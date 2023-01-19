@@ -64,7 +64,7 @@ void AlignedAllocator::print(std::ostream& os, int indent) const
 }
 
 //==============================================================================
-bool AlignedAllocator::validateAlignment(size_t size, size_t alignment) const
+bool AlignedAllocator::ValidateAlignment(size_t size, size_t alignment)
 {
   if (alignment == 0) {
     return true;

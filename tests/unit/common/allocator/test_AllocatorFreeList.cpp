@@ -38,6 +38,13 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
+TEST(AllocatorFreeListTest, Type)
+{
+  // Check if the type is correct
+  EXPECT_EQ(AllocatorFreeList::GetType(), AllocatorFreeList().getType());
+}
+
+//==============================================================================
 TEST(AllocatorFreeListTest, Constructors)
 {
   auto a = AllocatorFreeList::Debug();

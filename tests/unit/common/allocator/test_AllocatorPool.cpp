@@ -38,6 +38,13 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
+TEST(AllocatorPoolTest, Type)
+{
+  // Check if the type is correct
+  EXPECT_EQ(AllocatorPool::GetType(), AllocatorPool().getType());
+}
+
+//==============================================================================
 TEST(AllocatorPoolTest, Constructors)
 {
   auto a = AllocatorPool::Debug();

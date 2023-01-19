@@ -49,6 +49,20 @@ public:
   /// Returns the default memory allocator
   static AlignedAllocator& GetDefault();
 
+  /// Validates the alignment of a given size and alignment
+  ///
+  /// This function checks whether the given size and alignment are valid for
+  /// memory allocation. It checks if the alignment is zero, in which case it
+  /// returns true. If the alignment is less than the size of a pointer, it
+  /// returns false. If the alignment is not a power of 2, it returns
+  /// false. If the size is not a multiple of the alignment, it returns false.
+  ///
+  /// @param size The size of the memory block to be allocated.
+  /// @param alignment The alignment of the memory block.
+  /// @return True if the given size and alignment are valid for memory
+  /// allocation, false otherwise.
+  [[nodiscard]] static bool ValidateAlignment(size_t size, size_t alignment);
+
   /// Default constructor
   AlignedAllocator() noexcept = default;
 
@@ -113,21 +127,6 @@ public:
   /// Prints state of the memory allocator
   friend std::ostream& operator<<(
       std::ostream& os, const AlignedAllocator& allocator);
-
-protected:
-  /// Validates the alignment of a given size and alignment
-  ///
-  /// This function checks whether the given size and alignment are valid for
-  /// memory allocation. It checks if the alignment is zero, in which case it
-  /// returns true. If the alignment is less than the size of a pointer, it
-  /// returns false. If the alignment is not a power of 2, it returns
-  /// false. If the size is not a multiple of the alignment, it returns false.
-  ///
-  /// @param size The size of the memory block to be allocated.
-  /// @param alignment The alignment of the memory block.
-  /// @return True if the given size and alignment are valid for memory
-  /// allocation, false otherwise.
-  [[nodiscard]] bool validateAlignment(size_t size, size_t alignment) const;
 };
 
 } // namespace dart::common

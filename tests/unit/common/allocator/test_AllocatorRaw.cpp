@@ -35,6 +35,14 @@
 #include <gtest/gtest.h>
 
 using namespace dart;
+using namespace common;
+
+//==============================================================================
+TEST(AllocatorRawTest, Type)
+{
+  // Check if the type is correct
+  EXPECT_EQ(AllocatorRaw::GetType(), AllocatorRaw().getType());
+}
 
 //==============================================================================
 TEST(AllocatorRawTest, Basics)

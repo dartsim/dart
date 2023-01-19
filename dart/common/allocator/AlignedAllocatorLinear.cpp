@@ -72,7 +72,7 @@ void* AlignedAllocatorLinear::allocate(size_t size, size_t alignment) noexcept
     return nullptr;
   }
 
-  if (!this->validateAlignment(size, alignment)) {
+  if (!this->ValidateAlignment(size, alignment)) {
     return nullptr;
   }
 

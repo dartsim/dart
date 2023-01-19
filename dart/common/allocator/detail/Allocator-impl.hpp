@@ -69,16 +69,15 @@ T* Allocator::construct(Args&&... args) noexcept
 template <typename T, typename... Args>
 T* Allocator::constructAt(void* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  return constructAt(static_cast<T*>(pointer), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* Allocator::constructAt(T* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  ::new (pointer) T(std::forward<Args>(args)...);
+  return pointer;
 }
 
 //==============================================================================

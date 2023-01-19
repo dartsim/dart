@@ -68,18 +68,15 @@ T* AlignedAllocator::construct(Args&&... args) noexcept
 template <typename T, typename... Args>
 T* AlignedAllocator::constructAt(void* pointer, Args&&... args)
 {
-  return ::new (
-      const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
-      T(std::forward<Args>(args)...);
+  return constructAt(static_cast<T*>(pointer), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* AlignedAllocator::constructAt(T* pointer, Args&&... args)
 {
-  return ::new (
-      const_cast<void*>(static_cast<const volatile void*>(pointer)), alignof(T))
-      T(std::forward<Args>(args)...);
+  ::new (pointer) T(std::forward<Args>(args)...);
+  return pointer;
 }
 
 //==============================================================================

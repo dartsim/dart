@@ -40,6 +40,14 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
+TEST(AlignedAllocatorLinearTest, Type)
+{
+  // Check if the type is correct
+  EXPECT_EQ(
+      AlignedAllocatorLinear::GetType(), AlignedAllocatorLinear(16).getType());
+}
+
+//==============================================================================
 GTEST_TEST(AlignedAllocatorLinearTest, Allocate)
 {
   AlignedAllocatorLinear allocator(1024);
