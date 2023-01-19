@@ -60,7 +60,9 @@ public:
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
-  /// \param[in] bytes: The byte size to allocate storage for.
+  /// \param[in] bytes: The byte size to allocate storage for. The value of
+  /// bytes must be greater than zero and must be a multiple of the alignment
+  /// value.
   /// \param[in] alignment: The alignment of the allocated memory.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
@@ -113,7 +115,18 @@ public:
       std::ostream& os, const AlignedAllocator& allocator);
 
 protected:
-  /// Returns true if @c alignment is valid for @c size.
+  /// Validates the alignment of a given size and alignment
+  ///
+  /// This function checks whether the given size and alignment are valid for
+  /// memory allocation. It checks if the alignment is zero, in which case it
+  /// returns true. If the alignment is less than the size of a pointer, it
+  /// returns false. If the alignment is not a power of 2, it returns
+  /// false. If the size is not a multiple of the alignment, it returns false.
+  ///
+  /// @param size The size of the memory block to be allocated.
+  /// @param alignment The alignment of the memory block.
+  /// @return True if the given size and alignment are valid for memory
+  /// allocation, false otherwise.
   [[nodiscard]] bool validateAlignment(size_t size, size_t alignment) const;
 };
 

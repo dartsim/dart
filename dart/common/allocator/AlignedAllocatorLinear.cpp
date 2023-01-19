@@ -140,7 +140,7 @@ void AlignedAllocatorLinear::print(std::ostream& os, int indent) const
   std::lock_guard<std::mutex> lock(m_mutex);
 
   if (indent == 0) {
-    os << "[AlignedAllocatorLinear]\n";
+    os << "[dart::common::AlignedAllocatorLinear]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {

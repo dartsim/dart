@@ -58,7 +58,15 @@ public:
 
   DART_STRING_TYPE(AlignedAllocatorLinear);
 
-  /// @copydoc Allocator::allocate
+  /// Allocates \c size bytes of uninitialized storage.
+  ///
+  /// \param[in] bytes: The byte size to allocate storage for. The value of
+  /// bytes must be greater than zero and must be a multiple of the alignment
+  /// value.
+  /// \param[in] alignment: The alignment of the allocated memory.
+  /// \return On success, the pointer to the beginning of newly allocated
+  /// memory.
+  /// \return On failure, a null pointer
   ///
   /// Complexity is O(1).
   [[nodiscard]] void* allocate(size_t size, size_t alignment) noexcept override;
