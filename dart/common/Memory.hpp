@@ -92,9 +92,12 @@ template <typename HeaderType>
 [[nodiscard]] constexpr std::size_t GetPaddingIncludingHeader(
     const std::size_t base_address, const std::size_t alignment);
 
-template <size_t Alignment, typename HeaderType>
+template <size_t Alignment>
+[[nodiscard]] constexpr std::size_t GetPadding(const std::size_t base_address);
+
+template <typename HeaderType>
 [[nodiscard]] constexpr std::size_t GetPaddingIncludingHeader(
-    const std::size_t base_address);
+    const std::size_t baseAddress, const std::size_t alignment);
 
 /// Allocates memory on a specified alignment boundary.
 ///
