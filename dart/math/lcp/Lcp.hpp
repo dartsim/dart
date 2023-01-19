@@ -141,6 +141,28 @@ template <
     typename DerivedB,
     typename DerivedX,
     typename S = typename DerivedA::Scalar>
+bool solveLcpJacobi(
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
+    const LcpOption<S>& option = LcpOption<S>(),
+    LcpResult<S>* result = nullptr);
+
+/// @brief Solve LCP using projected Gauss-Seidel method
+/// @tparam S Scalar type
+/// @tparam DerivedA Derived type of A
+/// @tparam DerivedB Derived type of b
+/// @param A Matrix A in LCP formulation
+/// @param b Vector b in LCP formulation
+/// @param x Vector x in LCP formulation
+/// @param option Options for solving LCP
+/// @param result Result of solving LCP
+/// @return True if LCP is solved successfully
+template <
+    typename DerivedA,
+    typename DerivedB,
+    typename DerivedX,
+    typename S = typename DerivedA::Scalar>
 bool solveLcpPgs(
     const math::MatrixBase<DerivedA>& A,
     const math::MatrixBase<DerivedB>& b,
@@ -238,6 +260,86 @@ bool solveLcpLemke(
   }
 
   return (errorCode == 0);
+}
+
+//==============================================================================
+template <typename DerivedA, typename DerivedB, typename DerivedX, typename S>
+bool solveLcpJacobi(
+    const math::MatrixBase<DerivedA>& A,
+    const math::MatrixBase<DerivedB>& b,
+    math::PlainObjectBase<DerivedX>* x,
+    const LcpOption<S>& option,
+    LcpResult<S>* result)
+{
+  const std::size_t n = A.rows();
+
+  // Initialize x
+  if (option.warmStart)
+    (*x).conservativeResize(n);
+  else
+    (*x).setZero(n);
+
+  if (n == 0)
+    return true;
+
+  // Check if all the diagonal elements are non-negative
+  for (std::size_t i = 0u; i < n; ++i) {
+    if ((A.diagonal().array() < eps<S>()).any()) {
+      if (result) {
+        (*result).status = LcpResult<S>::Status::NEGATIVE_DIAGONAL;
+      }
+      return false;
+    }
+  }
+
+  const math::VectorX<S> invM = A.diagonal().cwiseInverse();
+  S new_x;
+  bool converged = false;
+  std::size_t iteration = 0u;
+
+  math::VectorX<S> minusN = A;
+  minusN.diagonal().setZero();
+
+  math::VectorX<S> Ax_b;
+  Ax_b = b;
+  Ax_b.noalias() += A * (*x);
+
+  while (true) {
+    // Sweep forward and backward alternatively
+    if (iteration % 2) {
+      for (std::size_t i = n; i-- > 0u;) {
+        new_x = -(minusN[i] + b[i]) * invM[i];
+        (*x)[i] = std::max(S(0), new_x); // project
+      }
+    } else {
+      for (std::size_t i = 0u; i < n; ++i) {
+        new_x = -(minusN[i] + b[i]) * invM[i];
+        (*x)[i] = std::max(S(0), new_x); // project
+      }
+    }
+
+    Ax_b = b;
+    Ax_b.noalias() += A * (*x);
+
+    S error_norm = computeLcpErrorFromXandY(b, *x, Ax_b);
+    if (error_norm < option.tolerance) {
+      converged = true;
+      break;
+    }
+
+    if (++iteration >= option.maxIterations) {
+      break;
+    }
+  }
+
+  if (result) {
+    if (converged)
+      (*result).status = LcpResult<S>::Status::SOLVED;
+    else
+      (*result).status = LcpResult<S>::Status::REACHED_MAX_ITERATION;
+  }
+
+  return converged;
 }
 
 //==============================================================================

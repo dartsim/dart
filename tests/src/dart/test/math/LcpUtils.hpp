@@ -194,7 +194,9 @@ std::pair<math::MatrixX<S>, math::VectorX<S>> generateValidLcpProblem(
   for (auto i = 0u; i < n; ++i) {
     if (vec[i] == 0) {
       x[i] = S(0);
+      y[i] = std::abs(y[i]);
     } else {
+      x[i] = std::abs(x[i]);
       y[i] = S(0);
     }
   }

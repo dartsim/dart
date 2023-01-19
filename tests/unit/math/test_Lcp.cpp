@@ -75,7 +75,7 @@ TYPED_TEST(LcpTest, PivotingMethods)
 }
 
 //==============================================================================
-TYPED_TEST(LcpTest, SweepingMethods)
+TYPED_TEST(LcpTest, SweepingMethodsPGS)
 {
   using S = typename TestFixture::Scalar;
 
@@ -90,7 +90,46 @@ TYPED_TEST(LcpTest, SweepingMethods)
   option.tolerance = tol;
 
 #if defined(NDEBUG)
+  const auto numTests = 4;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024})
+#else
   const auto numTests = 5;
+  for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256})
+#endif
+  {
+    for (auto i = 0; i < numTests; ++i) {
+      const auto [A, b] = test::generateValidLcpProblem<S>(n);
+      math::VectorX<S> x = math::VectorX<S>(n);
+
+      EXPECT_TRUE(dart::math::solveLcpPgs(A, b, &x, option))
+          << "n: " << n << ", #" << i << "\n"
+          << "x     : " << x.transpose() << "\n"
+          << "Ax + b: " << (A * x + b).transpose();
+      EXPECT_TRUE(dart::math::validateLcp(A, b, x, tol))
+          << "n: " << n << ", #" << i << "\n"
+          << "x     : " << x.transpose() << "\n"
+          << "Ax + b: " << (A * x + b).transpose();
+    }
+  }
+}
+
+//==============================================================================
+TYPED_TEST(LcpTest, SweepingMethodsPSOR)
+{
+  using S = typename TestFixture::Scalar;
+
+  S tol;
+  if constexpr (std::is_same_v<S, float>)
+    tol = 1e-3;
+  else if constexpr (std::is_same_v<S, double>)
+    tol = 1e-6;
+
+  LcpOption<S> option;
+  option.maxIterations = 10000;
+  option.tolerance = tol;
+
+#if defined(NDEBUG)
+  const auto numTests = 4;
   for (const auto n : {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024})
 #else
   const auto numTests = 5;
