@@ -69,12 +69,15 @@ bool FileInfoWorld::loadFile(const char* _fName)
   std::vector<double> tempState;
   math::VectorXd state;
 
+  inFile.width(256);
   inFile >> buffer;
   inFile >> numFrames;
+  inFile.width(256);
   inFile >> buffer;
   inFile >> numSkeletons;
 
   for (int i = 0; i < numSkeletons; i++) {
+    inFile.width(256);
     inFile >> buffer;
     inFile >> intVal;
     numDofsForSkels.push_back(intVal);
@@ -93,6 +96,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
       }
     }
 
+    inFile.width(256);
     inFile >> buffer;
     inFile >> intVal;
     for (int j = 0; j < intVal; j++) {

@@ -38,6 +38,7 @@
 #include "dart/math/lcp/Lcp.hpp"
 
 #include <cstdio>
+#include <cstring>
 
 namespace dart {
 namespace math {
@@ -83,7 +84,7 @@ bool ODELCPSolver::Solve(
     hi = new double[n];
     int* findex = new int[n];
 
-    memset(A, 0, n * nSkip * sizeof(double));
+    std::memset(A, 0, static_cast<std::size_t>(n) * nSkip * sizeof(double));
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {
         A[i * nSkip + j] = _A(i, j);

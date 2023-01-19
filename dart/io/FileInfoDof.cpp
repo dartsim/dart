@@ -69,12 +69,16 @@ bool FileInfoDof::loadFile(const char* _fName)
   std::size_t nDof;
 
   // nFrames =
+  inFile.width(256);
   inFile >> buffer;
+  inFile.width(256);
   inFile >> buffer;
   inFile >> mNumFrames;
 
   // nDof =
+  inFile.width(256);
   inFile >> buffer;
+  inFile.width(256);
   inFile >> buffer;
   inFile >> nDof;
 
@@ -84,8 +88,10 @@ bool FileInfoDof::loadFile(const char* _fName)
   mDofs.resize(mNumFrames);
 
   // dof names
-  for (std::size_t i = 0; i < nDof; i++)
+  for (std::size_t i = 0; i < nDof; i++) {
+    inFile.width(256);
     inFile >> buffer;
+  }
   for (std::size_t j = 0; j < mNumFrames; j++) {
     mDofs[j].resize(nDof);
     for (std::size_t i = 0; i < nDof; i++) {
@@ -96,6 +102,7 @@ bool FileInfoDof::loadFile(const char* _fName)
   }
 
   // fps
+  inFile.width(256);
   inFile >> buffer;
   if (!inFile.eof())
     inFile >> mFPS;
