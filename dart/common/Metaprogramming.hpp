@@ -30,39 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_METAPROGRAMMING_HPP_
-#define DART_COMMON_METAPROGRAMMING_HPP_
+#pragma once
 
-// Check for any member with given name, whether var, func, class, union, enum.
-#define DART_CREATE_MEMBER_CHECK(member)                                       \
-                                                                               \
-  template <typename T, typename = std::true_type>                             \
-  struct Alias_##member;                                                       \
-                                                                               \
-  template <typename T>                                                        \
-  struct Alias_##member<                                                       \
-      T,                                                                       \
-      ::std::integral_constant<                                                \
-          bool,                                                                \
-          ::dart::common::detail::got_type<decltype(&T::member)>::value>>      \
-  {                                                                            \
-    static const decltype(&T::member) value;                                   \
-  };                                                                           \
-                                                                               \
-  struct AmbiguitySeed_##member                                                \
-  {                                                                            \
-    char member;                                                               \
-  };                                                                           \
-                                                                               \
-  template <typename T>                                                        \
-  struct has_member_##member                                                   \
-  {                                                                            \
-    static const bool value = ::dart::common::detail::has_member<              \
-        Alias_##member<                                                        \
-            ::dart::common::detail::ambiguate<T, AmbiguitySeed_##member>>,     \
-        Alias_##member<AmbiguitySeed_##member>>::value;                        \
-  }
+// DETAIL_DART_CREATE_MEMBER_CHECK is a macro that can be used to check if a
+// given type has a specific member (specified by the member parameter). The
+// macro generates several structs and a constant expression that can be used to
+// check for the presence of the member.
+//
+// The struct Alias_name<T, std::true_type> is defined for any type T that has
+// a member member. The struct has a static member value of type
+// decltype(&T::member).
+//
+// The struct has_member_name<T> is defined for any type T and has a static
+// member value of type bool that is true if T has a member member and false
+// otherwise. The has_member_name<T>::value is determined by using
+// dart::common::detail::has_member with
+// Alias_name<dart::common::detail::ambiguate<T, AmbiguitySeed_name>> and
+// Alias_name<AmbiguitySeed_member>.
+//
+// A constant expression has_member_name_v<T> is also defined for any type T
+// that has the same value as has_member_name<T>::value.
+#define DART_CREATE_MEMBER_CHECK(name) DETAIL_DART_CREATE_MEMBER_CHECK(name)
 
 #include <dart/common/detail/Metaprogramming-impl.hpp>
-
-#endif // DART_COMMON_METAPROGRAMMING_HPP_

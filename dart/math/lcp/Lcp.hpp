@@ -296,7 +296,7 @@ bool solveLcpPsor(
   while (true) {
     // Sweep forward and backward alternatively
     if (iteration % 2) {
-      for (std::size_t i = n; i-- > 0u;) {  // backward from n-1 to 0
+      for (std::size_t i = n; i-- > 0u;) { // backward from n-1 to 0
         new_x = (*x)[i] - option.lambda * (A.row(i).dot(*x) + b[i]) * invM[i];
         (*x)[i] = std::max(S(0), new_x); // project
       }

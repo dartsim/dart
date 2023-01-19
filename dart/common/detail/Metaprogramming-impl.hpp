@@ -30,12 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
-#define DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
+#pragma once
 
 #include <dart/common/Metaprogramming.hpp>
 
 #include <type_traits>
+
+// Check for any member with given name, whether var, func, class, union, enum.
+#define DETAIL_DART_CREATE_MEMBER_CHECK(member)                                \
+                                                                               \
+  template <typename T, typename = std::true_type>                             \
+  struct Alias_##member;                                                       \
+                                                                               \
+  template <typename T>                                                        \
+  struct Alias_##member<                                                       \
+      T,                                                                       \
+      ::std::integral_constant<                                                \
+          bool,                                                                \
+          ::dart::common::detail::got_type<decltype(&T::member)>::value>>      \
+  {                                                                            \
+    static decltype(&T::member) value;                                         \
+  };                                                                           \
+                                                                               \
+  struct AmbiguitySeed_##member                                                \
+  {                                                                            \
+    char member;                                                               \
+  };                                                                           \
+                                                                               \
+  template <typename T>                                                        \
+  struct has_member_##member                                                   \
+  {                                                                            \
+    static constexpr bool value = ::dart::common::detail::has_member<          \
+        Alias_##member<                                                        \
+            ::dart::common::detail::ambiguate<T, AmbiguitySeed_##member>>,     \
+        Alias_##member<AmbiguitySeed_##member>>::value;                        \
+  };                                                                           \
+                                                                               \
+  template <typename T>                                                        \
+  constexpr bool has_member_##member##_v = has_member_##member<T>::value;
 
 namespace dart::common::detail {
 
@@ -85,5 +117,3 @@ struct has_member
 };
 
 } // namespace dart::common::detail
-
-#endif // DART_COMMON_DETAIL_METAPROGRAMMING_HPP_

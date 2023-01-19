@@ -46,7 +46,7 @@
   }                                                                            \
                                                                                \
   /** Returns type string */                                                   \
-  [[nodiscard]] const std::string& getType() const override                    \
+  [[nodiscard]] const std::string& getType() const final                       \
   {                                                                            \
     return GetType();                                                          \
   }                                                                            \
@@ -63,7 +63,7 @@
   }                                                                            \
                                                                                \
   /** Returns type string */                                                   \
-  [[nodiscard]] const std::string& getType() const override                    \
+  [[nodiscard]] const std::string& getType() const final                       \
   {                                                                            \
     return GetType();                                                          \
   }                                                                            \
@@ -82,11 +82,10 @@ template <typename Derived>
 bool Castable<Base>::is() const
 {
   if constexpr (
-      has_member_getType<Base>::value
-      && has_member_getStaticType<Derived>::value) {
+      has_member_getType_v<Base> && has_member_getStaticType_v<Derived>) {
     return (base().getType() == Derived::getStaticType());
   } else if constexpr (
-      has_member_getType<Base>::value && has_member_GetType<Derived>::value) {
+      has_member_getType_v<Base> && has_member_GetType_v<Derived>) {
     return (base().getType() == Derived::GetType());
   } else {
     return (dynamic_cast<const Derived*>(&base()) != nullptr);
