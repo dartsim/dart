@@ -67,6 +67,11 @@ if [ -z "$IN_CI" ]; then
   IN_CI=OFF
 fi
 
+if [ -z "$ENABLE_SIMD" ]; then
+  echo "Info: Environment variable ENABLE_SIMD is unset. Using OFF by default."
+  ENABLE_SIMD=ON
+fi
+
 if [ -f /etc/os-release ]; then
   # freedesktop.org and systemd
   . /etc/os-release
@@ -182,6 +187,7 @@ cmake \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_CODECOV=$CODECOV \
   -DDART_IN_CI=$IN_CI \
+  -DDART_ENABLE_SIMD=$ENABLE_SIMD \
   ${install_prefix_option}
 
 # Check format

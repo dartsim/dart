@@ -22,7 +22,7 @@ jobs:
         compiler: [gcc] # TODO(JS): Add clang
         build_type: [Debug] # TODO(JS): Add Release
         build_dartpy: [ON]
-        enable_native_arch: [ON]
+        enable_simd: [OFF]
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
@@ -31,7 +31,7 @@ jobs:
       COMPILER: ${{ matrix.compiler }}
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ${{ matrix.build_dartpy }}
-      DART_ENABLE_NATIVE_ARCH: ${{ matrix.enable_native_arch }}
+      ENABLE_SIMD: ${{ matrix.enable_simd }}
       IN_CI: ON
       IN_DOCKER: ON
     steps:

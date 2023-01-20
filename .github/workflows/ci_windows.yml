@@ -22,11 +22,13 @@ jobs:
         build_shared_libs: [ON, OFF]
         build_dartpy: [OFF]       # Build tests and dartpy exclusively 
                                   # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
+        enable_simd: [ON]
     env:
       VCPKG_BUILD_TAG: v2023.01.16-2
       VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ${{ matrix.build_dartpy }}
+      ENABLE_SIMD: ${{ matrix.enable_simd }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -50,7 +52,8 @@ jobs:
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
             -DDART_BUILD_COMP_gui=OFF ^
-            -DDART_IN_CI=ON
+            -DDART_IN_CI=ON ^
+            -DDART_ENABLE_SIMD=%ENABLE_SIMD%
           cmake --build . --config %BUILD_TYPE% --target tests --parallel
           ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%
       - name: Build dartpy
@@ -67,5 +70,6 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
-            -DDART_IN_CI=ON
+            -DDART_IN_CI=ON ^
+            -DDART_ENABLE_SIMD=%ENABLE_SIMD%
           cmake --build . --config %BUILD_TYPE% --target dartpy --parallel

@@ -18,11 +18,13 @@ jobs:
       matrix:
         build_type: [Release]
         osx_image: [macos-12]
+        enable_simd: [ON]
     env:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ON
       IN_CI: ON
+      ENABLE_SIMD: ${{ matrix.enable_simd }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

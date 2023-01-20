@@ -24,6 +24,7 @@ jobs:
         codecov: [OFF]
         check_format: [OFF]
         build_dartpy: [ON]
+        enable_simd: [ON]
         include:
           # For code coverage report to Codecov
           - os: ubuntu-jammy
@@ -31,6 +32,7 @@ jobs:
             codecov: ON
             check_format: ON
             build_dartpy: ON
+            enable_simd: ON
     env:
       # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
       DART_DEV_IMAGE: dartsim/dart-dev
@@ -41,6 +43,7 @@ jobs:
       CODECOV: ${{ matrix.codecov }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       CHECK_FORMAT: ${{ matrix.check_format }}
+      ENABLE_SIMD: ${{ matrix.enable_simd }}
       IN_CI: ON
       IN_DOCKER: ON
     steps:
