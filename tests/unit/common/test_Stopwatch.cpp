@@ -34,11 +34,13 @@
 
 #include <gtest/gtest.h>
 
+#include <thread>
+
 using namespace dart;
 using namespace common;
 
 //==============================================================================
-TEST(StopwatchTest, Basics)
+GTEST_TEST(StopwatchTest, Elapsed)
 {
   auto sw = StopwatchNS();
 
@@ -79,6 +81,15 @@ TEST(StopwatchTest, Basics)
   sw.reset();
   EXPECT_FALSE(sw.isStarted());
   EXPECT_DOUBLE_EQ(sw.elapsedS(), 0.0);
+}
 
-  std::cout << sw;
+//==============================================================================
+GTEST_TEST(StopwatchTest, IsStarted)
+{
+  Stopwatch<> sw(false);
+  EXPECT_FALSE(sw.isStarted());
+  sw.start();
+  EXPECT_TRUE(sw.isStarted());
+  sw.stop();
+  EXPECT_FALSE(sw.isStarted());
 }

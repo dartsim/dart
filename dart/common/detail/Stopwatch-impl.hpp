@@ -139,7 +139,6 @@ double Stopwatch<UnitType, ClockType>::elapsedMS() const
     return duration().count();
   } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count() * 1e+3;
-    ;
   }
 }
 
@@ -155,7 +154,6 @@ double Stopwatch<UnitType, ClockType>::elapsedUS() const
     return duration().count() * 1e+3;
   } else if constexpr (std::is_same_v<UnitType, std::chrono::seconds>) {
     return duration().count() * 1e+6;
-    ;
   }
 }
 

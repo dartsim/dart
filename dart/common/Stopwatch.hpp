@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STOPWATCH_HPP_
-#define DART_COMMON_STOPWATCH_HPP_
+#pragma once
 
 #include <dart/common/Fwd.hpp>
 
@@ -40,9 +39,18 @@
 
 namespace dart::common {
 
-/// Simple stopwatch implementation
+/// Stopwatch class for measuring elapsed time.
+///
+/// Stopwatch is a simple class for measuring elapsed time. It is a wrapper of
+/// std::chrono::high_resolution_clock. The default unit of the elapsed time is
+/// std::chrono::seconds.
+///
+/// \tparam UnitType: The unit type of the elapsed time. The default is
+/// std::chrono::nanoseconds.
+/// \tparam ClockType: The clock type of the stopwatch. The default is
+/// std::chrono::high_resolution_clock.
 template <
-    typename UnitType,
+    typename UnitType = std::chrono::nanoseconds,
     typename ClockType = std::chrono::high_resolution_clock>
 class Stopwatch final
 {
@@ -133,13 +141,18 @@ DART_COMMON_API double tocUS(bool print = false);
 /// Returns the elapsed time in nanoseconds since the last tic() call.
 DART_COMMON_API double tocNS(bool print = false);
 
+/// Stopwatch with std::chrono::seconds as the unit type
 using StopwatchS = Stopwatch<std::chrono::seconds>;
+
+/// Stopwatch with std::chrono::milliseconds as the unit type
 using StopwatchMS = Stopwatch<std::chrono::milliseconds>;
+
+/// Stopwatch with std::chrono::microseconds as the unit type
 using StopwatchUS = Stopwatch<std::chrono::microseconds>;
+
+/// Stopwatch with std::chrono::nanoseconds as the unit type
 using StopwatchNS = Stopwatch<std::chrono::nanoseconds>;
 
 } // namespace dart::common
 
 #include <dart/common/detail/Stopwatch-impl.hpp>
-
-#endif // DART_COMMON_STOPWATCH_HPP_
