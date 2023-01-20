@@ -40,7 +40,11 @@ namespace dart::common {
 template <typename T>
 T* AlignedAllocator::allocateAs(size_t n) noexcept
 {
-  return static_cast<T*>(allocate(n * sizeof(T), alignof(T)));
+  // Note that the alignment must be power of two and integral multiple of
+  // sizeof(void*)
+  return static_cast<T*>(
+      allocate(n * sizeof(T), std::max(alignof(T), alignof(void*))));
+  // TODO(JS): The requirement for alignment can vary based on the platform.
 }
 
 //==============================================================================
