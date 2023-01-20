@@ -64,31 +64,19 @@ AlignedAllocatorLinear::~AlignedAllocatorLinear()
 //==============================================================================
 void* AlignedAllocatorLinear::allocate(size_t size, size_t alignment) noexcept
 {
-  if (size == 0) {
+  if (size == 0 || m_start_ptr == nullptr
+      || !ValidateAlignment(size, alignment)) {
     return nullptr;
   }
 
-  if (m_start_ptr == nullptr) {
-    return nullptr;
-  }
-
-  if (!this->ValidateAlignment(size, alignment)) {
-    return nullptr;
-  }
-
-  // Lock the mutex
   std::lock_guard<std::mutex> lock(m_mutex);
 
   const size_t current_ptr = reinterpret_cast<size_t>(m_start_ptr) + m_offset;
-
-  // Compute padding
-  size_t padding = 0;
-  if (alignment > 0 && m_offset % alignment != 0) {
-    padding = GetPadding(current_ptr, alignment);
-  }
+  const size_t padding = GetPadding(current_ptr, alignment);
+  const size_t total_size = padding + size;
 
   // Check max capacity
-  if (m_offset + padding + size > m_max_capacity) {
+  if (m_offset + total_size > m_max_capacity) {
     DART_DEBUG(
         "Allocating {} bytes with padding {} exceeds the max capacity {}. "
         "Returning nullptr.",
@@ -98,9 +86,7 @@ void* AlignedAllocatorLinear::allocate(size_t size, size_t alignment) noexcept
     return nullptr;
   }
 
-  // Update offset
-  m_offset += padding + size;
-
+  m_offset += total_size;
   return reinterpret_cast<void*>(current_ptr + padding);
 }
 

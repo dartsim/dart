@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
-#define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
+#pragma once
 
 #include <dart/common/Macros.hpp>
 
@@ -39,8 +38,7 @@
 
 #include <memory>
 
-namespace dart {
-namespace common {
+namespace dart::common {
 
 //==============================================================================
 template <typename _Tp, typename... _Args>
@@ -56,10 +54,6 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 constexpr std::size_t GetPadding(
     const std::size_t base_address, const std::size_t alignment)
 {
-  if (alignment == 0) {
-    return 0;
-  }
-
   //
   // 0       (alignment)  (2*alignment)          (multiplier*alignment)
   // +------------+-------------+-----...----+-------------+--------------
@@ -69,23 +63,15 @@ constexpr std::size_t GetPadding(
   //                                            |--------->|
   //                                               padding
   //
-
-  const std::size_t multiplier = (base_address / alignment) + 1;
-  const std::size_t aligned_address = multiplier * alignment;
-  DART_ASSERT(aligned_address >= base_address);
-  const std::size_t padding = aligned_address - base_address;
-
-  return padding;
+  return (alignment == 0)
+             ? 0
+             : (alignment - (base_address % alignment)) % alignment;
 }
 
 //==============================================================================
 template <size_t Alignment>
 constexpr std::size_t GetPadding(const std::size_t base_address)
 {
-  if constexpr (Alignment == 0) {
-    return 0;
-  }
-
   //
   // 0       (alignment)  (2*alignment)          (multiplier*alignment)
   // +------------+-------------+-----...----+-------------+--------------
@@ -95,16 +81,26 @@ constexpr std::size_t GetPadding(const std::size_t base_address)
   //                                            |--------->|
   //                                               padding
   //
-
-  const std::size_t multiplier = (base_address / Alignment) + 1;
-  const std::size_t aligned_address = multiplier * Alignment;
-  DART_ASSERT(aligned_address >= base_address);
-  const std::size_t padding = aligned_address - base_address;
-
-  return padding;
+  return (base_address % Alignment == 0)
+             ? 0
+             : (Alignment - (base_address % Alignment));
 }
 
-} // namespace common
-} // namespace dart
+//==============================================================================
+template <typename HeaderType>
+constexpr std::size_t GetPaddingIncludingHeader(
+    const std::size_t base_address, const std::size_t alignment)
+{
+  constexpr auto header_size = sizeof(HeaderType);
+  return GetPadding(base_address + header_size, alignment) + header_size;
+}
 
-#endif // DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
+//==============================================================================
+template <size_t Alignment, typename HeaderType>
+constexpr std::size_t GetPaddingIncludingHeader(const std::size_t base_address)
+{
+  constexpr auto header_size = sizeof(HeaderType);
+  return GetPadding<Alignment>(base_address + header_size) + header_size;
+}
+
+} // namespace dart::common

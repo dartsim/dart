@@ -30,66 +30,67 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/AlignedAllocator.hpp"
+#pragma once
 
-#include "dart/common/allocator/AlignedAllocatorRaw.hpp"
+#include <dart/common/allocator/AlignedAllocator.hpp>
+
+#include <iostream>
+#include <mutex>
+#include <unordered_map>
 
 namespace dart::common {
 
-namespace {
-
 template <typename T>
-constexpr bool ispow2(T x) noexcept
+class AlignedAllocatorDebugger : public AlignedAllocator
 {
-  return (x & (x - 1)) == 0;
-}
+public:
+  /// Constructor
+  template <typename... Args>
+  AlignedAllocatorDebugger(Args&&... args);
 
-} // namespace
+  /// Destructor
+  ~AlignedAllocatorDebugger();
 
-//==============================================================================
-AlignedAllocator& AlignedAllocator::GetDefault()
-{
-  static AlignedAllocatorRaw defaultAllocator;
-  return defaultAllocator;
-}
+  /// Returns type string.
+  [[nodiscard]] static const std::string& GetType();
 
-//==============================================================================
-void AlignedAllocator::print(std::ostream& os, int indent) const
-{
-  if (indent == 0) {
-    os << "[*::print is not implemented]\n";
-  }
-  const std::string spaces(indent, ' ');
-  os << spaces << "*::print is not implemented:\n";
-}
+  // Documentation inherited
+  [[nodiscard]] const std::string& getType() const override;
 
-//==============================================================================
-bool AlignedAllocator::ValidateAlignment(size_t size, size_t alignment)
-{
-  if (alignment < sizeof(void*)) {
-    DART_DEBUG("Alignment '{}' must be greater than sizeof(void*).", alignment);
-    return false;
-  }
+  // Documentation inherited
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
 
-  if (!ispow2(alignment)) {
-    DART_DEBUG("Alignment '{}' must be a power of 2.", alignment);
-    return false;
-  }
+  // Documentation inherited
+  void deallocate(void* pointer, size_t bytes) override;
 
-  if (size % alignment != 0) {
-    DART_DEBUG(
-        "Size '{}' must be a multiple of alignment '{}'.", size, alignment);
-    return false;
-  }
+  /// Returns true if there is no memory allocated by the internal allocator.
+  [[nodiscard]] bool isEmpty() const;
 
-  return true;
-}
+  /// Returns true if a pointer is allocated by the internal allocator.
+  [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
 
-//==============================================================================
-std::ostream& operator<<(std::ostream& os, const AlignedAllocator& allocator)
-{
-  allocator.print(os);
-  return os;
-}
+  /// Returns the internal allocator
+  [[nodiscard]] const T& getInternalAllocator() const;
+
+  /// Returns the internal allocator
+  [[nodiscard]] T& getInternalAllocator();
+
+  // Documentation inherited
+  void print(std::ostream& os = std::cout, int indent = 0) const override;
+
+private:
+  T mInternalAllocator;
+
+  size_t mSize = 0;
+
+  size_t mPeak = 0;
+
+  std::unordered_map<void*, size_t> mMapPointerToSize;
+
+  mutable std::mutex mMutex;
+};
 
 } // namespace dart::common
+
+#include <dart/common/allocator/detail/AlignedAllocatorDebugger-impl.hpp>

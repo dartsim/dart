@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORY_HPP_
-#define DART_COMMON_MEMORY_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -43,20 +42,59 @@
 
 namespace dart::common {
 
+/// Returns a shared pointer to an object of type _Tp that is aligned to the
+/// specified alignment.
+///
+/// @param alignment The alignment value that the base address needs to be
+/// aligned to.
+/// @param args The arguments to forward to the constructor of _Tp.
+/// @return A shared pointer to an object of type _Tp that is aligned to the
+/// specified alignment.
+/// @note If the alignment is 0, this function will return a shared pointer to
+/// an object of type _Tp that is not aligned.
 template <typename _Tp, typename... _Args>
-std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
+std::shared_ptr<_Tp> make_aligned_shared(_Args&&... args);
 
 /// Returns the padding needed to align the given base address to the specified
 /// alignment.
 ///
-/// @param baseAddress The base address that needs to be aligned.
+/// @param base_address The base address that needs to be aligned.
 /// @param alignment The alignment value that the base address needs to be
 /// aligned to.
 /// @return The padding needed to align the base address to the specified
 /// alignment.
 /// @note If the alignment is 0, this function will return 0.
 [[nodiscard]] constexpr std::size_t GetPadding(
-    const std::size_t baseAddress, const std::size_t alignment);
+    const std::size_t base_address, const std::size_t alignment);
+
+/// Returns the padding needed to align the given base address to the specified
+/// alignment.
+///
+/// @param base_address The base address that needs to be aligned.
+/// @param alignment The alignment value that the base address needs to be
+/// aligned to.
+/// @return The padding needed to align the base address to the specified
+/// alignment.
+/// @note If the alignment is 0, this function will return 0.
+template <size_t Alignment>
+[[nodiscard]] constexpr std::size_t GetPadding(const std::size_t base_address);
+
+/// Returns the padding needed to align the given base address to the specified
+/// alignment, including the size of the header.
+///
+/// @param base_address The base address that needs to be aligned.
+/// @param alignment The alignment value that the base address needs to be
+/// aligned to.
+/// @return The padding needed to align the base address to the specified
+/// alignment, including the size of the header.
+/// @note If the alignment is 0, this function will return 0.
+template <typename HeaderType>
+[[nodiscard]] constexpr std::size_t GetPaddingIncludingHeader(
+    const std::size_t base_address, const std::size_t alignment);
+
+template <size_t Alignment, typename HeaderType>
+[[nodiscard]] constexpr std::size_t GetPaddingIncludingHeader(
+    const std::size_t base_address);
 
 /// Allocates memory on a specified alignment boundary.
 ///
@@ -230,5 +268,3 @@ public:                                                                        \
 #endif
 
 #include <dart/common/detail/Memory-impl.hpp>
-
-#endif // DART_COMMON_MEMORY_HPP_

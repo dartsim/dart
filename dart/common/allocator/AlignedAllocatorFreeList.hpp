@@ -33,15 +33,16 @@
 #pragma once
 
 #include <dart/common/Fwd.hpp>
+#include <dart/common/allocator/AlignedAllocator.hpp>
+#include <dart/common/allocator/AlignedAllocatorDebugger.hpp>
 #include <dart/common/allocator/Allocator.hpp>
-#include <dart/common/allocator/AllocatorDebugger.hpp>
 
 #include <mutex>
 
 namespace dart::common {
 
-/// AllocatorFreeList is a memory allocator designed for allocating memory of
-/// various sizes.
+/// AlignedAllocatorFreeList is a memory allocator designed for allocating
+/// memory of various sizes.
 ///
 /// It preallocates a large chunk of contiguous memory during construction,
 /// using a base memory allocator, and returns small portions of this memory
@@ -53,23 +54,23 @@ namespace dart::common {
 /// the preallocated memory are currently in use. If the preallocated memory
 /// runs out, the class will allocate additional memory chunks using the base
 /// allocator.
-class DART_COMMON_API AllocatorFreeList : public Allocator
+class DART_COMMON_API AlignedAllocatorFreeList : public AlignedAllocator
 {
 public:
-  using Debug = AllocatorDebugger<AllocatorFreeList>;
+  using Debug = AlignedAllocatorDebugger<AlignedAllocatorFreeList>;
 
   /// Constructor
   ///
   /// @param[in] baseAllocator: (optional) Base memory allocator.
   /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
-  explicit AllocatorFreeList(
+  explicit AlignedAllocatorFreeList(
       Allocator& baseAllocator = Allocator::GetDefault(),
       size_t initialAllocation = 1048576 /* 1 MB */);
 
   /// Destructor
-  ~AllocatorFreeList() override;
+  ~AlignedAllocatorFreeList() override;
 
-  DART_STRING_TYPE(AllocatorFreeList);
+  DART_STRING_TYPE(AlignedAllocatorFreeList);
 
   /// Returns the base allocator
   [[nodiscard]] const Allocator& getBaseAllocator() const;
@@ -78,7 +79,8 @@ public:
   [[nodiscard]] Allocator& getBaseAllocator();
 
   // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
+  [[nodiscard]] void* allocate(
+      size_t bytes, size_t alignment) noexcept override;
 
   // Documentation inherited
   void deallocate(void* pointer, size_t bytes) override;
@@ -97,6 +99,8 @@ private:
     /// Memory block size in bytes
     size_t mSize;
 
+    size_t padding;
+
     /// Pointer to previous memory block
     MemoryBlockHeader* mPrev;
 
@@ -112,6 +116,7 @@ private:
     /// Constructor
     explicit MemoryBlockHeader(
         size_t size,
+        size_t padding,
         MemoryBlockHeader* prev,
         MemoryBlockHeader* next,
         bool isNextContiguous);
@@ -126,7 +131,7 @@ private:
     const unsigned char* asCharPtr() const;
 
     /// Splits the memory block
-    void split(size_t sizeToSplit);
+    void split(size_t sizeToSplit, size_t padding);
 
     /// Merges this memory block with the given memory block
     void merge(MemoryBlockHeader* other);

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/allocator/AllocatorFreeList.hpp>
+#include "dart/common/allocator/AllocatorFreeList.hpp"
 
 #include <gtest/gtest.h>
 
@@ -38,14 +38,14 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-TEST(AllocatorFreeListTest, Type)
+GTEST_TEST(AllocatorFreeListTest, Type)
 {
   // Check if the type is correct
   EXPECT_EQ(AllocatorFreeList::GetType(), AllocatorFreeList().getType());
 }
 
 //==============================================================================
-TEST(AllocatorFreeListTest, Constructors)
+GTEST_TEST(AllocatorFreeListTest, Constructors)
 {
   auto a = AllocatorFreeList::Debug();
   EXPECT_EQ(
@@ -60,7 +60,74 @@ TEST(AllocatorFreeListTest, Constructors)
 }
 
 //==============================================================================
-TEST(AllocatorFreeListTest, Basics)
+GTEST_TEST(AllocatorFreeListTest, Allocate)
+{
+  const size_t allocated_size1 = 128;
+  const size_t allocated_size2 = 256;
+  const size_t allocated_size3 = 512;
+
+  auto allocator = AllocatorFreeList::Debug();
+
+  // Test allocating memory with a valid size
+  void* ptr1 = allocator.allocate(allocated_size1);
+  EXPECT_NE(ptr1, nullptr);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), allocated_size1);
+
+  // Test allocating memory with a valid size
+  void* ptr2 = allocator.allocate(allocated_size2);
+  EXPECT_NE(ptr2, nullptr);
+  EXPECT_EQ(
+      allocator.getInternalAllocator().getSize(),
+      allocated_size1 + allocated_size2);
+
+  // Test allocating memory with a valid size
+  void* ptr3 = allocator.allocate(allocated_size3);
+  EXPECT_NE(ptr3, nullptr);
+  EXPECT_EQ(
+      allocator.getInternalAllocator().getSize(),
+      allocated_size1 + allocated_size2 + allocated_size3);
+
+  // Test allocating memory with a zero size
+  void* ptr4 = allocator.allocate(0);
+  EXPECT_EQ(ptr4, nullptr);
+  EXPECT_EQ(
+      allocator.getInternalAllocator().getSize(),
+      allocated_size1 + allocated_size2 + allocated_size3);
+
+  // Deallocate
+  allocator.deallocate(ptr1, allocated_size1);
+  EXPECT_EQ(
+      allocator.getInternalAllocator().getSize(),
+      allocated_size2 + allocated_size3);
+  allocator.deallocate(ptr2, allocated_size2);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), allocated_size3);
+  allocator.deallocate(ptr3, allocated_size3);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), 0);
+}
+
+//==============================================================================
+GTEST_TEST(AllocatorFreeListTest, Deallocate)
+{
+  const size_t allocated_size1 = 128;
+
+  auto allocator = AllocatorFreeList::Debug();
+
+  // Test deallocating nullptr
+  allocator.deallocate(nullptr, allocated_size1);
+
+  // Test deallocating zero bytes
+  void* ptr1 = allocator.allocate(allocated_size1);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), allocated_size1);
+  allocator.deallocate(ptr1, 0);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), allocated_size1);
+
+  // Test deallocating a valid pointer
+  allocator.deallocate(ptr1, allocated_size1);
+  EXPECT_EQ(allocator.getInternalAllocator().getSize(), 0);
+}
+
+//==============================================================================
+GTEST_TEST(AllocatorFreeListTest, HasAllocated)
 {
   auto a = AllocatorFreeList::Debug();
   EXPECT_TRUE(a.isEmpty());
@@ -81,7 +148,7 @@ TEST(AllocatorFreeListTest, Basics)
 }
 
 //==============================================================================
-TEST(AllocatorFreeListTest, MemoryLeak)
+GTEST_TEST(AllocatorFreeListTest, MemoryLeak)
 {
   auto a = AllocatorFreeList::Debug();
   EXPECT_TRUE(a.isEmpty());

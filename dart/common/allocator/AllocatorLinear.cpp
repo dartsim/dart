@@ -62,11 +62,7 @@ AllocatorLinear::~AllocatorLinear()
 //==============================================================================
 void* AllocatorLinear::allocate(size_t size) noexcept
 {
-  if (size == 0) {
-    return nullptr;
-  }
-
-  if (m_start_ptr == nullptr) {
+  if (size == 0 || m_start_ptr == nullptr) {
     return nullptr;
   }
 

@@ -30,16 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/AllocatorFreeList.hpp"
+#include "dart/common/allocator/AlignedAllocatorFreeList.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Memory.hpp"
 
 namespace dart::common {
 
 //==============================================================================
-AllocatorFreeList::AllocatorFreeList(
+AlignedAllocatorFreeList::AlignedAllocatorFreeList(
     Allocator& baseAllocator, size_t initialAllocation)
   : mBaseAllocator(baseAllocator)
 {
@@ -47,7 +48,7 @@ AllocatorFreeList::AllocatorFreeList(
 }
 
 //==============================================================================
-AllocatorFreeList::~AllocatorFreeList()
+AlignedAllocatorFreeList::~AlignedAllocatorFreeList()
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
@@ -100,27 +101,32 @@ AllocatorFreeList::~AllocatorFreeList()
 }
 
 //==============================================================================
-const Allocator& AllocatorFreeList::getBaseAllocator() const
+const Allocator& AlignedAllocatorFreeList::getBaseAllocator() const
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-Allocator& AllocatorFreeList::getBaseAllocator()
+Allocator& AlignedAllocatorFreeList::getBaseAllocator()
 {
   return mBaseAllocator;
 }
 
 //==============================================================================
-void* AllocatorFreeList::allocate(size_t bytes) noexcept
+void* AlignedAllocatorFreeList::allocate(
+    size_t bytes, size_t alignment) noexcept
 {
   // Not allowed to allocate zero bytes
-  if (bytes == 0) {
+  if (bytes == 0 || !ValidateAlignment(bytes, alignment)) {
     return nullptr;
   }
 
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
+  // TODO(JS): Instead of using a lock_guard to lock the mutex on every
+  // allocation, use a lock-free data structure such as a
+  // concurrent_unordered_map or a lock-free linked-list to store the free
+  // blocks.
 
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
@@ -130,31 +136,57 @@ void* AllocatorFreeList::allocate(size_t bytes) noexcept
   MemoryBlockHeader* prev = nullptr;
 
   // Search for a memory block that is not used and has sufficient free space
-  const size_t total_size = bytes + sizeof(MemoryBlockHeader);
+  size_t total_size;
+  size_t padding;
+  DART_ASSERT(curr);
   while (curr) {
+    padding = GetPaddingIncludingHeader<MemoryBlockHeader>(
+        curr->asSizeT(), alignment);
+    total_size = bytes + padding;
+    DART_ASSERT((curr->asSizeT() + padding) % alignment == 0);
     if (!curr->mIsAllocated && total_size <= curr->mSize) {
-      curr->split(total_size);
+      const MemoryBlockHeader copy = *curr;
+      curr = reinterpret_cast<MemoryBlockHeader*>(
+          curr->asSizeT() + padding - sizeof(MemoryBlockHeader));
+      *curr = copy;
+      curr->padding = padding;
+      curr->split(total_size, padding);
       break;
     }
     prev = curr;
     curr = curr->mNext;
   }
+  // TODO(JS): Instead of using a while loop to iterate through the free blocks,
+  // use a more efficient search algorithm such as a buddy allocator which can
+  // quickly find a block of the correct size.
 
   // If failed to find an avaliable memory block, allocate a new memory block
   if (curr == nullptr) {
     // Allocate a sufficient size
-    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + total_size) * 2)) {
+    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
       return nullptr;
     }
+    // TODO(JS): Consider using a more sophisticated method for determining the
+    // size of the new block, such as a power of 2 or a geometric series.
 
     DART_ASSERT(mFreeBlock != nullptr);
     DART_ASSERT(!mFreeBlock->mIsAllocated);
 
     curr = mFreeBlock;
+    padding = GetPaddingIncludingHeader<MemoryBlockHeader>(
+        curr->asSizeT(), alignment);
+    total_size = bytes + padding;
+    DART_ASSERT((curr->asSizeT() + padding) % alignment == 0);
     DART_ASSERT(curr->mSize >= total_size);
 
     // Split the new memory block for the requested size
-    curr->split(total_size);
+    const MemoryBlockHeader copy = *curr;
+    curr = reinterpret_cast<MemoryBlockHeader*>(
+        curr->asSizeT() + padding - sizeof(MemoryBlockHeader));
+    *curr = copy;
+    curr->padding = padding;
+    curr->split(total_size, padding);
+    DART_ASSERT(curr->mSize == total_size);
   }
 
   // Mark the current block is allocated
@@ -171,7 +203,7 @@ void* AllocatorFreeList::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
-void AllocatorFreeList::deallocate(void* pointer, size_t bytes)
+void AlignedAllocatorFreeList::deallocate(void* pointer, size_t bytes)
 {
   // Cannot deallocate nullptr or zero bytes
   if (pointer == nullptr || bytes == 0) {
@@ -185,17 +217,26 @@ void AllocatorFreeList::deallocate(void* pointer, size_t bytes)
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);
   MemoryBlockHeader* block = reinterpret_cast<MemoryBlockHeader*>(block_addr);
   DART_ASSERT(block->mIsAllocated);
+  if (block->padding != 0) {
+    const MemoryBlockHeader copy = *block;
+    block = reinterpret_cast<MemoryBlockHeader*>(
+        block->asSizeT() + sizeof(MemoryBlockHeader) - copy.padding);
+    *block = copy;
+    block->padding = 0;
+  }
   block->mIsAllocated = false;
 
   MemoryBlockHeader* const prev = block->mPrev;
   MemoryBlockHeader* const next = block->mNext;
 
   if (prev != nullptr && !prev->mIsAllocated && prev->mIsNextContiguous) {
+    DART_ASSERT(prev->padding == 0);
     prev->merge(block);
     block = prev;
   }
 
   if (next != nullptr && !next->mIsAllocated && block->mIsNextContiguous) {
+    DART_ASSERT(next->padding == 0);
     block->merge(next);
   }
 
@@ -208,10 +249,11 @@ void AllocatorFreeList::deallocate(void* pointer, size_t bytes)
 }
 
 //==============================================================================
-bool AllocatorFreeList::allocateMemoryBlock(size_t sizeToAllocate)
+bool AlignedAllocatorFreeList::allocateMemoryBlock(size_t sizeToAllocate)
 {
   // Allocate memory chunk for header and the actual requested size
-  void* memory = mBaseAllocator.allocate(sizeToAllocate);
+  void* memory
+      = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
 
   // Return false if failed to allocate
   if (memory == nullptr)
@@ -222,6 +264,7 @@ bool AllocatorFreeList::allocateMemoryBlock(size_t sizeToAllocate)
   mFirstMemoryBlock = mBaseAllocator.constructAt<MemoryBlockHeader>(
       memory,            // address to construct
       sizeToAllocate,    // size of the memory block
+      0,                 // padding, initially zero
       nullptr,           // previous memory block
       mFirstMemoryBlock, // next memory block
       false              // whether the next memory block is contiguous
@@ -241,13 +284,13 @@ bool AllocatorFreeList::allocateMemoryBlock(size_t sizeToAllocate)
 }
 
 //==============================================================================
-void AllocatorFreeList::print(std::ostream& os, int indent) const
+void AlignedAllocatorFreeList::print(std::ostream& os, int indent) const
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (indent == 0) {
-    os << "[AllocatorFreeList]\n";
+    os << "[AlignedAllocatorFreeList]\n";
   }
   const std::string spaces(indent, ' ');
   if (indent != 0) {
@@ -272,12 +315,14 @@ void AllocatorFreeList::print(std::ostream& os, int indent) const
 }
 
 //==============================================================================
-AllocatorFreeList::MemoryBlockHeader::MemoryBlockHeader(
+AlignedAllocatorFreeList::MemoryBlockHeader::MemoryBlockHeader(
     size_t size,
+    size_t padding,
     MemoryBlockHeader* prev,
     MemoryBlockHeader* next,
     bool isNextContiguous)
   : mSize(size),
+    padding(padding),
     mPrev(prev),
     mNext(next),
     mIsAllocated(false),
@@ -289,25 +334,27 @@ AllocatorFreeList::MemoryBlockHeader::MemoryBlockHeader(
 }
 
 //==============================================================================
-size_t AllocatorFreeList::MemoryBlockHeader::asSizeT() const
+size_t AlignedAllocatorFreeList::MemoryBlockHeader::asSizeT() const
 {
   return reinterpret_cast<size_t>(this);
 }
 
 //==============================================================================
-unsigned char* AllocatorFreeList::MemoryBlockHeader::asCharPtr()
+unsigned char* AlignedAllocatorFreeList::MemoryBlockHeader::asCharPtr()
 {
   return reinterpret_cast<unsigned char*>(this);
 }
 
 //==============================================================================
-const unsigned char* AllocatorFreeList::MemoryBlockHeader::asCharPtr() const
+const unsigned char* AlignedAllocatorFreeList::MemoryBlockHeader::asCharPtr()
+    const
 {
   return reinterpret_cast<const unsigned char*>(this);
 }
 
 //==============================================================================
-void AllocatorFreeList::MemoryBlockHeader::split(size_t sizeToSplit)
+void AlignedAllocatorFreeList::MemoryBlockHeader::split(
+    size_t sizeToSplit, size_t padding)
 {
   DART_ASSERT(sizeToSplit <= mSize);
   DART_ASSERT(!mIsAllocated);
@@ -319,9 +366,10 @@ void AllocatorFreeList::MemoryBlockHeader::split(size_t sizeToSplit)
 
   DART_ASSERT(mSize > sizeToSplit);
 
-  unsigned char* new_block_addr = asCharPtr() + sizeToSplit;
+  unsigned char* new_block_addr
+      = asCharPtr() + sizeof(MemoryBlockHeader) + sizeToSplit - padding;
   new (new_block_addr)
-      MemoryBlockHeader(mSize - sizeToSplit, this, mNext, mIsNextContiguous);
+      MemoryBlockHeader(mSize - sizeToSplit, 0, this, mNext, mIsNextContiguous);
   mNext = reinterpret_cast<MemoryBlockHeader*>(new_block_addr);
   if (mNext->mNext) {
     mNext->mNext->mPrev = mNext;
@@ -335,7 +383,8 @@ void AllocatorFreeList::MemoryBlockHeader::split(size_t sizeToSplit)
 }
 
 //==============================================================================
-void AllocatorFreeList::MemoryBlockHeader::merge(MemoryBlockHeader* other)
+void AlignedAllocatorFreeList::MemoryBlockHeader::merge(
+    MemoryBlockHeader* other)
 {
   DART_ASSERT(other);
   DART_ASSERT(other->mPrev == this);
@@ -359,7 +408,7 @@ void AllocatorFreeList::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 
 //==============================================================================
 #ifndef NDEBUG
-bool AllocatorFreeList::MemoryBlockHeader::isValid() const
+bool AlignedAllocatorFreeList::MemoryBlockHeader::isValid() const
 {
   if (mPrev != nullptr && mPrev->mNext != this) {
     return false;

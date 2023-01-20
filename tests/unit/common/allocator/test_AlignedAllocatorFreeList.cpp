@@ -30,81 +30,90 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/allocator/AlignedAllocatorRaw.hpp"
+#include "dart/common/allocator/AlignedAllocatorFreeList.hpp"
 
 #include <gtest/gtest.h>
-
-#include <sstream>
 
 using namespace dart;
 using namespace common;
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, Allocate)
+class AlignedAllocatorFreeListTest : public ::testing::Test
 {
-  AlignedAllocator& allocator = AlignedAllocator::GetDefault();
-  void* ptr = allocator.allocate(1024, 16);
+protected:
+  AlignedAllocatorFreeList::Debug mAllocator;
+};
+
+//==============================================================================
+class MyObject
+{
+public:
+  MyObject(const std::string& str, int num) : str_(str), num_(num) {}
+
+  std::string str_;
+  int num_;
+};
+
+//==============================================================================
+TEST_F(AlignedAllocatorFreeListTest, Type)
+{
+  // Check if the type is correct
+  EXPECT_EQ(
+      AlignedAllocatorFreeList::GetType(),
+      AlignedAllocatorFreeList().getType());
+}
+
+//==============================================================================
+TEST_F(AlignedAllocatorFreeListTest, Allocate)
+{
+  // Test allocating a block of memory with a given size and alignment
+  void* ptr = mAllocator.allocate(1024, 16);
   EXPECT_NE(ptr, nullptr);
-  allocator.deallocate(ptr, 1024);
+  EXPECT_EQ(0u, reinterpret_cast<uintptr_t>(ptr) % 16);
+  mAllocator.deallocate(ptr, 1024);
 }
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, AllocateAs)
+TEST_F(AlignedAllocatorFreeListTest, AllocateAs)
 {
-  AlignedAllocator& allocator = AlignedAllocator::GetDefault();
-  int* ptr = allocator.allocateAs<int>(10);
+  // Test allocating a block of memory for a specific type
+  int* ptr = mAllocator.allocateAs<int>(10);
   EXPECT_NE(ptr, nullptr);
-  allocator.deallocate(ptr, sizeof(int) * 10);
+  mAllocator.deallocate(ptr, sizeof(int) * 10);
 }
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, Construct)
+TEST_F(AlignedAllocatorFreeListTest, Construct)
 {
-  AlignedAllocator& allocator = AlignedAllocator::GetDefault();
-  std::string* str = allocator.construct<std::string>("hello");
-  EXPECT_NE(str, nullptr);
-  EXPECT_EQ(*str, "hello");
-  allocator.destroy(str);
+  // Test constructing an object in a block of memory
+  MyObject* ptr = mAllocator.construct<MyObject>("hello", 42);
+  EXPECT_NE(ptr, nullptr);
+  mAllocator.destroy(ptr);
 }
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, ConstructAt)
+TEST_F(AlignedAllocatorFreeListTest, ConstructAt)
 {
-  AlignedAllocator& allocator = AlignedAllocator::GetDefault();
-  void* ptr = allocator.allocate(sizeof(std::string), alignof(std::string));
-  std::string* str = allocator.constructAt<std::string>(ptr, "hello");
-  EXPECT_EQ(ptr, str);
-  EXPECT_EQ(*str, "hello");
-  allocator.destroy(str);
+  // Test constructing an object at a specific memory location
+  void* memory = mAllocator.allocate(sizeof(MyObject), alignof(MyObject));
+  MyObject* ptr = mAllocator.constructAt<MyObject>(memory, "hello", 42);
+  EXPECT_EQ(ptr, reinterpret_cast<MyObject*>(memory));
+  mAllocator.destroy(ptr);
 }
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, AlignmentZero)
+TEST_F(AlignedAllocatorFreeListTest, Destroy)
 {
-  EXPECT_FALSE(AlignedAllocator::ValidateAlignment(100, 0));
-  EXPECT_FALSE(AlignedAllocator::ValidateAlignment(0, 0));
+  // Test destroying an object and deallocating its memory
+  MyObject* ptr = mAllocator.construct<MyObject>("hello", 42);
+  mAllocator.destroy(ptr);
 }
 
 //==============================================================================
-GTEST_TEST(AlignedAllocatorTest, AlignmentLessThanVoidPointer)
+TEST_F(AlignedAllocatorFreeListTest, Print)
 {
-  EXPECT_FALSE(AlignedAllocator::ValidateAlignment(100, sizeof(void*) - 1));
-}
-
-//==============================================================================
-GTEST_TEST(AlignedAllocatorTest, AlignmentNotPowerOfTwo)
-{
-  EXPECT_FALSE(AlignedAllocator::ValidateAlignment(100, 7));
-}
-
-//==============================================================================
-GTEST_TEST(AlignedAllocatorTest, SizeNotMultipleOfAlignment)
-{
-  EXPECT_FALSE(AlignedAllocator::ValidateAlignment(100, 8));
-}
-
-//==============================================================================
-GTEST_TEST(AlignedAllocatorTest, ValidInput)
-{
-  EXPECT_TRUE(AlignedAllocator::ValidateAlignment(0, 16));
+  // Test printing the state of the allocator
+  std::stringstream stream;
+  mAllocator.print(stream);
+  EXPECT_FALSE(stream.str().empty());
 }
