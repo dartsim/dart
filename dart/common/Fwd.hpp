@@ -45,7 +45,7 @@
   using WeakConst##X##Ptr = ::std::weak_ptr<const X>;                          \
   using Unique##X##Ptr = ::std::unique_ptr<X>;                                 \
   using UniqueConst##X##Ptr = ::std::unique_ptr<const X>;                      \
-  void _ANONYMOUS_FUNCTION_1()
+  static_assert(true, "")
 
 #define DART_DECLARE_CLASS_POINTERS(X)                                         \
   class X;                                                                     \
@@ -74,7 +74,7 @@
   using x##f = x<float>;                                                       \
   using x##d = x<double>;                                                      \
   using x##ld = x<long double>;                                                \
-  void _ANONYMOUS_FUNCTION_3()
+  static_assert(true, "")
 
 #define DART_DECLARE_CLASS_POINTERS_S(x)                                       \
   template <typename T>                                                        \
@@ -94,7 +94,7 @@
   using x##f = x<float>;                                                       \
   using x##d = x<double>;                                                      \
   using x##ld = x<long double>;                                                \
-  void _ANONYMOUS_FUNCTION_4()
+  static_assert(true, "")
 
 #if defined(_MSC_VER)
 

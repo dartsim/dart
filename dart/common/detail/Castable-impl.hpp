@@ -50,7 +50,7 @@
   {                                                                            \
     return GetType();                                                          \
   }                                                                            \
-  void _ANONYMOUS_FUNCTION_1()
+  static_assert(true, "")
 
 #define DETAIL_DART_STRING_TYPE_TEMPLATE_1(type_name, templ_arg1)              \
   /** Returns static type string. */                                           \
@@ -67,7 +67,7 @@
   {                                                                            \
     return GetType();                                                          \
   }                                                                            \
-  void _ANONYMOUS_FUNCTION_2()
+  static_assert(true, "")
 
 namespace dart::common {
 
