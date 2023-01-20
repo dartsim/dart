@@ -145,12 +145,6 @@ void* AlignedAllocatorFreeList::allocate(
     total_size = bytes + padding;
     DART_ASSERT((curr->asSizeT() + padding) % alignment == 0);
     if (!curr->mIsAllocated && total_size <= curr->mSize) {
-      const MemoryBlockHeader copy = *curr;
-      curr = reinterpret_cast<MemoryBlockHeader*>(
-          curr->asSizeT() + padding - sizeof(MemoryBlockHeader));
-      *curr = copy;
-      curr->padding = padding;
-      curr->split(total_size, padding);
       break;
     }
     prev = curr;
@@ -160,7 +154,7 @@ void* AlignedAllocatorFreeList::allocate(
   // use a more efficient search algorithm such as a buddy allocator which can
   // quickly find a block of the correct size.
 
-  // If failed to find an avaliable memory block, allocate a new memory block
+  // If failed to find an available memory block, allocate a new memory block
   if (curr == nullptr) {
     // Allocate a sufficient size
     if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
@@ -178,16 +172,22 @@ void* AlignedAllocatorFreeList::allocate(
     total_size = bytes + padding;
     DART_ASSERT((curr->asSizeT() + padding) % alignment == 0);
     DART_ASSERT(curr->mSize >= total_size);
+  }
 
-    // Split the new memory block for the requested size
+  // Shift location of the header if the padding is greater than the size of the
+  // header, so that the location of the header is the data pointer minus the
+  // size of the header.
+  if (padding > sizeof(MemoryBlockHeader)) {
     const MemoryBlockHeader copy = *curr;
     curr = reinterpret_cast<MemoryBlockHeader*>(
         curr->asSizeT() + padding - sizeof(MemoryBlockHeader));
     *curr = copy;
     curr->padding = padding;
-    curr->split(total_size, padding);
-    DART_ASSERT(curr->mSize == total_size);
   }
+
+  // Split the new memory block for the requested size
+  curr->split(total_size, padding);
+  DART_ASSERT(curr->mSize == total_size);
 
   // Mark the current block is allocated
   curr->mIsAllocated = true;
@@ -217,13 +217,6 @@ void AlignedAllocatorFreeList::deallocate(void* pointer, size_t bytes)
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);
   MemoryBlockHeader* block = reinterpret_cast<MemoryBlockHeader*>(block_addr);
   DART_ASSERT(block->mIsAllocated);
-  if (block->padding != 0) {
-    const MemoryBlockHeader copy = *block;
-    block = reinterpret_cast<MemoryBlockHeader*>(
-        block->asSizeT() + sizeof(MemoryBlockHeader) - copy.padding);
-    *block = copy;
-    block->padding = 0;
-  }
   block->mIsAllocated = false;
 
   MemoryBlockHeader* const prev = block->mPrev;
@@ -238,6 +231,14 @@ void AlignedAllocatorFreeList::deallocate(void* pointer, size_t bytes)
   if (next != nullptr && !next->mIsAllocated && block->mIsNextContiguous) {
     DART_ASSERT(next->padding == 0);
     block->merge(next);
+  }
+
+  if (block->padding != 0) {
+    const MemoryBlockHeader copy = *block;
+    block = reinterpret_cast<MemoryBlockHeader*>(
+        block->asSizeT() + sizeof(MemoryBlockHeader) - copy.padding);
+    *block = copy;
+    block->padding = 0;
   }
 
   mFreeBlock = block;

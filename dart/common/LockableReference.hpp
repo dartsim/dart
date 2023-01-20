@@ -57,11 +57,11 @@ public:
 
   /// Locks lockable that this class references; blocks if one of the lockables
   /// are
-  /// not avaliable.
+  /// not available.
   virtual void lock() = 0;
 
   /// Tries to lock the lockables that this class references; returns false if
-  /// one of the lockables is not avaliable.
+  /// one of the lockables is not available.
   virtual bool try_lock() noexcept = 0;
 
   /// Unlocks the lockables.
