@@ -45,6 +45,19 @@
       ::testing::internal::CmpHelperFloatingPointEQ<S>, val1, val2)
 
 //==============================================================================
+#define EXPECT_VECTOR_INT_EQ(vec1, vec2)                                       \
+  if (vec1 != vec2) {                                                          \
+    std::stringstream ss;                                                      \
+    ss << "Expected equality of these vectors:\n"                              \
+       << "  Expected: " << vec1.transpose() << "\n"                           \
+       << "  Actual  : " << vec2.transpose() << "\n";                          \
+    GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
+  }                                                                            \
+  do {                                                                         \
+  } while (0)
+// do {} while (0) is to require semicolon after the macro
+
+//==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
   if (!::dart::test::equals(vec1, vec2)) {                                     \
     std::stringstream ss;                                                      \
@@ -239,14 +252,47 @@ struct EqualsImpl<
 } // namespace detail
 
 //==============================================================================
+template <typename Scalar>
+Scalar EpsForDiff()
+{
+  if constexpr (std::is_same_v<Scalar, float>) {
+    return 1e-2;
+  } else if constexpr (std::is_same_v<Scalar, double>) {
+    return 1e-3;
+  } else if constexpr (std::is_same_v<Scalar, long double>) {
+    return 1e-4;
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+Scalar EpsForEquals()
+{
+  if constexpr (std::is_same_v<Scalar, float>) {
+    return 1e-3;
+  } else if constexpr (std::is_same_v<Scalar, double>) {
+    return 1e-6;
+  } else if constexpr (std::is_same_v<Scalar, long double>) {
+    return 1e-9;
+  }
+  assert(false);
+  return 1e-6;
+}
+
+//==============================================================================
 /// Returns true if the two matrices are equal within the given bound
 template <typename T1, typename T2>
 bool equals(
     const T1& expected,
     const T2& actual,
-    typename T1::Scalar tol = static_cast<typename T1::Scalar>(1e-5))
+    typename T1::Scalar tol = EpsForEquals<typename T1::Scalar>())
 {
-  return detail::EqualsImpl<T1, T2>::run(expected, actual, tol);
+  const bool result = detail::EqualsImpl<T1, T2>::run(expected, actual, tol);
+  if (!result) {
+    std::cout << "Expected: \n" << expected << std::endl;
+    std::cout << "Actual  : \n" << actual << std::endl;
+  }
+  return result;
 }
 
 //==============================================================================

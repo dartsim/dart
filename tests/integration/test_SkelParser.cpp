@@ -82,7 +82,7 @@ TEST(SkelParser, DataStructure)
   EXPECT_EQ(valChar, toChar(strChar));
   EXPECT_VECTOR_DOUBLE_EQ(valVector2d, toVector2d(strVector2d));
   EXPECT_VECTOR_DOUBLE_EQ(valVector3d, toVector3d(strVector3d));
-  EXPECT_VECTOR_DOUBLE_EQ(valVector3i, toVector3i(strVector3i));
+  EXPECT_VECTOR_INT_EQ(valVector3i, toVector3i(strVector3i));
   EXPECT_VECTOR_DOUBLE_EQ(valVector6d, toVector6d(strVector6d));
   EXPECT_VECTOR_DOUBLE_EQ(valVectorXd, toVectorXd(strVectorXd));
   EXPECT_TRANSFORM_DOUBLE_EQ(valIsometry3d, toIsometry3d(strIsometry3d));

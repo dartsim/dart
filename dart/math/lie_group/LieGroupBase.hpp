@@ -62,6 +62,23 @@ public:
   /// Returns true if this is not approximately equal to other
   [[nodiscard]] bool operator!=(const Derived& other) const;
 
+  /// Returns true if this SO3 is approximately equal to other within the given
+  /// tolerance.
+  ///
+  /// @param[in] other The other SO3 to compare against.
+  /// @param[in] tol The tolerance for equality.
+  /// @return True if this SO3 is approximately equal to other within the given
+  /// tolerance.
+  template <typename OtherDerived>
+  [[nodiscard]] bool isApprox(
+      const LieGroupBase<OtherDerived>& other, Scalar tol = Tolerance()) const;
+
+  /// Returns the inverse of this Lie group.
+  [[nodiscard]] PlainObject inverse() const;
+
+  /// Returns the logarithm of this Lie group.
+  [[nodiscard]] Vector3<Scalar> log() const;
+
   /// Returns the matrix representation of this Lie group.
   ///
   /// Note that some Lie groups may need to convert the internal representation
@@ -98,7 +115,7 @@ LieGroupBase<Derived>::Tolerance()
   } else if constexpr (std::is_same_v<Scalar, double>) {
     return 1e-6;
   } else if constexpr (std::is_same_v<Scalar, long double>) {
-    return 1e-12;
+    return 1e-9;
   }
 }
 
@@ -132,10 +149,35 @@ bool LieGroupBase<Derived>::operator!=(const Derived& other) const
 
 //==============================================================================
 template <typename Derived>
+template <typename OtherDerived>
+bool LieGroupBase<Derived>::isApprox(
+    const LieGroupBase<OtherDerived>& other, Scalar tol) const
+{
+  return (other.inverse() * derived()).log().isZero(tol);
+}
+
+//==============================================================================
+template <typename Derived>
+typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::inverse()
+    const
+{
+  return derived().inverse();
+}
+
+//==============================================================================
+template <typename Derived>
+Vector3<typename LieGroupBase<Derived>::Scalar> LieGroupBase<Derived>::log()
+    const
+{
+  return derived().log();
+}
+
+//==============================================================================
+template <typename Derived>
 typename LieGroupBase<Derived>::MatrixType LieGroupBase<Derived>::toMatrix()
     const
 {
-  return derived().matrix();
+  return derived().toMatrix();
 }
 
 //==============================================================================

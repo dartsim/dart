@@ -51,6 +51,8 @@ public:
 
   using Base::derived;
 
+  using Base::Tolerance;
+
   /// Assignment operator.
   ///
   /// @param[in] other The other SO3 to assign.
@@ -58,16 +60,35 @@ public:
   template <typename OtherDerived>
   SO3Base<Derived>& operator=(const SO3Base<OtherDerived>& other);
 
-  /// Returns true if this SO3 is approximately equal to other within the given
-  /// tolerance.
+  /// Composes this SO3 with other and returns the result.
   ///
-  /// @param[in] other The other SO3 to compare against.
-  /// @param[in] tol The tolerance for equality.
-  /// @return True if this SO3 is approximately equal to other within the given
-  /// tolerance.
+  /// @param[in] other The other SO3 to compose with.
+  /// @return The composition of this SO3 with other.
   template <typename OtherDerived>
-  [[nodiscard]] bool isApprox(
-      const SO3Base<OtherDerived>& other, Scalar tol = Base::Tolerance()) const;
+  [[nodiscard]] PlainObject operator*(const SO3Base<OtherDerived>& other) const;
+
+  /// Normalizes this SO3 so that its quaternion representation is always unit
+  /// and unique by keeping the real part of the quaternion positive.
+  void normalize();
+
+  /// Returns the inverse of this SO3.
+  [[nodiscard]] PlainObject inverse() const;
+
+  /// Returns the logarithm of this SO3.
+  ///
+  /// @param[in] tol Tolerance for checking if the rotation is near identity.
+  /// @return The logarithm of this SO3.
+  [[nodiscard]] Vector3<Scalar> log(Scalar tol = Tolerance()) const;
+
+  /// Returns the logarithm of this SO3.
+  ///
+  /// @param[out] jacobian The Jacobian of the logarithm.
+  /// @param[in] tol Tolerance for checking if the rotation is near identity.
+  /// @return The logarithm of this SO3.
+  template <typename MatrixDerived>
+  [[nodiscard]] Vector3<Scalar> log(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = Tolerance()) const;
 
   /// Returns the quaternion representation of this SO3.
   [[nodiscard]] const Data& quaternion() const;
@@ -97,10 +118,44 @@ SO3Base<Derived>& SO3Base<Derived>::operator=(
 //==============================================================================
 template <typename Derived>
 template <typename OtherDerived>
-bool SO3Base<Derived>::isApprox(
-    const SO3Base<OtherDerived>& other, Scalar tol) const
+typename SO3Base<Derived>::PlainObject SO3Base<Derived>::operator*(
+    const SO3Base<OtherDerived>& other) const
 {
-  return quaternion().isApprox(other.quaternion(), tol);
+  return PlainObject(quaternion() * other.quaternion());
+}
+
+//==============================================================================
+template <typename Derived>
+void SO3Base<Derived>::normalize()
+{
+  if (quaternion().w() < 0) {
+    quaternion().coeffs() *= -1;
+  }
+  quaternion().normalize();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::PlainObject SO3Base<Derived>::inverse() const
+{
+  return PlainObject(quaternion().conjugate());
+}
+
+//==============================================================================
+template <typename Derived>
+Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::log(
+    Scalar tol) const
+{
+  return SO3<Scalar>::Log(derived(), tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::log(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
+{
+  return SO3<Scalar>::Log(derived(), jacobian, tol);
 }
 
 //==============================================================================

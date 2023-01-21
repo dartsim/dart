@@ -32,6 +32,10 @@
 
 #pragma once
 
+// This file is a convenience header that includes all of the Lie groups in
+// DART. It is intended to be used by users who want to use all of the Lie
+// groups in DART.
+
 #include <dart/math/lie_group/LieGroupBase.hpp>
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Base.hpp>
