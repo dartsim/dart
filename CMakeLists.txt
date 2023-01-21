@@ -81,13 +81,13 @@ endif()
 #===============================================================================
 # Build options
 #===============================================================================
-option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
+dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
 else()
-  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 # Note: DART_ENABLE_SIMD should only be enabled when building DART and its
 # dependent projects on the same machine. Enabling this option adds the
@@ -95,36 +95,36 @@ endif()
 # subsets supported by the local machine. Building on different machines with
 # differing architectures may lead to runtime errors, particularly memory
 # alignment errors.
-option(DART_ENABLE_SIMD
+dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" ON)
-option(DART_BUILD_DARTPY "Build dartpy" ON)
-option(DART_CODECOV "Turn on codecov support" OFF)
-option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
+dart_option(DART_BUILD_DARTPY "Build dartpy" ON)
+dart_option(DART_CODECOV "Turn on codecov support" OFF)
+dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
 # to always generate ANSI-formatted colors regardless of the output medium types.
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
-option(DART_FORCE_COLORED_OUTPUT
+dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
-option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" ON)
+dart_option(DART_DOWNLOAD_DEPENDENT_PACKAGES "Whether to download dependent package" ON)
 
-option(DART_PROFILE_BACKEND_REMOTERY "Enable Remotery profiling backend" OFF)
+dart_option(DART_PROFILE_BACKEND_REMOTERY "Enable Remotery profiling backend" OFF)
 
-option(DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE "Build instantiation of template code for double" ON)
-option(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT  "Build instantiation of template code for float" OFF)
+dart_option(DART_BUILD_TEMPLATE_CODE_FOR_DOUBLE "Build instantiation of template code for double" ON)
+dart_option(DART_BUILD_TEMPLATE_CODE_FOR_FLOAT  "Build instantiation of template code for float" OFF)
 
-option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
-option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
-option(DART_BUILD_COMP_optimization "Build component 'optimization'" ON)
-option(DART_BUILD_COMP_collision    "Build component 'collision'"    ON)
-option(DART_BUILD_COMP_dynamics     "Build component 'dynamics'"     ON)
-option(DART_BUILD_COMP_simulation   "Build component 'simulation'"   ON)
-option(DART_BUILD_COMP_io           "Build component 'io'"           ON)
-option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
-option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
+dart_option(DART_BUILD_COMP_common       "Build component 'common'"       ON)
+dart_option(DART_BUILD_COMP_math         "Build component 'math'"         ON)
+dart_option(DART_BUILD_COMP_optimization "Build component 'optimization'" ON)
+dart_option(DART_BUILD_COMP_collision    "Build component 'collision'"    ON)
+dart_option(DART_BUILD_COMP_dynamics     "Build component 'dynamics'"     ON)
+dart_option(DART_BUILD_COMP_simulation   "Build component 'simulation'"   ON)
+dart_option(DART_BUILD_COMP_io           "Build component 'io'"           ON)
+dart_option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
+dart_option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
 
-option(DART_IN_CI "Indicate building DART as part of CI" OFF)
+dart_option(DART_IN_CI "Indicate building DART as part of CI" OFF)
 
 #===============================================================================
 # Print intro
@@ -140,6 +140,9 @@ message(STATUS "[ Build Tools ]")
 message(STATUS "- CMake: ${CMAKE_VERSION}")
 message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "")
+
+# Print DART options
+dart_print_options()
 
 #===============================================================================
 # CodeCov settings
