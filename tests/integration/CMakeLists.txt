@@ -8,6 +8,8 @@
 
 # TODO(JS): Improve the way of handling the test cases
 
+set(test_type "TEST_INTEGRATION")
+
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics)
 
   set(sources
@@ -25,7 +27,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics)
   endif()
 
   dart_build_tests(
-    TYPE integration
+    TYPE ${test_type}
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-dynamics
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
@@ -38,7 +40,7 @@ endif()
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation)
 
   dart_build_tests(
-    TYPE integration
+    TYPE ${test_type}
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
@@ -76,7 +78,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
   )
 
   dart_build_tests(
-    TYPE integration
+    TYPE ${test_type}
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-io
@@ -87,10 +89,6 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 endif()
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io AND NOT MSVC)
-  if(NOT MSVC)
-    dart_add_test("integration" test_DartLoader)
-    target_link_libraries(test_DartLoader ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  endif()
 
   if(BUILD_SHARED_LIBS)
     dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
@@ -103,9 +101,17 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io AND NOT MSVC)
     target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
     target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
-    dart_add_test("integration" test_IkFast)
-    target_link_libraries(test_IkFast ${PROJECT_NAME}${DART_MAJOR_VERSION}-io GeneratedWamIkFast SharedLibraryWamIkFast)
+    dart_build_tests(
+      TYPE ${test_type}
+      LINK_LIBRARIES
+        ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+        ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
+        GeneratedWamIkFast SharedLibraryWamIkFast
+      SOURCES
+        test_IkFast.cpp
+    )
   endif()
+
 endif()
 
 dart_format_add(
@@ -116,42 +122,22 @@ dart_format_add(
 
 if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io AND NOT MSVC)
 
-  dart_add_test("integration" test_Collision)
-  target_link_libraries(test_Collision ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-    target_link_libraries(test_Collision ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  endif()
-  if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-    target_link_libraries(test_Collision ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  endif()
-
-  dart_add_test("integration" test_Dynamics)
-  target_link_libraries(test_Dynamics ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_Joints)
-  target_link_libraries(test_Joints ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_JointForceTorque)
-  target_link_libraries(test_JointForceTorque ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_Skeleton)
-  target_link_libraries(test_Skeleton ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_MetaSkeleton)
-  target_link_libraries(test_MetaSkeleton ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_SoftDynamics)
-  target_link_libraries(test_SoftDynamics ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-
-  dart_add_test("integration" test_World)
-  target_link_libraries(test_World ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-    target_link_libraries(test_World ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision)
-  endif()
-
-  if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-    dart_add_test("integration" test_ForwardKinematics)
-    target_link_libraries(test_ForwardKinematics ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  endif()
+  dart_build_tests(
+    TYPE ${test_type}
+    LINK_LIBRARIES
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
+    SOURCES
+      test_Collision.cpp
+      test_DartLoader.cpp
+      test_Dynamics.cpp
+      test_ForwardKinematics.cpp
+      test_Joints.cpp
+      test_JointForceTorque.cpp
+      test_MetaSkeleton.cpp
+      test_Skeleton.cpp
+      test_SoftDynamics.cpp
+      test_World.cpp
+  )
 
 endif()

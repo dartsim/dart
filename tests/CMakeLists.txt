@@ -135,8 +135,8 @@ if(NOT DART_IN_CI OR NOT MSVC)
 endif()
 
 # Print tests
-dart_get_tests(integration_tests "integration")
-dart_get_tests(regression_tests "regression")
+dart_get_tests(integration_tests "TEST_INTEGRATION")
+dart_get_tests(regression_tests "TEST_REGRESSION")
 dart_get_tests(unit_tests "TEST_UNIT")
 
 if(DART_VERBOSE)

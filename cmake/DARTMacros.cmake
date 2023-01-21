@@ -990,7 +990,6 @@ function(dart_build_tests)
     message(STATUS "No tests have been specified for ${test_type}")
   else()
     list(LENGTH dart_build_tests_SOURCES num_tests)
-    message(STATUS "Adding ${num_tests} ${test_type} tests")
   endif()
 
   if(dart_build_tests_TEST_LIST)
