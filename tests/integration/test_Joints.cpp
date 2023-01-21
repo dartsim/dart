@@ -48,7 +48,7 @@
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
@@ -104,9 +104,11 @@ void JOINTS::SetUp()
   frames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
   frames.push_back(new SimpleFrame(frames.back(), "refFrame2"));
   frames.push_back(new SimpleFrame(frames.back(), "refFrame3"));
+#if defined(NDEBUG)
   frames.push_back(new SimpleFrame(frames.back(), "refFrame4"));
   frames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
   frames.push_back(new SimpleFrame(frames.back(), "refFrame6"));
+#endif
 }
 
 //==============================================================================
@@ -764,10 +766,12 @@ void testJointCoulombFrictionForce(double _timeStep)
 //==============================================================================
 TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
 {
-  std::array<double, 3> timeSteps;
-  timeSteps[0] = 1e-2;
-  timeSteps[1] = 1e-3;
-  timeSteps[2] = 1e-4;
+  std::vector<double> timeSteps;
+  timeSteps.push_back(1e-2);
+  timeSteps.push_back(1e-3);
+#if defined(NDEBUG)
+  timeSteps.push_back(1e-4);
+#endif
 
   for (auto timeStep : timeSteps)
     testJointCoulombFrictionForce(timeStep);

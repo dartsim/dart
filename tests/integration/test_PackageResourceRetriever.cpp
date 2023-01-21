@@ -33,7 +33,7 @@
 #include "dart/config.hpp"
 #include "dart/io/PackageResourceRetriever.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

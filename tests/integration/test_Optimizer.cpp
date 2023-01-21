@@ -37,7 +37,7 @@
 #include "dart/optimization/GradientDescentSolver.hpp"
 #include "dart/optimization/Problem.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

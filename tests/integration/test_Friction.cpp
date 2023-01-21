@@ -33,8 +33,9 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/simulation/simulation.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

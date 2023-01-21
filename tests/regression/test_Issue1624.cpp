@@ -33,7 +33,7 @@
 #include "dart/dart.hpp"
 #include "dart/io/sdf/SdfParser.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <dart/dynamics/ode/OdeCollisionDetector.hpp>
 

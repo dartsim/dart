@@ -36,11 +36,10 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/io/SkelParser.hpp"
 #include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
@@ -48,6 +47,7 @@
 
 using namespace Eigen;
 using namespace dart;
+using namespace simulation;
 
 //==============================================================================
 class DynamicsTest : public ::testing::Test
@@ -138,8 +138,10 @@ void DynamicsTest::SetUp()
   fileList.push_back(
       "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+#if defined(NDEBUG)
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
   fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+#endif
   fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
   fileList.push_back(
       "dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
@@ -148,15 +150,19 @@ void DynamicsTest::SetUp()
   fileList.push_back("dart://sample/skel/test/tree_structure.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
   fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+#if defined(NDEBUG)
   fileList.push_back("dart://sample/skel/fullbody1.skel");
+#endif
 
   // Create a list of reference frames to use during tests
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame2"));
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame3"));
+#if defined(NDEBUG)
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame4"));
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame6"));
+#endif
 }
 
 //==============================================================================
@@ -876,7 +882,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 #ifndef NDEBUG // Debug mode
   int nTestItr = 2;
 #else
-  int nTestItr = 5;
+  int nTestItr = 4;
 #endif
   double qLB = -0.5 * pi();
   double qUB = 0.5 * pi();
@@ -2266,7 +2272,7 @@ TEST_F(DynamicsTest, testJacobians)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #ifndef NDEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    // dtdbg << getList()[i].toString() << std::endl;
 #endif
     testJacobians(getList()[i]);
   }

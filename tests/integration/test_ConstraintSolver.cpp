@@ -34,11 +34,12 @@
 #include "dart/dynamics/ContactSurface.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
+using namespace simulation;
 
 //==============================================================================
 std::shared_ptr<World> createWorld()

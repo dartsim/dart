@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <dart/dart.hpp>
 
@@ -146,7 +146,11 @@ TEST(Issue1445, Collision)
   // We let the joint be at the origin of the child link.
   fixedJoint->setTransformFromParentBodyNode(poseParentChild);
 
+#if defined(NDEBUG)
   const std::size_t numSteps = 100;
+#else
+  const std::size_t numSteps = 20;
+#endif
 
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();

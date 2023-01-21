@@ -35,4 +35,3 @@ dart_format_add(${hdrs} ${srcs})
 
 add_subdirectory(math)
 add_subdirectory(dynamics)
-add_subdirectory(io)

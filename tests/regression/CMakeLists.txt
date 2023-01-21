@@ -16,6 +16,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
     TYPE ${test_type}
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
     SOURCES
       test_Issue1583.cpp
       test_Issue1596.cpp
@@ -37,6 +38,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision AND TARGET ${PROJECT_NA
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
     SOURCES
       test_Issue1184.cpp
   )
@@ -50,6 +52,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision AND TARGET ${PROJECT_NA
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-collision
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
     SOURCES
       test_Issue1234.cpp
       test_Issue1243.cpp

@@ -34,7 +34,7 @@
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 

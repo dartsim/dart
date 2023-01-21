@@ -81,7 +81,7 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
     TYPE ${test_type}
     LINK_LIBRARIES
       ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
-      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-io
+      ${PROJECT_NAME}${DART_MAJOR_VERSION}-test-dynamics
     SOURCES
       ${sources}
   )

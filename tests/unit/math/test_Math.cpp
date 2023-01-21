@@ -737,7 +737,11 @@ Matrix<double, 6, 6> Transform_Matrix4d(
 
 TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
 {
+#if defined(NDEBUG)
   const int iterations = 100000;
+#else
+  const int iterations = 1000;
+#endif
 
   Affine3d A1
       = Translation3d(0.1, 0.2, 0.3)

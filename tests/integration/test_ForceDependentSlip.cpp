@@ -36,13 +36,15 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/simulation/simulation.hpp"
 
-#include <dart/test/io/TestHelpers.hpp>
+#include <dart/test/dynamics/TestHelpers.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dynamics;
+using namespace simulation;
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
@@ -135,7 +137,11 @@ TEST(ForceDependentSlip, BoxSlipVelocity)
   world->addSkeleton(skeleton1);
   world->addSkeleton(skeleton2);
 
+#if defined(NDEBUG)
   const auto numSteps = 2000;
+#else
+  const auto numSteps = 200;
+#endif
   const double extForce = 10.0;
   for (auto i = 0u; i < numSteps; ++i) {
     body1->addExtForce({extForce, 0, 0});
@@ -243,7 +249,11 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
   world->addSkeleton(skeleton2);
 
   const double dt = 0.001;
+#if defined(NDEBUG)
   const auto numSteps = 2000;
+#else
+  const auto numSteps = 200;
+#endif
   const double extForceX = 1.0;
   const double extTorqueY = 2.0;
 

@@ -42,8 +42,6 @@
 
 #include <dart/test/math/GTestUtils.hpp>
 
-#include <dart/simulation/World.hpp>
-
 #include <dart/dynamics/CollisionDetector.hpp>
 #include <dart/dynamics/ConstraintSolver.hpp>
 #include <dart/dynamics/dynamics.hpp>
@@ -55,12 +53,12 @@
 
 #include <vector>
 
+// TODO(JS): Remove using namespace from header
 using namespace Eigen;
 using namespace dart;
 using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
-using namespace dart::simulation;
 
 /// Function headers
 enum TypeOfDOF
