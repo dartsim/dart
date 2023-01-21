@@ -62,8 +62,13 @@ public:
   /// Returns true if this is not approximately equal to other
   [[nodiscard]] bool operator!=(const Derived& other) const;
 
-  /// Returns the matrix representation of this Lie group
-  [[nodiscard]] MatrixType matrix() const;
+  /// Returns the matrix representation of this Lie group.
+  ///
+  /// Note that some Lie groups may need to convert the internal representation
+  /// to the matrix representation. This conversion may be expensive.
+  ///
+  /// @return The matrix representation of this Lie group
+  [[nodiscard]] MatrixType toMatrix() const;
 
 protected:
   /// Returns the derived class as a const reference
@@ -127,7 +132,8 @@ bool LieGroupBase<Derived>::operator!=(const Derived& other) const
 
 //==============================================================================
 template <typename Derived>
-typename LieGroupBase<Derived>::MatrixType LieGroupBase<Derived>::matrix() const
+typename LieGroupBase<Derived>::MatrixType LieGroupBase<Derived>::toMatrix()
+    const
 {
   return derived().matrix();
 }

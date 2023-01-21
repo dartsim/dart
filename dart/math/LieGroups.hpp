@@ -35,3 +35,4 @@
 #include <dart/math/lie_group/LieGroupBase.hpp>
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Base.hpp>
+#include <dart/math/lie_group/SO3Map.hpp>

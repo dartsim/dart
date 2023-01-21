@@ -107,7 +107,9 @@ public:
   SO3& operator=(SO3&& other);
 
   /// Returns the matrix representation of this SO3
-  [[nodiscard]] MatrixType matrix() const;
+  ///
+  /// The matrix representation of SO3 is a 3x3 orthogonal matrix
+  [[nodiscard]] MatrixType toMatrix() const;
 
   /// Returns the quaternion representation of this SO3
   [[nodiscard]] const Data& quaternion() const;
@@ -221,7 +223,7 @@ SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other)
 
 //==============================================================================
 template <typename S, int Options>
-typename SO3<S, Options>::MatrixType SO3<S, Options>::matrix() const
+typename SO3<S, Options>::MatrixType SO3<S, Options>::toMatrix() const
 {
   return ::Eigen::Quaternion<S>(m_data).toRotationMatrix();
 }

@@ -51,6 +51,13 @@ public:
 
   using Base::derived;
 
+  /// Assignment operator.
+  ///
+  /// @param[in] other The other SO3 to assign.
+  /// @return Reference to this SO3.
+  template <typename OtherDerived>
+  SO3Base<Derived>& operator=(const SO3Base<OtherDerived>& other);
+
   /// Returns true if this SO3 is approximately equal to other within the given
   /// tolerance.
   ///
@@ -76,6 +83,16 @@ public:
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+SO3Base<Derived>& SO3Base<Derived>::operator=(
+    const SO3Base<OtherDerived>& other)
+{
+  quaternion() = other.quaternion();
+  return *this;
+}
 
 //==============================================================================
 template <typename Derived>

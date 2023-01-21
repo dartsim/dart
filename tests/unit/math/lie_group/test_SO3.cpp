@@ -67,7 +67,7 @@ TYPED_TEST(SO3Test, Random)
   SO3<S> so3 = SO3<S>::Random();
   EXPECT_GE(so3.quaternion().norm(), 0);
   EXPECT_LE(so3.quaternion().norm(), 1);
-  EXPECT_TRUE(so3.matrix().determinant() > 0);
+  EXPECT_TRUE(so3.toMatrix().determinant() > 0);
 }
 
 //==============================================================================
@@ -80,9 +80,9 @@ TYPED_TEST(SO3Test, DefaultConstructor)
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       if (i == j) {
-        EXPECT_S_EQ(so3.matrix()(i, j), 1);
+        EXPECT_S_EQ(so3.toMatrix()(i, j), 1);
       } else {
-        EXPECT_S_EQ(so3.matrix()(i, j), 0);
+        EXPECT_S_EQ(so3.toMatrix()(i, j), 0);
       }
     }
   }
@@ -152,7 +152,7 @@ TYPED_TEST(SO3Test, Matrix)
   using S = typename TestFixture::Scalar;
 
   SO3<S> so3 = SO3<S>::Random();
-  Matrix3<S> m = so3.matrix();
+  Matrix3<S> m = so3.toMatrix();
   EXPECT_TRUE(m.determinant() > 0);
 }
 
@@ -177,4 +177,54 @@ TYPED_TEST(SO3Test, Data)
   EXPECT_S_EQ(so3.data()[1], so3.quaternion().coeffs()[1]);
   EXPECT_S_EQ(so3.data()[2], so3.quaternion().coeffs()[2]);
   EXPECT_S_EQ(so3.data()[3], so3.quaternion().coeffs()[3]);
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, MapConstructor)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Test the constructor for the const specialization
+  S data[] = {1.0, 0.0, 0.0, 0.0};
+  ::Eigen::Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
+  EXPECT_EQ(const_map.data(), data);
+
+  // Test the constructor for the non-const specialization
+  Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
+  EXPECT_EQ(nonconst_map.data(), data);
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, TestDataAccess)
+{
+  using S = typename TestFixture::Scalar;
+
+  S data[] = {1.0, 0.0, 0.0, 0.0};
+  Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
+  EXPECT_EQ(const_map.data(), data);
+
+  Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
+  EXPECT_EQ(nonconst_map.data(), data);
+
+  // Modify the underlying data
+  data[1] = 1.0;
+  data[2] = 2.0;
+  data[3] = 3.0;
+
+  // Check that the modifications are visible through the non-const Map
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+  }
+
+  // Check that the modifications are visible even through the const Map
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+  }
+
+  // Modify the data through the non-const Map
+  nonconst_map = SO3<S>::Random();
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+  }
 }
