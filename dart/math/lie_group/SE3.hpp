@@ -328,6 +328,7 @@ SE3<S, Options> SE3<S, Options>::Exp(
   const Eigen::Vector3<S> translation
       = SO3<S>::LeftJacobian(dx.template head<3>(), tol)
         * dx.template tail<3>();
+  // TODO(JS): Check if this version is faster than expMap() and expMapRot()
   return SE3(std::move(rotation), std::move(translation));
 }
 

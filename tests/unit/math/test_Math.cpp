@@ -1245,22 +1245,8 @@ TEST(MATH, ROTATION)
   using namespace dart;
   using namespace math;
 
-  // Create Initial ExpMap
-  math::Vector3d axis(2.0, 1.0, 1.0);
-  axis.normalize();
-  double angle = 1.2;
-  EXPECT_DOUBLE_EQ(axis.norm(), 1.0);
-  math::Vector3d expmap = axis * angle;
-
-  // Test conversion between expmap and quaternion
-  math::Quaterniond q = expToQuat(expmap);
-  math::Vector3d expmap2 = quatToExp(q);
-
-  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, MATH_EPS)
-      << "Orig: " << expmap << " Reconstructed: " << expmap2;
-
   // Test conversion between matrix and euler
-  math::Matrix3d m = q.toRotationMatrix();
+  math::Matrix3d m = Quaterniond::UnitRandom().toRotationMatrix();
   math::Vector3d e = matrixToEulerXYZ(m);
   math::Matrix3d m2 = eulerXYZToMatrix(e);
 
@@ -1347,8 +1333,7 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
 #endif
   int m = 3;
 
-  Vector6d t = Vector6d::Random();
-  Isometry3d T = expMap(t);
+  Isometry3d T = SE3d::Random().toIsometry3();
   Jacobian dynamicJ = Jacobian::Random(6, m);
   Matrix<double, 6, 3> fixedJ = dynamicJ; // Matrix<double, 6, 3>::Random();
 

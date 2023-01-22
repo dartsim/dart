@@ -78,7 +78,13 @@ public:
   /// @brief Tag for the constructor that does not normalize the quaternion
   enum NoNormalizeTag
   {
-    NoNormalize = 0,
+    NO_NORMALIZE = 0,
+  };
+
+  enum class EulerConvention
+  {
+    INTRINSIC,
+    EXTRINSIC,
   };
 
   using Base::Tolerance;
@@ -88,6 +94,19 @@ public:
 
   /// Returns a random SO3
   [[nodiscard]] static PlainObject Random();
+
+  template <typename MatrixDerived>
+  [[nodiscard]] static PlainObject FromEulerAngles(
+      const Eigen::MatrixBase<MatrixDerived>& angles,
+      int axis0,
+      int axis1,
+      int axis2,
+      EulerConvention convention = EulerConvention::INTRINSIC);
+
+  template <typename MatrixDerived>
+  [[nodiscard]] static PlainObject FromEulerXYZ(
+      const Eigen::MatrixBase<MatrixDerived>& angles,
+      EulerConvention convention = EulerConvention::INTRINSIC);
 
   /// Returns the exponential map of the given vector
   ///
@@ -329,7 +348,7 @@ namespace dart::math {
 template <typename S, int Options>
 typename SO3<S, Options>::PlainObject SO3<S, Options>::Identity()
 {
-  return SO3(::Eigen::Quaternion<S>::Identity(), NoNormalize);
+  return SO3(::Eigen::Quaternion<S>::Identity(), NO_NORMALIZE);
 }
 
 //==============================================================================
@@ -337,6 +356,27 @@ template <typename S, int Options>
 typename SO3<S, Options>::PlainObject SO3<S, Options>::Random()
 {
   return SO3(::Eigen::Quaternion<S>::UnitRandom());
+}
+
+//==============================================================================
+template <typename S, int Options>
+template <typename MatrixDerived>
+typename SO3<S, Options>::PlainObject SO3<S, Options>::FromEulerAngles(
+    const Eigen::MatrixBase<MatrixDerived>& angles,
+    int axis0,
+    int axis1,
+    int axis2,
+    EulerConvention convention)
+{
+  if (convention == EulerConvention::EXTRINSIC) {
+    return FromEulerAngles(
+        angles.reverse(), 2, 1, 0, EulerConvention::INTRINSIC);
+  }
+
+  return SO3<S>(Quaternion<S>(
+      AngleAxis<S>(angles[0], Vector3<S>::Unit(axis0))
+      * AngleAxis<S>(angles[1], Vector3<S>::Unit(axis1))
+      * AngleAxis<S>(angles[2], Vector3<S>::Unit(axis2))));
 }
 
 //==============================================================================
@@ -357,6 +397,7 @@ SO3<S, Options> SO3<S, Options>::Exp(
   const Tangent vec = (sin_half_theta / theta) * dx;
   return SO3<S, Options>{
       Eigen::Quaternion<S>(cos_half_theta, vec[0], vec[1], vec[2])};
+  // TODO(JS): Consider creating a constructor from Coeffs type
 }
 
 //==============================================================================

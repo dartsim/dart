@@ -30,10 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-
-#include <dart/test/math/GTestUtils.hpp>
+#include "dart/math/math.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 
 #include <gtest/gtest.h>
 
@@ -233,12 +231,12 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
   // Exp
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d s = math::Vector6d::Random();
-    math::Isometry3d Exp_s = math::expMap(s);
+    math::Isometry3d Exp_s = math::SE3d::Exp(s).toIsometry3();
     math::Matrix4d Exp_s_2 = math::Matrix4d::Identity();
 
     double theta = s.head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::makeSkewSymmetric(s.head<3>());
+    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -270,7 +268,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
     double theta = s.head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::makeSkewSymmetric(s.head<3>());
+    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -302,7 +300,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
     double theta = s.head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::makeSkewSymmetric(s.head<3>());
+    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -345,7 +343,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     for (int i = 0; i < 6; ++i)
       randomS[i] = Uniform(min, max);
 
-    math::Isometry3d T = math::expMap(randomS);
+    math::Isometry3d T = math::SE3d::Exp(randomS).toIsometry3();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }
@@ -358,7 +356,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdT(V) == T * V * InvT
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector6d V = math::Vector6d::Random();
 
     math::Vector6d AdTV = AdT(T, V);
@@ -376,7 +374,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     AdTMatrix.topLeftCorner<3, 3>() = T.linear();
     AdTMatrix.bottomRightCorner<3, 3>() = T.linear();
     AdTMatrix.bottomLeftCorner<3, 3>()
-        = math::makeSkewSymmetric(T.translation()) * T.linear();
+        = math::SO3<double>::Hat(T.translation()) * T.linear();
     math::Vector6d AdTMatrix_V = AdTMatrix * V;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(AdTV(j), AdTMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -385,7 +383,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdR == AdT([R 0; 0 1], V)
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Isometry3d R = math::Isometry3d::Identity();
     R.linear() = T.linear();
     math::Vector6d V = math::Vector6d::Random();
@@ -400,7 +398,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdTAngular == AdT(T, se3(w, 0))
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector3d w = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.head<3>() = w;
@@ -415,7 +413,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdTLinear == AdT(T, se3(w, 0))
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -430,7 +428,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdTJac
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -445,7 +443,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdInvT
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Vector6d V = math::Vector6d::Random();
 
@@ -459,7 +457,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // AdInvRLinear
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -476,7 +474,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // dAdT
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Vector6d F = math::Vector6d::Random();
 
     math::Vector6d dAdTF = dAdT(T, F);
@@ -486,7 +484,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     AdTMatrix.topLeftCorner<3, 3>() = T.linear();
     AdTMatrix.bottomRightCorner<3, 3>() = T.linear();
     AdTMatrix.bottomLeftCorner<3, 3>()
-        = math::makeSkewSymmetric(T.translation()) * T.linear();
+        = math::SO3<double>::Hat(T.translation()) * T.linear();
     math::Vector6d AdTTransMatrix_V = AdTMatrix.transpose() * F;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(dAdTF(j), AdTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -495,7 +493,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // dAdInvT
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Vector6d F = math::Vector6d::Random();
 
@@ -512,7 +510,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     AdInvTMatrix.topLeftCorner<3, 3>() = InvT.linear();
     AdInvTMatrix.bottomRightCorner<3, 3>() = InvT.linear();
     AdInvTMatrix.bottomLeftCorner<3, 3>()
-        = math::makeSkewSymmetric(InvT.translation()) * InvT.linear();
+        = math::SO3<double>::Hat(InvT.translation()) * InvT.linear();
     math::Vector6d AdInvTTransMatrix_V = AdInvTMatrix.transpose() * F;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(dAdInvT_F(j), AdInvTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -521,7 +519,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
   // dAdInvR
   for (int i = 0; i < numTest; ++i) {
     math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::expMap(t);
+    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Isometry3d InvR = math::Isometry3d::Identity();
     InvR.linear() = InvT.linear();
@@ -545,9 +543,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
     //
     math::Matrix6d adV_Matrix = math::Matrix6d::Zero();
-    adV_Matrix.topLeftCorner<3, 3>() = math::makeSkewSymmetric(V.head<3>());
-    adV_Matrix.bottomRightCorner<3, 3>() = math::makeSkewSymmetric(V.head<3>());
-    adV_Matrix.bottomLeftCorner<3, 3>() = math::makeSkewSymmetric(V.tail<3>());
+    adV_Matrix.topLeftCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
+    adV_Matrix.bottomRightCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
+    adV_Matrix.bottomLeftCorner<3, 3>() = math::SO3<double>::Hat(V.tail<3>());
     math::Vector6d adV_Matrix_W = adV_Matrix * W;
 
     for (int j = 0; j < 6; ++j)
@@ -563,10 +561,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
     //
     math::Matrix6d dadV_Matrix = math::Matrix6d::Zero();
-    dadV_Matrix.topLeftCorner<3, 3>() = math::makeSkewSymmetric(V.head<3>());
-    dadV_Matrix.bottomRightCorner<3, 3>()
-        = math::makeSkewSymmetric(V.head<3>());
-    dadV_Matrix.bottomLeftCorner<3, 3>() = math::makeSkewSymmetric(V.tail<3>());
+    dadV_Matrix.topLeftCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
+    dadV_Matrix.bottomRightCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
+    dadV_Matrix.bottomLeftCorner<3, 3>() = math::SO3<double>::Hat(V.tail<3>());
     math::Vector6d dadV_Matrix_F = dadV_Matrix.transpose() * F;
 
     for (int j = 0; j < 6; ++j)

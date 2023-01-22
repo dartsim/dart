@@ -38,16 +38,56 @@
 using namespace dart;
 using namespace math;
 
-template <typename S>
-struct SE3Test : public testing::Test
-{
-  using Scalar = S;
-};
-
-using Types = testing::Types<float, double>;
-TYPED_TEST_SUITE(SE3Test, Types);
-
 namespace {
+
+//==============================================================================
+template <typename S>
+Isometry3<S> expMap(const Vector6<S>& _S)
+{
+  // R = Exp(w)
+  // p = sin(t) / t*v + (t - sin(t)) / t^3*<w, v>*w + (1 - cos(t)) / t^2*(w X v)
+  // , when S = (w, v), t = |w|
+
+  Isometry3<S> ret = Isometry3<S>::Identity();
+  S s2[] = {_S[0] * _S[0], _S[1] * _S[1], _S[2] * _S[2]};
+  S s3[] = {_S[0] * _S[1], _S[1] * _S[2], _S[2] * _S[0]};
+  S theta = sqrt(s2[0] + s2[1] + s2[2]);
+  S cos_t = cos(theta), alpha, beta, gamma;
+
+  if (theta > SO3<S>::Tolerance()) {
+    S sin_t = sin(theta);
+    alpha = sin_t / theta;
+    beta = (1.0 - cos_t) / theta / theta;
+    gamma = (_S[0] * _S[3] + _S[1] * _S[4] + _S[2] * _S[5]) * (theta - sin_t)
+            / theta / theta / theta;
+  } else {
+    alpha = 1.0 - theta * theta / 6.0;
+    beta = 0.5 - theta * theta / 24.0;
+    gamma = (_S[0] * _S[3] + _S[1] * _S[4] + _S[2] * _S[5]) / 6.0
+            - theta * theta / 120.0;
+  }
+
+  ret(0, 0) = beta * s2[0] + cos_t;
+  ret(1, 0) = beta * s3[0] + alpha * _S[2];
+  ret(2, 0) = beta * s3[2] - alpha * _S[1];
+
+  ret(0, 1) = beta * s3[0] - alpha * _S[2];
+  ret(1, 1) = beta * s2[1] + cos_t;
+  ret(2, 1) = beta * s3[1] + alpha * _S[0];
+
+  ret(0, 2) = beta * s3[2] + alpha * _S[1];
+  ret(1, 2) = beta * s3[1] - alpha * _S[0];
+  ret(2, 2) = beta * s2[2] + cos_t;
+
+  ret(0, 3)
+      = alpha * _S[3] + beta * (_S[1] * _S[5] - _S[2] * _S[4]) + gamma * _S[0];
+  ret(1, 3)
+      = alpha * _S[4] + beta * (_S[2] * _S[3] - _S[0] * _S[5]) + gamma * _S[1];
+  ret(2, 3)
+      = alpha * _S[5] + beta * (_S[0] * _S[4] - _S[1] * _S[3]) + gamma * _S[2];
+
+  return ret;
+}
 
 //==============================================================================
 template <typename S>
@@ -69,6 +109,15 @@ template <typename S>
 }
 
 } // namespace
+
+template <typename S>
+struct SE3Test : public testing::Test
+{
+  using Scalar = S;
+};
+
+using Types = testing::Types<float, double>;
+TYPED_TEST_SUITE(SE3Test, Types);
 
 //==============================================================================
 TYPED_TEST(SE3Test, Identity)
@@ -112,15 +161,30 @@ TYPED_TEST(SE3Test, Exp)
 {
   using S = typename TestFixture::Scalar;
 
-  SE3<S> x = SE3<S>::Random();
-  EXPECT_TRUE(SE3<S>::Exp(SE3<S>::Log(x)).isApprox(x))
-      << "x          : \n"
-      << x.toMatrix() << "\n"
-      << "Exp(Log(x)): \n"
-      << SE3<S>::Exp(SE3<S>::Log(x)).toMatrix() << "\n"
-      << "Log(x)          : " << SE3<S>::Log(x).transpose() << "\n"
-      << "Log(Exp(Log(x))): "
-      << SE3<S>::Log(SE3<S>::Exp(SE3<S>::Log(x))).transpose() << "\n";
+  const auto num_tests = 100;
+
+  for (auto i = 0; i < num_tests; ++i) {
+    Vector6<S> x = Vector6<S>::Random();
+
+    EXPECT_TRUE(SE3<S>::Exp(x).toMatrix().isApprox(expMap<S>(x).matrix()))
+        << "x          : " << x.transpose() << "\n"
+        << "Exp(x)   :\n"
+        << SE3<S>::Exp(x).toMatrix() << "\n"
+        << "expMap(x):\n"
+        << expMap<S>(x).matrix() << "\n";
+  }
+
+  for (auto i = 0; i < num_tests; ++i) {
+    SE3<S> x = SE3<S>::Random();
+    EXPECT_TRUE(SE3<S>::Exp(SE3<S>::Log(x)).isApprox(x))
+        << "x          : \n"
+        << x.toMatrix() << "\n"
+        << "Exp(Log(x)): \n"
+        << SE3<S>::Exp(SE3<S>::Log(x)).toMatrix() << "\n"
+        << "Log(x)          : " << SE3<S>::Log(x).transpose() << "\n"
+        << "Log(Exp(Log(x))): "
+        << SE3<S>::Log(SE3<S>::Exp(SE3<S>::Log(x))).transpose() << "\n";
+  }
 }
 
 //==============================================================================

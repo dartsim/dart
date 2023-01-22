@@ -110,20 +110,6 @@ void Geometry(py::module& m)
       ::py::arg("expmap"));
 
   m.def(
-      "expToQuat",
-      +[](const math::Vector3d& _v) -> math::Quaterniond {
-        return dart::math::expToQuat(_v);
-      },
-      ::py::arg("v"));
-
-  m.def(
-      "quatToExp",
-      +[](const math::Quaterniond& _q) -> math::Vector3d {
-        return dart::math::quatToExp(_q);
-      },
-      ::py::arg("q"));
-
-  m.def(
       "expAngular",
       +[](const math::Vector3d& _s) -> math::Isometry3d {
         return dart::math::expAngular(_s);

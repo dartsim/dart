@@ -147,8 +147,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   Joint* joint
       = skeleton->createJointAndBodyNodePair<JointType>(nullptr, _properties)
             .first;
-  joint->setTransformFromChildBodyNode(math::expMap(math::Vector6d::Random()));
-  joint->setTransformFromParentBodyNode(math::expMap(math::Vector6d::Random()));
+  joint->setTransformFromChildBodyNode(math::SE3d::Random().toIsometry3());
+  joint->setTransformFromParentBodyNode(math::SE3d::Random().toIsometry3());
 
   int dof = joint->getNumDofs();
 

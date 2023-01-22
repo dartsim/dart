@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/LieGroups.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -47,26 +48,6 @@
 
 namespace dart {
 namespace math {
-
-Quaterniond expToQuat(const Vector3d& _v)
-{
-  double mag = _v.norm();
-
-  if (mag > 1e-10) {
-    Quaterniond q(AngleAxisd(mag, _v / mag));
-    return q;
-  } else {
-    Quaterniond q(1, 0, 0, 0);
-    return q;
-  }
-}
-
-Vector3d quatToExp(const Quaterniond& _q)
-{
-  AngleAxisd aa(_q);
-  Vector3d v = aa.axis();
-  return v * aa.angle();
-}
 
 // Reference:
 // http://www.geometrictools.com/LibMathematics/Algebra/Wm5Matrix3.inl
@@ -403,34 +384,6 @@ Matrix3d quatSecondDeriv(const Quaterniond& /*_q*/, int _el1, int _el2)
   return 2 * mat;
 }
 
-Vector3d rotatePoint(const Quaterniond& _q, const Vector3d& _pt)
-{
-  Quaterniond quat_pt(0, _pt[0], _pt[1], _pt[2]);
-  Quaterniond qinv = _q.inverse();
-
-  Quaterniond rot = _q * quat_pt * qinv;
-
-  // check below - assuming same format of point achieved
-  Vector3d temp;
-  //  VLOG(1) << "Point before: " << 0 << " "
-  //          << pt.x << " " << pt.y << " " << pt.z << "\n";
-  //  VLOG(1) << "Point after:  "
-  //          << rot.x << " " << rot.y << " " << rot.z << " " << rot.w << "\n";
-  temp[0] = rot.x();
-  temp[1] = rot.y();
-  temp[2] = rot.z();
-
-  //  VLOG(1) << "Point after rotation: "
-  //          << temp[0] << " " << temp[1] << " " << temp[2] << endl;
-  return temp;
-}
-
-Vector3d rotatePoint(const Quaterniond& _q, double _x, double _y, double _z)
-{
-  Vector3d pt(_x, _y, _z);
-  return rotatePoint(_q, pt);
-}
-
 // ----------- expmap computations -------------
 
 #define EPSILON_EXPMAP_THETA 1.0e-3
@@ -440,7 +393,7 @@ Matrix3d expMapRot(const Vector3d& _q)
   double theta = _q.norm();
 
   Matrix3d R = Matrix3d::Zero();
-  Matrix3d qss = makeSkewSymmetric(_q);
+  Matrix3d qss = SO3<double>::Hat(_q);
   Matrix3d qss2 = qss * qss;
 
   if (theta < EPSILON_EXPMAP_THETA)
@@ -457,7 +410,7 @@ Matrix3d expMapJac(const Vector3d& _q)
   double theta = _q.norm();
 
   Matrix3d J = Matrix3d::Zero();
-  Matrix3d qss = makeSkewSymmetric(_q);
+  Matrix3d qss = SO3<double>::Hat(_q);
   Matrix3d qss2 = qss * qss;
 
   if (theta < EPSILON_EXPMAP_THETA)
@@ -474,9 +427,9 @@ Matrix3d expMapJacDot(const Vector3d& _q, const Vector3d& _qdot)
   double theta = _q.norm();
 
   Matrix3d Jdot = Matrix3d::Zero();
-  Matrix3d qss = makeSkewSymmetric(_q);
+  Matrix3d qss = SO3<double>::Hat(_q);
   Matrix3d qss2 = qss * qss;
-  Matrix3d qdss = makeSkewSymmetric(_qdot);
+  Matrix3d qdss = SO3<double>::Hat(_qdot);
   double ttdot = _q.dot(_qdot); // theta*thetaDot
   double st = sin(theta);
   double ct = cos(theta);
@@ -657,8 +610,7 @@ Matrix6d getAdTMatrix(const Isometry3d& T)
 
   AdT.topLeftCorner<3, 3>() = T.linear();
   AdT.topRightCorner<3, 3>().setZero();
-  AdT.bottomLeftCorner<3, 3>()
-      = makeSkewSymmetric(T.translation()) * T.linear();
+  AdT.bottomLeftCorner<3, 3>() = SO3<double>::Hat(T.translation()) * T.linear();
   AdT.bottomRightCorner<3, 3>() = T.linear();
 
   return AdT;
@@ -1465,35 +1417,6 @@ bool verifyTransform(const Isometry3d& _T)
 {
   return !isNan(_T.matrix().topRows<3>())
          && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
-}
-
-Vector3d fromSkewSymmetric(const Matrix3d& _m)
-{
-#ifndef NDEBUG
-  if (std::abs(_m(0, 0)) > DART_EPSILON || std::abs(_m(1, 1)) > DART_EPSILON
-      || std::abs(_m(2, 2)) > DART_EPSILON) {
-    dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
-           << _m << "\n";
-    return Vector3d::Zero();
-  }
-#endif
-  Vector3d ret;
-  ret << _m(2, 1), _m(0, 2), _m(1, 0);
-  return ret;
-}
-
-Matrix3d makeSkewSymmetric(const Vector3d& _v)
-{
-  Matrix3d result = Matrix3d::Zero();
-
-  result(0, 1) = -_v(2);
-  result(1, 0) = _v(2);
-  result(0, 2) = _v(1);
-  result(2, 0) = -_v(1);
-  result(1, 2) = -_v(0);
-  result(2, 1) = _v(0);
-
-  return result;
 }
 
 //==============================================================================

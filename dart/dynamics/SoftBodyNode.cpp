@@ -1225,7 +1225,7 @@ void SoftBodyNode::clearInternalForces()
 void SoftBodyNode::_addPiToArtInertia(
     const math::Vector3d& _p, double _Pi) const
 {
-  math::Matrix3d tmp = math::makeSkewSymmetric(_p);
+  math::Matrix3d tmp = math::SO3<double>::Hat(_p);
 
   mArtInertia.topLeftCorner<3, 3>() -= _Pi * tmp * tmp;
   mArtInertia.topRightCorner<3, 3>() += _Pi * tmp;
@@ -1240,7 +1240,7 @@ void SoftBodyNode::_addPiToArtInertia(
 void SoftBodyNode::_addPiToArtInertiaImplicit(
     const math::Vector3d& _p, double _ImplicitPi) const
 {
-  math::Matrix3d tmp = math::makeSkewSymmetric(_p);
+  math::Matrix3d tmp = math::SO3<double>::Hat(_p);
 
   mArtInertiaImplicit.topLeftCorner<3, 3>() -= _ImplicitPi * tmp * tmp;
   mArtInertiaImplicit.topRightCorner<3, 3>() += _ImplicitPi * tmp;

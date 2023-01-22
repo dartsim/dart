@@ -55,7 +55,7 @@ BallJointConstraint::BallJointConstraint(
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  math::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
+  math::Matrix3d ssm1 = dart::math::SO3<double>::Hat(-mOffset1);
   mJacobian1.leftCols<3>() = ssm1;
   mJacobian1.rightCols<3>() = math::Matrix3d::Identity();
 }
@@ -77,8 +77,8 @@ BallJointConstraint::BallJointConstraint(
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  math::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  math::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
+  math::Matrix3d ssm1 = dart::math::SO3<double>::Hat(-mOffset1);
+  math::Matrix3d ssm2 = dart::math::SO3<double>::Hat(-mOffset2);
   mJacobian1.leftCols<3>() = ssm1;
   mJacobian1.rightCols<3>() = math::Matrix3d::Identity();
   mJacobian2.leftCols<3>() = ssm2;
@@ -114,7 +114,7 @@ void BallJointConstraint::update()
     math::Vector3d p2 = T12.inverse() * mOffset1;
 
     math::Matrix<double, 3, 6> J2;
-    J2.leftCols<3>() = math::makeSkewSymmetric(-p2);
+    J2.leftCols<3>() = math::SO3<double>::Hat(-p2);
     J2.rightCols<3>() = math::Matrix3d::Identity();
 
     mJacobian2 = T12.linear() * J2;

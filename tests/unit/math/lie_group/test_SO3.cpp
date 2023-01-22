@@ -38,6 +38,31 @@
 using namespace dart;
 using namespace math;
 
+namespace {
+
+//==============================================================================
+template <typename S>
+Matrix3<S> expMapRot(const Vector3<S>& _q)
+{
+  // I + sin(t) / t*[S] + (1 - cos(t)) / t^2*[S]^2, where t = |S|
+
+  S theta = _q.norm();
+
+  Matrix3<S> R = Matrix3<S>::Zero();
+  Matrix3<S> qss = SO3<S>::Hat(_q);
+  Matrix3<S> qss2 = qss * qss;
+
+  if (theta < SO3<S>::Tolerance())
+    R = Matrix3<S>::Identity() + qss + 0.5 * qss2;
+  else
+    R = Matrix3<S>::Identity() + (sin(theta) / theta) * qss
+        + ((1 - cos(theta)) / (theta * theta)) * qss2;
+
+  return R;
+}
+
+} // namespace
+
 template <typename S>
 struct SO3Test : public testing::Test
 {
@@ -84,15 +109,31 @@ TYPED_TEST(SO3Test, Exp)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S> x = SO3<S>::Random();
-  EXPECT_TRUE(SO3<S>::Exp(SO3<S>::Log(x)).isApprox(x))
-      << "x          : \n"
-      << x.toMatrix() << "\n"
-      << "Exp(Log(x)): \n"
-      << SO3<S>::Exp(SO3<S>::Log(x)).toMatrix() << "\n"
-      << "Log(x)          : " << SO3<S>::Log(x).transpose() << "\n"
-      << "Log(Exp(Log(x))): "
-      << SO3<S>::Log(SO3<S>::Exp(SO3<S>::Log(x))).transpose() << "\n";
+  const auto num_tests = 100;
+
+  for (auto i = 0; i < num_tests; ++i) {
+    Vector3<S> x = Vector3<S>::Random();
+
+    EXPECT_TRUE(SO3<S>::Exp(x).toMatrix().isApprox(expMapRot<S>(x).matrix()))
+        << "x          : " << x.transpose() << "\n"
+        << "Exp(x)      :\n"
+        << SO3<S>::Exp(x).toMatrix() << "\n"
+        << "expMapRot(x):\n"
+        << expMapRot<S>(x).matrix() << "\n";
+  }
+
+  for (auto i = 0; i < num_tests; ++i) {
+    SO3<S> x = SO3<S>::Random();
+
+    EXPECT_TRUE(SO3<S>::Exp(SO3<S>::Log(x)).isApprox(x))
+        << "x          : \n"
+        << x.toMatrix() << "\n"
+        << "Exp(Log(x)): \n"
+        << SO3<S>::Exp(SO3<S>::Log(x)).toMatrix() << "\n"
+        << "Log(x)          : " << SO3<S>::Log(x).transpose() << "\n"
+        << "Log(Exp(Log(x))): "
+        << SO3<S>::Log(SO3<S>::Exp(SO3<S>::Log(x))).transpose() << "\n";
+  }
 }
 
 //==============================================================================
@@ -354,7 +395,7 @@ TYPED_TEST(SO3Test, MoveAssignmentOperator)
 }
 
 //==============================================================================
-TYPED_TEST(SO3Test, Matrix)
+TYPED_TEST(SO3Test, ToMatrix)
 {
   using S = typename TestFixture::Scalar;
 
@@ -370,8 +411,7 @@ TYPED_TEST(SO3Test, Quaternion)
 
   SO3<S> x = SO3<S>::Random();
   Quaternion<S> q = x.quaternion();
-  EXPECT_GE(q.norm(), 0);
-  EXPECT_LE(q.norm(), 1);
+  EXPECT_NEAR(q.norm(), 1, SO3<S>::Tolerance());
 }
 
 //==============================================================================

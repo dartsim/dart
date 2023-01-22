@@ -35,30 +35,12 @@
 
 #include <dart/math/Constants.hpp>
 #include <dart/math/Fwd.hpp>
+#include <dart/math/LieGroups.hpp>
 
 namespace dart {
 namespace math {
 
-/// \brief
-DART_MATH_API Matrix3d makeSkewSymmetric(const Vector3d& _v);
-
-/// \brief
-DART_MATH_API Vector3d fromSkewSymmetric(const Matrix3d& _m);
-
 //------------------------------------------------------------------------------
-/// \brief
-DART_MATH_API Quaterniond expToQuat(const Vector3d& _v);
-
-/// \brief
-DART_MATH_API Vector3d quatToExp(const Quaterniond& _q);
-
-/// \brief
-DART_MATH_API Vector3d rotatePoint(const Quaterniond& _q, const Vector3d& _pt);
-
-/// \brief
-DART_MATH_API Vector3d
-rotatePoint(const Quaterniond& _q, double _x, double _y, double _z);
-
 /// \brief
 DART_MATH_API Matrix3d quatDeriv(const Quaterniond& _q, int _el);
 
