@@ -36,10 +36,10 @@
 
 namespace dart::math {
 
-/// @brief Base class for SO3
+/// @brief Base class for SE3
 /// @tparam Derived The derived class
 template <typename Derived>
-class SO3Base : public LieGroupBase<Derived>
+class SE3Base : public LieGroupBase<Derived>
 {
 public:
   using Base = LieGroupBase<Derived>;
@@ -51,51 +51,38 @@ public:
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
-  // SO3Base specific types
-  using QuaternionType = ::Eigen::Map<Quaternion<Scalar>>;
-  using ConstQuaternionType = ::Eigen::Map<const Quaternion<Scalar>>;
-
   using Base::Tolerance;
 
   using Base::operator=;
   using Base::coeffs;
   using Base::derived;
 
-  /// Composes this SO3 with other and returns the result.
-  ///
-  /// @param[in] other The other SO3 to compose with.
-  /// @return The composition of this SO3 with other.
   template <typename OtherDerived>
-  [[nodiscard]] PlainObject operator*(const SO3Base<OtherDerived>& other) const;
+  PlainObject operator*(const SE3Base<OtherDerived>& other) const;
 
   /**
-   * Transforms a 3D vector by this SO3.
-   *
-   * @tparam MatrixDerived: Type of the matrix
-   * @param[in] vec: 3D vector to be transformed
-   * @return Transformed 3D vector
+   * Returns the inverse of this SO3.
    */
-  template <typename MatrixDerived>
-  [[nodiscard]] Vector3<Scalar> operator*(
-      const Eigen::MatrixBase<MatrixDerived>& vec) const;
-
-  /// Normalizes this SO3 so that its quaternion representation is always unit
-  /// and unique by keeping the real part of the quaternion positive.
-  void normalize();
-
-  /// Returns the inverse of this SO3.
   [[nodiscard]] PlainObject inverse() const;
 
-  /// Returns the matrix representation of this SO3
-  ///
-  /// The matrix representation of SO3 is a 3x3 orthogonal matrix
+  /// Returns the Isometry3 representation of the SE3
+  [[nodiscard]] Isometry3<Scalar> toIsometry3() const;
+
+  /// Returns the matrix representation of the SE3
   [[nodiscard]] MatrixType toMatrix() const;
 
-  /// Returns the quaternion representation of this SO3.
-  [[nodiscard]] const ConstQuaternionType quaternion() const;
+  /// Returns the rotation
+  [[nodiscard]] const Eigen::Map<const SO3<Scalar>> rotation() const;
 
-  /// Returns the quaternion representation of this SO3.
-  [[nodiscard]] QuaternionType quaternion();
+  /// Returns the rotation
+  [[nodiscard]] Eigen::Map<SO3<Scalar>> rotation();
+
+  /// Returns the translation
+  [[nodiscard]] const Eigen::Map<const Eigen::Vector3<Scalar>> translation()
+      const;
+
+  /// Returns the translation
+  [[nodiscard]] Eigen::Map<Eigen::Vector3<Scalar>> translation();
 
   /// Returns the x component of the orientation part in quaternion.
   [[nodiscard]] Scalar quat_x() const;
@@ -120,6 +107,24 @@ public:
 
   /// Returns the w component of the orientation part in quaternion.
   [[nodiscard]] Scalar& quat_w();
+
+  /// Returns the x component of the position part.
+  [[nodiscard]] Scalar x() const;
+
+  /// Returns the y component of the position part.
+  [[nodiscard]] Scalar y() const;
+
+  /// Returns the z component of the position part.
+  [[nodiscard]] Scalar z() const;
+
+  /// Returns the x component of the position part.
+  [[nodiscard]] Scalar& x();
+
+  /// Returns the y component of the position part.
+  [[nodiscard]] Scalar& y();
+
+  /// Returns the z component of the position part.
+  [[nodiscard]] Scalar& z();
 };
 
 } // namespace dart::math
@@ -133,114 +138,168 @@ namespace dart::math {
 //==============================================================================
 template <typename Derived>
 template <typename OtherDerived>
-typename SO3Base<Derived>::PlainObject SO3Base<Derived>::operator*(
-    const SO3Base<OtherDerived>& other) const
+typename SE3Base<Derived>::PlainObject SE3Base<Derived>::operator*(
+    const SE3Base<OtherDerived>& other) const
 {
-  return PlainObject(quaternion() * other.quaternion());
+  const Eigen::Map<const SO3<Scalar>>& o = rotation();
+  return PlainObject(
+      o * other.rotation(), o * other.translation() + translation());
 }
 
 //==============================================================================
 template <typename Derived>
-template <typename MatrixDerived>
-Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::operator*(
-    const Eigen::MatrixBase<MatrixDerived>& vec) const
+typename SE3Base<Derived>::PlainObject SE3Base<Derived>::inverse() const
 {
-  return quaternion() * vec;
+  const SO3<Scalar> r_inv = rotation().inverse();
+  return PlainObject(r_inv, -(r_inv * translation()));
 }
 
 //==============================================================================
 template <typename Derived>
-void SO3Base<Derived>::normalize()
+Isometry3<typename SE3Base<Derived>::Scalar> SE3Base<Derived>::toIsometry3()
+    const
 {
-  if (coeffs().w() < 0) {
-    coeffs() *= -1;
-  }
-  coeffs().normalize();
+  Isometry3<Scalar> out;
+  out.makeAffine();
+  out.linear() = rotation().toMatrix();
+  out.translation() = translation();
+  return out;
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::PlainObject SO3Base<Derived>::inverse() const
+typename SE3Base<Derived>::MatrixType SE3Base<Derived>::toMatrix() const
 {
-  return PlainObject(quaternion().conjugate());
+  return toIsometry3().matrix();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::MatrixType SO3Base<Derived>::toMatrix() const
+const Eigen::Map<const SO3<typename SE3Base<Derived>::Scalar>>
+SE3Base<Derived>::rotation() const
 {
-  return quaternion().toRotationMatrix();
+  return Eigen::Map<const SO3<Scalar>>(coeffs().data());
 }
 
 //==============================================================================
 template <typename Derived>
-const typename SO3Base<Derived>::ConstQuaternionType
-SO3Base<Derived>::quaternion() const
+Eigen::Map<SO3<typename SE3Base<Derived>::Scalar>> SE3Base<Derived>::rotation()
 {
-  return ConstQuaternionType(coeffs().data());
+  return Eigen::Map<SO3<Scalar>>(coeffs().data());
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::QuaternionType SO3Base<Derived>::quaternion()
+const Eigen::Map<const Vector3<typename SE3Base<Derived>::Scalar>>
+SE3Base<Derived>::translation() const
 {
-  return QuaternionType(coeffs().data());
+  return Eigen::Map<const Vector3<Scalar>>(coeffs().data() + 4);
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_x() const
+Eigen::Map<Vector3<typename SE3Base<Derived>::Scalar>>
+SE3Base<Derived>::translation()
+{
+  return Eigen::Map<Vector3<Scalar>>(coeffs().data() + 4);
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_x() const
 {
   return coeffs().x();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_y() const
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_y() const
 {
   return coeffs().y();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_z() const
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_z() const
 {
   return coeffs().z();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_w() const
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_w() const
 {
   return coeffs().w();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_x()
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_x()
 {
   return coeffs().x();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_y()
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_y()
 {
   return coeffs().y();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_z()
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_z()
 {
   return coeffs().z();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_w()
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_w()
 {
   return coeffs().w();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::x() const
+{
+  return coeffs().x();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::y() const
+{
+  return coeffs().y();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar SE3Base<Derived>::z() const
+{
+  return coeffs().z();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::x()
+{
+  return coeffs().x();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::y()
+{
+  return coeffs().y();
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Scalar& SE3Base<Derived>::z()
+{
+  return coeffs().z();
 }
 
 } // namespace dart::math

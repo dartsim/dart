@@ -102,7 +102,12 @@ TYPED_TEST(SO3Test, HatAndVeeOperators)
 
   Eigen::Vector3<S> vec(1, 2, 3);
   Eigen::Matrix3<S> mat;
-  mat << 0, -3, 2, 3, 0, -1, -2, 1, 0;
+  // clang-format off
+  mat <<
+     0, -3,  2,
+     3,  0, -1,
+    -2,  1,  0;
+  // clang-format on
 
   // Check if the result is equal to the expected matrix
   EXPECT_TRUE(SO3<S>::Hat(vec).isApprox(mat));
@@ -276,14 +281,14 @@ TYPED_TEST(SO3Test, DefaultConstructor)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S, 0> so3;
+  SO3<S> x;
   // Test that the data is initialized to the identity matrix
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       if (i == j) {
-        EXPECT_S_EQ(so3.toMatrix()(i, j), 1);
+        EXPECT_S_EQ(x.toMatrix()(i, j), 1);
       } else {
-        EXPECT_S_EQ(so3.toMatrix()(i, j), 0);
+        EXPECT_S_EQ(x.toMatrix()(i, j), 0);
       }
     }
   }
@@ -307,9 +312,9 @@ TYPED_TEST(SO3Test, CopyConstructor)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S, 0> so3_1 = SO3<S>::Random();
-  SO3<S, 0> so3_2(so3_1);
-  EXPECT_EQ(so3_1, so3_2);
+  SO3<S> x1 = SO3<S>::Random();
+  SO3<S> x2(x1);
+  EXPECT_EQ(x1, x2);
 }
 
 //==============================================================================
@@ -317,11 +322,11 @@ TYPED_TEST(SO3Test, MoveConstructor)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S, 0> so3_1 = SO3<S>::Random();
-  const math::Quaternion<S> data = so3_1.quaternion();
-  SO3<S, 0> so3_2(std::move(so3_1));
-  // Test that so3_2's data is equal to the original data of so3_1
-  EXPECT_EQ(so3_2.quaternion(), data);
+  SO3<S> x1 = SO3<S>::Random();
+  const math::Quaternion<S> data = x1.quaternion();
+  SO3<S> x2(std::move(x1));
+  // Test that x2's data is equal to the original data of x1
+  EXPECT_EQ(x2.quaternion(), data);
 }
 
 //==============================================================================
@@ -329,10 +334,10 @@ TYPED_TEST(SO3Test, CopyAssignmentOperator)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S, 0> so3_1 = SO3<S>::Random();
-  SO3<S, 0> so3_2;
-  so3_2 = so3_1;
-  EXPECT_EQ(so3_1, so3_2);
+  SO3<S> x1 = SO3<S>::Random();
+  SO3<S> x2;
+  x2 = x1;
+  EXPECT_EQ(x1, x2);
 }
 
 //==============================================================================
@@ -340,12 +345,12 @@ TYPED_TEST(SO3Test, MoveAssignmentOperator)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S, 0> so3_1 = SO3<S>::Random();
-  const math::Quaternion<S> data = so3_1.quaternion();
-  SO3<S, 0> so3_2;
-  so3_2 = std::move(so3_1);
-  // Test that so3_2's data is equal to the original data of so3_1
-  EXPECT_EQ(so3_2.quaternion(), data);
+  SO3<S> x1 = SO3<S>::Random();
+  const math::Quaternion<S> data = x1.quaternion();
+  SO3<S> x2;
+  x2 = std::move(x1);
+  // Test that x2's data is equal to the original data of x1
+  EXPECT_EQ(x2.quaternion(), data);
 }
 
 //==============================================================================
@@ -353,8 +358,8 @@ TYPED_TEST(SO3Test, Matrix)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S> so3 = SO3<S>::Random();
-  Matrix3<S> m = so3.toMatrix();
+  SO3<S> x = SO3<S>::Random();
+  Matrix3<S> m = x.toMatrix();
   EXPECT_TRUE(m.determinant() > 0);
 }
 
@@ -363,8 +368,8 @@ TYPED_TEST(SO3Test, Quaternion)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S> so3 = SO3<S>::Random();
-  Quaternion<S> q = so3.quaternion();
+  SO3<S> x = SO3<S>::Random();
+  Quaternion<S> q = x.quaternion();
   EXPECT_GE(q.norm(), 0);
   EXPECT_LE(q.norm(), 1);
 }
@@ -374,11 +379,33 @@ TYPED_TEST(SO3Test, Coeffs)
 {
   using S = typename TestFixture::Scalar;
 
-  SO3<S> so3 = SO3<S>::Random();
-  EXPECT_S_EQ(so3.coeffs()[0], so3.quaternion().coeffs()[0]);
-  EXPECT_S_EQ(so3.coeffs()[1], so3.quaternion().coeffs()[1]);
-  EXPECT_S_EQ(so3.coeffs()[2], so3.quaternion().coeffs()[2]);
-  EXPECT_S_EQ(so3.coeffs()[3], so3.quaternion().coeffs()[3]);
+  {
+    SO3<S> x = SO3<S>::Random();
+
+    EXPECT_S_EQ(x.coeffs()[0], x.quaternion().coeffs()[0]);
+    EXPECT_S_EQ(x.coeffs()[1], x.quaternion().coeffs()[1]);
+    EXPECT_S_EQ(x.coeffs()[2], x.quaternion().coeffs()[2]);
+    EXPECT_S_EQ(x.coeffs()[3], x.quaternion().coeffs()[3]);
+
+    EXPECT_S_EQ(x.quat_w(), x.quaternion().w());
+    EXPECT_S_EQ(x.quat_x(), x.quaternion().x());
+    EXPECT_S_EQ(x.quat_y(), x.quaternion().y());
+    EXPECT_S_EQ(x.quat_z(), x.quaternion().z());
+  }
+
+  {
+    const SO3<S> x = SO3<S>::Random();
+
+    EXPECT_S_EQ(x.coeffs()[0], x.quaternion().coeffs()[0]);
+    EXPECT_S_EQ(x.coeffs()[1], x.quaternion().coeffs()[1]);
+    EXPECT_S_EQ(x.coeffs()[2], x.quaternion().coeffs()[2]);
+    EXPECT_S_EQ(x.coeffs()[3], x.quaternion().coeffs()[3]);
+
+    EXPECT_S_EQ(x.quat_w(), x.quaternion().w());
+    EXPECT_S_EQ(x.quat_x(), x.quaternion().x());
+    EXPECT_S_EQ(x.quat_y(), x.quaternion().y());
+    EXPECT_S_EQ(x.quat_z(), x.quaternion().z());
+  }
 }
 
 //==============================================================================
@@ -387,12 +414,12 @@ TYPED_TEST(SO3Test, MapConstructor)
   using S = typename TestFixture::Scalar;
 
   // Test the constructor for the const specialization
-  S data[] = {1.0, 0.0, 0.0, 0.0};
-  ::Eigen::Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
+  S data[] = {1, 0, 0, 0};
+  ::Eigen::Map<const SO3<S>, Eigen::Unaligned> const_map(data);
   EXPECT_EQ(const_map.coeffs().data(), data);
 
   // Test the constructor for the non-const specialization
-  Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
+  Map<SO3<S>, Eigen::Unaligned> nonconst_map(data);
   EXPECT_EQ(nonconst_map.coeffs().data(), data);
 }
 
@@ -402,10 +429,10 @@ TYPED_TEST(SO3Test, TestDataAccess)
   using S = typename TestFixture::Scalar;
 
   S data[] = {1.0, 0.0, 0.0, 0.0};
-  Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
+  Map<const SO3<S>, Eigen::Unaligned> const_map(data);
   EXPECT_EQ(const_map.coeffs().data(), data);
 
-  Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
+  Map<SO3<S>, Eigen::Unaligned> nonconst_map(data);
   EXPECT_EQ(nonconst_map.coeffs().data(), data);
 
   // Modify the underlying data

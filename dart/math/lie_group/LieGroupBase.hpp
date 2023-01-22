@@ -46,6 +46,7 @@ public:
   using Coeffs = typename ::Eigen::internal::traits<Derived>::Coeffs;
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
+  using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
 
   /// Returns the tolerance for the Lie group
   [[nodiscard]] static constexpr Scalar Tolerance();
@@ -56,11 +57,20 @@ public:
   /// Returns a random element of the Lie group
   [[nodiscard]] static PlainObject Random();
 
+  /// Assignment operator.
+  ///
+  /// @param[in] other The other Lie group to assign.
+  /// @return Reference to this Lie group.
+  template <typename OtherDerived>
+  LieGroupBase<Derived>& operator=(const LieGroupBase<OtherDerived>& other);
+
   /// Returns true if this is approximately equal to other
-  [[nodiscard]] bool operator==(const Derived& other) const;
+  template <typename OtherDerived>
+  [[nodiscard]] bool operator==(const LieGroupBase<OtherDerived>& other) const;
 
   /// Returns true if this is not approximately equal to other
-  [[nodiscard]] bool operator!=(const Derived& other) const;
+  template <typename OtherDerived>
+  [[nodiscard]] bool operator!=(const LieGroupBase<OtherDerived>& other) const;
 
   /// Returns true if this SO3 is approximately equal to other within the given
   /// tolerance.
@@ -77,7 +87,7 @@ public:
   [[nodiscard]] PlainObject inverse() const;
 
   /// Returns the logarithm of this Lie group.
-  [[nodiscard]] Vector3<Scalar> log() const;
+  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
 
   /// Returns the matrix representation of this Lie group.
   ///
@@ -141,14 +151,28 @@ typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-bool LieGroupBase<Derived>::operator==(const Derived& other) const
+template <typename OtherDerived>
+LieGroupBase<Derived>& LieGroupBase<Derived>::operator=(
+    const LieGroupBase<OtherDerived>& other)
+{
+  coeffs() = other.coeffs();
+  return *this;
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+bool LieGroupBase<Derived>::operator==(
+    const LieGroupBase<OtherDerived>& other) const
 {
   return derived().isApprox(other, Tolerance());
 }
 
 //==============================================================================
 template <typename Derived>
-bool LieGroupBase<Derived>::operator!=(const Derived& other) const
+template <typename OtherDerived>
+bool LieGroupBase<Derived>::operator!=(
+    const LieGroupBase<OtherDerived>& other) const
 {
   return !(*this == other);
 }
@@ -172,10 +196,10 @@ typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::inverse()
 
 //==============================================================================
 template <typename Derived>
-Vector3<typename LieGroupBase<Derived>::Scalar> LieGroupBase<Derived>::log()
-    const
+typename LieGroupBase<Derived>::Tangent LieGroupBase<Derived>::log(
+    Scalar tol) const
 {
-  return derived().log();
+  return PlainObject::Log(derived(), tol);
 }
 
 //==============================================================================

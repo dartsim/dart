@@ -321,6 +321,9 @@ using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 template <typename Scalar, int Options = 0>
 class SO3;
 
+template <typename Scalar, int Options = 0>
+class SE3;
+
 //------------------------------------------------------------------------------
 // Other DART types
 //------------------------------------------------------------------------------

@@ -48,6 +48,7 @@ struct traits<::dart::math::SO3<S, Options_>>
   using Coeffs = ::Eigen::Matrix<S, CoeffsDim, 1, Options>;
   using PlainObject = ::dart::math::SO3<S, Options_>;
   using MatrixType = ::Eigen::Matrix<S, 3, 3>;
+  using Tangent = ::Eigen::Matrix<S, 3, 1>;
 };
 
 } // namespace Eigen::internal
@@ -68,6 +69,7 @@ public:
   using Coeffs = typename Base::Coeffs;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
+  using Tangent = typename Base::Tangent;
 
   // SO3Base specific types
   using QuaternionType = typename Base::QuaternionType;
@@ -132,7 +134,7 @@ public:
   /// @tparam MatrixDrived The type of the SO3
   /// @see Exp()
   template <typename OtherDrived>
-  [[nodiscard]] static Vector3<S> Log(
+  [[nodiscard]] static Tangent Log(
       const SO3Base<OtherDrived>& x, S tol = Tolerance());
 
   /// Returns the logarithm map of the given SO3
@@ -150,7 +152,7 @@ public:
   /// @tparam MatrixDerivedB The type of the Jacobian
   /// @see Exp()
   template <typename OtherDrived, typename MatrixDerived>
-  [[nodiscard]] static Vector3<S> Log(
+  [[nodiscard]] static Tangent Log(
       const SO3Base<OtherDrived>& x,
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       S tol = Tolerance());
@@ -255,29 +257,39 @@ public:
 
   /// Move constructor
   /// @param[in] other The other SO3 to be moved
-  SO3(SO3&& other);
+  SO3(SO3&& other) noexcept;
+
+  /// Copy constructor
+  template <typename OtherDerived>
+  SO3(const SO3Base<OtherDerived>& other);
+
+  /// Move constructor
+  template <typename OtherDerived>
+  SO3(SO3Base<OtherDerived>&& other);
 
   /// Constructs an SO3 from a quaternion
   template <typename QuaternionDrived>
-  SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat);
-
-  /// Constructs an SO3 from a quaternion
-  ///
-  /// This constructor does not normalize the quaternion. It is useful when
-  /// constructing SO3 from a quaternion that is already normalized.
-  template <typename QuaternionDrived>
-  SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat, NoNormalizeTag);
-
-  /// Constructs an SO3 from a quaternion
-  template <typename QuaternionDrived>
-  SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat);
+  explicit SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat);
 
   /// Constructs an SO3 from a quaternion
   ///
   /// This constructor does not normalize the quaternion. It is useful when
   /// constructing SO3 from a quaternion that is already normalized.
   template <typename QuaternionDrived>
-  SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag);
+  explicit SO3(
+      const ::Eigen::QuaternionBase<QuaternionDrived>& quat, NoNormalizeTag);
+
+  /// Constructs an SO3 from a quaternion
+  template <typename QuaternionDrived>
+  explicit SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat);
+
+  /// Constructs an SO3 from a quaternion
+  ///
+  /// This constructor does not normalize the quaternion. It is useful when
+  /// constructing SO3 from a quaternion that is already normalized.
+  template <typename QuaternionDrived>
+  explicit SO3(
+      ::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag);
 
   /// Copy assignment operator
   /// @param[in] other The other SO3 to be copied
@@ -287,20 +299,10 @@ public:
   /// Move assignment operator
   /// @param[in] other The other SO3 to be moved
   /// @return Reference to this SO3
-  SO3& operator=(SO3&& other);
+  SO3& operator=(SO3&& other) noexcept;
 
   using Base::normalize;
-
-  /// Returns the matrix representation of this SO3
-  ///
-  /// The matrix representation of SO3 is a 3x3 orthogonal matrix
-  [[nodiscard]] MatrixType toMatrix() const;
-
-  /// Returns the quaternion representation of this SO3
-  [[nodiscard]] const ConstQuaternionType quaternion() const;
-
-  /// Returns the quaternion representation of this SO3
-  [[nodiscard]] QuaternionType quaternion();
+  using Base::quaternion;
 
   /// Returns the coefficients of the underlying quaternion
   [[nodiscard]] const Coeffs& coeffs() const;
@@ -345,14 +347,14 @@ SO3<S, Options> SO3<S, Options>::Exp(
 {
   const S theta = dx.norm();
   if (theta < tol) {
-    const Vector3<S> vec = 0.5 * dx;
+    const Tangent vec = 0.5 * dx;
     return SO3<S, Options>{Eigen::Quaternion<S>(1.0, vec[0], vec[1], vec[2])};
   }
 
   const S half_theta = 0.5 * theta;
   const S sin_half_theta = std::sin(half_theta);
   const S cos_half_theta = std::cos(half_theta);
-  const Vector3<S> vec = (sin_half_theta / theta) * dx;
+  const Tangent vec = (sin_half_theta / theta) * dx;
   return SO3<S, Options>{
       Eigen::Quaternion<S>(cos_half_theta, vec[0], vec[1], vec[2])};
 }
@@ -374,7 +376,8 @@ SO3<S, Options> SO3<S, Options>::Exp(
 //==============================================================================
 template <typename S, int Options>
 template <typename OtherDrived>
-Vector3<S> SO3<S, Options>::Log(const SO3Base<OtherDrived>& x, S tol)
+typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
+    const SO3Base<OtherDrived>& x, S tol)
 {
   const S cos_theta = x.quaternion().w();
   const S theta = 2 * std::acos(cos_theta);
@@ -391,12 +394,12 @@ Vector3<S> SO3<S, Options>::Log(const SO3Base<OtherDrived>& x, S tol)
 //==============================================================================
 template <typename S, int Options>
 template <typename OtherDrived, typename MatrixDerived>
-Vector3<S> SO3<S, Options>::Log(
+typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
     const SO3Base<OtherDrived>& x,
     Eigen::MatrixBase<MatrixDerived>* jacobian,
     S tol)
 {
-  const Vector3<S> xi = Log(x, tol);
+  const Tangent xi = Log(x, tol);
   if (jacobian) {
     (*jacobian) = RightJacobianInverse(xi);
   }
@@ -517,7 +520,25 @@ SO3<S, Options>::SO3(const SO3& other) : m_coeffs(other.m_coeffs)
 
 //==============================================================================
 template <typename S, int Options>
-SO3<S, Options>::SO3(SO3&& other) : m_coeffs(std::move(other.m_coeffs))
+SO3<S, Options>::SO3(SO3&& other) noexcept : m_coeffs(std::move(other.m_coeffs))
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, int Options>
+template <typename OtherDerived>
+SO3<S, Options>::SO3(const SO3Base<OtherDerived>& other)
+  : m_coeffs(other.coeffs())
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, int Options>
+template <typename OtherDerived>
+SO3<S, Options>::SO3(SO3Base<OtherDerived>&& other)
+  : m_coeffs(std::move(other.coeffs()))
 {
   // Do nothing
 }
@@ -570,32 +591,10 @@ SO3<S, Options>& SO3<S, Options>::operator=(const SO3& other)
 
 //==============================================================================
 template <typename S, int Options>
-SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other)
+SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other) noexcept
 {
   m_coeffs = std::move(other.m_coeffs);
   return *this;
-}
-
-//==============================================================================
-template <typename S, int Options>
-typename SO3<S, Options>::MatrixType SO3<S, Options>::toMatrix() const
-{
-  return ::Eigen::Quaternion<S>(m_coeffs).toRotationMatrix();
-}
-
-//==============================================================================
-template <typename S, int Options>
-const typename SO3<S, Options>::ConstQuaternionType
-SO3<S, Options>::quaternion() const
-{
-  return ConstQuaternionType(m_coeffs.data());
-}
-
-//==============================================================================
-template <typename S, int Options>
-typename SO3<S, Options>::QuaternionType SO3<S, Options>::quaternion()
-{
-  return QuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
