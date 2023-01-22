@@ -42,10 +42,10 @@ template <typename S, int Options_>
 struct traits<::dart::math::SO3<S, Options_>>
 {
   static constexpr int Options = Options_;
-  static constexpr int DataDim = 4;
+  static constexpr int CoeffsDim = 4;
 
   using Scalar = S;
-  using Data = ::Eigen::Quaternion<S, Options>;
+  using Coeffs = ::Eigen::Matrix<S, CoeffsDim, 1, Options>;
   using PlainObject = ::dart::math::SO3<S, Options_>;
   using MatrixType = ::Eigen::Matrix<S, 3, 3>;
 };
@@ -63,10 +63,15 @@ class SO3 : public SO3Base<SO3<S, Options_>>
 public:
   using Base = SO3Base<SO3<S, Options_>>;
 
+  // LieGroupBase types
   using Scalar = typename Base::Scalar;
-  using Data = typename Base::Data;
+  using Coeffs = typename Base::Coeffs;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
+
+  // SO3Base specific types
+  using QuaternionType = typename Base::QuaternionType;
+  using ConstQuaternionType = typename Base::ConstQuaternionType;
 
   /// @brief Tag for the constructor that does not normalize the quaternion
   enum NoNormalizeTag
@@ -292,20 +297,20 @@ public:
   [[nodiscard]] MatrixType toMatrix() const;
 
   /// Returns the quaternion representation of this SO3
-  [[nodiscard]] const Data& quaternion() const;
+  [[nodiscard]] const ConstQuaternionType quaternion() const;
 
   /// Returns the quaternion representation of this SO3
-  [[nodiscard]] Data& quaternion();
+  [[nodiscard]] QuaternionType quaternion();
 
-  /// Returns the pointer to data of the underlying quaternion coefficients
-  [[nodiscard]] const Scalar* data() const;
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] const Coeffs& coeffs() const;
 
-  /// Returns the pointer to data of the underlying quaternion coefficients
-  [[nodiscard]] Scalar* data();
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] Coeffs& coeffs();
 
 private:
   /// The underlying quaternion coefficients
-  Data m_data;
+  Coeffs m_coeffs;
 };
 
 DART_TEMPLATE_CLASS_HEADER(MATH, SO3);
@@ -498,21 +503,21 @@ Matrix3<S> SO3<S, Options>::RightJacobianInverse(
 
 //==============================================================================
 template <typename S, int Options>
-SO3<S, Options>::SO3() : m_data(::Eigen::Quaternion<S>::Identity())
+SO3<S, Options>::SO3() : m_coeffs(::Eigen::Quaternion<S>::Identity().coeffs())
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S, int Options>
-SO3<S, Options>::SO3(const SO3& other) : m_data(other.m_data)
+SO3<S, Options>::SO3(const SO3& other) : m_coeffs(other.m_coeffs)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S, int Options>
-SO3<S, Options>::SO3(SO3&& other) : m_data(std::move(other.m_data))
+SO3<S, Options>::SO3(SO3&& other) : m_coeffs(std::move(other.m_coeffs))
 {
   // Do nothing
 }
@@ -521,7 +526,7 @@ SO3<S, Options>::SO3(SO3&& other) : m_data(std::move(other.m_data))
 template <typename S, int Options>
 template <typename QuaternionDrived>
 SO3<S, Options>::SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat)
-  : m_data(quat)
+  : m_coeffs(quat.coeffs())
 {
   normalize();
 }
@@ -531,7 +536,7 @@ template <typename S, int Options>
 template <typename QuaternionDrived>
 SO3<S, Options>::SO3(
     const ::Eigen::QuaternionBase<QuaternionDrived>& quat, NoNormalizeTag)
-  : m_data(quat)
+  : m_coeffs(quat.coeffs())
 {
   // Do nothing
 }
@@ -540,7 +545,7 @@ SO3<S, Options>::SO3(
 template <typename S, int Options>
 template <typename QuaternionDrived>
 SO3<S, Options>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat)
-  : m_data(std::move(quat))
+  : m_coeffs(std::move(quat.coeffs()))
 {
   normalize();
 }
@@ -550,7 +555,7 @@ template <typename S, int Options>
 template <typename QuaternionDrived>
 SO3<S, Options>::SO3(
     ::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag)
-  : m_data(std::move(quat))
+  : m_coeffs(std::move(quat.coeffs()))
 {
   // Do nothing
 }
@@ -559,7 +564,7 @@ SO3<S, Options>::SO3(
 template <typename S, int Options>
 SO3<S, Options>& SO3<S, Options>::operator=(const SO3& other)
 {
-  m_data = other.m_data;
+  m_coeffs = other.m_coeffs;
   return *this;
 }
 
@@ -567,7 +572,7 @@ SO3<S, Options>& SO3<S, Options>::operator=(const SO3& other)
 template <typename S, int Options>
 SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other)
 {
-  m_data = std::move(other.m_data);
+  m_coeffs = std::move(other.m_coeffs);
   return *this;
 }
 
@@ -575,35 +580,36 @@ SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other)
 template <typename S, int Options>
 typename SO3<S, Options>::MatrixType SO3<S, Options>::toMatrix() const
 {
-  return ::Eigen::Quaternion<S>(m_data).toRotationMatrix();
+  return ::Eigen::Quaternion<S>(m_coeffs).toRotationMatrix();
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename SO3<S, Options>::Data& SO3<S, Options>::quaternion() const
+const typename SO3<S, Options>::ConstQuaternionType
+SO3<S, Options>::quaternion() const
 {
-  return m_data;
+  return ConstQuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
 template <typename S, int Options>
-typename SO3<S, Options>::Data& SO3<S, Options>::quaternion()
+typename SO3<S, Options>::QuaternionType SO3<S, Options>::quaternion()
 {
-  return m_data;
+  return QuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename SO3<S, Options>::Scalar* SO3<S, Options>::data() const
+const typename SO3<S, Options>::Coeffs& SO3<S, Options>::coeffs() const
 {
-  return m_data.coeffs().data();
+  return m_coeffs;
 }
 
 //==============================================================================
 template <typename S, int Options>
-typename SO3<S, Options>::Scalar* SO3<S, Options>::data()
+typename SO3<S, Options>::Coeffs& SO3<S, Options>::coeffs()
 {
-  return m_data.coeffs().data();
+  return m_coeffs;
 }
 
 } // namespace dart::math

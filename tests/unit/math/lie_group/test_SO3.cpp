@@ -370,15 +370,15 @@ TYPED_TEST(SO3Test, Quaternion)
 }
 
 //==============================================================================
-TYPED_TEST(SO3Test, Data)
+TYPED_TEST(SO3Test, Coeffs)
 {
   using S = typename TestFixture::Scalar;
 
   SO3<S> so3 = SO3<S>::Random();
-  EXPECT_S_EQ(so3.data()[0], so3.quaternion().coeffs()[0]);
-  EXPECT_S_EQ(so3.data()[1], so3.quaternion().coeffs()[1]);
-  EXPECT_S_EQ(so3.data()[2], so3.quaternion().coeffs()[2]);
-  EXPECT_S_EQ(so3.data()[3], so3.quaternion().coeffs()[3]);
+  EXPECT_S_EQ(so3.coeffs()[0], so3.quaternion().coeffs()[0]);
+  EXPECT_S_EQ(so3.coeffs()[1], so3.quaternion().coeffs()[1]);
+  EXPECT_S_EQ(so3.coeffs()[2], so3.quaternion().coeffs()[2]);
+  EXPECT_S_EQ(so3.coeffs()[3], so3.quaternion().coeffs()[3]);
 }
 
 //==============================================================================
@@ -389,11 +389,11 @@ TYPED_TEST(SO3Test, MapConstructor)
   // Test the constructor for the const specialization
   S data[] = {1.0, 0.0, 0.0, 0.0};
   ::Eigen::Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.data(), data);
+  EXPECT_EQ(const_map.coeffs().data(), data);
 
   // Test the constructor for the non-const specialization
   Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.data(), data);
+  EXPECT_EQ(nonconst_map.coeffs().data(), data);
 }
 
 //==============================================================================
@@ -403,10 +403,10 @@ TYPED_TEST(SO3Test, TestDataAccess)
 
   S data[] = {1.0, 0.0, 0.0, 0.0};
   Map<const dart::math::SO3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.data(), data);
+  EXPECT_EQ(const_map.coeffs().data(), data);
 
   Map<dart::math::SO3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.data(), data);
+  EXPECT_EQ(nonconst_map.coeffs().data(), data);
 
   // Modify the underlying data
   data[1] = 1.0;
@@ -415,18 +415,18 @@ TYPED_TEST(SO3Test, TestDataAccess)
 
   // Check that the modifications are visible through the non-const Map
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
   }
 
   // Check that the modifications are visible even through the const Map
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
   }
 
   // Modify the data through the non-const Map
   nonconst_map = SO3<S>::Random();
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.data()[i], data[i]);
-    EXPECT_EQ(nonconst_map.data()[i], data[i]);
+    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
   }
 }

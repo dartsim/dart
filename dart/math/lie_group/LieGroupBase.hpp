@@ -43,7 +43,7 @@ class LieGroupBase
 {
 public:
   using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;
-  using Data = typename ::Eigen::internal::traits<Derived>::Data;
+  using Coeffs = typename ::Eigen::internal::traits<Derived>::Coeffs;
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
 
@@ -86,6 +86,12 @@ public:
   ///
   /// @return The matrix representation of this Lie group
   [[nodiscard]] MatrixType toMatrix() const;
+
+  /// Returns the coefficients of this Lie group.
+  [[nodiscard]] const Coeffs& coeffs() const;
+
+  /// Returns the coefficients of this Lie group.
+  [[nodiscard]] Coeffs& coeffs();
 
 protected:
   /// Returns the derived class as a const reference
@@ -178,6 +184,21 @@ typename LieGroupBase<Derived>::MatrixType LieGroupBase<Derived>::toMatrix()
     const
 {
   return derived().toMatrix();
+}
+
+//==============================================================================
+template <typename Derived>
+const typename LieGroupBase<Derived>::Coeffs& LieGroupBase<Derived>::coeffs()
+    const
+{
+  return derived().coeffs();
+}
+
+//==============================================================================
+template <typename Derived>
+typename LieGroupBase<Derived>::Coeffs& LieGroupBase<Derived>::coeffs()
+{
+  return derived().coeffs();
 }
 
 //==============================================================================

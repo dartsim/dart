@@ -44,10 +44,15 @@ class SO3Base : public LieGroupBase<Derived>
 public:
   using Base = LieGroupBase<Derived>;
 
+  // LieGroupBase types
   using Scalar = typename Base::Scalar;
-  using Data = typename Base::Data;
+  using Coeffs = typename Base::Coeffs;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
+
+  // SO3Base specific types
+  using QuaternionType = ::Eigen::Map<Quaternion<Scalar>>;
+  using ConstQuaternionType = ::Eigen::Map<const Quaternion<Scalar>>;
 
   using Base::derived;
 
@@ -91,10 +96,12 @@ public:
       Scalar tol = Tolerance()) const;
 
   /// Returns the quaternion representation of this SO3.
-  [[nodiscard]] const Data& quaternion() const;
+  [[nodiscard]] const ConstQuaternionType quaternion() const;
 
   /// Returns the quaternion representation of this SO3.
-  [[nodiscard]] Data& quaternion();
+  [[nodiscard]] QuaternionType quaternion();
+
+  using Base::coeffs;
 };
 
 } // namespace dart::math
@@ -128,10 +135,10 @@ typename SO3Base<Derived>::PlainObject SO3Base<Derived>::operator*(
 template <typename Derived>
 void SO3Base<Derived>::normalize()
 {
-  if (quaternion().w() < 0) {
-    quaternion().coeffs() *= -1;
+  if (coeffs().w() < 0) {
+    coeffs() *= -1;
   }
-  quaternion().normalize();
+  coeffs().normalize();
 }
 
 //==============================================================================
@@ -160,14 +167,15 @@ Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::log(
 
 //==============================================================================
 template <typename Derived>
-const typename SO3Base<Derived>::Data& SO3Base<Derived>::quaternion() const
+const typename SO3Base<Derived>::ConstQuaternionType
+SO3Base<Derived>::quaternion() const
 {
   return derived().quaternion();
 }
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::Data& SO3Base<Derived>::quaternion()
+typename SO3Base<Derived>::QuaternionType SO3Base<Derived>::quaternion()
 {
   return derived().quaternion();
 }

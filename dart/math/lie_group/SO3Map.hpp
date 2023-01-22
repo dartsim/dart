@@ -44,10 +44,10 @@ struct traits<::Eigen::Map<const ::dart::math::SO3<S, Options_>>>
   using Base = traits<const ::dart::math::SO3<S, Options_>>;
 
   static constexpr int Options = Options_;
-  static constexpr int DataDim = Base::DataDim;
+  static constexpr int CoeffsDim = Base::CoeffsDim;
 
   using Scalar = typename Base::Scalar;
-  using Data = typename ::Eigen::Map<const ::Eigen::Quaternion<S>, Options>;
+  using Coeffs = typename ::Eigen::Map<const ::Eigen::Vector4<S>, Options>;
 };
 
 /// Specialization of Eigen::internal::traits for dart::math::SO3
@@ -58,10 +58,10 @@ struct traits<::Eigen::Map<::dart::math::SO3<S, Options_>>>
   using Base = traits<::dart::math::SO3<S, Options_>>;
 
   static constexpr int Options = Options_;
-  static constexpr int DataDim = Base::DataDim;
+  static constexpr int CoeffsDim = Base::CoeffsDim;
 
   using Scalar = typename Base::Scalar;
-  using Data = typename ::Eigen::Map<::Eigen::Quaternion<S>, Options>;
+  using Coeffs = typename ::Eigen::Map<::Eigen::Vector4<S>, Options>;
 };
 
 } // namespace Eigen::internal
@@ -85,24 +85,29 @@ public:
       Map<const ::dart::math::SO3<S, Options_>, Options_>>;
   using This = Map<const ::dart::math::SO3<S, Options_>, Options_>;
 
+  // LieGroupBase types
   using Scalar = typename Base::Scalar;
-  using Data = typename Base::Data;
+  using Coeffs = typename Base::Coeffs;
+
+  // SO3Base specific types
+  using QuaternionType = typename Base::QuaternionType;
+  using ConstQuaternionType = typename Base::ConstQuaternionType;
 
   /// Default constructor
   ///
   /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least DataDim,
+  /// its internal data. The array must have a size of at least CoeffsDim,
   /// which is 4 for SO3.
   explicit Map(const Scalar* data);
 
   /// Returns the quaternion representation of this SO3
-  [[nodiscard]] const Data& quaternion() const;
+  [[nodiscard]] const ConstQuaternionType quaternion() const;
 
-  /// Returns the pointer to data of the underlying quaternion coefficients
-  [[nodiscard]] const Scalar* data() const;
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] const Coeffs& coeffs() const;
 
 private:
-  Data m_data;
+  Coeffs m_coeffs;
 };
 
 /// Specialization of Eigen::Map for dart::math::SO3, and also concrete
@@ -121,32 +126,37 @@ public:
       = ::dart::math::SO3Base<Map<::dart::math::SO3<S, Options_>, Options_>>;
   using This = Map<::dart::math::SO3<S, Options_>, Options_>;
 
+  // LieGroupBase types
   using Scalar = typename Base::Scalar;
-  using Data = typename Base::Data;
+  using Coeffs = typename Base::Coeffs;
+
+  // SO3Base specific types
+  using QuaternionType = typename Base::QuaternionType;
+  using ConstQuaternionType = typename Base::ConstQuaternionType;
 
   using Base::operator=;
 
   /// Default constructor
   ///
   /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least DataDim,
+  /// its internal data. The array must have a size of at least CoeffsDim,
   /// which is 4 for SO3.
   explicit Map(Scalar* data);
 
   /// Returns the quaternion representation of this SO3
-  [[nodiscard]] const Data& quaternion() const;
+  [[nodiscard]] const ConstQuaternionType quaternion() const;
 
   /// Returns the quaternion representation of this SO3
-  [[nodiscard]] Data& quaternion();
+  [[nodiscard]] QuaternionType quaternion();
 
-  /// Returns the pointer to data of the underlying quaternion coefficients
-  [[nodiscard]] const Scalar* data() const;
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] const Coeffs& coeffs() const;
 
-  /// Returns the pointer to data of the underlying quaternion coefficients
-  [[nodiscard]] Scalar* data();
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] Coeffs& coeffs();
 
 private:
-  Data m_data;
+  Coeffs m_coeffs;
 };
 
 } // namespace Eigen
@@ -160,64 +170,65 @@ namespace Eigen {
 //==============================================================================
 template <typename S, int Options>
 Map<const ::dart::math::SO3<S, Options>, Options>::Map(const Scalar* data)
-  : m_data(data)
+  : m_coeffs(data)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename Map<const ::dart::math::SO3<S, Options>, Options>::Data&
-Map<const ::dart::math::SO3<S, Options>, Options>::quaternion() const
+const typename Map<const ::dart::math::SO3<S, Options>, Options>::
+    ConstQuaternionType
+    Map<const ::dart::math::SO3<S, Options>, Options>::quaternion() const
 {
-  return m_data;
+  return ConstQuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename Map<const ::dart::math::SO3<S, Options>, Options>::Scalar*
-Map<const ::dart::math::SO3<S, Options>, Options>::data() const
+const typename Map<const ::dart::math::SO3<S, Options>, Options>::Coeffs&
+Map<const ::dart::math::SO3<S, Options>, Options>::coeffs() const
 {
-  return m_data.coeffs().data();
+  return m_coeffs;
 }
 
 //==============================================================================
 template <typename S, int Options>
-Map<::dart::math::SO3<S, Options>, Options>::Map(Scalar* data) : m_data(data)
+Map<::dart::math::SO3<S, Options>, Options>::Map(Scalar* data) : m_coeffs(data)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename Map<::dart::math::SO3<S, Options>, Options>::Data&
+const typename Map<::dart::math::SO3<S, Options>, Options>::ConstQuaternionType
 Map<::dart::math::SO3<S, Options>, Options>::quaternion() const
 {
-  return m_data;
+  return ConstQuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
 template <typename S, int Options>
-typename Map<::dart::math::SO3<S, Options>, Options>::Data&
+typename Map<::dart::math::SO3<S, Options>, Options>::QuaternionType
 Map<::dart::math::SO3<S, Options>, Options>::quaternion()
 {
-  return m_data;
+  return QuaternionType(m_coeffs.data());
 }
 
 //==============================================================================
 template <typename S, int Options>
-const typename Map<::dart::math::SO3<S, Options>, Options>::Scalar*
-Map<::dart::math::SO3<S, Options>, Options>::data() const
+const typename Map<::dart::math::SO3<S, Options>, Options>::Coeffs&
+Map<::dart::math::SO3<S, Options>, Options>::coeffs() const
 {
-  return m_data.coeffs().data();
+  return m_coeffs;
 }
 
 //==============================================================================
 template <typename S, int Options>
-typename Map<::dart::math::SO3<S, Options>, Options>::Scalar*
-Map<::dart::math::SO3<S, Options>, Options>::data()
+typename Map<::dart::math::SO3<S, Options>, Options>::Coeffs&
+Map<::dart::math::SO3<S, Options>, Options>::coeffs()
 {
-  return m_data.coeffs().data();
+  return m_coeffs;
 }
 
 } // namespace Eigen
