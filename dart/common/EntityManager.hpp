@@ -32,17 +32,12 @@
 
 #pragma once
 
-#include <dart/collision/Export.hpp>
+#include <dart/common/IncludeEntt.hpp>
+#include <dart/common/allocator/StdAlignedAllocator.hpp>
 
-#include <dart/math/Fwd.hpp>
+namespace dart::common {
 
-namespace dart::collision {
+using Entity = ::entt::entity;
+using EntityManager = entt::basic_registry<Entity, StdAlignedAllocator<Entity>>;
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
-
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
-
-} // namespace dart::collision
+} // namespace dart::common

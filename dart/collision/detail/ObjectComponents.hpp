@@ -32,17 +32,49 @@
 
 #pragma once
 
-#include <dart/collision/Export.hpp>
+#include <dart/collision/Fwd.hpp>
 
-#include <dart/math/Fwd.hpp>
+#include <dart/math/bv/Aabb3.hpp>
+#include <dart/math/geometry/Sphere.hpp>
+#include <dart/math/geometry/TriMesh.hpp>
 
-namespace dart::collision {
+namespace dart::collision::detail {
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
+template <typename S>
+struct CompLocalAabb
+{
+  math::Aabb3<S> aabb;
+  bool dirty{true};
+};
 
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
+template <typename S>
+struct CompGlobalAabb
+{
+  math::Aabb3<S> aabb;
+  bool dirty{true};
+};
 
-} // namespace dart::collision
+template <typename S>
+struct CompSphere
+{
+  math::Sphere<S> sphere;
+};
+
+template <typename S>
+struct CompTriMesh
+{
+};
+
+} // namespace dart::collision::detail
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+#include <dart/common/Macros.hpp>
+
+namespace dart::collision::detail {
+
+//==============================================================================
+
+} // namespace dart::collision::detail

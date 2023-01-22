@@ -32,17 +32,51 @@
 
 #pragma once
 
-#include <dart/collision/Export.hpp>
+#include <dart/common/Fwd.hpp>
+#include <dart/common/allocator/Allocator.hpp>
 
-#include <dart/math/Fwd.hpp>
+namespace dart::common {
 
-namespace dart::collision {
+template <typename BaseType_>
+class BasePtrArray
+{
+public:
+  using BaseType = BaseType_;
+  using BaseTypePtr = BaseType*;
+  using ConstBaseTypePtr = const BaseType*;
+};
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
+template <typename BaseType_, typename DerivedType_>
+class DerivedPtrArray final : public BasePtrArray<BaseType_>
+{
+public:
+  using BaseType = BaseType_;
+  using BaseTypePtr = BaseType*;
+  using ConstBaseTypePtr = const BaseType*;
 
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
+  using DerivedType = DerivedType_;
+  using DerivedTypePtr = DerivedType*;
+  using ConstDerivedTypePtr = const DerivedType*;
 
-} // namespace dart::collision
+  explicit DerivedPtrArray(Allocator& allocator = Allocator::GetDefault());
+
+private:
+  Allocator& m_allocator;
+};
+
+} // namespace dart::common
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::common {
+
+template <typename BaseType, typename DerivedType>
+DerivedPtrArray<BaseType, DerivedType>::DerivedPtrArray(Allocator& allocator)
+  : m_allocator(allocator)
+{
+  // Do nothing
+}
+
+} // namespace dart::common

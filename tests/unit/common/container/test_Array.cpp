@@ -30,19 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/common/common.hpp"
 
-#include <dart/collision/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/math/Fwd.hpp>
+using namespace dart;
+using namespace common;
 
-namespace dart::collision {
+namespace {
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
+struct MyBase
+{
+  int base_int{1};
+};
 
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
+struct MyDerived : MyBase
+{
+  int derived_int{-1};
+};
 
-} // namespace dart::collision
+} // namespace
+
+//==============================================================================
+GTEST_TEST(PtrArrayTest, Basics)
+{
+  DerivedPtrArray<MyBase, MyDerived> array;
+  (void)array;
+}

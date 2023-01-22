@@ -30,19 +30,62 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/common/common.hpp"
 
-#include <dart/collision/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/math/Fwd.hpp>
+using namespace dart;
+using namespace common;
 
-namespace dart::collision {
+namespace {
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
+struct position
+{
+  float x;
+  float y;
+};
 
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
+struct velocity
+{
+  float dx;
+  float dy;
+};
 
-} // namespace dart::collision
+} // namespace
+
+//==============================================================================
+TEST(EntityManagerTest, Basics)
+{
+  AlignedAllocatorRaw alloc = AlignedAllocatorRaw();
+
+  auto registry = EntityManager(alloc);
+  (void)registry;
+
+  auto view = registry.view<const position, velocity>();
+
+  // use a callback
+  view.each([](const auto& pos, auto& vel) {
+    (void)pos;
+    (void)vel;
+  });
+
+  // use an extended callback
+  view.each([](const auto entity, const auto& pos, auto& vel) {
+    (void)entity;
+    (void)pos;
+    (void)vel;
+  });
+
+  // use a range-for
+  for (auto [entity, pos, vel] : view.each()) {
+    (void)entity;
+    (void)pos;
+    (void)vel;
+  }
+
+  // use forward iterators and get only the components of interest
+  for (auto entity : view) {
+    auto& vel = view.get<velocity>(entity);
+    (void)vel;
+  }
+}

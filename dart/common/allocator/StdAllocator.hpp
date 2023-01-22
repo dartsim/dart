@@ -97,6 +97,12 @@ public:
   /// Destructor
   ~StdAllocator() = default;
 
+  /// Copy assignment operator
+  StdAllocator& operator=(const StdAllocator& other);
+
+  /// Move assignment operator
+  StdAllocator& operator=(StdAllocator&& other);
+
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
   /// \param[in] n: The number of objects to allocate storage for.
@@ -127,7 +133,7 @@ public:
 private:
   template <typename U>
   friend class StdAllocator;
-  Allocator& mBaseAllocator;
+  Allocator& m_base_allocator;
 };
 
 } // namespace dart::common

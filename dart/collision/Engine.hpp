@@ -32,95 +32,110 @@
 
 #pragma once
 
-#include <dart/common/Logging.hpp>
+#include <dart/collision/Fwd.hpp>
+
+#include <dart/common/EntityManager.hpp>
+#include <dart/common/allocator/AlignedAllocator.hpp>
+#include <dart/common/allocator/Allocator.hpp>
 #include <dart/common/allocator/StdAllocator.hpp>
 
-namespace dart::common {
+namespace dart::collision {
+
+template <typename S = double>
+class Engine
+{
+public:
+  using Scalar = S;
+
+  explicit Engine(
+      common::EntityManager* entity_manager = nullptr,
+      common::Allocator& base_allocator = common::Allocator::GetDefault());
+
+  virtual ~Engine();
+
+  Scene<S>* createScene();
+
+  const common::EntityManager* getEntityManager() const;
+
+  common::EntityManager* getEntityManager();
+
+  common::Allocator& getAllocator();
+
+private:
+  common::EntityManager* m_entity_manager{nullptr};
+  common::Allocator& m_allocator;
+  std::vector<Scene<S>*, common::StdAllocator<Scene<S>*>> m_scenes;
+  bool m_owns_entity_manager{false};
+};
+
+} // namespace dart::collision
 
 //==============================================================================
-template <typename T>
-StdAllocator<T>::StdAllocator(Allocator& base_allocator) noexcept
-  : m_base_allocator(base_allocator)
+// Implementation
+//==============================================================================
+
+namespace dart::collision {
+
+//==============================================================================
+template <typename S>
+Engine<S>::Engine(
+    common::EntityManager* entity_manager, common::Allocator& base_allocator)
+  : m_entity_manager(entity_manager), m_allocator(base_allocator)
 {
-  // Do nothing
+  if (!m_entity_manager) {
+    m_owns_entity_manager = true;
+    m_entity_manager = base_allocator.construct<common::EntityManager>();
+  }
 }
 
 //==============================================================================
-template <typename T>
-StdAllocator<T>::StdAllocator(const StdAllocator& other) throw()
-  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+template <typename S>
+Engine<S>::~Engine()
 {
-  // Do nothing
+  for (auto scene : m_scenes) {
+    m_allocator.destroy(scene);
+  }
+  m_scenes.clear();
+
+  if (m_owns_entity_manager) {
+    m_allocator.destroy(m_entity_manager);
+    m_entity_manager = nullptr;
+    m_owns_entity_manager = false;
+  }
 }
 
 //==============================================================================
-template <typename T>
-template <class U>
-StdAllocator<T>::StdAllocator(const StdAllocator<U>& other) throw()
-  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
+template <typename S>
+Scene<S>* Engine<S>::createScene()
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-StdAllocator<T>& StdAllocator<T>::operator=(const StdAllocator& other)
-{
-  m_base_allocator = other.m_base_allocator;
-  return *this;
-}
-
-//==============================================================================
-template <typename T>
-StdAllocator<T>& StdAllocator<T>::operator=(StdAllocator&& other)
-{
-  m_base_allocator = std::move(other.m_base_allocator);
-  return *this;
-}
-
-//==============================================================================
-template <typename T>
-typename StdAllocator<T>::pointer StdAllocator<T>::allocate(
-    size_type n, const void* hint)
-{
-  (void)hint;
-  pointer ptr
-      = reinterpret_cast<pointer>(m_base_allocator.allocate(n * sizeof(T)));
-
-  // Throw std::bad_alloc to comply 23.10.9.1
-  // Reference: https://stackoverflow.com/a/50326956/3122234
-  if (!ptr) {
-    throw std::bad_alloc();
+  auto scene = m_allocator.template construct<Scene<Scalar>>(this);
+  if (!scene) {
+    return nullptr;
   }
 
-  return ptr;
+  m_scenes.push_back(scene);
+  return scene;
 }
 
 //==============================================================================
-template <typename T>
-void StdAllocator<T>::deallocate(pointer pointer, size_type n)
+template <typename S>
+const common::EntityManager* Engine<S>::getEntityManager() const
 {
-  m_base_allocator.deallocate(pointer, n * sizeof(T));
+  return m_entity_manager;
 }
 
 //==============================================================================
-template <typename T>
-void StdAllocator<T>::print(std::ostream& os, int indent) const
+template <typename S>
+common::EntityManager* Engine<S>::getEntityManager()
 {
-  if (indent == 0) {
-    os << "[dart::common::StdAllocator]\n";
-  }
-  const std::string spaces(indent, ' ');
-  os << spaces << "base_allocator:\n";
-  m_base_allocator.print(os, indent + 2);
+  return m_entity_manager;
 }
 
 //==============================================================================
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const StdAllocator<T>& allocator)
+template <typename S>
+common::Allocator& Engine<S>::getAllocator()
 {
-  allocator.print(os);
-  return os;
+  return m_allocator;
 }
 
-} // namespace dart::common
+} // namespace dart::collision

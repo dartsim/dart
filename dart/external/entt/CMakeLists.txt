@@ -6,8 +6,12 @@
 #
 # This file is provided under the "BSD-style" License
 
-add_subdirectory(convhull_3d)
-add_subdirectory(entt)
-add_subdirectory(imgui)
-add_subdirectory(ikfast)
-add_subdirectory(odelcpsolver)
+# Search all header and source files
+file(GLOB hdrs "*.h")
+
+# Install
+install(
+  FILES ${hdrs}
+  DESTINATION include/${org_name}/${PROJECT_NAME}${DART_MAJOR_VERSION}/${PROJECT_NAME}/external/entt
+  COMPONENT headers
+)

@@ -40,8 +40,8 @@ namespace dart::common {
 //==============================================================================
 template <typename T>
 StdAlignedAllocator<T>::StdAlignedAllocator(
-    AlignedAllocator& baseAllocator) noexcept
-  : mBaseAllocator(baseAllocator)
+    AlignedAllocator& base_allocator) noexcept
+  : m_base_allocator(base_allocator)
 {
   // Do nothing
 }
@@ -50,7 +50,7 @@ StdAlignedAllocator<T>::StdAlignedAllocator(
 template <typename T>
 StdAlignedAllocator<T>::StdAlignedAllocator(
     const StdAlignedAllocator& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
 {
   // Do nothing
 }
@@ -60,9 +60,27 @@ template <typename T>
 template <class U>
 StdAlignedAllocator<T>::StdAlignedAllocator(
     const StdAlignedAllocator<U>& other) throw()
-  : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
+  : std::allocator<T>(other), m_base_allocator(other.m_base_allocator)
 {
   // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+StdAlignedAllocator<T>& StdAlignedAllocator<T>::operator=(
+    const StdAlignedAllocator& other)
+{
+  m_base_allocator = other.m_base_allocator;
+  return *this;
+}
+
+//==============================================================================
+template <typename T>
+StdAlignedAllocator<T>& StdAlignedAllocator<T>::operator=(
+    StdAlignedAllocator&& other)
+{
+  m_base_allocator = std::move(other.m_base_allocator);
+  return *this;
 }
 
 //==============================================================================
@@ -72,7 +90,7 @@ typename StdAlignedAllocator<T>::pointer StdAlignedAllocator<T>::allocate(
 {
   (void)hint;
   pointer ptr = reinterpret_cast<pointer>(
-      mBaseAllocator.allocate(n * sizeof(T), alignof(T)));
+      m_base_allocator.allocate(n * sizeof(T), alignof(T)));
 
   // Throw std::bad_alloc to comply 23.10.9.1
   // Reference: https://stackoverflow.com/a/50326956/3122234
@@ -87,7 +105,7 @@ typename StdAlignedAllocator<T>::pointer StdAlignedAllocator<T>::allocate(
 template <typename T>
 void StdAlignedAllocator<T>::deallocate(pointer pointer, size_type n)
 {
-  mBaseAllocator.deallocate(pointer, n * sizeof(T));
+  m_base_allocator.deallocate(pointer, n * sizeof(T));
 }
 
 //==============================================================================
@@ -99,7 +117,7 @@ void StdAlignedAllocator<T>::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "base_allocator:\n";
-  mBaseAllocator.print(os, indent + 2);
+  m_base_allocator.print(os, indent + 2);
 }
 
 //==============================================================================

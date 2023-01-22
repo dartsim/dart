@@ -99,6 +99,12 @@ public:
   /// Destructor
   ~StdAlignedAllocator() = default;
 
+  /// Copy assignment operator
+  StdAlignedAllocator& operator=(const StdAlignedAllocator& other);
+
+  /// Move assignment operator
+  StdAlignedAllocator& operator=(StdAlignedAllocator&& other);
+
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
   /// \param[in] n: The number of objects to allocate storage for.

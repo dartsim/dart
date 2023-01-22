@@ -30,19 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/collision/collision.hpp"
 
-#include <dart/collision/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/math/Fwd.hpp>
+using namespace dart;
+using namespace collision;
 
-namespace dart::collision {
+//==============================================================================
+TEST(EngineTest, Basics)
+{
+  auto engine = Engine();
+  (void)engine;
 
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
+  auto scene = engine.createScene();
+  EXPECT_NE(scene, nullptr);
 
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
+  auto object = scene->createObject<math::Sphere<double>>(1.5);
+  EXPECT_NE(object, nullptr);
 
-} // namespace dart::collision
+  scene->update();
+}

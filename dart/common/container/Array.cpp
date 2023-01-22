@@ -30,19 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/common/container/Array.hpp"
 
-#include <dart/collision/Export.hpp>
+namespace dart::common {
 
-#include <dart/math/Fwd.hpp>
-
-namespace dart::collision {
-
-DART_DECLARE_CLASS_POINTERS_S(Engine);
-DART_DECLARE_CLASS_POINTERS_S(Scene);
-DART_DECLARE_CLASS_POINTERS_S(Object);
-
-template <typename S, typename T>
-class ObjectGeometryEmbedded;
-
-} // namespace dart::collision
+} // namespace dart::common
