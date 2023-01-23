@@ -395,6 +395,27 @@ TYPED_TEST(SO3Test, MoveAssignmentOperator)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, Multiplication)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Set arbitrary values for se3_1 and se3_2
+  SO3<S> x1 = SO3<S>::Random();
+  SO3<S> x2 = SO3<S>::Random();
+
+  // Test operator* for SE3Base
+  SO3<S> result = x1 * x2;
+  // Assert that the result is as expected
+  EXPECT_TRUE(result.toMatrix().isApprox(x1.toMatrix() * x2.toMatrix()));
+
+  // Test operator* for Vector3
+  Vector3<S> vec = Vector3<S>::Random(); // Set arbitrary value for vec
+  Vector3<S> result_vec = x1 * vec;
+  // Assert that the result is as expected
+  EXPECT_TRUE(result_vec.isApprox(x1.toMatrix() * vec));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, ToMatrix)
 {
   using S = typename TestFixture::Scalar;

@@ -428,6 +428,30 @@ TYPED_TEST(SE3Test, MoveAssignmentOperator)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, Multiplication)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Set arbitrary values for se3_1 and se3_2
+  SE3<S> x1 = SE3<S>::Random();
+  SE3<S> x2 = SE3<S>::Random();
+
+  // Test operator* for SE3Base
+  SE3<S> result = x1 * x2;
+  // Assert that the result is as expected
+  EXPECT_EQ(result.rotation(), x1.rotation() * x2.rotation());
+  EXPECT_EQ(
+      result.translation(),
+      x1.translation() + x1.rotation() * x2.translation());
+
+  // Test operator* for Vector3
+  Vector3<S> vec = Vector3<S>::Random(); // Set arbitrary value for vec
+  Vector3<S> result_vec = x1 * vec;
+  // Assert that the result is as expected
+  EXPECT_EQ(result_vec, x1.translation() + x1.rotation() * vec);
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, MapConstructor)
 {
   using S = typename TestFixture::Scalar;

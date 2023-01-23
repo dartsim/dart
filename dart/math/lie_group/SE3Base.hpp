@@ -57,8 +57,25 @@ public:
   using Base::coeffs;
   using Base::derived;
 
+  /**
+   * @brief Group multiplication operator
+   * 
+   * @tparam OtherDerived The type of the other SE3 point
+   * @param[in] other: The other SE3 point
+   * @return PlainObject The result of the multiplication
+   */
   template <typename OtherDerived>
   PlainObject operator*(const SE3Base<OtherDerived>& other) const;
+
+  /**
+   * @brief Vector multiplication operator
+   * 
+   * @tparam OtherDerived The type of the other SE3 point
+   * @param[in] other: The other SE3 point
+   * @return PlainObject& The result of the multiplication
+   */
+  template <typename MatrixDerived>
+  Vector3<Scalar> operator*(const MatrixBase<MatrixDerived>& vec) const;
 
   /**
    * Returns the inverse of this SO3.
@@ -144,6 +161,15 @@ typename SE3Base<Derived>::PlainObject SE3Base<Derived>::operator*(
   const Eigen::Map<const SO3<Scalar>>& o = rotation();
   return PlainObject(
       o * other.rotation(), o * other.translation() + translation());
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Vector3<typename SE3Base<Derived>::Scalar> SE3Base<Derived>::operator*(
+    const MatrixBase<MatrixDerived>& vec) const
+{
+  return rotation() * vec + translation();
 }
 
 //==============================================================================
