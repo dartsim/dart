@@ -42,6 +42,8 @@ template <typename Derived>
 class LieGroupBase
 {
 public:
+  static constexpr int CoeffsDim
+      = ::Eigen::internal::traits<Derived>::CoeffsDim;
   using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;
   using Coeffs = typename ::Eigen::internal::traits<Derived>::Coeffs;
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;

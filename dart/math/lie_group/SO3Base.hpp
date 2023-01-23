@@ -45,6 +45,7 @@ public:
   using Base = LieGroupBase<Derived>;
 
   // LieGroupBase types
+  using Base::CoeffsDim;
   using Scalar = typename Base::Scalar;
   using Coeffs = typename Base::Coeffs;
   using PlainObject = typename Base::PlainObject;

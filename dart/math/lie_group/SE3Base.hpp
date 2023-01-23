@@ -45,6 +45,7 @@ public:
   using Base = LieGroupBase<Derived>;
 
   // LieGroupBase types
+  using Base::CoeffsDim;
   using Scalar = typename Base::Scalar;
   using Coeffs = typename Base::Coeffs;
   using PlainObject = typename Base::PlainObject;
@@ -59,7 +60,7 @@ public:
 
   /**
    * @brief Group multiplication operator
-   * 
+   *
    * @tparam OtherDerived The type of the other SE3 point
    * @param[in] other: The other SE3 point
    * @return PlainObject The result of the multiplication
@@ -69,7 +70,7 @@ public:
 
   /**
    * @brief Vector multiplication operator
-   * 
+   *
    * @tparam OtherDerived The type of the other SE3 point
    * @param[in] other: The other SE3 point
    * @return PlainObject& The result of the multiplication

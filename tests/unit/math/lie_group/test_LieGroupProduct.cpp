@@ -30,14 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/math/LieGroups.hpp"
+#include "dart/test/math/GTestUtils.hpp"
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
+#include <gtest/gtest.h>
 
-#include <dart/math/lie_group/LieGroupProduct.hpp>
-#include <dart/math/lie_group/SE3.hpp>
-#include <dart/math/lie_group/SE3Map.hpp>
-#include <dart/math/lie_group/SO3.hpp>
-#include <dart/math/lie_group/SO3Map.hpp>
+using namespace dart;
+using namespace math;
+
+namespace {
+
+} // namespace
+
+template <typename S>
+struct LieGroupProductTest : public testing::Test
+{
+  using Scalar = S;
+};
+
+using Types = testing::Types<float, double>;
+TYPED_TEST_SUITE(LieGroupProductTest, Types);
+
+//==============================================================================
+TYPED_TEST(LieGroupProductTest, Identity)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3<S> se3_1;
+  SO3<S> so3_1;
+  auto p1 = LieGroupProduct<S, SE3, SO3>();
+  EXPECT_EQ(p1.CoeffsDim, se3_1.CoeffsDim + so3_1.CoeffsDim);
+}

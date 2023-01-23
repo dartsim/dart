@@ -32,12 +32,40 @@
 
 #pragma once
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
+#include <dart/math/lie_group/LieGroupBase.hpp>
 
-#include <dart/math/lie_group/LieGroupProduct.hpp>
-#include <dart/math/lie_group/SE3.hpp>
-#include <dart/math/lie_group/SE3Map.hpp>
-#include <dart/math/lie_group/SO3.hpp>
-#include <dart/math/lie_group/SO3Map.hpp>
+namespace dart::math {
+
+/// @brief Base class for LieGroupProduct
+/// @tparam Derived The derived class
+template <typename Derived>
+class LieGroupProductBase : public LieGroupBase<Derived>
+{
+public:
+  using Base = LieGroupBase<Derived>;
+
+  // LieGroupBase types
+  using Scalar = typename Base::Scalar;
+  using Coeffs = typename Base::Coeffs;
+  using PlainObject = typename Base::PlainObject;
+  using MatrixType = typename Base::MatrixType;
+  using Tangent = typename Base::Tangent;
+
+  using Base::Tolerance;
+
+  using Base::operator=;
+  using Base::coeffs;
+  using Base::derived;
+};
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+
+} // namespace dart::math
