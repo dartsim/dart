@@ -47,7 +47,7 @@
 // so it's recommended to add Doxygen comments to the APIs defined in the macro.
 //
 // The macro name may change until it is finalized.
-#define DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(CLASS_NAME)                      \
+#define DART_LIEGROUP_CONSTRUCTORS(CLASS_NAME)                                 \
   /**                                                                          \
    * Copy constructor                                                          \
    * @param[in] other The other element to be copied                           \
@@ -139,7 +139,14 @@
   }                                                                            \
   static_assert(true, "")
 
-#define DART_DEFINE_CONSTRUCTORS_FOR_TANGENT(CLASS_NAME)                       \
+#define DART_TANGENT_DEFAULT_CONSTRUCTOR(CLASS_NAME)                           \
+  CLASS_NAME() : m_params(Params::Zero())                                      \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+  static_assert(true, "")
+
+#define DART_TANGENT_CONSTRUCTORS(CLASS_NAME)                                  \
   /**                                                                          \
    * Copy constructor                                                          \
    * @param[in] other The other element to be copied                           \

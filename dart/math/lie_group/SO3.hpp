@@ -182,7 +182,7 @@ public:
   /// later.
   explicit SO3(NoInitializeTag);
 
-  DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(SO3);
+  DART_LIEGROUP_CONSTRUCTORS(SO3);
 
   /// Constructs an SO3 from a quaternion
   template <typename QuaternionDrived>

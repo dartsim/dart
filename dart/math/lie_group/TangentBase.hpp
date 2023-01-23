@@ -69,10 +69,10 @@ public:
 
   /// @}
 
+  [[nodiscard]] static Tangent Zero();
+
   /// Returns a random element of the tangent of the Lie group
   [[nodiscard]] static Tangent Random();
-
-  // TODO(JS): Add Zero()
 
   template <typename OtherDerived>
   Derived& operator=(const TangentBase<OtherDerived>& other);
@@ -133,17 +133,17 @@ public:
   template <typename OtherDerived>
   [[nodiscard]] Tangent ad(const TangentBase<OtherDerived>& other) const;
 
-  [[nodiscard]] bool isZero(Scalar tol) const;
+  [[nodiscard]] bool isZero(Scalar tol = LieGroupTol<Scalar>()) const;
 
   template <typename OtherDerived>
   [[nodiscard]] bool isApprox(
       const TangentBase<OtherDerived>& other,
-      Scalar tol = LieGroupTol<Scalar>());
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   template <typename MatrixDerived>
   [[nodiscard]] bool isApprox(
       const Eigen::MatrixBase<MatrixDerived>& mat,
-      Scalar tol = LieGroupTol<Scalar>());
+      Scalar tol = LieGroupTol<Scalar>()) const;
   [[nodiscard]] auto operator[](int i) const;
 
   [[nodiscard]] auto operator[](int i);
@@ -166,6 +166,13 @@ public:
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::Zero()
+{
+  return Tangent(Params::Zero());
+}
 
 //==============================================================================
 template <typename Derived>
@@ -280,7 +287,7 @@ bool TangentBase<Derived>::isZero(Scalar tol) const
 template <typename Derived>
 template <typename OtherDerived>
 bool TangentBase<Derived>::isApprox(
-    const TangentBase<OtherDerived>& other, Scalar tol)
+    const TangentBase<OtherDerived>& other, Scalar tol) const
 {
   return isApprox(other.params(), tol);
 }
@@ -289,7 +296,7 @@ bool TangentBase<Derived>::isApprox(
 template <typename Derived>
 template <typename MatrixDerived>
 bool TangentBase<Derived>::isApprox(
-    const Eigen::MatrixBase<MatrixDerived>& mat, Scalar tol)
+    const Eigen::MatrixBase<MatrixDerived>& mat, Scalar tol) const
 {
   return params().isApprox(mat, tol);
 }

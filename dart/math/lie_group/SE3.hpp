@@ -157,7 +157,7 @@ public:
   /// translation are going to be initialized later.
   explicit SE3(NoInitializeTag);
 
-  DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(SE3);
+  DART_LIEGROUP_CONSTRUCTORS(SE3);
 
   /// Constructs an SE3 from a rotation (or SE(3)) and a translation (or R(3))
   ///

@@ -46,3 +46,4 @@
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Map.hpp>
 #include <dart/math/lie_group/SO3Tangent.hpp>
+#include <dart/math/lie_group/SpatialInertia.hpp>

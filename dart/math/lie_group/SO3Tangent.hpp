@@ -72,7 +72,9 @@ public:
   using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
-  DART_DEFINE_CONSTRUCTORS_FOR_TANGENT(SO3Tangent);
+  DART_TANGENT_DEFAULT_CONSTRUCTOR(SO3Tangent);
+
+  DART_TANGENT_CONSTRUCTORS(SO3Tangent);
 
   explicit SO3Tangent(Scalar w0, Scalar w1, Scalar w2)
     : Base(), m_params(w0, w1, w2)
