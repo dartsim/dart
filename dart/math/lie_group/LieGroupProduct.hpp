@@ -38,19 +38,41 @@ namespace Eigen::internal {
 
 // TODO(JS): Move to a dedicated header file
 /// @brief Specialization of Eigen::internal::traits for LieGroupProduct
-template <typename S, template <typename, int> class... T>
+template <typename S, template <typename> class... T>
 struct traits<::dart::math::LieGroupProduct<S, T...>>
 {
-  static constexpr std::array<int, sizeof...(T)> CoeffsDimIdx
-      = {T<S, 0>::CoeffsDim...};
-
-  static constexpr int CoeffsDim = (T<S, 0>::CoeffsDim + ...);
-
   using Scalar = S;
-  using Coeffs = ::Eigen::Matrix<S, CoeffsDim, 1>;
+
+  // LieGroupProduct specifics
+  static constexpr std::size_t ProductSize = sizeof...(T);
+  static constexpr auto ParamSizeIndices
+      = ::dart::math::detail::GetIndices<T<S>::ParamSize...>();
+  using Components = std::tuple<T<S>...>;
+  template <std::size_t Index>
+  using Component = typename std::tuple_element<Index, Components>::type;
+  template <std::size_t Index>
+  using ComponentMap = ::Eigen::Map<Component<Index>>;
+  template <std::size_t Index>
+  using ConstComponentMap = ::Eigen::Map<const Component<Index>>;
+
+  // LieGroup common
+#if defined(_MSC_VER)
+  static constexpr int ParamSize
+      = ::dart::math::detail::Sum(T<S>::ParamSize...);
+  static constexpr int Dim = ::dart::math::detail::Sum(T<S>::Dim...);
+  static constexpr int DoF = ::dart::math::detail::Sum(T<S>::DoF...);
+  static constexpr int MatrixDim
+      = ::dart::math::detail::Sum(T<S>::MatrixDim...);
+#else
+  static constexpr int ParamSize = (T<S>::ParamSize + ...);
+  static constexpr int Dim = (T<S>::Dim + ...);
+  static constexpr int DoF = (T<S>::DoF + ...);
+  static constexpr int MatrixDim = (T<S>::DoF + ...);
+#endif
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using PlainObject = ::dart::math::LieGroupProduct<S, T...>;
-  using MatrixType = ::Eigen::Matrix<S, 3, 3>;
-  using Tangent = ::Eigen::Matrix<S, 3, 1>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using Tangent = ::Eigen::Matrix<S, Dim, 1>;
 };
 
 } // namespace Eigen::internal
@@ -61,16 +83,27 @@ namespace dart::math {
 /// LieGroupProduct
 /// @tparam S The scalar type
 /// @tparam Options_ The options for the underlying Eigen::Matrix
-template <typename S, template <typename, int> class... T>
+template <typename S, template <typename> class... T>
 class LieGroupProduct : public LieGroupProductBase<LieGroupProduct<S, T...>>
 {
 public:
   using Base = LieGroupProductBase<LieGroupProduct<S, T...>>;
-
-  // LieGroupBase types
-  static constexpr int CoeffsDim = Base::CoeffsDim;
+  using This = LieGroupProduct<S, T...>;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroupProduct specifics
+  static constexpr std::size_t ProductSize = Base::ProductSize;
+  static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
+  using Components = typename Base::Components;
+  template <std::size_t Index>
+  using Component = typename Base::template Component<Index>;
+  template <size_t Index>
+  using ComponentMap = typename Base::template ComponentMap<Index>;
+  template <size_t Index>
+  using ConstComponentMap = typename Base::template ConstComponentMap<Index>;
+
+  // LieGroup common
+  using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
@@ -80,15 +113,37 @@ public:
   /// Default constructor that initializes the quaternion to identity
   LieGroupProduct();
 
-  /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] const Coeffs& coeffs() const;
+  /// Constructs a LieGroupProduct from the given components
+  ///
+  /// @param[in] components The components of the LieGroupProduct. The numer and
+  /// order of components must match the template parameters.
+  LieGroupProduct(const T<S>&... components);
+
+  /// Constructs a LieGroupProduct from the given components
+  ///
+  /// @param[in] components The components of the LieGroupProduct. The numer and
+  /// order of components must match the template parameters.
+  LieGroupProduct(T<S>&&... components);
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] Coeffs& coeffs();
+  [[nodiscard]] const Params& params() const;
+
+  /// Returns the coefficients of the underlying quaternion
+  [[nodiscard]] Params& params();
 
 private:
+#if defined(_MSC_VER)
+  template <std::size_t... Index_>
+  LieGroupProduct(detail::int_sequence<Index_...>);
+
+  template <std::size_t... Index_>
+  LieGroupProduct(detail::int_sequence<Index_...>, const T<S>&... components);
+
+  template <std::size_t... Index_>
+  LieGroupProduct(detail::int_sequence<Index_...>, T<S>&&... components);
+#endif
   /// The underlying quaternion coefficients
-  Coeffs m_coeffs;
+  Params m_params;
 };
 
 } // namespace dart::math
@@ -99,27 +154,119 @@ private:
 
 namespace dart::math {
 
+#if defined(_MSC_VER)
 //==============================================================================
-template <typename S, template <typename, int> class... T>
+template <typename S, template <typename> class... T>
 LieGroupProduct<S, T...>::LieGroupProduct()
-  : m_coeffs(Coeffs::Zero()) // TODO(JS): Get coeffs their identities
+  : LieGroupProduct(detail::make_int_sequence<ProductSize>{})
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, template <typename, int> class... T>
-const typename LieGroupProduct<S, T...>::Coeffs&
-LieGroupProduct<S, T...>::coeffs() const
+template <typename S, template <typename> class... T>
+template <std::size_t... Index_>
+LieGroupProduct<S, T...>::LieGroupProduct(detail::int_sequence<Index_...>)
 {
-  return m_coeffs;
+  (void)(std::initializer_list<int>{
+      ((m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
+        = Component<Index_>::Identity().params()),
+       0)...});
 }
 
 //==============================================================================
-template <typename S, template <typename, int> class... T>
-typename LieGroupProduct<S, T...>::Coeffs& LieGroupProduct<S, T...>::coeffs()
+template <typename S, template <typename> class... T>
+LieGroupProduct<S, T...>::LieGroupProduct(const T<S>&... components)
+  : LieGroupProduct(detail::make_int_sequence<ProductSize>{}, components...)
 {
-  return m_coeffs;
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+template <std::size_t... Index_>
+LieGroupProduct<S, T...>::LieGroupProduct(
+    detail::int_sequence<Index_...>, const T<S>&... components)
+{
+  (void)(std::initializer_list<int>{
+      ((m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
+        = components.params()),
+       0)...});
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+LieGroupProduct<S, T...>::LieGroupProduct(T<S>&&... components)
+  : LieGroupProduct(
+      detail::make_int_sequence<ProductSize>{},
+      std::forward<T<S>...>(components)...)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+template <std::size_t... Index_>
+LieGroupProduct<S, T...>::LieGroupProduct(
+    detail::int_sequence<Index_...>, T<S>&&... components)
+{
+  (void)(std::initializer_list<int>{
+      ((m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
+        = std::move(components.params())),
+       0)...});
+}
+#else
+//==============================================================================
+template <typename S, template <typename> class... T>
+LieGroupProduct<S, T...>::LieGroupProduct()
+{
+  auto assign = [&](auto&& arg, std::size_t index) {
+    m_params.template segment<arg.ParamSize>(index) = arg.params();
+  };
+  std::apply(
+      [&](auto... i) { (assign(T<S>::Identity(), i), ...); }, ParamSizeIndices);
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+LieGroupProduct<S, T...>::LieGroupProduct(const T<S>&... components)
+{
+  auto assign = [&](const auto& arg, std::size_t index) {
+    m_params.template segment<arg.ParamSize>(index) = arg.params();
+  };
+  std::apply(
+      [&](auto... i) { (assign(components, i), ...); }, ParamSizeIndices);
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+LieGroupProduct<S, T...>::LieGroupProduct(T<S>&&... components)
+{
+  auto assign = [&](auto&& arg, std::size_t index) {
+    m_params.template segment<arg.ParamSize>(index) = std::move(arg.params());
+  };
+  std::apply(
+      [&](auto... i) { (assign(std::move(components), i), ...); },
+      ParamSizeIndices);
+}
+#endif
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+const typename LieGroupProduct<S, T...>::Params&
+LieGroupProduct<S, T...>::params() const
+{
+  return m_params;
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+typename LieGroupProduct<S, T...>::Params& LieGroupProduct<S, T...>::params()
+{
+  return m_params;
 }
 
 } // namespace dart::math

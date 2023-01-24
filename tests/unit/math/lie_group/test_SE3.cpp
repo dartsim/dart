@@ -141,9 +141,9 @@ TYPED_TEST(SE3Test, Random)
 
   SE3<S> x = SE3<S>::Random();
   EXPECT_GE(x.rotation().quaternion().norm(), 0)
-      << "quat_coeffs: " << x.rotation().quaternion().coeffs().transpose();
+      << "quat_params: " << x.rotation().quaternion().coeffs().transpose();
   EXPECT_LE(x.rotation().quaternion().norm(), 1)
-      << "quat_coeffs: " << x.rotation().quaternion().coeffs().transpose();
+      << "quat_params: " << x.rotation().quaternion().coeffs().transpose();
   EXPECT_TRUE(x.rotation().toMatrix().determinant() > 0);
 }
 
@@ -459,11 +459,11 @@ TYPED_TEST(SE3Test, MapConstructor)
   // Test the constructor for the const specialization
   S data[] = {1, 0, 0, 0, 1, 2, 3};
   ::Eigen::Map<const SE3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.coeffs().data(), data);
+  EXPECT_EQ(const_map.params().data(), data);
 
   // Test the constructor for the non-const specialization
   Map<SE3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.coeffs().data(), data);
+  EXPECT_EQ(nonconst_map.params().data(), data);
 }
 
 //==============================================================================
@@ -473,10 +473,10 @@ TYPED_TEST(SE3Test, TestDataAccess)
 
   S data[] = {1, 0, 0, 0, 1, 2, 3};
   Map<const SE3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.coeffs().data(), data);
+  EXPECT_EQ(const_map.params().data(), data);
 
   Map<SE3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.coeffs().data(), data);
+  EXPECT_EQ(nonconst_map.params().data(), data);
 
   // Modify the underlying data
   data[1] = 1.0;
@@ -488,18 +488,18 @@ TYPED_TEST(SE3Test, TestDataAccess)
 
   // Check that the modifications are visible through the non-const Map
   for (int i = 0; i < 7; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 
   // Check that the modifications are visible even through the const Map
   for (int i = 0; i < 7; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 
   // Modify the data through the non-const Map
   nonconst_map = SE3<S>::Random();
   for (int i = 0; i < 7; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 }

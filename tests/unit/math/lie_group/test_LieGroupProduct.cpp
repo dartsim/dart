@@ -52,12 +52,66 @@ using Types = testing::Types<float, double>;
 TYPED_TEST_SUITE(LieGroupProductTest, Types);
 
 //==============================================================================
-TYPED_TEST(LieGroupProductTest, Identity)
+TYPED_TEST(LieGroupProductTest, StaticProperties)
 {
   using S = typename TestFixture::Scalar;
 
-  SE3<S> se3_1;
-  SO3<S> so3_1;
-  auto p1 = LieGroupProduct<S, SE3, SO3>();
-  EXPECT_EQ(p1.CoeffsDim, se3_1.CoeffsDim + so3_1.CoeffsDim);
+  const auto total_param_size = LieGroupProduct<S, SE3, SO3>::ParamSize;
+  EXPECT_EQ(total_param_size, SE3<S>::ParamSize + SO3<S>::ParamSize);
+
+  const auto product_size = LieGroupProduct<S, SE3, SO3>::ProductSize;
+  EXPECT_EQ(product_size, 2);
+}
+
+//==============================================================================
+TYPED_TEST(LieGroupProductTest, DefaultConstructor)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3<S> se3 = SE3<S>::Random();
+  SO3<S> so3 = SO3<S>::Random();
+
+  // Default constructor
+  auto product = LieGroupProduct<S, SE3, SO3>();
+  EXPECT_EQ(product.ParamSize, se3.ParamSize + so3.ParamSize);
+
+  // Check if the components are their identieis
+  auto comp_0 = product.template get<0>();
+  EXPECT_EQ(comp_0, SE3<S>::Identity());
+  EXPECT_TRUE(comp_0.params().isApprox(SE3<S>::Identity().params()));
+  auto comp_1 = product.template get<1>();
+  EXPECT_EQ(comp_1, SO3<S>::Identity());
+  EXPECT_TRUE(comp_1.params().isApprox(SO3<S>::Identity().params()));
+}
+
+//==============================================================================
+TYPED_TEST(LieGroupProductTest, ConstructFromComponents)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3<S> se3 = SE3<S>::Random();
+  SO3<S> so3 = SO3<S>::Random();
+
+  // Copy constructor from the components
+  auto product = LieGroupProduct<S, SE3, SO3>(se3, so3);
+
+  // Check the parameters
+  int offset = 0;
+  EXPECT_TRUE(product.params()
+                  .template segment<SE3<S>::ParamSize>(offset)
+                  .eval()
+                  .isApprox(se3.params()));
+  offset += SE3<S>::ParamSize;
+  EXPECT_TRUE(product.params()
+                  .template segment<SO3<S>::ParamSize>(offset)
+                  .eval()
+                  .isApprox(so3.params()));
+
+  // Check the components
+  auto comp_0 = product.template get<0>();
+  EXPECT_EQ(comp_0, se3);
+  EXPECT_TRUE(comp_0.params().isApprox(se3.params()));
+  auto comp_1 = product.template get<1>();
+  EXPECT_EQ(comp_1, so3);
+  EXPECT_TRUE(comp_1.params().isApprox(so3.params()));
 }

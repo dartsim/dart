@@ -38,17 +38,20 @@ namespace Eigen::internal {
 
 // TODO(JS): Move to a dedicated header file
 /// @brief Specialization of Eigen::internal::traits for SO3
-template <typename S, int Options_>
-struct traits<::dart::math::SO3<S, Options_>>
+template <typename S>
+struct traits<::dart::math::SO3<S>>
 {
-  static constexpr int Options = Options_;
-  static constexpr int CoeffsDim = 4;
-
   using Scalar = S;
-  using Coeffs = ::Eigen::Matrix<S, CoeffsDim, 1, Options>;
-  using PlainObject = ::dart::math::SO3<S, Options_>;
-  using MatrixType = ::Eigen::Matrix<S, 3, 3>;
-  using Tangent = ::Eigen::Matrix<S, 3, 1>;
+
+  // LieGroup common
+  static constexpr int ParamSize = 4;
+  static constexpr int Dim = 3;
+  static constexpr int DoF = 3;
+  static constexpr int MatrixDim = 3;
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  using PlainObject = ::dart::math::SO3<S>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using Tangent = ::Eigen::Matrix<S, DoF, 1>;
 };
 
 } // namespace Eigen::internal
@@ -58,22 +61,22 @@ namespace dart::math {
 /// @brief SO3 is a specialization of LieGroupBase for SO3
 /// @tparam S The scalar type
 /// @tparam Options_ The options for the underlying Eigen::Matrix
-template <typename S, int Options_>
-class SO3 : public SO3Base<SO3<S, Options_>>
+template <typename S>
+class SO3 : public SO3Base<SO3<S>>
 {
 public:
-  using Base = SO3Base<SO3<S, Options_>>;
-
-  // LieGroupBase types
+  using Base = SO3Base<SO3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // SO3 specifics
+  using QuaternionType = typename Base::QuaternionType;
+  using ConstQuaternionType = typename Base::ConstQuaternionType;
+
+  // LieGroup types
+  using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
-
-  // SO3Base specific types
-  using QuaternionType = typename Base::QuaternionType;
-  using ConstQuaternionType = typename Base::ConstQuaternionType;
 
   /// @brief Tag for the constructor that does not normalize the quaternion
   enum NoNormalizeTag
@@ -324,14 +327,14 @@ public:
   using Base::quaternion;
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] const Coeffs& coeffs() const;
+  [[nodiscard]] const Params& params() const;
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] Coeffs& coeffs();
+  [[nodiscard]] Params& params();
 
 private:
   /// The underlying quaternion coefficients
-  Coeffs m_coeffs;
+  Params m_params;
 };
 
 DART_TEMPLATE_CLASS_HEADER(MATH, SO3);
@@ -345,23 +348,23 @@ DART_TEMPLATE_CLASS_HEADER(MATH, SO3);
 namespace dart::math {
 
 //==============================================================================
-template <typename S, int Options>
-typename SO3<S, Options>::PlainObject SO3<S, Options>::Identity()
+template <typename S>
+typename SO3<S>::PlainObject SO3<S>::Identity()
 {
   return SO3(::Eigen::Quaternion<S>::Identity(), NO_NORMALIZE);
 }
 
 //==============================================================================
-template <typename S, int Options>
-typename SO3<S, Options>::PlainObject SO3<S, Options>::Random()
+template <typename S>
+typename SO3<S>::PlainObject SO3<S>::Random()
 {
   return SO3(::Eigen::Quaternion<S>::UnitRandom());
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-typename SO3<S, Options>::PlainObject SO3<S, Options>::FromEulerAngles(
+typename SO3<S>::PlainObject SO3<S>::FromEulerAngles(
     const Eigen::MatrixBase<MatrixDerived>& angles,
     int axis0,
     int axis1,
@@ -380,30 +383,28 @@ typename SO3<S, Options>::PlainObject SO3<S, Options>::FromEulerAngles(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-SO3<S, Options> SO3<S, Options>::Exp(
-    const Eigen::MatrixBase<MatrixDerived>& dx, S tol)
+SO3<S> SO3<S>::Exp(const Eigen::MatrixBase<MatrixDerived>& dx, S tol)
 {
   const S theta = dx.norm();
   if (theta < tol) {
     const Tangent vec = 0.5 * dx;
-    return SO3<S, Options>{Eigen::Quaternion<S>(1.0, vec[0], vec[1], vec[2])};
+    return SO3<S>{Eigen::Quaternion<S>(1.0, vec[0], vec[1], vec[2])};
   }
 
   const S half_theta = 0.5 * theta;
   const S sin_half_theta = std::sin(half_theta);
   const S cos_half_theta = std::cos(half_theta);
   const Tangent vec = (sin_half_theta / theta) * dx;
-  return SO3<S, Options>{
-      Eigen::Quaternion<S>(cos_half_theta, vec[0], vec[1], vec[2])};
-  // TODO(JS): Consider creating a constructor from Coeffs type
+  return SO3<S>{Eigen::Quaternion<S>(cos_half_theta, vec[0], vec[1], vec[2])};
+  // TODO(JS): Consider creating a constructor from Params type
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDrivedA, typename MatrixDerivedB>
-SO3<S, Options> SO3<S, Options>::Exp(
+SO3<S> SO3<S>::Exp(
     const Eigen::MatrixBase<MatrixDrivedA>& dx,
     Eigen::MatrixBase<MatrixDerivedB>* jacobian,
     S tol)
@@ -415,10 +416,9 @@ SO3<S, Options> SO3<S, Options>::Exp(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDrived>
-typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
-    const SO3Base<OtherDrived>& x, S tol)
+typename SO3<S>::Tangent SO3<S>::Log(const SO3Base<OtherDrived>& x, S tol)
 {
   const S cos_theta = x.quaternion().w();
   const S theta = 2 * std::acos(cos_theta);
@@ -433,9 +433,9 @@ typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDrived, typename MatrixDerived>
-typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
+typename SO3<S>::Tangent SO3<S>::Log(
     const SO3Base<OtherDrived>& x,
     Eigen::MatrixBase<MatrixDerived>* jacobian,
     S tol)
@@ -448,9 +448,9 @@ typename SO3<S, Options>::Tangent SO3<S, Options>::Log(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDrived>
-Matrix3<S> SO3<S, Options>::Hat(const Eigen::MatrixBase<MatrixDrived>& xi)
+Matrix3<S> SO3<S>::Hat(const Eigen::MatrixBase<MatrixDrived>& xi)
 {
   // clang-format off
   return Matrix3<S>{
@@ -462,25 +462,25 @@ Matrix3<S> SO3<S, Options>::Hat(const Eigen::MatrixBase<MatrixDrived>& xi)
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Vector3<S> SO3<S, Options>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
+Vector3<S> SO3<S>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
   return Vector3<S>{matrix(2, 1), matrix(0, 2), matrix(1, 0)};
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix3<S> SO3<S, Options>::Ad(const SO3Base<OtherDerived>& x)
+Matrix3<S> SO3<S>::Ad(const SO3Base<OtherDerived>& x)
 {
   return x.quaternion().toRotationMatrix();
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix3<S> SO3<S, Options>::LeftJacobian(
+Matrix3<S> SO3<S>::LeftJacobian(
     const Eigen::MatrixBase<OtherDerived>& xi, S tol)
 {
   Matrix3<S> J = Matrix3<S>::Identity();
@@ -504,18 +504,18 @@ Matrix3<S> SO3<S, Options>::LeftJacobian(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix3<S> SO3<S, Options>::RightJacobian(
+Matrix3<S> SO3<S>::RightJacobian(
     const Eigen::MatrixBase<OtherDerived>& xi, S tol)
 {
   return LeftJacobian(-xi, tol);
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix3<S> SO3<S, Options>::LeftJacobianInverse(
+Matrix3<S> SO3<S>::LeftJacobianInverse(
     const Eigen::MatrixBase<OtherDerived>& dx, S tol)
 {
   Matrix3<S> J = Matrix3<S>::Identity();
@@ -537,119 +537,116 @@ Matrix3<S> SO3<S, Options>::LeftJacobianInverse(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix3<S> SO3<S, Options>::RightJacobianInverse(
+Matrix3<S> SO3<S>::RightJacobianInverse(
     const Eigen::MatrixBase<OtherDerived>& dx, S tol)
 {
   return LeftJacobianInverse(-dx, tol);
 }
 
 //==============================================================================
-template <typename S, int Options>
-SO3<S, Options>::SO3() : m_coeffs(::Eigen::Quaternion<S>::Identity().coeffs())
+template <typename S>
+SO3<S>::SO3() : m_params(::Eigen::Quaternion<S>::Identity().coeffs())
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
-SO3<S, Options>::SO3(const SO3& other) : m_coeffs(other.m_coeffs)
+template <typename S>
+SO3<S>::SO3(const SO3& other) : m_params(other.m_params)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
-SO3<S, Options>::SO3(SO3&& other) noexcept : m_coeffs(std::move(other.m_coeffs))
+template <typename S>
+SO3<S>::SO3(SO3&& other) noexcept : m_params(std::move(other.m_params))
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-SO3<S, Options>::SO3(const SO3Base<OtherDerived>& other)
-  : m_coeffs(other.coeffs())
+SO3<S>::SO3(const SO3Base<OtherDerived>& other) : m_params(other.params())
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-SO3<S, Options>::SO3(SO3Base<OtherDerived>&& other)
-  : m_coeffs(std::move(other.coeffs()))
+SO3<S>::SO3(SO3Base<OtherDerived>&& other) : m_params(std::move(other.params()))
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename QuaternionDrived>
-SO3<S, Options>::SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat)
-  : m_coeffs(quat.coeffs())
+SO3<S>::SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat)
+  : m_params(quat.coeffs())
 {
   normalize();
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename QuaternionDrived>
-SO3<S, Options>::SO3(
+SO3<S>::SO3(
     const ::Eigen::QuaternionBase<QuaternionDrived>& quat, NoNormalizeTag)
-  : m_coeffs(quat.coeffs())
+  : m_params(quat.coeffs())
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename QuaternionDrived>
-SO3<S, Options>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat)
-  : m_coeffs(std::move(quat.coeffs()))
+SO3<S>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat)
+  : m_params(std::move(quat.coeffs()))
 {
   normalize();
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename QuaternionDrived>
-SO3<S, Options>::SO3(
-    ::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag)
-  : m_coeffs(std::move(quat.coeffs()))
+SO3<S>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag)
+  : m_params(std::move(quat.coeffs()))
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
-SO3<S, Options>& SO3<S, Options>::operator=(const SO3& other)
+template <typename S>
+SO3<S>& SO3<S>::operator=(const SO3& other)
 {
-  m_coeffs = other.m_coeffs;
+  m_params = other.m_params;
   return *this;
 }
 
 //==============================================================================
-template <typename S, int Options>
-SO3<S, Options>& SO3<S, Options>::operator=(SO3&& other) noexcept
+template <typename S>
+SO3<S>& SO3<S>::operator=(SO3&& other) noexcept
 {
-  m_coeffs = std::move(other.m_coeffs);
+  m_params = std::move(other.m_params);
   return *this;
 }
 
 //==============================================================================
-template <typename S, int Options>
-const typename SO3<S, Options>::Coeffs& SO3<S, Options>::coeffs() const
+template <typename S>
+const typename SO3<S>::Params& SO3<S>::params() const
 {
-  return m_coeffs;
+  return m_params;
 }
 
 //==============================================================================
-template <typename S, int Options>
-typename SO3<S, Options>::Coeffs& SO3<S, Options>::coeffs()
+template <typename S>
+typename SO3<S>::Params& SO3<S>::params()
 {
-  return m_coeffs;
+  return m_params;
 }
 
 } // namespace dart::math

@@ -42,10 +42,16 @@ template <typename Derived>
 class LieGroupBase
 {
 public:
-  static constexpr int CoeffsDim
-      = ::Eigen::internal::traits<Derived>::CoeffsDim;
   using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;
-  using Coeffs = typename ::Eigen::internal::traits<Derived>::Coeffs;
+
+  // LieGroup common
+  static constexpr int ParamSize
+      = ::Eigen::internal::traits<Derived>::ParamSize;
+  static constexpr int Dim = ::Eigen::internal::traits<Derived>::Dim;
+  static constexpr int DoF = ::Eigen::internal::traits<Derived>::DoF;
+  static constexpr int MatrixDim
+      = ::Eigen::internal::traits<Derived>::MatrixDim;
+  using Params = typename ::Eigen::internal::traits<Derived>::Params;
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
   using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
@@ -100,10 +106,10 @@ public:
   [[nodiscard]] MatrixType toMatrix() const;
 
   /// Returns the coefficients of this Lie group.
-  [[nodiscard]] const Coeffs& coeffs() const;
+  [[nodiscard]] const Params& params() const;
 
   /// Returns the coefficients of this Lie group.
-  [[nodiscard]] Coeffs& coeffs();
+  [[nodiscard]] Params& params();
 
 protected:
   /// Returns the derived class as a const reference
@@ -157,7 +163,7 @@ template <typename OtherDerived>
 LieGroupBase<Derived>& LieGroupBase<Derived>::operator=(
     const LieGroupBase<OtherDerived>& other)
 {
-  coeffs() = other.coeffs();
+  params() = other.params();
   return *this;
 }
 
@@ -214,17 +220,17 @@ typename LieGroupBase<Derived>::MatrixType LieGroupBase<Derived>::toMatrix()
 
 //==============================================================================
 template <typename Derived>
-const typename LieGroupBase<Derived>::Coeffs& LieGroupBase<Derived>::coeffs()
+const typename LieGroupBase<Derived>::Params& LieGroupBase<Derived>::params()
     const
 {
-  return derived().coeffs();
+  return derived().params();
 }
 
 //==============================================================================
 template <typename Derived>
-typename LieGroupBase<Derived>::Coeffs& LieGroupBase<Derived>::coeffs()
+typename LieGroupBase<Derived>::Params& LieGroupBase<Derived>::params()
 {
-  return derived().coeffs();
+  return derived().params();
 }
 
 //==============================================================================

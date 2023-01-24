@@ -318,13 +318,13 @@ using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 // Lie Groups
 //------------------------------------------------------------------------------
 
-template <typename Scalar, int Options = 0>
+template <typename Scalar>
 class SO3;
 
-template <typename Scalar, int Options = 0>
+template <typename Scalar>
 class SE3;
 
-template <typename Scalar, template <typename, int> class...>
+template <typename Scalar, template <typename> class...>
 class LieGroupProduct;
 
 //------------------------------------------------------------------------------

@@ -436,17 +436,17 @@ TYPED_TEST(SO3Test, Quaternion)
 }
 
 //==============================================================================
-TYPED_TEST(SO3Test, Coeffs)
+TYPED_TEST(SO3Test, Params)
 {
   using S = typename TestFixture::Scalar;
 
   {
     SO3<S> x = SO3<S>::Random();
 
-    EXPECT_S_EQ(x.coeffs()[0], x.quaternion().coeffs()[0]);
-    EXPECT_S_EQ(x.coeffs()[1], x.quaternion().coeffs()[1]);
-    EXPECT_S_EQ(x.coeffs()[2], x.quaternion().coeffs()[2]);
-    EXPECT_S_EQ(x.coeffs()[3], x.quaternion().coeffs()[3]);
+    EXPECT_S_EQ(x.params()[0], x.quaternion().coeffs()[0]);
+    EXPECT_S_EQ(x.params()[1], x.quaternion().coeffs()[1]);
+    EXPECT_S_EQ(x.params()[2], x.quaternion().coeffs()[2]);
+    EXPECT_S_EQ(x.params()[3], x.quaternion().coeffs()[3]);
 
     EXPECT_S_EQ(x.quat_w(), x.quaternion().w());
     EXPECT_S_EQ(x.quat_x(), x.quaternion().x());
@@ -457,10 +457,10 @@ TYPED_TEST(SO3Test, Coeffs)
   {
     const SO3<S> x = SO3<S>::Random();
 
-    EXPECT_S_EQ(x.coeffs()[0], x.quaternion().coeffs()[0]);
-    EXPECT_S_EQ(x.coeffs()[1], x.quaternion().coeffs()[1]);
-    EXPECT_S_EQ(x.coeffs()[2], x.quaternion().coeffs()[2]);
-    EXPECT_S_EQ(x.coeffs()[3], x.quaternion().coeffs()[3]);
+    EXPECT_S_EQ(x.params()[0], x.quaternion().coeffs()[0]);
+    EXPECT_S_EQ(x.params()[1], x.quaternion().coeffs()[1]);
+    EXPECT_S_EQ(x.params()[2], x.quaternion().coeffs()[2]);
+    EXPECT_S_EQ(x.params()[3], x.quaternion().coeffs()[3]);
 
     EXPECT_S_EQ(x.quat_w(), x.quaternion().w());
     EXPECT_S_EQ(x.quat_x(), x.quaternion().x());
@@ -477,11 +477,11 @@ TYPED_TEST(SO3Test, MapConstructor)
   // Test the constructor for the const specialization
   S data[] = {1, 0, 0, 0};
   ::Eigen::Map<const SO3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.coeffs().data(), data);
+  EXPECT_EQ(const_map.params().data(), data);
 
   // Test the constructor for the non-const specialization
   Map<SO3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.coeffs().data(), data);
+  EXPECT_EQ(nonconst_map.params().data(), data);
 }
 
 //==============================================================================
@@ -491,10 +491,10 @@ TYPED_TEST(SO3Test, TestDataAccess)
 
   S data[] = {1.0, 0.0, 0.0, 0.0};
   Map<const SO3<S>, Eigen::Unaligned> const_map(data);
-  EXPECT_EQ(const_map.coeffs().data(), data);
+  EXPECT_EQ(const_map.params().data(), data);
 
   Map<SO3<S>, Eigen::Unaligned> nonconst_map(data);
-  EXPECT_EQ(nonconst_map.coeffs().data(), data);
+  EXPECT_EQ(nonconst_map.params().data(), data);
 
   // Modify the underlying data
   data[1] = 1.0;
@@ -503,18 +503,18 @@ TYPED_TEST(SO3Test, TestDataAccess)
 
   // Check that the modifications are visible through the non-const Map
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 
   // Check that the modifications are visible even through the const Map
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 
   // Modify the data through the non-const Map
   nonconst_map = SO3<S>::Random();
   for (int i = 0; i < 4; ++i) {
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
-    EXPECT_EQ(nonconst_map.coeffs()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
+    EXPECT_EQ(nonconst_map.params()[i], data[i]);
   }
 }

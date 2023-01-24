@@ -43,24 +43,26 @@ class SO3Base : public LieGroupBase<Derived>
 {
 public:
   using Base = LieGroupBase<Derived>;
-
-  // LieGroupBase types
-  using Base::CoeffsDim;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
-  using PlainObject = typename Base::PlainObject;
-  using MatrixType = typename Base::MatrixType;
-  using Tangent = typename Base::Tangent;
 
   // SO3Base specific types
   using QuaternionType = ::Eigen::Map<Quaternion<Scalar>>;
   using ConstQuaternionType = ::Eigen::Map<const Quaternion<Scalar>>;
 
-  using Base::Tolerance;
+  // LieGroup common
+  using Base::Dim;
+  using Base::DoF;
+  using Base::MatrixDim;
+  using Base::ParamSize;
+  using Params = typename Base::Params;
+  using PlainObject = typename Base::PlainObject;
+  using MatrixType = typename Base::MatrixType;
+  using Tangent = typename Base::Tangent;
 
+  using Base::Tolerance;
   using Base::operator=;
-  using Base::coeffs;
   using Base::derived;
+  using Base::params;
 
   /// Composes this SO3 with other and returns the result.
   ///
@@ -153,10 +155,10 @@ Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::operator*(
 template <typename Derived>
 void SO3Base<Derived>::normalize()
 {
-  if (coeffs().w() < 0) {
-    coeffs() *= -1;
+  if (params().w() < 0) {
+    params() *= -1;
   }
-  coeffs().normalize();
+  params().normalize();
 }
 
 //==============================================================================
@@ -178,70 +180,70 @@ template <typename Derived>
 const typename SO3Base<Derived>::ConstQuaternionType
 SO3Base<Derived>::quaternion() const
 {
-  return ConstQuaternionType(coeffs().data());
+  return ConstQuaternionType(params().data());
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::QuaternionType SO3Base<Derived>::quaternion()
 {
-  return QuaternionType(coeffs().data());
+  return QuaternionType(params().data());
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_x() const
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_y() const
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_z() const
 {
-  return coeffs().z();
+  return params().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar SO3Base<Derived>::quat_w() const
 {
-  return coeffs().w();
+  return params().w();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_x()
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_y()
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_z()
 {
-  return coeffs().z();
+  return params().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SO3Base<Derived>::Scalar& SO3Base<Derived>::quat_w()
 {
-  return coeffs().w();
+  return params().w();
 }
 
 } // namespace dart::math

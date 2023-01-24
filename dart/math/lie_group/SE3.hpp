@@ -40,17 +40,20 @@ namespace Eigen::internal {
 
 // TODO(JS): Move to a dedicated header file
 /// @brief Specialization of Eigen::internal::traits for SE3
-template <typename S, int Options_>
-struct traits<::dart::math::SE3<S, Options_>>
+template <typename S>
+struct traits<::dart::math::SE3<S>>
 {
-  static constexpr int Options = Options_;
-  static constexpr int CoeffsDim = 7;
-
   using Scalar = S;
-  using Coeffs = ::Eigen::Matrix<S, CoeffsDim, 1, Options>;
-  using PlainObject = ::dart::math::SE3<S, Options_>;
-  using MatrixType = ::Eigen::Matrix<S, 4, 4>;
-  using Tangent = ::Eigen::Matrix<S, 6, 1>;
+
+  // LieGroup common
+  static constexpr int ParamSize = 7;
+  static constexpr int Dim = 3;
+  static constexpr int DoF = 6;
+  static constexpr int MatrixDim = 4;
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  using PlainObject = ::dart::math::SE3<S>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using Tangent = ::Eigen::Matrix<S, DoF, 1>;
 };
 
 } // namespace Eigen::internal
@@ -60,15 +63,15 @@ namespace dart::math {
 /// @brief SE3 is a specialization of LieGroupBase for SE3
 /// @tparam S The scalar type
 /// @tparam Options_ The options for the underlying Eigen::Matrix
-template <typename S, int Options_>
-class SE3 : public SE3Base<SE3<S, Options_>>
+template <typename S>
+class SE3 : public SE3Base<SE3<S>>
 {
 public:
-  using Base = SE3Base<SE3<S, Options_>>;
-
-  // LieGroupBase types
+  using Base = SE3Base<SE3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroup common
+  using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
@@ -248,14 +251,14 @@ public:
   SE3& operator=(SE3&& other) noexcept;
 
   /// Returns the underlying coefficients
-  [[nodiscard]] const Coeffs& coeffs() const;
+  [[nodiscard]] const Params& params() const;
 
   /// Returns the underlying coefficients
-  [[nodiscard]] Coeffs& coeffs();
+  [[nodiscard]] Params& params();
 
 private:
   /// The underlying coefficients
-  Coeffs m_coeffs;
+  Params m_params;
 };
 
 DART_TEMPLATE_CLASS_HEADER(MATH, SE3);
@@ -305,24 +308,23 @@ Matrix3<S> computeQ(
 } // namespace detail
 
 //==============================================================================
-template <typename S, int Options>
-typename SE3<S, Options>::PlainObject SE3<S, Options>::Identity()
+template <typename S>
+typename SE3<S>::PlainObject SE3<S>::Identity()
 {
   return SE3();
 }
 
 //==============================================================================
-template <typename S, int Options>
-typename SE3<S, Options>::PlainObject SE3<S, Options>::Random()
+template <typename S>
+typename SE3<S>::PlainObject SE3<S>::Random()
 {
   return SE3(SO3<S>::Random(), Eigen::Vector3<S>::Random());
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-SE3<S, Options> SE3<S, Options>::Exp(
-    const Eigen::MatrixBase<MatrixDerived>& dx, const S tol)
+SE3<S> SE3<S>::Exp(const Eigen::MatrixBase<MatrixDerived>& dx, const S tol)
 {
   const SO3<S> rotation = SO3<S>::Exp(dx.template head<3>(), tol);
   const Eigen::Vector3<S> translation
@@ -333,9 +335,9 @@ SE3<S, Options> SE3<S, Options>::Exp(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerivedA, typename MatrixDerivedB>
-SE3<S, Options> SE3<S, Options>::Exp(
+SE3<S> SE3<S>::Exp(
     const Eigen::MatrixBase<MatrixDerivedA>& dx,
     Eigen::MatrixBase<MatrixDerivedB>* jacobian,
     S tol)
@@ -347,10 +349,9 @@ SE3<S, Options> SE3<S, Options>::Exp(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-typename SE3<S, Options>::Tangent SE3<S, Options>::Log(
-    const SE3Base<OtherDerived>& x, S tol)
+typename SE3<S>::Tangent SE3<S>::Log(const SE3Base<OtherDerived>& x, S tol)
 {
   Tangent out;
   out.template head<3>() = SO3<S>::Log(x.rotation(), tol);
@@ -361,9 +362,9 @@ typename SE3<S, Options>::Tangent SE3<S, Options>::Log(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived, typename MatrixDerived>
-typename SE3<S, Options>::Tangent SE3<S, Options>::Log(
+typename SE3<S>::Tangent SE3<S>::Log(
     const SE3Base<OtherDerived>& x,
     Eigen::MatrixBase<MatrixDerived>* jacobian,
     S tol)
@@ -376,9 +377,9 @@ typename SE3<S, Options>::Tangent SE3<S, Options>::Log(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix4<S> SE3<S, Options>::Hat(const Eigen::MatrixBase<MatrixDerived>& xi)
+Matrix4<S> SE3<S>::Hat(const Eigen::MatrixBase<MatrixDerived>& xi)
 {
   Matrix4<S> out = Matrix4<S>::Zero();
   out.template topLeftCorner<3, 3>() = SO3<S>::Hat(xi.template head<3>());
@@ -388,9 +389,9 @@ Matrix4<S> SE3<S, Options>::Hat(const Eigen::MatrixBase<MatrixDerived>& xi)
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Vector6<S> SE3<S, Options>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
+Vector6<S> SE3<S>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
   Vector6<S> out;
   out.template head<3>() = SO3<S>::Vee(matrix.template topLeftCorner<3, 3>());
@@ -399,9 +400,9 @@ Vector6<S> SE3<S, Options>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived>
-Matrix6<S> SE3<S, Options>::Ad(const SE3Base<OtherDerived>& x)
+Matrix6<S> SE3<S>::Ad(const SE3Base<OtherDerived>& x)
 {
   Matrix6<S> out;
   out.template topLeftCorner<3, 3>() = x.rotation().matrix();
@@ -413,9 +414,9 @@ Matrix6<S> SE3<S, Options>::Ad(const SE3Base<OtherDerived>& x)
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename OtherDerived, typename MatrixDerived>
-typename SE3<S, Options>::Tangent SE3<S, Options>::Ad(
+typename SE3<S>::Tangent SE3<S>::Ad(
     const SE3Base<OtherDerived>& x, const Eigen::MatrixBase<MatrixDerived>& xi)
 {
   // Cache the rotation matrix for efficiency when multiplying 3d vector more
@@ -431,10 +432,9 @@ typename SE3<S, Options>::Tangent SE3<S, Options>::Ad(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::LieBracket(
-    const Eigen::MatrixBase<MatrixDerived>& dx)
+Matrix6<S> SE3<S>::LieBracket(const Eigen::MatrixBase<MatrixDerived>& dx)
 {
   Matrix6<S> out;
   out.template topLeftCorner<3, 3>() = SO3<S>::Hat(dx.template head<3>());
@@ -445,9 +445,9 @@ Matrix6<S> SE3<S, Options>::LieBracket(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename DerivedA, typename DerivedB>
-typename SE3<S, Options>::Tangent SE3<S, Options>::LieBracket(
+typename SE3<S>::Tangent SE3<S>::LieBracket(
     const Eigen::MatrixBase<DerivedA>& dx1,
     const Eigen::MatrixBase<DerivedB>& dx2)
 {
@@ -465,17 +465,17 @@ typename SE3<S, Options>::Tangent SE3<S, Options>::LieBracket(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::Cross(const Eigen::MatrixBase<MatrixDerived>& dx)
+Matrix6<S> SE3<S>::Cross(const Eigen::MatrixBase<MatrixDerived>& dx)
 {
   return LieBracket(dx);
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename DerivedA, typename DerivedB>
-typename SE3<S, Options>::Tangent SE3<S, Options>::Cross(
+typename SE3<S>::Tangent SE3<S>::Cross(
     const Eigen::MatrixBase<DerivedA>& dx1,
     const Eigen::MatrixBase<DerivedB>& dx2)
 {
@@ -483,9 +483,9 @@ typename SE3<S, Options>::Tangent SE3<S, Options>::Cross(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::LeftJacobian(
+Matrix6<S> SE3<S>::LeftJacobian(
     const Eigen::MatrixBase<MatrixDerived>& xi, S tol)
 {
   // Equation (100) in "Associating Uncertainty With Three-Dimensional Poses for
@@ -518,18 +518,18 @@ Matrix6<S> SE3<S, Options>::LeftJacobian(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::RightJacobian(
+Matrix6<S> SE3<S>::RightJacobian(
     const Eigen::MatrixBase<MatrixDerived>& xi, S tol)
 {
   return LeftJacobian(-xi, tol);
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::LeftJacobianInverse(
+Matrix6<S> SE3<S>::LeftJacobianInverse(
     const Eigen::MatrixBase<MatrixDerived>& xi, S tol)
 {
   // Equation (103) in "Associating Uncertainty With Three-Dimensional Poses for
@@ -565,85 +565,85 @@ Matrix6<S> SE3<S, Options>::LeftJacobianInverse(
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename MatrixDerived>
-Matrix6<S> SE3<S, Options>::RightJacobianInverse(
+Matrix6<S> SE3<S>::RightJacobianInverse(
     const Eigen::MatrixBase<MatrixDerived>& xi, S tol)
 {
   return LeftJacobianInverse(-xi, tol);
 }
 
 //==============================================================================
-template <typename S, int Options>
-SE3<S, Options>::SE3() : m_coeffs(Coeffs::Zero())
+template <typename S>
+SE3<S>::SE3() : m_params(Params::Zero())
 {
-  coeffs().w() = 1;
+  params().w() = 1;
 }
 
 //==============================================================================
-template <typename S, int Options>
-SE3<S, Options>::SE3(const SE3& other) : m_coeffs(other.coeffs())
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S, int Options>
-SE3<S, Options>::SE3(SE3&& other) noexcept : m_coeffs(std::move(other.coeffs()))
+template <typename S>
+SE3<S>::SE3(const SE3& other) : m_params(other.params())
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
+SE3<S>::SE3(SE3&& other) noexcept : m_params(std::move(other.params()))
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
 template <typename SO3Derived, typename MatrixDerived>
-SE3<S, Options>::SE3(
+SE3<S>::SE3(
     const SO3Base<SO3Derived>& rotation,
     const Eigen::MatrixBase<MatrixDerived>& translation)
 {
-  coeffs().template head<4>() = rotation.coeffs();
-  coeffs().template tail<3>() = translation;
+  params().template head<4>() = rotation.params();
+  params().template tail<3>() = translation;
 }
 
 //==============================================================================
-template <typename S, int Options>
+template <typename S>
 template <typename SO3Derived, typename MatrixDerived>
-SE3<S, Options>::SE3(
+SE3<S>::SE3(
     SO3Base<SO3Derived>&& rotation,
     Eigen::MatrixBase<MatrixDerived>&& translation)
 {
-  coeffs().template head<4>() = std::move(rotation.coeffs());
-  coeffs().template tail<3>() = std::move(translation);
+  params().template head<4>() = std::move(rotation.params());
+  params().template tail<3>() = std::move(translation);
 }
 
 //==============================================================================
-template <typename S, int Options>
-SE3<S, Options>& SE3<S, Options>::operator=(const SE3& other)
+template <typename S>
+SE3<S>& SE3<S>::operator=(const SE3& other)
 {
-  m_coeffs = other.coeffs();
+  m_params = other.params();
   return *this;
 }
 
 //==============================================================================
-template <typename S, int Options>
-SE3<S, Options>& SE3<S, Options>::operator=(SE3&& other) noexcept
+template <typename S>
+SE3<S>& SE3<S>::operator=(SE3&& other) noexcept
 {
-  m_coeffs = std::move(other.coeffs());
+  m_params = std::move(other.params());
   return *this;
 }
 
 //==============================================================================
-template <typename S, int Options>
-const typename SE3<S, Options>::Coeffs& SE3<S, Options>::coeffs() const
+template <typename S>
+const typename SE3<S>::Params& SE3<S>::params() const
 {
-  return m_coeffs;
+  return m_params;
 }
 
 //==============================================================================
-template <typename S, int Options>
-typename SE3<S, Options>::Coeffs& SE3<S, Options>::coeffs()
+template <typename S>
+typename SE3<S>::Params& SE3<S>::params()
 {
-  return m_coeffs;
+  return m_params;
 }
 
 } // namespace dart::math

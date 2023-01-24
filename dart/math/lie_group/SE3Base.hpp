@@ -43,20 +43,22 @@ class SE3Base : public LieGroupBase<Derived>
 {
 public:
   using Base = LieGroupBase<Derived>;
-
-  // LieGroupBase types
-  using Base::CoeffsDim;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroup common
+  using Base::Dim;
+  using Base::DoF;
+  using Base::MatrixDim;
+  using Base::ParamSize;
+  using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
   using Base::Tolerance;
-
   using Base::operator=;
-  using Base::coeffs;
   using Base::derived;
+  using Base::params;
 
   /**
    * @brief Group multiplication operator
@@ -205,14 +207,14 @@ template <typename Derived>
 const Eigen::Map<const SO3<typename SE3Base<Derived>::Scalar>>
 SE3Base<Derived>::rotation() const
 {
-  return Eigen::Map<const SO3<Scalar>>(coeffs().data());
+  return Eigen::Map<const SO3<Scalar>>(params().data());
 }
 
 //==============================================================================
 template <typename Derived>
 Eigen::Map<SO3<typename SE3Base<Derived>::Scalar>> SE3Base<Derived>::rotation()
 {
-  return Eigen::Map<SO3<Scalar>>(coeffs().data());
+  return Eigen::Map<SO3<Scalar>>(params().data());
 }
 
 //==============================================================================
@@ -220,7 +222,7 @@ template <typename Derived>
 const Eigen::Map<const Vector3<typename SE3Base<Derived>::Scalar>>
 SE3Base<Derived>::translation() const
 {
-  return Eigen::Map<const Vector3<Scalar>>(coeffs().data() + 4);
+  return Eigen::Map<const Vector3<Scalar>>(params().data() + 4);
 }
 
 //==============================================================================
@@ -228,105 +230,105 @@ template <typename Derived>
 Eigen::Map<Vector3<typename SE3Base<Derived>::Scalar>>
 SE3Base<Derived>::translation()
 {
-  return Eigen::Map<Vector3<Scalar>>(coeffs().data() + 4);
+  return Eigen::Map<Vector3<Scalar>>(params().data() + 4);
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_x() const
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_y() const
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_z() const
 {
-  return coeffs().z();
+  return params().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::quat_w() const
 {
-  return coeffs().w();
+  return params().w();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_x()
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_y()
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_z()
 {
-  return coeffs().z();
+  return params().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_w()
 {
-  return coeffs().w();
+  return params().w();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::x() const
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::y() const
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::z() const
 {
-  return coeffs().z();
+  return params().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::x()
 {
-  return coeffs().x();
+  return params().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::y()
 {
-  return coeffs().y();
+  return params().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::z()
 {
-  return coeffs().z();
+  return params().z();
 }
 
 } // namespace dart::math

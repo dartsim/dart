@@ -37,33 +37,28 @@
 namespace Eigen::internal {
 
 /// Specialization of Eigen::internal::traits for const dart::math::SE3
-template <typename S, int Options_>
-struct traits<::Eigen::Map<const ::dart::math::SE3<S, Options_>>>
-  : traits<const ::dart::math::SE3<S, Options_>>
+template <typename S>
+struct traits<::Eigen::Map<const ::dart::math::SE3<S>>>
+  : traits<const ::dart::math::SE3<S>>
 {
-  using Base = traits<const ::dart::math::SE3<S, Options_>>;
-
-  static constexpr int Options = Options_;
-  static constexpr int CoeffsDim = Base::CoeffsDim;
-
+  using Base = traits<const ::dart::math::SE3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs =
-      typename ::Eigen::Map<const ::Eigen::Matrix<S, CoeffsDim, 1>, Options>;
+
+  // LieGroup common
+  static constexpr int ParamSize = Base::ParamSize;
+  using Params = typename ::Eigen::Map<const ::Eigen::Matrix<S, ParamSize, 1>>;
 };
 
 /// Specialization of Eigen::internal::traits for dart::math::SE3
-template <typename S, int Options_>
-struct traits<::Eigen::Map<::dart::math::SE3<S, Options_>>>
-  : traits<::dart::math::SE3<S, Options_>>
+template <typename S>
+struct traits<::Eigen::Map<::dart::math::SE3<S>>> : traits<::dart::math::SE3<S>>
 {
-  using Base = traits<::dart::math::SE3<S, Options_>>;
-
-  static constexpr int Options = Options_;
-  static constexpr int CoeffsDim = Base::CoeffsDim;
-
+  using Base = traits<::dart::math::SE3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs =
-      typename ::Eigen::Map<::Eigen::Matrix<S, CoeffsDim, 1>, Options>;
+
+  // LieGroup common
+  static constexpr int ParamSize = Base::ParamSize;
+  using Params = typename ::Eigen::Map<::Eigen::Matrix<S, ParamSize, 1>>;
 };
 
 } // namespace Eigen::internal
@@ -77,32 +72,30 @@ namespace Eigen {
 /// @tparam Options_ The options of the underlying quaternion coefficients.
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
-template <typename S, int Options_>
-class Map<const ::dart::math::SE3<S, Options_>, Options_>
-  : public ::dart::math::SE3Base<
-        Map<const ::dart::math::SE3<S, Options_>, Options_>>
+template <typename S>
+class Map<const ::dart::math::SE3<S>>
+  : public ::dart::math::SE3Base<Map<const ::dart::math::SE3<S>>>
 {
 public:
-  using Base = ::dart::math::SE3Base<
-      Map<const ::dart::math::SE3<S, Options_>, Options_>>;
-  using This = Map<const ::dart::math::SE3<S, Options_>, Options_>;
-
-  // LieGroupBase types
+  using Base = ::dart::math::SE3Base<Map<const ::dart::math::SE3<S>>>;
+  using This = Map<const ::dart::math::SE3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroup common
+  using Params = typename Base::Params;
 
   /// Default constructor
   ///
   /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least CoeffsDim,
+  /// its internal data. The array must have a size of at least ParamSize,
   /// which is 4 for SE3.
   explicit Map(const Scalar* data);
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] const Coeffs& coeffs() const;
+  [[nodiscard]] const Params& params() const;
 
 private:
-  Coeffs m_coeffs;
+  Params m_params;
 };
 
 /// Specialization of Eigen::Map for dart::math::SE3, and also concrete
@@ -112,36 +105,35 @@ private:
 /// @tparam Options_ The options of the underlying quaternion coefficients.
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
-template <typename S, int Options_>
-class Map<::dart::math::SE3<S, Options_>, Options_>
-  : public ::dart::math::SE3Base<Map<::dart::math::SE3<S, Options_>, Options_>>
+template <typename S>
+class Map<::dart::math::SE3<S>>
+  : public ::dart::math::SE3Base<Map<::dart::math::SE3<S>>>
 {
 public:
-  using Base
-      = ::dart::math::SE3Base<Map<::dart::math::SE3<S, Options_>, Options_>>;
-  using This = Map<::dart::math::SE3<S, Options_>, Options_>;
-
-  // LieGroupBase types
+  using Base = ::dart::math::SE3Base<Map<::dart::math::SE3<S>>>;
+  using This = Map<::dart::math::SE3<S>>;
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroup common
+  using Params = typename Base::Params;
 
   using Base::operator=;
 
   /// Default constructor
   ///
   /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least CoeffsDim,
+  /// its internal data. The array must have a size of at least ParamSize,
   /// which is 4 for SE3.
   explicit Map(Scalar* data);
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] const Coeffs& coeffs() const;
+  [[nodiscard]] const Params& params() const;
 
   /// Returns the coefficients of the underlying quaternion
-  [[nodiscard]] Coeffs& coeffs();
+  [[nodiscard]] Params& params();
 
 private:
-  Coeffs m_coeffs;
+  Params m_params;
 };
 
 } // namespace Eigen
@@ -153,42 +145,40 @@ private:
 namespace Eigen {
 
 //==============================================================================
-template <typename S, int Options>
-Map<const ::dart::math::SE3<S, Options>, Options>::Map(const Scalar* data)
-  : m_coeffs(data)
+template <typename S>
+Map<const ::dart::math::SE3<S>>::Map(const Scalar* data) : m_params(data)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
-const typename Map<const ::dart::math::SE3<S, Options>, Options>::Coeffs&
-Map<const ::dart::math::SE3<S, Options>, Options>::coeffs() const
+template <typename S>
+const typename Map<const ::dart::math::SE3<S>>::Params&
+Map<const ::dart::math::SE3<S>>::params() const
 {
-  return m_coeffs;
+  return m_params;
 }
 
 //==============================================================================
-template <typename S, int Options>
-Map<::dart::math::SE3<S, Options>, Options>::Map(Scalar* data) : m_coeffs(data)
+template <typename S>
+Map<::dart::math::SE3<S>>::Map(Scalar* data) : m_params(data)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S, int Options>
-const typename Map<::dart::math::SE3<S, Options>, Options>::Coeffs&
-Map<::dart::math::SE3<S, Options>, Options>::coeffs() const
+template <typename S>
+const typename Map<::dart::math::SE3<S>>::Params&
+Map<::dart::math::SE3<S>>::params() const
 {
-  return m_coeffs;
+  return m_params;
 }
 
 //==============================================================================
-template <typename S, int Options>
-typename Map<::dart::math::SE3<S, Options>, Options>::Coeffs&
-Map<::dart::math::SE3<S, Options>, Options>::coeffs()
+template <typename S>
+typename Map<::dart::math::SE3<S>>::Params& Map<::dart::math::SE3<S>>::params()
 {
-  return m_coeffs;
+  return m_params;
 }
 
 } // namespace Eigen

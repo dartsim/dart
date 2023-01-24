@@ -36,6 +36,48 @@
 
 namespace dart::math {
 
+// TODO(JS): Move this to under detail/
+namespace detail {
+
+template <size_t PackSize, int i, int j, int... Args>
+constexpr auto GetIndicesImpl()
+{
+  if constexpr (PackSize == 1) {
+    return std::array{0, Args...};
+  } else {
+    return GetIndicesImpl<PackSize - 1, i + j, Args..., i + j>();
+  }
+}
+
+template <int... Args>
+constexpr auto GetIndices()
+{
+  return GetIndicesImpl<sizeof...(Args), 0, Args...>();
+}
+
+#if defined(_MSC_VER)
+template <typename T>
+constexpr T Sum(T t)
+{
+  return t;
+}
+
+template <typename T, typename... Rest>
+constexpr T Sum(T t, Rest... rest)
+{
+  return t + Sum(rest...);
+}
+
+template <std::size_t... Is>
+using int_sequence = std::integer_sequence<std::size_t, Is...>;
+
+template <std::size_t N>
+using make_int_sequence = std::make_integer_sequence<std::size_t, N>;
+
+#endif
+
+} // namespace detail
+
 /// @brief Base class for LieGroupProduct
 /// @tparam Derived The derived class
 template <typename Derived>
@@ -43,10 +85,30 @@ class LieGroupProductBase : public LieGroupBase<Derived>
 {
 public:
   using Base = LieGroupBase<Derived>;
-
-  // LieGroupBase types
   using Scalar = typename Base::Scalar;
-  using Coeffs = typename Base::Coeffs;
+
+  // LieGroupProduct specifics
+  static constexpr int ProductSize
+      = ::Eigen::internal::traits<Derived>::ProductSize;
+  static constexpr auto ParamSizeIndices
+      = ::Eigen::internal::traits<Derived>::ParamSizeIndices;
+  using Components = typename ::Eigen::internal::traits<Derived>::Components;
+  template <std::size_t Index>
+  using Component =
+      typename ::Eigen::internal::traits<Derived>::template Component<Index>;
+  template <size_t Index>
+  using ComponentMap =
+      typename ::Eigen::internal::traits<Derived>::template ComponentMap<Index>;
+  template <size_t Index>
+  using ConstComponentMap = typename ::Eigen::internal::traits<
+      Derived>::template ConstComponentMap<Index>;
+
+  // LieGroupBase common
+  using Base::Dim;
+  using Base::DoF;
+  using Base::MatrixDim;
+  using Base::ParamSize;
+  using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
@@ -54,8 +116,27 @@ public:
   using Base::Tolerance;
 
   using Base::operator=;
-  using Base::coeffs;
   using Base::derived;
+  using Base::params;
+
+  /**
+   * @brief Returns the map of the component at the given index
+   *
+   * @tparam Index The index of the component
+   * @return ConstComponentMap<Index> The map of the component at the given
+   * index
+   */
+  template <size_t Index>
+  ConstComponentMap<Index> get() const;
+
+  /**
+   * @brief Returns the map of the component at the given index
+   *
+   * @tparam Index The index of the component
+   * @return ComponentMap<Index> The map of the component at the given index
+   */
+  template <size_t Index>
+  ComponentMap<Index> get();
 };
 
 } // namespace dart::math
@@ -67,5 +148,23 @@ public:
 namespace dart::math {
 
 //==============================================================================
+template <typename Derived>
+template <size_t Index>
+typename LieGroupProductBase<Derived>::template ConstComponentMap<Index>
+LieGroupProductBase<Derived>::get() const
+{
+  return ConstComponentMap<Index>(
+      params().data() + std::get<Index>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename Derived>
+template <size_t Index>
+typename LieGroupProductBase<Derived>::template ComponentMap<Index>
+LieGroupProductBase<Derived>::get()
+{
+  return ComponentMap<Index>(
+      params().data() + std::get<Index>(ParamSizeIndices));
+}
 
 } // namespace dart::math
