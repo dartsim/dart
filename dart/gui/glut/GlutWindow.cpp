@@ -43,9 +43,9 @@
   #include <sys/types.h>
 #endif
 #include "dart/common/Console.hpp"
-#include "dart/gui/GLFuncs.hpp"
-#include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/gui/glut/GLFuncs.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
+#include "dart/gui/glut/OpenGLRenderInterface.hpp"
 
 #include <iostream>
 #include <vector>

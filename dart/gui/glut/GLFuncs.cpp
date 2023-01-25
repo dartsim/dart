@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GLFuncs.hpp"
+#include "dart/gui/glut/GLFuncs.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/GLUTFuncs.hpp"
+#include "dart/gui/glut/LoadOpengl.hpp"
 #include "dart/math/Constants.hpp"
 
 #include <iostream>

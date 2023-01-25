@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/glut/RenderInterface.hpp"
 
 namespace dart {
 namespace gui {

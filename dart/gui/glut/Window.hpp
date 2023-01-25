@@ -34,8 +34,8 @@
 #define DART_GUI_GLUT_WINDOW_HPP_
 
 #include <dart/gui/Fwd.hpp>
-#include <dart/gui/LoadOpengl.hpp>
-#include <dart/gui/RenderInterface.hpp>
+#include <dart/gui/glut/LoadOpengl.hpp>
+#include <dart/gui/glut/RenderInterface.hpp>
 
 #include <vector>
 

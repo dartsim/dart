@@ -32,7 +32,7 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/gui/GLFuncs.hpp>
+#include <dart/gui/glut/GLFuncs.hpp>
 
 using namespace dart;
 using namespace math;

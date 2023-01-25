@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/gui/glut/OpenGLRenderInterface.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -42,7 +42,7 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/glut/LoadOpengl.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/geometry/Icosphere.hpp"
 

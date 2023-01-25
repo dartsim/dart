@@ -38,7 +38,7 @@
 
 #include "MyWindow.hpp"
 
-#include <dart/gui/GLFuncs.hpp>
+#include <dart/gui/glut/GLFuncs.hpp>
 
 #define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;

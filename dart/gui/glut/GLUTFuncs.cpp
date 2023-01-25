@@ -32,8 +32,8 @@
 
 #include "dart/gui/glut/GLUTFuncs.hpp"
 
-#include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
+#include "dart/gui/glut/LoadOpengl.hpp"
 
 #include <iostream>
 #include <string>
