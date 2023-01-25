@@ -83,6 +83,8 @@ public:
   // GroupProduct specifics
   static constexpr int ProductSize
       = ::Eigen::internal::traits<Derived>::ProductSize;
+  static constexpr auto ParamSizes
+      = ::Eigen::internal::traits<Derived>::ParamSizes;
   static constexpr auto ParamSizeIndices
       = ::Eigen::internal::traits<Derived>::ParamSizeIndices;
   using Components = typename ::Eigen::internal::traits<Derived>::Components;

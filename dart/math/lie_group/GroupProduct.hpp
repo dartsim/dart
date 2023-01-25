@@ -45,6 +45,7 @@ struct traits<::dart::math::GroupProduct<S, T...>>
 
   // GroupProduct specifics
   static constexpr std::size_t ProductSize = sizeof...(T);
+  static constexpr auto ParamSizes = std::array{T<S>::ParamSize...};
   static constexpr auto ParamSizeIndices
       = ::dart::math::detail::GetIndices<T<S>::ParamSize...>();
   using Components = std::tuple<T<S>...>;
@@ -92,6 +93,7 @@ public:
 
   // GroupProduct specifics
   static constexpr std::size_t ProductSize = Base::ProductSize;
+  static constexpr auto ParamSizes = Base::ParamSizes;
   static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
   using Components = typename Base::Components;
   template <std::size_t Index>
@@ -151,6 +153,12 @@ public:
   /// Returns the parameters of the specific component group
   template <std::size_t Index_>
   [[nodiscard]] auto params();
+
+  /// Returns the parameters of the whole group product
+  [[nodiscard]] auto params(std::size_t index) const;
+
+  /// Returns the parameters of the whole group product
+  [[nodiscard]] auto params(std::size_t index);
 
   /// Returns the parameters of the whole group product
   [[nodiscard]] const Params& params() const;
@@ -242,6 +250,20 @@ auto GroupProduct<S, T...>::params() const
 {
   return m_params.template segment<Component<Index_>::ParamSize>(
       std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+auto GroupProduct<S, T...>::params(std::size_t index)
+{
+  return m_params.segment(ParamSizeIndices[index], ParamSizes[index]);
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+auto GroupProduct<S, T...>::params(std::size_t index) const
+{
+  return m_params.segment(ParamSizeIndices[index], ParamSizes[index]);
 }
 
 //==============================================================================

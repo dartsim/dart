@@ -101,15 +101,50 @@ TYPED_TEST(GroupProductTest, Cast)
 {
   using S = typename TestFixture::Scalar;
 
-  auto product_1 = GroupProduct<S, SE3, SO3>();
-  auto product_2 = product_1.template cast<float>();
-  auto product_3 = product_1.template cast<double>();
+  {
+    auto product_1 = GroupProduct<S, SE3, SO3>();
+    auto product_2 = product_1.template cast<float>();
+    auto product_3 = product_1.template cast<double>();
 
-  for (std::size_t i = 0; i < product_1.ParamSize; ++i) {
-    EXPECT_FLOAT_EQ(
-        static_cast<float>(product_1.params()[i]), product_2.params()[i]);
-    EXPECT_DOUBLE_EQ(
-        static_cast<double>(product_1.params()[i]), product_3.params()[i]);
+    for (auto i = 0u; i < product_1.ProductSize; ++i) {
+      for (auto j = 0; j < product_1.ParamSizes[i]; ++j) {
+        EXPECT_FLOAT_EQ(
+            static_cast<float>(product_1.params(i)[j]), product_2.params(i)[j]);
+        EXPECT_DOUBLE_EQ(
+            static_cast<double>(product_1.params(i)[j]),
+            product_3.params(i)[j]);
+      }
+    }
+
+    for (std::size_t i = 0; i < product_1.ParamSize; ++i) {
+      EXPECT_FLOAT_EQ(
+          static_cast<float>(product_1.params()[i]), product_2.params()[i]);
+      EXPECT_DOUBLE_EQ(
+          static_cast<double>(product_1.params()[i]), product_3.params()[i]);
+    }
+  }
+
+  {
+    const auto product_1 = GroupProduct<S, SE3, SO3>();
+    auto product_2 = product_1.template cast<float>();
+    auto product_3 = product_1.template cast<double>();
+
+    for (auto i = 0u; i < product_1.ProductSize; ++i) {
+      for (auto j = 0; j < product_1.ParamSizes[i]; ++j) {
+        EXPECT_FLOAT_EQ(
+            static_cast<float>(product_1.params(i)[j]), product_2.params(i)[j]);
+        EXPECT_DOUBLE_EQ(
+            static_cast<double>(product_1.params(i)[j]),
+            product_3.params(i)[j]);
+      }
+    }
+
+    for (std::size_t i = 0; i < product_1.ParamSize; ++i) {
+      EXPECT_FLOAT_EQ(
+          static_cast<float>(product_1.params()[i]), product_2.params()[i]);
+      EXPECT_DOUBLE_EQ(
+          static_cast<double>(product_1.params()[i]), product_3.params()[i]);
+    }
   }
 }
 
