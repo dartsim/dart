@@ -45,6 +45,10 @@ struct traits<::Eigen::Map<const ::dart::math::GroupProduct<S, T...>>>
   using Base = const ::dart::math::GroupProduct<S, T...>;
   using Scalar = S;
 
+  // GroupProduct specifics
+  static constexpr auto ParamSizes = Base::ParamSizes;
+  static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
+
   // LieGroup common
   static constexpr auto ParamSize = Base::ParamSize;
   using Params = ::Eigen::Map<const ::Eigen::Matrix<S, ParamSize, 1>>;
@@ -57,6 +61,10 @@ struct traits<::Eigen::Map<::dart::math::GroupProduct<S, T...>>>
 {
   using Base = ::dart::math::GroupProduct<S, T...>;
   using Scalar = S;
+
+  // GroupProduct specifics
+  static constexpr auto ParamSizes = Base::ParamSizes;
+  static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
 
   // LieGroup common
   static constexpr auto ParamSize = Base::ParamSize;
@@ -81,11 +89,19 @@ public:
   using This = Map<const ::dart::math::GroupProduct<S, T...>>;
   using Scalar = typename Base::Scalar;
 
+  // GroupProduct specifics
+  static constexpr auto ParamSizes = Base::ParamSizes;
+  static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
+
   // LieGroup common
   using Params = typename Base::Params;
 
   /** Constructor */
   explicit Map(const Scalar* data);
+
+  /// Returns the parameters of the specific component group
+  template <std::size_t Index_>
+  [[nodiscard]] auto params() const;
 
   /** Returns the underlying parameters */
   [[nodiscard]] const Params& params() const;
@@ -109,11 +125,23 @@ public:
   using This = Map<::dart::math::GroupProduct<S, T...>>;
   using Scalar = typename Base::Scalar;
 
+  // GroupProduct specifics
+  static constexpr auto ParamSizes = Base::ParamSizes;
+  static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
+
   // LieGroup common
   using Params = typename Base::Params;
 
   /** Constructor */
   explicit Map(Scalar* data);
+
+  /// Returns the parameters of the specific component group
+  template <std::size_t Index_>
+  [[nodiscard]] auto params() const;
+
+  /// Returns the parameters of the specific component group
+  template <std::size_t Index_>
+  [[nodiscard]] auto params();
 
   /** Returns the underlying parameters */
   [[nodiscard]] const Params& params() const;
@@ -144,6 +172,15 @@ Map<const ::dart::math::GroupProduct<S, T...>>::Map(const Scalar* data)
 
 //==============================================================================
 template <typename S, template <typename> class... T>
+template <std::size_t Index_>
+auto Map<const ::dart::math::GroupProduct<S, T...>>::params() const
+{
+  return m_params.template segment<std::get<Index_>(ParamSizes)>(
+      std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
 const typename Map<const ::dart::math::GroupProduct<S, T...>>::Params&
 Map<const ::dart::math::GroupProduct<S, T...>>::params() const
 {
@@ -155,6 +192,24 @@ template <typename S, template <typename> class... T>
 Map<::dart::math::GroupProduct<S, T...>>::Map(Scalar* data) : m_params(data)
 {
   // Do nothing
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+template <std::size_t Index_>
+auto Map<::dart::math::GroupProduct<S, T...>>::params() const
+{
+  return m_params.template segment<std::get<Index_>(ParamSizes)>(
+      std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+template <std::size_t Index_>
+auto Map<::dart::math::GroupProduct<S, T...>>::params()
+{
+  return m_params.template segment<std::get<Index_>(ParamSizes)>(
+      std::get<Index_>(ParamSizeIndices));
 }
 
 //==============================================================================

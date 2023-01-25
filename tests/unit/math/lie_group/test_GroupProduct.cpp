@@ -51,16 +51,25 @@ struct GroupProductTest : public testing::Test
 using Types = testing::Types<float, double>;
 TYPED_TEST_SUITE(GroupProductTest, Types);
 
+template <typename S>
+using SE3xSO3 = GroupProduct<S, SE3, SO3>;
+
 //==============================================================================
 TYPED_TEST(GroupProductTest, StaticProperties)
 {
   using S = typename TestFixture::Scalar;
 
-  const auto total_param_size = GroupProduct<S, SE3, SO3>::ParamSize;
-  EXPECT_EQ(total_param_size, SE3<S>::ParamSize + SO3<S>::ParamSize);
+  {
+    const auto total_param_size = GroupProduct<S, SE3, SO3>::ParamSize;
+    EXPECT_EQ(total_param_size, SE3<S>::ParamSize + SO3<S>::ParamSize);
 
-  const auto product_size = GroupProduct<S, SE3, SO3>::ProductSize;
-  EXPECT_EQ(product_size, 2);
+    const auto product_size = GroupProduct<S, SE3, SO3>::ProductSize;
+    EXPECT_EQ(product_size, 2);
+  }
+
+  {
+    EXPECT_EQ(SE3xSO3<S>::ParamSize, SE3<S>::ParamSize + SO3<S>::ParamSize);
+  }
 }
 
 //==============================================================================
@@ -68,11 +77,27 @@ TYPED_TEST(GroupProductTest, Random)
 {
   using S = typename TestFixture::Scalar;
 
-  auto product_1 = GroupProduct<S, SE3, SO3>::Random();
-  EXPECT_EQ(
-      product_1.template get<0>(), SE3<S>(product_1.template params<0>()));
-  EXPECT_EQ(
-      product_1.template get<1>(), SO3<S>(product_1.template params<1>()));
+  {
+    auto p = GroupProduct<S, SE3, SO3>::Random();
+    EXPECT_EQ(p.template get<0>(), SE3<S>(p.template params<0>()));
+    EXPECT_EQ(p.template get<1>(), SO3<S>(p.template params<1>()));
+  }
+
+  // Nested product
+  {
+    const auto p = GroupProduct<S, SE3, SE3xSO3, SO3>();
+    EXPECT_EQ(p.template get<0>(), SE3<S>(p.template params<0>()));
+    EXPECT_EQ(p.template get<1>(), SE3xSO3<S>(p.template params<1>()));
+    {
+      EXPECT_EQ(
+          p.template get<1>().template get<0>(),
+          SE3<S>(p.template get<1>().template params<0>()));
+      EXPECT_EQ(
+          p.template get<1>().template get<1>(),
+          SO3<S>(p.template get<1>().template params<1>()));
+    }
+    EXPECT_EQ(p.template get<2>(), SO3<S>(p.template params<2>()));
+  }
 }
 
 //==============================================================================

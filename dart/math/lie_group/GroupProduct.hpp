@@ -91,6 +91,8 @@ public:
   using Base = GroupProductBase<GroupProduct<S, T...>>;
   using This = GroupProduct<S, T...>;
   using Scalar = typename Base::Scalar;
+  template <typename U = S>
+  using Nested = GroupProduct<U>;
 
   // GroupProduct specifics
   static constexpr std::size_t ProductSize = Base::ProductSize;
@@ -224,6 +226,15 @@ auto GroupProduct<S, T...>::params() const
 
 //==============================================================================
 template <typename S, template <typename> class... T>
+template <std::size_t Index_>
+auto GroupProduct<S, T...>::params()
+{
+  return m_params.template segment<Component<Index_>::ParamSize>(
+      std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
 auto GroupProduct<S, T...>::params(std::size_t index)
 {
   return m_params.segment(ParamSizeIndices[index], ParamSizes[index]);
@@ -234,15 +245,6 @@ template <typename S, template <typename> class... T>
 auto GroupProduct<S, T...>::params(std::size_t index) const
 {
   return m_params.segment(ParamSizeIndices[index], ParamSizes[index]);
-}
-
-//==============================================================================
-template <typename S, template <typename> class... T>
-template <std::size_t Index_>
-auto GroupProduct<S, T...>::params()
-{
-  return m_params.template segment<Component<Index_>::ParamSize>(
-      std::get<Index_>(ParamSizeIndices));
 }
 
 //==============================================================================

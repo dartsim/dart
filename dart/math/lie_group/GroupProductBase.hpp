@@ -113,6 +113,16 @@ public:
   using Base::params;
 
   /**
+   * @brief Group multiplication operator
+   *
+   * @tparam OtherDerived The type of the other group product
+   * @param[in] other: The other group product point
+   * @return PlainObject The result of the multiplication
+   */
+  template <typename OtherDerived>
+  PlainObject operator*(const GroupProductBase<OtherDerived>& other) const;
+
+  /**
    * @brief Sets the components of the group product to random values
    *
    * @return Derived& Reference to this GroupProduct
@@ -127,7 +137,7 @@ public:
    * index
    */
   template <size_t Index>
-  ConstComponentMap<Index> get() const;
+  const ConstComponentMap<Index> get() const;
 
   /**
    * @brief Returns the map of the component at the given index
@@ -139,6 +149,11 @@ public:
   ComponentMap<Index> get();
 
 private:
+  template <typename OtherDerived, std::size_t... Index_>
+  PlainObject compose(
+      std::integer_sequence<std::size_t, Index_...>,
+      const GroupProductBase<OtherDerived>& other) const;
+
   template <std::size_t... Index_>
   Derived& setRandom(std::integer_sequence<std::size_t, Index_...>);
 };
@@ -150,6 +165,30 @@ private:
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+typename GroupProductBase<Derived>::PlainObject
+GroupProductBase<Derived>::operator*(
+    const GroupProductBase<OtherDerived>& other) const
+{
+  return compose(
+      std::make_integer_sequence<std::size_t, Derived::ProductSize>{}, other);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived, std::size_t... Index_>
+typename GroupProductBase<Derived>::PlainObject
+GroupProductBase<Derived>::compose(
+    std::integer_sequence<std::size_t, Index_...>,
+    const GroupProductBase<OtherDerived>& other) const
+{
+  return PlainObject((..., [&] {
+    return get<Index_>() * other.template get<Index_>();
+  }()));
+}
 
 //==============================================================================
 template <typename Derived>
@@ -174,7 +213,7 @@ Derived& GroupProductBase<Derived>::setRandom(
 //==============================================================================
 template <typename Derived>
 template <size_t Index>
-typename GroupProductBase<Derived>::template ConstComponentMap<Index>
+const typename GroupProductBase<Derived>::template ConstComponentMap<Index>
 GroupProductBase<Derived>::get() const
 {
   return ConstComponentMap<Index>(
