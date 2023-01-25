@@ -86,6 +86,13 @@ public:
   /// and unique by keeping the real part of the quaternion positive.
   void normalize();
 
+  /**
+   * @brief Set the SO3 to a random rotation
+   *
+   * @return Reference to this SO3
+   */
+  Derived& setRandom();
+
   /// Returns the inverse of this SO3.
   [[nodiscard]] PlainObject inverse() const;
 
@@ -159,6 +166,15 @@ void SO3Base<Derived>::normalize()
     params() *= -1;
   }
   params().normalize();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SO3Base<Derived>::setRandom()
+{
+  quaternion() = Quaternion<Scalar>::UnitRandom();
+  normalize();
+  return derived();
 }
 
 //==============================================================================

@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/Fwd.hpp>
+#include <dart/math/lie_group/detail/Cast.hpp>
 
 namespace dart::math {
 
@@ -55,6 +56,11 @@ public:
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
   using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
+
+  // LieGroupBase specifics
+  template <typename OtherScalar>
+  using ScalarCastType =
+      typename detail::ScalarCast<PlainObject, OtherScalar>::type;
 
   /// Returns the tolerance for the Lie group
   [[nodiscard]] static constexpr Scalar Tolerance();
@@ -105,11 +111,15 @@ public:
   /// @return The matrix representation of this Lie group
   [[nodiscard]] MatrixType toMatrix() const;
 
-  /// Returns the coefficients of this Lie group.
+  /// Returns the parameters of this Lie group.
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the coefficients of this Lie group.
+  /// Returns the parameters of this Lie group.
   [[nodiscard]] Params& params();
+
+  /// Returns a new Lie group with the parameters casted to OtherScalar
+  template <typename OtherScalar>
+  [[nodiscard]] ScalarCastType<OtherScalar> cast() const;
 
 protected:
   /// Returns the derived class as a const reference
@@ -147,14 +157,16 @@ LieGroupBase<Derived>::Tolerance()
 template <typename Derived>
 typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Identity()
 {
-  return Derived::Identity();
+  const static PlainObject identity = PlainObject();
+  return identity;
 }
 
 //==============================================================================
 template <typename Derived>
 typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Random()
 {
-  return Derived::Random();
+  // setRandom() must be implemented in each <group>Base class
+  return PlainObject().setRandom();
 }
 
 //==============================================================================
@@ -231,6 +243,15 @@ template <typename Derived>
 typename LieGroupBase<Derived>::Params& LieGroupBase<Derived>::params()
 {
   return derived().params();
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherScalar>
+typename LieGroupBase<Derived>::template ScalarCastType<OtherScalar>
+LieGroupBase<Derived>::cast() const
+{
+  return ScalarCastType<OtherScalar>(params().template cast<OtherScalar>());
 }
 
 //==============================================================================

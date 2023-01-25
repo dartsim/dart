@@ -67,27 +67,20 @@ constexpr T Sum(T t, Rest... rest)
 {
   return t + Sum(rest...);
 }
-
-template <std::size_t... Is>
-using int_sequence = std::integer_sequence<std::size_t, Is...>;
-
-template <std::size_t N>
-using make_int_sequence = std::make_integer_sequence<std::size_t, N>;
-
 #endif
 
 } // namespace detail
 
-/// @brief Base class for LieGroupProduct
+/// @brief Base class for GroupProduct
 /// @tparam Derived The derived class
 template <typename Derived>
-class LieGroupProductBase : public LieGroupBase<Derived>
+class GroupProductBase : public LieGroupBase<Derived>
 {
 public:
   using Base = LieGroupBase<Derived>;
   using Scalar = typename Base::Scalar;
 
-  // LieGroupProduct specifics
+  // GroupProduct specifics
   static constexpr int ProductSize
       = ::Eigen::internal::traits<Derived>::ProductSize;
   static constexpr auto ParamSizeIndices
@@ -120,6 +113,13 @@ public:
   using Base::params;
 
   /**
+   * @brief Sets the components of the group product to random values
+   *
+   * @return Derived& Reference to this GroupProduct
+   */
+  Derived& setRandom();
+
+  /**
    * @brief Returns the map of the component at the given index
    *
    * @tparam Index The index of the component
@@ -137,6 +137,10 @@ public:
    */
   template <size_t Index>
   ComponentMap<Index> get();
+
+private:
+  template <int... Index_>
+  Derived& setRandom(std::integer_sequence<int, Index_...>);
 };
 
 } // namespace dart::math
@@ -149,9 +153,30 @@ namespace dart::math {
 
 //==============================================================================
 template <typename Derived>
+Derived& GroupProductBase<Derived>::setRandom()
+{
+  return setRandom(std::make_integer_sequence<int, Derived::ProductSize>{});
+}
+
+//==============================================================================
+template <typename Derived>
+template <int... Index_>
+Derived& GroupProductBase<Derived>::setRandom(
+    std::integer_sequence<int, Index_...>)
+{
+  (
+      [&] {
+        get<Index_>().setRandom();
+      }(),
+      ...);
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
 template <size_t Index>
-typename LieGroupProductBase<Derived>::template ConstComponentMap<Index>
-LieGroupProductBase<Derived>::get() const
+typename GroupProductBase<Derived>::template ConstComponentMap<Index>
+GroupProductBase<Derived>::get() const
 {
   return ConstComponentMap<Index>(
       params().data() + std::get<Index>(ParamSizeIndices));
@@ -160,8 +185,8 @@ LieGroupProductBase<Derived>::get() const
 //==============================================================================
 template <typename Derived>
 template <size_t Index>
-typename LieGroupProductBase<Derived>::template ComponentMap<Index>
-LieGroupProductBase<Derived>::get()
+typename GroupProductBase<Derived>::template ComponentMap<Index>
+GroupProductBase<Derived>::get()
 {
   return ComponentMap<Index>(
       params().data() + std::get<Index>(ParamSizeIndices));

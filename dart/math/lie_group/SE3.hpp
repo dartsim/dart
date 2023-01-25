@@ -62,7 +62,6 @@ namespace dart::math {
 
 /// @brief SE3 is a specialization of LieGroupBase for SE3
 /// @tparam S The scalar type
-/// @tparam Options_ The options for the underlying Eigen::Matrix
 template <typename S>
 class SE3 : public SE3Base<SE3<S>>
 {
@@ -77,12 +76,6 @@ public:
   using Tangent = typename Base::Tangent;
 
   using Base::Tolerance;
-
-  /// Returns the identity SE3
-  [[nodiscard]] static PlainObject Identity();
-
-  /// Returns a random SE3
-  [[nodiscard]] static PlainObject Random();
 
   /// Returns the exponential map of the given vector
   ///
@@ -244,20 +237,26 @@ public:
       SO3Base<SO3Derived>&& rotation,
       Eigen::MatrixBase<MatrixDerived>&& translation);
 
+  template <typename MatrixDerived>
+  explicit SE3(const Eigen::MatrixBase<MatrixDerived>& params);
+
+  template <typename MatrixDerived>
+  explicit SE3(Eigen::MatrixBase<MatrixDerived>&& params);
+
   /// Copy assignment operator
   SE3& operator=(const SE3& other);
 
   /// Move assignment operator
   SE3& operator=(SE3&& other) noexcept;
 
-  /// Returns the underlying coefficients
+  /// Returns the underlying parameters
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the underlying coefficients
+  /// Returns the underlying parameters
   [[nodiscard]] Params& params();
 
 private:
-  /// The underlying coefficients
+  /// The underlying parameters
   Params m_params;
 };
 
@@ -306,20 +305,6 @@ Matrix3<S> computeQ(
 }
 
 } // namespace detail
-
-//==============================================================================
-template <typename S>
-typename SE3<S>::PlainObject SE3<S>::Identity()
-{
-  return SE3();
-}
-
-//==============================================================================
-template <typename S>
-typename SE3<S>::PlainObject SE3<S>::Random()
-{
-  return SE3(SO3<S>::Random(), Eigen::Vector3<S>::Random());
-}
 
 //==============================================================================
 template <typename S>
@@ -614,6 +599,23 @@ SE3<S>::SE3(
 {
   params().template head<4>() = std::move(rotation.params());
   params().template tail<3>() = std::move(translation);
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerived>
+SE3<S>::SE3(const Eigen::MatrixBase<MatrixDerived>& params) : m_params(params)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerived>
+SE3<S>::SE3(Eigen::MatrixBase<MatrixDerived>&& params)
+  : m_params(std::move(params))
+{
+  // Do nothing
 }
 
 //==============================================================================

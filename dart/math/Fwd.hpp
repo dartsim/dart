@@ -325,7 +325,7 @@ template <typename Scalar>
 class SE3;
 
 template <typename Scalar, template <typename> class...>
-class LieGroupProduct;
+class GroupProduct;
 
 //------------------------------------------------------------------------------
 // Other DART types

@@ -60,7 +60,6 @@ namespace dart::math {
 
 /// @brief SO3 is a specialization of LieGroupBase for SO3
 /// @tparam S The scalar type
-/// @tparam Options_ The options for the underlying Eigen::Matrix
 template <typename S>
 class SO3 : public SO3Base<SO3<S>>
 {
@@ -91,12 +90,6 @@ public:
   };
 
   using Base::Tolerance;
-
-  /// Returns the identity SO3
-  [[nodiscard]] static PlainObject Identity();
-
-  /// Returns a random SO3
-  [[nodiscard]] static PlainObject Random();
 
   template <typename MatrixDerived>
   [[nodiscard]] static PlainObject FromEulerAngles(
@@ -313,6 +306,12 @@ public:
   explicit SO3(
       ::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag);
 
+  template <typename MatrixDerived>
+  explicit SO3(const Eigen::MatrixBase<MatrixDerived>& params);
+
+  template <typename MatrixDerived>
+  explicit SO3(Eigen::MatrixBase<MatrixDerived>&& params);
+
   /// Copy assignment operator
   /// @param[in] other The other SO3 to be copied
   /// @return Reference to this SO3
@@ -326,14 +325,14 @@ public:
   using Base::normalize;
   using Base::quaternion;
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the underlying quaternion
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the underlying quaternion
   [[nodiscard]] Params& params();
 
 private:
-  /// The underlying quaternion coefficients
+  /// The underlying quaternion parameters
   Params m_params;
 };
 
@@ -346,20 +345,6 @@ DART_TEMPLATE_CLASS_HEADER(MATH, SO3);
 //==============================================================================
 
 namespace dart::math {
-
-//==============================================================================
-template <typename S>
-typename SO3<S>::PlainObject SO3<S>::Identity()
-{
-  return SO3(::Eigen::Quaternion<S>::Identity(), NO_NORMALIZE);
-}
-
-//==============================================================================
-template <typename S>
-typename SO3<S>::PlainObject SO3<S>::Random()
-{
-  return SO3(::Eigen::Quaternion<S>::UnitRandom());
-}
 
 //==============================================================================
 template <typename S>
@@ -615,6 +600,23 @@ template <typename S>
 template <typename QuaternionDrived>
 SO3<S>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag)
   : m_params(std::move(quat.coeffs()))
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerived>
+SO3<S>::SO3(const Eigen::MatrixBase<MatrixDerived>& params) : m_params(params)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerived>
+SO3<S>::SO3(Eigen::MatrixBase<MatrixDerived>&& params)
+  : m_params(std::move(params))
 {
   // Do nothing
 }

@@ -43,28 +43,40 @@ namespace {
 } // namespace
 
 template <typename S>
-struct LieGroupProductTest : public testing::Test
+struct GroupProductTest : public testing::Test
 {
   using Scalar = S;
 };
 
 using Types = testing::Types<float, double>;
-TYPED_TEST_SUITE(LieGroupProductTest, Types);
+TYPED_TEST_SUITE(GroupProductTest, Types);
 
 //==============================================================================
-TYPED_TEST(LieGroupProductTest, StaticProperties)
+TYPED_TEST(GroupProductTest, StaticProperties)
 {
   using S = typename TestFixture::Scalar;
 
-  const auto total_param_size = LieGroupProduct<S, SE3, SO3>::ParamSize;
+  const auto total_param_size = GroupProduct<S, SE3, SO3>::ParamSize;
   EXPECT_EQ(total_param_size, SE3<S>::ParamSize + SO3<S>::ParamSize);
 
-  const auto product_size = LieGroupProduct<S, SE3, SO3>::ProductSize;
+  const auto product_size = GroupProduct<S, SE3, SO3>::ProductSize;
   EXPECT_EQ(product_size, 2);
 }
 
 //==============================================================================
-TYPED_TEST(LieGroupProductTest, DefaultConstructor)
+TYPED_TEST(GroupProductTest, Random)
+{
+  using S = typename TestFixture::Scalar;
+
+  auto product_1 = GroupProduct<S, SE3, SO3>::Random();
+  EXPECT_EQ(
+      product_1.template get<0>(), SE3<S>(product_1.template params<0>()));
+  EXPECT_EQ(
+      product_1.template get<1>(), SO3<S>(product_1.template params<1>()));
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, DefaultConstructor)
 {
   using S = typename TestFixture::Scalar;
 
@@ -72,7 +84,7 @@ TYPED_TEST(LieGroupProductTest, DefaultConstructor)
   SO3<S> so3 = SO3<S>::Random();
 
   // Default constructor
-  auto product = LieGroupProduct<S, SE3, SO3>();
+  auto product = GroupProduct<S, SE3, SO3>();
   EXPECT_EQ(product.ParamSize, se3.ParamSize + so3.ParamSize);
 
   // Check if the components are their identieis
@@ -85,7 +97,24 @@ TYPED_TEST(LieGroupProductTest, DefaultConstructor)
 }
 
 //==============================================================================
-TYPED_TEST(LieGroupProductTest, ConstructFromComponents)
+TYPED_TEST(GroupProductTest, Cast)
+{
+  using S = typename TestFixture::Scalar;
+
+  auto product_1 = GroupProduct<S, SE3, SO3>();
+  auto product_2 = product_1.template cast<float>();
+  auto product_3 = product_1.template cast<double>();
+
+  for (std::size_t i = 0; i < product_1.ParamSize; ++i) {
+    EXPECT_FLOAT_EQ(
+        static_cast<float>(product_1.params()[i]), product_2.params()[i]);
+    EXPECT_DOUBLE_EQ(
+        static_cast<double>(product_1.params()[i]), product_3.params()[i]);
+  }
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, ConstructFromComponents)
 {
   using S = typename TestFixture::Scalar;
 
@@ -93,7 +122,7 @@ TYPED_TEST(LieGroupProductTest, ConstructFromComponents)
   SO3<S> so3 = SO3<S>::Random();
 
   // Copy constructor from the components
-  auto product = LieGroupProduct<S, SE3, SO3>(se3, so3);
+  auto product = GroupProduct<S, SE3, SO3>(se3, so3);
 
   // Check the parameters
   int offset = 0;
@@ -114,4 +143,53 @@ TYPED_TEST(LieGroupProductTest, ConstructFromComponents)
   auto comp_1 = product.template get<1>();
   EXPECT_EQ(comp_1, so3);
   EXPECT_TRUE(comp_1.params().isApprox(so3.params()));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+void TestMapParams()
+{
+  using ProductType = GroupProduct<S, T...>;
+  const auto ParamSize = ProductType::ProductSize;
+
+  VectorX<S> params = VectorX<S>::Random(ParamSize);
+
+  Map<const ProductType> map_const(params.data());
+  Map<ProductType> map(params.data());
+
+  // Check that the params() function returns the correct data
+  const auto& params_const = map_const.params();
+  for (std::size_t i = 0; i < ParamSize; i++) {
+    EXPECT_EQ(params_const[i], params[i]);
+  }
+
+  for (std::size_t i = 0; i < ParamSize; i++) {
+    EXPECT_EQ(map.params()[i], params[i]);
+  }
+
+  // Check that the params() function returns a non-const reference for the
+  // non-const Map class
+  params[0] = 5;
+  EXPECT_EQ(params[0], 5);
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, MapParams)
+{
+  using S = typename TestFixture::Scalar;
+
+  TestMapParams<S, SO3>();
+  TestMapParams<S, SE3>();
+
+  TestMapParams<S, SO3, SO3>();
+  TestMapParams<S, SE3, SE3>();
+
+  TestMapParams<S, SO3, SO3, SO3>();
+  TestMapParams<S, SE3, SE3, SE3>();
+
+  TestMapParams<S, SO3, SE3>();
+  TestMapParams<S, SE3, SO3>();
+
+  TestMapParams<S, SO3, SE3, SO3>();
+  TestMapParams<S, SE3, SO3, SE3>();
 }

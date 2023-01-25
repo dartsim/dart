@@ -68,8 +68,7 @@ namespace Eigen {
 /// Specialization of Eigen::Map for const dart::math::SO3, and also concrete
 /// implementation of dart::math::SO3Base.
 ///
-/// @tparam S The scalar type of the underlying quaternion coefficients
-/// @tparam Options_ The options of the underlying quaternion coefficients.
+/// @tparam S The scalar type of the underlying quaternion parameters
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
 template <typename S>
@@ -95,7 +94,7 @@ public:
   /// which is 4 for SO3.
   explicit Map(const Scalar* data);
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the underlying quaternion
   [[nodiscard]] const Params& params() const;
 
 private:
@@ -105,8 +104,7 @@ private:
 /// Specialization of Eigen::Map for dart::math::SO3, and also concrete
 /// implementation of dart::math::SO3Base.
 ///
-/// @tparam S The scalar type of the underlying quaternion coefficients
-/// @tparam Options_ The options of the underlying quaternion coefficients.
+/// @tparam S The scalar type of the underlying quaternion parameters
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
 template <typename S>
@@ -134,10 +132,10 @@ public:
   /// which is 4 for SO3.
   explicit Map(Scalar* data);
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the underlying quaternion
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the underlying quaternion
   [[nodiscard]] Params& params();
 
 private:

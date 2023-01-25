@@ -32,32 +32,34 @@
 
 #pragma once
 
-#include <dart/math/lie_group/SE3.hpp>
+#include <dart/math/lie_group/GroupProductBase.hpp>
 
 namespace Eigen::internal {
 
-/// Specialization of Eigen::internal::traits for const dart::math::SE3
-template <typename S>
-struct traits<::Eigen::Map<const ::dart::math::SE3<S>>>
-  : traits<const ::dart::math::SE3<S>>
+// TODO(JS): Move to a dedicated header file
+/// @brief Specialization of Eigen::internal::traits for GroupProduct
+template <typename S, template <typename> class... T>
+struct traits<::Eigen::Map<const ::dart::math::GroupProduct<S, T...>>>
+  : traits<const ::dart::math::GroupProduct<S, T...>>
 {
-  using Base = traits<const ::dart::math::SE3<S>>;
-  using Scalar = typename Base::Scalar;
+  using Base = const ::dart::math::GroupProduct<S, T...>;
+  using Scalar = S;
 
   // LieGroup common
-  static constexpr int ParamSize = Base::ParamSize;
+  static constexpr auto ParamSize = Base::ParamSize;
   using Params = ::Eigen::Map<const ::Eigen::Matrix<S, ParamSize, 1>>;
 };
 
-/// Specialization of Eigen::internal::traits for dart::math::SE3
-template <typename S>
-struct traits<::Eigen::Map<::dart::math::SE3<S>>> : traits<::dart::math::SE3<S>>
+/// @brief Specialization of Eigen::internal::traits for GroupProduct
+template <typename S, template <typename> class... T>
+struct traits<::Eigen::Map<::dart::math::GroupProduct<S, T...>>>
+  : traits<::dart::math::GroupProduct<S, T...>>
 {
-  using Base = traits<::dart::math::SE3<S>>;
-  using Scalar = typename Base::Scalar;
+  using Base = ::dart::math::GroupProduct<S, T...>;
+  using Scalar = S;
 
   // LieGroup common
-  static constexpr int ParamSize = Base::ParamSize;
+  static constexpr auto ParamSize = Base::ParamSize;
   using Params = ::Eigen::Map<::Eigen::Matrix<S, ParamSize, 1>>;
 };
 
@@ -65,72 +67,62 @@ struct traits<::Eigen::Map<::dart::math::SE3<S>>> : traits<::dart::math::SE3<S>>
 
 namespace Eigen {
 
-/// Specialization of Eigen::Map for const dart::math::SE3, and also concrete
-/// implementation of dart::math::SE3Base.
-///
-/// @tparam S The scalar type of the underlying quaternion parameters
-/// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
-/// way, Eigen can use vectorized instructions.
-template <typename S>
-class Map<const ::dart::math::SE3<S>>
-  : public ::dart::math::SE3Base<Map<const ::dart::math::SE3<S>>>
+/// @brief GroupProduct is a specialization of LieGroupBase for
+/// GroupProduct
+/// @tparam S The scalar type
+template <typename S, template <typename> class... T>
+class Map<const ::dart::math::GroupProduct<S, T...>>
+  : public ::dart::math::GroupProductBase<
+        Map<const ::dart::math::GroupProduct<S, T...>>>
 {
 public:
-  using Base = ::dart::math::SE3Base<Map<const ::dart::math::SE3<S>>>;
-  using This = Map<const ::dart::math::SE3<S>>;
+  using Base = ::dart::math::GroupProductBase<
+      Map<const ::dart::math::GroupProduct<S, T...>>>;
+  using This = Map<const ::dart::math::GroupProduct<S, T...>>;
   using Scalar = typename Base::Scalar;
 
   // LieGroup common
   using Params = typename Base::Params;
 
-  /// Default constructor
-  ///
-  /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least ParamSize,
-  /// which is 4 for SE3.
+  /** Constructor */
   explicit Map(const Scalar* data);
 
-  /// Returns the parameters of the underlying quaternion
+  /** Returns the underlying parameters */
   [[nodiscard]] const Params& params() const;
 
 private:
+  /** The underlying parameters */
   Params m_params;
 };
 
-/// Specialization of Eigen::Map for dart::math::SE3, and also concrete
-/// implementation of dart::math::SE3Base.
-///
-/// @tparam S The scalar type of the underlying quaternion parameters
-/// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
-/// way, Eigen can use vectorized instructions.
-template <typename S>
-class Map<::dart::math::SE3<S>>
-  : public ::dart::math::SE3Base<Map<::dart::math::SE3<S>>>
+/// @brief GroupProduct is a specialization of LieGroupBase for
+/// GroupProduct
+/// @tparam S The scalar type
+template <typename S, template <typename> class... T>
+class Map<::dart::math::GroupProduct<S, T...>>
+  : public ::dart::math::GroupProductBase<
+        Map<::dart::math::GroupProduct<S, T...>>>
 {
 public:
-  using Base = ::dart::math::SE3Base<Map<::dart::math::SE3<S>>>;
-  using This = Map<::dart::math::SE3<S>>;
+  using Base = ::dart::math::GroupProductBase<
+      Map<::dart::math::GroupProduct<S, T...>>>;
+  using This = Map<::dart::math::GroupProduct<S, T...>>;
   using Scalar = typename Base::Scalar;
 
   // LieGroup common
   using Params = typename Base::Params;
 
-  using Base::operator=;
-
-  /// Default constructor
-  ///
-  /// @param[in] data Pointer to an array of scalars that this Map will use as
-  /// its internal data. The array must have a size of at least ParamSize,
-  /// which is 4 for SE3.
+  /** Constructor */
   explicit Map(Scalar* data);
 
-  /// Returns the parameters of the underlying quaternion
+  /** Returns the underlying parameters */
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the parameters of the underlying quaternion
+  /** Returns the underlying parameters */
   [[nodiscard]] Params& params();
 
 private:
+  /** The underlying parameters */
   Params m_params;
 };
 
@@ -143,38 +135,40 @@ private:
 namespace Eigen {
 
 //==============================================================================
-template <typename S>
-Map<const ::dart::math::SE3<S>>::Map(const Scalar* data) : m_params(data)
+template <typename S, template <typename> class... T>
+Map<const ::dart::math::GroupProduct<S, T...>>::Map(const Scalar* data)
+  : m_params(data)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
-const typename Map<const ::dart::math::SE3<S>>::Params&
-Map<const ::dart::math::SE3<S>>::params() const
+template <typename S, template <typename> class... T>
+const typename Map<const ::dart::math::GroupProduct<S, T...>>::Params&
+Map<const ::dart::math::GroupProduct<S, T...>>::params() const
 {
   return m_params;
 }
 
 //==============================================================================
-template <typename S>
-Map<::dart::math::SE3<S>>::Map(Scalar* data) : m_params(data)
+template <typename S, template <typename> class... T>
+Map<::dart::math::GroupProduct<S, T...>>::Map(Scalar* data) : m_params(data)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
-const typename Map<::dart::math::SE3<S>>::Params&
-Map<::dart::math::SE3<S>>::params() const
+template <typename S, template <typename> class... T>
+const typename Map<::dart::math::GroupProduct<S, T...>>::Params&
+Map<::dart::math::GroupProduct<S, T...>>::params() const
 {
   return m_params;
 }
 
 //==============================================================================
-template <typename S>
-typename Map<::dart::math::SE3<S>>::Params& Map<::dart::math::SE3<S>>::params()
+template <typename S, template <typename> class... T>
+typename Map<::dart::math::GroupProduct<S, T...>>::Params&
+Map<::dart::math::GroupProduct<S, T...>>::params()
 {
   return m_params;
 }

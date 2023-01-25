@@ -32,13 +32,35 @@
 
 #pragma once
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
+namespace dart::math::detail {
 
-#include <dart/math/lie_group/GroupProduct.hpp>
-#include <dart/math/lie_group/GroupProductMap.hpp>
-#include <dart/math/lie_group/SE3.hpp>
-#include <dart/math/lie_group/SE3Map.hpp>
-#include <dart/math/lie_group/SO3.hpp>
-#include <dart/math/lie_group/SO3Map.hpp>
+//==============================================================================
+template <typename Class, typename OtherDerived>
+struct ScalarCast;
+
+//==============================================================================
+template <
+    template <typename, template <typename> class...>
+    class Class,
+    typename Scalar,
+    typename OtherScalar,
+    template <typename>
+    class... Ts>
+struct ScalarCast<Class<Scalar, Ts...>, OtherScalar>
+{
+  using type = Class<OtherScalar, Ts...>;
+};
+
+//==============================================================================
+template <
+    template <typename, int>
+    class Class,
+    typename Scalar,
+    typename OtherScalar,
+    int Dim>
+struct ScalarCast<Class<Scalar, Dim>, OtherScalar>
+{
+  using type = Class<OtherScalar, Dim>;
+};
+
+} // namespace dart::math::detail

@@ -32,18 +32,18 @@
 
 #pragma once
 
-#include <dart/math/lie_group/LieGroupProductBase.hpp>
+#include <dart/math/lie_group/GroupProductBase.hpp>
 
 namespace Eigen::internal {
 
 // TODO(JS): Move to a dedicated header file
-/// @brief Specialization of Eigen::internal::traits for LieGroupProduct
+/// @brief Specialization of Eigen::internal::traits for GroupProduct
 template <typename S, template <typename> class... T>
-struct traits<::dart::math::LieGroupProduct<S, T...>>
+struct traits<::dart::math::GroupProduct<S, T...>>
 {
   using Scalar = S;
 
-  // LieGroupProduct specifics
+  // GroupProduct specifics
   static constexpr std::size_t ProductSize = sizeof...(T);
   static constexpr auto ParamSizeIndices
       = ::dart::math::detail::GetIndices<T<S>::ParamSize...>();
@@ -70,7 +70,7 @@ struct traits<::dart::math::LieGroupProduct<S, T...>>
   static constexpr int MatrixDim = (T<S>::DoF + ...);
 #endif
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
-  using PlainObject = ::dart::math::LieGroupProduct<S, T...>;
+  using PlainObject = ::dart::math::GroupProduct<S, T...>;
   using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
   using Tangent = ::Eigen::Matrix<S, Dim, 1>;
 };
@@ -79,19 +79,18 @@ struct traits<::dart::math::LieGroupProduct<S, T...>>
 
 namespace dart::math {
 
-/// @brief LieGroupProduct is a specialization of LieGroupBase for
-/// LieGroupProduct
+/// @brief GroupProduct is a specialization of LieGroupBase for
+/// GroupProduct
 /// @tparam S The scalar type
-/// @tparam Options_ The options for the underlying Eigen::Matrix
 template <typename S, template <typename> class... T>
-class LieGroupProduct : public LieGroupProductBase<LieGroupProduct<S, T...>>
+class GroupProduct : public GroupProductBase<GroupProduct<S, T...>>
 {
 public:
-  using Base = LieGroupProductBase<LieGroupProduct<S, T...>>;
-  using This = LieGroupProduct<S, T...>;
+  using Base = GroupProductBase<GroupProduct<S, T...>>;
+  using This = GroupProduct<S, T...>;
   using Scalar = typename Base::Scalar;
 
-  // LieGroupProduct specifics
+  // GroupProduct specifics
   static constexpr std::size_t ProductSize = Base::ProductSize;
   static constexpr auto ParamSizeIndices = Base::ParamSizeIndices;
   using Components = typename Base::Components;
@@ -111,38 +110,62 @@ public:
   using Base::Tolerance;
 
   /// Default constructor that initializes the quaternion to identity
-  LieGroupProduct();
+  GroupProduct();
 
-  /// Constructs a LieGroupProduct from the given components
+  /// Constructs a GroupProduct from the given components
   ///
-  /// @param[in] components The components of the LieGroupProduct. The numer and
+  /// @param[in] components The components of the GroupProduct. The numer and
   /// order of components must match the template parameters.
-  LieGroupProduct(const T<S>&... components);
+  GroupProduct(const T<S>&... components);
 
-  /// Constructs a LieGroupProduct from the given components
+  /// Constructs a GroupProduct from the given components
   ///
-  /// @param[in] components The components of the LieGroupProduct. The numer and
+  /// @param[in] components The components of the GroupProduct. The numer and
   /// order of components must match the template parameters.
-  LieGroupProduct(T<S>&&... components);
+  GroupProduct(T<S>&&... components);
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Constructs a GroupProduct from the given parameters
+  ///
+  /// @param[in] params The parameters of the GroupProduct
+  template <typename MatrixDerived>
+  GroupProduct(const ::Eigen::MatrixBase<MatrixDerived>& params);
+
+  /// Constructs a GroupProduct from the given parameters
+  ///
+  /// @param[in] params The parameters of the GroupProduct
+  template <typename MatrixDerived>
+  GroupProduct(::Eigen::MatrixBase<MatrixDerived>&& params);
+
+  /// Returns the parameters of the specific component group
+  template <std::size_t Index_>
+  [[nodiscard]] auto params() const;
+
+  /// Returns the parameters of the specific component group
+  template <std::size_t Index_>
+  [[nodiscard]] auto params();
+
+  /// Returns the parameters of the whole group product
   [[nodiscard]] const Params& params() const;
 
-  /// Returns the coefficients of the underlying quaternion
+  /// Returns the parameters of the whole group product
   [[nodiscard]] Params& params();
 
 private:
-#if defined(_MSC_VER)
-  template <std::size_t... Index_>
-  LieGroupProduct(detail::int_sequence<Index_...>);
+  static_assert(
+      sizeof...(T) > 0, "GroupProduct must have at least one component");
 
   template <std::size_t... Index_>
-  LieGroupProduct(detail::int_sequence<Index_...>, const T<S>&... components);
+  GroupProduct(std::integer_sequence<std::size_t, Index_...>);
 
   template <std::size_t... Index_>
-  LieGroupProduct(detail::int_sequence<Index_...>, T<S>&&... components);
-#endif
-  /// The underlying quaternion coefficients
+  GroupProduct(
+      std::integer_sequence<std::size_t, Index_...>, const T<S>&... components);
+
+  template <std::size_t... Index_>
+  GroupProduct(
+      std::integer_sequence<std::size_t, Index_...>, T<S>&&... components);
+
+  /// The underlying quaternion parameters
   Params m_params;
 };
 
@@ -154,11 +177,10 @@ private:
 
 namespace dart::math {
 
-#if defined(_MSC_VER)
 //==============================================================================
 template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct()
-  : LieGroupProduct(detail::make_int_sequence<ProductSize>{})
+GroupProduct<S, T...>::GroupProduct()
+  : GroupProduct(std::make_integer_sequence<std::size_t, ProductSize>{})
 {
   // Do nothing
 }
@@ -166,19 +188,23 @@ LieGroupProduct<S, T...>::LieGroupProduct()
 //==============================================================================
 template <typename S, template <typename> class... T>
 template <std::size_t... Index_>
-LieGroupProduct<S, T...>::LieGroupProduct(detail::int_sequence<Index_...>)
+GroupProduct<S, T...>::GroupProduct(
+    std::integer_sequence<std::size_t, Index_...>)
 {
-  (void)(std::initializer_list<int>{
-      ((m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
-        = Component<Index_>::Identity().params()),
-       0)...});
+  (
+      [&] {
+        m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(ParamSizeIndices))
+            = Component<Index_>::Identity().params();
+      }(),
+      ...);
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct(const T<S>&... components)
-  : LieGroupProduct(detail::make_int_sequence<ProductSize>{}, components...)
+GroupProduct<S, T...>::GroupProduct(const T<S>&... components)
+  : GroupProduct(
+      std::make_integer_sequence<std::size_t, ProductSize>{}, components...)
 {
   // Do nothing
 }
@@ -186,21 +212,23 @@ LieGroupProduct<S, T...>::LieGroupProduct(const T<S>&... components)
 //==============================================================================
 template <typename S, template <typename> class... T>
 template <std::size_t... Index_>
-LieGroupProduct<S, T...>::LieGroupProduct(
-    detail::int_sequence<Index_...>, const T<S>&... components)
+GroupProduct<S, T...>::GroupProduct(
+    std::integer_sequence<std::size_t, Index_...>, const T<S>&... components)
 {
-  (void)(std::initializer_list<int>{
-      ((m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
-        = components.params()),
-       0)...});
+  (
+      [&] {
+        m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(ParamSizeIndices))
+            = components.params();
+      }(),
+      ...);
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct(T<S>&&... components)
-  : LieGroupProduct(
-      detail::make_int_sequence<ProductSize>{},
+GroupProduct<S, T...>::GroupProduct(T<S>&&... components)
+  : GroupProduct(
+      std::make_integer_sequence<std::size_t, ProductSize>{},
       std::forward<T<S>...>(components)...)
 {
   // Do nothing
@@ -209,62 +237,66 @@ LieGroupProduct<S, T...>::LieGroupProduct(T<S>&&... components)
 //==============================================================================
 template <typename S, template <typename> class... T>
 template <std::size_t... Index_>
-LieGroupProduct<S, T...>::LieGroupProduct(
-    detail::int_sequence<Index_...>, T<S>&&... components)
+GroupProduct<S, T...>::GroupProduct(
+    std::integer_sequence<std::size_t, Index_...>, T<S>&&... components)
 {
-  (void)(std::initializer_list<int>{
-      ((m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(Eigen::internal::traits<This>::ParamSizeIndices))
-        = std::move(components.params())),
-       0)...});
-}
-#else
-//==============================================================================
-template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct()
-{
-  auto assign = [&](auto&& arg, std::size_t index) {
-    m_params.template segment<arg.ParamSize>(index) = arg.params();
-  };
-  std::apply(
-      [&](auto... i) { (assign(T<S>::Identity(), i), ...); }, ParamSizeIndices);
+  (
+      [&] {
+        m_params.template segment<Component<Index_>::ParamSize>(
+            std::get<Index_>(ParamSizeIndices))
+            = std::move(components.params());
+      }(),
+      ...);
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct(const T<S>&... components)
+template <typename MatrixDerived>
+GroupProduct<S, T...>::GroupProduct(
+    const ::Eigen::MatrixBase<MatrixDerived>& params)
+  : m_params(params)
 {
-  auto assign = [&](const auto& arg, std::size_t index) {
-    m_params.template segment<arg.ParamSize>(index) = arg.params();
-  };
-  std::apply(
-      [&](auto... i) { (assign(components, i), ...); }, ParamSizeIndices);
+  // Do nothing
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-LieGroupProduct<S, T...>::LieGroupProduct(T<S>&&... components)
+template <typename MatrixDerived>
+GroupProduct<S, T...>::GroupProduct(::Eigen::MatrixBase<MatrixDerived>&& params)
+  : m_params(std::move(params))
 {
-  auto assign = [&](auto&& arg, std::size_t index) {
-    m_params.template segment<arg.ParamSize>(index) = std::move(arg.params());
-  };
-  std::apply(
-      [&](auto... i) { (assign(std::move(components), i), ...); },
-      ParamSizeIndices);
+  // Do nothing
 }
-#endif
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-const typename LieGroupProduct<S, T...>::Params&
-LieGroupProduct<S, T...>::params() const
+template <std::size_t Index_>
+auto GroupProduct<S, T...>::params() const
+{
+  return m_params.template segment<Component<Index_>::ParamSize>(
+      std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+template <std::size_t Index_>
+auto GroupProduct<S, T...>::params()
+{
+  return m_params.template segment<Component<Index_>::ParamSize>(
+      std::get<Index_>(ParamSizeIndices));
+}
+
+//==============================================================================
+template <typename S, template <typename> class... T>
+const typename GroupProduct<S, T...>::Params& GroupProduct<S, T...>::params()
+    const
 {
   return m_params;
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-typename LieGroupProduct<S, T...>::Params& LieGroupProduct<S, T...>::params()
+typename GroupProduct<S, T...>::Params& GroupProduct<S, T...>::params()
 {
   return m_params;
 }

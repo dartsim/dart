@@ -81,6 +81,13 @@ public:
   Vector3<Scalar> operator*(const MatrixBase<MatrixDerived>& vec) const;
 
   /**
+   * @brief Sets the group to random
+   *
+   * @return The reference of this SE3
+   */
+  Derived& setRandom();
+
+  /**
    * Returns the inverse of this SO3.
    */
   [[nodiscard]] PlainObject inverse() const;
@@ -173,6 +180,15 @@ Vector3<typename SE3Base<Derived>::Scalar> SE3Base<Derived>::operator*(
     const MatrixBase<MatrixDerived>& vec) const
 {
   return rotation() * vec + translation();
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& SE3Base<Derived>::setRandom()
+{
+  rotation().setRandom();
+  translation().setRandom();
+  return derived();
 }
 
 //==============================================================================
