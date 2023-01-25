@@ -99,7 +99,7 @@ public:
   // LieGroupBase common
   using Base::Dim;
   using Base::DoF;
-  using Base::MatrixDim;
+  using Base::MatrixRepDim;
   using Base::ParamSize;
   using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;
@@ -139,8 +139,8 @@ public:
   ComponentMap<Index> get();
 
 private:
-  template <int... Index_>
-  Derived& setRandom(std::integer_sequence<int, Index_...>);
+  template <std::size_t... Index_>
+  Derived& setRandom(std::integer_sequence<std::size_t, Index_...>);
 };
 
 } // namespace dart::math
@@ -155,20 +155,19 @@ namespace dart::math {
 template <typename Derived>
 Derived& GroupProductBase<Derived>::setRandom()
 {
-  return setRandom(std::make_integer_sequence<int, Derived::ProductSize>{});
+  return setRandom(
+      std::make_integer_sequence<std::size_t, Derived::ProductSize>{});
 }
 
 //==============================================================================
 template <typename Derived>
-template <int... Index_>
+template <std::size_t... Index_>
 Derived& GroupProductBase<Derived>::setRandom(
-    std::integer_sequence<int, Index_...>)
+    std::integer_sequence<std::size_t, Index_...>)
 {
-  (
-      [&] {
-        get<Index_>().setRandom();
-      }(),
-      ...);
+  (..., [&] {
+    get<Index_>().setRandom();
+  }());
   return derived();
 }
 

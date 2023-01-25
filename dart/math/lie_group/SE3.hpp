@@ -49,10 +49,10 @@ struct traits<::dart::math::SE3<S>>
   static constexpr int ParamSize = 7;
   static constexpr int Dim = 3;
   static constexpr int DoF = 6;
-  static constexpr int MatrixDim = 4;
+  static constexpr int MatrixRepDim = 4;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using PlainObject = ::dart::math::SE3<S>;
-  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Tangent = ::Eigen::Matrix<S, DoF, 1>;
 };
 
@@ -216,6 +216,13 @@ public:
   /// Default constructor that initializes the quaternion to identity and the
   /// translation to zero
   SE3();
+
+  /// Default constructor that does not initialize the quaternion and the
+  /// translation
+  ///
+  /// This constructor is useful for performance reasons when the quaternion and
+  /// translation are going to be initialized later.
+  explicit SE3(NoInitializeTag);
 
   /// Copy constructor
   SE3(const SE3& other);
@@ -563,6 +570,13 @@ template <typename S>
 SE3<S>::SE3() : m_params(Params::Zero())
 {
   params().w() = 1;
+}
+
+//==============================================================================
+template <typename S>
+SE3<S>::SE3(NoInitializeTag)
+{
+  // Do nothing
 }
 
 //==============================================================================

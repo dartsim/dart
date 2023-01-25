@@ -47,10 +47,10 @@ struct traits<::dart::math::SO3<S>>
   static constexpr int ParamSize = 4;
   static constexpr int Dim = 3;
   static constexpr int DoF = 3;
-  static constexpr int MatrixDim = 3;
+  static constexpr int MatrixRepDim = 3;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using PlainObject = ::dart::math::SO3<S>;
-  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Tangent = ::Eigen::Matrix<S, DoF, 1>;
 };
 
@@ -265,6 +265,12 @@ public:
 
   /// Default constructor that initializes the quaternion to identity
   SO3();
+
+  /// Default constructor that does not initialize the quaternion
+  ///
+  /// This constructor is useful when the quaternion is going to be initialized
+  /// later.
+  explicit SO3(NoInitializeTag);
 
   /// Copy constructor
   /// @param[in] other The other SO3 to be copied
@@ -533,6 +539,13 @@ Matrix3<S> SO3<S>::RightJacobianInverse(
 //==============================================================================
 template <typename S>
 SO3<S>::SO3() : m_params(::Eigen::Quaternion<S>::Identity().coeffs())
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+SO3<S>::SO3(NoInitializeTag)
 {
   // Do nothing
 }

@@ -37,30 +37,59 @@
 
 namespace dart::math {
 
+enum NoInitializeTag
+{
+  NO_INITIALIZE = 0,
+};
+
 /// @brief Base class for Lie groups
 /// @tparam Derived The derived class
 template <typename Derived>
 class LieGroupBase
 {
 public:
+  /// The scalar type for the internal representation of the Lie group
   using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;
 
-  // LieGroup common
+  /// @{ @name LieGroup common
+
+  /// The number of parameters of the Lie group
   static constexpr int ParamSize
       = ::Eigen::internal::traits<Derived>::ParamSize;
+
+  /// The dimension of the Lie group is embedded (e.g., 2D or 3D Eucleadian
+  /// space)
   static constexpr int Dim = ::Eigen::internal::traits<Derived>::Dim;
+
+  /// The degree of freedom of the Lie group
   static constexpr int DoF = ::Eigen::internal::traits<Derived>::DoF;
-  static constexpr int MatrixDim
-      = ::Eigen::internal::traits<Derived>::MatrixDim;
+
+  /// The dimension of the matrix representation of the Lie group
+  static constexpr int MatrixRepDim
+      = ::Eigen::internal::traits<Derived>::MatrixRepDim;
+
+  /// The parameter type of the Lie group
   using Params = typename ::Eigen::internal::traits<Derived>::Params;
+
+  /// The plain object type of the Lie group
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
+
+  /// The matrix type of the Lie group
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
+
+  /// The tangent type of the Lie group
   using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
 
-  // LieGroupBase specifics
+  /// @}
+
+  /// @{ @name LieGroupBase specific
+
+  /// Template type for casting the scalar type of the Lie group
   template <typename OtherScalar>
   using ScalarCastType =
       typename detail::ScalarCast<PlainObject, OtherScalar>::type;
+
+  /// @}
 
   /// Returns the tolerance for the Lie group
   [[nodiscard]] static constexpr Scalar Tolerance();
@@ -166,7 +195,7 @@ template <typename Derived>
 typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Random()
 {
   // setRandom() must be implemented in each <group>Base class
-  return PlainObject().setRandom();
+  return PlainObject(NO_INITIALIZE).setRandom();
 }
 
 //==============================================================================

@@ -52,7 +52,7 @@ public:
   // LieGroup common
   using Base::Dim;
   using Base::DoF;
-  using Base::MatrixDim;
+  using Base::MatrixRepDim;
   using Base::ParamSize;
   using Params = typename Base::Params;
   using PlainObject = typename Base::PlainObject;

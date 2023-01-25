@@ -61,17 +61,17 @@ struct traits<::dart::math::GroupProduct<S, T...>>
       = ::dart::math::detail::Sum(T<S>::ParamSize...);
   static constexpr int Dim = ::dart::math::detail::Sum(T<S>::Dim...);
   static constexpr int DoF = ::dart::math::detail::Sum(T<S>::DoF...);
-  static constexpr int MatrixDim
-      = ::dart::math::detail::Sum(T<S>::MatrixDim...);
+  static constexpr int MatrixRepDim
+      = ::dart::math::detail::Sum(T<S>::MatrixRepDim...);
 #else
   static constexpr int ParamSize = (T<S>::ParamSize + ...);
   static constexpr int Dim = (T<S>::Dim + ...);
   static constexpr int DoF = (T<S>::DoF + ...);
-  static constexpr int MatrixDim = (T<S>::DoF + ...);
+  static constexpr int MatrixRepDim = (T<S>::DoF + ...);
 #endif
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using PlainObject = ::dart::math::GroupProduct<S, T...>;
-  using MatrixType = ::Eigen::Matrix<S, MatrixDim, MatrixDim>;
+  using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Tangent = ::Eigen::Matrix<S, Dim, 1>;
 };
 
@@ -109,8 +109,16 @@ public:
 
   using Base::Tolerance;
 
-  /// Default constructor that initializes the quaternion to identity
+  /// Default constructor that initializes the components to identity
   GroupProduct();
+
+  /// Default constructor that does not initialize the components to identity
+  ///
+  /// This constructor is only available when all the components are default
+  /// constructible. Otherwise, this constructor is deleted. This constructor is
+  /// useful when you want to use GroupProduct as a member variable of another
+  /// class, and you want to initialize the GroupProduct later.
+  GroupProduct(NoInitializeTag);
 
   /// Constructs a GroupProduct from the given components
   ///
@@ -154,17 +162,6 @@ private:
   static_assert(
       sizeof...(T) > 0, "GroupProduct must have at least one component");
 
-  template <std::size_t... Index_>
-  GroupProduct(std::integer_sequence<std::size_t, Index_...>);
-
-  template <std::size_t... Index_>
-  GroupProduct(
-      std::integer_sequence<std::size_t, Index_...>, const T<S>&... components);
-
-  template <std::size_t... Index_>
-  GroupProduct(
-      std::integer_sequence<std::size_t, Index_...>, T<S>&&... components);
-
   /// The underlying quaternion parameters
   Params m_params;
 };
@@ -180,73 +177,43 @@ namespace dart::math {
 //==============================================================================
 template <typename S, template <typename> class... T>
 GroupProduct<S, T...>::GroupProduct()
-  : GroupProduct(std::make_integer_sequence<std::size_t, ProductSize>{})
 {
-  // Do nothing
+  std::size_t index = 0;
+  (..., [&] {
+    m_params.template segment<T<S>::ParamSize>(index)
+        = T<S>::Identity().params();
+    index += T<S>::ParamSize;
+  }());
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
-template <std::size_t... Index_>
-GroupProduct<S, T...>::GroupProduct(
-    std::integer_sequence<std::size_t, Index_...>)
+GroupProduct<S, T...>::GroupProduct(NoInitializeTag)
 {
-  (
-      [&] {
-        m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(ParamSizeIndices))
-            = Component<Index_>::Identity().params();
-      }(),
-      ...);
+  // Do nothing
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
 GroupProduct<S, T...>::GroupProduct(const T<S>&... components)
-  : GroupProduct(
-      std::make_integer_sequence<std::size_t, ProductSize>{}, components...)
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S, template <typename> class... T>
-template <std::size_t... Index_>
-GroupProduct<S, T...>::GroupProduct(
-    std::integer_sequence<std::size_t, Index_...>, const T<S>&... components)
-{
-  (
-      [&] {
-        m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(ParamSizeIndices))
-            = components.params();
-      }(),
-      ...);
+  std::size_t index = 0;
+  (..., [&] {
+    m_params.template segment<T<S>::ParamSize>(index) = components.params();
+    index += T<S>::ParamSize;
+  }());
 }
 
 //==============================================================================
 template <typename S, template <typename> class... T>
 GroupProduct<S, T...>::GroupProduct(T<S>&&... components)
-  : GroupProduct(
-      std::make_integer_sequence<std::size_t, ProductSize>{},
-      std::forward<T<S>...>(components)...)
 {
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S, template <typename> class... T>
-template <std::size_t... Index_>
-GroupProduct<S, T...>::GroupProduct(
-    std::integer_sequence<std::size_t, Index_...>, T<S>&&... components)
-{
-  (
-      [&] {
-        m_params.template segment<Component<Index_>::ParamSize>(
-            std::get<Index_>(ParamSizeIndices))
-            = std::move(components.params());
-      }(),
-      ...);
+  std::size_t index = 0;
+  (..., [&] {
+    m_params.template segment<T<S>::ParamSize>(index)
+        = std::move(components.params());
+    index += T<S>::ParamSize;
+  }());
 }
 
 //==============================================================================

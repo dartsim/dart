@@ -118,31 +118,33 @@ TYPED_TEST(GroupProductTest, ConstructFromComponents)
 {
   using S = typename TestFixture::Scalar;
 
-  SE3<S> se3 = SE3<S>::Random();
-  SO3<S> so3 = SO3<S>::Random();
+  {
+    SE3<S> se3 = SE3<S>::Random();
+    SO3<S> so3 = SO3<S>::Random();
 
-  // Copy constructor from the components
-  auto product = GroupProduct<S, SE3, SO3>(se3, so3);
+    // Copy constructor from the components
+    auto product = GroupProduct<S, SE3, SO3>(se3, so3);
 
-  // Check the parameters
-  int offset = 0;
-  EXPECT_TRUE(product.params()
-                  .template segment<SE3<S>::ParamSize>(offset)
-                  .eval()
-                  .isApprox(se3.params()));
-  offset += SE3<S>::ParamSize;
-  EXPECT_TRUE(product.params()
-                  .template segment<SO3<S>::ParamSize>(offset)
-                  .eval()
-                  .isApprox(so3.params()));
+    // Check the parameters
+    int offset = 0;
+    EXPECT_TRUE(product.params()
+                    .template segment<SE3<S>::ParamSize>(offset)
+                    .eval()
+                    .isApprox(se3.params()));
+    offset += SE3<S>::ParamSize;
+    EXPECT_TRUE(product.params()
+                    .template segment<SO3<S>::ParamSize>(offset)
+                    .eval()
+                    .isApprox(so3.params()));
 
-  // Check the components
-  auto comp_0 = product.template get<0>();
-  EXPECT_EQ(comp_0, se3);
-  EXPECT_TRUE(comp_0.params().isApprox(se3.params()));
-  auto comp_1 = product.template get<1>();
-  EXPECT_EQ(comp_1, so3);
-  EXPECT_TRUE(comp_1.params().isApprox(so3.params()));
+    // Check the components
+    auto comp_0 = product.template get<0>();
+    EXPECT_EQ(comp_0, se3);
+    EXPECT_TRUE(comp_0.params().isApprox(se3.params()));
+    auto comp_1 = product.template get<1>();
+    EXPECT_EQ(comp_1, so3);
+    EXPECT_TRUE(comp_1.params().isApprox(so3.params()));
+  }
 }
 
 //==============================================================================
