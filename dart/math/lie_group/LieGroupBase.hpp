@@ -130,8 +130,36 @@ public:
   /// Returns the inverse of this Lie group.
   [[nodiscard]] PlainObject inverse() const;
 
-  /// Returns the logarithm of this Lie group.
+  /// Returns the logarithm map of the this Lie group
+  ///
+  /// The logarithm map of a Lie group @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// @param[in] x The Lie group to be converted to a vector.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrived The type of the Lie group
+  /// @see Exp()
   [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+
+  /// Returns the logarithm map of this Lie group
+  ///
+  /// The logarithm map of a Lie group @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// This function also returns the Jacobian of the logarithm map.
+  ///
+  /// @param[in] x The Lie group to be converted to a vector.
+  /// @param[out] jacobian The Jacobian of the logarithm map.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrivedA The type of the Lie group
+  /// @tparam MatrixDerivedB The type of the Jacobian
+  /// @see Exp()
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent log(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = Tolerance()) const;
 
   /// Returns the matrix representation of this Lie group.
   ///
@@ -249,7 +277,16 @@ template <typename Derived>
 typename LieGroupBase<Derived>::Tangent LieGroupBase<Derived>::log(
     Scalar tol) const
 {
-  return PlainObject::Log(derived(), tol);
+  return derived().log(tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename LieGroupBase<Derived>::Tangent LieGroupBase<Derived>::log(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
+{
+  return derived().log(jacobian, tol);
 }
 
 //==============================================================================

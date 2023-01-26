@@ -92,6 +92,37 @@ public:
    */
   [[nodiscard]] PlainObject inverse() const;
 
+  /// Returns the logarithm map of the given SE3
+  ///
+  /// The logarithm map of an SE3 @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// @param[in] x The SE3 to be converted to a vector.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrived The type of the SE3
+  /// @see Exp()
+  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+
+  /// Returns the logarithm map of the given SE3
+  ///
+  /// The logarithm map of an SE3 @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// This function also returns the Jacobian of the logarithm map.
+  ///
+  /// @param[in] x The SE3 to be converted to a vector.
+  /// @param[out] jacobian The Jacobian of the logarithm map.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrivedA The type of the SE3
+  /// @tparam MatrixDerivedB The type of the Jacobian
+  /// @see Exp()
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent log(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = Tolerance()) const;
+
   /// Returns the Isometry3 representation of the SE3
   [[nodiscard]] Isometry3<Scalar> toIsometry3() const;
 
@@ -197,6 +228,29 @@ typename SE3Base<Derived>::PlainObject SE3Base<Derived>::inverse() const
 {
   const SO3<Scalar> r_inv = rotation().inverse();
   return PlainObject(r_inv, -(r_inv * translation()));
+}
+
+//==============================================================================
+template <typename Derived>
+typename SE3Base<Derived>::Tangent SE3Base<Derived>::log(Scalar tol) const
+{
+  const Eigen::Vector3<Scalar> angular = rotation().log(tol).params();
+  const Eigen::Vector3<Scalar> linear
+      = SO3<Scalar>::LeftJacobianInverse(angular, tol) * translation();
+  return Tangent(std::move(angular), std::move(linear));
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename SE3Base<Derived>::Tangent SE3Base<Derived>::log(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
+{
+  const Tangent xi = log(tol);
+  if (jacobian) {
+    (*jacobian) = SE3<Scalar>::RightJacobianInverse(xi, tol);
+  }
+  return xi;
 }
 
 //==============================================================================

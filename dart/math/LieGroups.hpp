@@ -40,6 +40,7 @@
 #include <dart/math/lie_group/GroupProductMap.hpp>
 #include <dart/math/lie_group/SE3.hpp>
 #include <dart/math/lie_group/SE3Map.hpp>
+#include <dart/math/lie_group/SE3Tangent.hpp>
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Map.hpp>
 #include <dart/math/lie_group/SO3Tangent.hpp>

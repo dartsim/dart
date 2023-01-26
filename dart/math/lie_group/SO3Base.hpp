@@ -96,6 +96,37 @@ public:
   /// Returns the inverse of this SO3.
   [[nodiscard]] PlainObject inverse() const;
 
+  /// Returns the logarithm map of the given SO3
+  ///
+  /// The logarithm map of an SO3 @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// @param[in] x The SO3 to be converted to a vector.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrived The type of the SO3
+  /// @see Exp()
+  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+
+  /// Returns the logarithm map of the given SO3
+  ///
+  /// The logarithm map of an SO3 @f$ x @f$ is a vector @f$ \xi @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// This function also returns the Jacobian of the logarithm map.
+  ///
+  /// @param[in] x The SO3 to be converted to a vector.
+  /// @param[out] jacobian The Jacobian of the logarithm map.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The vector.
+  /// @tparam MatrixDrivedA The type of the SO3
+  /// @tparam MatrixDerivedB The type of the Jacobian
+  /// @see Exp()
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent log(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = Tolerance()) const;
+
   /// Returns the matrix representation of this SO3
   ///
   /// The matrix representation of SO3 is a 3x3 orthogonal matrix
@@ -182,6 +213,35 @@ template <typename Derived>
 typename SO3Base<Derived>::PlainObject SO3Base<Derived>::inverse() const
 {
   return PlainObject(quaternion().conjugate());
+}
+
+//==============================================================================
+template <typename Derived>
+typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(Scalar tol) const
+{
+  const Scalar cos_theta = quaternion().w();
+  const Scalar theta = 2 * std::acos(cos_theta);
+  DART_ASSERT(!std::isnan(theta));
+
+  if (theta < tol) {
+    return Tangent(2 * quaternion().vec());
+  }
+
+  const Scalar theta_over_sin_half_theta = theta / std::sin(0.5 * theta);
+  return Tangent(theta_over_sin_half_theta * quaternion().vec());
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
+{
+  const Tangent xi = log(tol);
+  if (jacobian) {
+    (*jacobian) = SO3<Scalar>::RightJacobianInverse(xi, tol);
+  }
+  return xi;
 }
 
 //==============================================================================

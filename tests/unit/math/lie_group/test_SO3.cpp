@@ -125,17 +125,14 @@ TYPED_TEST(SO3Test, Exp)
   for (auto i = 0; i < num_tests; ++i) {
     SO3<S> x = SO3<S>::Random();
 
-    EXPECT_TRUE(SO3<S>::Exp(SO3<S>::Log(x).params()).isApprox(x))
+    EXPECT_TRUE(SO3<S>::Exp(x.log().params()).isApprox(x))
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << SO3<S>::Exp(SO3<S>::Log(x).params()).toMatrix() << "\n"
-        << "Log(x)          : " << SO3<S>::Log(x).params().transpose() << "\n"
+        << SO3<S>::Exp(x.log().params()).toMatrix() << "\n"
+        << "Log(x)          : " << x.log().params().transpose() << "\n"
         << "Log(Exp(Log(x))): "
-        << SO3<S>::Log(SO3<S>::Exp(SO3<S>::Log(x).params()))
-               .params()
-               .transpose()
-        << "\n";
+        << SO3<S>::Exp(x.log().params()).log().params().transpose() << "\n";
   }
 }
 
@@ -202,7 +199,7 @@ TYPED_TEST(SO3Test, Jacobians)
       const SO3 T_a = SO3::Exp(x_a);
       const SO3 T_b = SO3::Exp(x_b);
       const SO3 dT_left = T_b * T_a.inverse();
-      const Vector3 dt = SO3::Log(dT_left).params();
+      const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;
       jac_numeric.col(j) = SO3::Vee(dt_dt);
     }
@@ -226,7 +223,7 @@ TYPED_TEST(SO3Test, Jacobians)
       const SO3 T_a = SO3::Exp(x_a);
       const SO3 T_b = SO3::Exp(x_b);
       const SO3 dT_left = T_a.inverse() * T_b;
-      const Vector3 dt = SO3::Log(dT_left).params();
+      const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;
       jac_numeric.col(j) = SO3::Vee(dt_dt);
     }

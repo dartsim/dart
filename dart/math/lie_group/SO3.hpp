@@ -139,40 +139,6 @@ public:
       Eigen::MatrixBase<MatrixDerivedB>* jacobian,
       S tol = Tolerance());
 
-  /// Returns the logarithm map of the given SO3
-  ///
-  /// The logarithm map of an SO3 @f$ x @f$ is a vector @f$ \xi @f$ such
-  /// that @f$ \log(x) = \xi @f$.
-  ///
-  /// @param[in] x The SO3 to be converted to a vector.
-  /// @param[in] tol The tolerance for the norm of the vector.
-  /// @return The vector.
-  /// @tparam MatrixDrived The type of the SO3
-  /// @see Exp()
-  template <typename OtherDrived>
-  [[nodiscard]] static Tangent Log(
-      const SO3Base<OtherDrived>& x, S tol = Tolerance());
-
-  /// Returns the logarithm map of the given SO3
-  ///
-  /// The logarithm map of an SO3 @f$ x @f$ is a vector @f$ \xi @f$ such
-  /// that @f$ \log(x) = \xi @f$.
-  ///
-  /// This function also returns the Jacobian of the logarithm map.
-  ///
-  /// @param[in] x The SO3 to be converted to a vector.
-  /// @param[out] jacobian The Jacobian of the logarithm map.
-  /// @param[in] tol The tolerance for the norm of the vector.
-  /// @return The vector.
-  /// @tparam MatrixDrivedA The type of the SO3
-  /// @tparam MatrixDerivedB The type of the Jacobian
-  /// @see Exp()
-  template <typename OtherDrived, typename MatrixDerived>
-  [[nodiscard]] static Tangent Log(
-      const SO3Base<OtherDrived>& x,
-      Eigen::MatrixBase<MatrixDerived>* jacobian,
-      S tol = Tolerance());
-
   /// Returns the hat operator of the given vector
   ///
   /// The hat operator of a vector is a skew-symmetric matrix @f$ \hat{v} @f$
@@ -385,38 +351,6 @@ SO3<S> SO3<S>::Exp(
     *jacobian = RightJacobian(dx, tol);
   }
   return Exp(dx, tol);
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDrived>
-typename SO3<S>::Tangent SO3<S>::Log(const SO3Base<OtherDrived>& x, S tol)
-{
-  const S cos_theta = x.quaternion().w();
-  const S theta = 2 * std::acos(cos_theta);
-  DART_ASSERT(!std::isnan(theta));
-
-  if (theta < tol) {
-    return Tangent(2 * x.quaternion().vec());
-  }
-
-  const S theta_over_sin_half_theta = theta / std::sin(0.5 * theta);
-  return Tangent(theta_over_sin_half_theta * x.quaternion().vec());
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDrived, typename MatrixDerived>
-typename SO3<S>::Tangent SO3<S>::Log(
-    const SO3Base<OtherDrived>& x,
-    Eigen::MatrixBase<MatrixDerived>* jacobian,
-    S tol)
-{
-  const Tangent xi = Log(x, tol);
-  if (jacobian) {
-    (*jacobian) = RightJacobianInverse(xi);
-  }
-  return xi;
 }
 
 //==============================================================================

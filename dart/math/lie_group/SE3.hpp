@@ -99,26 +99,6 @@ public:
       Eigen::MatrixBase<MatrixDerivedB>* jacobian,
       S tol = Tolerance());
 
-  /// Returns the logarithm map of the given SE3
-  ///
-  /// @param x The SE3 to be converted to vector
-  /// @param tol The tolerance for the norm of the vector
-  template <typename OtherDerived>
-  [[nodiscard]] static Tangent Log(
-      const SE3Base<OtherDerived>& x, S tol = Tolerance());
-
-  /// Returns the logarithm map of the given SE3 and the Jacobian of the
-  /// logarithm map
-  ///
-  /// @param x The SE3 to be converted to vector
-  /// @param jacobian The Jacobian of the logarithm map
-  /// @param tol The tolerance for the norm of the vector
-  template <typename OtherDerived, typename MatrixDerived>
-  [[nodiscard]] static Tangent Log(
-      const SE3Base<OtherDerived>& x,
-      Eigen::MatrixBase<MatrixDerived>* jacobian,
-      S tol = Tolerance());
-
   /**
    * Returns the hat operator of the given vector
    *
@@ -330,32 +310,6 @@ SE3<S> SE3<S>::Exp(
     (*jacobian) = RightJacobian(dx, tol);
   }
   return Exp(dx, tol);
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived>
-typename SE3<S>::Tangent SE3<S>::Log(const SE3Base<OtherDerived>& x, S tol)
-{
-  const Eigen::Vector3<S> angular = SO3<S>::Log(x.rotation(), tol).params();
-  const Eigen::Vector3<S> linear
-      = SO3<S>::LeftJacobianInverse(angular, tol) * x.translation();
-  return Tangent(std::move(angular), std::move(linear));
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived, typename MatrixDerived>
-typename SE3<S>::Tangent SE3<S>::Log(
-    const SE3Base<OtherDerived>& x,
-    Eigen::MatrixBase<MatrixDerived>* jacobian,
-    S tol)
-{
-  const Tangent xi = Log(x, tol);
-  if (jacobian) {
-    (*jacobian) = RightJacobianInverse(xi, tol);
-  }
-  return xi;
 }
 
 //==============================================================================

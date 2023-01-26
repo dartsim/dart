@@ -176,17 +176,14 @@ TYPED_TEST(SE3Test, Exp)
 
   for (auto i = 0; i < num_tests; ++i) {
     SE3<S> x = SE3<S>::Random();
-    EXPECT_TRUE(SE3<S>::Exp(SE3<S>::Log(x).params()).isApprox(x))
+    EXPECT_TRUE(SE3<S>::Exp(x.log().params()).isApprox(x))
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << SE3<S>::Exp(SE3<S>::Log(x).params()).toMatrix() << "\n"
-        << "Log(x)          : " << SE3<S>::Log(x).params().transpose() << "\n"
+        << SE3<S>::Exp(x.log().params()).toMatrix() << "\n"
+        << "Log(x)          : " << x.log().params().transpose() << "\n"
         << "Log(Exp(Log(x))): "
-        << SE3<S>::Log(SE3<S>::Exp(SE3<S>::Log(x).params()))
-               .params()
-               .transpose()
-        << "\n";
+        << SE3<S>::Exp(x.log().params()).log().params().transpose() << "\n";
   }
 }
 
@@ -264,7 +261,7 @@ TYPED_TEST(SE3Test, Jacobians)
       const SE3 T_minus = SE3::Exp(x_minus);
       const SE3 T_plus = SE3::Exp(x_plus);
       const SE3 dT_left = T_plus * T_minus.inverse();
-      const Vector6 dt = SE3::Log(dT_left).params();
+      const Vector6 dt = dT_left.log().params();
       const Matrix4 dt_dt = SE3::Hat(dt) / eps;
       jac_numeric.col(j) = SE3::Vee(dt_dt);
     }
@@ -284,7 +281,7 @@ TYPED_TEST(SE3Test, Jacobians)
       const SE3 T_minus = SE3::Exp(x_minus);
       const SE3 T_plus = SE3::Exp(x_plus);
       const SE3 dT_right = T_minus.inverse() * T_plus;
-      const Vector6 dt = SE3::Log(dT_right).params();
+      const Vector6 dt = dT_right.log().params();
       const Matrix4 dt_dt = SE3::Hat(dt) / eps;
       jac_numeric.col(j) = SE3::Vee(dt_dt);
     }
