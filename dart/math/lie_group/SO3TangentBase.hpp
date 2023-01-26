@@ -49,10 +49,22 @@ public:
   using Base::ParamSize;
   using LieGroup = typename Base::LieGroup;
   using Tangent = typename Base::Tangent;
+  using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
   using Base::derived;
   using Base::params;
+
+  /// Returns the hat operator of this tangent
+  ///
+  /// The hat operator of a vector is a skew-symmetric matrix @f$ \hat{v} @f$
+  /// such that @f$ \hat{v} w = v \times w @f$ for any vector
+  /// @f$ w @f$.
+  ///
+  /// @param[in] xi The vector to be converted to a skew-symmetric matrix.
+  /// @return The skew-symmetric matrix.
+  /// @see Hat()
+  [[nodiscard]] LieAlgebra hat() const;
 
   /// Returns the exponential map of the given vector
   ///
@@ -93,6 +105,14 @@ public:
 #include <dart/math/lie_group/SO3.hpp>
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename SO3TangentBase<Derived>::LieAlgebra SO3TangentBase<Derived>::hat()
+    const
+{
+  return LieAlgebra(skew(params()));
+}
 
 //==============================================================================
 template <typename Derived>

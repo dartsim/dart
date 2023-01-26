@@ -131,4 +131,19 @@ constexpr S LieGroupTol()
   }
 }
 
+template <typename Derived>
+math::Matrix<typename Derived::Scalar, 3, 3> skew(
+    const math::MatrixBase<Derived>& vec)
+{
+  using Scalar = typename Derived::Scalar;
+
+  // clang-format off
+  return math::Matrix<Scalar, 3, 3>{
+    {       0, -vec[2], +vec[1]},
+    { +vec[2],       0, -vec[0]},
+    { -vec[1], +vec[0],       0}
+  };
+  // clang-format on
+}
+
 } // namespace dart::math

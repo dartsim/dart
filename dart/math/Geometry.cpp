@@ -393,7 +393,7 @@ Matrix3d expMapRot(const Vector3d& _q)
   double theta = _q.norm();
 
   Matrix3d R = Matrix3d::Zero();
-  Matrix3d qss = SO3<double>::Hat(_q);
+  Matrix3d qss = skew(_q);
   Matrix3d qss2 = qss * qss;
 
   if (theta < EPSILON_EXPMAP_THETA)
@@ -410,7 +410,7 @@ Matrix3d expMapJac(const Vector3d& _q)
   double theta = _q.norm();
 
   Matrix3d J = Matrix3d::Zero();
-  Matrix3d qss = SO3<double>::Hat(_q);
+  Matrix3d qss = skew(_q);
   Matrix3d qss2 = qss * qss;
 
   if (theta < EPSILON_EXPMAP_THETA)
@@ -427,9 +427,9 @@ Matrix3d expMapJacDot(const Vector3d& _q, const Vector3d& _qdot)
   double theta = _q.norm();
 
   Matrix3d Jdot = Matrix3d::Zero();
-  Matrix3d qss = SO3<double>::Hat(_q);
+  Matrix3d qss = skew(_q);
   Matrix3d qss2 = qss * qss;
-  Matrix3d qdss = SO3<double>::Hat(_qdot);
+  Matrix3d qdss = skew(_qdot);
   double ttdot = _q.dot(_qdot); // theta*thetaDot
   double st = sin(theta);
   double ct = cos(theta);
@@ -610,7 +610,7 @@ Matrix6d getAdTMatrix(const Isometry3d& T)
 
   AdT.topLeftCorner<3, 3>() = T.linear();
   AdT.topRightCorner<3, 3>().setZero();
-  AdT.bottomLeftCorner<3, 3>() = SO3<double>::Hat(T.translation()) * T.linear();
+  AdT.bottomLeftCorner<3, 3>() = skew(T.translation()) * T.linear();
   AdT.bottomRightCorner<3, 3>() = T.linear();
 
   return AdT;

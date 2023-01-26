@@ -76,28 +76,9 @@ public:
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
-  /**
-   * Returns the hat operator of the given vector
-   *
-   * The hat operator is defined as follows:
-   * @f[
-   *   \hat{\xi} = \begin{bmatrix}
-   *     \hat{w} & 0 \\
-   *     \hat{v} & \hat{w}
-   *   \end{bmatrix}
-   * @f] where @f$ \xi = (w, v) @f$ and @f$ \hat{w} @f$ and @f$ \hat{v} @f$ are
-   * the hat operators of @f$ w @f$ and @f$ v @f$ respectively.
-   *
-   * @param xi The vector to be converted to matrix
-   * @see Vee()
-   */
-  template <typename MatrixDrived>
-  [[nodiscard]] static Matrix4<S> Hat(
-      const Eigen::MatrixBase<MatrixDrived>& xi);
-
   /// Returns the vee operator of the given matrix
   template <typename MatrixDerived>
-  [[nodiscard]] static Vector6<S> Vee(
+  [[nodiscard]] static Tangent Vee(
       const Eigen::MatrixBase<MatrixDerived>& matrix);
 
   /// Returns the adjoint transformation matrix (6x6) of the given SE(3) point
@@ -266,24 +247,14 @@ Matrix3<S> computeQ(
 //==============================================================================
 template <typename S>
 template <typename MatrixDerived>
-Matrix4<S> SE3<S>::Hat(const Eigen::MatrixBase<MatrixDerived>& xi)
-{
-  Matrix4<S> out = Matrix4<S>::Zero();
-  out.template topLeftCorner<3, 3>() = SO3<S>::Hat(xi.template head<3>());
-  out.template topRightCorner<3, 1>() = xi.template tail<3>();
-  out.template bottomRows<1>().setZero();
-  return out;
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-Vector6<S> SE3<S>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
+typename SE3<S>::Tangent SE3<S>::Vee(
+    const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
   Vector6<S> out;
-  out.template head<3>() = SO3<S>::Vee(matrix.template topLeftCorner<3, 3>());
+  out.template head<3>()
+      = SO3<S>::Vee(matrix.template topLeftCorner<3, 3>()).params();
   out.template tail<3>() = matrix.template topRightCorner<3, 1>();
-  return out;
+  return Tangent(std::move(out));
 }
 
 //==============================================================================
@@ -295,7 +266,7 @@ Matrix6<S> SE3<S>::Ad(const SE3Base<OtherDerived>& x)
   out.template topLeftCorner<3, 3>() = x.rotation().matrix();
   out.template topRightCorner<3, 3>().setZero();
   out.template bottomLeftCorner<3, 3>().noalias()
-      = SO3<S>::Hat(x.translation()) * out.template topLeftCorner<3, 3>();
+      = skew(x.translation()) * out.template topLeftCorner<3, 3>();
   out.template bottomRightCorner<3, 3>() = out.template topLeftCorner<3, 3>();
   return out;
 }
@@ -322,8 +293,8 @@ template <typename MatrixDerived>
 Matrix6<S> SE3<S>::LieBracket(const Eigen::MatrixBase<MatrixDerived>& dx)
 {
   Matrix6<S> out;
-  out.template topLeftCorner<3, 3>() = SO3<S>::Hat(dx.template head<3>());
-  out.template bottomLeftCorner<3, 3>() = SO3<S>::Hat(dx.template tail<3>());
+  out.template topLeftCorner<3, 3>() = skew(dx.template head<3>());
+  out.template bottomLeftCorner<3, 3>() = skew(dx.template tail<3>());
   out.template topRightCorner<3, 3>().setZero();
   out.template bottomRightCorner<3, 3>() = out.template topLeftCorner<3, 3>();
   return out;
@@ -383,8 +354,8 @@ Matrix6<S> SE3<S>::LeftJacobian(
 
   const Vector3<S> phi = xi.template head<3>();
   const Vector3<S> rho = xi.template tail<3>();
-  const Matrix3<S> phiX = SO3<S>::Hat(phi);
-  const Matrix3<S> rhoX = SO3<S>::Hat(rho);
+  const Matrix3<S> phiX = skew(phi);
+  const Matrix3<S> rhoX = skew(rho);
   const S theta = phi.norm();
 
   Matrix6<S> J;
@@ -427,8 +398,8 @@ Matrix6<S> SE3<S>::LeftJacobianInverse(
 
   const Vector3<S> phi = xi.template head<3>();
   const Vector3<S> rho = xi.template tail<3>();
-  const Matrix3<S> phiX = SO3<S>::Hat(phi);
-  const Matrix3<S> rhoX = SO3<S>::Hat(rho);
+  const Matrix3<S> phiX = skew(phi);
+  const Matrix3<S> rhoX = skew(rho);
   const S theta = phi.norm();
 
   Matrix6<S> J;

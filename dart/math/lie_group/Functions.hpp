@@ -37,13 +37,17 @@
 
 namespace dart::math {
 
+template <typename Derived>
+[[nodiscard]] typename Derived::LieAlgebra Hat(
+    const TangentBase<Derived>& tangent);
+
 /// Exponential map of a Lie group element
 ///
 /// @param[in] tangent Tangent vector
 /// @param[in] tol Tolerance for the convergence of the exponential map
 /// @return Lie group element
 template <typename Derived>
-typename Derived::LieGroup Exp(
+[[nodiscard]] typename Derived::LieGroup Exp(
     const TangentBase<Derived>& tangent,
     typename Derived::Scalar tol = LieGroupTol<typename Derived::Scalar>());
 
@@ -53,7 +57,7 @@ typename Derived::LieGroup Exp(
 /// @param[in] tol Tolerance for the convergence of the logarithmic map
 /// @return Tangent vector
 template <typename Derived>
-typename Derived::Tangent Log(
+[[nodiscard]] typename Derived::Tangent Log(
     const LieGroupBase<Derived>& x,
     typename Derived::Scalar tol = LieGroupTol<typename Derived::Scalar>());
 
@@ -64,6 +68,20 @@ typename Derived::Tangent Log(
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename Derived::LieAlgebra Hat(const TangentBase<Derived>& tangent)
+{
+  return tangent.hat();
+}
+
+//==============================================================================
+template <typename Derived>
+typename Derived::Tangent Vee(const LieGroupBase<Derived>& x)
+{
+  return x.vee();
+}
 
 //==============================================================================
 template <typename Derived>

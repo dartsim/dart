@@ -62,6 +62,8 @@ public:
   /// The plain object type of the Lie group
   using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
 
+  using LieAlgebra = typename ::Eigen::internal::traits<Derived>::LieAlgebra;
+
   /// The data type of the underlying data
   using Params = typename ::Eigen::internal::traits<Derived>::Params;
 
@@ -71,6 +73,9 @@ public:
   [[nodiscard]] static Tangent Random();
 
   // TODO(JS): Add Zero()
+
+  /// Returns the hat operator of the tangent element
+  [[nodiscard]] LieAlgebra hat() const;
 
   /// Returns the exponential map of the given tangent
   ///
@@ -101,9 +106,25 @@ public:
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
-  bool isZero(Scalar tol) const
+  [[nodiscard]] bool isZero(Scalar tol) const
   {
     return params().isZero(tol);
+  }
+
+  template <typename OtherDerived>
+  [[nodiscard]] bool isApprox(
+      const TangentBase<OtherDerived>& other,
+      Scalar tol = LieGroupTol<Scalar>())
+  {
+    return isApprox(other.params(), tol);
+  }
+
+  template <typename MatrixDerived>
+  [[nodiscard]] bool isApprox(
+      const Eigen::MatrixBase<MatrixDerived>& mat,
+      Scalar tol = LieGroupTol<Scalar>())
+  {
+    return params().isApprox(mat, tol);
   }
 
   auto operator[](int i) const
@@ -147,6 +168,13 @@ template <typename Derived>
 typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
 {
   return Tangent(Params::Random());
+}
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::LieAlgebra TangentBase<Derived>::hat() const
+{
+  return derived().hat();
 }
 
 //==============================================================================

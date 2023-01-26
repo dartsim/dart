@@ -103,20 +103,6 @@ public:
       const Eigen::MatrixBase<MatrixDerived>& angles,
       EulerConvention convention = EulerConvention::INTRINSIC);
 
-  /// Returns the hat operator of the given vector
-  ///
-  /// The hat operator of a vector is a skew-symmetric matrix @f$ \hat{v} @f$
-  /// such that @f$ \hat{v} w = v \times w @f$ for any vector
-  /// @f$ w @f$.
-  ///
-  /// @param[in] xi The vector to be converted to a skew-symmetric matrix.
-  /// @return The skew-symmetric matrix.
-  /// @tparam MatrixDrived The type of the vector
-  /// @see Vee()
-  template <typename MatrixDrived>
-  [[nodiscard]] static Matrix3<S> Hat(
-      const Eigen::MatrixBase<MatrixDrived>& xi);
-
   /// Returns the vee operator of the given skew-symmetric matrix
   ///
   /// The vee operator of a skew-symmetric matrix @f$ \hat{v} @f$ is a vector
@@ -126,9 +112,8 @@ public:
   /// @param[in] matrix The skew-symmetric matrix to be converted to a vector.
   /// @return The vector.
   /// @tparam MatrixDrived The type of the skew-symmetric matrix
-  /// @see Hat()
   template <typename MatrixDerived>
-  [[nodiscard]] static Vector3<S> Vee(
+  [[nodiscard]] static Tangent Vee(
       const Eigen::MatrixBase<MatrixDerived>& matrix);
 
   /// Returns the adjoint transformation of the given SO3
@@ -287,24 +272,11 @@ typename SO3<S>::LieGroup SO3<S>::FromEulerAngles(
 
 //==============================================================================
 template <typename S>
-template <typename MatrixDrived>
-Matrix3<S> SO3<S>::Hat(const Eigen::MatrixBase<MatrixDrived>& xi)
-{
-  // clang-format off
-  return Matrix3<S>{
-    {      0, -xi[2], +xi[1]},
-    { +xi[2],      0, -xi[0]},
-    { -xi[1], +xi[0],      0}
-  };
-  // clang-format on
-}
-
-//==============================================================================
-template <typename S>
 template <typename MatrixDerived>
-Vector3<S> SO3<S>::Vee(const Eigen::MatrixBase<MatrixDerived>& matrix)
+typename SO3<S>::Tangent SO3<S>::Vee(
+    const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
-  return Vector3<S>{matrix(2, 1), matrix(0, 2), matrix(1, 0)};
+  return Tangent(matrix(2, 1), matrix(0, 2), matrix(1, 0));
 }
 
 //==============================================================================
@@ -326,7 +298,7 @@ Matrix3<S> SO3<S>::LeftJacobian(
   const S t = xi.norm();
 
   if (t < tol) {
-    J.noalias() += Hat(0.5 * xi);
+    J.noalias() += skew(0.5 * xi);
     return J;
   }
 
@@ -334,7 +306,7 @@ Matrix3<S> SO3<S>::LeftJacobian(
   const S t3 = t2 * t;
   const S st = std::sin(t);
   const S ct = std::cos(t);
-  const Matrix3<S> A = Hat(xi);
+  const Matrix3<S> A = skew(xi);
   J.noalias() += ((1 - ct) / t2) * A;
   J.noalias() += ((t - st) / t3) * A * A;
 
@@ -360,14 +332,14 @@ Matrix3<S> SO3<S>::LeftJacobianInverse(
 
   const S theta = dx.norm();
   if (theta < tol) {
-    J.noalias() += Hat(0.5 * dx);
+    J.noalias() += skew(0.5 * dx);
     return J;
   }
 
   const S t2 = theta * theta;
   const S st = std::sin(theta);
   const S ct = std::cos(theta);
-  const Matrix3<S> A = Hat(dx);
+  const Matrix3<S> A = skew(dx);
   J.noalias() -= 0.5 * A;
   J.noalias() += (1 / t2 - (1 + ct) / (2 * theta * st)) * A * A;
 

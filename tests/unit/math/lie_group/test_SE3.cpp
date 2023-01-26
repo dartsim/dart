@@ -191,7 +191,7 @@ TYPED_TEST(SE3Test, HatAndVeeOperators)
 {
   using S = typename TestFixture::Scalar;
 
-  Vector6<S> vec(1, 2, 3, 4, 5, 6);
+  SE3Tangent<S> vec(1, 2, 3, 4, 5, 6);
   Matrix4<S> mat;
   // clang-format off
   mat <<
@@ -202,16 +202,16 @@ TYPED_TEST(SE3Test, HatAndVeeOperators)
   // clang-format on
 
   // Check if the result is equal to the expected matrix
-  EXPECT_TRUE(SE3<S>::Hat(vec).isApprox(mat));
+  EXPECT_TRUE(Hat(vec).isApprox(mat));
 
   // Check if the result is equal to the expected vector
   EXPECT_TRUE(SE3<S>::Vee(mat).isApprox(vec));
 
   // Check if the result is equal to the original vector
-  EXPECT_TRUE(SE3<S>::Vee(SE3<S>::Hat(vec)).isApprox(vec));
+  EXPECT_TRUE(SE3<S>::Vee(Hat(vec)).isApprox(vec));
 
   // Check if the result is equal to the original matrix
-  EXPECT_TRUE(SE3<S>::Hat(SE3<S>::Vee(mat)).isApprox(mat));
+  EXPECT_TRUE(Hat(SE3<S>::Vee(mat)).isApprox(mat));
 }
 
 //==============================================================================
@@ -261,9 +261,9 @@ TYPED_TEST(SE3Test, Jacobians)
       const SE3 T_minus = SE3Tangent(x_minus).exp();
       const SE3 T_plus = SE3Tangent(x_plus).exp();
       const SE3 dT_left = T_plus * T_minus.inverse();
-      const Vector6 dt = dT_left.log().params();
-      const Matrix4 dt_dt = SE3::Hat(dt) / eps;
-      jac_numeric.col(j) = SE3::Vee(dt_dt);
+      const SE3Tangent dt = dT_left.log();
+      const Matrix4 dt_dt = Hat(dt) / eps;
+      jac_numeric.col(j) = SE3::Vee(dt_dt).params();
     }
     EXPECT_TRUE(test::equals(jac_numeric, SE3::LeftJacobian(x)));
   };
@@ -281,9 +281,9 @@ TYPED_TEST(SE3Test, Jacobians)
       const SE3 T_minus = SE3Tangent(x_minus).exp();
       const SE3 T_plus = SE3Tangent(x_plus).exp();
       const SE3 dT_right = T_minus.inverse() * T_plus;
-      const Vector6 dt = dT_right.log().params();
-      const Matrix4 dt_dt = SE3::Hat(dt) / eps;
-      jac_numeric.col(j) = SE3::Vee(dt_dt);
+      const SE3Tangent dt = dT_right.log();
+      const Matrix4 dt_dt = Hat(dt) / eps;
+      jac_numeric.col(j) = SE3::Vee(dt_dt).params();
     }
     EXPECT_TRUE(test::equals(jac_numeric, SE3::RightJacobian(x)));
   };

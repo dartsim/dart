@@ -49,10 +49,27 @@ public:
   using Base::ParamSize;
   using LieGroup = typename Base::LieGroup;
   using Tangent = typename Base::Tangent;
+  using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
   using Base::derived;
   using Base::params;
+
+  /**
+   * Returns the hat operator of the given vector
+   *
+   * The hat operator is defined as follows:
+   * @f[
+   *   \hat{\xi} = \begin{bmatrix}
+   *     \hat{w} & 0 \\
+   *     \hat{v} & \hat{w}
+   *   \end{bmatrix}
+   * @f] where @f$ \xi = (w, v) @f$ and @f$ \hat{w} @f$ and @f$ \hat{v} @f$ are
+   * the hat operators of @f$ w @f$ and @f$ v @f$ respectively.
+   *
+   * @param xi The vector to be converted to matrix
+   */
+  [[nodiscard]] LieAlgebra hat() const;
 
   /// Returns the exponential map of the given vector
   ///
@@ -113,6 +130,17 @@ public:
 #include <dart/math/lie_group/SE3.hpp>
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename SE3TangentBase<Derived>::LieAlgebra SE3TangentBase<Derived>::hat()
+    const
+{
+  LieAlgebra out = LieAlgebra::Zero();
+  out.template topLeftCorner<3, 3>() = skew(angular());
+  out.template topRightCorner<3, 1>() = linear();
+  return out;
+}
 
 //==============================================================================
 template <typename Derived>

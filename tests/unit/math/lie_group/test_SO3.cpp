@@ -49,7 +49,7 @@ Matrix3<S> expMapRot(const Vector3<S>& _q)
   S theta = _q.norm();
 
   Matrix3<S> R = Matrix3<S>::Zero();
-  Matrix3<S> qss = SO3<S>::Hat(_q);
+  Matrix3<S> qss = skew(_q);
   Matrix3<S> qss2 = qss * qss;
 
   if (theta < LieGroupTol<S>())
@@ -141,8 +141,8 @@ TYPED_TEST(SO3Test, HatAndVeeOperators)
 {
   using S = typename TestFixture::Scalar;
 
-  Eigen::Vector3<S> vec(1, 2, 3);
-  Eigen::Matrix3<S> mat;
+  SO3Tangent<S> vec(1, 2, 3);
+  typename SO3Tangent<S>::LieAlgebra mat;
   // clang-format off
   mat <<
      0, -3,  2,
@@ -151,16 +151,16 @@ TYPED_TEST(SO3Test, HatAndVeeOperators)
   // clang-format on
 
   // Check if the result is equal to the expected matrix
-  EXPECT_TRUE(SO3<S>::Hat(vec).isApprox(mat));
+  EXPECT_TRUE(Hat(vec).isApprox(mat));
 
   // Check if the result is equal to the expected vector
   EXPECT_TRUE(SO3<S>::Vee(mat).isApprox(vec));
 
   // Check if the result is equal to the original vector
-  EXPECT_TRUE(SO3<S>::Vee(SO3<S>::Hat(vec)).isApprox(vec));
+  EXPECT_TRUE(SO3<S>::Vee(Hat(vec)).isApprox(vec));
 
   // Check if the result is equal to the original matrix
-  EXPECT_TRUE(SO3<S>::Hat(SO3<S>::Vee(mat)).isApprox(mat));
+  EXPECT_TRUE(Hat(SO3<S>::Vee(mat)).isApprox(mat));
 }
 
 //==============================================================================
@@ -200,9 +200,9 @@ TYPED_TEST(SO3Test, Jacobians)
       const SO3 T_a = Exp(SO3Tangent(x_a));
       const SO3 T_b = Exp(SO3Tangent(x_b));
       const SO3 dT_left = T_b * T_a.inverse();
-      const Vector3 dt = dT_left.log().params();
-      const Matrix3 dt_dt = SO3::Hat(dt) / eps;
-      jac_numeric.col(j) = SO3::Vee(dt_dt);
+      const SO3Tangent dt = dT_left.log();
+      const Matrix3 dt_dt = Hat(dt) / eps;
+      jac_numeric.col(j) = SO3::Vee(dt_dt).params();
     }
     EXPECT_TRUE(test::equals(jac_numeric, SO3::LeftJacobian(x)))
         << "left_J_numeric:\n"
@@ -224,9 +224,9 @@ TYPED_TEST(SO3Test, Jacobians)
       const SO3 T_a = Exp(SO3Tangent(x_a));
       const SO3 T_b = Exp(SO3Tangent(x_b));
       const SO3 dT_left = T_a.inverse() * T_b;
-      const Vector3 dt = dT_left.log().params();
-      const Matrix3 dt_dt = SO3::Hat(dt) / eps;
-      jac_numeric.col(j) = SO3::Vee(dt_dt);
+      const SO3Tangent dt = dT_left.log();
+      const Matrix3 dt_dt = Hat(dt) / eps;
+      jac_numeric.col(j) = SO3::Vee(dt_dt).params();
     }
     EXPECT_TRUE(test::equals(jac_numeric, SO3::RightJacobian(x)))
         << "right_J_numeric:\n"

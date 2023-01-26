@@ -236,7 +236,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
     double theta = s.params().head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::SO3<double>::Hat(s.params().head<3>());
+    math::Matrix3d qss = skew(s.params().head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -268,7 +268,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
     double theta = s.head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
+    math::Matrix3d qss = skew(s.head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -300,7 +300,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
     double theta = s.head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
+    math::Matrix3d qss = skew(s.head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -369,8 +369,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     math::Matrix6d AdTMatrix = math::Matrix6d::Zero();
     AdTMatrix.topLeftCorner<3, 3>() = T.linear();
     AdTMatrix.bottomRightCorner<3, 3>() = T.linear();
-    AdTMatrix.bottomLeftCorner<3, 3>()
-        = math::SO3<double>::Hat(T.translation()) * T.linear();
+    AdTMatrix.bottomLeftCorner<3, 3>() = skew(T.translation()) * T.linear();
     math::Vector6d AdTMatrix_V = AdTMatrix * V;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(AdTV(j), AdTMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -479,8 +478,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     math::Matrix6d AdTMatrix = math::Matrix6d::Zero();
     AdTMatrix.topLeftCorner<3, 3>() = T.linear();
     AdTMatrix.bottomRightCorner<3, 3>() = T.linear();
-    AdTMatrix.bottomLeftCorner<3, 3>()
-        = math::SO3<double>::Hat(T.translation()) * T.linear();
+    AdTMatrix.bottomLeftCorner<3, 3>() = skew(T.translation()) * T.linear();
     math::Vector6d AdTTransMatrix_V = AdTMatrix.transpose() * F;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(dAdTF(j), AdTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -506,7 +504,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     AdInvTMatrix.topLeftCorner<3, 3>() = InvT.linear();
     AdInvTMatrix.bottomRightCorner<3, 3>() = InvT.linear();
     AdInvTMatrix.bottomLeftCorner<3, 3>()
-        = math::SO3<double>::Hat(InvT.translation()) * InvT.linear();
+        = skew(InvT.translation()) * InvT.linear();
     math::Vector6d AdInvTTransMatrix_V = AdInvTMatrix.transpose() * F;
     for (int j = 0; j < 6; ++j)
       EXPECT_NEAR(dAdInvT_F(j), AdInvTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -539,9 +537,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
     //
     math::Matrix6d adV_Matrix = math::Matrix6d::Zero();
-    adV_Matrix.topLeftCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
-    adV_Matrix.bottomRightCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
-    adV_Matrix.bottomLeftCorner<3, 3>() = math::SO3<double>::Hat(V.tail<3>());
+    adV_Matrix.topLeftCorner<3, 3>() = skew(V.head<3>());
+    adV_Matrix.bottomRightCorner<3, 3>() = skew(V.head<3>());
+    adV_Matrix.bottomLeftCorner<3, 3>() = skew(V.tail<3>());
     math::Vector6d adV_Matrix_W = adV_Matrix * W;
 
     for (int j = 0; j < 6; ++j)
@@ -557,9 +555,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
     //
     math::Matrix6d dadV_Matrix = math::Matrix6d::Zero();
-    dadV_Matrix.topLeftCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
-    dadV_Matrix.bottomRightCorner<3, 3>() = math::SO3<double>::Hat(V.head<3>());
-    dadV_Matrix.bottomLeftCorner<3, 3>() = math::SO3<double>::Hat(V.tail<3>());
+    dadV_Matrix.topLeftCorner<3, 3>() = skew(V.head<3>());
+    dadV_Matrix.bottomRightCorner<3, 3>() = skew(V.head<3>());
+    dadV_Matrix.bottomLeftCorner<3, 3>() = skew(V.tail<3>());
     math::Vector6d dadV_Matrix_F = dadV_Matrix.transpose() * F;
 
     for (int j = 0; j < 6; ++j)

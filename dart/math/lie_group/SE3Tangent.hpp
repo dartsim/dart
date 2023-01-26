@@ -49,6 +49,7 @@ struct traits<::dart::math::SE3Tangent<S>>
   static constexpr int ParamSize = DoF;
   using LieGroup = ::dart::math::SE3<S>;
   using Tangent = ::dart::math::SE3Tangent<S>;
+  using LieAlgebra = ::Eigen::Matrix<S, 4, 4>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
 };
 
@@ -68,12 +69,20 @@ public:
   // LieGroup types
   using LieGroup = typename Base::LieGroup;
   using Tangent = typename Base::Tangent;
+  using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
   DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SE3Tangent);
 
+  explicit SE3Tangent(
+      Scalar w0, Scalar w1, Scalar w2, Scalar v0, Scalar v1, Scalar v2)
+    : Base(), m_params(w0, w1, w2, v0, v1, v2)
+  {
+    // Do nothing
+  }
+
   template <typename MatrixDerivedA, typename MatrixDerivedB>
-  SE3Tangent(
+  explicit SE3Tangent(
       const ::Eigen::MatrixBase<MatrixDerivedA>& angular,
       const ::Eigen::MatrixBase<MatrixDerivedB>& linear)
     : Base(), m_params((Params() << angular, linear).finished())
@@ -86,7 +95,7 @@ public:
    * @param[in] params The raw parameters to be moved
    */
   template <typename MatrixDerivedA, typename MatrixDerivedB>
-  SE3Tangent(
+  explicit SE3Tangent(
       ::Eigen::MatrixBase<MatrixDerivedA>&& angular,
       ::Eigen::MatrixBase<MatrixDerivedB>&& linear)
     : Base(),

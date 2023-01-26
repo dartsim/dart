@@ -382,7 +382,7 @@ bool Inertia::operator==(const Inertia& other) const
 // Note: Taken from Springer Handbook, chapter 2.2.11
 void Inertia::computeSpatialTensor()
 {
-  math::Matrix3d C = math::SO3<double>::Hat(mCenterOfMass);
+  math::Matrix3d C = math::skew(mCenterOfMass);
 
   // Top left
   mSpatialTensor.block<3, 3>(0, 0) = getMoment() + mMass * C * C.transpose();
