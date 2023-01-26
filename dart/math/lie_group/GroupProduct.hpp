@@ -134,17 +134,7 @@ public:
   /// order of components must match the template parameters.
   GroupProduct(T<S>&&... components);
 
-  /// Constructs a GroupProduct from the given parameters
-  ///
-  /// @param[in] params The parameters of the GroupProduct
-  template <typename MatrixDerived>
-  GroupProduct(const ::Eigen::MatrixBase<MatrixDerived>& params);
-
-  /// Constructs a GroupProduct from the given parameters
-  ///
-  /// @param[in] params The parameters of the GroupProduct
-  template <typename MatrixDerived>
-  GroupProduct(::Eigen::MatrixBase<MatrixDerived>&& params);
+  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(GroupProduct);
 
   /// Returns the parameters of the specific component group
   template <std::size_t Index_>
@@ -222,25 +212,6 @@ GroupProduct<S, T...>::GroupProduct(T<S>&&... components)
         = std::move(components.params());
     index += T<S>::ParamSize;
   }());
-}
-
-//==============================================================================
-template <typename S, template <typename> class... T>
-template <typename MatrixDerived>
-GroupProduct<S, T...>::GroupProduct(
-    const ::Eigen::MatrixBase<MatrixDerived>& params)
-  : m_params(params)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S, template <typename> class... T>
-template <typename MatrixDerived>
-GroupProduct<S, T...>::GroupProduct(::Eigen::MatrixBase<MatrixDerived>&& params)
-  : m_params(std::move(params))
-{
-  // Do nothing
 }
 
 //==============================================================================

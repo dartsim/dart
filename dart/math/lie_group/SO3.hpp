@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/lie_group/SO3Base.hpp>
+#include <dart/math/lie_group/SO3Tangent.hpp>
 
 namespace Eigen::internal {
 
@@ -44,14 +45,14 @@ struct traits<::dart::math::SO3<S>>
   using Scalar = S;
 
   // LieGroup common
-  static constexpr int ParamSize = 4;
   static constexpr int Dim = 3;
   static constexpr int DoF = 3;
   static constexpr int MatrixRepDim = 3;
-  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  static constexpr int ParamSize = 4;
   using PlainObject = ::dart::math::SO3<S>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
-  using Tangent = ::Eigen::Matrix<S, DoF, 1>;
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  using Tangent = ::dart::math::SO3Tangent<S>;
 };
 
 } // namespace Eigen::internal
@@ -272,21 +273,7 @@ public:
   /// later.
   explicit SO3(NoInitializeTag);
 
-  /// Copy constructor
-  /// @param[in] other The other SO3 to be copied
-  SO3(const SO3& other);
-
-  /// Move constructor
-  /// @param[in] other The other SO3 to be moved
-  SO3(SO3&& other) noexcept;
-
-  /// Copy constructor
-  template <typename OtherDerived>
-  SO3(const SO3Base<OtherDerived>& other);
-
-  /// Move constructor
-  template <typename OtherDerived>
-  SO3(SO3Base<OtherDerived>&& other);
+  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SO3);
 
   /// Constructs an SO3 from a quaternion
   template <typename QuaternionDrived>
@@ -311,12 +298,6 @@ public:
   template <typename QuaternionDrived>
   explicit SO3(
       ::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag);
-
-  template <typename MatrixDerived>
-  explicit SO3(const Eigen::MatrixBase<MatrixDerived>& params);
-
-  template <typename MatrixDerived>
-  explicit SO3(Eigen::MatrixBase<MatrixDerived>&& params);
 
   /// Copy assignment operator
   /// @param[in] other The other SO3 to be copied
@@ -416,11 +397,11 @@ typename SO3<S>::Tangent SO3<S>::Log(const SO3Base<OtherDrived>& x, S tol)
   DART_ASSERT(!std::isnan(theta));
 
   if (theta < tol) {
-    return 2 * x.quaternion().vec();
+    return Tangent(2 * x.quaternion().vec());
   }
 
   const S theta_over_sin_half_theta = theta / std::sin(0.5 * theta);
-  return theta_over_sin_half_theta * x.quaternion().vec();
+  return Tangent(theta_over_sin_half_theta * x.quaternion().vec());
 }
 
 //==============================================================================
@@ -552,36 +533,6 @@ SO3<S>::SO3(NoInitializeTag)
 
 //==============================================================================
 template <typename S>
-SO3<S>::SO3(const SO3& other) : m_params(other.m_params)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-SO3<S>::SO3(SO3&& other) noexcept : m_params(std::move(other.m_params))
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived>
-SO3<S>::SO3(const SO3Base<OtherDerived>& other) : m_params(other.params())
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived>
-SO3<S>::SO3(SO3Base<OtherDerived>&& other) : m_params(std::move(other.params()))
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
 template <typename QuaternionDrived>
 SO3<S>::SO3(const ::Eigen::QuaternionBase<QuaternionDrived>& quat)
   : m_params(quat.coeffs())
@@ -613,23 +564,6 @@ template <typename S>
 template <typename QuaternionDrived>
 SO3<S>::SO3(::Eigen::QuaternionBase<QuaternionDrived>&& quat, NoNormalizeTag)
   : m_params(std::move(quat.coeffs()))
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SO3<S>::SO3(const Eigen::MatrixBase<MatrixDerived>& params) : m_params(params)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SO3<S>::SO3(Eigen::MatrixBase<MatrixDerived>&& params)
-  : m_params(std::move(params))
 {
   // Do nothing
 }

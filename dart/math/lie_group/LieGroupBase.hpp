@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/Fwd.hpp>
+#include <dart/math/lie_group/Helpers.hpp>
 #include <dart/math/lie_group/detail/Cast.hpp>
 
 namespace dart::math {
@@ -53,10 +54,6 @@ public:
 
   /// @{ @name LieGroup common
 
-  /// The number of parameters of the Lie group
-  static constexpr int ParamSize
-      = ::Eigen::internal::traits<Derived>::ParamSize;
-
   /// The dimension of the Lie group is embedded (e.g., 2D or 3D Eucleadian
   /// space)
   static constexpr int Dim = ::Eigen::internal::traits<Derived>::Dim;
@@ -68,11 +65,15 @@ public:
   static constexpr int MatrixRepDim
       = ::Eigen::internal::traits<Derived>::MatrixRepDim;
 
-  /// The parameter type of the Lie group
-  using Params = typename ::Eigen::internal::traits<Derived>::Params;
+  /// The number of parameters of the Lie group
+  static constexpr int ParamSize
+      = ::Eigen::internal::traits<Derived>::ParamSize;
 
   /// The plain object type of the Lie group
   using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
+
+  /// The parameter type of the Lie group
+  using Params = typename ::Eigen::internal::traits<Derived>::Params;
 
   /// The matrix type of the Lie group
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;

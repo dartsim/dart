@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/lie_group/SE3Base.hpp>
+#include <dart/math/lie_group/SE3Tangent.hpp>
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Map.hpp>
 
@@ -46,14 +47,14 @@ struct traits<::dart::math::SE3<S>>
   using Scalar = S;
 
   // LieGroup common
-  static constexpr int ParamSize = 7;
   static constexpr int Dim = 3;
   static constexpr int DoF = 6;
   static constexpr int MatrixRepDim = 4;
-  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  static constexpr int ParamSize = 7;
   using PlainObject = ::dart::math::SE3<S>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
-  using Tangent = ::Eigen::Matrix<S, DoF, 1>;
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  using Tangent = ::dart::math::SE3Tangent<S>;
 };
 
 } // namespace Eigen::internal
@@ -84,6 +85,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] static SE3 Exp(
       const Eigen::MatrixBase<MatrixDerived>& dx, const S tol = Tolerance());
+  // TODO(JS): Update this to take Tangent
 
   /// Returns the exponential map of the given vector and the Jacobian of the
   /// exponential map
@@ -224,11 +226,7 @@ public:
   /// translation are going to be initialized later.
   explicit SE3(NoInitializeTag);
 
-  /// Copy constructor
-  SE3(const SE3& other);
-
-  /// Move constructor
-  SE3(SE3&& other) noexcept;
+  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SE3);
 
   /// Constructs an SE3 from a rotation (or SE(3)) and a translation (or R(3))
   ///
@@ -243,12 +241,6 @@ public:
   explicit SE3(
       SO3Base<SO3Derived>&& rotation,
       Eigen::MatrixBase<MatrixDerived>&& translation);
-
-  template <typename MatrixDerived>
-  explicit SE3(const Eigen::MatrixBase<MatrixDerived>& params);
-
-  template <typename MatrixDerived>
-  explicit SE3(Eigen::MatrixBase<MatrixDerived>&& params);
 
   /// Copy assignment operator
   SE3& operator=(const SE3& other);
@@ -345,12 +337,10 @@ template <typename S>
 template <typename OtherDerived>
 typename SE3<S>::Tangent SE3<S>::Log(const SE3Base<OtherDerived>& x, S tol)
 {
-  Tangent out;
-  out.template head<3>() = SO3<S>::Log(x.rotation(), tol);
-  out.template tail<3>().noalias()
-      = SO3<S>::LeftJacobianInverse(out.template head<3>(), tol)
-        * x.translation();
-  return out;
+  const Eigen::Vector3<S> angular = SO3<S>::Log(x.rotation(), tol).params();
+  const Eigen::Vector3<S> linear
+      = SO3<S>::LeftJacobianInverse(angular, tol) * x.translation();
+  return Tangent(std::move(angular), std::move(linear));
 }
 
 //==============================================================================
@@ -415,12 +405,10 @@ typename SE3<S>::Tangent SE3<S>::Ad(
   // than once
   const Eigen::Matrix<S, 3, 3> rotation = x.rotation().toMatrix();
 
-  Tangent out;
-  out.template head<3>().noalias() = rotation * xi.template head<3>();
-  out.template tail<3>().noalias() = rotation * xi.template tail<3>();
-  out.template tail<3>().noalias()
-      += x.translation().cross(out.template head<3>());
-  return out;
+  const Vector3<S> angular = rotation * xi.template head<3>();
+  Vector3<S> linear = rotation * xi.template tail<3>();
+  linear.noalias() += x.translation().cross(angular);
+  return Tangent(std::move(angular), std::move(linear));
 }
 
 //==============================================================================
@@ -581,20 +569,6 @@ SE3<S>::SE3(NoInitializeTag)
 
 //==============================================================================
 template <typename S>
-SE3<S>::SE3(const SE3& other) : m_params(other.params())
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-SE3<S>::SE3(SE3&& other) noexcept : m_params(std::move(other.params()))
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
 template <typename SO3Derived, typename MatrixDerived>
 SE3<S>::SE3(
     const SO3Base<SO3Derived>& rotation,
@@ -613,23 +587,6 @@ SE3<S>::SE3(
 {
   params().template head<4>() = std::move(rotation.params());
   params().template tail<3>() = std::move(translation);
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SE3<S>::SE3(const Eigen::MatrixBase<MatrixDerived>& params) : m_params(params)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SE3<S>::SE3(Eigen::MatrixBase<MatrixDerived>&& params)
-  : m_params(std::move(params))
-{
-  // Do nothing
 }
 
 //==============================================================================

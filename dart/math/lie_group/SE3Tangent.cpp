@@ -30,16 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <dart/math/lie_group/SE3Tangent.hpp>
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
+namespace dart::math {
 
-#include <dart/math/lie_group/GroupProduct.hpp>
-#include <dart/math/lie_group/GroupProductMap.hpp>
-#include <dart/math/lie_group/SE3.hpp>
-#include <dart/math/lie_group/SE3Map.hpp>
-#include <dart/math/lie_group/SO3.hpp>
-#include <dart/math/lie_group/SO3Map.hpp>
-#include <dart/math/lie_group/SO3Tangent.hpp>
+DART_TEMPLATE_CLASS_SOURCE(MATH, SE3Tangent);
+
+} // namespace dart::math

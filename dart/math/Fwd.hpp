@@ -320,9 +320,13 @@ using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 
 template <typename Scalar>
 class SO3;
+template <typename Scalar>
+class SO3Tangent;
 
 template <typename Scalar>
 class SE3;
+template <typename Scalar>
+class SE3Tangent;
 
 template <typename Scalar, template <typename> class...>
 class GroupProduct;
