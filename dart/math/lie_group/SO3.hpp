@@ -49,7 +49,7 @@ struct traits<::dart::math::SO3<S>>
   static constexpr int DoF = 3;
   static constexpr int MatrixRepDim = 3;
   static constexpr int ParamSize = 4;
-  using PlainObject = ::dart::math::SO3<S>;
+  using LieGroup = ::dart::math::SO3<S>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using Tangent = ::dart::math::SO3Tangent<S>;
@@ -74,7 +74,7 @@ public:
 
   // LieGroup types
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
@@ -90,10 +90,8 @@ public:
     EXTRINSIC,
   };
 
-  using Base::Tolerance;
-
   template <typename MatrixDerived>
-  [[nodiscard]] static PlainObject FromEulerAngles(
+  [[nodiscard]] static LieGroup FromEulerAngles(
       const Eigen::MatrixBase<MatrixDerived>& angles,
       int axis0,
       int axis1,
@@ -101,43 +99,9 @@ public:
       EulerConvention convention = EulerConvention::INTRINSIC);
 
   template <typename MatrixDerived>
-  [[nodiscard]] static PlainObject FromEulerXYZ(
+  [[nodiscard]] static LieGroup FromEulerXYZ(
       const Eigen::MatrixBase<MatrixDerived>& angles,
       EulerConvention convention = EulerConvention::INTRINSIC);
-
-  /// Returns the exponential map of the given vector
-  ///
-  /// The exponential map of a vector @f$ \xi @f$ is an SO3 @f$ x @f$ such
-  /// that @f$ \log(x) = \xi @f$.
-  ///
-  /// @param[in] dx The vector to be converted to an SO3.
-  /// @param[in] tol The tolerance for the norm of the vector.
-  /// @return The SO3.
-  /// @tparam MatrixDrived The type of the vector
-  /// @see Log()
-  template <typename MatrixDrived>
-  [[nodiscard]] static SO3 Exp(
-      const Eigen::MatrixBase<MatrixDrived>& dx, S tol = Tolerance());
-
-  /// Returns the exponential map of the given vector
-  ///
-  /// The exponential map of a vector @f$ \xi @f$ is an SO3 @f$ x @f$ such
-  /// that @f$ \log(x) = \xi @f$.
-  ///
-  /// This function also returns the Jacobian of the exponential map.
-  ///
-  /// @param[in] dx The vector to be converted to an SO3.
-  /// @param[out] jacobian The Jacobian of the exponential map.
-  /// @param[in] tol The tolerance for the norm of the vector.
-  /// @return The SO3.
-  /// @tparam MatrixDrivedA The type of the vector
-  /// @tparam MatrixDerivedB The type of the Jacobian
-  /// @see Log()
-  template <typename MatrixDrivedA, typename MatrixDerivedB>
-  [[nodiscard]] static SO3 Exp(
-      const Eigen::MatrixBase<MatrixDrivedA>& dx,
-      Eigen::MatrixBase<MatrixDerivedB>* jacobian,
-      S tol = Tolerance());
 
   /// Returns the hat operator of the given vector
   ///
@@ -190,7 +154,7 @@ public:
   /// @see RightJacobian()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix3<S> LeftJacobian(
-      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = LieGroupTol<Scalar>());
 
   /// Returns the right Jacobian of the exponential map
   ///
@@ -206,7 +170,7 @@ public:
   /// @see LeftJacobian()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix3<S> RightJacobian(
-      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = LieGroupTol<Scalar>());
 
   /// Returns the left Jacobian inverse of the exponential map
   ///
@@ -217,7 +181,7 @@ public:
   /// @see RightJacobianInverse()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix3<S> LeftJacobianInverse(
-      const Eigen::MatrixBase<MatrixDrived>& dx, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& dx, S tol = LieGroupTol<Scalar>());
 
   /// Returns the right Jacobian inverse of the exponential map
   ///
@@ -228,7 +192,8 @@ public:
   /// @see LeftJacobianInverse()
   template <typename MatrixDerived>
   [[nodiscard]] static Matrix3<S> RightJacobianInverse(
-      const Eigen::MatrixBase<MatrixDerived>& dx, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDerived>& dx,
+      S tol = LieGroupTol<Scalar>());
 
   /// Default constructor that initializes the quaternion to identity
   SO3();
@@ -302,7 +267,7 @@ namespace dart::math {
 //==============================================================================
 template <typename S>
 template <typename MatrixDerived>
-typename SO3<S>::PlainObject SO3<S>::FromEulerAngles(
+typename SO3<S>::LieGroup SO3<S>::FromEulerAngles(
     const Eigen::MatrixBase<MatrixDerived>& angles,
     int axis0,
     int axis1,
@@ -318,39 +283,6 @@ typename SO3<S>::PlainObject SO3<S>::FromEulerAngles(
       AngleAxis<S>(angles[0], Vector3<S>::Unit(axis0))
       * AngleAxis<S>(angles[1], Vector3<S>::Unit(axis1))
       * AngleAxis<S>(angles[2], Vector3<S>::Unit(axis2))));
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SO3<S> SO3<S>::Exp(const Eigen::MatrixBase<MatrixDerived>& dx, S tol)
-{
-  const S theta = dx.norm();
-  if (theta < tol) {
-    const Tangent vec = 0.5 * dx;
-    return SO3<S>{Eigen::Quaternion<S>(1.0, vec[0], vec[1], vec[2])};
-  }
-
-  const S half_theta = 0.5 * theta;
-  const S sin_half_theta = std::sin(half_theta);
-  const S cos_half_theta = std::cos(half_theta);
-  const Tangent vec = (sin_half_theta / theta) * dx;
-  return SO3<S>{Eigen::Quaternion<S>(cos_half_theta, vec[0], vec[1], vec[2])};
-  // TODO(JS): Consider creating a constructor from Params type
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDrivedA, typename MatrixDerivedB>
-SO3<S> SO3<S>::Exp(
-    const Eigen::MatrixBase<MatrixDrivedA>& dx,
-    Eigen::MatrixBase<MatrixDerivedB>* jacobian,
-    S tol)
-{
-  if (jacobian) {
-    *jacobian = RightJacobian(dx, tol);
-  }
-  return Exp(dx, tol);
 }
 
 //==============================================================================

@@ -51,7 +51,7 @@ struct traits<::dart::math::SE3<S>>
   static constexpr int DoF = 6;
   static constexpr int MatrixRepDim = 4;
   static constexpr int ParamSize = 7;
-  using PlainObject = ::dart::math::SE3<S>;
+  using LieGroup = ::dart::math::SE3<S>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using Tangent = ::dart::math::SE3Tangent<S>;
@@ -72,32 +72,9 @@ public:
 
   // LieGroup common
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
-
-  using Base::Tolerance;
-
-  /// Returns the exponential map of the given vector
-  ///
-  /// @param dx The vector to be converted to SE3
-  /// @param tol The tolerance for the norm of the vector
-  template <typename MatrixDerived>
-  [[nodiscard]] static SE3 Exp(
-      const Eigen::MatrixBase<MatrixDerived>& dx, const S tol = Tolerance());
-  // TODO(JS): Update this to take Tangent
-
-  /// Returns the exponential map of the given vector and the Jacobian of the
-  /// exponential map
-  ///
-  /// @param dx The vector to be converted to SE3
-  /// @param jacobian The Jacobian of the exponential map
-  /// @param tol The tolerance for the norm of the vector
-  template <typename MatrixDerivedA, typename MatrixDerivedB>
-  [[nodiscard]] static SE3 Exp(
-      const Eigen::MatrixBase<MatrixDerivedA>& dx,
-      Eigen::MatrixBase<MatrixDerivedB>* jacobian,
-      S tol = Tolerance());
 
   /**
    * Returns the hat operator of the given vector
@@ -160,7 +137,7 @@ public:
   /// @see RightJacobian()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix6<S> LeftJacobian(
-      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = LieGroupTol<Scalar>());
 
   /// Returns the right Jacobian of the exponential map
   ///
@@ -171,7 +148,7 @@ public:
   /// @see LeftJacobian()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix6<S> RightJacobian(
-      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& xi, S tol = LieGroupTol<Scalar>());
 
   /// Returns the left Jacobian inverse of the exponential map
   ///
@@ -182,7 +159,7 @@ public:
   /// @see RightJacobianInverse()
   template <typename MatrixDrived>
   [[nodiscard]] static Matrix6<S> LeftJacobianInverse(
-      const Eigen::MatrixBase<MatrixDrived>& dx, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDrived>& dx, S tol = LieGroupTol<Scalar>());
 
   /// Returns the right Jacobian inverse of the exponential map
   ///
@@ -193,7 +170,8 @@ public:
   /// @see LeftJacobianInverse()
   template <typename MatrixDerived>
   [[nodiscard]] static Matrix6<S> RightJacobianInverse(
-      const Eigen::MatrixBase<MatrixDerived>& dx, S tol = Tolerance());
+      const Eigen::MatrixBase<MatrixDerived>& dx,
+      S tol = LieGroupTol<Scalar>());
 
   /// Default constructor that initializes the quaternion to identity and the
   /// translation to zero
@@ -284,33 +262,6 @@ Matrix3<S> computeQ(
 }
 
 } // namespace detail
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerived>
-SE3<S> SE3<S>::Exp(const Eigen::MatrixBase<MatrixDerived>& dx, const S tol)
-{
-  const SO3<S> rotation = SO3<S>::Exp(dx.template head<3>(), tol);
-  const Eigen::Vector3<S> translation
-      = SO3<S>::LeftJacobian(dx.template head<3>(), tol)
-        * dx.template tail<3>();
-  // TODO(JS): Check if this version is faster than expMap() and expMapRot()
-  return SE3(std::move(rotation), std::move(translation));
-}
-
-//==============================================================================
-template <typename S>
-template <typename MatrixDerivedA, typename MatrixDerivedB>
-SE3<S> SE3<S>::Exp(
-    const Eigen::MatrixBase<MatrixDerivedA>& dx,
-    Eigen::MatrixBase<MatrixDerivedB>* jacobian,
-    S tol)
-{
-  if (jacobian) {
-    (*jacobian) = RightJacobian(dx, tol);
-  }
-  return Exp(dx, tol);
-}
 
 //==============================================================================
 template <typename S>

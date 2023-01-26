@@ -70,7 +70,7 @@ public:
       = ::Eigen::internal::traits<Derived>::ParamSize;
 
   /// The plain object type of the Lie group
-  using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
+  using LieGroup = typename ::Eigen::internal::traits<Derived>::LieGroup;
 
   /// The parameter type of the Lie group
   using Params = typename ::Eigen::internal::traits<Derived>::Params;
@@ -88,18 +88,15 @@ public:
   /// Template type for casting the scalar type of the Lie group
   template <typename OtherScalar>
   using ScalarCastType =
-      typename detail::ScalarCast<PlainObject, OtherScalar>::type;
+      typename detail::ScalarCast<LieGroup, OtherScalar>::type;
 
   /// @}
 
-  /// Returns the tolerance for the Lie group
-  [[nodiscard]] static constexpr Scalar Tolerance();
-
   /// Returns the identity of the Lie group
-  [[nodiscard]] static PlainObject Identity();
+  [[nodiscard]] static LieGroup Identity();
 
   /// Returns a random element of the Lie group
-  [[nodiscard]] static PlainObject Random();
+  [[nodiscard]] static LieGroup Random();
 
   /// Assignment operator.
   ///
@@ -125,10 +122,11 @@ public:
   /// tolerance.
   template <typename OtherDerived>
   [[nodiscard]] bool isApprox(
-      const LieGroupBase<OtherDerived>& other, Scalar tol = Tolerance()) const;
+      const LieGroupBase<OtherDerived>& other,
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the inverse of this Lie group.
-  [[nodiscard]] PlainObject inverse() const;
+  [[nodiscard]] LieGroup inverse() const;
 
   /// Returns the logarithm map of the this Lie group
   ///
@@ -140,7 +138,7 @@ public:
   /// @return The vector.
   /// @tparam MatrixDrived The type of the Lie group
   /// @see Exp()
-  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+  [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the logarithm map of this Lie group
   ///
@@ -159,7 +157,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] Tangent log(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = Tolerance()) const;
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the matrix representation of this Lie group.
   ///
@@ -197,34 +195,18 @@ namespace dart::math {
 
 //==============================================================================
 template <typename Derived>
-constexpr typename LieGroupBase<Derived>::Scalar
-LieGroupBase<Derived>::Tolerance()
+typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::Identity()
 {
-  // TODO: This is a temporary solution. We need to find a better way to
-  // determine the tolerance.
-  if constexpr (std::is_same_v<Scalar, float>) {
-    return 1e-3;
-  } else if constexpr (std::is_same_v<Scalar, double>) {
-    return 1e-6;
-  } else if constexpr (std::is_same_v<Scalar, long double>) {
-    return 1e-9;
-  }
-}
-
-//==============================================================================
-template <typename Derived>
-typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Identity()
-{
-  const static PlainObject identity = PlainObject();
+  const static LieGroup identity = LieGroup();
   return identity;
 }
 
 //==============================================================================
 template <typename Derived>
-typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::Random()
+typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::Random()
 {
   // setRandom() must be implemented in each <group>Base class
-  return PlainObject(NO_INITIALIZE).setRandom();
+  return LieGroup(NO_INITIALIZE).setRandom();
 }
 
 //==============================================================================
@@ -243,7 +225,7 @@ template <typename OtherDerived>
 bool LieGroupBase<Derived>::operator==(
     const LieGroupBase<OtherDerived>& other) const
 {
-  return derived().isApprox(other, Tolerance());
+  return derived().isApprox(other, LieGroupTol<Scalar>());
 }
 
 //==============================================================================
@@ -266,8 +248,7 @@ bool LieGroupBase<Derived>::isApprox(
 
 //==============================================================================
 template <typename Derived>
-typename LieGroupBase<Derived>::PlainObject LieGroupBase<Derived>::inverse()
-    const
+typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::inverse() const
 {
   return derived().inverse();
 }

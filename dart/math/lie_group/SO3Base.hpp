@@ -55,11 +55,10 @@ public:
   using Base::MatrixRepDim;
   using Base::ParamSize;
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
-  using Base::Tolerance;
   using Base::operator=;
   using Base::derived;
   using Base::params;
@@ -69,7 +68,7 @@ public:
   /// @param[in] other The other SO3 to compose with.
   /// @return The composition of this SO3 with other.
   template <typename OtherDerived>
-  [[nodiscard]] PlainObject operator*(const SO3Base<OtherDerived>& other) const;
+  [[nodiscard]] LieGroup operator*(const SO3Base<OtherDerived>& other) const;
 
   /**
    * Transforms a 3D vector by this SO3.
@@ -94,7 +93,7 @@ public:
   Derived& setRandom();
 
   /// Returns the inverse of this SO3.
-  [[nodiscard]] PlainObject inverse() const;
+  [[nodiscard]] LieGroup inverse() const;
 
   /// Returns the logarithm map of the given SO3
   ///
@@ -106,7 +105,7 @@ public:
   /// @return The vector.
   /// @tparam MatrixDrived The type of the SO3
   /// @see Exp()
-  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+  [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the logarithm map of the given SO3
   ///
@@ -125,7 +124,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] Tangent log(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = Tolerance()) const;
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the matrix representation of this SO3
   ///
@@ -174,10 +173,10 @@ namespace dart::math {
 //==============================================================================
 template <typename Derived>
 template <typename OtherDerived>
-typename SO3Base<Derived>::PlainObject SO3Base<Derived>::operator*(
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::operator*(
     const SO3Base<OtherDerived>& other) const
 {
-  return PlainObject(quaternion() * other.quaternion());
+  return LieGroup(quaternion() * other.quaternion());
 }
 
 //==============================================================================
@@ -210,9 +209,9 @@ Derived& SO3Base<Derived>::setRandom()
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::PlainObject SO3Base<Derived>::inverse() const
+typename SO3Base<Derived>::LieGroup SO3Base<Derived>::inverse() const
 {
-  return PlainObject(quaternion().conjugate());
+  return LieGroup(quaternion().conjugate());
 }
 
 //==============================================================================

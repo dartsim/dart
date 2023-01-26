@@ -117,4 +117,18 @@
 
 namespace dart::math {
 
+template <typename S>
+constexpr S LieGroupTol()
+{
+  // TODO: This is a temporary solution. We need to find a better way to
+  // determine the tolerance.
+  if constexpr (std::is_same_v<S, float>) {
+    return 1e-3;
+  } else if constexpr (std::is_same_v<S, double>) {
+    return 1e-6;
+  } else if constexpr (std::is_same_v<S, long double>) {
+    return 1e-9;
+  }
+}
+
 } // namespace dart::math

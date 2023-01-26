@@ -57,13 +57,49 @@ public:
   static constexpr int ParamSize
       = ::Eigen::internal::traits<Derived>::ParamSize;
 
+  using LieGroup = typename ::Eigen::internal::traits<Derived>::LieGroup;
+
   /// The plain object type of the Lie group
-  using PlainObject = typename ::Eigen::internal::traits<Derived>::PlainObject;
+  using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
 
   /// The data type of the underlying data
   using Params = typename ::Eigen::internal::traits<Derived>::Params;
 
   /// @}
+
+  /// Returns a random element of the tangent of the Lie group
+  [[nodiscard]] static Tangent Random();
+
+  // TODO(JS): Add Zero()
+
+  /// Returns the exponential map of the given tangent
+  ///
+  /// The exponential map of a vector @f$ \xi @f$ is a Lie group element @f$ x
+  /// @f$ such that @f$ \log(x) = \xi @f$.
+  ///
+  /// @param[in] dx The vector to be converted to a Lie group element.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The Lie group element.
+  /// @tparam MatrixDrived The type of the vector
+  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>());
+
+  /// Returns the exponential map of the given tangent
+  ///
+  /// The exponential map of a vector @f$ \xi @f$ is a Lie group element @f$ x
+  /// @f$ such that @f$ \log(x) = \xi @f$.
+  ///
+  /// This function also returns the Jacobian of the exponential map.
+  ///
+  /// @param[in] dx The vector to be converted to a Lie group element.
+  /// @param[out] jacobian The Jacobian of the exponential map.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The Lie group element.
+  /// @tparam MatrixDrivedA The type of the vector
+  /// @tparam MatrixDerivedB The type of the Jacobian
+  template <typename MatrixDerived>
+  [[nodiscard]] LieGroup exp(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = LieGroupTol<Scalar>());
 
   bool isZero(Scalar tol) const
   {
@@ -105,6 +141,29 @@ protected:
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
+{
+  return Tangent(Params::Random());
+}
+
+//==============================================================================
+template <typename Derived>
+typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(Scalar tol)
+{
+  return derived().exp(tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol)
+{
+  return derived().exp(jacobian, tol);
+}
 
 //==============================================================================
 template <typename Derived>

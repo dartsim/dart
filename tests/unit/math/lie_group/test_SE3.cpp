@@ -54,7 +54,7 @@ Isometry3<S> expMap(const Vector6<S>& _S)
   S theta = sqrt(s2[0] + s2[1] + s2[2]);
   S cos_t = cos(theta), alpha, beta, gamma;
 
-  if (theta > SO3<S>::Tolerance()) {
+  if (theta > LieGroupTol<S>()) {
     S sin_t = sin(theta);
     alpha = sin_t / theta;
     beta = (1.0 - cos_t) / theta / theta;
@@ -164,26 +164,26 @@ TYPED_TEST(SE3Test, Exp)
   const auto num_tests = 100;
 
   for (auto i = 0; i < num_tests; ++i) {
-    Vector6<S> x = Vector6<S>::Random();
+    SE3Tangent<S> x = SE3Tangent<S>::Random();
 
-    EXPECT_TRUE(SE3<S>::Exp(x).toMatrix().isApprox(expMap<S>(x).matrix()))
-        << "x          : " << x.transpose() << "\n"
+    EXPECT_TRUE(x.exp().toMatrix().isApprox(expMap<S>(x).matrix()))
+        << "x          : " << x.params().transpose() << "\n"
         << "Exp(x)   :\n"
-        << SE3<S>::Exp(x).toMatrix() << "\n"
+        << x.exp().toMatrix() << "\n"
         << "expMap(x):\n"
         << expMap<S>(x).matrix() << "\n";
   }
 
   for (auto i = 0; i < num_tests; ++i) {
     SE3<S> x = SE3<S>::Random();
-    EXPECT_TRUE(SE3<S>::Exp(x.log().params()).isApprox(x))
+    EXPECT_TRUE(x.log().exp().isApprox(x))
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << SE3<S>::Exp(x.log().params()).toMatrix() << "\n"
+        << x.log().exp().toMatrix() << "\n"
         << "Log(x)          : " << x.log().params().transpose() << "\n"
-        << "Log(Exp(Log(x))): "
-        << SE3<S>::Exp(x.log().params()).log().params().transpose() << "\n";
+        << "Log(Exp(Log(x))): " << x.log().exp().log().params().transpose()
+        << "\n";
   }
 }
 
@@ -246,6 +246,7 @@ TYPED_TEST(SE3Test, Jacobians)
   using Matrix4 = Matrix4<S>;
   using Matrix6 = Matrix6<S>;
   using SE3 = SE3<S>;
+  using SE3Tangent = SE3Tangent<S>;
 
   // TODO(JS): Make this general for all the Lie group types
   auto test_numerical_left_jacobian = [&](const Vector6& x) {
@@ -258,8 +259,8 @@ TYPED_TEST(SE3Test, Jacobians)
       Vector6 x_plus = x;
       x_plus[j] += S(0.5) * eps;
 
-      const SE3 T_minus = SE3::Exp(x_minus);
-      const SE3 T_plus = SE3::Exp(x_plus);
+      const SE3 T_minus = SE3Tangent(x_minus).exp();
+      const SE3 T_plus = SE3Tangent(x_plus).exp();
       const SE3 dT_left = T_plus * T_minus.inverse();
       const Vector6 dt = dT_left.log().params();
       const Matrix4 dt_dt = SE3::Hat(dt) / eps;
@@ -278,8 +279,8 @@ TYPED_TEST(SE3Test, Jacobians)
       Vector6 x_plus = x;
       x_plus[j] += S(0.5) * eps;
 
-      const SE3 T_minus = SE3::Exp(x_minus);
-      const SE3 T_plus = SE3::Exp(x_plus);
+      const SE3 T_minus = SE3Tangent(x_minus).exp();
+      const SE3 T_plus = SE3Tangent(x_plus).exp();
       const SE3 dT_right = T_minus.inverse() * T_plus;
       const Vector6 dt = dT_right.log().params();
       const Matrix4 dt_dt = SE3::Hat(dt) / eps;
@@ -308,38 +309,44 @@ TYPED_TEST(SE3Test, Jacobians)
         << dlog(V);
 
     // exp(x + dx) ~= exp(J_l(x) * dx) * exp(x)
-    EXPECT_TRUE(SE3::Exp(V + dV).isApprox(
-        SE3::Exp(SE3::LeftJacobian(V) * dV) * SE3::Exp(V), 1e-6))
+    EXPECT_TRUE(SE3Tangent(V + dV).exp().isApprox(
+        SE3Tangent(SE3::LeftJacobian(V) * dV).exp() * SE3Tangent(V).exp(),
+        1e-6))
         << "exp(x + dx):\n"
-        << SE3::Exp(V + dV).toMatrix() << "\n"
+        << SE3Tangent(V + dV).exp().toMatrix() << "\n"
         << "exp(J_l(x) * dx) * exp(x):\n"
-        << (SE3::Exp(SE3::LeftJacobian(V) * dV) * SE3::Exp(V)).toMatrix();
+        << (SE3Tangent(SE3::LeftJacobian(V) * dV).exp() * SE3Tangent(V).exp())
+               .toMatrix();
 
     // exp(x + dx) ~= exp(x) * exp(J_r(x) * dx)
-    EXPECT_TRUE(SE3::Exp(V + dV).isApprox(
-        SE3::Exp(V) * SE3::Exp(SE3::RightJacobian(V) * dV), 1e-6))
+    EXPECT_TRUE(SE3Tangent(V + dV).exp().isApprox(
+        SE3Tangent(V).exp() * SE3Tangent(SE3::RightJacobian(V) * dV).exp(),
+        1e-6))
         << "exp(x + dx):\n"
-        << SE3::Exp(V + dV).toMatrix() << "\n"
+        << SE3Tangent(V + dV).exp().toMatrix() << "\n"
         << "exp(x) * exp(J_r(x) * dx):\n"
-        << (SE3::Exp(V) * SE3::Exp(SE3::RightJacobian(V) * dV)).toMatrix();
+        << (SE3Tangent(V).exp() * SE3Tangent(SE3::RightJacobian(V) * dV).exp())
+               .toMatrix();
 
     // log(exp(dx) * exp(x)) ~= x + J_l^{-1}(x) * dx
     EXPECT_TRUE(
-        (SE3::Exp(dV) * SE3::Exp(V))
-            .isApprox(SE3::Exp(V + SE3::LeftJacobianInverse(V) * dV), 1e-6))
+        (SE3Tangent(dV).exp() * SE3Tangent(V).exp())
+            .isApprox(
+                SE3Tangent(V + SE3::LeftJacobianInverse(V) * dV).exp(), 1e-6))
         << "exp(dx) * exp(x):\n"
-        << (SE3::Exp(dV) * SE3::Exp(V)).toMatrix() << "\n"
+        << (SE3Tangent(dV).exp() * SE3Tangent(V).exp()).toMatrix() << "\n"
         << "exp(x + J_l^{-1}(x) * dx):\n"
-        << SE3::Exp(V + SE3::LeftJacobianInverse(V) * dV).toMatrix();
+        << SE3Tangent(V + SE3::LeftJacobianInverse(V) * dV).exp().toMatrix();
 
     // log(exp(x) * exp(dx)) ~= x + J_r^{-1}(x) * dx
     EXPECT_TRUE(
-        (SE3::Exp(V) * SE3::Exp(dV))
-            .isApprox(SE3::Exp(V + SE3::RightJacobianInverse(V) * dV), 1e-6))
+        (SE3Tangent(V).exp() * SE3Tangent(dV).exp())
+            .isApprox(
+                SE3Tangent(V + SE3::RightJacobianInverse(V) * dV).exp(), 1e-6))
         << "exp(x) * exp(dx):\n"
-        << (SE3::Exp(V) * SE3::Exp(dV)).toMatrix() << "\n"
+        << (SE3Tangent(V).exp() * SE3Tangent(dV).exp()).toMatrix() << "\n"
         << "exp(x + J_r^{-1}(x) * dx):\n"
-        << SE3::Exp(V + SE3::RightJacobianInverse(V) * dV).toMatrix();
+        << SE3Tangent(V + SE3::RightJacobianInverse(V) * dV).exp().toMatrix();
 
     // J_l^{-1} == (J_l)^{-1}
     EXPECT_TRUE(SE3::LeftJacobianInverse(V).isApprox(

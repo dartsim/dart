@@ -104,11 +104,9 @@ public:
   using Base::MatrixRepDim;
   using Base::ParamSize;
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
-
-  using Base::Tolerance;
 
   using Base::operator=;
   using Base::derived;

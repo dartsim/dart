@@ -230,13 +230,13 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 
   // Exp
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d s = math::Vector6d::Random();
-    math::Isometry3d Exp_s = math::SE3d::Exp(s).toIsometry3();
+    math::SE3Tangentd s = math::SE3Tangentd::Random();
+    math::Isometry3d Exp_s = s.exp().toIsometry3();
     math::Matrix4d Exp_s_2 = math::Matrix4d::Identity();
 
-    double theta = s.head<3>().norm();
+    double theta = s.params().head<3>().norm();
     math::Matrix3d R = Matrix3d::Zero();
-    math::Matrix3d qss = math::SO3<double>::Hat(s.head<3>());
+    math::Matrix3d qss = math::SO3<double>::Hat(s.params().head<3>());
     math::Matrix3d qss2 = qss * qss;
     math::Matrix3d P = math::Matrix3d::Zero();
 
@@ -251,7 +251,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     }
 
     Exp_s_2.topLeftCorner<3, 3>() = R;
-    Exp_s_2.topRightCorner<3, 1>() = P * s.tail<3>();
+    Exp_s_2.topRightCorner<3, 1>() = P * s.params().tail<3>();
 
     //
     for (int i = 0; i < 4; ++i)
@@ -338,12 +338,8 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
   }
 
   for (int idxTest = 0; idxTest < numExpTests; ++idxTest) {
-    math::Vector6d randomS = math::Vector6d::Zero();
-
-    for (int i = 0; i < 6; ++i)
-      randomS[i] = Uniform(min, max);
-
-    math::Isometry3d T = math::SE3d::Exp(randomS).toIsometry3();
+    math::SE3Tangentd randomS = math::SE3Tangentd::Random();
+    math::Isometry3d T = randomS.exp().toIsometry3();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }
@@ -355,8 +351,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdT(V) == T * V * InvT
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector6d V = math::Vector6d::Random();
 
     math::Vector6d AdTV = AdT(T, V);
@@ -382,8 +378,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdR == AdT([R 0; 0 1], V)
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Isometry3d R = math::Isometry3d::Identity();
     R.linear() = T.linear();
     math::Vector6d V = math::Vector6d::Random();
@@ -397,8 +393,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdTAngular == AdT(T, se3(w, 0))
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector3d w = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.head<3>() = w;
@@ -412,8 +408,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdTLinear == AdT(T, se3(w, 0))
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -427,8 +423,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdTJac
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -442,8 +438,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdInvT
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Vector6d V = math::Vector6d::Random();
 
@@ -456,8 +452,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // AdInvRLinear
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector3d v = math::Vector3d::Random();
     math::Vector6d V = math::Vector6d::Zero();
     V.tail<3>() = v;
@@ -473,8 +469,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // dAdT
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Vector6d F = math::Vector6d::Random();
 
     math::Vector6d dAdTF = dAdT(T, F);
@@ -492,8 +488,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // dAdInvT
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Vector6d F = math::Vector6d::Random();
 
@@ -518,8 +514,8 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
   // dAdInvR
   for (int i = 0; i < numTest; ++i) {
-    math::Vector6d t = math::Vector6d::Random();
-    math::Isometry3d T = math::SE3d::Exp(t).toIsometry3();
+    math::SE3Tangentd t = math::SE3Tangentd::Random();
+    math::Isometry3d T = t.exp().toIsometry3();
     math::Isometry3d InvT = T.inverse();
     math::Isometry3d InvR = math::Isometry3d::Identity();
     InvR.linear() = InvT.linear();

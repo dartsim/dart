@@ -47,10 +47,41 @@ public:
   using Base::Dim;
   using Base::DoF;
   using Base::ParamSize;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
+  using Tangent = typename Base::Tangent;
   using Params = typename Base::Params;
 
   using Base::derived;
+  using Base::params;
+
+  /// Returns the exponential map of the given vector
+  ///
+  /// The exponential map of a vector @f$ \xi @f$ is an SO3 @f$ x @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// @param[in] dx The vector to be converted to an SO3.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The SO3.
+  /// @tparam MatrixDrived The type of the vector
+  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>());
+
+  /// Returns the exponential map of the given vector
+  ///
+  /// The exponential map of a vector @f$ \xi @f$ is an SO3 @f$ x @f$ such
+  /// that @f$ \log(x) = \xi @f$.
+  ///
+  /// This function also returns the Jacobian of the exponential map.
+  ///
+  /// @param[in] dx The vector to be converted to an SO3.
+  /// @param[out] jacobian The Jacobian of the exponential map.
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return The SO3.
+  /// @tparam MatrixDrivedA The type of the vector
+  /// @tparam MatrixDerivedB The type of the Jacobian
+  template <typename MatrixDerived>
+  [[nodiscard]] LieGroup exp(
+      Eigen::MatrixBase<MatrixDerived>* jacobian,
+      Scalar tol = LieGroupTol<Scalar>());
 };
 
 } // namespace dart::math
@@ -59,8 +90,35 @@ public:
 // Implementation
 //==============================================================================
 
+#include <dart/math/lie_group/SE3.hpp>
+
 namespace dart::math {
 
 //==============================================================================
+template <typename Derived>
+typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
+    Scalar tol)
+{
+  // TODO(JS): Change to angular() once it's added
+  const SO3<Scalar> rotation
+      = SO3Tangent<Scalar>(params().template head<3>()).exp(tol);
+  const Eigen::Vector3<Scalar> translation
+      = SO3<Scalar>::LeftJacobian(params().template head<3>(), tol)
+        * params().template tail<3>();
+  // TODO(JS): Check if this version is faster than expMap() and expMapRot()
+  return LieGroup(std::move(rotation), std::move(translation));
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol)
+{
+  if (jacobian) {
+    (*jacobian) = SE3<Scalar>::RightJacobian(params(), tol);
+  }
+  return exp(tol);
+}
 
 } // namespace dart::math

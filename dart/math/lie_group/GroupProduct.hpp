@@ -71,7 +71,7 @@ struct traits<::dart::math::GroupProduct<S, T...>>
   static constexpr int MatrixRepDim = (T<S>::DoF + ...);
 #endif
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
-  using PlainObject = ::dart::math::GroupProduct<S, T...>;
+  using LieGroup = ::dart::math::GroupProduct<S, T...>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Tangent = ::Eigen::Matrix<S, Dim, 1>;
 };
@@ -105,11 +105,9 @@ public:
 
   // LieGroup common
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
-
-  using Base::Tolerance;
 
   /// Default constructor that initializes the components to identity
   GroupProduct();

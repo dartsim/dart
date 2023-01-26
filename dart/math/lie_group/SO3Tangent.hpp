@@ -47,7 +47,8 @@ struct traits<::dart::math::SO3Tangent<S>>
   static constexpr int Dim = 3;
   static constexpr int DoF = 3;
   static constexpr int ParamSize = DoF;
-  using PlainObject = ::dart::math::SO3Tangent<S>;
+  using LieGroup = ::dart::math::SO3<S>;
+  using Tangent = ::dart::math::SO3Tangent<S>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
 };
 
@@ -65,7 +66,8 @@ public:
   using Scalar = typename Base::Scalar;
 
   // LieGroup types
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
+  using Tangent = typename Base::Tangent;
   using Params = typename Base::Params;
 
   DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SO3Tangent);

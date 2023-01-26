@@ -51,11 +51,10 @@ public:
   using Base::MatrixRepDim;
   using Base::ParamSize;
   using Params = typename Base::Params;
-  using PlainObject = typename Base::PlainObject;
+  using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Tangent = typename Base::Tangent;
 
-  using Base::Tolerance;
   using Base::operator=;
   using Base::derived;
   using Base::params;
@@ -65,17 +64,17 @@ public:
    *
    * @tparam OtherDerived The type of the other SE3 point
    * @param[in] other: The other SE3 point
-   * @return PlainObject The result of the multiplication
+   * @return LieGroup The result of the multiplication
    */
   template <typename OtherDerived>
-  PlainObject operator*(const SE3Base<OtherDerived>& other) const;
+  LieGroup operator*(const SE3Base<OtherDerived>& other) const;
 
   /**
    * @brief Vector multiplication operator
    *
    * @tparam OtherDerived The type of the other SE3 point
    * @param[in] other: The other SE3 point
-   * @return PlainObject& The result of the multiplication
+   * @return LieGroup& The result of the multiplication
    */
   template <typename MatrixDerived>
   Vector3<Scalar> operator*(const MatrixBase<MatrixDerived>& vec) const;
@@ -90,7 +89,7 @@ public:
   /**
    * Returns the inverse of this SO3.
    */
-  [[nodiscard]] PlainObject inverse() const;
+  [[nodiscard]] LieGroup inverse() const;
 
   /// Returns the logarithm map of the given SE3
   ///
@@ -102,7 +101,7 @@ public:
   /// @return The vector.
   /// @tparam MatrixDrived The type of the SE3
   /// @see Exp()
-  [[nodiscard]] Tangent log(Scalar tol = Tolerance()) const;
+  [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the logarithm map of the given SE3
   ///
@@ -121,7 +120,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] Tangent log(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = Tolerance()) const;
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the Isometry3 representation of the SE3
   [[nodiscard]] Isometry3<Scalar> toIsometry3() const;
@@ -196,11 +195,11 @@ namespace dart::math {
 //==============================================================================
 template <typename Derived>
 template <typename OtherDerived>
-typename SE3Base<Derived>::PlainObject SE3Base<Derived>::operator*(
+typename SE3Base<Derived>::LieGroup SE3Base<Derived>::operator*(
     const SE3Base<OtherDerived>& other) const
 {
   const Eigen::Map<const SO3<Scalar>>& o = rotation();
-  return PlainObject(
+  return LieGroup(
       o * other.rotation(), o * other.translation() + translation());
 }
 
@@ -224,10 +223,10 @@ Derived& SE3Base<Derived>::setRandom()
 
 //==============================================================================
 template <typename Derived>
-typename SE3Base<Derived>::PlainObject SE3Base<Derived>::inverse() const
+typename SE3Base<Derived>::LieGroup SE3Base<Derived>::inverse() const
 {
   const SO3<Scalar> r_inv = rotation().inverse();
-  return PlainObject(r_inv, -(r_inv * translation()));
+  return LieGroup(r_inv, -(r_inv * translation()));
 }
 
 //==============================================================================

@@ -52,7 +52,7 @@ Matrix3<S> expMapRot(const Vector3<S>& _q)
   Matrix3<S> qss = SO3<S>::Hat(_q);
   Matrix3<S> qss2 = qss * qss;
 
-  if (theta < SO3<S>::Tolerance())
+  if (theta < LieGroupTol<S>())
     R = Matrix3<S>::Identity() + qss + 0.5 * qss2;
   else
     R = Matrix3<S>::Identity() + (sin(theta) / theta) * qss
@@ -112,27 +112,27 @@ TYPED_TEST(SO3Test, Exp)
   const auto num_tests = 100;
 
   for (auto i = 0; i < num_tests; ++i) {
-    Vector3<S> x = Vector3<S>::Random();
+    SO3Tangent<S> x = SO3Tangent<S>::Random();
 
-    EXPECT_TRUE(SO3<S>::Exp(x).toMatrix().isApprox(expMapRot<S>(x).matrix()))
-        << "x          : " << x.transpose() << "\n"
+    EXPECT_TRUE(x.exp().toMatrix().isApprox(expMapRot<S>(x.params())))
+        << "x          : " << x.params().transpose() << "\n"
         << "Exp(x)      :\n"
-        << SO3<S>::Exp(x).toMatrix() << "\n"
+        << x.exp().toMatrix() << "\n"
         << "expMapRot(x):\n"
-        << expMapRot<S>(x).matrix() << "\n";
+        << expMapRot<S>(x.params()) << "\n";
   }
 
   for (auto i = 0; i < num_tests; ++i) {
     SO3<S> x = SO3<S>::Random();
 
-    EXPECT_TRUE(SO3<S>::Exp(x.log().params()).isApprox(x))
+    EXPECT_TRUE(x.log().exp().isApprox(x))
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << SO3<S>::Exp(x.log().params()).toMatrix() << "\n"
+        << x.log().exp().toMatrix() << "\n"
         << "Log(x)          : " << x.log().params().transpose() << "\n"
-        << "Log(Exp(Log(x))): "
-        << SO3<S>::Exp(x.log().params()).log().params().transpose() << "\n";
+        << "Log(Exp(Log(x))): " << x.log().exp().log().params().transpose()
+        << "\n";
   }
 }
 
@@ -185,6 +185,7 @@ TYPED_TEST(SO3Test, Jacobians)
   using Vector3 = Vector3<S>;
   using Matrix3 = Matrix3<S>;
   using SO3 = SO3<S>;
+  using SO3Tangent = SO3Tangent<S>;
 
   auto test_numerical_left_jacobian = [&](const Vector3& x) {
     const S eps = test::EpsForDiff<S>();
@@ -196,8 +197,8 @@ TYPED_TEST(SO3Test, Jacobians)
       Vector3 x_b = x;
       x_b[j] += S(0.5) * eps;
 
-      const SO3 T_a = SO3::Exp(x_a);
-      const SO3 T_b = SO3::Exp(x_b);
+      const SO3 T_a = SO3Tangent(x_a).exp();
+      const SO3 T_b = SO3Tangent(x_b).exp();
       const SO3 dT_left = T_b * T_a.inverse();
       const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;
@@ -220,8 +221,8 @@ TYPED_TEST(SO3Test, Jacobians)
       Vector3 x_b = x;
       x_b[j] += S(0.5) * eps;
 
-      const SO3 T_a = SO3::Exp(x_a);
-      const SO3 T_b = SO3::Exp(x_b);
+      const SO3 T_a = SO3Tangent(x_a).exp();
+      const SO3 T_b = SO3Tangent(x_b).exp();
       const SO3 dT_left = T_a.inverse() * T_b;
       const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;
@@ -247,57 +248,63 @@ TYPED_TEST(SO3Test, Jacobians)
     test_numerical_right_jacobian(xi);
 
     // Ad(exp(J_l(dx) * xi)) = J_l * Ad(exp(xi))
-    EXPECT_TRUE(SO3::Ad(SO3::Exp(SO3::LeftJacobian(dx) * xi))
+    EXPECT_TRUE(SO3::Ad(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp())
                     .isApprox(
-                        SO3::LeftJacobian(dx) * SO3::Ad(SO3::Exp(xi)),
-                        SO3::Tolerance() * 1e+1))
+                        SO3::LeftJacobian(dx) * SO3::Ad(SO3Tangent(xi).exp()),
+                        LieGroupTol<S>() * 1e+1))
         << "Ad(exp(J_l(dx) * xi)):\n"
-        << SO3::Ad(SO3::Exp(SO3::LeftJacobian(dx) * xi)) << "\n"
+        << SO3::Ad(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp()) << "\n"
         << "J_l * Ad(exp(xi))    :\n"
-        << SO3::LeftJacobian(dx) * SO3::Ad(SO3::Exp(xi));
+        << SO3::LeftJacobian(dx) * SO3::Ad(SO3Tangent(xi).exp());
 
     // Ad(exp(J_r(dx) * xi)) = Ad(exp(xi)) * J_r
-    EXPECT_TRUE(SO3::Ad(SO3::Exp(SO3::RightJacobian(dx) * xi))
+    EXPECT_TRUE(SO3::Ad(SO3Tangent(SO3::RightJacobian(dx) * xi).exp())
                     .isApprox(
-                        SO3::Ad(SO3::Exp(xi)) * SO3::RightJacobian(dx),
-                        SO3::Tolerance() * 1e+1))
+                        SO3::Ad(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx),
+                        LieGroupTol<S>() * 1e+1))
         << "Ad(exp(J_r(dx) * xi)):\n"
-        << SO3::Ad(SO3::Exp(SO3::RightJacobian(dx) * xi)) << "\n"
+        << SO3::Ad(SO3Tangent(SO3::RightJacobian(dx) * xi).exp()) << "\n"
         << "Ad(exp(xi)) * J_r    :\n"
-        << SO3::Ad(SO3::Exp(xi)) * SO3::RightJacobian(dx);
+        << SO3::Ad(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx);
 
     // exp(x + dx) ~= exp(J_l(x) * dx) * exp(x)
-    EXPECT_TRUE(SO3::Exp(xi + dx).isApprox(
-        SO3::Exp(SO3::LeftJacobian(xi) * dx) * SO3::Exp(xi)))
+    EXPECT_TRUE(SO3Tangent(xi + dx).exp().isApprox(
+        SO3Tangent(SO3::LeftJacobian(xi) * dx).exp() * SO3Tangent(xi).exp()))
         << "exp(x + dx):\n"
-        << SO3::Exp(xi + dx).toMatrix() << "\n"
+        << SO3Tangent(xi + dx).exp().toMatrix() << "\n"
         << "exp(J_l(x) * dx) * exp(x):\n"
-        << (SO3::Exp(SO3::LeftJacobian(xi) * dx) * SO3::Exp(xi)).toMatrix();
+        << (SO3Tangent(SO3::LeftJacobian(xi) * dx).exp() * SO3Tangent(xi).exp())
+               .toMatrix();
 
     // exp(x + dx) ~= exp(x) * exp(J_r(x) * dx)
     EXPECT_EQ(
-        SO3::Exp(xi + dx), SO3::Exp(xi) * SO3::Exp(SO3::RightJacobian(xi) * dx))
+        SO3Tangent(xi + dx).exp(),
+        SO3Tangent(xi).exp() * SO3Tangent(SO3::RightJacobian(xi) * dx).exp())
         << "exp(x + dx):\n"
-        << SO3::Exp(xi + dx).toMatrix() << "\n"
+        << SO3Tangent(xi + dx).exp().toMatrix() << "\n"
         << "exp(x) * exp(J_r(x) * dx):\n"
-        << (SO3::Exp(xi) * SO3::Exp(SO3::RightJacobian(xi) * dx)).toMatrix();
+        << (SO3Tangent(xi).exp()
+            * SO3Tangent(SO3::RightJacobian(xi) * dx).exp())
+               .toMatrix();
 
     // log(exp(dx) * exp(x)) ~= x + J_l^{-1}(x) * dx
-    EXPECT_TRUE((SO3::Exp(dx) * SO3::Exp(xi))
-                    .isApprox(SO3::Exp(xi + SO3::LeftJacobianInverse(xi) * dx)))
+    EXPECT_TRUE(
+        (SO3Tangent(dx).exp() * SO3Tangent(xi).exp())
+            .isApprox(SO3Tangent(xi + SO3::LeftJacobianInverse(xi) * dx).exp()))
         << "exp(dx) * exp(x):\n"
-        << (SO3::Exp(dx) * SO3::Exp(xi)).toMatrix() << "\n"
+        << (SO3Tangent(dx).exp() * SO3Tangent(xi).exp()).toMatrix() << "\n"
         << "exp(x + J_l^{-1}(x) * dx):\n"
-        << SO3::Exp(xi + SO3::LeftJacobianInverse(xi) * dx).toMatrix();
+        << SO3Tangent(xi + SO3::LeftJacobianInverse(xi) * dx).exp().toMatrix();
 
     // log(exp(x) * exp(dx)) ~= x + J_r^{-1}(x) * dx
     EXPECT_TRUE(
-        (SO3::Exp(xi) * SO3::Exp(dx))
-            .isApprox(SO3::Exp(xi + SO3::RightJacobianInverse(xi) * dx)))
+        (SO3Tangent(xi).exp() * SO3Tangent(dx).exp())
+            .isApprox(
+                SO3Tangent(xi + SO3::RightJacobianInverse(xi) * dx).exp()))
         << "exp(x) * exp(dx):\n"
-        << (SO3::Exp(xi) * SO3::Exp(dx)).toMatrix() << "\n"
+        << (SO3Tangent(xi).exp() * SO3Tangent(dx).exp()).toMatrix() << "\n"
         << "exp(x + J_r^{-1}(x) * dx):\n"
-        << SO3::Exp(xi + SO3::RightJacobianInverse(xi) * dx).toMatrix();
+        << SO3Tangent(xi + SO3::RightJacobianInverse(xi) * dx).exp().toMatrix();
 
     // J_l^{-1} == (J_l)^{-1}
     EXPECT_TRUE(
@@ -432,7 +439,7 @@ TYPED_TEST(SO3Test, Quaternion)
 
   SO3<S> x = SO3<S>::Random();
   Quaternion<S> q = x.quaternion();
-  EXPECT_NEAR(q.norm(), 1, SO3<S>::Tolerance());
+  EXPECT_NEAR(q.norm(), 1, LieGroupTol<S>());
 }
 
 //==============================================================================
