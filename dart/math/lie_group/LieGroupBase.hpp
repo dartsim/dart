@@ -34,6 +34,7 @@
 
 #include <dart/math/Fwd.hpp>
 #include <dart/math/lie_group/Helpers.hpp>
+#include <dart/math/lie_group/InverseBase.hpp>
 #include <dart/math/lie_group/detail/Cast.hpp>
 
 namespace dart::math {
@@ -72,11 +73,13 @@ public:
   /// The plain object type of the Lie group
   using LieGroup = typename ::Eigen::internal::traits<Derived>::LieGroup;
 
-  /// The parameter type of the Lie group
-  using Params = typename ::Eigen::internal::traits<Derived>::Params;
+  using InverseType = typename ::Eigen::internal::traits<Derived>::InverseType;
 
   /// The matrix type of the Lie group
   using MatrixType = typename ::Eigen::internal::traits<Derived>::MatrixType;
+
+  /// The parameter type of the Lie group
+  using Params = typename ::Eigen::internal::traits<Derived>::Params;
 
   /// The tangent type of the Lie group
   using Tangent = typename ::Eigen::internal::traits<Derived>::Tangent;
@@ -125,8 +128,11 @@ public:
       const LieGroupBase<OtherDerived>& other,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
-  /// Returns the inverse of this Lie group.
-  [[nodiscard]] LieGroup inverse() const;
+  /// Returns the inverse of this Lie group
+  [[nodiscard]] InverseType inverse() const;
+
+  /// Performs in-place inverse and returns the reference of the derived
+  Derived& inverseInPlace();
 
   /// Returns the logarithm map of the this Lie group
   ///
@@ -136,7 +142,6 @@ public:
   /// @param[in] x The Lie group to be converted to a vector.
   /// @param[in] tol The tolerance for the norm of the vector.
   /// @return The vector.
-  /// @tparam MatrixDrived The type of the Lie group
   /// @see Exp()
   [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
@@ -177,7 +182,6 @@ public:
   template <typename OtherScalar>
   [[nodiscard]] ScalarCastType<OtherScalar> cast() const;
 
-protected:
   /// Returns the derived class as a const reference
   [[nodiscard]] const Derived& derived() const noexcept;
 
@@ -243,14 +247,29 @@ template <typename OtherDerived>
 bool LieGroupBase<Derived>::isApprox(
     const LieGroupBase<OtherDerived>& other, Scalar tol) const
 {
+  if constexpr (std::is_same_v<Derived, OtherDerived>) {
+    if (this == &other) {
+      return true;
+    }
+  }
+
   return (other.inverse() * derived()).log().isZero(tol);
 }
 
 //==============================================================================
 template <typename Derived>
-typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::inverse() const
+typename LieGroupBase<Derived>::InverseType LieGroupBase<Derived>::inverse()
+    const
 {
-  return derived().inverse();
+  return InverseType(derived());
+}
+
+//==============================================================================
+template <typename Derived>
+Derived& LieGroupBase<Derived>::inverseInPlace()
+{
+  *this = inverse();
+  return *this;
 }
 
 //==============================================================================

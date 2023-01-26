@@ -30,24 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
+#pragma once
 
-#include <dart/dart.hpp>
+#include <dart/math/lie_group/InverseBase.hpp>
 
-#include <pybind11/pybind11.h>
+namespace Eigen::internal {
 
-namespace py = pybind11;
-
-namespace dart {
-namespace python {
-
-void LieGroups(py::module& m)
+// TODO(JS): Move to a dedicated header file
+template <typename SO3Derived>
+struct traits<::dart::math::SO3Inverse<SO3Derived>>
+  : traits<::dart::math::SO3<typename SO3Derived::Scalar>>
 {
-  py::class_<math::SO3d>(m, "SO3").def(py::init<>());
+};
 
-  py::class_<math::SE3d>(m, "SE3").def(py::init<>());
-}
+} // namespace Eigen::internal
 
-} // namespace python
-} // namespace dart
+namespace dart::math {
+
+/// @brief SO3Inverse is a specialization of LieGroupBase for SO3Inverse
+/// @tparam SO3Derived The derived type of SO3. It can be either SO3 or Map<SO3>
+template <typename SO3Derived>
+class SO3Inverse : public InverseBase<SO3Inverse<SO3Derived>>
+{
+public:
+  using Base = InverseBase<SO3Inverse<SO3Derived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit SO3Inverse(const SO3Derived& so3) : m_so3(so3)
+  {
+    // Do nothing
+  }
+
+  const SO3Derived& original() const
+  {
+    return m_so3;
+  }
+
+  SO3Derived& original()
+  {
+    return m_so3;
+  }
+
+protected:
+  const SO3Derived& m_so3;
+};
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+
+} // namespace dart::math

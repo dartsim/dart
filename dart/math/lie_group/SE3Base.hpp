@@ -50,9 +50,10 @@ public:
   using Base::DoF;
   using Base::MatrixRepDim;
   using Base::ParamSize;
-  using Params = typename Base::Params;
   using LieGroup = typename Base::LieGroup;
+  using InverseType = typename Base::InverseType;
   using MatrixType = typename Base::MatrixType;
+  using Params = typename Base::Params;
   using Tangent = typename Base::Tangent;
 
   using Base::operator=;
@@ -62,12 +63,12 @@ public:
   /**
    * @brief Group multiplication operator
    *
-   * @tparam OtherDerived The type of the other SE3 point
+   * @tparam OtherDerived The type of the other Lie group point
    * @param[in] other: The other SE3 point
    * @return LieGroup The result of the multiplication
    */
   template <typename OtherDerived>
-  LieGroup operator*(const SE3Base<OtherDerived>& other) const;
+  LieGroup operator*(const LieGroupBase<OtherDerived>& other) const;
 
   /**
    * @brief Vector multiplication operator
@@ -89,7 +90,7 @@ public:
   /**
    * Returns the inverse of this SO3.
    */
-  [[nodiscard]] LieGroup inverse() const;
+  Derived& inverseInPlace();
 
   /// Returns the logarithm map of the given SE3
   ///
@@ -196,11 +197,12 @@ namespace dart::math {
 template <typename Derived>
 template <typename OtherDerived>
 typename SE3Base<Derived>::LieGroup SE3Base<Derived>::operator*(
-    const SE3Base<OtherDerived>& other) const
+    const LieGroupBase<OtherDerived>& other) const
 {
   const Eigen::Map<const SO3<Scalar>>& o = rotation();
   return LieGroup(
-      o * other.rotation(), o * other.translation() + translation());
+      o * other.derived().rotation(),
+      o * other.derived().translation() + translation());
 }
 
 //==============================================================================
@@ -223,10 +225,12 @@ Derived& SE3Base<Derived>::setRandom()
 
 //==============================================================================
 template <typename Derived>
-typename SE3Base<Derived>::LieGroup SE3Base<Derived>::inverse() const
+Derived& SE3Base<Derived>::inverseInPlace()
 {
-  const SO3<Scalar> r_inv = rotation().inverse();
-  return LieGroup(r_inv, -(r_inv * translation()));
+  const SO3<Scalar> r_inv = rotation().inverseInPlace();
+  rotation() = r_inv;
+  translation() = -(r_inv * translation());
+  return derived();
 }
 
 //==============================================================================

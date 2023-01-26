@@ -70,9 +70,10 @@ struct traits<::dart::math::GroupProduct<S, T...>>
   static constexpr int DoF = (T<S>::DoF + ...);
   static constexpr int MatrixRepDim = (T<S>::DoF + ...);
 #endif
-  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using LieGroup = ::dart::math::GroupProduct<S, T...>;
+  using InverseType = ::dart::math::GroupProductInverse<LieGroup>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
+  using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using Tangent = ::Eigen::Matrix<S, Dim, 1>;
 };
 

@@ -105,6 +105,17 @@ TYPED_TEST(SO3Test, Inverse)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, InverseInPlace)
+{
+  using S = typename TestFixture::Scalar;
+
+  SO3<S> so3 = SO3<S>::Random();
+  const SO3<S> so3_inverse = so3.inverse();
+  so3.inverseInPlace();
+  EXPECT_TRUE(so3_inverse.isApprox(so3));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, Exp)
 {
   using S = typename TestFixture::Scalar;

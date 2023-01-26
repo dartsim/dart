@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/lie_group/SE3Base.hpp>
+#include <dart/math/lie_group/SE3Inverse.hpp>
 #include <dart/math/lie_group/SE3Tangent.hpp>
 #include <dart/math/lie_group/SO3.hpp>
 #include <dart/math/lie_group/SO3Map.hpp>
@@ -52,6 +53,7 @@ struct traits<::dart::math::SE3<S>>
   static constexpr int MatrixRepDim = 4;
   static constexpr int ParamSize = 7;
   using LieGroup = ::dart::math::SE3<S>;
+  using InverseType = ::dart::math::SE3Inverse<LieGroup>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using Tangent = ::dart::math::SE3Tangent<S>;

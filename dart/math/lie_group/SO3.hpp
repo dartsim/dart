@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/math/lie_group/SO3Base.hpp>
+#include <dart/math/lie_group/SO3Inverse.hpp>
 #include <dart/math/lie_group/SO3Tangent.hpp>
 
 namespace Eigen::internal {
@@ -50,6 +51,7 @@ struct traits<::dart::math::SO3<S>>
   static constexpr int MatrixRepDim = 3;
   static constexpr int ParamSize = 4;
   using LieGroup = ::dart::math::SO3<S>;
+  using InverseType = ::dart::math::SO3Inverse<LieGroup>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
   using Tangent = ::dart::math::SO3Tangent<S>;

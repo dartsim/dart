@@ -67,7 +67,7 @@
   }                                                                            \
                                                                                \
   /**                                                                          \
-   * Copy-constructs from raw parameters                                       \
+   * Copy-constructs from CLASS_NAME##Base                                     \
    * @tparam OtherDerived The derived type of the base class                   \
    * @param[in] other The other element to be copied                           \
    */                                                                          \
@@ -79,12 +79,36 @@
   }                                                                            \
                                                                                \
   /**                                                                          \
-   * Move-constructs from raw parameters                                       \
+   * Move-constructs from CLASS_NAME##Base                                     \
    * @tparam OtherDerived The derived type of the base class                   \
    * @param[in] other The other element to be copied                           \
    */                                                                          \
   template <typename OtherDerived>                                             \
   CLASS_NAME(CLASS_NAME##Base<OtherDerived>&& other)                           \
+    : Base(), m_params(std::move(other.params()))                              \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Copy-constructs from LieGroupBase                                         \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(const LieGroupBase<OtherDerived>& other)                          \
+    : Base(), m_params(other.params())                                         \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Move-constructs from LieGroupBase                                         \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(LieGroupBase<OtherDerived>&& other)                               \
     : Base(), m_params(std::move(other.params()))                              \
   {                                                                            \
     /* Do nothing */                                                           \

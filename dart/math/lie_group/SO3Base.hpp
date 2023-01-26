@@ -54,9 +54,10 @@ public:
   using Base::DoF;
   using Base::MatrixRepDim;
   using Base::ParamSize;
-  using Params = typename Base::Params;
   using LieGroup = typename Base::LieGroup;
+  using InverseType = typename Base::InverseType;
   using MatrixType = typename Base::MatrixType;
+  using Params = typename Base::Params;
   using Tangent = typename Base::Tangent;
 
   using Base::operator=;
@@ -68,7 +69,8 @@ public:
   /// @param[in] other The other SO3 to compose with.
   /// @return The composition of this SO3 with other.
   template <typename OtherDerived>
-  [[nodiscard]] LieGroup operator*(const SO3Base<OtherDerived>& other) const;
+  [[nodiscard]] LieGroup operator*(
+      const LieGroupBase<OtherDerived>& other) const;
 
   /**
    * Transforms a 3D vector by this SO3.
@@ -92,8 +94,8 @@ public:
    */
   Derived& setRandom();
 
-  /// Returns the inverse of this SO3.
-  [[nodiscard]] LieGroup inverse() const;
+  /// Performs in-place inverse and returns the reference of the derived
+  Derived& inverseInPlace();
 
   /// Returns the logarithm map of the given SO3
   ///
@@ -174,9 +176,9 @@ namespace dart::math {
 template <typename Derived>
 template <typename OtherDerived>
 typename SO3Base<Derived>::LieGroup SO3Base<Derived>::operator*(
-    const SO3Base<OtherDerived>& other) const
+    const LieGroupBase<OtherDerived>& other) const
 {
-  return LieGroup(quaternion() * other.quaternion());
+  return LieGroup(quaternion() * other.derived().quaternion());
 }
 
 //==============================================================================
@@ -209,9 +211,10 @@ Derived& SO3Base<Derived>::setRandom()
 
 //==============================================================================
 template <typename Derived>
-typename SO3Base<Derived>::LieGroup SO3Base<Derived>::inverse() const
+Derived& SO3Base<Derived>::inverseInPlace()
 {
-  return LieGroup(quaternion().conjugate());
+  quaternion() = quaternion().conjugate();
+  return derived();
 }
 
 //==============================================================================

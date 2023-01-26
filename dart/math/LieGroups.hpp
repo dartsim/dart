@@ -39,6 +39,7 @@
 #include <dart/math/lie_group/Functions.hpp>
 #include <dart/math/lie_group/GroupProduct.hpp>
 #include <dart/math/lie_group/GroupProductMap.hpp>
+#include <dart/math/lie_group/InverseBase.hpp>
 #include <dart/math/lie_group/SE3.hpp>
 #include <dart/math/lie_group/SE3Map.hpp>
 #include <dart/math/lie_group/SE3Tangent.hpp>

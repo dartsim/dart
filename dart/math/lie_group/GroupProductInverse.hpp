@@ -30,24 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
+#pragma once
 
-#include <dart/dart.hpp>
+#include <dart/math/lie_group/InverseBase.hpp>
 
-#include <pybind11/pybind11.h>
+namespace Eigen::internal {
 
-namespace py = pybind11;
-
-namespace dart {
-namespace python {
-
-void LieGroups(py::module& m)
+// TODO(JS): Move to a dedicated header file
+template <typename GrouProductDerived>
+struct traits<::dart::math::GroupProductInverse<GrouProductDerived>>
+  : traits<
+        ::dart::math::GroupProductInverse<typename GrouProductDerived::Scalar>>
 {
-  py::class_<math::SO3d>(m, "SO3").def(py::init<>());
+};
 
-  py::class_<math::SE3d>(m, "SE3").def(py::init<>());
-}
+} // namespace Eigen::internal
 
-} // namespace python
-} // namespace dart
+namespace dart::math {
+
+/// @brief GrouProductInverse is a specialization of LieGroupBase for
+/// GrouProductInverse
+/// @tparam S The scalar type
+template <typename GrouProductDerived>
+class GrouProductInverse
+  : public InverseBase<GrouProductInverse<GrouProductDerived>>
+{
+public:
+  using Base = InverseBase<GrouProductInverse<GrouProductDerived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit GrouProductInverse(const GrouProductDerived& x) : m_x(x)
+  {
+    // Do nothing
+  }
+
+  const GrouProductDerived& original() const
+  {
+    return m_x;
+  }
+
+  GrouProductDerived& original()
+  {
+    return m_x;
+  }
+
+protected:
+  const GrouProductDerived& m_x;
+};
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+
+} // namespace dart::math

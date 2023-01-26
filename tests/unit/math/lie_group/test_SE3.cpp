@@ -148,12 +148,33 @@ TYPED_TEST(SE3Test, Random)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, InverseStaticProperties)
+{
+  using S = typename TestFixture::Scalar;
+
+  constexpr auto is_same
+      = std::is_same_v<typename SE3<S>::InverseType, SE3Inverse<SE3<S>>>;
+  EXPECT_TRUE(is_same);
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, Inverse)
 {
   using S = typename TestFixture::Scalar;
 
   SE3<S> x = SE3<S>::Random();
   EXPECT_TRUE(x.inverse().inverse().isApprox(x));
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, InverseInPlace)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3<S> x = SE3<S>::Random();
+  const SE3<S> x_inverse = x.inverse();
+  x.inverseInPlace();
+  EXPECT_TRUE(x_inverse.isApprox(x));
 }
 
 //==============================================================================
@@ -233,7 +254,8 @@ TYPED_TEST(SE3Test, TestAd)
   xi << 1, 2, 3, 4, 5, 6;
   out = SE3<S>::Ad(x, xi);
   // Verify the result by using inverse
-  Vector6<S> xi_inv = SE3<S>::Ad(x.inverse(), out);
+  Vector6<S> xi_inv
+      = SE3<S>::Ad(x.inverse().eval(), out); // TODO: Remove eval()
   EXPECT_TRUE(xi_inv.isApprox(xi));
 }
 

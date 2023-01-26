@@ -324,17 +324,30 @@ template <typename Derived>
 class TangentBase;
 
 template <typename Scalar>
+class SO3Base;
+template <typename Scalar>
 class SO3;
+template <typename Derived>
+class SO3Inverse;
 template <typename Scalar>
 class SO3Tangent;
 
 template <typename Scalar>
+class SE3Base;
+template <typename Scalar>
 class SE3;
+template <typename Derived>
+class SE3Inverse;
 template <typename Scalar>
 class SE3Tangent;
 
 template <typename Scalar, template <typename> class...>
 class GroupProduct;
+template <typename Derived>
+class GroupProductInverse;
+
+template <typename LieGroupType>
+class InverseBase;
 
 //------------------------------------------------------------------------------
 // Other DART types

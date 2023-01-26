@@ -30,24 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
+#pragma once
 
-#include <dart/dart.hpp>
+#include <dart/math/lie_group/InverseBase.hpp>
 
-#include <pybind11/pybind11.h>
+namespace Eigen::internal {
 
-namespace py = pybind11;
-
-namespace dart {
-namespace python {
-
-void LieGroups(py::module& m)
+// TODO(JS): Move to a dedicated header file
+template <typename SE3Derived>
+struct traits<::dart::math::SE3Inverse<SE3Derived>>
+  : traits<::dart::math::SE3<typename SE3Derived::Scalar>>
 {
-  py::class_<math::SO3d>(m, "SO3").def(py::init<>());
+};
 
-  py::class_<math::SE3d>(m, "SE3").def(py::init<>());
-}
+} // namespace Eigen::internal
 
-} // namespace python
-} // namespace dart
+namespace dart::math {
+
+/// @brief SE3Inverse is a specialization of LieGroupBase for SE3Inverse
+/// @tparam S The scalar type
+template <typename SE3Derived>
+class SE3Inverse : public InverseBase<SE3Inverse<SE3Derived>>
+{
+public:
+  using Base = InverseBase<SE3Inverse<SE3Derived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit SE3Inverse(const SE3Derived& se3) : m_se3(se3)
+  {
+    // Do nothing
+  }
+
+  const SE3Derived& original() const
+  {
+    return m_se3;
+  }
+
+  SE3Derived& original()
+  {
+    return m_se3;
+  }
+
+protected:
+  const SE3Derived& m_se3;
+};
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+
+} // namespace dart::math
