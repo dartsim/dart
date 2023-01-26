@@ -32,16 +32,53 @@
 
 #pragma once
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
+#include <dart/math/Fwd.hpp>
+#include <dart/math/lie_group/Helpers.hpp>
 
-#include <dart/math/lie_group/Functions.hpp>
-#include <dart/math/lie_group/GroupProduct.hpp>
-#include <dart/math/lie_group/GroupProductMap.hpp>
-#include <dart/math/lie_group/SE3.hpp>
-#include <dart/math/lie_group/SE3Map.hpp>
-#include <dart/math/lie_group/SE3Tangent.hpp>
-#include <dart/math/lie_group/SO3.hpp>
-#include <dart/math/lie_group/SO3Map.hpp>
-#include <dart/math/lie_group/SO3Tangent.hpp>
+namespace dart::math {
+
+/// Exponential map of a Lie group element
+///
+/// @param[in] tangent Tangent vector
+/// @param[in] tol Tolerance for the convergence of the exponential map
+/// @return Lie group element
+template <typename Derived>
+typename Derived::LieGroup Exp(
+    const TangentBase<Derived>& tangent,
+    typename Derived::Scalar tol = LieGroupTol<typename Derived::Scalar>());
+
+/// Logarithmic map of a Lie group element
+///
+/// @param[in] x Lie group element
+/// @param[in] tol Tolerance for the convergence of the logarithmic map
+/// @return Tangent vector
+template <typename Derived>
+typename Derived::Tangent Log(
+    const LieGroupBase<Derived>& x,
+    typename Derived::Scalar tol = LieGroupTol<typename Derived::Scalar>());
+
+} // namespace dart::math
+
+//==============================================================================
+//
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+template <typename Derived>
+typename Derived::LieGroup Exp(
+    const TangentBase<Derived>& tangent, typename Derived::Scalar tol)
+{
+  return tangent.exp(tol);
+}
+
+//==============================================================================
+template <typename Derived>
+typename Derived::Tangent Log(
+    const LieGroupBase<Derived>& x, typename Derived::Scalar tol)
+{
+  return x.log(tol);
+}
+
+} // namespace dart::math

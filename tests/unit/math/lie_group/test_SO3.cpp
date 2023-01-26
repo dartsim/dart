@@ -114,10 +114,10 @@ TYPED_TEST(SO3Test, Exp)
   for (auto i = 0; i < num_tests; ++i) {
     SO3Tangent<S> x = SO3Tangent<S>::Random();
 
-    EXPECT_TRUE(x.exp().toMatrix().isApprox(expMapRot<S>(x.params())))
+    EXPECT_TRUE(Exp(x).toMatrix().isApprox(expMapRot<S>(x.params())))
         << "x          : " << x.params().transpose() << "\n"
         << "Exp(x)      :\n"
-        << x.exp().toMatrix() << "\n"
+        << Exp(x).toMatrix() << "\n"
         << "expMapRot(x):\n"
         << expMapRot<S>(x.params()) << "\n";
   }
@@ -125,13 +125,13 @@ TYPED_TEST(SO3Test, Exp)
   for (auto i = 0; i < num_tests; ++i) {
     SO3<S> x = SO3<S>::Random();
 
-    EXPECT_TRUE(x.log().exp().isApprox(x))
+    EXPECT_EQ(Exp(Log(x)), x)
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << x.log().exp().toMatrix() << "\n"
-        << "Log(x)          : " << x.log().params().transpose() << "\n"
-        << "Log(Exp(Log(x))): " << x.log().exp().log().params().transpose()
+        << Exp(Log(x)).toMatrix() << "\n"
+        << "Log(x)          : " << Log(x).params().transpose() << "\n"
+        << "Log(Exp(Log(x))): " << Log(Exp(Log(x))).params().transpose()
         << "\n";
   }
 }
@@ -197,8 +197,8 @@ TYPED_TEST(SO3Test, Jacobians)
       Vector3 x_b = x;
       x_b[j] += S(0.5) * eps;
 
-      const SO3 T_a = SO3Tangent(x_a).exp();
-      const SO3 T_b = SO3Tangent(x_b).exp();
+      const SO3 T_a = Exp(SO3Tangent(x_a));
+      const SO3 T_b = Exp(SO3Tangent(x_b));
       const SO3 dT_left = T_b * T_a.inverse();
       const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;
@@ -221,8 +221,8 @@ TYPED_TEST(SO3Test, Jacobians)
       Vector3 x_b = x;
       x_b[j] += S(0.5) * eps;
 
-      const SO3 T_a = SO3Tangent(x_a).exp();
-      const SO3 T_b = SO3Tangent(x_b).exp();
+      const SO3 T_a = Exp(SO3Tangent(x_a));
+      const SO3 T_b = Exp(SO3Tangent(x_b));
       const SO3 dT_left = T_a.inverse() * T_b;
       const Vector3 dt = dT_left.log().params();
       const Matrix3 dt_dt = SO3::Hat(dt) / eps;

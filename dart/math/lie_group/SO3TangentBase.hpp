@@ -63,7 +63,7 @@ public:
   /// @param[in] tol The tolerance for the norm of the vector.
   /// @return The SO3.
   /// @tparam MatrixDrived The type of the vector
-  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>());
+  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the exponential map of the given vector
   ///
@@ -81,7 +81,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] LieGroup exp(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = LieGroupTol<Scalar>());
+      Scalar tol = LieGroupTol<Scalar>()) const;
 };
 
 } // namespace dart::math
@@ -97,7 +97,7 @@ namespace dart::math {
 //==============================================================================
 template <typename Derived>
 typename SO3TangentBase<Derived>::LieGroup SO3TangentBase<Derived>::exp(
-    Scalar tol)
+    Scalar tol) const
 {
   const Scalar theta = params().norm();
   if (theta < tol) {
@@ -118,7 +118,7 @@ typename SO3TangentBase<Derived>::LieGroup SO3TangentBase<Derived>::exp(
 template <typename Derived>
 template <typename MatrixDerived>
 typename SO3TangentBase<Derived>::LieGroup SO3TangentBase<Derived>::exp(
-    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol)
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
 {
   if (jacobian) {
     *jacobian = SO3<Scalar>::RightJacobian(params(), tol);

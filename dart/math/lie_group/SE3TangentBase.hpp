@@ -63,7 +63,7 @@ public:
   /// @param[in] tol The tolerance for the norm of the vector.
   /// @return The SO3.
   /// @tparam MatrixDrived The type of the vector
-  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>());
+  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the exponential map of the given vector
   ///
@@ -81,7 +81,27 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] LieGroup exp(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = LieGroupTol<Scalar>());
+      Scalar tol = LieGroupTol<Scalar>()) const;
+
+  auto angular() const
+  {
+    return params().template head<3>();
+  }
+
+  auto angular()
+  {
+    return params().template head<3>();
+  }
+
+  auto linear() const
+  {
+    return params().template tail<3>();
+  }
+
+  auto linear()
+  {
+    return params().template tail<3>();
+  }
 };
 
 } // namespace dart::math
@@ -97,14 +117,11 @@ namespace dart::math {
 //==============================================================================
 template <typename Derived>
 typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
-    Scalar tol)
+    Scalar tol) const
 {
-  // TODO(JS): Change to angular() once it's added
-  const SO3<Scalar> rotation
-      = SO3Tangent<Scalar>(params().template head<3>()).exp(tol);
+  const SO3<Scalar> rotation = SO3Tangent<Scalar>(angular()).exp(tol);
   const Eigen::Vector3<Scalar> translation
-      = SO3<Scalar>::LeftJacobian(params().template head<3>(), tol)
-        * params().template tail<3>();
+      = SO3<Scalar>::LeftJacobian(angular(), tol) * linear();
   // TODO(JS): Check if this version is faster than expMap() and expMapRot()
   return LieGroup(std::move(rotation), std::move(translation));
 }
@@ -113,7 +130,7 @@ typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
 template <typename Derived>
 template <typename MatrixDerived>
 typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
-    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol)
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
 {
   if (jacobian) {
     (*jacobian) = SE3<Scalar>::RightJacobian(params(), tol);

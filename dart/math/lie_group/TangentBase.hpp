@@ -81,7 +81,7 @@ public:
   /// @param[in] tol The tolerance for the norm of the vector.
   /// @return The Lie group element.
   /// @tparam MatrixDrived The type of the vector
-  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>());
+  [[nodiscard]] LieGroup exp(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the exponential map of the given tangent
   ///
@@ -99,7 +99,7 @@ public:
   template <typename MatrixDerived>
   [[nodiscard]] LieGroup exp(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
-      Scalar tol = LieGroupTol<Scalar>());
+      Scalar tol = LieGroupTol<Scalar>()) const;
 
   bool isZero(Scalar tol) const
   {
@@ -151,7 +151,8 @@ typename TangentBase<Derived>::Tangent TangentBase<Derived>::Random()
 
 //==============================================================================
 template <typename Derived>
-typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(Scalar tol)
+typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(
+    Scalar tol) const
 {
   return derived().exp(tol);
 }
@@ -160,7 +161,7 @@ typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(Scalar tol)
 template <typename Derived>
 template <typename MatrixDerived>
 typename TangentBase<Derived>::LieGroup TangentBase<Derived>::exp(
-    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol)
+    Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
 {
   return derived().exp(jacobian, tol);
 }

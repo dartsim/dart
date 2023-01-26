@@ -165,24 +165,23 @@ TYPED_TEST(SE3Test, Exp)
 
   for (auto i = 0; i < num_tests; ++i) {
     SE3Tangent<S> x = SE3Tangent<S>::Random();
-
-    EXPECT_TRUE(x.exp().toMatrix().isApprox(expMap<S>(x).matrix()))
+    EXPECT_TRUE(Exp(x).toMatrix().isApprox(expMap<S>(x).matrix()))
         << "x          : " << x.params().transpose() << "\n"
         << "Exp(x)   :\n"
-        << x.exp().toMatrix() << "\n"
+        << Exp(x).toMatrix() << "\n"
         << "expMap(x):\n"
         << expMap<S>(x).matrix() << "\n";
   }
 
   for (auto i = 0; i < num_tests; ++i) {
     SE3<S> x = SE3<S>::Random();
-    EXPECT_TRUE(x.log().exp().isApprox(x))
+    EXPECT_EQ(Exp(Log(x)), x)
         << "x          : \n"
         << x.toMatrix() << "\n"
         << "Exp(Log(x)): \n"
-        << x.log().exp().toMatrix() << "\n"
-        << "Log(x)          : " << x.log().params().transpose() << "\n"
-        << "Log(Exp(Log(x))): " << x.log().exp().log().params().transpose()
+        << Exp(Log(x)).toMatrix() << "\n"
+        << "Log(x)          : " << Log(x).params().transpose() << "\n"
+        << "Log(Exp(Log(x))): " << Log(Exp(Log(x))).params().transpose()
         << "\n";
   }
 }

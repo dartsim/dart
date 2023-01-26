@@ -318,6 +318,11 @@ using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
 // Lie Groups
 //------------------------------------------------------------------------------
 
+template <typename Derived>
+class LieGroupBase;
+template <typename Derived>
+class TangentBase;
+
 template <typename Scalar>
 class SO3;
 template <typename Scalar>
