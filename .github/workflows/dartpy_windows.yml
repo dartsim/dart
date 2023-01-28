@@ -28,6 +28,7 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.15
           DART_IN_CI: ON
+          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - uses: actions/upload-artifact@v3
         with:

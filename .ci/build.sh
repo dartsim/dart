@@ -27,9 +27,9 @@ if [ -z "$CODECOV" ]; then
   CODECOV=OFF
 fi
 
-if [ -z "$BUILD_DIR" ]; then
-  echo "Error: Environment variable BUILD_DIR is unset. Using $PWD by default."
-  BUILD_DIR=$PWD
+if [ -z "$CODE_DIR" ]; then
+  echo "Error: Environment variable CODE_DIR is unset. Using $PWD by default."
+  CODE_DIR=$PWD
 fi
 
 if [ -z "$CHECK_FORMAT" ]; then
@@ -124,7 +124,7 @@ fi
 
 # Build API documentation and exit
 if [ $BUILD_DOCS = "ON" ]; then
-  . "${BUILD_DIR}/.ci/build_docs.sh"
+  . "${CODE_DIR}/.ci/build_docs.sh"
   exit 0
 fi
 
@@ -140,11 +140,15 @@ echo " CMake   : $(cmake --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 echo ""
 echo "====================================="
 
-# Set up the trap command
-trap "cleanup" EXIT
+# Create workspace folder
+ws_dir=/ws
+mkdir -p $ws_dir
+
+# Create build folder
+build_dir=$ws_dir/build
+mkdir -p $build_dir
 
 # Run CMake
-build_dir=${BUILD_DIR}/build
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
@@ -152,6 +156,7 @@ elif [[ $OSTYPE = darwin* ]]; then
 fi
 
 cmake \
+  -S $CODE_DIR \
   -B $build_dir \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
@@ -222,10 +227,12 @@ elif [ "$TEST_INSTALLATION" = "ON" ]; then
 
   # DART: build an C++ example using installed DART
   echo "Info: Testing the installation..."
-  cd $BUILD_DIR/examples/hello_world
-  mkdir build && cd build
-  cmake ..
-  make -j$num_threads
+
+  hello_world_build_dir=$ws_dir/build_hellow_world
+  mkdir -p $hello_world_build_dir
+
+  cmake -S $CODE_DIR/examples/hello_world -B $hello_world_build_dir
+  cmake --build $hello_world_build_dir --target all -j$num_threads 
 
 fi
 
@@ -233,28 +240,6 @@ fi
 if [ "$BUILD_DARTPY" = "ON" ]; then
   echo "Info: Running a Python example..."
   echo $PYTHONPATH
-  cd $BUILD_DIR/python/examples/hello_world
+  cd $CODE_DIR/python/examples/hello_world
   python3 main.py
 fi
-
-# Clean-up
-clean
-
-# Clean-up function
-cleanup() {
-  echo "Cleaning up before exiting..."
-
-  # Cleanup build directories
-  rm -rf $build_dir
-  find . -type d -name "build" -prune -exec rm -rf {} \;
-
-  # Python temp files
-  find . -name "*.pyc" -exec rm -rf {} +
-  find . -type d -name "__pycache__" -prune -exec rm -rf {} \;
-  find . -type d -name ".pytest_cache" -prune -exec rm -rf {} \;
-
-  # Linter files
-  find . -type d -name ".scannerwork" -prune -exec rm -rf {} \;
-}
-
-

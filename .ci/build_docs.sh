@@ -9,7 +9,7 @@ script_path="$(
 
 WORK_DIR="${HOME}/dart_docs"
 DART_CLONE_DIR="${WORK_DIR}/dart"
-DART_DOCS_OUTPUT_DIR="${BUILD_DIR}/gh-pages"
+DART_DOCS_OUTPUT_DIR="${CODE_DIR}/gh-pages"
 DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
 
 help() {
