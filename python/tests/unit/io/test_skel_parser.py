@@ -11,10 +11,10 @@ import dartpy as dart
 
 
 def test_read_world():
-    assert dart.io.SkelParser.readWorld(
-        'dart://sample/skel/cubes.skel') is not None
-    assert dart.io.SkelParser.readWorld(
-        'dart://sample/skel/cubes.skel', None) is not None
+    assert dart.io.SkelParser.readWorld("dart://sample/skel/cubes.skel") is not None
+    assert (
+        dart.io.SkelParser.readWorld("dart://sample/skel/cubes.skel", None) is not None
+    )
 
 
 if __name__ == "__main__":

@@ -13,9 +13,9 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.io.SkelParser.readWorld('dart://sample/skel/chain.skel')
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
-    world.setTimeStep(1.0/2000)
+    world.setTimeStep(1.0 / 2000)
 
     chain = world.getSkeleton(0)
     for i in range(chain.getNumJoints()):
@@ -33,8 +33,8 @@ def main():
     chain.setPositions(init_pose)
 
     # Create a ball joint contraint
-    bd1 = chain.getBodyNode('link 6')
-    bd2 = chain.getBodyNode('link 10')
+    bd1 = chain.getBodyNode("link 6")
+    bd2 = chain.getBodyNode("link 10")
     bd1.setColor([0, 1, 0])
     bd2.setColor([0, 1, 0])
 

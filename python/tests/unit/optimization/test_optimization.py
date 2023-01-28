@@ -20,11 +20,13 @@ class SampleConstFunc(dart.optimization.Function):
         self.b = b
 
     def eval(self, x):
-        return (self.a*x[0] + self.b) * (self.a*x[0] + self.b) * (self.a*x[0] + self.b) - x[1];
+        return (self.a * x[0] + self.b) * (self.a * x[0] + self.b) * (
+            self.a * x[0] + self.b
+        ) - x[1]
 
     def evalGradient(self, x, grad):
-        grad[0] = 3 * self.a * (self.a*x[0] + self.b) * (self.a*x[0] + self.b);
-        grad[1] = -1.0;
+        grad[0] = 3 * self.a * (self.a * x[0] + self.b) * (self.a * x[0] + self.b)
+        grad[1] = -1.0
 
 
 def test_gradient_descent_solver():
@@ -53,7 +55,7 @@ def test_gradient_descent_solver():
 
 
 def test_nlopt_solver():
-    if not hasattr(dart.optimization, 'NloptSolver'):
+    if not hasattr(dart.optimization, "NloptSolver"):
         return
 
     prob = dart.optimization.Problem(2)

@@ -9,34 +9,37 @@ from tests.util import get_asset_path
 
 
 def test_parse_skeleton_non_existing_path_returns_null():
-    assert os.path.isfile(get_asset_path('skel/cubes.skel')) is True
+    assert os.path.isfile(get_asset_path("skel/cubes.skel")) is True
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('skel/test/does_not_exist.urdf')) is None
+    assert loader.parseSkeleton(get_asset_path("skel/test/does_not_exist.urdf")) is None
 
 
 def test_parse_skeleton_invalid_urdf_returns_null():
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('urdf/invalid.urdf')) is None
+    assert loader.parseSkeleton(get_asset_path("urdf/invalid.urdf")) is None
 
 
 def test_parse_skeleton_missing_mesh_returns_null():
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('urdf/missing_mesh.urdf')) is None
+    assert loader.parseSkeleton(get_asset_path("urdf/missing_mesh.urdf")) is None
 
 
 def test_parse_skeleton_invalid_mesh_returns_null():
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('urdf/invalid_mesh.urdf')) is None
+    assert loader.parseSkeleton(get_asset_path("urdf/invalid_mesh.urdf")) is None
 
 
 def test_parse_skeleton_missing_package_returns_null():
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('urdf/missing_package.urdf')) is None
+    assert loader.parseSkeleton(get_asset_path("urdf/missing_package.urdf")) is None
 
 
 def test_parse_skeleton_loads_primitive_geometry():
     loader = DartLoader()
-    assert loader.parseSkeleton(get_asset_path('urdf/test/primitive_geometry.urdf')) is not None
+    assert (
+        loader.parseSkeleton(get_asset_path("urdf/test/primitive_geometry.urdf"))
+        is not None
+    )
 
 
 # Failing with following errors:
@@ -49,8 +52,9 @@ def test_parse_skeleton_loads_primitive_geometry():
 
 def test_parse_joint_properties():
     loader = DartLoader()
-    robot = loader.parseSkeleton(get_asset_path('urdf/test/joint_properties.urdf'))
+    robot = loader.parseSkeleton(get_asset_path("urdf/test/joint_properties.urdf"))
     assert robot is not None
+
 
 #    joint1 = robot.getJoint(1)
 #    assert joint1 is not None

@@ -5,9 +5,9 @@ import numpy as np
 
 
 def test_ball_joint_constraint():
-    world = dart.io.SkelParser.readWorld('dart://sample/skel/chain.skel')
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
-    world.setTimeStep(1.0/2000)
+    world.setTimeStep(1.0 / 2000)
 
     # Set joint damping
     chain = world.getSkeleton(0)
@@ -17,8 +17,8 @@ def test_ball_joint_constraint():
             joint.setDampingCoefficient(j, 0.01)
 
     # Create a ball joint contraint
-    bd1 = chain.getBodyNode('link 6')
-    bd2 = chain.getBodyNode('link 10')
+    bd1 = chain.getBodyNode("link 6")
+    bd2 = chain.getBodyNode("link 10")
     offset1 = [0, 0.025, 0]
     joint_pos = bd1.getTransform().multiply(offset1)
     offset2 = bd2.getTransform().inverse().multiply(joint_pos)

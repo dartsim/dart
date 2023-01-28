@@ -51,20 +51,22 @@ def test_static():
     assert joint_12 is not None
 
     tf = dart.math.Isometry3()
-    
+
     # Run 10 steps
     for _ in range(10):
         world.step()
 
-        #----------------------
+        # ----------------------
         # Test joint_01 wrench
-        #----------------------
+        # ----------------------
 
         # Reference adjustment for the difference of the joint frame conventions
         # between Gazebo and DART
         tf.set_identity()
         tf.set_translation(joint_01.getTransformFromParentBodyNode().translation())
-        parent_frame01 = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "parent_frame01", tf)
+        parent_frame01 = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), "parent_frame01", tf
+        )
         tf.set_identity()
         tf.set_translation(joint_01.getTransformFromChildBodyNode().translation())
         child_frame01 = dart.dynamics.SimpleFrame(link_1, "child_frame01", tf)
@@ -75,9 +77,9 @@ def test_static():
         child_f01 = joint_01.getWrenchToChildBodyNode(child_frame01)
         assert (child_f01 == -parent_f01).all()
 
-        #----------------------
+        # ----------------------
         # Test joint_12 wrench
-        #----------------------
+        # ----------------------
 
         # Reference adjustment for the difference of the joint frame conventions
         # between Gazebo and DART
@@ -137,33 +139,39 @@ def test_force_torque_at_joint_limits():
         world.step()
 
     tf = dart.math.Isometry3()
-    
+
     # Run 5 steps
     for _ in range(5):
         world.step()
 
-        #----------------------
+        # ----------------------
         # Test joint_01 wrench
-        #----------------------
+        # ----------------------
 
         # Reference adjustment for the difference of the joint frame conventions
         # between Gazebo and DART
         tf.set_identity()
         tf.set_translation(joint_01.getTransformFromParentBodyNode().translation())
-        parent_frame01 = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "parent_frame01", tf)
+        parent_frame01 = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), "parent_frame01", tf
+        )
         tf.set_identity()
         tf.set_translation(joint_01.getTransformFromChildBodyNode().translation())
         child_frame01 = dart.dynamics.SimpleFrame(link_1, "child_frame01", tf)
 
         parent_f01 = joint_01.getWrenchToParentBodyNode(parent_frame01)
-        assert np.isclose(parent_f01, [750, 0, -450, 600, -200, 1000], rtol=0.1, atol=4.5).all()
+        assert np.isclose(
+            parent_f01, [750, 0, -450, 600, -200, 1000], rtol=0.1, atol=4.5
+        ).all()
 
         child_f01 = joint_01.getWrenchToChildBodyNode(child_frame01)
-        assert np.isclose(child_f01, [-750, -450, 0, -600, 1000, 200], rtol=0.1, atol=4.5).all()
+        assert np.isclose(
+            child_f01, [-750, -450, 0, -600, 1000, 200], rtol=0.1, atol=4.5
+        ).all()
 
-        #----------------------
+        # ----------------------
         # Test joint_12 wrench
-        #----------------------
+        # ----------------------
 
         # Reference adjustment for the difference of the joint frame conventions
         # between Gazebo and DART
@@ -175,10 +183,14 @@ def test_force_torque_at_joint_limits():
         child_frame12 = dart.dynamics.SimpleFrame(link_2, "child_frame12", tf)
 
         parent_f12 = joint_12.getWrenchToParentBodyNode(parent_frame12)
-        assert np.isclose(parent_f12, [250, 150, 0, 300, -500, -100], rtol=0.1, atol=0.1).all()
+        assert np.isclose(
+            parent_f12, [250, 150, 0, 300, -500, -100], rtol=0.1, atol=0.1
+        ).all()
 
         child_f12 = joint_12.getWrenchToChildBodyNode(child_frame12)
-        assert np.isclose(child_f12, [-250, -150, 0, -300, 500, 100], rtol=0.1, atol=0.1).all()
+        assert np.isclose(
+            child_f12, [-250, -150, 0, -300, 500, 100], rtol=0.1, atol=0.1
+        ).all()
 
 
 def test_force_torque_at_joint_limits_with_external_forces():
@@ -222,10 +234,10 @@ def test_force_torque_at_joint_limits_with_external_forces():
     assert joint_23 is not None
 
     tf = dart.math.Isometry3()
-    
+
     # Run 45005 steps
-    kp1 = 5e+4
-    kp2 = 1e+4
+    kp1 = 5e4
+    kp2 = 1e4
     target1 = 0
     target2 = -0.25 * math.pi
     steps = 4500
@@ -247,9 +259,9 @@ def test_force_torque_at_joint_limits_with_external_forces():
 
     tol = 2
 
-    #----------------------
+    # ----------------------
     # Test joint_12 wrench
-    #----------------------
+    # ----------------------
 
     # Reference adjustment for the difference of the joint frame conventions
     # between Gazebo and DART
@@ -266,9 +278,9 @@ def test_force_torque_at_joint_limits_with_external_forces():
     child_f01 = joint_12.getWrenchToChildBodyNode(child_frame01)
     assert np.isclose(child_f01, [-25, 175, 0, 0, 0, -300], rtol=0.01, atol=tol).all()
 
-    #----------------------
+    # ----------------------
     # Test joint_23 wrench
-    #----------------------
+    # ----------------------
 
     # Reference adjustment for the difference of the joint frame conventions
     # between Gazebo and DART
@@ -283,9 +295,9 @@ def test_force_torque_at_joint_limits_with_external_forces():
     assert np.isclose(parent_f12, [25, 0, 0, 0, 0, 50], rtol=0.01, atol=tol).all()
 
     child_f12 = joint_23.getWrenchToChildBodyNode(child_frame12)
-    assert np.isclose(child_f12, [-17.678, 0, 17.679, -35.355, 0, -35.355], rtol=0.01, atol=tol).all()
-
-
+    assert np.isclose(
+        child_f12, [-17.678, 0, 17.679, -35.355, 0, -35.355], rtol=0.01, atol=tol
+    ).all()
 
 
 if __name__ == "__main__":

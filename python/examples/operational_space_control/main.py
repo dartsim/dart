@@ -7,20 +7,22 @@ class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
         super(HelloWorldNode, self).__init__(world)
         self.kr5 = kr5
         self.dofs = self.kr5.getNumDofs()
-        self.ee = kr5.getBodyNode('palm')
+        self.ee = kr5.getBodyNode("palm")
         self.Kp = np.eye(3) * 50.0
         self.Kd = np.eye(self.dofs) * 5.0
         self.ee_offset = [0.05, 0, 0]
 
         tf = self.ee.getTransform()
         tf.pretranslate(self.ee_offset)
-        self.target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target", tf)
+        self.target = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), "target", tf
+        )
 
     def customPreStep(self):
         M = self.kr5.getMassMatrix()
 
         J = self.ee.getLinearJacobian()
-        Jt = J.transpose();
+        Jt = J.transpose()
         JJt = np.matmul(J, Jt)
         kI = 0.0025 * np.eye(3)
         invJ = np.matmul(Jt, np.linalg.inv(JJt + kI))
@@ -30,7 +32,10 @@ class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
         dJdJt = np.matmul(dJ, dJt)
         invdJ = np.matmul(dJt, np.linalg.inv(dJdJt + kI))
 
-        e = self.target.getTransform().translation() - self.ee.getTransform().translation()
+        e = (
+            self.target.getTransform().translation()
+            - self.ee.getTransform().translation()
+        )
         de = -self.ee.getLinearVelocity()
 
         cg = self.kr5.getCoriolisAndGravityForces()
@@ -70,9 +75,9 @@ def main():
     viewer.addAttachment(grid)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([2.0, 1.0, 2.0],
-                                 [0.00, 0.00, 0.00],
-                                 [-0.24, 0.94, -0.25])
+    viewer.setCameraHomePosition(
+        [2.0, 1.0, 2.0], [0.00, 0.00, 0.00], [-0.24, 0.94, -0.25]
+    )
     viewer.run()
 
 

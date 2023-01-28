@@ -9,11 +9,15 @@ def main():
     ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
     world.addSkeleton(kr5)
     world.addSkeleton(ground)
-    print('Robot {} is loaded'.format(kr5.getName()))
+    print("Robot {} is loaded".format(kr5.getName()))
 
     for i in range(100):
         if i % 10 == 0:
-            print('[{}] joint position: {}'.format(world.getSimFrames(), kr5.getPositions()))
+            print(
+                "[{}] joint position: {}".format(
+                    world.getSimFrames(), kr5.getPositions()
+                )
+            )
         world.step()
 
 

@@ -11,7 +11,7 @@ Demonstrates the following dartpy functionality:
 
 
 class ContactVisualizingNode(dart.gui.osg.RealTimeWorldNode):
-    """ WorldNode subclass, which extracts the contacts of the last simulation
+    """WorldNode subclass, which extracts the contacts of the last simulation
     step and adds them to a pointloud for visualization.
 
     Note: Simulation must run for the contacts to be displayed.
@@ -36,14 +36,11 @@ class ContactVisualizingNode(dart.gui.osg.RealTimeWorldNode):
         self._pointCloudShape.setPoint(contactPoints)
 
     def _getListOfContactPoints(self):
-        return [
-            c.point
-            for c in self.getWorld().getLastCollisionResult().getContacts()
-        ]
+        return [c.point for c in self.getWorld().getLastCollisionResult().getContacts()]
 
 
 def setAlpha(skeleton, alphaValue):
-    """ setAlpha(skeleton : dartpy.dynamics.Skeleton, alphaValue : float) -> None
+    """setAlpha(skeleton : dartpy.dynamics.Skeleton, alphaValue : float) -> None
 
     sets the transparency (alpha) value for each body node of the skeleton,
     assuming that the VisualAspect is contained within the first ShapeNode

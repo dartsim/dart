@@ -41,14 +41,14 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
         self.world = world
         self.skel = skel
         self.dofs = self.skel.getNumDofs()
-        self.left_heel = self.skel.getBodyNode('h_heel_left')
+        self.left_heel = self.skel.getBodyNode("h_heel_left")
         self.left_foot = [
-            self.skel.getDof('j_heel_left_1').getIndexInSkeleton(),
-            self.skel.getDof('j_toe_left').getIndexInSkeleton(),
+            self.skel.getDof("j_heel_left_1").getIndexInSkeleton(),
+            self.skel.getDof("j_toe_left").getIndexInSkeleton(),
         ]
         self.right_foot = [
-            self.skel.getDof('j_heel_right_1').getIndexInSkeleton(),
-            self.skel.getDof('j_toe_right').getIndexInSkeleton(),
+            self.skel.getDof("j_heel_right_1").getIndexInSkeleton(),
+            self.skel.getDof("j_toe_right").getIndexInSkeleton(),
         ]
         self.timestep = world.getTimeStep()
         self.Kp = np.eye(self.dofs)
@@ -83,15 +83,17 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
         self.world.addSimpleFrame(self.ext_force_simple_frame)
 
     def customPreStep(self):
-        q = self.skel.getPositions();
-        dq = self.skel.getVelocities();
+        q = self.skel.getPositions()
+        dq = self.skel.getVelocities()
         constraint_forces = self.skel.getConstraintForces()
 
         # SPD tracking
         invM = np.linalg.inv(self.skel.getMassMatrix() + self.Kd * self.timestep)
         p = np.matmul(-self.Kp, q + dq * self.timestep - self.q_d)
         d = np.matmul(-self.Kd, dq)
-        ddq = np.matmul(invM, -self.skel.getCoriolisAndGravityForces() + p + d + constraint_forces)
+        ddq = np.matmul(
+            invM, -self.skel.getCoriolisAndGravityForces() + p + d + constraint_forces
+        )
 
         self.torques = p + d + np.matmul(-self.Kd, ddq) * self.timestep
 
@@ -101,21 +103,37 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
         offset = com[0] - cop[0]
         if offset < 0.1 and offset > 0.0:
-             k1 = 200
-             k2 = 100
-             kd = 10
-             self.torques[self.left_foot[0]] += -k1 * offset + kd * (self.pre_offset - offset)
-             self.torques[self.left_foot[1]] += -k2 * offset + kd * (self.pre_offset - offset)
-             self.torques[self.right_foot[0]] += -k1 * offset + kd * (self.pre_offset - offset)
-             self.torques[self.right_foot[1]] += -k2 * offset + kd * (self.pre_offset - offset)
+            k1 = 200
+            k2 = 100
+            kd = 10
+            self.torques[self.left_foot[0]] += -k1 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.left_foot[1]] += -k2 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.right_foot[0]] += -k1 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.right_foot[1]] += -k2 * offset + kd * (
+                self.pre_offset - offset
+            )
         elif offset > -0.2 and offset < -0.05:
             k1 = 2000
             k2 = 100
             kd = 100
-            self.torques[self.left_foot[0]] += -k1 * offset + kd * (self.pre_offset - offset)
-            self.torques[self.left_foot[1]] += -k2 * offset + kd * (self.pre_offset - offset)
-            self.torques[self.right_foot[0]] += -k1 * offset + kd * (self.pre_offset - offset)
-            self.torques[self.right_foot[1]] += -k2 * offset + kd * (self.pre_offset - offset)
+            self.torques[self.left_foot[0]] += -k1 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.left_foot[1]] += -k2 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.right_foot[0]] += -k1 * offset + kd * (
+                self.pre_offset - offset
+            )
+            self.torques[self.right_foot[1]] += -k2 * offset + kd * (
+                self.pre_offset - offset
+            )
 
         # Just to make sure no illegal torque is used
         for i in range(6):
@@ -128,7 +146,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
         if self.ext_force_duration <= 0:
             self.ext_force_duration = 0
             self.ext_force = np.zeros(3)
-        spine = self.skel.getBodyNode('h_spine')
+        spine = self.skel.getBodyNode("h_spine")
         spine.addExtForce(self.ext_force)
         if self.ext_force_duration > 0:
             arrow_head = spine.getTransform().translation()
@@ -149,18 +167,18 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def main():
-    world = dart.io.SkelParser.readWorld('dart://sample/skel/fullbody1.skel')
+    world = dart.io.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
     world.setGravity([0, -9.81, 0])
 
-    biped = world.getSkeleton('fullbody1')
-    biped.getDof('j_pelvis_rot_y').setPosition(-0.20)
-    biped.getDof('j_thigh_left_z').setPosition(0.15)
-    biped.getDof('j_shin_left').setPosition(-0.40)
-    biped.getDof('j_heel_left_1').setPosition(0.25)
-    biped.getDof('j_thigh_right_z').setPosition(0.15)
-    biped.getDof('j_shin_right').setPosition(-0.40)
-    biped.getDof('j_heel_right_1').setPosition(0.25)
-    biped.getDof('j_abdomen_2').setPosition(0.00)
+    biped = world.getSkeleton("fullbody1")
+    biped.getDof("j_pelvis_rot_y").setPosition(-0.20)
+    biped.getDof("j_thigh_left_z").setPosition(0.15)
+    biped.getDof("j_shin_left").setPosition(-0.40)
+    biped.getDof("j_heel_left_1").setPosition(0.25)
+    biped.getDof("j_thigh_right_z").setPosition(0.15)
+    biped.getDof("j_shin_right").setPosition(-0.40)
+    biped.getDof("j_heel_right_1").setPosition(0.25)
+    biped.getDof("j_abdomen_2").setPosition(0.00)
 
     node = MyWorldNode(world, biped)
 

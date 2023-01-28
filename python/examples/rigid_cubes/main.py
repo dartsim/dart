@@ -14,7 +14,6 @@ def main():
     world = dart.io.SkelParser.readWorld("dart://sample/skel/cubes.skel")
     world.setGravity([0, -9.81, 0])
 
-
     viewer = dart.gui.osg.Viewer()
     shadow = dart.gui.osg.WorldNode.createDefaultShadowTechnique(viewer)
 
@@ -26,5 +25,5 @@ def main():
     viewer.run()
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     main()

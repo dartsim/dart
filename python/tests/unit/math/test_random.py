@@ -4,12 +4,12 @@ from dartpy.math import Random
 
 
 def test_create():
-    """ Test that we can create a Random object """
+    """Test that we can create a Random object"""
     rng = Random()
 
 
 def test_seed():
-    """ Test that the seed is set correctly """
+    """Test that the seed is set correctly"""
 
     numSeeds = 10
     N = 10

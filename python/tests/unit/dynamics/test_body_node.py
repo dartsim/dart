@@ -16,8 +16,7 @@ def test_basic():
         bodyPtr = body.getBodyNodePtr()
         assert body == bodyPtr
         assert body.getName() == bodyPtr.getName()
-        assert np.array_equal(
-            np.array(body.getSpatialVelocity()), np.zeros(6)) is True
+        assert np.array_equal(np.array(body.getSpatialVelocity()), np.zeros(6)) is True
         shape_nodes = body.getShapeNodes()
         for shape_node in shape_nodes:
             print(shape_node)
@@ -55,8 +54,9 @@ def test_get_inertia():
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
-    inertias = [kr5.getBodyNode(i).getInertia()
-                for i in range(1, kr5.getNumBodyNodes())]
+    inertias = [
+        kr5.getBodyNode(i).getInertia() for i in range(1, kr5.getNumBodyNodes())
+    ]
     assert all([inertia is not None for inertia in inertias])
 
 
