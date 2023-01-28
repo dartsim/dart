@@ -30,6 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "eigen_geometry_pybind.h"
+#include "eigen_pybind.h"
+
+#include <dart/dart.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,17 +42,13 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Random(py::module& sm);
-void Geometry(py::module& sm);
-void LieGroups(py::module& sm);
-
-void dart_math(py::module& m)
+void LieGroups(py::module& m)
 {
-  auto sm = m.def_submodule("math");
+  py::class_<math::SO3d>(m, "SO3")
+      .def(py::init<>());
 
-  Random(sm);
-  Geometry(sm);
-  LieGroups(sm);
+  py::class_<math::SE3d>(m, "SE3")
+      .def(py::init<>());
 }
 
 } // namespace python

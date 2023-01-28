@@ -6,13 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT DARTPY_PYTHON_VERSION)
-  set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
-endif()
-
 # Find pybind11, including PythonInterp and PythonLibs
-# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
 if(WIN32)
   set(PYBIND11_FINDPYTHON TRUE)
 endif()
@@ -49,6 +43,12 @@ pybind11_add_module(${pybind_module}
   ${dartpy_sources}
 )
 
+# DARTPY_VERSION_INFO is defined by setup.py and passed into the C++ code as a
+# define (VERSION_INFO) here.
+target_compile_definitions(${pybind_module}
+  PRIVATE VERSION_INFO=${DARTPY_VERSION_INFO}
+)
+
 target_include_directories(${pybind_module}
   SYSTEM PUBLIC
     ${PYTHON_INCLUDE_DIRS}
@@ -60,7 +60,6 @@ target_include_directories(${pybind_module}
 target_link_libraries(${pybind_module}
   PUBLIC
     ${DARTPY_REQUIRED_LIBS}
-    ${PYTHON_LIBRARIES}
 )
 if(TARGET dart-optimization-nlopt)
   target_link_libraries(${pybind_module} PUBLIC dart-optimization-nlopt)

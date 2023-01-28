@@ -31,3 +31,4 @@ data/screencap/*
 # Python
 dist/
 *.egg-info
+wheelhouse/

@@ -86,6 +86,7 @@ if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
   dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
@@ -124,6 +125,7 @@ dart_option(DART_BUILD_COMP_io           "Build component 'io'"           ON)
 dart_option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
 dart_option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
 
+dart_option(DART_DBUILD_TESTING "Enable building tests and benchmark" ON)
 dart_option(DART_IN_CI "Indicate building DART as part of CI" OFF)
 
 #===============================================================================
@@ -137,8 +139,13 @@ message(STATUS "")
 
 # Print build tool information
 message(STATUS "[ Build Tools ]")
-message(STATUS "- CMake: ${CMAKE_VERSION}")
-message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "- CMake    : ${CMAKE_VERSION} (${CMAKE_COMMAND})")
+message(STATUS "- C++      : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "- Toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+message(STATUS "- Generator: ${CMAKE_GENERATOR} (${CMAKE_SYSTEM_PROCESSOR})")
+if(CMAKE_PREFIX_PATH)
+  message(STATUS "  - prefix: ${CMAKE_PREFIX_PATH}")
+endif()
 message(STATUS "")
 
 # Print DART options
@@ -281,11 +288,12 @@ if(MSVC)
   
   add_compile_options(/bigobj)
 
-  # Enable multi-threaded compilation.
-  add_compile_options(/MP)
-
   if(DART_IN_CI)
-    add_compile_options(/Zm2000)
+    # Increase the maximum number of sections in an object file.
+    add_compile_options(/Zm2000)  # 2000 max
+  else()
+    # Enable multi-threaded compilation.
+    add_compile_options(/MP)
   endif()
 
   add_link_options(/OPT:NOREF /FORCE:MULTIPLE)
@@ -300,7 +308,11 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  set(gcc_required_version 11.2.0)
+  if(DART_IN_CI)
+    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
+  else()
+    set(gcc_required_version 11.2.0)
+  endif()
   if(GCC_VERSION VERSION_LESS ${gcc_required_version})
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ ${gcc_required_version} or greater.")
   endif()
@@ -394,10 +406,12 @@ set(DART_IN_SOURCE_BUILD TRUE)
 
 # Add a "tests" target to build unit tests.
 enable_testing()
-if(MSVC)
-  add_subdirectory(tests)
-else()
-  add_subdirectory(tests EXCLUDE_FROM_ALL)
+if(DART_DBUILD_TESTING)
+  if(MSVC)
+    add_subdirectory(tests)
+  else()
+    add_subdirectory(tests EXCLUDE_FROM_ALL)
+  endif()
 endif()
 # Add example subdirectories and an "examples" target.
 if(MSVC)

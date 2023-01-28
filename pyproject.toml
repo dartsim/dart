@@ -1,0 +1,89 @@
+# Copyright (c) 2011-2023, The DART development contributors
+# All rights reserved.
+
+[build-system]
+requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+files = "setup.py"
+python_version = "3.7"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["ninja"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]
+testpaths = ["tests"]
+
+# https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
+[tool.cibuildwheel]
+test-command = "pytest {project}/tests"
+skip = [
+    "cp36-*",
+    "cp37-*",
+    "cp38-macos*",
+    "cp38-win*",
+    "cp39-macos*",
+    "cp39-win*",
+    "cp311-*linux*",
+    "cp311-win*",
+    "pp*",
+    "*musllinux*",
+]
+
+[tool.cibuildwheel.linux]
+archs = ["auto64"]
+before-all = [
+    "yum install -y fmt-devel glew-devel glfw-devel libccd-devel boost-devel bullet-devel coin-or-Ipopt-devel nlopt-devel spdlog-devel tinyxml-devel python3-devel",
+    "git clone https://github.com/ros/console_bridge.git -b 1.0.2 && mkdir -p console_bridge/build && cmake console_bridge -B console_bridge/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build console_bridge/build --target install -j4",
+    "git clone https://github.com/ros/urdfdom_headers.git -b 1.0.5 && mkdir -p urdfdom_headers/build && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build urdfdom_headers/build --target install -j4",
+    "git clone https://github.com/ros/urdfdom.git -b 3.0.0 && mkdir -p urdfdom/build && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build urdfdom/build --target install -j4",
+    "git clone https://github.com/leethomason/tinyxml2.git -b '9.0.0' && mkdir -p tinyxml2/build && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON && cmake --build tinyxml2/build --target install -j4",
+    "git clone https://github.com/pybind/pybind11.git -b 'v2.8.1' && mkdir -p pybind11/build && cmake pybind11 -B pybind11/build -DCMAKE_BUILD_TYPE=Release -DPYBIND11_TEST=OFF && cmake --build pybind11/build --target install -j4",
+    "git clone https://github.com/assimp/assimp.git -b 'v5.2.5' && mkdir -p assimp/build && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_TESTS=OFF && cmake --build assimp/build --target install -j4",
+    "git clone https://gitlab.com/libeigen/eigen.git -b '3.4.0' && mkdir -p eigen/build && cmake eigen -B eigen/build -DCMAKE_BUILD_TYPE=Release -DEIGEN_BUILD_TESTING=OFF -DEIGEN_BUILD_DOC=OFF && cmake --build eigen/build --target install -j4",
+    "git clone https://github.com/OctoMap/octomap.git -b 'v1.9.6' && mkdir -p octomap/build && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF && cmake --build octomap/build --target install -j4",
+    "git clone https://github.com/flexible-collision-library/fcl.git -b '0.7.0' && mkdir -p fcl/build && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build fcl/build --target install -j4",
+    "git clone https://github.com/openscenegraph/OpenSceneGraph.git -b 'OpenSceneGraph-3.6.5' && mkdir -p OpenSceneGraph/build && cmake OpenSceneGraph -B OpenSceneGraph/build -DCMAKE_BUILD_TYPE=Release -DBUILD_OSG_APPLICATIONS=OFF && cmake --build OpenSceneGraph/build --target install -j4",
+]
+test-command = "echo 'installed'"
+
+[tool.cibuildwheel.macos]
+archs = ["auto64"]
+before-all = [
+    "brew update > /dev/null",
+    "brew bundle || brew bundle",
+    "brew install open-scene-graph",
+    "sw_vers",
+]
+test-command = "echo 'installed'"
+
+[tool.cibuildwheel.windows]
+archs = ["auto64"]
+environment = { CMAKE_TOOLCHAIN_FILE = 'C:\\dartsim\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake' }
+before-all = [
+    "mkdir C:\\dartsim",
+    "choco install -y wget",
+    "wget -q https://github.com/dartsim/vcpkg-build/releases/download/v2023.01.16-2/vcpkg-dartsim-deps-v7.0.zip",
+    "unzip -qq vcpkg-dartsim-deps-v7.0.zip -d C:\\dartsim",
+    "dir C:\\dartsim",
+    "dir C:\\dartsim\\vcpkg\\installed",
+    "dir C:\\dartsim\\vcpkg\\installed\\x64-windows\\include",
+    "dir C:\\dartsim\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake",
+]
+test-command = "echo 'installed'"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"

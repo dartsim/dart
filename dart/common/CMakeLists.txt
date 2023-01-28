@@ -89,7 +89,6 @@ endif()
 if(DART_ENABLE_SIMD)
 
   if(MSVC)
-
     # /arch:AVX2 option is effective only for x64 but not for x86 since it's
     # enabled for x86 by default. The option will be ignored on x86 with a
     # warning message. If anyone knows how to detect the system's architecture
@@ -97,21 +96,22 @@ if(DART_ENABLE_SIMD)
     # depending on the architectures.
     if(CMAKE_SIZEOF_VOID_P EQUAL 8) # x64
         list(APPEND compile_options_public /arch:AVX2)
-    else()                          # x86
+    else()  # x86
         list(APPEND compile_options_public /arch:SSE2 /arch:AVX /arch:AVX2)
     endif()
-
+      
   elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
 
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8) # x64
-      if(APPLE)
-        if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
-            list(APPEND compile_options_public -march=native -faligned-new)
-        endif()
+    if(APPLE)
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+          list(APPEND compile_options_public -march=armv8.3-a+simd -faligned-new)
       else()
-        list(APPEND compile_options_public -march=native -faligned-new)
+          if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+              list(APPEND compile_options_public -march=native -faligned-new)
+          endif()
       endif()
-    else()                         # x86
+
+    else()
       list(APPEND compile_options_public -march=native -faligned-new)
     endif()
 
