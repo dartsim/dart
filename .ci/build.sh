@@ -237,6 +237,9 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   python3 main.py
 fi
 
+# Clean-up
+clean
+
 # Clean-up function
 cleanup() {
   echo "Cleaning up before exiting..."
