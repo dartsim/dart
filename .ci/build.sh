@@ -140,6 +140,9 @@ echo " CMake   : $(cmake --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 echo ""
 echo "====================================="
 
+# Set up the trap command
+trap "cleanup" EXIT
+
 # Run CMake
 build_dir=${BUILD_DIR}/build
 if [ "$OSTYPE" = "linux-gnu" ]; then
@@ -233,3 +236,18 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   cd $BUILD_DIR/python/examples/hello_world
   python3 main.py
 fi
+
+# Clean-up function
+cleanup() {
+  echo "Cleaning up before exiting..."
+
+  # Cleanup build directories
+  rm -rf $build_dir
+  find . -type d -name "build" -prune -exec rm -rf {} \;
+
+  # Python temp files
+  find . -name "*.pyc" -exec rm -rf {} +
+  find . -type d -name ".pytest_cache" -prune -exec rm -rf {} \;
+}
+
+
