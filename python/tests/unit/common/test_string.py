@@ -6,8 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
-import pytest
 import dartpy as dart
+import pytest
 
 
 def test_case_conversions():

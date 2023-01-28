@@ -1,5 +1,5 @@
-import numpy as np
 import dartpy as dart
+import numpy as np
 
 
 def main():

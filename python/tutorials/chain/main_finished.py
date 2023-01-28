@@ -1,7 +1,7 @@
 import math
-import numpy as np
-import dartpy as dart
 
+import dartpy as dart
+import numpy as np
 
 default_height = 1.0  # m
 default_width = 0.2  # m

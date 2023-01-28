@@ -1,7 +1,8 @@
 import platform
-import pytest
+
 import dartpy as dart
 import numpy as np
+import pytest
 
 
 def collision_groups_tester(cd):

@@ -1,5 +1,5 @@
-import pytest
 import dartpy as dart
+import pytest
 
 
 def test_basics():

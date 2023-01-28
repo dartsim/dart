@@ -1,7 +1,8 @@
 import math
-import pytest
-import numpy as np
+
 import dartpy as dart
+import numpy as np
+import pytest
 
 
 def kinematics_tester(joint):

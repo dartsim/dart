@@ -1,7 +1,8 @@
 import platform
-import pytest
-import numpy as np
+
 import dartpy as dart
+import numpy as np
+import pytest
 
 
 def test_basic():

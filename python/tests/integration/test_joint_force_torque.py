@@ -1,7 +1,8 @@
-import pytest
 import math
-import numpy as np
+
 import dartpy as dart
+import numpy as np
+import pytest
 
 
 def read_world(uri: dart.common.Uri):
