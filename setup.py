@@ -164,7 +164,7 @@ class CMakeBuild(build_ext):
         )
 
 
-sources = ["CMakeLists.txt"]
+sources = ["CMakeLists.txt", "package.xml"]
 sources.extend(glob("cmake/**/*", recursive=True))
 sources.extend(glob("dart/**/*", recursive=True))
 sources.extend(glob("python/**/*", recursive=True))
