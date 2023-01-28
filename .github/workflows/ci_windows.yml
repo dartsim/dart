@@ -23,7 +23,6 @@ jobs:
         build_dartpy: [OFF]       # Build tests and dartpy exclusively 
                                   # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
     env:
-      VCPKG_ROOT: "C:/dartsim/vcpkg"
       VCPKG_BUILD_TAG: v2023.01.16-2
       VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
       BUILD_TYPE: ${{ matrix.build_type }}
@@ -34,10 +33,9 @@ jobs:
       - name: Install Dependencies
         shell: cmd
         run: |
-          mkdir -p C:\dartsim
           choco install -y wget
           wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
-          unzip -qq %VCPKG_DEPS_ZIP% -d C:\dartsim
+          unzip -qq %VCPKG_DEPS_ZIP% -d %GITHUB_WORKSPACE%
       - name: Build and run tests
         if: matrix.build_dartpy == 'OFF'
         shell: cmd
@@ -47,7 +45,7 @@ jobs:
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
             -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_TOOLCHAIN_FILE="%GITHUB_WORKSPACE%/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
@@ -66,7 +64,7 @@ jobs:
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
             -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_TOOLCHAIN_FILE="%GITHUB_WORKSPACE%/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^

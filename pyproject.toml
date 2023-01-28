@@ -72,16 +72,15 @@ test-command = "echo 'installed'"
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"]
-environment = { CMAKE_TOOLCHAIN_FILE = 'C:\\dartsim\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake' }
+environment = { CMAKE_TOOLCHAIN_FILE = '%CD%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake' }
 before-all = [
-    "mkdir C:\\dartsim",
     "choco install -y wget",
     "wget -q https://github.com/dartsim/vcpkg-build/releases/download/v2023.01.16-2/vcpkg-dartsim-deps-v7.0.zip",
-    "unzip -qq vcpkg-dartsim-deps-v7.0.zip -d C:\\dartsim",
-    "dir C:\\dartsim",
-    "dir C:\\dartsim\\vcpkg\\installed",
-    "dir C:\\dartsim\\vcpkg\\installed\\x64-windows\\include",
-    "dir C:\\dartsim\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake",
+    "unzip -qq vcpkg-dartsim-deps-v7.0.zip -d %CD%",
+    "dir %CD%",
+    "dir %CD%\\vcpkg\\installed",
+    "dir %CD%\\vcpkg\\installed\\x64-windows\\include",
+    "dir %CD%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake",
 ]
 test-command = "echo 'installed'"
 

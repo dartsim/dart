@@ -247,7 +247,11 @@ cleanup() {
 
   # Python temp files
   find . -name "*.pyc" -exec rm -rf {} +
+  find . -type d -name "__pycache__" -prune -exec rm -rf {} \;
   find . -type d -name ".pytest_cache" -prune -exec rm -rf {} \;
+
+  # Linter files
+  find . -type d -name ".scannerwork" -prune -exec rm -rf {} \;
 }
 
 
