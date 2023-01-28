@@ -45,7 +45,7 @@ jobs:
             --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
             --env-file ./.ci/docker/env.list \
             $DART_DEV_IMAGE:$DOCKER_TAG \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build_docs.sh build"
 
       - name: Deploy
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -54,3 +54,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: gh-pages
           enable_jekyll: true
+
+      - name: Cleanup
+        run: |
+          docker run \
+            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
+            --env-file ./.ci/docker/env.list \
+            $DART_DEV_IMAGE:$DOCKER_TAG \
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build_docs.sh clean"
