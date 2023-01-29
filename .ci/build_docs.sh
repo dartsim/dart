@@ -7,9 +7,9 @@ script_path="$(
   pwd -P
 )"
 
-WORK_DIR="${HOME}/dart_docs"
+WORK_DIR="${GITHUB_WORKSPACE}/dart_docs"
 DART_CLONE_DIR="${WORK_DIR}/dart"
-DART_DOCS_OUTPUT_DIR="${CODE_DIR}/gh-pages"
+DART_DOCS_OUTPUT_DIR="${GITHUB_WORKSPACE}/gh-pages"
 DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
 
 help() {

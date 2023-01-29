@@ -32,6 +32,11 @@ if [ -z "$CODE_DIR" ]; then
   CODE_DIR=$PWD
 fi
 
+if [ -z "$IN_DOCKER" ]; then
+  echo "Error: Environment variable IN_DOCKER is unset. Using OFF by default."
+  IN_DOCKER=OFF
+fi
+
 if [ -z "$CHECK_FORMAT" ]; then
   echo "Info: Environment variable CHECK_FORMAT is unset. Using OFF by default."
   CHECK_FORMAT=OFF
@@ -111,6 +116,10 @@ else
   num_threads=$NUM_CORES
 fi
 
+if [ $num_threads -gt 60 ]; then
+  num_threads=60
+fi
+
 # Set compilers
 if [ "$COMPILER" = "gcc" ]; then
   export CC=gcc
@@ -132,20 +141,30 @@ echo "====================================="
 echo ""
 echo " [ SYSTEM INFO ]"
 echo ""
-echo " OS      : $OS $VER ($(uname -m))"
-echo " OSTYPE  : $OSTYPE"
-echo " Cores   : $num_threads / $num_available_threads"
-echo " Compiler: $COMPILER $($CXX --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
-echo " CMake   : $(cmake --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
+echo " IN_DOCKER: $IN_DOCKER"
+echo " OS       : $OS $VER ($(uname -m))"
+echo " OSTYPE   : $OSTYPE"
+echo " Cores    : $num_threads / $num_available_threads"
+echo " Compiler : $COMPILER $($CXX --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
+echo " CMake    : $(cmake --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 echo ""
 echo "====================================="
 
-# Create workspace folder
-ws_dir=/ws
-mkdir -p $ws_dir
+if [ "$IN_DOCKER" = "ON" ]; then
+  # Create workspace folder
+  ws_dir=/ws
+  mkdir -p $ws_dir
+
+  # Copy DART code
+  source_dir=$ws_dir/code
+  cp -r $CODE_DIR $source_dir
+else
+  source_dir=$CODE_DIR
+fi
+cd $source_dir
 
 # Create build folder
-build_dir=$ws_dir/build
+build_dir=$source_dir/build
 mkdir -p $build_dir
 
 # Run CMake
@@ -156,7 +175,7 @@ elif [[ $OSTYPE = darwin* ]]; then
 fi
 
 cmake \
-  -S $CODE_DIR \
+  -S $source_dir \
   -B $build_dir \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
@@ -227,12 +246,10 @@ elif [ "$TEST_INSTALLATION" = "ON" ]; then
 
   # DART: build an C++ example using installed DART
   echo "Info: Testing the installation..."
-
-  hello_world_build_dir=$ws_dir/build_hellow_world
-  mkdir -p $hello_world_build_dir
-
-  cmake -S $CODE_DIR/examples/hello_world -B $hello_world_build_dir
-  cmake --build $hello_world_build_dir --target all -j$num_threads 
+  cd $source_dir/examples/hello_world
+  mkdir build && cd build
+  cmake ..
+  make -j$num_threads
 
 fi
 
@@ -240,6 +257,6 @@ fi
 if [ "$BUILD_DARTPY" = "ON" ]; then
   echo "Info: Running a Python example..."
   echo $PYTHONPATH
-  cd $CODE_DIR/python/examples/hello_world
+  cd $source_dir/python/examples/hello_world
   python3 main.py
 fi

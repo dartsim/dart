@@ -36,16 +36,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Pull dev container
-        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
+      - name: Prework for installing packages using cache
+        run: |
+          sudo apt update
+          sudo apt install -y cmake
+
+      - name: Install Dependencies with cache
+        uses: awalsh128/cache-apt-pkgs-action@master
+        with:
+          packages: build-essential libboost-all-dev clang clang-format-14 cmake curl doxygen gcovr git lcov lsb-release pkg-config software-properties-common valgrind libassimp-dev libccd-dev libeigen3-dev libfcl-dev libfmt-dev coinor-libipopt-dev freeglut3-dev libxi-dev libxmu-dev libbullet-dev libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev libspdlog-dev ocl-icd-opencl-dev libpython3-dev pybind11-dev python3 python3-dev python3-distutils python3-numpy python3-pip python3-setuptools
+          version: 1.1
+
+      - name: Install Python dependencies
+        run: |
+          pip3 install pytest -U
 
       - name: Build
         run: |
-          docker run \
-            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
-            --env-file ./.ci/docker/env.list \
-            $DART_DEV_IMAGE:$DOCKER_TAG \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build_docs.sh build"
+          ./.ci/build_docs.sh build
 
       - name: Deploy
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -57,8 +65,4 @@ jobs:
 
       - name: Cleanup
         run: |
-          docker run \
-            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
-            --env-file ./.ci/docker/env.list \
-            $DART_DEV_IMAGE:$DOCKER_TAG \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build_docs.sh clean"
+          ./.ci/build_docs.sh clean

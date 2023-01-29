@@ -42,6 +42,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       CHECK_FORMAT: ${{ matrix.check_format }}
       IN_CI: ON
+      IN_DOCKER: ON
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
