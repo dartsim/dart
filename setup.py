@@ -74,7 +74,8 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             f"-DBUILD_SHARED_LIBS=OFF",
             f"-DDART_DBUILD_TESTING=OFF",
-            f"-DDART_ENABLE_SIMD=OFF",  # TODO: Enable SIMD
+            f"-DDART_ENABLE_SIMD=ON",
+            f"-DDART_BUILD_WHEELS=ON",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -160,7 +161,9 @@ class CMakeBuild(build_ext):
             ["cmake", ext.sourcedir] + cmake_args, cwd=build_temp, env=env, check=True
         )
         subprocess.run(
-            ["cmake", "--build", "."] + build_args, cwd=build_temp, check=True
+            ["cmake", "--build", "."] + ["--target", "dartpy"] + build_args,
+            cwd=build_temp,
+            check=True,
         )
 
 
@@ -177,7 +180,7 @@ sources.extend(glob("tutorials/**/*", recursive=True))
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.1.0.post12",
+    version="0.1.0.post15",
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",

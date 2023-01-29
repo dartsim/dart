@@ -33,18 +33,20 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-  build_sdist:
-    name: Build source distribution
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  # TODO: Disabled because installing from source doesn't work when the deps are not
+  # installed in the system
+  # build_sdist:
+  #   name: Build source distribution
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Build SDist
-        run: pipx run build --sdist
+  #     - name: Build SDist
+  #       run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v3
-        with:
-          path: dist/*.tar.gz
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         path: dist/*.tar.gz
 
   upload_pypi:
     needs: [build_wheels, build_sdist]

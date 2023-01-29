@@ -5,7 +5,7 @@ name: API Documentation
 on:
   push:
     branches:
-      - "**"
+      - "release-*"
   schedule:
     # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00

@@ -126,7 +126,8 @@ dart_option(DART_BUILD_COMP_gui          "Build component 'gui'"          ON)
 dart_option(DART_BUILD_COMP_planning     "Build component 'planning'"     ON)
 
 dart_option(DART_DBUILD_TESTING "Enable building tests and benchmark" ON)
-dart_option(DART_IN_CI "Indicate building DART as part of CI" OFF)
+dart_option(DART_IN_CI "Indicate building DART as part of CI"        OFF)
+dart_option(DART_BUILD_WHEELS "Indicate building dartpy for wheels"  OFF)
 
 #===============================================================================
 # Print intro
