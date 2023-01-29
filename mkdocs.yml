@@ -1,10 +1,15 @@
 # Project information
 
 site_name: DART Documentation
+
 repo_url: https://github.com/dartsim/dart.git
+
 repo_name: GitHub
+
 site_description: Dynamic Animation and Robotics Toolkit
+
 # site_favicon: null  # todo: add dart.ico
+
 copyright: Copyright (c) 2011-2023, The DART development contributors
 
 theme: readthedocs
@@ -12,11 +17,11 @@ theme: readthedocs
 # Build directories
 docs_dir: docs/readthedocs
 
-pages:
-    - Home: "index.md"
-    - Tutorials:
-          - "Introduction": "tutorials/introduction.md"
-          - "Pendulum": "tutorials/multi-pendulum.md"
-          - "Collisions": "tutorials/collisions.md"
-          - "Manipulator": "tutorials/dominoes.md"
-          - "Biped": "tutorials/biped.md"
+nav:
+      - Home: "index.md"
+      - Tutorials:
+              - "Introduction": "tutorials/introduction.md"
+              - "Pendulum": "tutorials/multi-pendulum.md"
+              - "Collisions": "tutorials/collisions.md"
+              - "Manipulator": "tutorials/dominoes.md"
+              - "Biped": "tutorials/biped.md"
