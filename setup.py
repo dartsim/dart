@@ -76,6 +76,7 @@ class CMakeBuild(build_ext):
             f"-DDART_DBUILD_TESTING=OFF",
             f"-DDART_ENABLE_SIMD=ON",
             f"-DDART_BUILD_WHEELS=ON",
+            f"-DDART_DOWNLOAD_DEPENDENT_PACKAGES=OFF",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -205,7 +206,6 @@ setup(
     extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.7",
     install_requires=[
-        # need to build from source when no wheel is available
-        "cmake",
+        "numpy",
     ],
 )

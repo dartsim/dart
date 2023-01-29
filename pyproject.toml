@@ -29,6 +29,8 @@ testpaths = ["tests"]
 
 # https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
 [tool.cibuildwheel]
+manylinux-x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
+manylinux-pypy_x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
 test-command = "pytest {project}/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
 build = [
@@ -36,6 +38,7 @@ build = [
     "cp38-manylinux_x86_64",
     "cp39-manylinux_x86_64",
     "cp310-manylinux_x86_64",
+    "cp311-manylinux_x86_64",
 
     # macOS
     "cp310-macosx_x86_64",
@@ -47,18 +50,6 @@ build = [
 
 [tool.cibuildwheel.linux]
 archs = ["auto64"]
-before-all = [
-    "yum install -y fmt-devel glew-devel glfw-devel libccd-devel boost-devel bullet-devel coin-or-Ipopt-devel nlopt-devel spdlog-devel tinyxml-devel python3-devel",
-    "git clone https://github.com/ros/console_bridge.git -b 1.0.2 && mkdir -p console_bridge/build && cmake console_bridge -B console_bridge/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build console_bridge/build --target install -j",
-    "git clone https://github.com/ros/urdfdom_headers.git -b 1.0.5 && mkdir -p urdfdom_headers/build && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build urdfdom_headers/build --target install -j",
-    "git clone https://github.com/ros/urdfdom.git -b 3.0.0 && mkdir -p urdfdom/build && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build urdfdom/build --target install -j",
-    "git clone https://github.com/leethomason/tinyxml2.git -b '9.0.0' && mkdir -p tinyxml2/build && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON && cmake --build tinyxml2/build --target install -j",
-    "git clone https://github.com/assimp/assimp.git -b 'v5.2.5' && mkdir -p assimp/build && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_TESTS=OFF && cmake --build assimp/build --target install -j",
-    "git clone https://gitlab.com/libeigen/eigen.git -b '3.4.0' && mkdir -p eigen/build && cmake eigen -B eigen/build -DCMAKE_BUILD_TYPE=Release -DEIGEN_BUILD_TESTING=OFF -DEIGEN_BUILD_DOC=OFF && cmake --build eigen/build --target install -j",
-    "git clone https://github.com/OctoMap/octomap.git -b 'v1.9.6' && mkdir -p octomap/build && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF && cmake --build octomap/build --target install -j",
-    "git clone https://github.com/flexible-collision-library/fcl.git -b '0.7.0' && mkdir -p fcl/build && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && cmake --build fcl/build --target install -j",
-    "git clone https://github.com/openscenegraph/OpenSceneGraph.git -b 'OpenSceneGraph-3.6.5' && mkdir -p OpenSceneGraph/build && cmake OpenSceneGraph -B OpenSceneGraph/build -DCMAKE_BUILD_TYPE=Release -DBUILD_OSG_APPLICATIONS=OFF && cmake --build OpenSceneGraph/build --target install -j",
-]
 test-command = "echo 'installed'"
 
 [tool.cibuildwheel.macos]
@@ -73,15 +64,6 @@ test-command = "echo 'installed'"
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"]
-before-all = [
-    "choco install -y wget",
-    "wget -q https://github.com/dartsim/vcpkg-build/releases/download/v2023.01.16-2/vcpkg-dartsim-deps-v7.0.zip",
-    "unzip -qq vcpkg-dartsim-deps-v7.0.zip -d %CD%",
-    "dir %CD%",
-    "dir %CD%\\vcpkg\\installed",
-    "dir %CD%\\vcpkg\\installed\\x64-windows\\include",
-    "dir %CD%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake",
-]
 test-command = "echo 'installed'"
 
 [[tool.cibuildwheel.overrides]]

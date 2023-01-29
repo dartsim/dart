@@ -62,12 +62,6 @@ jobs:
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Prework for installing packages using cache (Cpp)
-      if: ${{ matrix.language == 'cpp' }}
-      run: |
-        sudo apt update
-        sudo apt install -y cmake
-
     - name: Install Dependencies with cache (Cpp)
       uses: awalsh128/cache-apt-pkgs-action@master
       if: ${{ matrix.language == 'cpp' }}
