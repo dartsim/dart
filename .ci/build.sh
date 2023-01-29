@@ -205,6 +205,7 @@ fi
 if [ "$BUILD_DARTPY" = "ON" ]; then
   cmake --build $build_dir --target dartpy -j$num_threads 
   cmake --build $build_dir --target pytest
+  find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
 fi
 
 cmake --build $build_dir --target install
@@ -259,4 +260,5 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   echo $PYTHONPATH
   cd $source_dir/python/examples/hello_world
   python3 main.py
+  find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
 fi
