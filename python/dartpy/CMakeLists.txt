@@ -6,14 +6,40 @@
 #
 # This file is provided under the "BSD-style" License
 
-# Find pybind11, including PythonInterp and PythonLibs
-if(WIN32)
-  set(PYBIND11_FINDPYTHON TRUE)
-endif()
-find_package(pybind11 2.2.0 QUIET)
-if(NOT pybind11_FOUND)
-  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
-  return()
+# pybind11
+if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
+  # Fetch Pybind11
+  dart_fetch_git_repo(
+    PROJECT_NAME pybind11
+    WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
+    GIT_URL https://github.com/pybind/pybind11.git
+    GIT_TAG v2.10.3
+  )
+
+  # Set options
+  set(PYBIND11_TEST OFF CACHE BOOL "" FORCE)
+
+  # To suppress warning, Policy CMP0042 is not set
+  set(CMAKE_MACOSX_RPATH 1)
+
+  # Adds the targers: gtest, gtest_main, gmock, gmock_main
+  add_subdirectory(
+    ${pybind11_SOURCE_DIR}
+    ${pybind11_BINARY_DIR}
+    EXCLUDE_FROM_ALL
+  )
+
+  set(pybind11_FOUND TRUE)
+else()
+  # Find pybind11, including PythonInterp and PythonLibs
+  if(WIN32)
+    set(PYBIND11_FINDPYTHON TRUE)
+  endif()
+  find_package(pybind11 2.2.0 QUIET)
+  if(NOT pybind11_FOUND)
+    message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
+    return()
+  endif()
 endif()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c

@@ -180,7 +180,7 @@ sources.extend(glob("tutorials/**/*", recursive=True))
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.1.0.post15",
+    version="0.1.0.post16",
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
