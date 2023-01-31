@@ -51,6 +51,7 @@ build = [
 
 [tool.cibuildwheel.linux]
 archs = ["auto64"]
+environment-pass = ["DART_IN_CI"]
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"]

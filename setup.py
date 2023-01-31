@@ -139,8 +139,6 @@ class CMakeBuild(build_ext):
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
-        if self.compiler.compiler_type == "msvc":
-            build_args += [f"-j1"]
         elif "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
             # self.parallel is a Python 3 only way to set parallel jobs by hand
             # using -j in the build_ext call, not supported by pip or PyPA-build.
@@ -149,7 +147,7 @@ class CMakeBuild(build_ext):
                 build_args += [f"-j{self.parallel}"]
 
         cmake_args += [
-            f"-DDART_IN_CI={os.environ.get('DART_IN_CI', 'ON')}",
+            f"-DDART_IN_CI={os.environ.get('DART_IN_CI', 'OFF')}",
         ]
 
         build_temp = Path(self.build_temp) / ext.name
