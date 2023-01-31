@@ -11,13 +11,18 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      
+
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-      
+
   - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "weekly"
