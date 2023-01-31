@@ -22,9 +22,13 @@ jobs:
     env:
       VCPKG_BUILD_TAG: v2023.01.16-2
       VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
-      CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      CMAKE_TOOLCHAIN_FILE: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
+      DART_IN_CI: ON
 
     steps:
+      # Check disk space
+      - run: Get-PSDrive
+
       - uses: actions/checkout@v3
 
       - name: Install vcpkg deps
@@ -32,14 +36,10 @@ jobs:
         run: |
           choco install -y wget
           wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
-          unzip -qq %VCPKG_DEPS_ZIP% -d %GITHUB_WORKSPACE%
+          unzip -qq %VCPKG_DEPS_ZIP% -d C:/.dartsim/
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.0
-        env:
-          MACOSX_DEPLOYMENT_TARGET: 10.15
-          DART_IN_CI: ON
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - uses: actions/upload-artifact@v3
         with:

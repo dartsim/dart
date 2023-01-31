@@ -35,7 +35,7 @@ jobs:
         run: |
           choco install -y wget
           wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
-          unzip -qq %VCPKG_DEPS_ZIP% -d %GITHUB_WORKSPACE%
+          unzip -qq %VCPKG_DEPS_ZIP% -d C:/.dartsim/
       - name: Build and run tests
         if: matrix.build_dartpy == 'OFF'
         shell: cmd
@@ -45,7 +45,7 @@ jobs:
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
             -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
-            -DCMAKE_TOOLCHAIN_FILE="%GITHUB_WORKSPACE%/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_TOOLCHAIN_FILE="C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
@@ -64,7 +64,7 @@ jobs:
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
             -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
             -DDART_BUILD_DARTPY=%BUILD_DARTPY% ^
-            -DCMAKE_TOOLCHAIN_FILE="%GITHUB_WORKSPACE%/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_TOOLCHAIN_FILE="C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
