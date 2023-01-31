@@ -31,7 +31,8 @@ testpaths = ["tests"]
 [tool.cibuildwheel]
 manylinux-x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
 manylinux-pypy_x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
-test-command = "pytest {project}/tests"
+test-requires = "pytest"
+test-command = "pytest {project}/python/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
 build = [
     # Linux
@@ -50,7 +51,6 @@ build = [
 
 [tool.cibuildwheel.linux]
 archs = ["auto64"]
-test-command = "echo 'installed'"
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"]
@@ -60,11 +60,9 @@ before-all = [
     "brew install open-scene-graph",
     "sw_vers",
 ]
-test-command = "echo 'installed'"
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"]
-test-command = "echo 'installed'"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
