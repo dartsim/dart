@@ -74,7 +74,7 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             f"-DBUILD_SHARED_LIBS=OFF",
             f"-DDART_DBUILD_TESTING=OFF",
-            f"-DDART_ENABLE_SIMD=ON",
+            f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
             f"-DDART_DOWNLOAD_DEPENDENT_PACKAGES=OFF",
         ]
@@ -181,7 +181,7 @@ sources.extend(glob("tutorials/**/*", recursive=True))
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.1.0.post16",
+    version="0.1.0.post17",
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
