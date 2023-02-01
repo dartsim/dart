@@ -133,7 +133,7 @@ public:
   /// order of components must match the template parameters.
   GroupProduct(T<S>&&... components);
 
-  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(GroupProduct);
+  DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(GroupProduct);
 
   /// Returns the parameters of the specific component group
   template <std::size_t Index_>

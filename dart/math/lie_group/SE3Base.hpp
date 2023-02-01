@@ -123,6 +123,34 @@ public:
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
+  /// Performs the adjoint transformation on the given se(3) by the given SE(3)
+  template <typename TangentDerived>
+  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const
+  {
+    // Cache the rotation matrix for efficiency when multiplying 3d vector more
+    // than once
+    const Eigen::Matrix<Scalar, 3, 3> rot = rotation().toMatrix();
+
+    const Vector3<Scalar> angular = rot * dx.derived().angular();
+
+    Vector3<Scalar> linear = rot * dx.derived().linear();
+    linear.noalias() += translation().cross(angular);
+
+    return Tangent(std::move(angular), std::move(linear));
+  }
+
+  /// Returns the adjoint transformation matrix (6x6) of the given SE(3) point
+  [[nodiscard]] Matrix6<Scalar> toAdjointMatrix() const
+  {
+    Matrix6<Scalar> out;
+    out.template topLeftCorner<3, 3>() = rotation().toMatrix();
+    out.template topRightCorner<3, 3>().setZero();
+    out.template bottomLeftCorner<3, 3>().noalias()
+        = skew(translation()) * out.template topLeftCorner<3, 3>();
+    out.template bottomRightCorner<3, 3>() = out.template topLeftCorner<3, 3>();
+    return out;
+  }
+
   /// Returns the Isometry3 representation of the SE3
   [[nodiscard]] Isometry3<Scalar> toIsometry3() const;
 

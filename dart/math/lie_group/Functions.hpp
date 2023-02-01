@@ -61,6 +61,14 @@ template <typename Derived>
     const LieGroupBase<Derived>& x,
     typename Derived::Scalar tol = LieGroupTol<typename Derived::Scalar>());
 
+template <typename LieGroupDerived, typename TangentDerived>
+[[nodiscard]] typename LieGroupDerived::Tangent Ad(
+    const LieGroupBase<LieGroupDerived>& x,
+    const TangentBase<TangentDerived>& dx);
+
+template <typename LieGroupDerived>
+[[nodiscard]] auto AdMatrix(const LieGroupBase<LieGroupDerived>& x);
+
 } // namespace dart::math
 
 //==============================================================================
@@ -97,6 +105,22 @@ typename Derived::Tangent Log(
     const LieGroupBase<Derived>& x, typename Derived::Scalar tol)
 {
   return x.log(tol);
+}
+
+//==============================================================================
+template <typename LieGroupDerived, typename TangentDerived>
+typename LieGroupDerived::Tangent Ad(
+    const LieGroupBase<LieGroupDerived>& x,
+    const TangentBase<TangentDerived>& dx)
+{
+  return x.ad(dx);
+}
+
+//==============================================================================
+template <typename LieGroupDerived>
+[[nodiscard]] auto AdMatrix(const LieGroupBase<LieGroupDerived>& x)
+{
+  return x.toAdjointMatrix();
 }
 
 } // namespace dart::math

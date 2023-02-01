@@ -164,6 +164,17 @@ public:
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
+  template <typename TangentDerived>
+  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const
+  {
+    return derived().ad(dx);
+  }
+
+  [[nodiscard]] auto toAdjointMatrix() const
+  {
+    return derived().toAdjointMatrix();
+  }
+
   /// Returns the matrix representation of this Lie group.
   ///
   /// Note that some Lie groups may need to convert the internal representation
@@ -268,8 +279,8 @@ typename LieGroupBase<Derived>::InverseType LieGroupBase<Derived>::inverse()
 template <typename Derived>
 Derived& LieGroupBase<Derived>::inverseInPlace()
 {
-  *this = inverse();
-  return *this;
+  derived() = inverse();
+  return derived();
 }
 
 //==============================================================================

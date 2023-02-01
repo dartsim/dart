@@ -12,7 +12,7 @@ if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
   dart_fetch_git_repo(
     PROJECT_NAME pybind11
     WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
-    GIT_URL https://github.com/pybind/pybind11.git
+    GIT_URL https://github.com/pybind/pybind11
     GIT_TAG v2.10.3
   )
 

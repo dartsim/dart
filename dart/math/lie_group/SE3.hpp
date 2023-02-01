@@ -83,16 +83,6 @@ public:
   [[nodiscard]] static Tangent Vee(
       const Eigen::MatrixBase<MatrixDerived>& matrix);
 
-  /// Returns the adjoint transformation matrix (6x6) of the given SE(3) point
-  template <typename OtherDerived>
-  [[nodiscard]] static Matrix6<S> Ad(const SE3Base<OtherDerived>& x);
-
-  /// Performs the adjoint transformation on the given se(3) by the given SE(3)
-  template <typename OtherDerived, typename MatrixDerived>
-  [[nodiscard]] static Tangent Ad(
-      const SE3Base<OtherDerived>& x,
-      const Eigen::MatrixBase<MatrixDerived>& xi);
-
   template <typename MatrixDerived>
   [[nodiscard]] static Matrix6<S> LieBracket(
       const Eigen::MatrixBase<MatrixDerived>& dx);
@@ -167,7 +157,7 @@ public:
   /// translation are going to be initialized later.
   explicit SE3(NoInitializeTag);
 
-  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SE3);
+  DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(SE3);
 
   /// Constructs an SE3 from a rotation (or SE(3)) and a translation (or R(3))
   ///
@@ -257,36 +247,6 @@ typename SE3<S>::Tangent SE3<S>::Vee(
       = SO3<S>::Vee(matrix.template topLeftCorner<3, 3>()).params();
   out.template tail<3>() = matrix.template topRightCorner<3, 1>();
   return Tangent(std::move(out));
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived>
-Matrix6<S> SE3<S>::Ad(const SE3Base<OtherDerived>& x)
-{
-  Matrix6<S> out;
-  out.template topLeftCorner<3, 3>() = x.rotation().matrix();
-  out.template topRightCorner<3, 3>().setZero();
-  out.template bottomLeftCorner<3, 3>().noalias()
-      = skew(x.translation()) * out.template topLeftCorner<3, 3>();
-  out.template bottomRightCorner<3, 3>() = out.template topLeftCorner<3, 3>();
-  return out;
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived, typename MatrixDerived>
-typename SE3<S>::Tangent SE3<S>::Ad(
-    const SE3Base<OtherDerived>& x, const Eigen::MatrixBase<MatrixDerived>& xi)
-{
-  // Cache the rotation matrix for efficiency when multiplying 3d vector more
-  // than once
-  const Eigen::Matrix<S, 3, 3> rotation = x.rotation().toMatrix();
-
-  const Vector3<S> angular = rotation * xi.template head<3>();
-  Vector3<S> linear = rotation * xi.template tail<3>();
-  linear.noalias() += x.translation().cross(angular);
-  return Tangent(std::move(angular), std::move(linear));
 }
 
 //==============================================================================

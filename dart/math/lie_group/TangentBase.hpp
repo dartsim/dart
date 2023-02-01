@@ -74,8 +74,54 @@ public:
 
   // TODO(JS): Add Zero()
 
+  Derived& operator=(const TangentBase& other)
+  {
+    params() = other.params();
+    return derived();
+  }
+
+  Derived& operator=(TangentBase&& other)
+  {
+    params() = std::move(other.params());
+    return derived();
+  }
+
+  template <typename OtherDerived>
+  Derived& operator=(const TangentBase<OtherDerived>& other)
+  {
+    params() = other.params();
+    return derived();
+  }
+
+  template <typename OtherDerived>
+  Derived& operator=(TangentBase<OtherDerived>&& other)
+  {
+    params() = std::move(other.params());
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator=(const MatrixBase<MatrixDerived>& other)
+  {
+    params() = other;
+    return derived();
+  }
+
+  template <typename MatrixDerived>
+  Derived& operator=(MatrixBase<MatrixDerived>&& other)
+  {
+    params() = std::move(other);
+    return derived();
+  }
+
   /// Returns the hat operator of the tangent element
   [[nodiscard]] LieAlgebra hat() const;
+
+  // Overload operator, for comma initializer
+  ::Eigen::CommaInitializer<Params> operator<<(Scalar value)
+  {
+    return ::Eigen::CommaInitializer<Params>(params(), value);
+  }
 
   /// Returns the exponential map of the given tangent
   ///
@@ -147,7 +193,6 @@ public:
     return derived().params();
   }
 
-protected:
   /// Returns the derived class as a const reference
   [[nodiscard]] const Derived& derived() const noexcept;
 

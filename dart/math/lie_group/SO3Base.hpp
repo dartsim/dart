@@ -128,6 +128,23 @@ public:
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
+  /// Returns the adjoint transformation of the given SO3
+  ///
+  /// The adjoint transformation of SO3 @f$ x @f$ is a matrix @f$ A @f$ such
+  /// that @f$ A v = x v x^{-1} @f$ for any vector @f$ v @f$.
+  ///
+  /// @param[in] x The SO3 to be converted to a matrix.
+  template <typename TangentDerived>
+  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const
+  {
+    return Tangent(quaternion() * dx.params());
+  }
+
+  [[nodiscard]] Matrix3<Scalar> toAdjointMatrix() const
+  {
+    return toMatrix();
+  }
+
   /// Returns the matrix representation of this SO3
   ///
   /// The matrix representation of SO3 is a 3x3 orthogonal matrix

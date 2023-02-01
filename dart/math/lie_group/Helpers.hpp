@@ -47,7 +47,7 @@
 // so it's recommended to add Doxygen comments to the APIs defined in the macro.
 //
 // The macro name may change until it is finalized.
-#define DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(CLASS_NAME)                      \
+#define DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(CLASS_NAME)                      \
   /**                                                                          \
    * Copy constructor                                                          \
    * @param[in] other The other element to be copied                           \
@@ -109,6 +109,98 @@
    */                                                                          \
   template <typename OtherDerived>                                             \
   CLASS_NAME(LieGroupBase<OtherDerived>&& other)                               \
+    : Base(), m_params(std::move(other.params()))                              \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Copy-constructs from raw parameters                                       \
+   * @tparam MatrixDerived The derived type of the matrix base                 \
+   * @param[in] params The raw parameters to be copied                         \
+   */                                                                          \
+  template <typename MatrixDerived>                                            \
+  CLASS_NAME(const ::Eigen::MatrixBase<MatrixDerived>& params)                 \
+    : Base(), m_params(params)                                                 \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Move-constructs from raw parameters                                       \
+   * @tparam MatrixDerived The derived type of the matrix base                 \
+   * @param[in] params The raw parameters to be moved                          \
+   */                                                                          \
+  template <typename MatrixDerived>                                            \
+  CLASS_NAME(::Eigen::MatrixBase<MatrixDerived>&& params)                      \
+    : Base(), m_params(std::move(params))                                      \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+  static_assert(true, "")
+
+#define DART_DEFINE_CONSTRUCTORS_FOR_TANGENT(CLASS_NAME)                       \
+  /**                                                                          \
+   * Copy constructor                                                          \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  CLASS_NAME(const CLASS_NAME& other) : Base(), m_params(other.m_params)       \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Move constructor                                                          \
+   * @param[in] other The other element to be moved                            \
+   */                                                                          \
+  CLASS_NAME(CLASS_NAME&& other) : Base(), m_params(std::move(other.m_params)) \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Copy-constructs from CLASS_NAME##Base                                     \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(const CLASS_NAME##Base<OtherDerived>& other)                      \
+    : Base(), m_params(other.params())                                         \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Move-constructs from CLASS_NAME##Base                                     \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(CLASS_NAME##Base<OtherDerived>&& other)                           \
+    : Base(), m_params(std::move(other.params()))                              \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Copy-constructs from TangentBase                                          \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(const TangentBase<OtherDerived>& other)                           \
+    : Base(), m_params(other.params())                                         \
+  {                                                                            \
+    /* Do nothing */                                                           \
+  }                                                                            \
+                                                                               \
+  /**                                                                          \
+   * Move-constructs from TangentBase                                          \
+   * @tparam OtherDerived The derived type of the base class                   \
+   * @param[in] other The other element to be copied                           \
+   */                                                                          \
+  template <typename OtherDerived>                                             \
+  CLASS_NAME(TangentBase<OtherDerived>&& other)                                \
     : Base(), m_params(std::move(other.params()))                              \
   {                                                                            \
     /* Do nothing */                                                           \

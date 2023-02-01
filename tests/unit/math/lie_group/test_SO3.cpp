@@ -183,7 +183,7 @@ TYPED_TEST(SO3Test, AdjointTransformationMatrix)
   SO3<S> so3(quat);
   Eigen::Matrix3<S> expected_matrix = quat.toRotationMatrix();
 
-  Eigen::Matrix3<S> result = SO3<S>::Ad(so3);
+  Eigen::Matrix3<S> result = so3.toAdjointMatrix();
 
   // Check if the result is equal to the expected matrix
   EXPECT_TRUE(result.isApprox(expected_matrix));
@@ -259,24 +259,24 @@ TYPED_TEST(SO3Test, Jacobians)
     test_numerical_right_jacobian(xi);
 
     // Ad(exp(J_l(dx) * xi)) = J_l * Ad(exp(xi))
-    EXPECT_TRUE(SO3::Ad(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp())
+    EXPECT_TRUE(AdMatrix(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp())
                     .isApprox(
-                        SO3::LeftJacobian(dx) * SO3::Ad(SO3Tangent(xi).exp()),
+                        SO3::LeftJacobian(dx) * AdMatrix(SO3Tangent(xi).exp()),
                         LieGroupTol<S>() * 1e+1))
         << "Ad(exp(J_l(dx) * xi)):\n"
-        << SO3::Ad(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp()) << "\n"
+        << AdMatrix(SO3Tangent(SO3::LeftJacobian(dx) * xi).exp()) << "\n"
         << "J_l * Ad(exp(xi))    :\n"
-        << SO3::LeftJacobian(dx) * SO3::Ad(SO3Tangent(xi).exp());
+        << SO3::LeftJacobian(dx) * AdMatrix(SO3Tangent(xi).exp());
 
     // Ad(exp(J_r(dx) * xi)) = Ad(exp(xi)) * J_r
-    EXPECT_TRUE(SO3::Ad(SO3Tangent(SO3::RightJacobian(dx) * xi).exp())
+    EXPECT_TRUE(AdMatrix(SO3Tangent(SO3::RightJacobian(dx) * xi).exp())
                     .isApprox(
-                        SO3::Ad(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx),
+                        AdMatrix(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx),
                         LieGroupTol<S>() * 1e+1))
         << "Ad(exp(J_r(dx) * xi)):\n"
-        << SO3::Ad(SO3Tangent(SO3::RightJacobian(dx) * xi).exp()) << "\n"
+        << AdMatrix(SO3Tangent(SO3::RightJacobian(dx) * xi).exp()) << "\n"
         << "Ad(exp(xi)) * J_r    :\n"
-        << SO3::Ad(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx);
+        << AdMatrix(SO3Tangent(xi).exp()) * SO3::RightJacobian(dx);
 
     // exp(x + dx) ~= exp(J_l(x) * dx) * exp(x)
     EXPECT_TRUE(SO3Tangent(xi + dx).exp().isApprox(

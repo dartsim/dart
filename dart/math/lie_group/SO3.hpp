@@ -118,15 +118,6 @@ public:
   [[nodiscard]] static Tangent Vee(
       const Eigen::MatrixBase<MatrixDerived>& matrix);
 
-  /// Returns the adjoint transformation of the given SO3
-  ///
-  /// The adjoint transformation of SO3 @f$ x @f$ is a matrix @f$ A @f$ such
-  /// that @f$ A v = x v x^{-1} @f$ for any vector @f$ v @f$.
-  ///
-  /// @param[in] x The SO3 to be converted to a matrix.
-  template <typename OtherDerived>
-  [[nodiscard]] static Matrix3<S> Ad(const SO3Base<OtherDerived>& x);
-
   /// Returns the left Jacobian of the exponential map
   ///
   /// The left Jacobian of the exponential map is a matrix @f$ L @f$ such that
@@ -191,7 +182,7 @@ public:
   /// later.
   explicit SO3(NoInitializeTag);
 
-  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SO3);
+  DART_DEFINE_CONSTRUCTORS_FOR_LIEGROUP(SO3);
 
   /// Constructs an SO3 from a quaternion
   template <typename QuaternionDrived>
@@ -279,14 +270,6 @@ typename SO3<S>::Tangent SO3<S>::Vee(
     const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
   return Tangent(matrix(2, 1), matrix(0, 2), matrix(1, 0));
-}
-
-//==============================================================================
-template <typename S>
-template <typename OtherDerived>
-Matrix3<S> SO3<S>::Ad(const SO3Base<OtherDerived>& x)
-{
-  return x.quaternion().toRotationMatrix();
 }
 
 //==============================================================================

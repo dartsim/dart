@@ -242,20 +242,17 @@ TYPED_TEST(SE3Test, TestAd)
 
   // Test 1: Test with identity SE3
   SE3<S> identity;
-  Vector6<S> xi;
-  xi << 1, 2, 3, 4, 5, 6;
-  Vector6<S> expected_out;
-  expected_out << 1, 2, 3, 4, 5, 6;
-  Vector6<S> out = SE3<S>::Ad(identity, xi);
+  SE3Tangent<S> xi(1, 2, 3, 4, 5, 6);
+  SE3Tangent<S> expected_out(1, 2, 3, 4, 5, 6);
+  SE3Tangent<S> out = Ad(identity, xi);
   EXPECT_TRUE(out.isApprox(expected_out));
 
   // Test 2: Test with non-identity SE3
   SE3<S> x = SE3<S>::Random();
   xi << 1, 2, 3, 4, 5, 6;
-  out = SE3<S>::Ad(x, xi);
+  out = Ad(x, xi);
   // Verify the result by using inverse
-  Vector6<S> xi_inv
-      = SE3<S>::Ad(x.inverse().eval(), out); // TODO: Remove eval()
+  SE3Tangent<S> xi_inv = Ad(x.inverse().eval(), out); // TODO: Remove eval()
   EXPECT_TRUE(xi_inv.isApprox(xi));
 }
 

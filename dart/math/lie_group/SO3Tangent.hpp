@@ -72,12 +72,26 @@ public:
   using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
-  DART_DEFINE_CONSTRUCTORS_FOR_CONCRETE(SO3Tangent);
+  DART_DEFINE_CONSTRUCTORS_FOR_TANGENT(SO3Tangent);
 
   explicit SO3Tangent(Scalar w0, Scalar w1, Scalar w2)
     : Base(), m_params(w0, w1, w2)
   {
     // Do nothing
+  }
+
+  using Base::operator=;
+
+  SO3Tangent& operator=(const SO3Tangent& other)
+  {
+    params() = other.params();
+    return *this;
+  }
+
+  SO3Tangent& operator=(SO3Tangent&& other)
+  {
+    params() = std::move(other.params());
+    return *this;
   }
 
   /// Returns the underlying params

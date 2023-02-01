@@ -52,6 +52,7 @@ public:
   using LieAlgebra = typename Base::LieAlgebra;
   using Params = typename Base::Params;
 
+  using Base::operator=;
   using Base::derived;
   using Base::params;
 
