@@ -175,7 +175,7 @@ TYPED_TEST(SO3Test, HatAndVeeOperators)
 }
 
 //==============================================================================
-TYPED_TEST(SO3Test, AdjointTransformationMatrix)
+TYPED_TEST(SO3Test, Adjoint)
 {
   using S = typename TestFixture::Scalar;
 
@@ -187,6 +187,17 @@ TYPED_TEST(SO3Test, AdjointTransformationMatrix)
 
   // Check if the result is equal to the expected matrix
   EXPECT_TRUE(result.isApprox(expected_matrix));
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, SmallAdjoint)
+{
+  using S = typename TestFixture::Scalar;
+
+  SO3Tangent<S> dx1 = SO3Tangent<S>::Random();
+  SO3Tangent<S> dx2 = SO3Tangent<S>::Random();
+
+  EXPECT_TRUE(ad(dx1, dx2).params().isApprox(dx1.params().cross(dx2.params())));
 }
 
 //==============================================================================

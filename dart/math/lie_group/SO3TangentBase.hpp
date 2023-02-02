@@ -95,6 +95,12 @@ public:
   [[nodiscard]] LieGroup exp(
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
+
+  template <typename OtherDerived>
+  [[nodiscard]] Tangent ad(const TangentBase<OtherDerived>& other) const
+  {
+    return Tangent(params().cross(other.params()));
+  }
 };
 
 } // namespace dart::math

@@ -236,7 +236,7 @@ TYPED_TEST(SE3Test, HatAndVeeOperators)
 }
 
 //==============================================================================
-TYPED_TEST(SE3Test, TestAd)
+TYPED_TEST(SE3Test, Adjoint)
 {
   using S = typename TestFixture::Scalar;
 
@@ -254,6 +254,20 @@ TYPED_TEST(SE3Test, TestAd)
   // Verify the result by using inverse
   SE3Tangent<S> xi_inv = Ad(x.inverse().eval(), out); // TODO: Remove eval()
   EXPECT_TRUE(xi_inv.isApprox(xi));
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, SmallAdjoint)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3Tangent<S> dx1 = SE3Tangent<S>::Random();
+  SE3Tangent<S> dx2 = SE3Tangent<S>::Random();
+
+  EXPECT_TRUE(
+      ad(dx1, dx2).angular().isApprox(dx1.angular().cross(dx2.angular())));
+  EXPECT_TRUE(ad(dx1, dx2).linear().isApprox(
+      dx1.angular().cross(dx2.linear()) + dx1.linear().cross(dx2.angular())));
 }
 
 //==============================================================================

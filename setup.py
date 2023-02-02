@@ -177,20 +177,20 @@ sources.extend(glob("tools/**/*", recursive=True))
 sources.extend(glob("tutorials/**/*", recursive=True))
 
 
-def get_latest_patch_number(package_name, default: str):
+def get_new_patch_number(package_name, default: int):
     try:
         package = pkg_resources.require(package_name)
         version = package[0].version
         patch_number = version.split(".")[-1].split("post")[-1]
-        return patch_number
+        return str(max(default, int(patch_number) + 1))
     except pkg_resources.DistributionNotFound:
-        return default
+        return str(default)
 
 
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.1.0.post" + get_latest_patch_number("dartpy", "18"),
+    version="0.1.0.post" + get_new_patch_number("dartpy", 18),
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",

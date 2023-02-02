@@ -69,6 +69,12 @@ template <typename LieGroupDerived, typename TangentDerived>
 template <typename LieGroupDerived>
 [[nodiscard]] auto AdMatrix(const LieGroupBase<LieGroupDerived>& x);
 
+/// Small adjoint action
+template <typename TangentDerivedA, typename TangentDerivedB>
+[[nodiscard]] typename TangentDerivedA::Tangent ad(
+    const TangentBase<TangentDerivedA>& dx1,
+    const TangentBase<TangentDerivedB>& dx2);
+
 } // namespace dart::math
 
 //==============================================================================
@@ -118,9 +124,18 @@ typename LieGroupDerived::Tangent Ad(
 
 //==============================================================================
 template <typename LieGroupDerived>
-[[nodiscard]] auto AdMatrix(const LieGroupBase<LieGroupDerived>& x)
+auto AdMatrix(const LieGroupBase<LieGroupDerived>& x)
 {
   return x.toAdjointMatrix();
+}
+
+//==============================================================================
+template <typename TangentDerivedA, typename TangentDerivedB>
+typename TangentDerivedA::Tangent ad(
+    const TangentBase<TangentDerivedA>& dx1,
+    const TangentBase<TangentDerivedB>& dx2)
+{
+  return dx1.ad(dx2);
 }
 
 } // namespace dart::math

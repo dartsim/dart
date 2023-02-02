@@ -101,25 +101,16 @@ public:
       Eigen::MatrixBase<MatrixDerived>* jacobian,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
-  auto angular() const
-  {
-    return params().template head<3>();
-  }
+  template <typename OtherDerived>
+  [[nodiscard]] Tangent ad(const TangentBase<OtherDerived>& other) const;
 
-  auto angular()
-  {
-    return params().template head<3>();
-  }
+  [[nodiscard]] auto angular() const;
 
-  auto linear() const
-  {
-    return params().template tail<3>();
-  }
+  [[nodiscard]] auto angular();
 
-  auto linear()
-  {
-    return params().template tail<3>();
-  }
+  [[nodiscard]] auto linear() const;
+
+  [[nodiscard]] auto linear();
 };
 
 } // namespace dart::math
@@ -165,6 +156,47 @@ typename SE3TangentBase<Derived>::LieGroup SE3TangentBase<Derived>::exp(
     (*jacobian) = SE3<Scalar>::RightJacobian(params(), tol);
   }
   return exp(tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+typename SE3TangentBase<Derived>::Tangent SE3TangentBase<Derived>::ad(
+    const TangentBase<OtherDerived>& other) const
+{
+  const auto& other_derived = other.derived();
+  return Tangent(
+      angular().cross(other_derived.angular()),
+      angular().cross(other_derived.linear())
+          + linear().cross(other_derived.angular()));
+}
+
+//==============================================================================
+template <typename Derived>
+auto SE3TangentBase<Derived>::angular() const
+{
+  return params().template head<3>();
+}
+
+//==============================================================================
+template <typename Derived>
+auto SE3TangentBase<Derived>::angular()
+{
+  return params().template head<3>();
+}
+
+//==============================================================================
+template <typename Derived>
+auto SE3TangentBase<Derived>::linear() const
+{
+  return params().template tail<3>();
+}
+
+//==============================================================================
+template <typename Derived>
+auto SE3TangentBase<Derived>::linear()
+{
+  return params().template tail<3>();
 }
 
 } // namespace dart::math

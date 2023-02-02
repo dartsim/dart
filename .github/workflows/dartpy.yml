@@ -15,19 +15,43 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        toolchain_file: [""]
+        experimental: [false]
+        include:
+          - os: windows-latest
+            toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
+            experimental: true
 
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install vcpkg deps
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: cmd
+        env:
+          VCPKG_BUILD_TAG: v2023.01.16-2
+          VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
+        run: |
+          choco install -y wget
+          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
+          unzip -qq %VCPKG_DEPS_ZIP% -d C:/.dartsim/
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.0
         env:
-          MACOSX_DEPLOYMENT_TARGET: 10.15
+          # Common
           DART_IN_CI: ON
+
+          # macOS
+          MACOSX_DEPLOYMENT_TARGET: 10.15
+
+          # Windows
+          CMAKE_TOOLCHAIN_FILE: ${{ matrix.toolchain_file}}
 
       - uses: actions/upload-artifact@v3
         with:
@@ -70,3 +94,4 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           # To test: repository_url: https://test.pypi.org/legacy/
+          skip_existing: true
