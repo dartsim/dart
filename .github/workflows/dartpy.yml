@@ -25,7 +25,7 @@ jobs:
         experimental: [false]
 
         include:
-          - os: macos-lastest
+          - os: macos-latest
             build: "cp310-macos_x86_64 cp311-macos_x86_64"
             toolchain_file: ""
             experimental: false
