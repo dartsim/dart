@@ -34,19 +34,26 @@ manylinux-pypy_x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
 test-requires = "pytest"
 test-command = "pytest {project}/python/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
-build = [
+skip = [
+    # Common
+    "pp*",
+
     # Linux
-    "cp38-manylinux_x86_64",
-    "cp39-manylinux_x86_64",
-    "cp310-manylinux_x86_64",
-    "cp311-manylinux_x86_64",
+    "*musllinux*",
+    "cp36-*linux*",
+    "cp37-*linux*",
 
     # macOS
-    "cp310-macosx_x86_64",
-    "cp311-macosx_x86_64",
+    "cp36-macosx*",
+    "cp37-macosx*",
+    "cp38-macosx*",
+    "cp39-macosx*",
 
     # Windows
-    "cp310-win_amd64",
+    "cp36-win*",
+    "cp37-win*",
+    "cp38-win*",
+    "cp39-win*",
 ]
 
 [tool.cibuildwheel.linux]

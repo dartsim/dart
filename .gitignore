@@ -29,6 +29,7 @@ docs/readthedocs/site
 data/screencap/*
 
 # Python
-dist/
 *.egg-info
+__pycache__
+dist/
 wheelhouse/

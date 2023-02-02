@@ -19,11 +19,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
+        build: ["cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64 cp311-manylinux_x86_64"]
         toolchain_file: [""]
         experimental: [false]
+
         include:
+          - os: macos-lastest
+            build: "cp310-macos_x86_64 cp311-macos_x86_64"
+            toolchain_file: ""
+            experimental: false
+
           - os: windows-latest
+            build: "cp311-win_amd64"
             toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: true
 
@@ -34,6 +42,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         shell: cmd
         env:
+          CIBW_BUILD: ${{ matrix.build }}
           VCPKG_BUILD_TAG: v2023.01.16-2
           VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
         run: |

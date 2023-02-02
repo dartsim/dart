@@ -309,7 +309,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if(DART_IN_CI)
+  if(DART_BUILD_WHEELS)
     set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
   else()
     set(gcc_required_version 11.2.0)
