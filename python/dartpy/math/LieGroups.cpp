@@ -30,24 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
+#include "dartpy/math/eigen_geometry_pybind.h"
+#include "dartpy/math/eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/math/math.hpp>
 
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
 void LieGroups(py::module& m)
 {
-  py::class_<math::SO3d>(m, "SO3").def(py::init<>());
+  py::class_<math::SO3d>(m, "SO3")
+      .def(py::init<>())
+      .def("setRandom", &math::SO3d::setRandom)
+      .def("inverseInPlace", &math::SO3d::inverseInPlace)
+      .def("toMatrix", &math::SO3d::toMatrix);
 
   py::class_<math::SE3d>(m, "SE3").def(py::init<>());
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

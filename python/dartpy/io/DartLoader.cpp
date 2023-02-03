@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/io/io.hpp>
 
 #include <pybind11/pybind11.h>
 

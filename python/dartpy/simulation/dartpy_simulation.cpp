@@ -30,25 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/simulation.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
-void Random(py::module& sm);
-void Geometry(py::module& sm);
-void LieGroups(py::module& sm);
+void World(py::module& sm);
 
-void dart_math(py::module& m)
+void Function(py::module& sm);
+
+void Problem(py::module& sm);
+
+PYBIND11_MODULE(dartpy_simulation, sm)
 {
-  auto sm = m.def_submodule("math");
+  sm.doc() = "dartpy.simulation";
 
-  Random(sm);
-  Geometry(sm);
-  LieGroups(sm);
+  World(sm);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

@@ -32,6 +32,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
+// clang-format off
+
 #pragma once
 
 /// @file
@@ -145,3 +147,5 @@ struct type_caster<Eigen::Translation<T, Dim>>
 
 }  // namespace detail
 }  // namespace pybind11
+
+// clang-format on

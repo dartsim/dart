@@ -33,9 +33,9 @@
 #include <dart/config.hpp>
 #if DART_HAVE_NLOPT
 
-  #include "eigen_pybind.h"
+  #include "dartpy/math/eigen_pybind.h"
 
-  #include <dart/dart.hpp>
+  #include <dart/optimization/optimization.hpp>
 
   #include <pybind11/pybind11.h>
 

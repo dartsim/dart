@@ -30,12 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <dart/common/common.hpp>
 
 #include <pybind11/pybind11.h>
 
-namespace dart {
-namespace python {
+namespace py = pybind11;
 
-} // namespace python
-} // namespace dart
+namespace dart::python {
+
+void Logging(py::module& sm);
+void Observer(py::module& sm);
+void Subject(py::module& sm);
+void Uri(py::module& sm);
+void Resource(py::module& sm);
+void ResourceRetriever(py::module& sm);
+void Stopwatch(py::module& sm);
+void String(py::module& sm);
+
+PYBIND11_MODULE(dartpy_common, sm)
+{
+  sm.doc() = "dartpy.common";
+
+  Logging(sm);
+  Observer(sm);
+  Subject(sm);
+  Uri(sm);
+  Resource(sm);
+  ResourceRetriever(sm);
+  Stopwatch(sm);
+  String(sm);
+}
+
+} // namespace dart::python

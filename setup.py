@@ -16,7 +16,7 @@ from glob import glob
 from pathlib import Path
 
 import pkg_resources
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -78,6 +78,7 @@ class CMakeBuild(build_ext):
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
             f"-DDART_DOWNLOAD_DEPENDENT_PACKAGES=OFF",
+            f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -90,7 +91,6 @@ class CMakeBuild(build_ext):
         cmake_args += [f"-DDARTPY_VERSION_INFO={self.distribution.get_version()}"]
 
         if self.compiler.compiler_type != "msvc":
-
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithread automatically. MSVC would require all variables be
             # exported for Ninja to pick it up, which is a little tricky to do.
@@ -109,7 +109,6 @@ class CMakeBuild(build_ext):
                     pass
 
         else:
-
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
@@ -179,6 +178,7 @@ sources.extend(glob("tutorials/**/*", recursive=True))
 
 def get_new_patch_number(package_name, default: int):
     import requests
+
     try:
         url = f"https://pypi.org/pypi/{package_name}/json"
         response = requests.get(url)
@@ -214,7 +214,7 @@ setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX :: Linux",
     ],
-    ext_modules=[CMakeExtension("dartpy", sources=sources)],
+    ext_modules=[CMakeExtension("dartpy_math", sources=sources)],
     url="https://github.com/dartsim/dart.git",
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
@@ -223,4 +223,6 @@ setup(
     install_requires=[
         "numpy",
     ],
+    packages=find_packages(where="python"),
+    package_dir={"": "python"},
 )

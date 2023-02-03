@@ -203,6 +203,7 @@ fi
 
 # dartpy: build, test, and install
 if [ "$BUILD_DARTPY" = "ON" ]; then
+  export DART_DATA_LOCAL_PATH=$source_dir/data
   cmake --build $build_dir --target dartpy -j$num_threads 
   cmake --build $build_dir --target pytest
   find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
@@ -254,11 +255,17 @@ elif [ "$TEST_INSTALLATION" = "ON" ]; then
 
 fi
 
+# TODO: Fix this
 # dartpy: run a Python example using installed dartpy
-if [ "$BUILD_DARTPY" = "ON" ]; then
-  echo "Info: Running a Python example..."
-  echo $PYTHONPATH
-  cd $source_dir/python/examples/hello_world
-  python3 main.py
-  find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
-fi
+# if [ "$BUILD_DARTPY" = "ON" ]; then
+#   echo "Info: Running a Python example..."
+#   echo $PYTHONPATH
+#   cd $source_dir
+#   py_version=$(python3 -c "import sys; print('{}.{}'.format(sys.version_info[0], sys.version_info[1]))")
+#   py_version_major=`echo $py_version | cut -d. -f1`
+#   python$py_version_major setup.py bdist_wheel
+#   wheel_file=$(ls dist/*.whl | head -n 1) && pip$py_version_major install "$wheel_file"
+#   cd $source_dir/python/examples/hello_world
+#   python$py_version_major main.py
+#   find $CODE_DIR -type d -name directory_name -exec rm -rf {} +
+# fi

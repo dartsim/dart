@@ -26,7 +26,7 @@ jobs:
 
         include:
           - os: macos-latest
-            build: "cp310-macos_x86_64 cp311-macos_x86_64"
+            build: "cp310-macosx_x86_64 cp311-macosx_x86_64"
             toolchain_file: ""
             experimental: false
 
@@ -35,6 +35,9 @@ jobs:
             toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: true
 
+    env:
+      CIBW_BUILD: ${{ matrix.build }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -42,7 +45,6 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         shell: cmd
         env:
-          CIBW_BUILD: ${{ matrix.build }}
           VCPKG_BUILD_TAG: v2023.01.16-2
           VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
         run: |
@@ -86,7 +88,7 @@ jobs:
     # needs: [build_wheels, build_sdist]
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # upload to PyPI on every tag starting with 'release-'
     # if: github.event_name == 'push' && startsWith(github.ref, 'release-')
     # alternatively, to publish when a GitHub Release is created, use the following rule:

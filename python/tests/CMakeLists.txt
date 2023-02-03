@@ -29,11 +29,11 @@ file(GLOB_RECURSE dartpy_test_files "test_*.py")
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest [sources]"
-    COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_ROOT_DIR}:${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest [sources]"
+    COMMAND PYTHONPATH=${DART_DARTPY_ROOT_DIR}:${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_io}
-    DEPENDS dartpy
+    DEPENDS dartpy _copy_submodules
   )
 else()
   add_custom_target(pytest
@@ -53,11 +53,11 @@ function(dartpy_add_test test_name) # ARGN for source file
     set(source "${test_name}.py")
   endif()
   add_custom_target(${test_name}
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} ${source}"
-    COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} ${source}
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_ROOT_DIR}:${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} ${source}"
+    COMMAND PYTHONPATH=${DART_DARTPY_ROOT_DIR}:${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
-    DEPENDS dartpy
+    DEPENDS dartpy _copy_submodules
   )
 endfunction()
 

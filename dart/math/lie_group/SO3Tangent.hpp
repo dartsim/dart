@@ -76,25 +76,13 @@ public:
 
   DART_TANGENT_CONSTRUCTORS(SO3Tangent);
 
-  explicit SO3Tangent(Scalar w0, Scalar w1, Scalar w2)
-    : Base(), m_params(w0, w1, w2)
-  {
-    // Do nothing
-  }
+  explicit SO3Tangent(Scalar w0, Scalar w1, Scalar w2);
 
   using Base::operator=;
 
-  SO3Tangent& operator=(const SO3Tangent& other)
-  {
-    params() = other.params();
-    return *this;
-  }
+  SO3Tangent& operator=(const SO3Tangent& other);
 
-  SO3Tangent& operator=(SO3Tangent&& other)
-  {
-    params() = std::move(other.params());
-    return *this;
-  }
+  SO3Tangent& operator=(SO3Tangent&& other);
 
   /// Returns the underlying params
   [[nodiscard]] const Params& params() const;
@@ -116,6 +104,30 @@ DART_TEMPLATE_CLASS_HEADER(MATH, SO3Tangent);
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename S>
+SO3Tangent<S>::SO3Tangent(Scalar w0, Scalar w1, Scalar w2)
+  : Base(), m_params(w0, w1, w2)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+SO3Tangent<S>& SO3Tangent<S>::operator=(const SO3Tangent& other)
+{
+  params() = other.params();
+  return *this;
+}
+
+//==============================================================================
+template <typename S>
+SO3Tangent<S>& SO3Tangent<S>::operator=(SO3Tangent&& other)
+{
+  params() = std::move(other.params());
+  return *this;
+}
 
 //==============================================================================
 template <typename S>

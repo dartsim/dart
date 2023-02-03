@@ -135,15 +135,9 @@ public:
   ///
   /// @param[in] x The SO3 to be converted to a matrix.
   template <typename TangentDerived>
-  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const
-  {
-    return Tangent(quaternion() * dx.params());
-  }
+  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const;
 
-  [[nodiscard]] Matrix3<Scalar> toAdjointMatrix() const
-  {
-    return toMatrix();
-  }
+  [[nodiscard]] Matrix3<Scalar> toAdjointMatrix() const;
 
   /// Returns the matrix representation of this SO3
   ///
@@ -261,6 +255,23 @@ typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(
     (*jacobian) = SO3<Scalar>::RightJacobianInverse(xi, tol);
   }
   return xi;
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename TangentDerived>
+typename SO3Base<Derived>::Tangent SO3Base<Derived>::ad(
+    const TangentBase<TangentDerived>& dx) const
+{
+  return Tangent(quaternion() * dx.params());
+}
+
+//==============================================================================
+template <typename Derived>
+Matrix3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::toAdjointMatrix()
+    const
+{
+  return toMatrix();
 }
 
 //==============================================================================

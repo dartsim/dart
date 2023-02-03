@@ -165,15 +165,9 @@ public:
       Scalar tol = LieGroupTol<Scalar>()) const;
 
   template <typename TangentDerived>
-  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const
-  {
-    return derived().ad(dx);
-  }
+  [[nodiscard]] Tangent ad(const TangentBase<TangentDerived>& dx) const;
 
-  [[nodiscard]] auto toAdjointMatrix() const
-  {
-    return derived().toAdjointMatrix();
-  }
+  [[nodiscard]] auto toAdjointMatrix() const;
 
   /// Returns the matrix representation of this Lie group.
   ///
@@ -298,6 +292,22 @@ typename LieGroupBase<Derived>::Tangent LieGroupBase<Derived>::log(
     Eigen::MatrixBase<MatrixDerived>* jacobian, Scalar tol) const
 {
   return derived().log(jacobian, tol);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename TangentDerived>
+typename LieGroupBase<Derived>::Tangent LieGroupBase<Derived>::ad(
+    const TangentBase<TangentDerived>& dx) const
+{
+  return derived().ad(dx);
+}
+
+//==============================================================================
+template <typename Derived>
+auto LieGroupBase<Derived>::toAdjointMatrix() const
+{
+  return derived().toAdjointMatrix();
 }
 
 //==============================================================================

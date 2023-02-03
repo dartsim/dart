@@ -30,12 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/dynamics/dynamics.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
+
+void Composite(py::module& sm);
 
 void Shape(py::module& sm);
 
@@ -88,9 +91,11 @@ void PgsBoxedLcpSolver(py::module& sm);
 void ConstraintSolver(py::module& sm);
 void BoxedLcpConstraintSolver(py::module& sm);
 
-void dart_dynamics(py::module& m)
+PYBIND11_MODULE(dartpy_dynamics, sm)
 {
-  auto sm = m.def_submodule("dynamics");
+  sm.doc() = "dartpy.dynamics";
+
+  Composite(sm);
 
   Shape(sm);
 
@@ -145,5 +150,4 @@ void dart_dynamics(py::module& m)
   BoxedLcpConstraintSolver(sm);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

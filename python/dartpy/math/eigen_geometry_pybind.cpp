@@ -32,6 +32,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
+// clang-format off
+
 #include <cmath>
 #include <cassert>
 
@@ -39,7 +41,7 @@
 
 #include "pybind11/pybind11.h"
 
-#include "eigen_geometry_pybind.h"
+#include "dartpy/math/eigen_geometry_pybind.h"
 
 using std::fabs;
 
@@ -118,7 +120,7 @@ void CheckAngleAxis(const Eigen::AngleAxis<T>& value) {
 // PYBIND11_MODULE(eigen_geometry, m) {
 void eigen_geometry(pybind11::module& parent_m)
 {
-  auto m = parent_m.def_submodule("math");
+  auto m = parent_m;
 
   m.doc() = "Bindings for Eigen geometric types.";
 
@@ -413,3 +415,5 @@ void eigen_geometry(pybind11::module& parent_m)
 
 } // namespace python
 } // namespace dart
+
+// clang-format on

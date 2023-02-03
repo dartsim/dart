@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
+#include "dartpy/math/eigen_geometry_pybind.h"
+#include "dartpy/math/eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/dynamics.hpp>
 
 #include <pybind11/pybind11.h>
 

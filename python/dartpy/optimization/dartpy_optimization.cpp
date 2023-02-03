@@ -30,81 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/optimization/optimization.hpp>
 
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
-void Contact(py::module& sm);
+void Solver(py::module& sm);
+void GradientDescentSolver(py::module& sm);
+#if DART_HAVE_NLOPT
+void NloptSolver(py::module& sm);
+#endif // DART_HAVE_NLOPT
 
-void CollisionFilter(py::module& sm);
-void CollisionObject(py::module& sm);
-void CollisionOption(py::module& sm);
-void CollisionResult(py::module& sm);
+void Function(py::module& sm);
 
-void DistanceOption(py::module& sm);
-void DistanceResult(py::module& sm);
+void Problem(py::module& sm);
 
-void RaycastOption(py::module& sm);
-void RaycastResult(py::module& sm);
-
-void CollisionDetector(py::module& sm);
-void FCLCollisionDetector(py::module& sm);
-void DARTCollisionDetector(py::module& sm);
-
-void CollisionGroup(py::module& sm);
-void FCLCollisionGroup(py::module& sm);
-void DARTCollisionGroup(py::module& sm);
-
-#if DART_HAVE_BULLET
-void BulletCollisionDetector(py::module& sm);
-void BulletCollisionGroup(py::module& sm);
-#endif // DART_HAVE_BULLET
-
-#if DART_HAVE_ODE
-void OdeCollisionDetector(py::module& sm);
-void OdeCollisionGroup(py::module& sm);
-#endif // DART_HAVE_ODE
-
-void dart_collision(py::module& m)
+PYBIND11_MODULE(dartpy_optimization, sm)
 {
-  auto sm = m.def_submodule("collision");
+  sm.doc() = "dartpy.optimization";
 
-  Contact(sm);
+  Solver(sm);
+  GradientDescentSolver(sm);
+#if DART_HAVE_NLOPT
+  NloptSolver(sm);
+#endif // DART_HAVE_NLOPT
 
-  CollisionFilter(sm);
-  CollisionObject(sm);
-  CollisionOption(sm);
-  CollisionResult(sm);
+  Function(sm);
 
-  DistanceOption(sm);
-  DistanceResult(sm);
-
-  RaycastOption(sm);
-  RaycastResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if DART_HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // DART_HAVE_BULLET
-
-#if DART_HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // DART_HAVE_ODE
+  Problem(sm);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

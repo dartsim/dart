@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/io/io.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
 void UtilsResourceRetriever(py::module& sm);
 void DartLoader(py::module& sm);
@@ -43,9 +44,9 @@ void SkelParser(py::module& sm);
 void SdfParser(py::module& sm);
 void MjcfParser(py::module& sm);
 
-void dart_io(py::module& m)
+PYBIND11_MODULE(dartpy_io, sm)
 {
-  auto sm = m.def_submodule("io");
+  sm.doc() = "dartpy.io";
 
   UtilsResourceRetriever(sm);
   DartLoader(sm);
@@ -54,5 +55,4 @@ void dart_io(py::module& m)
   MjcfParser(sm);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

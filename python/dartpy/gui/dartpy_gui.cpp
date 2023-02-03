@@ -30,41 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/gui/gui.hpp>
 
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-namespace dart {
-namespace python {
+namespace dart::python {
 
-void eigen_geometry(py::module& m);
+void WorldNode(py::module& sm);
+void RealTimeWorldNode(py::module& sm);
 
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimization(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_simulation(py::module& m);
-void dart_io(py::module& m);
-void dart_gui(py::module& m);
+void GUIEventHandler(py::module& sm);
 
-PYBIND11_MODULE(dartpy, m)
+void InteractiveFrame(py::module& sm);
+
+void ImGuiHandler(py::module& sm);
+void ImGuiWidget(py::module& sm);
+
+void Viewer(py::module& sm);
+void ImGuiViewer(py::module& sm);
+void ViewerAttachment(py::module& sm);
+void GridVisual(py::module& sm);
+
+void DragAndDrop(py::module& sm);
+
+void ShadowTechnique(py::module& sm);
+
+PYBIND11_MODULE(dartpy_gui, sm)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  sm.doc() = "dartpy.gui";
 
-  eigen_geometry(m);
+  WorldNode(sm);
+  RealTimeWorldNode(sm);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimization(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_simulation(m);
-  dart_io(m);
-  dart_gui(m);
+  GUIEventHandler(sm);
+
+  InteractiveFrame(sm);
+
+  ImGuiHandler(sm);
+  ImGuiWidget(sm);
+
+  Viewer(sm);
+  ImGuiViewer(sm);
+  ViewerAttachment(sm);
+  GridVisual(sm);
+
+  DragAndDrop(sm);
+
+  ShadowTechnique(sm);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python

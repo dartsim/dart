@@ -1396,3 +1396,81 @@ function(dart_coverage)
     install(DIRECTORY ${gcovr_html_dir}/ DESTINATION ${_ARG_INSTALL_DIR})
   endif()
 endfunction()
+
+#=========================================================================================
+function(dart_build_dartpy_submodule)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    TARGET_NAME
+  )
+  set(multiValueArgs
+    SOURCES
+    TARGET_LINK_LIBRARIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT DEFINED _ARG_TARGET_NAME)
+    message(FATAL_ERROR "TARGET_NAME not provided for dartpy submodule")
+  endif()
+
+  if(NOT DEFINED _ARG_SOURCES)
+    message(FATAL_ERROR "SOURCES not provided for ${_ARG_TARGET_NAME}")
+  endif()
+
+  foreach(lib ${_ARG_TARGET_LINK_LIBRARIES})
+    if(NOT TARGET ${lib})
+      message(WARNING "Skipping <${_ARG_TARGET_NAME}> because of missing target <${lib}>")
+      return()
+    endif()
+  endforeach()
+
+  pybind11_add_module(${_ARG_TARGET_NAME}
+    MODULE
+      ${_ARG_SOURCES}
+  )
+
+  target_compile_definitions(${_ARG_TARGET_NAME}
+    PRIVATE VERSION_INFO=${DARTPY_VERSION_INFO}
+  )
+
+  target_include_directories(${_ARG_TARGET_NAME}
+    SYSTEM PUBLIC
+      ${PYTHON_INCLUDE_DIRS}
+      ${pybind11_INCLUDE_DIRS}
+  )
+
+  foreach(lib ${_ARG_TARGET_LINK_LIBRARIES})
+    target_link_libraries(${_ARG_TARGET_NAME} PUBLIC ${lib})
+  endforeach()
+
+  # Remove debug postfix for dartpy
+  set_target_properties(${_ARG_TARGET_NAME}
+    PROPERTIES
+      DEBUG_POSTFIX ""
+  )
+
+  # Copy target for pytest
+  # Create a custom target to copy the shared library
+  add_custom_target(_copy_${_ARG_TARGET_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${_ARG_TARGET_NAME}> ${DART_DARTPY_BUILD_DIR}
+    DEPENDS ${_ARG_TARGET_NAME}
+    COMMENT "Copying ${_ARG_TARGET_NAME} to ${DART_DARTPY_BUILD_DIR}"
+  )
+
+  # Add the custom target as a dependency of the main target
+  add_dependencies(_copy_submodules _copy_${_ARG_TARGET_NAME})
+
+  # TODO: Fix installing dartpy using CMake
+  # Install the pybind module to site-packages directory
+  # install(TARGETS ${_ARG_TARGET_NAME}
+  #   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
+  # )
+
+  dart_format_add(${_ARG_SOURCES})
+
+  set_property(GLOBAL APPEND PROPERTY _DART_DARTPY_SUBMODULES ${_ARG_TARGET_NAME})
+
+endfunction()

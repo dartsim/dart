@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/dynamics.hpp>
 
 #include <pybind11/pybind11.h>
 
