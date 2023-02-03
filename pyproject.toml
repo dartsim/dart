@@ -2,7 +2,7 @@
 # All rights reserved.
 
 [build-system]
-requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12"]
+requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12", "requests"]
 build-backend = "setuptools.build_meta"
 
 [tool.isort]

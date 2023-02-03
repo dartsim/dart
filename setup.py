@@ -178,12 +178,18 @@ sources.extend(glob("tutorials/**/*", recursive=True))
 
 
 def get_new_patch_number(package_name, default: int):
+    import requests
     try:
-        package = pkg_resources.require(package_name)
-        version = package[0].version
-        patch_number = version.split(".")[-1].split("post")[-1]
-        return str(max(default, int(patch_number) + 1))
-    except pkg_resources.DistributionNotFound:
+        url = f"https://pypi.org/pypi/{package_name}/json"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            version = data["info"]["version"]
+            patch_number = version.split(".")[-1].split("post")[-1]
+            return str(max(default, int(patch_number) + 1))
+        else:
+            return str(default)
+    except requests.exceptions.RequestException:
         return str(default)
 
 
