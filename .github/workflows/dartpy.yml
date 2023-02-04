@@ -49,6 +49,7 @@ jobs:
           choco install -y wget
           wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/%VCPKG_DEPS_ZIP%
           unzip -qq %VCPKG_DEPS_ZIP% -d C:/.dartsim/
+          del %VCPKG_DEPS_ZIP%
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.0
