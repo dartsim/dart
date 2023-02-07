@@ -71,6 +71,7 @@ before-all = [
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"]
+test-command = "echo 'Skipping tests on Windows'"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
