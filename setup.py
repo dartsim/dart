@@ -196,7 +196,7 @@ def get_new_patch_number(package_name, default: int):
 # Set up the python package wrapping this extension.
 setup(
     name="dartpy",
-    version="0.1.0.post" + get_new_patch_number("dartpy", 18),
+    version="0.1.0.post" + get_new_patch_number("dartpy", 31),
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
