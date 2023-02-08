@@ -76,21 +76,12 @@ public:
 
   DART_TANGENT_CONSTRUCTORS(SE3Tangent);
 
-  explicit SE3Tangent(
-      Scalar w0, Scalar w1, Scalar w2, Scalar v0, Scalar v1, Scalar v2)
-    : Base(), m_params(w0, w1, w2, v0, v1, v2)
-  {
-    // Do nothing
-  }
+  explicit SE3Tangent(S w0, S w1, S w2, S v0, S v1, S v2);
 
   template <typename MatrixDerivedA, typename MatrixDerivedB>
   explicit SE3Tangent(
       const ::Eigen::MatrixBase<MatrixDerivedA>& angular,
-      const ::Eigen::MatrixBase<MatrixDerivedB>& linear)
-    : Base(), m_params((Params() << angular, linear).finished())
-  {
-    /* Do nothing */
-  }
+      const ::Eigen::MatrixBase<MatrixDerivedB>& linear);
 
   /**
    * Move-constructs from raw parameters
@@ -99,31 +90,15 @@ public:
   template <typename MatrixDerivedA, typename MatrixDerivedB>
   explicit SE3Tangent(
       ::Eigen::MatrixBase<MatrixDerivedA>&& angular,
-      ::Eigen::MatrixBase<MatrixDerivedB>&& linear)
-    : Base(),
-      m_params((Params() << std::move(angular), std::move(linear)).finished())
-  {
-    /* Do nothing */
-  }
+      ::Eigen::MatrixBase<MatrixDerivedB>&& linear);
 
   using Base::operator=;
 
-  SE3Tangent& operator=(const SE3Tangent& other)
-  {
-    params() = other.params();
-    return *this;
-  }
+  SE3Tangent& operator=(const SE3Tangent& other);
 
-  SE3Tangent& operator=(SE3Tangent&& other)
-  {
-    params() = std::move(other.params());
-    return *this;
-  }
+  SE3Tangent& operator=(SE3Tangent&& other);
 
-  operator Vector6<Scalar>() const
-  {
-    return m_params;
-  }
+  operator Vector6<S>() const;
   // TODO(JS): Check if this can be moved to upper level
 
   /// Returns the underlying params
@@ -146,6 +121,60 @@ DART_TEMPLATE_CLASS_HEADER(MATH, SE3Tangent);
 //==============================================================================
 
 namespace dart::math {
+
+//==============================================================================
+template <typename S>
+SE3Tangent<S>::SE3Tangent(S w0, S w1, S w2, S v0, S v1, S v2)
+  : Base(), m_params(w0, w1, w2, v0, v1, v2)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerivedA, typename MatrixDerivedB>
+SE3Tangent<S>::SE3Tangent(
+    const ::Eigen::MatrixBase<MatrixDerivedA>& angular,
+    const ::Eigen::MatrixBase<MatrixDerivedB>& linear)
+  : Base(), m_params((Params() << angular, linear).finished())
+{
+  /* Do nothing */
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerivedA, typename MatrixDerivedB>
+SE3Tangent<S>::SE3Tangent(
+    ::Eigen::MatrixBase<MatrixDerivedA>&& angular,
+    ::Eigen::MatrixBase<MatrixDerivedB>&& linear)
+  : Base(),
+    m_params((Params() << std::move(angular), std::move(linear)).finished())
+{
+  /* Do nothing */
+}
+
+//==============================================================================
+template <typename S>
+SE3Tangent<S>& SE3Tangent<S>::operator=(const SE3Tangent& other)
+{
+  params() = other.params();
+  return *this;
+}
+
+//==============================================================================
+template <typename S>
+SE3Tangent<S>& SE3Tangent<S>::operator=(SE3Tangent&& other)
+{
+  params() = std::move(other.params());
+  return *this;
+}
+
+//==============================================================================
+template <typename S>
+SE3Tangent<S>::operator Vector6<S>() const
+{
+  return m_params;
+}
 
 //==============================================================================
 template <typename S>

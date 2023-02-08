@@ -69,20 +69,25 @@ public:
 
   /// @}
 
+  /// Returns the zero element of the tangent of the Lie group
   [[nodiscard]] static Tangent Zero();
 
   /// Returns a random element of the tangent of the Lie group
   [[nodiscard]] static Tangent Random();
 
+  /// Assignment operator
   template <typename OtherDerived>
   Derived& operator=(const TangentBase<OtherDerived>& other);
 
+  /// Move assignment operator
   template <typename OtherDerived>
   Derived& operator=(TangentBase<OtherDerived>&& other);
 
+  /// Assignment operator
   template <typename MatrixDerived>
   Derived& operator=(const MatrixBase<MatrixDerived>& other);
 
+  /// Move assignment operator
   template <typename MatrixDerived>
   Derived& operator=(MatrixBase<MatrixDerived>&& other);
 
@@ -93,6 +98,24 @@ public:
   /// Returns true if this is not approximately equal to other
   template <typename OtherDerived>
   [[nodiscard]] bool operator!=(const TangentBase<OtherDerived>& other) const;
+
+  /// Performs the addition operation
+  template <typename OtherDerived>
+  [[nodiscard]] Tangent operator+(const TangentBase<OtherDerived>& other) const;
+
+  /// Performs the addition operation
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent operator+(
+      const Eigen::MatrixBase<MatrixDerived>& other) const;
+
+  /// Performs the addition operation
+  template <typename OtherDerived>
+  [[nodiscard]] Derived& operator+=(const TangentBase<OtherDerived>& other);
+
+  /// Performs the addition operation
+  template <typename MatrixDerived>
+  [[nodiscard]] Derived& operator+=(
+      const Eigen::MatrixBase<MatrixDerived>& other);
 
   /// Comma initializer
   template <typename T>
@@ -133,23 +156,43 @@ public:
   template <typename OtherDerived>
   [[nodiscard]] Tangent ad(const TangentBase<OtherDerived>& other) const;
 
+  template <typename MatrixDerived>
+  [[nodiscard]] Tangent ad(const Eigen::MatrixBase<MatrixDerived>& other) const;
+
+  /// Returns whether the tangent is zero
   [[nodiscard]] bool isZero(Scalar tol = LieGroupTol<Scalar>()) const;
 
+  /// Returns whether the tangent is approximately equal to other tangent
+  /// element
+  ///
+  /// @param[in] other The other tangent to compare to
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return True if the two tangents are approximately equal
   template <typename OtherDerived>
   [[nodiscard]] bool isApprox(
       const TangentBase<OtherDerived>& other,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
+  /// Returns whether the tangent is approximately equal to other vector
+  ///
+  /// @param[in] other The other tangent to compare to
+  /// @param[in] tol The tolerance for the norm of the vector.
+  /// @return True if the two tangents are approximately equal
   template <typename MatrixDerived>
   [[nodiscard]] bool isApprox(
       const Eigen::MatrixBase<MatrixDerived>& mat,
       Scalar tol = LieGroupTol<Scalar>()) const;
+
+  /// Returns the i-th component of the tangent
   [[nodiscard]] auto operator[](int i) const;
 
+  /// Returns the i-th component of the tangent
   [[nodiscard]] auto operator[](int i);
 
+  /// Returns the underlying data
   [[nodiscard]] const Params& params() const;
 
+  /// Returns the underlying data
   [[nodiscard]] Params& params();
 
   /// Returns the derived class as a const reference
@@ -237,6 +280,44 @@ bool TangentBase<Derived>::operator!=(
 
 //==============================================================================
 template <typename Derived>
+template <typename OtherDerived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::operator+(
+    const TangentBase<OtherDerived>& other) const
+{
+  return Tangent(params() + other.params());
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::operator+(
+    const Eigen::MatrixBase<MatrixDerived>& other) const
+{
+  return Tangent(params() + other);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename OtherDerived>
+Derived& TangentBase<Derived>::operator+=(
+    const TangentBase<OtherDerived>& other)
+{
+  params() += other.params();
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+Derived& TangentBase<Derived>::operator+=(
+    const Eigen::MatrixBase<MatrixDerived>& other)
+{
+  params() += other;
+  return derived();
+}
+
+//==============================================================================
+template <typename Derived>
 template <typename T>
 auto TangentBase<Derived>::operator<<(T&& v)
 {
@@ -274,6 +355,15 @@ typename TangentBase<Derived>::Tangent TangentBase<Derived>::ad(
     const TangentBase<OtherDerived>& other) const
 {
   return derived().ad(other);
+}
+
+//==============================================================================
+template <typename Derived>
+template <typename MatrixDerived>
+typename TangentBase<Derived>::Tangent TangentBase<Derived>::ad(
+    const Eigen::MatrixBase<MatrixDerived>& other) const
+{
+  return derived().ad(Tangent(other));
 }
 
 //==============================================================================

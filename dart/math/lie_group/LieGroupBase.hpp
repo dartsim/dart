@@ -116,6 +116,11 @@ public:
   template <typename OtherDerived>
   [[nodiscard]] bool operator!=(const LieGroupBase<OtherDerived>& other) const;
 
+  /// Returns whether this Lie group is the identity
+  ///
+  /// @param[in] tol The tolerance for identity.
+  [[nodiscard]] bool isIdentity(Scalar tol = LieGroupTol<Scalar>()) const;
+
   /// Returns true if this SO3 is approximately equal to other within the given
   /// tolerance.
   ///
@@ -244,6 +249,13 @@ bool LieGroupBase<Derived>::operator!=(
     const LieGroupBase<OtherDerived>& other) const
 {
   return !(*this == other);
+}
+
+//==============================================================================
+template <typename Derived>
+bool LieGroupBase<Derived>::isIdentity(Scalar tol) const
+{
+  return isApprox(Identity(), tol);
 }
 
 //==============================================================================

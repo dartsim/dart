@@ -75,6 +75,18 @@ template <typename TangentDerivedA, typename TangentDerivedB>
     const TangentBase<TangentDerivedA>& dx1,
     const TangentBase<TangentDerivedB>& dx2);
 
+/// Small adjoint action
+template <typename TangentDerived, typename MatrixDerived>
+[[nodiscard]] typename TangentDerived::Tangent ad(
+    const TangentBase<TangentDerived>& dx1,
+    const Eigen::MatrixBase<MatrixDerived>& dx2);
+
+/// Small adjoint action
+template <typename TangentDerived, typename MatrixDerived>
+[[nodiscard]] typename TangentDerived::Tangent ad(
+    const Eigen::MatrixBase<MatrixDerived>& dx1,
+    const TangentBase<TangentDerived>& dx2);
+
 } // namespace dart::math
 
 //==============================================================================
@@ -136,6 +148,24 @@ typename TangentDerivedA::Tangent ad(
     const TangentBase<TangentDerivedB>& dx2)
 {
   return dx1.ad(dx2);
+}
+
+//==============================================================================
+template <typename TangentDerived, typename MatrixDerived>
+typename TangentDerived::Tangent ad(
+    const TangentBase<TangentDerived>& dx1,
+    const Eigen::MatrixBase<MatrixDerived>& dx2)
+{
+  return dx1.ad(dx2);
+}
+
+//==============================================================================
+template <typename TangentDerived, typename MatrixDerived>
+typename TangentDerived::Tangent ad(
+    const Eigen::MatrixBase<MatrixDerived>& dx1,
+    const TangentBase<TangentDerived>& dx2)
+{
+  return typename TangentDerived::Tangent(dx1).ad(dx2);
 }
 
 } // namespace dart::math
