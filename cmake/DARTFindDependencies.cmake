@@ -146,13 +146,6 @@ else()
   message(WARNING "Looking for urdfdom - NOT found, to use dart-io-urdf, please install liburdfdom-dev")
   return()
 endif()
-if(MSVC)
-  set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
-                        optimized urdfdom_model_state debug urdfdom_model_stated
-                        optimized urdfdom_model       debug urdfdom_modeld
-                        optimized urdfdom_world       debug urdfdom_worldd
-                        optimized console_bridge      debug console_bridged)
-endif()
 
 dart_find_package(OpenGL)
 dart_find_package(GLUT)
