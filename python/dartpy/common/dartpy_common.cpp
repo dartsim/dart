@@ -51,6 +51,12 @@ PYBIND11_MODULE(dartpy_common, sm)
 {
   sm.doc() = "dartpy.common";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   Logging(sm);
   Observer(sm);
   Subject(sm);

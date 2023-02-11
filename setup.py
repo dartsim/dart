@@ -77,7 +77,7 @@ class CMakeBuild(build_ext):
             f"-DDART_DBUILD_TESTING=OFF",
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
-            f"-DDART_DOWNLOAD_DEPENDENT_PACKAGES=OFF",
+            f"-DDART_DOWNLOAD_DEPENDENT_PACKAGES=ON",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         ]
         build_args = []

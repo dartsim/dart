@@ -52,6 +52,12 @@ PYBIND11_MODULE(dartpy_optimization, sm)
 {
   sm.doc() = "dartpy.optimization";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   Solver(sm);
   GradientDescentSolver(sm);
 #if DART_HAVE_NLOPT

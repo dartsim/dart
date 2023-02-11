@@ -95,6 +95,12 @@ PYBIND11_MODULE(dartpy_dynamics, sm)
 {
   sm.doc() = "dartpy.dynamics";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   Composite(sm);
 
   Shape(sm);

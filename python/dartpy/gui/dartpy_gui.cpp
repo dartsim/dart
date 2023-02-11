@@ -61,6 +61,12 @@ PYBIND11_MODULE(dartpy_gui, sm)
 {
   sm.doc() = "dartpy.gui";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   WorldNode(sm);
   RealTimeWorldNode(sm);
 

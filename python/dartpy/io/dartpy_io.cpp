@@ -48,6 +48,12 @@ PYBIND11_MODULE(dartpy_io, sm)
 {
   sm.doc() = "dartpy.io";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   UtilsResourceRetriever(sm);
   DartLoader(sm);
   SkelParser(sm);

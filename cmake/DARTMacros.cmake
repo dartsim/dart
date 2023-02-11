@@ -1427,19 +1427,15 @@ function(dart_build_dartpy_submodule)
     endif()
   endforeach()
 
-  pybind11_add_module(${_ARG_TARGET_NAME}
-    MODULE
-      ${_ARG_SOURCES}
-  )
+  pybind11_add_module(${_ARG_TARGET_NAME} MODULE ${_ARG_SOURCES})
 
   target_compile_definitions(${_ARG_TARGET_NAME}
-    PRIVATE VERSION_INFO=${DARTPY_VERSION_INFO}
+    PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
   )
 
   target_include_directories(${_ARG_TARGET_NAME}
-    SYSTEM PUBLIC
+    SYSTEM PRIVATE
       ${PYTHON_INCLUDE_DIRS}
-      ${pybind11_INCLUDE_DIRS}
   )
 
   foreach(lib ${_ARG_TARGET_LINK_LIBRARIES})

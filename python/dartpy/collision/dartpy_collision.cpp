@@ -73,6 +73,12 @@ PYBIND11_MODULE(dartpy_collision, sm)
 {
   sm.doc() = "dartpy.collision";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   Contact(sm);
 
   CollisionFilter(sm);

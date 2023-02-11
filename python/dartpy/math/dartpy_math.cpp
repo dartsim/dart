@@ -48,6 +48,12 @@ PYBIND11_MODULE(dartpy_math, sm)
 {
   sm.doc() = "dartpy.math";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   eigen_geometry(sm);
 
   Random(sm);

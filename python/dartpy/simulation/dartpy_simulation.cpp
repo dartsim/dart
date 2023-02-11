@@ -48,6 +48,12 @@ PYBIND11_MODULE(dartpy_simulation, sm)
 {
   sm.doc() = "dartpy.simulation";
 
+#ifdef DARTPY_VERSION_INFO
+  sm.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  sm.attr("__version__") = "dev";
+#endif
+
   World(sm);
 }
 
