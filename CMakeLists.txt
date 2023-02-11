@@ -73,23 +73,11 @@ include(DARTMacros)
 include(Components)
 initialize_component_helpers(${PROJECT_NAME}${DART_MAJOR_VERSION})
 
-# System install paths on Windows
-if(WIN32)
-  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
-endif()
-
 #===============================================================================
 # Build options
 #===============================================================================
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
-if(MSVC)
-  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
-  set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
-  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-else()
-  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-endif()
+dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 # Note: DART_ENABLE_SIMD should only be enabled when building DART and its
 # dependent projects on the same machine. Enabling this option adds the
 # -march=native compile flag to the dart target, which enables all instruction
@@ -270,10 +258,6 @@ if(MSVC)
     add_compile_options(/WX)
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase-")
-  if(NOT DART_MSVC_DEFAULT_OPTIONS)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
-  endif(NOT DART_MSVC_DEFAULT_OPTIONS)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
   add_compile_options(/wd4005)
   add_compile_options(/wd4099)
