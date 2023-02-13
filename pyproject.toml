@@ -60,7 +60,7 @@ archs = ["auto64"]
 before-all = [
     "brew update > /dev/null",
     "brew bundle || brew bundle",
-    "brew install open-scene-graph",
+    "brew install open-scene-graph --HEAD",
     "sw_vers",
 ]
 
