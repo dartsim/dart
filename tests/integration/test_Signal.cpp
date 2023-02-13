@@ -304,7 +304,7 @@ TEST(Signal, ReturnValues)
 
 //==============================================================================
 void frameChangeCallback(
-    const Entity* _entity,
+    const dynamics::Entity* _entity,
     const Frame* _oldParentFrame,
     const Frame* _newParentFrame)
 {
@@ -324,7 +324,7 @@ void frameChangeCallback(
 
 //==============================================================================
 void nameChangedCallback(
-    const Entity* entity,
+    const dynamics::Entity* entity,
     const std::string& oldName,
     const std::string& newName)
 {

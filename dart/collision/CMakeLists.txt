@@ -24,8 +24,14 @@ dart_add_component(
     ${component_name}
   DEPENDENT_COMPONENTS
     common math
+  DEPENDENT_PACKAGES_REQUIRED
+    ccd fcl
+  TARGET_LINK_LIBRARIES_PUBLIC
+    ccd fcl
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
+  SUB_DIRECTORIES
+    detail
   GENERATE_EXPORT_HEADER
   GENERATE_META_HEADER
   FORMAT_CODE

@@ -361,4 +361,6 @@ using Jacobian
 
 DART_DECLARE_CLASS_POINTERS_S(Color);
 
+DART_DECLARE_CLASS_POINTERS_S(Geometry3);
+
 } // namespace dart::math
