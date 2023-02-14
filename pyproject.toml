@@ -47,6 +47,7 @@ skip = [
     "cp37-macosx*",
 
     # Windows
+    "cp*-win32",
     "cp36-win*",
     "cp37-win*",
 ]
