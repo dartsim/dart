@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
 
   #include <dart/gui/osg/render/ShapeNode.hpp>
 
@@ -78,6 +78,6 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP
 
 #endif // DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_

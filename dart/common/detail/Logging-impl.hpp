@@ -35,7 +35,7 @@
 
 #include <dart/common/Logging.hpp>
 
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   #include <spdlog/spdlog.h>
 #else
   #include <iostream>
@@ -44,7 +44,7 @@
 
 namespace dart::common {
 
-#if !DART_HAVE_SPDLOG
+#if !DART_HAS_SPDLOG
 namespace detail {
 
 //==============================================================================
@@ -79,7 +79,7 @@ void print(
 template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::trace(format_str, std::forward<Args>(args)...);
 #else
   detail::print(
@@ -91,7 +91,7 @@ void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::debug(format_str, std::forward<Args>(args)...);
 #else
   detail::print(
@@ -103,7 +103,7 @@ void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::info(format_str, std::forward<Args>(args)...);
 #else
   detail::print(
@@ -115,7 +115,7 @@ void info(const S& format_str, [[maybe_unused]] Args&&... args)
 template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::warn(format_str, std::forward<Args>(args)...);
 #else
   detail::print(
@@ -127,7 +127,7 @@ void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::error(format_str, std::forward<Args>(args)...);
 #else
   detail::print(
@@ -139,7 +139,7 @@ void error(const S& format_str, [[maybe_unused]] Args&&... args)
 template <typename S, typename... Args>
 void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_SPDLOG
+#if DART_HAS_SPDLOG
   spdlog::critical(format_str, std::forward<Args>(args)...);
 #else
   detail::print(

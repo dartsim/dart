@@ -46,13 +46,13 @@
 #include <sstream>
 
 #include <cstdio>
-#if DART_HAVE_NLOPT
+#if DART_HAS_NLOPT
   #include "dart/optimization/nlopt/NloptSolver.hpp"
 #endif
-#if DART_HAVE_IPOPT
+#if DART_HAS_IPOPT
   #include "dart/optimization/ipopt/IpoptSolver.hpp"
 #endif
-#if DART_HAVE_SNOPT
+#if DART_HAS_SNOPT
   #include "dart/optimization/snopt/SnoptSolver.hpp"
 #endif
 
@@ -143,7 +143,7 @@ TEST(Optimizer, GradientDescent)
 }
 
 //==============================================================================
-#if DART_HAVE_NLOPT
+#if DART_HAS_NLOPT
 TEST(Optimizer, BasicNlopt)
 {
   // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
@@ -175,7 +175,7 @@ TEST(Optimizer, BasicNlopt)
 #endif
 
 //==============================================================================
-#if DART_HAVE_IPOPT
+#if DART_HAS_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
@@ -205,7 +205,7 @@ TEST(Optimizer, BasicIpopt)
 #endif
 
 //==============================================================================
-#if DART_HAVE_SNOPT
+#if DART_HAS_SNOPT
 TEST(Optimizer, BasicSnopt)
 {
   dterr << "SNOPT is not implemented yet.\n";

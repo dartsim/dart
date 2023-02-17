@@ -32,7 +32,7 @@
 
 #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
 
   #include "dart/dynamics/SimpleFrame.hpp"
   #include "dart/dynamics/VoxelGridShape.hpp"
@@ -234,4 +234,4 @@ VoxelGridShapeNode::~VoxelGridShapeNode()
 } // namespace gui
 } // namespace dart
 
-#endif // DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP

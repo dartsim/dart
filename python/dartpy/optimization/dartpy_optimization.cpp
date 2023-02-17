@@ -40,9 +40,9 @@ namespace dart::python {
 
 void Solver(py::module& sm);
 void GradientDescentSolver(py::module& sm);
-#if DART_HAVE_NLOPT
+#if DART_HAS_NLOPT
 void NloptSolver(py::module& sm);
-#endif // DART_HAVE_NLOPT
+#endif // DART_HAS_NLOPT
 
 void Function(py::module& sm);
 
@@ -60,9 +60,9 @@ PYBIND11_MODULE(dartpy_optimization, sm)
 
   Solver(sm);
   GradientDescentSolver(sm);
-#if DART_HAVE_NLOPT
+#if DART_HAS_NLOPT
   NloptSolver(sm);
-#endif // DART_HAVE_NLOPT
+#endif // DART_HAS_NLOPT
 
   Function(sm);
 

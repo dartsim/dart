@@ -35,7 +35,7 @@
 
 #include <dart/dynamics/Shape.hpp>
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
   #include <octomap/Pointcloud.h>
 #endif
 
@@ -95,7 +95,7 @@ public:
   /// Replaces points with \c points.
   void setPoint(const std::vector<math::Vector3d>& points);
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
   /// Replaces points with \c pointCloud.
   void setPoints(const ::octomap::Pointcloud& pointCloud);
 

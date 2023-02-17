@@ -35,12 +35,12 @@ dart_find_package(octomap)
 if(MSVC)
   if(OCTOMAP_FOUND OR octomap_FOUND)
     if(NOT DEFINED octomap_VERSION)
-      set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
       message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
           "please install octomap with version information"
       )
     elseif(octomap_VERSION VERSION_LESS_EQUAL 1.9.6)
-      set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
       # Supporting Octomap on Windows is disabled for the following issue:
       # https://github.com/OctoMap/octomap/pull/213
       message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap "
@@ -49,13 +49,13 @@ if(MSVC)
           "is resolved."
       )
     else()
-      set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAS_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
       if(DART_VERBOSE)
         message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
       endif()
     endif()
   else()
-    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
     message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
         "please install octomap"
     )
@@ -63,18 +63,18 @@ if(MSVC)
 else()
   if(OCTOMAP_FOUND OR octomap_FOUND)
     if(NOT DEFINED octomap_VERSION)
-      set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
       message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
           "please install octomap with version information"
       )
     else()
-      set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+      set(DART_HAS_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
       if(DART_VERBOSE)
         message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
       endif()
     endif()
   else()
-    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAS_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
     message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
         "please install octomap"
     )
@@ -128,10 +128,10 @@ if(BULLET_FOUND)
     endif()
   endif()
 
-  set(DART_HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_HAS_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 else()
   message(WARNING "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
-  set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_HAS_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
 endif()
 
 dart_find_package(tinyxml2)

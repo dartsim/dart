@@ -51,7 +51,7 @@
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
   #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif
 #include "dart/dynamics/BoxShape.hpp"
@@ -72,7 +72,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/gui/osg/render/HeightmapShapeNode.hpp"
 #include "dart/gui/osg/render/WarningShapeNode.hpp"
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
   #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -297,7 +297,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
@@ -306,7 +306,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-#endif // DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP
   else if (HeightmapShapef::getStaticType() == shapeType) {
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);

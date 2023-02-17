@@ -147,7 +147,7 @@ TEST(Raycast, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if DART_HAVE_BULLET
+#if DART_HAS_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -230,7 +230,7 @@ TEST(Raycast, testOptions)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if DART_HAVE_BULLET
+#if DART_HAS_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif

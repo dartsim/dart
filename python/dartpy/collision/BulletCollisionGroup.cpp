@@ -32,7 +32,7 @@
 
 #include <dart/config.hpp>
 
-#if DART_HAVE_BULLET
+#if DART_HAS_BULLET
 
   #include <dart/dynamics/dynamics.hpp>
 
@@ -58,4 +58,4 @@ void BulletCollisionGroup(py::module& m)
 } // namespace python
 } // namespace dart
 
-#endif // DART_HAVE_BULLET
+#endif // DART_HAS_BULLET

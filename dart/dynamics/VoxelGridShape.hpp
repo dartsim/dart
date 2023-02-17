@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
 
   #include <dart/dynamics/Frame.hpp>
   #include <dart/dynamics/Fwd.hpp>
@@ -166,6 +166,6 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP
 
 #endif // DART_DYNAMICS_VOXELGRIDSHAPE_HPP_

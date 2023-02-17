@@ -41,7 +41,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
-#if DART_HAVE_BULLET
+#if DART_HAS_BULLET
   #include "dart/dynamics/dynamics.hpp"
 #endif
 #include "dart/dynamics/BallJointConstraint.hpp"
@@ -303,7 +303,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if DART_HAVE_BULLET
+#if DART_HAS_BULLET
     worlds.back()->getConstraintSolver()->setCollisionDetector(
         collision::BulletCollisionDetector::create());
 #else

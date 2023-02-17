@@ -57,9 +57,9 @@
 #include <fcl/narrowphase/collision_object.h>
 #include <fcl/narrowphase/distance.h>
 
-#if DART_HAVE_OCTOMAP && FCL_DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP && FCL_DART_HAS_OCTOMAP
   #include <fcl/geometry/octree/octree.h>
-#endif // DART_HAVE_OCTOMAP && FCL_DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP && FCL_DART_HAS_OCTOMAP
 
 #include <memory>
 
@@ -78,9 +78,9 @@ using Cone = ::fcl::Cone<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#if DART_HAVE_OCTOMAP && FCL_DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP && FCL_DART_HAS_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
-#endif // DART_HAVE_OCTOMAP && FCL_DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP && FCL_DART_HAS_OCTOMAP
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;

@@ -42,10 +42,10 @@ if(spdlog_FOUND)
     list(APPEND link_libraries_public spdlog::spdlog)
   else()
     message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
-    list(APPEND compile_definitions_public -DDART_HAVE_SPDLOG=0)
+    list(APPEND compile_definitions_public -DDART_HAS_SPDLOG=0)
   endif()
 else()
-  list(APPEND compile_definitions_public -DDART_HAVE_SPDLOG=0)
+  list(APPEND compile_definitions_public -DDART_HAS_SPDLOG=0)
 endif()
 
 # Profile backend settings

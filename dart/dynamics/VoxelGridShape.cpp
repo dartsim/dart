@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/VoxelGridShape.hpp"
 
-#if DART_HAVE_OCTOMAP
+#if DART_HAS_OCTOMAP
 
   #include "dart/common/Console.hpp"
   #include "dart/math/Helpers.hpp"
@@ -235,4 +235,4 @@ void VoxelGridShape::updateVolume() const
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_HAVE_OCTOMAP
+#endif // DART_HAS_OCTOMAP
