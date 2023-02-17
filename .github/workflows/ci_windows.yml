@@ -2,13 +2,17 @@
 
 name: CI Windows
 
+# Trigger the workflow on any push to any branch
 on:
   push:
     branches:
       - "**"
-  schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
+
+# Schedule the workflow to run at 2:00 AM every Sunday and Wednesday
+# in the Pacific Time zone (which is 8 hours behind UTC)
+# Cron syntax: [minute hour day_of_the_month month day_of_the_week]
+schedule:
+  - cron: "0 2 * * 0,3 America/Los_Angeles" # Runs every Sunday and Wednesday at 2:00 AM in Pacific Time
 
 jobs:
   build_2022:
@@ -20,8 +24,9 @@ jobs:
         toolset: [""]
         build_type: [Release]
         build_shared_libs: [ON, OFF]
-        build_dartpy: [OFF]       # Build tests and dartpy exclusively 
-                                  # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
+        build_dartpy:
+          [OFF] # Build tests and dartpy exclusively
+          # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
         enable_simd: [ON]
     env:
       VCPKG_BUILD_TAG: v2023.01.16-2
