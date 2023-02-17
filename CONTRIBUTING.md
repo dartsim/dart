@@ -1,104 +1,66 @@
-## How to Contribute to DART?
+# How to Contribute to DART?
 
 [Opening a GitHub pull request](https://help.github.com/articles/about-pull-requests/) would be the best way. Please make sure that your code follows DART conventions.
 
 The code doesn't need to be perfect right away, feel free to post work-in-progress versions to get the discussion started.
 
-## DART Contributors
-
- Name                                               | Contributions
-----------------------------------------------------|---------------
- [C. Karen Liu](https://github.com/karenliu)        | project creator, multibody dynamics, constraint resolution, tutorials
- [Mike Stilman](https://github.com/mstilman)        | project creator
- [Siddhartha S. Srinivasa](https://github.com/siddhss5) | project advisor
- [Jeongseok Lee](https://github.com/jslee02)        | project director, multibody dynamics, constraint resolution, collision detection, tutorials
- [Michael X. Grey](https://github.com/mxgrey)       | project director, extensive API improvements, inverse kinematics, gui::osg, tutorials
- [Tobias Kunz](https://github.com/tobiaskunz)       | former project director, motion planner
- [Sumit Jain](http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/) | multibody dynamics
- [Yuting Ye](https://github.com/yutingye)           | multibody dynamics, GUI
- [Michael Koval](https://github.com/mkoval)         | uri, resource retriever, bug fixes
- [Ana C. Huamán Quispe](https://github.com/ana-GT)  | urdf parser
- [Chen Tang](https://github.com/chentang)           | collision detection
- [Matthew Dutton](https://github.com/mdutton3)      | build and bug fixes
- [Eric Huang](https://github.com/ehuang3)           | build and bug fixes
- [Pushkar Kolhe](https://github.com/pushkar)        | early DART build system design
- [Saul Reynolds-Haertle](https://github.com/saulrh) | examples, bug fixes
- [Arash Rouhani](https://github.com/Tarrasch)       | build fixes
- [Kristin Siu](https://github.com/kasiu)            | integrators, bug fixes
- [Steven Peters](https://github.com/scpeters)       | build improvements and fixes
- [Can Erdogan](https://github.com/cerdogan)         | planning, examples
- [Jie Tan](https://github.com/jietan)               | lcp solver, renderer
- [Yunfei Bai](https://github.com/YunfeiBai)         | build and bug fixes
- [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | mimic joint, OSG shadows, shape deep copy, build and bug fixes
- [Sehoon Ha](https://github.com/sehoonha)           | early DART data structure design, [pydart](https://github.com/sehoonha/pydart)
- [Donny Ward](https://github.com/donnyward)         | build fix
- [Andrew Price](https://github.com/a-price)         | build fix
- [Eric Tobis](https://github.com/tobis)             | build fix
- [Jonathan Martin](https://github.com/nybblr)       | build fix
- [Jia Ye Li](https://github.com/JiaYeLi)            | fix typo of tutorials
- [Benjamin Chrétien](https://github.com/bchretien)  | bug fix
- [Olzhas Adiyatov](https://github.com/olzhas)       | bug fix
- [José Luis Rivero](https://github.com/j-rivero)    | build, especially for Debian
- [Jonathan Scholz](https://github.com/jscholz)      | build fix
- [John Turgeson](https://github.com/JohnTurgeson)   | mesh model
- [Jennifer Buehler](https://github.com/JenniferBuehler) | heightmap, bug fix
- [Dong Xu](https://github.com/hxbloom)              | motion blur renderer
- [Donghyun Kim](https://github.com/dhkim0821)       | Atlas texture images
- [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
- [pchorak](https://github.com/pchorak)              | bug fixes
- [acxz](https://github.com/acxz)                    | doxygen warning fix
- [Addisu Taddese](https://github.com/azeey)         | bug fix in ode collision detector, slip effect on contact, velocity and position integration, constraint grouping, skeleton unsubscription fix
- [Christoph Hinze](https://github.com/chhinze)      | python bindings
- [Erwin Coumans](https://github.com/erwincoumans)   | build fix on Windows/MSVC
- [Silvio Traversaro](https://github.com/traversaro) | build fix on Windows/MSVC, vcpkg packaging
- [Martin Pecka](https://github.com/peci1)           | contact surface generalization
-
-You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
-
 ## DART Style Guide
 
 - [How to Contribute to DART?](#how-to-contribute-to-dart)
-- [DART Contributors](#dart-contributors)
-- [DART Style Guide](#dart-style-guide)
-  - [C++ Style](#c-style)
-    - [Header Style](#header-style)
-    - [Source Style](#source-style)
-    - [Smart Pointers](#smart-pointers)
-    - [Autoformatting using ClangFormat](#autoformatting-using-clangformat)
-      - [Using CMake](#using-cmake)
-  - [CMake Style](#cmake-style)
+  - [DART Style Guide](#dart-style-guide)
+    - [C++ Style](#c-style)
+      - [Naming Conventions](#naming-conventions)
+      - [Example Header Style](#example-header-style)
+      - [Example Source Style](#example-source-style)
+      - [Definitions](#definitions)
+      - [Smart Pointers](#smart-pointers)
+      - [Autoformatting using ClangFormat](#autoformatting-using-clangformat)
+        - [Using CMake](#using-cmake)
+    - [CMake Style](#cmake-style)
+  - [DART Contributors](#dart-contributors)
 
 ### C++ Style
 
-C++ headers and sources should be contained in the same subdirectory of `dart/` that matches
-their namespace, with the extension `.hpp` and `.cpp`, respectively.
+C++ headers and sources should be contained in the same subdirectory of `dart/` that matches their namespace, with the file extensions `.hpp` for headers and `.cpp` for sources.
 
-#### Header Style
+#### Naming Conventions
 
-* Use **two-space** indentation
-* Use **camelCase** function names
-* Use **PascalCase** class names
-* No "cuddled" braces!
+| Style            | Convention |
+| ---------------- | ---------- |
+| Directories      | snake_case |
+| Files            | PascalCase |
+| Classes          | PascalCase |
+| Global functions | PascalCase |
+| Function names   | camelCase  |
+| Variables        | snake_case |
+| Indentation      | two spaces |
+
+#### Example Header Style
 
 ```c++
-#ifndef DART_EXAMPLE_EXAMPLECLASS_HPP_  // Header guards must include the library, namespace, and source file names.
-#define DART_EXAMPLE_EXAMPLECLASS_HPP_
+#pragma once  // Use #pragma once instead of header guards
 
-// Place all dependency includes at the top of the file.
-// Use absolute paths, and place these at the top.
+// Use clang-format to sort the headers.
+// - Includes should be at the top of the file.
+// - Group headers from most specific to most general.
+// - Within each group, sort the headers alphabetically.
+// - Use absolute paths for the headers.
+// - Use angle brackets for the headers listed in the public headers.
+
+#include <dart/common/pointers.hpp>
+#include <dart/component_name/ExampleInterface.hpp>
+#include <dart/component_name/ExampleOtherInterface.hpp>
+
+#include <3rd_party/headers.hpp>
+
 #include <stl_headers>
-#include <library/headers.hpp>
-#include "dart/common/pointers.hpp"
-#include "dart/component_name/ExampleInterface.hpp"
-#include "dart/component_name/ExampleOtherInterface.hpp"
 
-// Namespaces scopes should be one line each with "cuddled" braces.
+#include <c_headers>
+
 namespace dart {
 namespace example {
 
-// Use the following macro (defined in dart/common/SmartPointer.hpp) to declare
-// STL "smart" pointers. Pointers should be declared ahead of the class so
-// that the class itself can use the pointers.
+/// Namespaces scopes should be one line each with "cuddled" braces.
 DART_COMMON_MAKE_SHARED_WEAK(ExampleClass)
 
 /// A required Doxygen comment description for this class. This can be extended
@@ -116,7 +78,7 @@ public:
   /// \param[in] foo This is an example parameter description.
   /// \param[in] bar This is a longer example parameter description that needs
   /// to wrap across multiple lines.
-  ExampleClass(std::unique_ptr<util::RNG> foo,
+  explicit ExampleClass(std::unique_ptr<util::RNG> foo,
                const Eigen::Isometry3d& bar = Eigen::Isometry3d::Identity());
 
   ExampleClass(const ExampleClass& other);
@@ -125,17 +87,17 @@ public:
   ExampleClass& operator=(const ExampleClass& other);
   ExampleClass& operator=(ExampleClass&& other);
 
-  // If a class should be non-copyable, it should explicitly delete the following:
+  /// If a class should be non-copyable, it should explicitly delete the following:
   ExampleClass(const ExampleClass&) = delete;
   ExampleClass(ExampleClass&& other) = delete;
   ExampleClass& operator=(const ExampleClass& other) = delete;
   ExampleClass& operator=(ExampleClass&& other) = delete;
 
-  // Classes should explicitly declare a default virtual destructor
-  // if they do not declare one (unless marking a class as final).
+  /// Classes should explicitly declare a default virtual destructor
+  /// if they do not declare one (unless marking a class as final).
   virtual ~ExampleClass() = default;
 
-  // Documentation inherited.  <-- Use this comment to indicate that the docstring of the interface method applies
+  /// Documentation inherited.  <-- Use this comment to indicate that the docstring of the interface method applies
   int exampleInterfaceFunction() const override;  // <-- Always explicitly `override` interface functions without `virtual`
 
   /// Required brief description of method.
@@ -148,7 +110,7 @@ public:
   int exampleMethod(int a, int b, int* out) const;
 
 private:
-  std::unique_ptr<util::RNG> mExampleMember; // Member variables are prefixed with "m"
+  std::unique_ptr<util::RNG> m_example_member; // Member variables are prefixed with "m"
 };
 
 } // namespace example
@@ -158,25 +120,21 @@ private:
 // in headers. In this case, a "detail" header should be created in the "./detail"
 // subdirectory with the same name as the main header file, but an "-impl" suffix.
 // Private declarations in this header can use a "detail" sub-namespace.
-#include "dart/component_name/detail/ExampleClass-impl.hpp"
-
-#endif // DART_EXAMPLE_EXAMPLECLASS_HPP_
+#include <dart/component_name/detail/ExampleClass-impl.hpp>
 ```
 
-#### Source Style
-
-* Use **two-space** indentation
-* Use **camelCase** function names
-* Use **PascalCase** class names
-* No "cuddled" braces!
+#### Example Source Style
 
 ```c++
 // Includes should be at the top of the file.
 // The first include in a class source file should be the matching `.hpp` header file.
+// Use double quotes for 1st party headers.
 #include "dart/example/ExampleClass.hpp"
 
-#include <stl_headers>
+// Sort from most specific to most general.
+// Use angle brackets for 3rd party headers and system headers.
 #include <library/headers.hpp>
+#include <stl_headers>
 #include "dart/example/OtherHeaders.hpp"
 
 // Namespace nesting is preferred to "using namespace" directives.
@@ -188,8 +146,10 @@ namespace example {
 //==============================================================================
 int ExampleClass::exampleInterfaceFunction() const
 {
-  if (mExampleMember)
+  // Use braces for all control structures, even single-line statements.
+  if (m_example_member) {
     return 3;
+  }
 
   return -1;
 }
@@ -198,14 +158,21 @@ int ExampleClass::exampleInterfaceFunction() const
 int ExampleClass::exampleMethod(int a, int b, int* out) const
 {
   int result = a + b;
-  if (out)
+  if (out) {
     *out = result;
+  }
   return result;
 }
 
 } // namespace example
 } // namespace dart
 ```
+
+#### Definitions
+
+- `DART_ENABLE_*`: These are CMake options that enable/disable various features of DART. The features can be disabled if the dependencies are not available.
+- `DART_HAS_*`: These are automatically defined by CMake based on the availability of the dependencies.
+- `DART_ENABLED_*`: These are automatically defined by CMake based on the availability of the dependencies and the corresponding DART_ENABLE_* option.
 
 #### Smart Pointers
 
@@ -214,40 +181,40 @@ int ExampleClass::exampleMethod(int a, int b, int* out) const
 
 [sutter-smart-pointers]: https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/
 
-* General Rules
-  * Use a by-value `std::shared_ptr` as a parameter if the function surely takes
+- General Rules
+  - Use a by-value `std::shared_ptr` as a parameter if the function surely takes
     the shared ownership.
-  * Use a `const std::shared_ptr&` as a parameter only if you're not sure
+  - Use a `const std::shared_ptr&` as a parameter only if you're not sure
     whether or not you'll take a copy and share ownership.
-  * Use a non-const `std::shared_ptr&` parameter only to modify the
+  - Use a non-const `std::shared_ptr&` parameter only to modify the
     `std::shared_ptr`.
-  * Use `std::unique_ptr` anytime you want to use a `std::shared_ptr` but don't
+  - Use `std::unique_ptr` anytime you want to use a `std::shared_ptr` but don't
     need to share ownership.
-  * Otherwise use `Object*` instead, or `Object&` if not nullable.
+  - Otherwise use `Object*` instead, or `Object&` if not nullable.
 
 #### Autoformatting using ClangFormat
 
 You can automatically format all DART code
 using [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html) through
-CMake. Make sure `clang-format 6.0` is installed.
+CMake. Make sure `clang-format 14` is installed.
 
 ##### Using CMake
 
 ```bash
-$ cd to/dart/root/
-$ mkdir build
-$ cd build
-$ make check-format # to check the code without formatting
-$ make format       # to format the code
+cd to/dart/root/
+mkdir build
+cd build
+make check-format # to check the code without formatting
+make format       # to format the code
 ```
 
 ### CMake Style
 
-* Use **two-space** indentation
-* Use **lowercase** function names
-* Use **all-caps** variables except when referring to target names
-* Use `target_VARIABLE` when naming target-specific variables
-* **ALWAYS** quote singleton variables (e.g. `"${MY_VARIABLE}"` but not `${MY_LIST_VARIABLE}`)
+- Use **two-space** indentation
+- Use **lowercase** function names
+- Use **all-caps** variables except when referring to target names
+- Use `target_VARIABLE` when naming target-specific variables
+- **ALWAYS** quote singleton variables (e.g. `"${MY_VARIABLE}"` but not `${MY_LIST_VARIABLE}`)
 
 ```cmake
 cmake_minimum_required(VERSION 3.22.1)  # Always declare a minimum version in the top-level CMakeLists.txt.
@@ -291,3 +258,54 @@ target_link_libraries("${PROJECT_NAME}"
 enable_testing()
 add_subdirectory(tests)
 ```
+
+## DART Contributors
+
+ | Name                                                                     | Contributions                                                                                                                                  |
+ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+ | [C. Karen Liu](https://github.com/karenliu)                              | project creator, multibody dynamics, constraint resolution, tutorials                                                                          |
+ | [Mike Stilman](https://github.com/mstilman)                              | project creator                                                                                                                                |
+ | [Siddhartha S. Srinivasa](https://github.com/siddhss5)                   | project advisor                                                                                                                                |
+ | [Jeongseok Lee](https://github.com/jslee02)                              | project director, multibody dynamics, constraint resolution, collision detection, tutorials                                                    |
+ | [Michael X. Grey](https://github.com/mxgrey)                             | project director, extensive API improvements, inverse kinematics, gui::osg, tutorials                                                          |
+ | [Tobias Kunz](https://github.com/tobiaskunz)                             | former project director, motion planner                                                                                                        |
+ | [Sumit Jain](http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/) | multibody dynamics                                                                                                                             |
+ | [Yuting Ye](https://github.com/yutingye)                                 | multibody dynamics, GUI                                                                                                                        |
+ | [Michael Koval](https://github.com/mkoval)                               | uri, resource retriever, bug fixes                                                                                                             |
+ | [Ana C. Huamán Quispe](https://github.com/ana-GT)                        | urdf parser                                                                                                                                    |
+ | [Chen Tang](https://github.com/chentang)                                 | collision detection                                                                                                                            |
+ | [Matthew Dutton](https://github.com/mdutton3)                            | build and bug fixes                                                                                                                            |
+ | [Eric Huang](https://github.com/ehuang3)                                 | build and bug fixes                                                                                                                            |
+ | [Pushkar Kolhe](https://github.com/pushkar)                              | early DART build system design                                                                                                                 |
+ | [Saul Reynolds-Haertle](https://github.com/saulrh)                       | examples, bug fixes                                                                                                                            |
+ | [Arash Rouhani](https://github.com/Tarrasch)                             | build fixes                                                                                                                                    |
+ | [Kristin Siu](https://github.com/kasiu)                                  | integrators, bug fixes                                                                                                                         |
+ | [Steven Peters](https://github.com/scpeters)                             | build improvements and fixes                                                                                                                   |
+ | [Can Erdogan](https://github.com/cerdogan)                               | planning, examples                                                                                                                             |
+ | [Jie Tan](https://github.com/jietan)                                     | lcp solver, renderer                                                                                                                           |
+ | [Yunfei Bai](https://github.com/YunfeiBai)                               | build and bug fixes                                                                                                                            |
+ | [Konstantinos Chatzilygeroudis](https://github.com/costashatz)           | mimic joint, OSG shadows, shape deep copy, build and bug fixes                                                                                 |
+ | [Sehoon Ha](https://github.com/sehoonha)                                 | early DART data structure design, [pydart](https://github.com/sehoonha/pydart)                                                                 |
+ | [Donny Ward](https://github.com/donnyward)                               | build fix                                                                                                                                      |
+ | [Andrew Price](https://github.com/a-price)                               | build fix                                                                                                                                      |
+ | [Eric Tobis](https://github.com/tobis)                                   | build fix                                                                                                                                      |
+ | [Jonathan Martin](https://github.com/nybblr)                             | build fix                                                                                                                                      |
+ | [Jia Ye Li](https://github.com/JiaYeLi)                                  | fix typo of tutorials                                                                                                                          |
+ | [Benjamin Chrétien](https://github.com/bchretien)                        | bug fix                                                                                                                                        |
+ | [Olzhas Adiyatov](https://github.com/olzhas)                             | bug fix                                                                                                                                        |
+ | [José Luis Rivero](https://github.com/j-rivero)                          | build, especially for Debian                                                                                                                   |
+ | [Jonathan Scholz](https://github.com/jscholz)                            | build fix                                                                                                                                      |
+ | [John Turgeson](https://github.com/JohnTurgeson)                         | mesh model                                                                                                                                     |
+ | [Jennifer Buehler](https://github.com/JenniferBuehler)                   | heightmap, bug fix                                                                                                                             |
+ | [Dong Xu](https://github.com/hxbloom)                                    | motion blur renderer                                                                                                                           |
+ | [Donghyun Kim](https://github.com/dhkim0821)                             | Atlas texture images                                                                                                                           |
+ | [Aditya Vamsikrishna](https://github.com/aditya-vk)                      | bug fix                                                                                                                                        |
+ | [pchorak](https://github.com/pchorak)                                    | bug fixes                                                                                                                                      |
+ | [acxz](https://github.com/acxz)                                          | doxygen warning fix                                                                                                                            |
+ | [Addisu Taddese](https://github.com/azeey)                               | bug fix in ode collision detector, slip effect on contact, velocity and position integration, constraint grouping, skeleton unsubscription fix |
+ | [Christoph Hinze](https://github.com/chhinze)                            | python bindings                                                                                                                                |
+ | [Erwin Coumans](https://github.com/erwincoumans)                         | build fix on Windows/MSVC                                                                                                                      |
+ | [Silvio Traversaro](https://github.com/traversaro)                       | build fix on Windows/MSVC, vcpkg packaging                                                                                                     |
+ | [Martin Pecka](https://github.com/peci1)                                 | contact surface generalization                                                                                                                 |
+
+You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
