@@ -8,11 +8,11 @@ on:
     branches:
       - "**"
 
-# Schedule the workflow to run at 2:00 AM every Sunday and Wednesday
-# in the Pacific Time zone (which is 8 hours behind UTC)
-# Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-schedule:
-  - cron: "0 2 * * 0,3 America/Los_Angeles" # Runs every Sunday and Wednesday at 2:00 AM in Pacific Time
+  # Schedule the workflow to run at 2:00 AM every Sunday and Wednesday
+  # in the Pacific Time zone (which is 8 hours behind UTC)
+  # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
+  schedule:
+    - cron: "0 10 * * 0,3" # Runs every Sunday and Wednesday at 2:00 AM in Pacific Time
 
 jobs:
   build:
