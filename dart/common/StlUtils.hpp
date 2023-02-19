@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/common/Memory.hpp>
+#include <dart/common/detail/StlUtils.hpp>
 
 #include <vector>
 
@@ -41,82 +42,49 @@
 
 namespace dart::common {
 
-/// A helper class for iterating over a range of indices.
-///
-/// This class is useful for iterating over a range of indices in a for loop.
-/// For example, the following code iterates over the indices 0, 1, 2, and 3:
+/// Generates a sequence of integer values from 0 (inclusive) to end
+/// (exclusive), with a step size of 1.
 ///
 /// @code
-///   for (auto i : Range(4))
-///   {
-///     // Do something with i
-///   }
+///   for (int i : Range(5)) {
+///     std::cout << i << std::endl;
+///   } // Prints "0", "1", "2", "3", "4"
 /// @endcode
-class Range
-{
-public:
-  /// An iterator that iterates over the range of integers.
-  class Iterator
-  {
-  public:
-    /// Constructs an iterator for the given index.
-    /// @param index The starting index for the iterator.
-    Iterator(size_t index) : m_index(index)
-    {
-      // Empty
-    }
+///
+/// @param end The end of the sequence.
+/// @return An instance of `RangeProxy` for the input end.
+[[nodiscard]] inline auto Range(int end);
 
-    /// Returns the current value of the iterator.
-    /// @return The current value of the iterator.
-    size_t operator*() const
-    {
-      return m_index;
-    }
+/// Generates a sequence of integer values from start (inclusive) to end
+/// (exclusive), with a step size of step.
+///
+/// @code
+///   for (int i : Range(0, 10, 2)) {
+///     std::cout << i << std::endl;
+///   } // Prints "0", "2", "4", "6", "8"
+/// @endcode
+///
+/// @param start The start of the sequence.
+/// @param end The end of the sequence.
+/// @param step The step size of the sequence.
+/// @return An instance of `RangeProxy` for the input start, end, and step.
+[[nodiscard]] inline auto Range(int start, int end, int step = 1);
 
-    /// Advances the iterator to the next value in the range.
-    /// @return A reference to the iterator after it has been advanced.
-    Iterator& operator++()
-    {
-      ++m_index;
-      return *this;
-    }
-
-    /// Compares two iterators for inequality.
-    /// @param other The other iterator to compare against.
-    /// @return True if the two iterators are not equal, false otherwise.
-    bool operator!=(const Iterator& other) const
-    {
-      return m_index != other.m_index;
-    }
-
-  private:
-    size_t m_index;
-  };
-
-  /// Constructs a range of integer values from 0 to end-1.
-  /// @param end The end of the range (exclusive).
-  Range(size_t end) : m_end(end)
-  {
-    // Empty
-  }
-
-  /// Returns an iterator to the beginning of the range.
-  /// @return An iterator to the beginning of the range.
-  auto begin() const
-  {
-    return Iterator(0);
-  }
-
-  /// Returns an iterator to the end of the range.
-  /// @return An iterator to the end of the range.
-  auto end() const
-  {
-    return Iterator(m_end);
-  }
-
-private:
-  const size_t m_end;
-};
+/// Enumerate the elements in a container.
+///
+/// @code
+///   std::vector<int> v = {1, 2, 3, 4, 5};
+///   for (auto [i, x] : Enumerate(v)) {
+///     std::cout << i << ": " << x << std::endl;
+///   } // Prints "0: 1", "1: 2", "2: 3", "3: 4", "4: 5"
+/// @endcode
+///
+/// @tparam ContainerT The type of the container to be enumerated.
+/// @param a The container to be enumerated.
+/// @param start The starting index of the enumeration.
+/// @return An instance of `EnumerateProxy` for the input container.
+template <typename ContainerT>
+[[nodiscard]] auto Enumerate(ContainerT&& a, size_t start = 0);
 
 /// Returns an object from a vector if the index is valid, otherwise return
 /// nullptr.
@@ -136,6 +104,26 @@ T getVectorObjectIfAvailable(std::size_t index, const std::vector<T>& vec);
 
 namespace dart::common {
 
+//==============================================================================
+inline auto Range(int end)
+{
+  return detail::RangeImpl<int>(0, end, 1);
+}
+
+//==============================================================================
+inline auto Range(int start, int end, int step)
+{
+  return detail::RangeImpl<int>(start, end, step);
+}
+
+//==============================================================================
+template <typename ContainerT>
+auto Enumerate(ContainerT&& a, size_t start)
+{
+  return detail::EnumerateImpl<ContainerT>(std::forward<ContainerT>(a), start);
+}
+
+//==============================================================================
 template <typename T>
 T getVectorObjectIfAvailable(std::size_t index, const std::vector<T>& vec)
 {
