@@ -60,6 +60,15 @@ public:
   /// @return The generalized positions of the given MultiBody.
   [[nodiscard]] auto getPositions() const;
 
+  /// @{ @name Structural Changes
+
+  MultiBodyLink<S>* createLink()
+  {
+    return nullptr;
+  }
+
+  /// @}
+
 private:
   friend class MultiBodyBatch<S>;
 
@@ -110,7 +119,7 @@ private:
   size_t m_multibody_index{0};
 
   // Links
-  std::vector<MultiBodyLink<S>> mLinks;
+  std::vector<MultiBodyLink<S>*> mLinks;
 };
 
 DART_TEMPLATE_CLASS_HEADER(PHYSICS, MultiBody);

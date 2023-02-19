@@ -44,11 +44,23 @@ class MultiBodyLink
 public:
   using Scalar = S;
 
-  MultiBodyLink() = default;
+  MultiBodyLink(MultiBody<S>* multibody) : m_multibody(multibody)
+  {
+    DART_ASSERT(m_multibody);
+  }
 
 private:
+  MultiBody<S>* m_multibody;
 };
 
 DART_TEMPLATE_CLASS_HEADER(PHYSICS, MultiBodyLink);
+
+} // namespace dart::physics
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::physics {
 
 } // namespace dart::physics

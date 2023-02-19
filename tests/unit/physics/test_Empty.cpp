@@ -66,3 +66,16 @@ TYPED_TEST(PhysicsEmptyTest, Empty)
 
   world.setSimulationMode();
 }
+
+//==============================================================================
+TYPED_TEST(PhysicsEmptyTest, CreateLink)
+{
+  using S = typename TestFixture::Scalar;
+
+  auto world = World<S>();
+
+  auto mb_1 = world.createMultiBody();
+
+  auto link_1 = mb_1->createLink();
+  EXPECT_TRUE(link_1 != nullptr);
+}
