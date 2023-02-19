@@ -12,6 +12,26 @@ on:
 #   - https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 #   - https://github.com/pypa/cibuildwheel/blob/main/examples/github-deploy.yml
 jobs:
+  check_format:
+    name: Check format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black
+
+      - name: Check format
+        run: |
+          black --check --diff .
+
   build_wheels:
     name: ${{ matrix.os }}.${{ matrix.build }}
     runs-on: ${{ matrix.os }}
