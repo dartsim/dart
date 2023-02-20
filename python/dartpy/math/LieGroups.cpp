@@ -69,6 +69,12 @@ void LieGroups(py::module& m)
             .def(
                 "inverse",
                 [](const SO3d& self) -> SO3d { return self.inverse(); })
+            .def(
+                "log",
+                [](const SO3d& self, double tol) -> SO3Tangentd {
+                  return self.log(tol);
+                },
+                py::arg("tol") = LieGroupTol<double>())
             .def("inverseInPlace", &SO3d::inverseInPlace)
             .def("toMatrix", &SO3d::toMatrix);
 
@@ -95,6 +101,12 @@ void LieGroups(py::module& m)
             .def(
                 "inverse",
                 [](const SE3d& self) -> SE3d { return self.inverse(); })
+            .def(
+                "log",
+                [](const SE3d& self, double tol) -> SE3Tangentd {
+                  return self.log(tol);
+                },
+                py::arg("tol") = LieGroupTol<double>())
             .def("inverseInPlace", &SE3d::inverseInPlace)
             .def("toMatrix", &SE3d::toMatrix);
 
@@ -118,6 +130,12 @@ void LieGroups(py::module& m)
             .def(
                 "isZero",
                 &SO3Tangentd::isZero,
+                py::arg("tol") = LieGroupTol<double>())
+            .def(
+                "exp",
+                [](const SO3Tangentd& self, double tol) -> SO3d {
+                  return self.exp(tol);
+                },
                 py::arg("tol") = LieGroupTol<double>());
 
   auto se3_tangent
@@ -137,10 +155,38 @@ void LieGroups(py::module& m)
             .def(
                 "isZero",
                 &SE3Tangentd::isZero,
+                py::arg("tol") = LieGroupTol<double>())
+            .def(
+                "exp",
+                [](const SE3Tangentd& self, double tol) -> SE3d {
+                  return self.exp(tol);
+                },
                 py::arg("tol") = LieGroupTol<double>());
 
   so3.attr("Tangent") = so3_tangent;
   se3.attr("Tangent") = se3_tangent;
+
+  m.def(
+      "Exp",
+      [](const SO3Tangentd& dx, double tol) -> SO3d { return Exp(dx, tol); },
+      py::arg("dx"),
+      py::arg("tol") = LieGroupTol<double>());
+  m.def(
+      "Log",
+      [](const SO3d& x, double tol) -> SO3Tangentd { return Log(x, tol); },
+      py::arg("x"),
+      py::arg("tol") = LieGroupTol<double>());
+
+  m.def(
+      "Exp",
+      [](const SE3Tangentd& dx, double tol) -> SE3d { return Exp(dx, tol); },
+      py::arg("dx"),
+      py::arg("tol") = LieGroupTol<double>());
+  m.def(
+      "Log",
+      [](const SE3d& x, double tol) -> SE3Tangentd { return Log(x, tol); },
+      py::arg("x"),
+      py::arg("tol") = LieGroupTol<double>());
 }
 
 } // namespace dart::python

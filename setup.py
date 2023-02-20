@@ -16,7 +16,7 @@ from glob import glob
 from pathlib import Path
 
 import pkg_resources
-from setuptools import Extension, setup, find_packages
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments

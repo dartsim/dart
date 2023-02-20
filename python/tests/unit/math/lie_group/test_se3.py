@@ -2,7 +2,7 @@
 # All rights reserved.
 
 import pytest
-from dartpy.math import SE3, SO3
+from dartpy.math import SE3, SO3, Exp, Log
 
 
 def test_identity():
@@ -34,6 +34,12 @@ def test_equality():
     c = SE3.Random()
     d = c.inverse()
     assert c * d == SE3.Identity()
+
+
+def test_exp():
+    x = SE3.Random()
+    assert x == x.log().exp()
+    assert x == Exp(Log(x))
 
 
 if __name__ == "__main__":
