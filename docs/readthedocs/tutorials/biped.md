@@ -1,4 +1,6 @@
-# Overview
+# Biped
+
+## Overview
 This tutorial demonstrates the dynamic features in DART useful for
 developing controllers for bipedal or wheel-based robots. The tutorial
 consists of seven Lessons covering the following topics:
@@ -11,7 +13,7 @@ consists of seven Lessons covering the following topics:
 
 Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp).
 
-# Lesson 1: Joint limits and self-collision
+## Lesson 1: Joint limits and self-collision
 Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
 and call ``loadBiped`` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
@@ -89,7 +91,7 @@ Running the program again, you should see that the character is still
 floppy like a ragdoll, but now the joints do not bend backward and the
 body nodes do not penetrate each other anymore.
 
-# Lesson 2: Proportional-derivative control
+## Lesson 2: Proportional-derivative control
 
 To actively control its own motion, the biped must exert internal
 forces using actuators. In this Lesson, we will design one of the
@@ -203,7 +205,7 @@ skeletons. In the next Lesson, we will introduce a much more efficient
 way to stabilize the PD controllers without endless tuning and
 trial-and-errors.
 
-# Lesson 3: Stable PD control
+## Lesson 3: Stable PD control
 
 SPD is a variation of PD control proposed by
 [Jie Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The
@@ -253,7 +255,7 @@ backward or forward push), the biped loses its balance quickly. We
 will demonstrate a more robust feedback controller in the next Lesson.
 
 
-# Lesson 4: Ankle strategy
+## Lesson 4: Ankle strategy
 
 Ankle (or hip) strategy is an effective way to maintain standing
 balance. The idea is to adjust the target position of ankles according
@@ -316,7 +318,7 @@ The remaining of the ankle strategy implementation is just the matter
 of parameters tuning. We found that using different feedback rules for
 falling forward and backward result in more stable controller.
 
-# Lesson 5: Skeleton editing
+## Lesson 5: Skeleton editing
 
 DART provides various functions to copy, delete, split, and merge
 parts of skeletons to alleviate the pain of building simulation models from
@@ -376,7 +378,7 @@ a table of some relevant functions for quick references.
 | copyAs                | auto newSkel = bd1->copyAs("new skeleton")    | Create clones of the BodyNode bd1 and its subtree and create a new Skeleton with "new skeleton" name to attach them to. |
 
 
-# Lesson 6: Actuator types
+## Lesson 6: Actuator types
 
 DART provides five types of actuator. Each joint can select its own
 actuator type.
@@ -445,7 +447,7 @@ biped falls on the floor immediately because the current target pose is not
 balanced for one-foot stance. We need to find a better target
 pose.
 
-# Lesson 7: Inverse kinematics
+## Lesson 7: Inverse kinematics
 
 Instead of manually designing a target pose, this time we will solve for
 a balanced pose by formulating an inverse kinematics (IK) problem and

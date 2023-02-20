@@ -1,14 +1,19 @@
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required for Sphinx to work properly
 version: 2
 
-mkdocs:
-  configuration: mkdocs.yml
+# Build configuration
+sphinx:
+  configuration: docs/readthedocs/conf.py
+  fail_on_warning: true
 
+# Required dependencies for building Sphinx documentation
 python:
   version: "3.8"
+  install:
+    - requirements: docs/readthedocs/requirements.txt
 
-# Optionally declare the Python requirements required to build your docs
-python:
-   install:
-   - requirements: docs/readthedocs/requirements.txt
+# Build output
+formats: all

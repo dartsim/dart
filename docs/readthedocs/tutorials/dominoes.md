@@ -1,4 +1,6 @@
-# Overview
+# Dominoes
+
+## Overview
 
 This tutorial will demonstrate some of the more advanced features of DART's
 dynamics API which allow you to write robust controllers that work for real
@@ -11,7 +13,7 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 
 Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-Finished.cpp).
 
-# Lesson 1: Cloning Skeletons
+## Lesson 1: Cloning Skeletons
 
 There are often times where you might want to create an exact replica of an
 existing Skeleton. DART offers cloning functionality that allows you to do this
@@ -207,7 +209,7 @@ math::Vector3d location =
 mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 ```
 
-# Lesson 2: Loading and controlling a robotic manipulator
+## Lesson 2: Loading and controlling a robotic manipulator
 
 Striking something with a magical force is convenient, but not very believable.
 Instead, let's load a robotic manipulator and have it push over the first domino.
@@ -358,7 +360,7 @@ mForces = M * (mKpPD * q_err + mKdPD * dq_err) + Cg;
 **Give this new PD controller a try to see how its performance compares to the
 one without compensation**
 
-# Lesson 3: Writing an operational space controller
+## Lesson 3: Writing an operational space controller
 
 While PD controllers are simply and handy, operational space controllers can be
 much more elegant and useful for performing tasks. Operational space controllers

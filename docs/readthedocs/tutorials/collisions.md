@@ -1,4 +1,6 @@
-# Overview
+# Collisions
+
+## Overview
 This tutorial will show you how to programmatically create different kinds of
 bodies and set initial conditions for Skeletons. It will also demonstrate some
 use of DART's Frame Semantics.
@@ -13,7 +15,7 @@ The tutorial consists of five Lessons covering the following topics:
 
 Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions-Finished.cpp).
 
-# Lesson 1: Creating a rigid body
+## Lesson 1: Creating a rigid body
 
 Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp).
 Find the function named ``addRigidBody``. You will notice that this is a templated
@@ -279,7 +281,7 @@ if(parent)
 If this BodyNode has a parent BodyNode, then we set damping coefficients of its
 Joint to a default value.
 
-# Lesson 2: Creating a soft body
+## Lesson 2: Creating a soft body
 
 Find the templated function named ``addSoftBody``. This function will have a
 role identical to the ``addRigidBody`` function from earlier.
@@ -506,7 +508,7 @@ inertia.setMoment(box->computeInertia(inertia.getMass()));
 bn->setInertia(inertia);
 ```
 
-# Lesson 3: Setting initial conditions and taking advantage of Frames
+## Lesson 3: Setting initial conditions and taking advantage of Frames
 
 Find the ``addObject`` function in the ``MyWorld`` class. This function will
 be called whenever the user requests for an object to be added to the world.
@@ -715,7 +717,7 @@ degrees of freedom.
 
 Now we're ready to toss around objects!
 
-# Lesson 4: Setting joint spring and damping properties
+## Lesson 4: Setting joint spring and damping properties
 
 Find the ``setupRing`` function. This is where we'll setup a chain of BodyNodes
 so that it behaves more like a closed ring.
@@ -786,7 +788,7 @@ for(size_t i=6; i < ring->getNumDofs(); ++i)
 }
 ```
 
-# Lesson 5: Create a closed kinematic chain
+## Lesson 5: Create a closed kinematic chain
 
 Find the ``addRing`` function in ``MyWindow``. In here, we'll want to create a
 dynamic constraint that attaches the first and last BodyNodes of the chain

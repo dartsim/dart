@@ -1,3 +1,5 @@
+# Introduction
+
 The purpose of this tutorial is to provide a quick introduction to
 using DART. We designed many hands-on exercises to make the learning
 effective and fun. To follow along with this tutorial, first locate

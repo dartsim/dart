@@ -1,4 +1,6 @@
-# Overview
+# Multi Pendulum
+
+## Overview
 
 This tutorial will demonstrate some basic interaction with DART's dynamics
 API during simulation. This will show you how to:
@@ -13,7 +15,7 @@ API during simulation. This will show you how to:
 
 Please reference the source code in [**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp) and [**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum-Finished.cpp).
 
-# Lesson 0: Simulate a passive multi-pendulum
+## Lesson 0: Simulate a passive multi-pendulum
 
 This is a warmup lesson that demonstrates how to set up a simulation
 program in DART. The example we will use throughout this tutorial is a
@@ -72,7 +74,7 @@ routine. For example, one can incorporate sensors, actuators, or user
 interaction in the forward simulation.
 
 
-# Lesson 1: Change shapes and applying forces
+## Lesson 1: Change shapes and applying forces
 
 We have a pendulum with five bodies, and we want to be able to apply forces to
 them during simulation. Additionally, we want to visualize these forces so we
@@ -237,7 +239,7 @@ shape; we just need to add it:
 bn->createShapeNodeWith<VisualAspect>(mArrow);
 ```
 
-# Lesson 2: Set spring and damping properties for joints
+## Lesson 2: Set spring and damping properties for joints
 
 DART allows Joints to have implicit spring and damping properties. By default,
 these properties are zeroed out, so a joint will only exhibit the forces that
@@ -336,7 +338,7 @@ Again, we want to make sure that the damping coefficient is never negative. In
 fact, a negative damping coefficient would be far more harmful than a negative
 stiffness coefficient.
 
-# Lesson 3: Add and remove dynamic constraints
+## Lesson 3: Add and remove dynamic constraints
 
 Dynamic constraints in DART allow you to attach two BodyNodes together according
 to a selection of a few different Joint-style constraints. This allows you to
