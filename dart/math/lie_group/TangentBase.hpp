@@ -202,6 +202,14 @@ public:
   [[nodiscard]] Derived& derived() noexcept;
 };
 
+/// Stream operator for LieGroup tangent
+template <typename StreamT, typename Derived>
+StreamT& operator<<(StreamT& s, const TangentBase<Derived>& x)
+{
+  s << x.params();
+  return s;
+}
+
 } // namespace dart::math
 
 //==============================================================================

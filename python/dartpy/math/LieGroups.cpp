@@ -54,6 +54,12 @@ void LieGroups(py::module& m)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(py::self * py::self)
+            .def(
+                "__repr__",
+                [](std::ostream& os, const SO3d& x) -> std::ostream& {
+                  os << x;
+                  return os;
+                })
             .def("setRandom", &SO3d::setRandom)
             .def(
                 "isApprox",
@@ -88,6 +94,12 @@ void LieGroups(py::module& m)
             .def(py::self != py::self)
             .def(py::self * py::self)
             .def(
+                "__repr__",
+                [](std::ostream& os, const SE3d& x) -> std::ostream& {
+                  os << x;
+                  return os;
+                })
+            .def(
                 "isApprox",
                 [](const SE3d& self, const SE3d& other, double tol) -> bool {
                   return self.isApprox(other, tol);
@@ -121,6 +133,12 @@ void LieGroups(py::module& m)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(
+                "__repr__",
+                [](std::ostream& os, const SO3Tangentd& x) -> std::ostream& {
+                  os << x;
+                  return os;
+                })
+            .def(
                 "isApprox",
                 [](const SO3Tangentd& self,
                    const SO3Tangentd& other,
@@ -145,6 +163,12 @@ void LieGroups(py::module& m)
             .def_static("Random", &SE3Tangentd::Random)
             .def(py::self == py::self)
             .def(py::self != py::self)
+            .def(
+                "__repr__",
+                [](std::ostream& os, const SE3Tangentd& x) -> std::ostream& {
+                  os << x;
+                  return os;
+                })
             .def(
                 "isApprox",
                 [](const SE3Tangentd& self,

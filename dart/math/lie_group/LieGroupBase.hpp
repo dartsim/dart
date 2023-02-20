@@ -199,6 +199,14 @@ public:
   [[nodiscard]] Derived& derived() noexcept;
 };
 
+/// Stream operator for LieGroup
+template <typename StreamT, typename Derived>
+StreamT& operator<<(StreamT& s, const LieGroupBase<Derived>& x)
+{
+  s << x.toMatrix();
+  return s;
+}
+
 } // namespace dart::math
 
 //==============================================================================
