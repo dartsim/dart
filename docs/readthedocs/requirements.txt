@@ -1,4 +1,5 @@
 jinja2>=3.1.2
 myst_parser
+sphinx-copybutton
 sphinx_rtd_theme
 sphinx-tabs
