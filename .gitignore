@@ -1,35 +1,50 @@
+# This file lists patterns of files and directories to be ignored by version control systems.
+
+# Build artifacts
 build/
 .build/
-syntax: glob
+Testing/
+
+# Editor and IDE files
 *.swp
 *.swo
-CPack*
-CTest*
-Testing/
-TAGS
 .DS_Store
+.vscode/
+.idea/
+/nbproject/
 .cproject
 .project
-.vscode
-*.orig
-*.idb
-*.pdb
-*.ncb
-*.suo
-*.htm
-*.user
-*.dep
-*.manifest
-*.rsp
-*~
-.idea/*
-/nbproject/
-/doxygen/html/
-docs/readthedocs/site
-data/screencap/*
 
-# Python
-*.egg-info
-__pycache__
+# Generated files
+CPackConfig.cmake
+CTestTestfile.cmake
+*.ilk
+*.manifest
+*.ncb
+*.pdb
+*.rsp
+*.suo
+
+# Backup and temporary files
+*~
+.#*
+*.bak
+*.old
+
+# Documentation files
+doxygen/html/
+docs/readthedocs/site/
+
+# Python artifacts
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+__pycache__/
 dist/
-wheelhouse/
+build/
+*.egg
+*.whl
+
+# Homebrew lock files
+Brewfile.lock.json
