@@ -34,7 +34,7 @@ source_suffix = {
 # The master toctree document.
 root_doc = "index"
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
 
 # -- Options for HTML output -------------------------------------------------

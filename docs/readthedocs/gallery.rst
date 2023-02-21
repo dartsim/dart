@@ -1,5 +1,5 @@
-Examples
-========
+Gallery
+=======
 
 Built-in Examples
 -----------------

@@ -3,24 +3,9 @@
   <img src="https://raw.githubusercontent.com/dartsim/dart/master/docs/dart_logo_377x107.jpg" alt="DART: Dynamic Animation and Robotics Toolkit">
 </p>
 
-## Resources
+## Documentation
 
-For more information on DART, please visit the [DART website](http://dartsim.github.io/).
-
-### Installation Guides
-
-* C++: [Ubuntu](http://dartsim.github.io/install_dart_on_ubuntu.html) | [macOS](http://dartsim.github.io/install_dart_on_mac.html) | [Archlinux](http://dartsim.github.io/install_dart_on_archlinux.html) | [FreeBSD](http://dartsim.github.io/install_dart_on_freebsd.html) | [Windows](http://dartsim.github.io/install_dart_on_windows.html)
-* Python: `pip install dartpy` (for more information, see [Ubuntu](http://dartsim.github.io/install_dartpy_on_ubuntu.html) | [macOS](http://dartsim.github.io/install_dartpy_on_macos.html))
-
-### Additional Resources
-
-* [Gallery](http://dartsim.github.io/gallery.html)
-* C++
-  * [Tutorials](http://dartsim.github.io/tutorials_introduction.html)
-  * [API Documentation](https://dartsim.github.io/dart/)
-* Python
-  * PyPI package: [dartpy](https://pypi.org/project/dartpy/)
-  * OpenAI Gym with DART support: [gym-dart](https://github.com/dartsim/gym-dart)
+For more information on DART, please visit the [DART documentation](https://dart.readthedocs.io/).
 
 ## Build Status
 
