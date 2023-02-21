@@ -26,11 +26,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black
+          pip install black -U
+          pip install isort -U
 
       - name: Check format
         run: |
           black --check --diff .
+
+      - name: Check import
+        run: |
+          isort --check --diff .
 
   build_wheels:
     name: ${{ matrix.os }}.${{ matrix.build }}
