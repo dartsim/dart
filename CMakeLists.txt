@@ -266,7 +266,7 @@ if(MSVC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(/WX)
   endif()
-  
+
   # Required for full compiler support for the Standard C++ exception handling
   # model that safely unwinds stack objects.
   add_compile_options(/EHsc)
@@ -279,7 +279,7 @@ if(MSVC)
   # C++ compiler behavior to parse and instantiate class templates and function
   # templates.
   add_compile_options(/Zc:twoPhase-)
-  
+
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
   add_compile_options(/wd4005)
   add_compile_options(/wd4099)
@@ -292,7 +292,7 @@ if(MSVC)
   add_compile_options(/wd4506)
   add_compile_options(/wd4838)
   add_compile_options(/wd4996)
-  
+
   add_compile_options(/bigobj)
 
   if(DART_IN_CI)

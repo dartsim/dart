@@ -132,17 +132,30 @@ class CMakeBuild(build_ext):
                 build_args += ["--config", cfg]
 
         if sys.platform.startswith("darwin"):
-            # Cross-compile support for macOS - respect ARCHFLAGS if set
+            # Enable cross-compilation support for macOS and respect ARCHFLAGS if set
             archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
             if archs:
-                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
-            cmake_args += [
-                "-DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders"
-            ]
-            cmake_args += [
-                "-DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
-            ]
-            cmake_args += ["-DCMAKE_PREFIX_PATH=$(brew --prefix)"]
+                cmake_args.append(
+                    "-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))
+                )
+
+            # Get the location of Homebrew prefix and specify the location of OpenCL headers for macOS
+            homebrew_prefix = (
+                subprocess.check_output(["brew", "--prefix"]).decode().strip()
+            )
+            opencl_headers_dir = (
+                f"{homebrew_prefix}/opt/opencl-headers/share/cmake/OpenCLHeaders"
+            )
+            opencl_headerscpp_dir = f"{homebrew_prefix}/opt/opencl-clhpp-headers/share/cmake/OpenCLHeadersCpp"
+            cmake_args.extend(
+                [
+                    f"-DOpenCLHeaders_DIR={opencl_headers_dir}",
+                    f"-DOpenCLHeadersCpp_DIR={opencl_headerscpp_dir}",
+                    f"-DCMAKE_PREFIX_PATH={homebrew_prefix}",
+                ]
+            )
+
+            print(f"[DEBUG] cmake_args: {cmake_args}")
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
