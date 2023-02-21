@@ -22,6 +22,12 @@ DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-platform
 
 .. toctree::
    :maxdepth: 1
+   :caption: Gallery
+   
+   gallery
+
+.. toctree::
+   :maxdepth: 1
    :numbered:
    :caption: Tutorials
 
