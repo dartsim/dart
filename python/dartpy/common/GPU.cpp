@@ -30,39 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/gpu/GpuUtils.hpp"
+#include <dart/common/common.hpp>
 
-#include <gtest/gtest.h>
+#include <pybind11/pybind11.h>
 
-using namespace dart;
-using namespace common;
+namespace py = pybind11;
+using namespace dart::common;
 
-//==============================================================================
-GTEST_TEST(GpuUtilsTest, Basics)
+namespace dart::python {
+
+void bindGPU(py::module& m)
 {
-#if DART_ENABLED_GPU
-  std::cout << "GPU availibility: " << IsGpuAvailable() << std::endl;
-
-  for (const auto& device : GetDevices()) {
-    std::cout << "Device: " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-    std::cout << "Vendor: " << device.getInfo<CL_DEVICE_VENDOR>() << std::endl;
-    std::cout << "Type  : "
-              << DeviceTypeToString(device.getInfo<CL_DEVICE_TYPE>())
-              << std::endl;
-    std::cout << "Global Memory      : "
-              << device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() << std::endl;
-    std::cout << "Max Allocation Size: "
-              << device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() << std::endl;
-    std::cout << "Max Workgroup Size : "
-              << device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << std::endl;
-    std::cout << "Max Compute Units  : "
-              << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
-    std::cout << "Max Work Item Dims : "
-              << device.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>()
-              << std::endl;
-    std::cout << std::endl;
-  }
-#else
-  EXPECT_FALSE(isGpuAvailable());
-#endif
+  m.def("is_gpu_available", &IsGpuAvailable, py::arg("use_cache") = true);
 }
+
+} // namespace dart::python

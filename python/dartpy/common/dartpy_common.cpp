@@ -38,6 +38,7 @@ namespace py = pybind11;
 
 namespace dart::python {
 
+void GPU(py::module& sm);
 void Logging(py::module& sm);
 void Observer(py::module& sm);
 void Subject(py::module& sm);
@@ -57,6 +58,7 @@ PYBIND11_MODULE(dartpy_common, sm)
   sm.attr("__version__") = "dev";
 #endif
 
+  GPU(sm);
   Logging(sm);
   Observer(sm);
   Subject(sm);

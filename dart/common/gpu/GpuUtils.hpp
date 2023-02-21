@@ -51,7 +51,7 @@ namespace dart::common {
 ///
 /// @param[in] use_cache Whether to use the cached value
 /// @return True if GPU is available on the system
-[[nodiscard]] DART_COMMON_API bool isGpuAvailable(bool use_cache = true);
+[[nodiscard]] DART_COMMON_API bool IsGpuAvailable(bool use_cache = true);
 
 #if DART_ENABLED_GPU
 

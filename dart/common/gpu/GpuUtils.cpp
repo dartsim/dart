@@ -41,7 +41,7 @@
 namespace dart::common {
 
 //==============================================================================
-bool isGpuAvailable(bool use_cache)
+bool IsGpuAvailable(bool use_cache)
 {
 #if DART_ENABLED_GPU
   static bool gpu_available
