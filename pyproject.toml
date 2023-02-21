@@ -46,6 +46,9 @@ skip = [
     "cp36-macosx*",
     "cp37-macosx*",
 
+    # macOS (arm64)
+    "cp39-macosx_arm64",
+
     # Windows
     "cp*-win32",
     "cp36-win*",

@@ -136,6 +136,13 @@ class CMakeBuild(build_ext):
             archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+            cmake_args += [
+                "-DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders"
+            ]
+            cmake_args += [
+                "-DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
+            ]
+            cmake_args += ["-DCMAKE_PREFIX_PATH=$(brew --prefix)"]
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
