@@ -30,10 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dartpy/math/Utils.hpp"
 #include "dartpy/math/eigen_geometry_pybind.h"
 #include "dartpy/math/eigen_pybind.h"
 
 #include <dart/math/math.hpp>
+
+#include <dart/common/common.hpp>
 
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
@@ -55,10 +58,14 @@ void LieGroups(py::module& m)
             .def(py::self != py::self)
             .def(py::self * py::self)
             .def(
+                "__str__",
+                [](const SO3d& x) -> std::string {
+                  return toString(x.toMatrix());
+                })
+            .def(
                 "__repr__",
-                [](std::ostream& os, const SO3d& x) -> std::ostream& {
-                  os << x;
-                  return os;
+                [](const SO3d& x) -> std::string {
+                  return toRepr("SO3", x.toMatrix());
                 })
             .def("setRandom", &SO3d::setRandom)
             .def(
@@ -94,10 +101,14 @@ void LieGroups(py::module& m)
             .def(py::self != py::self)
             .def(py::self * py::self)
             .def(
+                "__str__",
+                [](const SE3d& x) -> std::string {
+                  return toString(x.toMatrix());
+                })
+            .def(
                 "__repr__",
-                [](std::ostream& os, const SE3d& x) -> std::ostream& {
-                  os << x;
-                  return os;
+                [](const SE3d& x) -> std::string {
+                  return toRepr("SE3", x.toMatrix());
                 })
             .def(
                 "isApprox",
@@ -133,10 +144,14 @@ void LieGroups(py::module& m)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(
+                "__str__",
+                [](const SO3Tangentd& x) -> std::string {
+                  return toString(x.params().transpose());
+                })
+            .def(
                 "__repr__",
-                [](std::ostream& os, const SO3Tangentd& x) -> std::ostream& {
-                  os << x;
-                  return os;
+                [](const SO3Tangentd& x) -> std::string {
+                  return toRepr("SO3Tangent", x.params().transpose());
                 })
             .def(
                 "isApprox",
@@ -164,10 +179,14 @@ void LieGroups(py::module& m)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(
+                "__str__",
+                [](const SE3Tangentd& x) -> std::string {
+                  return toString(x.params().transpose());
+                })
+            .def(
                 "__repr__",
-                [](std::ostream& os, const SE3Tangentd& x) -> std::ostream& {
-                  os << x;
-                  return os;
+                [](const SE3Tangentd& x) -> std::string {
+                  return toRepr("SE3Tangent", x.params().transpose());
                 })
             .def(
                 "isApprox",

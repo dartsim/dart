@@ -41,6 +41,9 @@ template <typename Derived>
 [[nodiscard]] typename Derived::LieAlgebra Hat(
     const TangentBase<Derived>& tangent);
 
+template <typename Derived>
+[[nodiscard]] typename Derived::Tangent Vee(const LieGroupBase<Derived>& x);
+
 /// Exponential map of a Lie group element
 ///
 /// @param[in] tangent Tangent vector
