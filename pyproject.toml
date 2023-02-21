@@ -69,7 +69,7 @@ before-all = [
 ]
 
 [tool.cibuildwheel.windows]
-archs = ["auto64"]
+archs = ["AMD64", "ARM64"]
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
