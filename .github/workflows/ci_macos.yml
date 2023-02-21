@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Release]
-        osx_image: [macos-12]
+        osx_image: [macos-latest]
         enable_simd: [ON]
     env:
       COMPILER: clang
