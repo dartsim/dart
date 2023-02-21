@@ -15,9 +15,9 @@ on:
     - cron: "0 10 * * 0,3" # Runs every Sunday and Wednesday at 2:00 AM in Pacific Time
 
 jobs:
-  build_2022:
+  build:
     name: shared=${{ matrix.build_shared_libs }}.${{ matrix.build_type }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
