@@ -39,7 +39,7 @@ using namespace dart::common;
 
 namespace dart::python {
 
-void bindGPU(py::module& m)
+void GPU(py::module& m)
 {
   m.def("is_gpu_available", &IsGpuAvailable, py::arg("use_cache") = true);
 }
