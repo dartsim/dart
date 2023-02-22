@@ -6,16 +6,13 @@
 
 import distutils.log
 import os
-import platform
 import re
 import subprocess
 import sys
 from codecs import open  # To use a consistent encoding
-from distutils.version import LooseVersion
 from glob import glob
 from pathlib import Path
 
-import pkg_resources
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
@@ -243,6 +240,6 @@ setup(
     install_requires=[
         "numpy",
     ],
-    packages=find_packages(where="python"),
+    packages=find_packages(where="python", exclude=["__pycache__"]),
     package_dir={"": "python"},
 )
