@@ -17,19 +17,4 @@ For more information on DART, please visit the [DART documentation](https://dart
 
 ## Citation
 
-If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500). [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]
-```bibtex
-@article{Lee2018,
-  doi = {10.21105/joss.00500},
-  url = {https://doi.org/10.21105/joss.00500},
-  year  = {2018},
-  month = {Feb},
-  publisher = {The Open Journal},
-  volume = {3},
-  number = {22},
-  pages = {500},
-  author = {Jeongseok Lee and Michael X. Grey and Sehoon Ha and Tobias Kunz and Sumit Jain and Yuting Ye and Siddhartha S. Srinivasa and Mike Stilman and C. Karen Liu},
-  title = {{DART}: Dynamic Animation and Robotics Toolkit},
-  journal = {The Journal of Open Source Software}
-}
-```
+If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500) [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]
