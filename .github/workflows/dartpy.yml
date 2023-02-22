@@ -124,12 +124,6 @@ jobs:
             release_only: false
 
           - os: windows-latest
-            build: "cp38-win_arm64"
-            toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
-            experimental: true
-            release_only: true
-
-          - os: windows-latest
             build: "cp39-win_arm64"
             toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: true
