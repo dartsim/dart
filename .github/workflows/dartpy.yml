@@ -75,6 +75,12 @@ jobs:
             experimental: false
             release_only: false
 
+          - os: ubuntu-latest
+            build: "cp311-manylinux_aarch64"
+            toolchain_file: ""
+            experimental: true
+            release_only: false
+
           - os: macos-latest
             build: "cp38-macosx_x86_64"
             toolchain_file: ""
@@ -122,18 +128,6 @@ jobs:
             toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: false
             release_only: false
-
-          - os: windows-latest
-            build: "cp39-win_arm64"
-            toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
-            experimental: true
-            release_only: true
-
-          - os: windows-latest
-            build: "cp310-win_arm64"
-            toolchain_file: C:/.dartsim/vcpkg/scripts/buildsystems/vcpkg.cmake
-            experimental: true
-            release_only: true
 
           - os: windows-latest
             build: "cp311-win_arm64"

@@ -126,9 +126,9 @@ std::string toRepr(
   } else {
     for (auto i : common::Range(mat.rows())) {
       if (i == 0) {
-        out += fmt::format("{}([", name);
+        out += fmt::format("{}([[", name);
       } else {
-        out += fmt::format("{: <{}}[", "", name.size() + 1u);
+        out += fmt::format("{: <{}}[[", "", name.size() + 2u);
       }
       for (auto j : common::Range(mat.cols())) {
         const auto val = mat(i, j);
@@ -141,7 +141,7 @@ std::string toRepr(
       if (i != mat.rows() - 1) {
         out += "]\n";
       } else {
-        out += "]]\n";
+        out += "]])\n";
       }
     }
   }
