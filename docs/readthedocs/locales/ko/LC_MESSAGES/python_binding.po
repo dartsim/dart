@@ -1,0 +1,106 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-23 06:06-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../python_binding.rst:2 44c1fbaf528844428616c69f5210444f
+msgid "Python Binding"
+msgstr ""
+
+#: ../../python_binding.rst:5 f5e226525f6d4e81bda94c8f28a13777
+msgid "Naming Conventions"
+msgstr ""
+
+#: ../../python_binding.rst:7 9f1ef5d00d694e0fb4e94cae892721ac
+msgid ""
+"This project uses different naming conventions for the C++ code and the "
+"Python bindings. In the C++ code, function names are in camelCase and "
+"variables and member variables use snake_case, whereas in the Python "
+"bindings, both function names and variables use snake_case."
+msgstr ""
+
+#: ../../python_binding.rst:12 19f325ee810140d9a5447a6d39eb7d1e
+msgid "Here are the naming conventions used in the Python bindings:"
+msgstr ""
+
+#: ../../python_binding.rst:14 1acdcc1580254a82adf1bfa68429ebe2
+msgid ""
+"Function names are in snake_case, with words separated by underscores "
+"(e.g. `calculate_average`)."
+msgstr ""
+
+#: ../../python_binding.rst:15 802244a93473499c9d682692c9bdb3e0
+msgid ""
+"Class names are in CamelCase, with the first letter of each word in "
+"uppercase (e.g. `MyClass`)."
+msgstr ""
+
+#: ../../python_binding.rst:16 c80d4887ec1b49fc97ad8ad51c084b26
+msgid ""
+"Variables and member variables are in snake_case, with words separated by"
+" underscores (e.g. `my_variable`)."
+msgstr ""
+
+#: ../../python_binding.rst:17 bdcc41d22e7c424ca4211ade44f918c7
+msgid ""
+"Constants are in ALL_CAPS, with words separated by underscores (e.g. "
+"`MY_CONSTANT`)."
+msgstr ""
+
+#: ../../python_binding.rst:18 95dae61597424b0b9d3754dd27a68bf2
+msgid ""
+"Namespaces are represented by modules, and are in lowercase, with words "
+"separated by underscores (e.g. `my_module.my_namespace`)."
+msgstr ""
+
+#: ../../python_binding.rst:20 dc58eb468ecb49168ad1fcef863f2314
+msgid "For example, the identity member function is called isIdentity in C++:"
+msgstr ""
+
+#: ../../python_binding.rst:27 db31e2669e7b47b5965c9f624bcac273
+msgid "while it is called is_identity in Python:"
+msgstr ""
+
+#: ../../python_binding.rst:35 f0779504b84d479aaba4603c2c686812
+msgid "Motivations for Different Naming Conventions"
+msgstr ""
+
+#: ../../python_binding.rst:37 ff603b0d9fd243c1bb94c54618c75d36
+msgid ""
+"The reason for using different naming conventions in the C++ code and the"
+" Python bindings is to follow the conventions that are most commonly used"
+" in each language. The camelCase convention is more common for function "
+"names in the C++ community, while the snake_case convention is more "
+"common for function names in the Python community."
+msgstr ""
+
+#: ../../python_binding.rst:43 99161e6d66e840e5819a47ca2eb2e48c
+msgid ""
+"By using the standard naming conventions in each language, we can make "
+"the code more readable and easier to understand for developers who are "
+"familiar with each language. Consistency within each language is "
+"important, but it's also crucial to document the conventions clearly so "
+"that other developers can understand how to use the code and what the "
+"naming conventions mean in each context. Additionally, following the "
+"naming conventions of each language can help with integration with other "
+"Python modules or projects."
+msgstr ""
+

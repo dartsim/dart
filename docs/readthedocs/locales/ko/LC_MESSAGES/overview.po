@@ -10,22 +10,22 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-22 19:05-0800\n"
+"POT-Creation-Date: 2023-02-23 06:06-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: ko_KR\n"
-"Language-Team: ko_KR <LL@li.org>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../overview.rst:7
+#: ../../overview.rst:7 e603e4657a8b4129be9c2afad62b2dbd
 msgid "Overview"
-msgstr ""
+msgstr "개요"
 
-#: ../../overview.rst:9
+#: ../../overview.rst:9 c39013ce451e4953a1d44a6d2f7dd83a
 msgid ""
 "DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-"
 "platform, open-source library developed by the `Graphics Lab "
@@ -42,14 +42,8 @@ msgid ""
 "the application of Featherstone's Articulated Body Algorithm to compute "
 "motion dynamics."
 msgstr ""
-"DART (Dynamic Animation and Robotics Toolkit)는 Graphics Lab <http://www.cc.gatech.edu/~karenliu/Home.html>_와 Humanoid Robotics Lab <http://www.golems.org/>_에서 개발한 공동, 크로스 플랫폼 오픈소스 라이브러리입니다.
-또한 Georgia Institute of Technology <http://www.gatech.edu/>_에서도 지속적으로 기여하고 있으며,
-University of Washington <http://www.washington.edu/>_의 Personal Robotics Lab <http://personalrobotics.cs.washington.edu/>_와 Open Source Robotics Foundation <https://www.osrfoundation.org/>_도 기여하고 있습니다. DART는 로봇 공학 및 컴퓨터 애니메이션의
-운동학 및 역학 응용 프로그램을 위한 데이터 구조 및 알고리즘을 제공합니다. DART는 굳이 묘사할 필요가 없을
-정도로 높은 정확성과 안정성을 가지고 있으며, 이는 관절의 연결체를 일반화된 좌표를 사용하여 나타내고,
-Featherstone의 Articulated Body Algorithm을 사용하여 모션 역학을 계산하기 때문입니다."
 
-#: ../../overview.rst:11
+#: ../../overview.rst:11 8ae87fb87f6043d28344b21ee4182adc
 msgid ""
 "For developers, DART offers full access to internal kinematic and dynamic"
 " quantities, such as the mass matrix, Coriolis and centrifugal forces, "
@@ -59,10 +53,9 @@ msgid ""
 " coordinate frames. The frame semantics of DART allow users to define and"
 " use arbitrary reference frames (both inertial and non-inertial) to "
 "specify or request data."
-msgstr ""
-"개발자를 위해서, DART는 다른 많은 인기있는 물리 엔진들이 시뮬레이터를 블랙박스로 취급하는 반면, 질량 행렬, 코리올리스 및 원심력 힘, 변환 행렬과 그 도함수 등 내부 기하학적 및 동적인 양에 대한 전체적인 접근을 제공합니다. 또한 임의의 본 위치 및 좌표 프레임에 대한 자코비안 행렬의 효율적인 계산을 제공합니다. DART의 프레임 의미론은 사용자가 데이터를 지정하거나 요청하기 위해 비관성 및 비관성이 모두 포함 된 임의의 참조 프레임을 정의하고 사용할 수 있게 합니다."
+msgstr "개발자들에게는 DART가 질량 행렬, 코리올리스 및 원심력과 같은 내부 운동학 및 동역학 양에 대한 전체적인 액세스를 제공하여, 시뮬레이터를 블랙박스로 처리하는 많은 인기 있는 물리 엔진과는 달리, 효율적인 계산을 통해 임의의 바디 포인트와 좌표 프레임에 대한 자코비안 행렬을 제공합니다. 또한 DART의 프레임 의미론은 사용자가 임의의 참조 프레임(관성 및 비관성 모두)을 정의하고 사용하여 데이터를 지정하거나 요청할 수 있도록 합니다."
 
-#: ../../overview.rst:13
+#: ../../overview.rst:13 aa7563b21e174eef8a74d8575d2820aa
 msgid ""
 "DART is suitable for real-time controllers due to its lazy evaluation, "
 "which automatically updates forward kinematics and dynamics values to "
@@ -72,197 +65,203 @@ msgid ""
 "complementarity problem (LCP) to guarantee non-penetration, directional "
 "friction, and approximated Coulomb friction cone conditions."
 msgstr ""
+"DART는 게으른 평가로 인해 코드 안전성을 보장하기 위해 자동으로 전진 운동학 및 동력학 값을 "
+"업데이트하므로 실시간 컨트롤러에 적합합니다. 또한 사용자가 제공하는 클래스를 DART 데이터 구조에 "
+"임베드하여 API를 확장할 수 있습니다. 접촉과 충돌은 암시적 시간 단계, 속도 기반 선형 보완성 "
+"문제(LCP)를 사용하여 비침투, 방향성 마찰 및 근사적인 쿨롱 마찰원 조건을 보장합니다."
 
-#: ../../overview.rst:15
+#: ../../overview.rst:15 781946802eb8440083887b7fbe45fffb
 msgid ""
 "In summary, DART has applications in robotics and computer animation as "
 "it features a multibody dynamic simulator and various kinematic tools for"
 " control and motion planning."
 msgstr ""
+"요약하면, DART는 다중체 동역학 시뮬레이터와 제어 및 모션 계획을 위한 다양한 운동학 도구를 "
+"갖추고 있어 로봇 공학 및 컴퓨터 애니메이션 분야에서 활용될 수 있습니다."
 
-#: ../../overview.rst:18
+#: ../../overview.rst:18 ebb3ac6443654a6aaa7be7f4202d975a
 msgid "Features"
-msgstr ""
+msgstr "특징"
 
-#: ../../overview.rst:21
+#: ../../overview.rst:21 913285a357b948d48fd3eb7f319ad5fd
 msgid "General"
-msgstr ""
+msgstr "일반"
 
-#: ../../overview.rst:23
+#: ../../overview.rst:23 93f7bcf7fed34424a1eb2d2a2c0c3769
 msgid "Open-source C++ library licensed under the BSD license."
-msgstr ""
+msgstr "BSD 라이센스로 배포되는 오픈 소스 C++ 라이브러리 입니다."
 
-#: ../../overview.rst:24
+#: ../../overview.rst:24 d2ed9cf688bd4dc6b2e1e9f41f61d4bd
 msgid ""
 "Supports multiple platforms including Ubuntu, Archlinux, FreeBSD, macOS, "
 "and Windows."
-msgstr ""
+msgstr "Ubuntu, Archlinux, FreeBSD, macOS 및 Windows를 비롯한 여러 플랫폼을 지원합니다."
 
-#: ../../overview.rst:25
+#: ../../overview.rst:25 ce0dc185f12a49cfb162dffa42518c2c
 msgid "Fully integrated with Gazebo."
-msgstr ""
+msgstr "Gazebo와 완전히 통합되어 있습니다."
 
-#: ../../overview.rst:26
+#: ../../overview.rst:26 8e96d4fb53674f7d98f9d85065632ca7
 msgid "Supports models in URDF and SDF formats."
-msgstr ""
+msgstr "URDF 및 SDF 형식의 모델을 지원합니다."
 
-#: ../../overview.rst:27
+#: ../../overview.rst:27 859751351c124cf68963768203a3d382
 msgid ""
 "Provides default integration methods (semi-implicit Euler and RK4) and an"
 " extensible API for other numerical integration methods."
-msgstr ""
+msgstr "기본 적분 방법(세미 암시적 Euler 및 RK4)과 다른 수치 적분 방법에 대한 확장 가능한 API를 제공합니다."
 
-#: ../../overview.rst:28
+#: ../../overview.rst:28 5b803c7655d54f12805420566e30fa94
 msgid ""
 "Supports lazy evaluation and automatic updates of kinematic and dynamic "
 "quantities."
-msgstr ""
+msgstr "게으른 평가 및 운동학 및 동역학 양의 자동 업데이트를 지원합니다."
 
-#: ../../overview.rst:29
+#: ../../overview.rst:29 6a70049cdc0e44d2b3583f8a6b3bf44e
 msgid ""
 "Allows for the extension of the API to embed user-provided classes into "
 "its data structures."
-msgstr ""
+msgstr "API를 확장하여 사용자가 제공한 클래스를 데이터 구조에 임베드할 수 있습니다."
 
-#: ../../overview.rst:30
+#: ../../overview.rst:30 9c554919f4184871b10fdd25a9eb96ac
 msgid "Provides comprehensive event recording in the simulation history."
-msgstr ""
+msgstr "시뮬레이션 기록에서 포괄적인 이벤트 기록을 제공합니다."
 
-#: ../../overview.rst:31
+#: ../../overview.rst:31 d7f233e77cd84ec0b7df6f96965a2706
 msgid "3D visualization API using OpenGL and OpenSceneGraph with ImGui support."
-msgstr ""
+msgstr "OpenGL 및 OpenSceneGraph와 ImGui 지원을 사용한 3D 시각화 API."
 
-#: ../../overview.rst:32
+#: ../../overview.rst:32 819dd3bc098a48afa3b60a3edee3da5c
 msgid ""
 "Extensible API to interface with various optimization problems, such as "
 "nonlinear programming and multi-objective optimization."
-msgstr ""
+msgstr "비선형 프로그래밍 및 다목적 최적화와 같은 다양한 최적화 문제와 상호 작용하기 위한 확장 가능한 API."
 
-#: ../../overview.rst:35
+#: ../../overview.rst:35 9bc0755e0bba4ca9b15fbb0230636787
 msgid "Collision Detection"
-msgstr ""
+msgstr "충돌 감지"
 
-#: ../../overview.rst:37
+#: ../../overview.rst:37 e1b3d0a8018441dab1b0fdc5471b75ff
 msgid "Support for multiple collision detectors: FCL, Bullet, and ODE."
-msgstr ""
+msgstr "FCL, Bullet 및 ODE와 같은 다중 충돌 감지기를 지원합니다."
 
-#: ../../overview.rst:38
+#: ../../overview.rst:38 5998018cccd8400385fcbdd8c6a25bfb
 msgid ""
 "Support for various collision shapes including primitive shapes, concave "
 "mesh, and probabilistic voxel grid."
-msgstr ""
+msgstr "기본 도형, 오목한 메시 및 확률적 복셀 그리드를 비롯한 다양한 충돌 모양을 지원합니다."
 
-#: ../../overview.rst:39
+#: ../../overview.rst:39 78010f67d4f2482b8ba0cfb22997967a
 msgid "Support for minimum distance computation."
-msgstr ""
+msgstr "최소 거리 계산을 지원합니다."
 
-#: ../../overview.rst:42
+#: ../../overview.rst:42 198493c34bb14ec3af9c85fab55d6eb5
 msgid "Kinematics"
-msgstr ""
+msgstr "기구학"
 
-#: ../../overview.rst:44
+#: ../../overview.rst:44 61a1ab5121b7418483af0de31982e915
 msgid "Support for numerous types of Joints."
-msgstr ""
+msgstr "다양한 종류의 조인트를 지원합니다."
 
-#: ../../overview.rst:45
+#: ../../overview.rst:45 66c621f3409f4b26b8b8596a8f87e400
 msgid ""
 "Support for numerous primitive and arbitrary body shapes with "
 "customizable inertial and material properties."
-msgstr ""
+msgstr "사용자 정의 가능한 관성 및 물성 속성을 가진 다양한 기본 및 임의의 바디 모양을 지원합니다."
 
-#: ../../overview.rst:46
+#: ../../overview.rst:46 bda10644b5f040318aa548c75ec456f7
 msgid ""
 "Support for flexible skeleton modeling, including cloning and "
 "reconfiguring skeletons or subsections of a skeleton."
-msgstr ""
+msgstr "스켈레톤 모델링을 유연하게 지원하며, 스켈레톤 또는 스켈레톤 부분의 복제 및 재구성이 가능합니다."
 
-#: ../../overview.rst:47
+#: ../../overview.rst:47 6c79412dd34d4ee5a23f83d30edc468c
 msgid ""
 "Comprehensive access to kinematic states (e.g. transformation, position, "
 "velocity, or acceleration) of arbitrary entities and coordinate frames."
-msgstr ""
+msgstr "임의의 개체 및 좌표 프레임의 운동학 상태(변환, 위치, 속도 또는 가속도)에 대한 포괄적인 액세스를 제공합니다."
 
-#: ../../overview.rst:48
+#: ../../overview.rst:48 591aaa54393744908a7d7079430869dc
 msgid "Comprehensive access to various Jacobian matrices and their derivatives."
-msgstr ""
+msgstr "다양한 자코비안 행렬 및 이들의 미분에 대한 포괄적인 액세스를 제공합니다."
 
-#: ../../overview.rst:49
+#: ../../overview.rst:49 0b3e2a5e39694f169088e433808c0c3b
 msgid "Flexible conversion of coordinate frames."
-msgstr ""
+msgstr "좌표 프레임의 유연한 변환을 지원합니다."
 
-#: ../../overview.rst:50
+#: ../../overview.rst:50 2a3932e1b57d4d3899f090758b3ce4e1
 msgid "Fully modular inverse kinematics framework."
-msgstr ""
+msgstr "완전히 모듈화된 역운동학 프레임워크를 제공합니다."
 
-#: ../../overview.rst:51
+#: ../../overview.rst:51 1ae3991c2b1c43bc96ba2ac627786038
 msgid "Plug-and-play hierarchical whole-body inverse kinematics solver."
-msgstr ""
+msgstr "플러그 앤 플레이 형태의 계층적 전신 역운동학 솔버를 제공합니다."
 
-#: ../../overview.rst:52
+#: ../../overview.rst:52 22860d3b9fce478aafb2d21902ce91dc
 msgid "Analytic inverse kinematics interface with ikfast support."
-msgstr ""
+msgstr "ikfast 지원을 갖춘 해석학적 역운동학 인터페이스를 제공합니다."
 
-#: ../../overview.rst:55
+#: ../../overview.rst:55 e46d99fbbdce41adb18f1123cb60fdf6
 msgid "Dynamics"
-msgstr ""
+msgstr "동역학"
 
-#: ../../overview.rst:57
+#: ../../overview.rst:57 3faea28d468f4c618b061448b0501d6e
 msgid ""
 "High performance for articulated dynamic systems using Lie Group "
 "representation and Featherstone hybrid algorithms."
-msgstr ""
+msgstr "Lie 그룹 표현과 Featherstone 하이브리드 알고리즘을 사용하여 관절 동적 시스템에 대한 고성능을 제공합니다."
 
-#: ../../overview.rst:58
+#: ../../overview.rst:58 0cf47008d62b41aa821bc39fede6439b
 msgid ""
 "Exact enforcement of joints between body nodes using generalized "
 "coordinates."
-msgstr ""
+msgstr "일반화된 좌표를 사용하여 바디 노드 간의 관절을 정확하게 강제합니다."
 
-#: ../../overview.rst:59
+#: ../../overview.rst:59 f91c946b61a34619a748954fa0ac886c
 msgid ""
 "Comprehensive API for dynamic quantities and their derivatives, such as "
 "the mass matrix, Coriolis force, gravitational force, and other external "
 "and internal forces."
-msgstr ""
+msgstr "질량 행렬, 코리올리스 힘, 중력 및 기타 외부 및 내부 힘과 같은 동적 양과 이들의 미분에 대한 포괄적인 API를 제공합니다."
 
-#: ../../overview.rst:60
+#: ../../overview.rst:60 fd0816710f674a70a9d0aaa4b61b7ffe
 msgid "Support for both rigid and soft body nodes."
-msgstr ""
+msgstr "강성 및 연성 바디 노드를 모두 지원합니다."
 
-#: ../../overview.rst:61
+#: ../../overview.rst:61 535d130985cd472e9c3a3415e4ea7ee9
 msgid ""
 "Modeling of viscoelastic joint dynamics with joint friction and hard "
 "joint limits."
-msgstr ""
+msgstr "관절 마찰과 하드 관절 한계를 가진 점성탄성 관절 동역학 모델링을 지원합니다."
 
-#: ../../overview.rst:62
+#: ../../overview.rst:62 a0aef6e7b5d14a1b9037f58f9432a511
 msgid "Support for various types of actuators."
-msgstr ""
+msgstr "다양한 유형의 액추에이터를 지원합니다."
 
-#: ../../overview.rst:63
+#: ../../overview.rst:63 6573f544da11446388dcaa728f18bc8a
 msgid ""
 "Handling of contacts and collisions using an implicit LCP to guarantee "
 "non-penetration, directional friction, and approximated Coulomb friction "
 "cone conditions."
-msgstr ""
+msgstr "암시적 LCP를 사용하여 비침투, 방향성 마찰 및 근사적인 쿨롱 마찰원 조건을 보장하여 접촉 및 충돌을 처리합니다."
 
-#: ../../overview.rst:64
+#: ../../overview.rst:64 3518ef302e85473ca3265d928fe9e99f
 msgid ""
 "Use of the \"Island\" technique to subdivide constraint handling for "
 "efficient performance."
-msgstr ""
+msgstr "효율적인 성능을 위해 제한 조건을 세분화하는 'Island' 기술을 사용합니다."
 
-#: ../../overview.rst:65
+#: ../../overview.rst:65 726fd53e5582461482932b02eca4a775
 msgid ""
 "Support for various Cartesian constraints and extensible API for user-"
 "defined constraints."
-msgstr ""
+msgstr "다양한 카르테시안 제약 조건을 지원하며, 사용자 정의 가능한 제약 조건을 위한 확장 가능한 API를 제공합니다."
 
-#: ../../overview.rst:66
+#: ../../overview.rst:66 20955497f40545c99b1880a3a2d9f473
 msgid "Multiple constraint solvers: Lemke method, Dantzig method, and PSG method."
-msgstr ""
+msgstr "여러 제약 해결기를 지원합니다: Lemke 방법, Dantzig 방법 및 PSG 방법."
 
-#: ../../overview.rst:67
+#: ../../overview.rst:67 2fd22fcb770f46498267630ac3879ee9
 msgid "Support for dynamic systems with closed-loop structures."
-msgstr ""
+msgstr "폐루프 구조의 동적 시스템을 지원합니다."
 

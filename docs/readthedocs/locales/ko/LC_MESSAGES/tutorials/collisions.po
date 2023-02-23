@@ -1,0 +1,889 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-23 06:06-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../tutorials/collisions.md:1 240b4c135a674aa19e634932c298c074
+msgid "Collisions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:3 f46ab859212147529d28613097639656
+msgid "Overview"
+msgstr ""
+
+#: ../../tutorials/collisions.md:4 04f0892f61fc470b935d0941482a5280
+msgid ""
+"This tutorial will show you how to programmatically create different "
+"kinds of bodies and set initial conditions for Skeletons. It will also "
+"demonstrate some use of DART's Frame Semantics."
+msgstr ""
+
+#: ../../tutorials/collisions.md:8 0ef73545cec54b8fbe39273ebe50f710
+msgid "The tutorial consists of five Lessons covering the following topics:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:10 d91ead1bc6c44a56a6dd8dfbe13b8dc4
+msgid "Creating a rigid body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:11 8cbf9acb45454a159303587f7629c1a9
+msgid "Creating a soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:12 8609df72706441f39e1cfbc6ca015cbc
+msgid "Setting initial conditions and taking advantage of Frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:13 0e064cf6682d4b8a81bb00ff6d37b5f5
+msgid "Setting joint spring and damping properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:14 147b35e827c54bb2a1d78002b6d128cb
+msgid "Creating a closed kinematic chain"
+msgstr ""
+
+#: ../../tutorials/collisions.md:16 8ea7391e03ea44a79727b50a66b829c2
+msgid ""
+"Please reference the source code in "
+"[**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp)"
+" and [**tutorialCollisions-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialCollisions-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/collisions.md:18 5b4e4325890841d48587645665c3a36f
+msgid "Lesson 1: Creating a rigid body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:20 e63f72f571384e8ea85050a8ea71cb12
+msgid ""
+"Start by going opening the Skeleton code "
+"[tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp)."
+" Find the function named ``addRigidBody``. You will notice that this is a"
+" templated function. If you're not familiar with templates, that's okay; "
+"we won't be doing anything too complicated with them. Different Joint "
+"types in DART are managed by a bunch of different classes, so we need to "
+"use templates if we want the same function to work with a variety of "
+"Joint types."
+msgstr ""
+
+#: ../../tutorials/collisions.md:27 e1e955d7579a49a1bbab42d7bd8f8dd8
+msgid "Lesson 1a: Setting joint properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:29 2e309463928f4a06a5d507b522940440
+msgid ""
+"The first thing we'll want to do is set the Joint properties for our new "
+"body. Whenever we create a BodyNode, we must also create a parent Joint "
+"for it. A BodyNode needs a parent Joint, even if that BodyNode is the "
+"root of the Skeleton, because we need its parent Joint to describe how "
+"it's attached to the world. A root BodyNode could be attached to the "
+"world by any kind of Joint. Most often, it will be attached by either a "
+"FreeJoint (if the body should be completely free to move with respect to "
+"the world) or a WeldJoint (if the body should be rigidly attached to the "
+"world, unable to move at all), but *any* Joint type is permissible."
+msgstr ""
+
+#: ../../tutorials/collisions.md:39 b32e0839c23b4d908dcae4efa7cde591
+msgid ""
+"Joint properties are managed in a nested class, which means it's a class "
+"which is defined inside of another class. For example, ``RevoluteJoint`` "
+"properties are managed in a class called ``RevoluteJoint::Properties`` "
+"while ``PrismaticJoint`` properties are managed in a class called "
+"``PrismaticJoint::Properties``. However, both ``RevoluteJoint`` and "
+"``PrismaticJoint`` inherit the ``SingleDofJoint`` class so the "
+"``RevoluteJoint::Properties`` and ``PrismaticJoint::Properties`` classes "
+"both inherit the ``SingleDofJoint::Properties`` class. The difference is "
+"that ``RevoluteJoint::Properties`` also inherits "
+"``RevoluteJoint::UniqueProperties`` whereas "
+"``PrismaticJoint::Properties`` inherits "
+"``PrismaticJoint::UniqueProperties`` instead. Many DART classes contain "
+"nested ``Properties`` classes like this which are compositions of their "
+"base class's nested ``Properties`` class and their own "
+"``UniqueProperties`` class. As you'll see later, this is useful for "
+"providing a consistent API that works cleanly for fundamentally different"
+" types of classes."
+msgstr ""
+
+#: ../../tutorials/collisions.md:53 8656bb0d601b439380e7cf0b2cd5e529
+msgid "To create a ``Properties`` class for our Joint type, we'll want to say"
+msgstr ""
+
+#: ../../tutorials/collisions.md:58 0374f4c12a094c9bac0871afe29cdcc0
+msgid ""
+"We need to include the ``typename`` keywords because of how the syntax "
+"works for templated functions. Leaving it out should make your compiler "
+"complain."
+msgstr ""
+
+#: ../../tutorials/collisions.md:61 27f8203055854e49a5b1d8a586688f9a
+msgid ""
+"From here, we can set the Joint properties in any way we'd like. There "
+"are only a few things we care about right now: First, the Joint's name. "
+"Every Joint in a Skeleton needs to have a non-empty unique name. Those "
+"are the only restrictions that are placed on Joint names. If you try to "
+"make a Joint's name empty, it will be given a default name. If you try to"
+" make a Joint's name non-unique, DART will append a number tag to the end"
+" of the name in order to make it unique. It will also print out a warning"
+" during run time, which can be an eyesore (because it wants you to be "
+"aware when you are being negligent about naming things). For the sake of "
+"simplicity, let's just give it a name based off its child BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:75 4390b742ee994e94bb0569872392c698
+msgid "Don't forget to uncomment the function arguments."
+msgstr ""
+
+#: ../../tutorials/collisions.md:77 b38a0be347144e5f833e3e322a1d1ce7
+msgid ""
+"Next we'll want to deal with offsetting the new BodyNode from its parent "
+"BodyNode. We can use the following to check if there is a parent "
+"BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:87 6f97d9c9d15842e19f4a3d8ae2946985
+msgid "Inside the brackets, we'll want to create the offset between bodies:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:93 dadc982b7c8f46759043282e2a7821de
+msgid ""
+"An ``math::Isometry3d`` is the Eigen library's version of a homogeneous "
+"transformation matrix. Here we are initializing it to an Identity matrix "
+"to start out. This is almost always something you should do when creating"
+" an math::Isometry3d, because otherwise its contents will be completely "
+"arbitrary trash."
+msgstr ""
+
+#: ../../tutorials/collisions.md:99 2cef49f8181442f59a543e5066ec9890
+msgid ""
+"We can easily compute the center point between the origins of the two "
+"bodies using our default height value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:106 a7f5686c5eb94721af919bf6488fcf1f
+msgid ""
+"We can then offset the parent and child BodyNodes of this Joint using "
+"this transform:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:114 21236aba782e4c39aa8152f4eaeaabe7
+msgid ""
+"Remember that all of that code should go inside the ``if(parent)`` "
+"condition. We do not want to create this offset for root BodyNodes, "
+"because later on we will rely on the assumption that the root Joint "
+"origin is lined up with the root BodyNode origin."
+msgstr ""
+
+#: ../../tutorials/collisions.md:119 6fe892b2a6594a37a7150369e84e8ecb
+msgid "Lesson 1b: Create a Joint and BodyNode pair"
+msgstr ""
+
+#: ../../tutorials/collisions.md:121 9b606d63c1084bcc9535b8ce957ca9d1
+msgid ""
+"A single function is used to simultaneously create a new Joint and its "
+"child BodyNode. It's important to note that a Joint cannot be created "
+"without a child BodyNode to accompany it, and a BodyNode cannot be "
+"created with parent Joint to attach it to something. A parent Joint "
+"without a child BodyNode or vice-versa would be non-physical and "
+"nonsensical, so we don't allow it."
+msgstr ""
+
+#: ../../tutorials/collisions.md:127 8b0fe272d8a546ebbdf41bb3465e5fc9
+msgid ""
+"Use the following to create a new Joint & BodyNode, and obtain a pointer "
+"to that new BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:135 a8ec7d7bc8d04ea28b783436e0589aa1
+msgid ""
+"There's a lot going on in this function, so let's break it down for a "
+"moment:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:141 9f12c325e55344deaa80bd5f1be38234
+msgid ""
+"This is a Skeleton member function that takes template arguments. The "
+"first template argument specifies the type of Joint that you want to "
+"create. In our case, the type of Joint we want to create is actually a "
+"template argument of our current function, so we just pass that argument "
+"along. The second template argument of ``createJointAndBodyNodePair`` "
+"allows us to specify the BodyNode type that we want to create, but the "
+"default argument is a standard rigid  BodyNode, so we can leave the "
+"second argument blank."
+msgstr ""
+
+#: ../../tutorials/collisions.md:153 60e2a172395f4fbe97ac070ad1f13fa5
+msgid ""
+"Now for the function arguments: The first specifies the parent BodyNode. "
+"In the event that you want to create a root BodyNode, you can simply pass"
+" in a nullptr as the parent. The second argument is a "
+"``JointType::Properties`` struct, so we pass in the ``joint_properties`` "
+"object that we created earlier. The third argument is a "
+"``BodyNode::Properties`` struct, but we're going to set the BodyNode "
+"properties later, so we'll just toss the name in by wrapping it up in a "
+"``BodyNode::AspectProperties`` object and leave the rest as default "
+"values."
+msgstr ""
+
+#: ../../tutorials/collisions.md:161 032d1e5d45604d0fb1aa9ea788d38822
+msgid "Now notice the very last thing on this line of code:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:167 cd030984c111486282b2bdccb8960d8c
+msgid ""
+"The function actually returns a ``std::pair`` of pointers to the new "
+"Joint and new BodyNode that were just created, but we only care about "
+"grabbing the  BodyNode once the function is finished, so we can append "
+"``.second`` to the end of the line so that we just grab the BodyNode "
+"pointer and ignore the Joint  pointer. The joint will of course still be "
+"created; we just have no need to  access it at this point."
+msgstr ""
+
+#: ../../tutorials/collisions.md:174 6ff739e84edf4b5ebf30e4c480de55c8
+msgid "Lesson 1c: Make a shape for the body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:176 6ac566ca9aad4146a19a2c60ce01476a
+msgid ""
+"We'll take advantage of the Shape::ShapeType enumeration to specify what "
+"kind of Shape we want to produce for the body. In particular, we'll allow"
+" the user to specify three types of Shapes: ``Shape::BOX``, "
+"``Shape::CYLINDER``, and ``Shape::ELLIPSOID``."
+msgstr ""
+
+#: ../../tutorials/collisions.md:197 ab2e04eb115f4110b804d9554e965307
+msgid ""
+"``ShapePtr`` is simply a typedef for ``std::shared_ptr<Shape>``. DART has"
+" this typedef in order to improve space usage and readability, because "
+"this type gets used very often."
+msgstr ""
+
+#: ../../tutorials/collisions.md:201 ad8a035a38024c28b52ac1c1d63708dc
+msgid ""
+"Now we want to construct each of the Shape types within their conditional"
+" statements. Each constructor is a bit different."
+msgstr ""
+
+#: ../../tutorials/collisions.md:204 2b54ea0d4cbb46c7babb78ca57a774be
+msgid ""
+"For box we pass in an math::Vector3d that contains the three dimensions "
+"of the box:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:213 2d91ce2a32fb47828fe27ea7605170d9
+msgid "For cylinder we pass in a radius and a height:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:220 1a7f3218b57a47d48f28f96ada2574b1
+msgid ""
+"For ellipsoid we pass in an math::Vector3d that contains the lengths of "
+"the three axes:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:227 c354b0ad7ae340b9ab675c1111826ede
+msgid ""
+"Since we actually want a sphere, all three axis lengths will be equal, so"
+" we can create an math::Vector3d filled with ones by using "
+"``math::Vector3d::Ones()`` and then multiply it by the length that we "
+"actually want for the three components."
+msgstr ""
+
+#: ../../tutorials/collisions.md:231 82fbd042eb1a486e970b7c6bfa582958
+msgid ""
+"Finally, we want to add this shape as a visualization **and** collision "
+"shape for the BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:239 36401e96786c436dab5242a3d188c385
+msgid ""
+"We want to do this no matter which type was selected, so those two lines "
+"of code should be after all the condition statements."
+msgstr ""
+
+#: ../../tutorials/collisions.md:242 64c2e8bb309c48d6a1edbba16089e615
+msgid "Lesson 1d: Set up the inertia properties for the body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:244 40948ddcb65545dba638ceee4a0229ed
+msgid ""
+"For the simulations to be physically accurate, it's important for the "
+"inertia properties of the body to match up with the geometric properties "
+"of the shape. We can create an ``Inertia`` object and set its values "
+"based on the shape's geometry, then give that ``Inertia`` to the "
+"BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:257 9e5a805c8e5045de8264634f506d26b2
+msgid "Lesson 1e: Set the coefficient of restitution"
+msgstr ""
+
+#: ../../tutorials/collisions.md:259 44aa88416c704c39bdd6df5d2fb734a0
+msgid "This is very easily done with the following function:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:265 67afdfd75a484853b408586fa39bb082
+msgid "Lesson 1f: Set the damping coefficient"
+msgstr ""
+
+#: ../../tutorials/collisions.md:267 77f31288af774c9587e2b93d009952d6
+msgid ""
+"In real life, joints have friction. This pulls energy out of systems over"
+" time, and makes those systems more stable. In our simulation, we'll "
+"ignore air friction, but we'll add friction in the joints between bodies "
+"in order to have better numerical and dynamic stability:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:281 3d271a8704dd4a29b36d88fc0085bce6
+msgid ""
+"If this BodyNode has a parent BodyNode, then we set damping coefficients "
+"of its Joint to a default value."
+msgstr ""
+
+#: ../../tutorials/collisions.md:284 9ccbf1afc2be43e0a559abea87f89002
+msgid "Lesson 2: Creating a soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:286 9f8d74b4ac0b44769c7f674523c2344c
+msgid ""
+"Find the templated function named ``addSoftBody``. This function will "
+"have a role identical to the ``addRigidBody`` function from earlier."
+msgstr ""
+
+#: ../../tutorials/collisions.md:289 debd3410dfbc4402854d35008089cc8a
+msgid "Lesson 2a: Set the Joint properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:291 0cc9a3e3b3e74ae28618a1d09d4451f5
+msgid ""
+"This portion is exactly the same as Lesson 1a. You can even copy the code"
+" directly from there if you'd like to."
+msgstr ""
+
+#: ../../tutorials/collisions.md:294 12e7732b75964594a476f5f708a3e4d4
+msgid "Lesson 2b: Set the properties of the soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:296 5e90d0ed9ba64ab18bf5f4acaf424e3d
+msgid ""
+"Last time we set the BodyNode properties after creating it, but this time"
+" we'll set them beforehand."
+msgstr ""
+
+#: ../../tutorials/collisions.md:299 91f08c089ccd4049b5227064298e6ab0
+msgid ""
+"First, let's create a struct for the properties that are unique to "
+"SoftBodyNodes:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:305 80540b4e4d544f2dbe44dfdf42e3623c
+msgid ""
+"Later we will combine this with a standard ``BodyNode::Properties`` "
+"struct, but for now let's fill it in. Up above we defined an enumeration "
+"for a couple different SoftBodyNode types. There is no official DART-"
+"native enumeration for this, we created our own to use for this function."
+" We'll want to fill in the ``SoftBodyNode::UniqueProperties`` struct "
+"based off of this enumeration:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:326 ba663e7cf154494aac2ddc3c848993d6
+msgid ""
+"Each of these types has a static function in the ``SoftBodyNodeHelper`` "
+"class that will set up your ``UniqueProperties`` for you. The arguments "
+"for each of the functions are a bit complicated, so here is how to call "
+"it for each type:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:330 faec0b2759c04938a7187c7e44b218ef
+msgid "For the SOFT_BOX:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:342 cfe2295168c648c4825ba543f54e6f34
+msgid "For the SOFT_CYLINDER:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:357 fe0a90d3ee4e4c97bd7bfd1d862e79fd
+msgid "And for the SOFT_ELLIPSOID:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:367 6d681a580e1042a4875bae9c3888be58
+msgid ""
+"Feel free to play around with the different parameters, like number of "
+"slices and number of stacks. However, be aware that some of those "
+"parameters have a minimum value, usually of 2 or 3. During runtime, you "
+"should be warned if you try to create one with a parameter that's too "
+"small."
+msgstr ""
+
+#: ../../tutorials/collisions.md:372 1eff252a5bc542e5a19b1228707eea85
+msgid "Lastly, we'll want to fill in the softness coefficients:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:380 582fc4f6e7ef4db68f7fd97c74511977
+msgid "Lesson 2c: Create the Joint and Soft Body pair"
+msgstr ""
+
+#: ../../tutorials/collisions.md:382 1f3acd9e5b2b437c9df423cc121d950a
+msgid ""
+"This step is very similar to Lesson 1b, except now we'll want to specify "
+"that we're creating a soft BodyNode. First, let's create a full  "
+"``SoftBodyNode::Properties``:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:391 aa9d2a3a9cf44a8aab90dbd8c4967b32
+msgid ""
+"This will combine the ``UniqueProperties`` of the SoftBodyNode with the "
+"standard properties of a BodyNode. Now we can pass the whole thing into "
+"the creation function:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:400 006971dd952646eca2794b6a7ee25f17
+msgid ""
+"Notice that this time it will return a ``SoftBodyNode`` pointer rather "
+"than a normal ``BodyNode`` pointer. This is one of the advantages of "
+"templates!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:403 06c202c94b0f431f86c380e97dda9fa9
+msgid "Lesson 2d: Zero out the BodyNode inertia"
+msgstr ""
+
+#: ../../tutorials/collisions.md:405 6df39ee0b38f4ab6a94935b01a47a807
+msgid ""
+"A SoftBodyNode has two sources of inertia: the underlying inertia of the "
+"standard BodyNode class, and the point mass inertias of its soft skin. In"
+" our case, we only want the point mass inertias, so we should zero out "
+"the standard BodyNode inertia. However, zeroing out inertia values can be"
+" very dangerous, because it can easily result in singularities. So "
+"instead of completely zeroing them out, we will just make them small "
+"enough that they don't impact the simulation:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:420 0f84ee78f44d4f518047ce939ddb940b
+msgid "Lesson 2e: Make the shape transparent"
+msgstr ""
+
+#: ../../tutorials/collisions.md:422 aa4052a13c5d4f2a83dd7a0d864e3803
+msgid ""
+"To help us visually distinguish between the soft and rigid portions of a "
+"body, we can make the soft part of the shape transparent. Upon creation, "
+"a SoftBodyNode will have exactly one visualization shape: the soft shape "
+"visualizer. We can grab that shape and reduce the value of its alpha "
+"channel:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:434 a6fa41901655431ca376cf953b304686
+msgid "Lesson 2f: Give a hard bone to the SoftBodyNode"
+msgstr ""
+
+#: ../../tutorials/collisions.md:436 e0a18b267d464cba8607b16391879749
+msgid ""
+"SoftBodyNodes are intended to be used as soft skins that are attached to "
+"rigid bones. We can create a rigid shape, place it in the SoftBodyNode, "
+"and give some inertia to the SoftBodyNode's base BodyNode class, to act "
+"as the inertia of the bone."
+msgstr ""
+
+#: ../../tutorials/collisions.md:441 98d3195c42c249a0a6dc46d28b6da540
+msgid ""
+"Find the function ``createSoftBody()``. Underneath the call to "
+"``addSoftBody``, we can create a box shape that matches the dimensions of"
+" the soft box, but scaled down:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:452 d56b4d949ce94d0fbe2ae469709d7df1
+msgid ""
+"And then we can add that shape to the visualization and collision shapes "
+"of the SoftBodyNode, just like normal:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:459 cbc495f7dba24dd89d863093b647fb75
+msgid ""
+"And we'll want to make sure that we set the inertia of the underlying "
+"BodyNode, or else the behavior will not be realistic:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:469 5c3d703330144df4a9459128aec41e65
+msgid ""
+"Note that the inertia of the inherited BodyNode is independent of the "
+"inertia of the SoftBodyNode's skin."
+msgstr ""
+
+#: ../../tutorials/collisions.md:472 3f5c73bad254420a8be994a8f0d04a13
+msgid "Lesson 2g: Add a rigid body attached by a WeldJoint"
+msgstr ""
+
+#: ../../tutorials/collisions.md:474 b94c3db1ec974a01a28c240b70e38842
+msgid ""
+"To make a more interesting hybrid shape, we can attach a protruding rigid"
+" body to a SoftBodyNode using a WeldJoint. Find the "
+"``createHybridBody()`` function and see where we call the ``addSoftBody``"
+" function. Just below this, we'll create a new rigid body with a "
+"WeldJoint attachment:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:484 9d2f6e8fd191440e9d3c9b5e40cff463
+msgid "Now we can give the new rigid BodyNode a regular box shape:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:494 46bd1b07b71d4a04b7fb12bcb916553a
+msgid ""
+"To make the box protrude, we'll shift it away from the center of its "
+"parent:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:502 aa260851f1cc438db41c5fb2590f48f9
+msgid ""
+"And be sure to set its inertia, or else the simulation will not be "
+"realistic:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:511 1ff8239b5680406ca310fc207a4204bf
+msgid "Lesson 3: Setting initial conditions and taking advantage of Frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:513 b0cb16e5ec6d45888cef9151e3b25c6b
+msgid ""
+"Find the ``addObject`` function in the ``MyWorld`` class. This function "
+"will be called whenever the user requests for an object to be added to "
+"the world. In this function, we want to set up the initial conditions for"
+" the object so that it gets thrown at the wall. We also want to make sure"
+" that it's not in collision with anything at the time that it's added, "
+"because that would result in problems for the simulation."
+msgstr ""
+
+#: ../../tutorials/collisions.md:520 39f922816b36492991cb7f9cae9e3b8e
+msgid "Lesson 3a: Set the starting position for the object"
+msgstr ""
+
+#: ../../tutorials/collisions.md:522 7d4bce0fecda465caabf56b0d5e4ad05
+msgid ""
+"We want to position the object in a reasonable place for us to throw it "
+"at the wall. We also want to have the ability to randomize its location "
+"along the y-axis."
+msgstr ""
+
+#: ../../tutorials/collisions.md:525 bf813da76d934a4ca4db368a7256f206
+msgid "First, let's create a zero vector for the position:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:530 2a93acc2836e45d08032ba1918a41375
+msgid ""
+"You'll notice that this is an math::Vector**6**d rather than the usual "
+"math::Vector**3**d. This vector has six components because the root "
+"BodyNode has 6 degrees of freedom: three for orientation and three for "
+"translation. Because we follow Roy Featherstone's Spatial Vector "
+"convention, the **first** three components are for **orientation** using "
+"a logmap (also known as angle-axis) and the **last** three components are"
+" for **translation**."
+msgstr ""
+
+#: ../../tutorials/collisions.md:537 c16c1743163a4f9c9de756c08d6c1234
+msgid ""
+"First, if randomness is turned on, we'll set the y-translation to a "
+"randomized value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:545 3f44fb5ed75c4a539957c2527ec81491
+msgid ""
+"``mDistribution(mMT)`` will generate a random value in the range \\[-1, "
+"1\\]  inclusive because of how we initialized the classes in the "
+"constructor of ``MyWindow``."
+msgstr ""
+
+#: ../../tutorials/collisions.md:549 57f2ef26ae1440429b7cc6d74dce01bc
+msgid "Then we always set the height to the default value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:554 e1b3671f439842ca938cbf9a87e5b3d7
+msgid "Finally, we use this vector to set the positions of the root Joint:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:559 eda86574ed2e4a67a55c82d60e176bf9
+msgid ""
+"We trust that the root Joint is a FreeJoint with 6 degrees of freedom "
+"because of how we constructed all the objects that are going to be thrown"
+" at the wall: They were all given a FreeJoint between the world and the "
+"root BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:563 80a3213353c94cd4ae69b6c4cb4ecff0
+msgid "Lesson 3b: Set the object's name"
+msgstr ""
+
+#: ../../tutorials/collisions.md:565 11bbc4384f8a410c8eac5f458a587594
+msgid ""
+"Every object in the world is required to have a non-empty unique name. "
+"Just like Joint names in a Skeleton, if we pass a Skeleton into a world "
+"with a non-unique name, the world will print out a complaint to us and "
+"then rename it. So avoid the ugly printout, we'll make sure the new "
+"object has a unique name ahead of time:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:574 7254d93bf2a14109bb69dd65c1c850a8
+msgid "Lesson 3c: Add the object to the world without collisions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:576 c49bcbdc39c6462eaeee85ef0a1c6fe5
+msgid ""
+"Before we add the Skeleton to the world, we want to make sure that it "
+"isn't actually placed inside of something accidentally. If an object in a"
+"  simulation starts off inside of another object, it can result in "
+"extremely non-physical simulations, perhaps even breaking the simulation "
+"entirely. We can access the world's collision detector directly to check "
+"make sure the new object is collision-free:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:588 ac8b558aa05948c9ae03b852c541b9e7
+msgid ""
+"Now we shouldn't be surprised if the *other* objects are in collision "
+"with each other, so we'll need to check whether our new object overlaps "
+"with any existing objects.  First, we use the collision engine to create "
+"a group which contains our object. Then,  we get a group containing the "
+"existing objects in the world and use it to check for  collisions."
+msgstr ""
+
+#: ../../tutorials/collisions.md:603 b8c89a2cdabf409db3e4f280be7421f8
+msgid ""
+"If the new skeleton doesn't overlap an existing object, we can add it to "
+"the world without any complaints:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:619 b8ca02899b944a41947562b747bbed82
+msgid ""
+"Of course we should also print out a message so that user understands why"
+" we didn't throw a new object."
+msgstr ""
+
+#: ../../tutorials/collisions.md:622 5cc6ddf9a9cd4a279d72aed99c86b8cd
+msgid "Lesson 3d: Creating reference frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:624 310e9202a2364a8e812a6f90ec4b7ffa
+msgid ""
+"DART has a unique feature that we call Frame Semantics. The Frame "
+"Semantics of DART allow you to create reference frames and use them to "
+"get and set data relative to arbitrary frames. There are two crucial "
+"Frame types currently used in DART: ``BodyNode``s and ``SimpleFrame``s."
+msgstr ""
+
+#: ../../tutorials/collisions.md:629 6602304ab11244498ab29db04b4b76f4
+msgid ""
+"The BodyNode class does not allow you to explicitly set its transform, "
+"velocity, or acceleration properties, because those are all strictly "
+"functions of the degrees of freedom that the BodyNode depends on. Because"
+" of this, the BodyNode is not a very convenient class if you want to "
+"create an arbitrary frame of reference. Instead, DART offers the "
+"``SimpleFrame`` class which gives you the freedom of arbitarily attaching"
+" it to any parent Frame and setting its transform, velocity, and "
+"acceleration to whatever you'd like. This makes SimpleFrame useful for "
+"specifying arbitrary reference frames."
+msgstr ""
+
+#: ../../tutorials/collisions.md:638 156ad47a698e4e3fbd869950ab2676d6
+msgid ""
+"We're going to set up a couple SimpleFrames and use them to easily "
+"specify the velocity properties that we want the Skeleton to have. First,"
+" we'll place a SimpleFrame at the Skeleton's center of mass:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:648 158228a9390a46fb83e0a422456b2393
+msgid ""
+"Calling ``object->getCOM()`` will tell us the center of mass location "
+"with respect to the World Frame. We use that to set the translation of "
+"the SimpleFrame's relative transform so that the origin of the "
+"SimpleFrame will be located at the object's center of mass."
+msgstr ""
+
+#: ../../tutorials/collisions.md:653 5ece03d4afb343af9d2e0ee2b9af77ec
+msgid "Now we'll set what we want the object's angular and linear speeds to be:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:671 dc3dda0634ae4ae1bd975ebd400ef499
+msgid "We just use the default values unless randomization is turned on."
+msgstr ""
+
+#: ../../tutorials/collisions.md:673 ef83fccac2dc4a848cc280ee63fd4eeb
+msgid "Now we'll convert those speeds into directional velocities:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:680 fd4c9acf3b4741cabd06fc8bf4736cb9
+msgid ""
+"And now we'll use those vectors to set the velocity properties of the "
+"SimpleFrame:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:686 292b9192894a4f5386613d43dd70e0e9
+msgid ""
+"The ``SimpleFrame::setClassicDerivatives()`` allows you to set the "
+"classic linear and angular velocities and accelerations of a SimpleFrame "
+"with respect to its parent Frame, which in this case is the World Frame. "
+"In DART, classic velocity and acceleration vectors are explicitly "
+"differentiated from spatial velocity and acceleration vectors. If you are"
+" unfamiliar with the term \"spatial vector\", then you'll most likely "
+"want to work in terms of classic velocity and acceleration."
+msgstr ""
+
+#: ../../tutorials/collisions.md:693 201e1a221f0f4d5f87b0057b641d3c9b
+msgid ""
+"Now we want to create a new SimpleFrame that will be a child of the "
+"previous one:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:699 7a1c004d7bd94356960b0cecd1c94a85
+msgid ""
+"And we want the origin of this new Frame to line up with the root "
+"BodyNode of our object:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:706 068f6b90fe194a0a839fc3e9c70d4a6d
+msgid ""
+"Now we'll use this reference frame to set the velocity of the root "
+"BodyNode. By setting the velocity of the root BodyNode equal to the "
+"velocity of this reference frame, we will ensure that the overall "
+"velocity of Skeleton's center of mass is equal to the velocity of the "
+"``center`` Frame from earlier."
+msgstr ""
+
+#: ../../tutorials/collisions.md:715 3c97ebcf4cb546c4ac309465cf58be67
+msgid ""
+"Note that the FreeJoint uses spatial velocity and spatial acceleration "
+"for its degrees of freedom."
+msgstr ""
+
+#: ../../tutorials/collisions.md:718 6994b39fb4f94044920db92d549db09e
+msgid "Now we're ready to toss around objects!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:720 2d1cb00df0c64a92a3a4910734d94112
+msgid "Lesson 4: Setting joint spring and damping properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:722 c0601d38e0304d24a38a9479d90da306
+msgid ""
+"Find the ``setupRing`` function. This is where we'll setup a chain of "
+"BodyNodes so that it behaves more like a closed ring."
+msgstr ""
+
+#: ../../tutorials/collisions.md:725 cbcf5855091141248c10a4adbd73116d
+msgid "Lesson 4a: Set the spring and damping coefficients"
+msgstr ""
+
+#: ../../tutorials/collisions.md:727 2f23be6442244f0fb55660a931c38a53
+msgid ""
+"We'll want to set the stiffness and damping coefficients of only the "
+"DegreesOfFreedom that are **between** two consecutive BodyNodes. The "
+"first six degrees of freedom are between the root BodyNode and the World,"
+" so we don't want to change the stiffness of them, or else the object "
+"will hover unnaturally in the air. But all the rest of the degrees of "
+"freedom should be set:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:742 6705701df1384c43a5178db88109326b
+msgid "Lesson 4b: Set the rest positions of the joints"
+msgstr ""
+
+#: ../../tutorials/collisions.md:744 ab3092ed8402445da4882a5f34630b93
+msgid ""
+"We want to make sure that the ring's rest position works well for the "
+"structure it has. Using basic geometry, we know we can compute the "
+"exterior angle on each edge of a polygon like so:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:753 849a05c478ec40de8cb76f8fcae3f2e5
+msgid ""
+"Now it's important to remember that the joints we have between the "
+"BodyNodes are BallJoints, which use logmaps (a.k.a. angle-axis) to "
+"represent their positions. The BallJoint class provides a convenience "
+"function for converting rotations into a position vector for a BallJoint."
+" A similar function also exists for EulerJoint and FreeJoint."
+msgstr ""
+
+#: ../../tutorials/collisions.md:771 577a45a6a6b7459f919b0db1b98ed7b9
+msgid "Now we can set the rest positions component-wise:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:778 6d565baca97e4dfdba05096dd18a5990
+msgid "Lesson 4c: Set the Joints to be in their rest positions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:780 340ba90b23354fc59f95aeaf5eef448d
+msgid ""
+"Finally, we should set the ring so that all the degrees of freedom (past "
+"the root BodyNode) start out in their rest positions:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:791 0e188bcdbfb14d33bf88a37065da620d
+msgid "Lesson 5: Create a closed kinematic chain"
+msgstr ""
+
+#: ../../tutorials/collisions.md:793 73f5c53fbb204b02a27a9e232bc188eb
+msgid ""
+"Find the ``addRing`` function in ``MyWindow``. In here, we'll want to "
+"create a dynamic constraint that attaches the first and last BodyNodes of"
+" the chain together by a BallJoint-style constraint."
+msgstr ""
+
+#: ../../tutorials/collisions.md:797 12e58c56ab1c4e578de4239d94dc74e2
+msgid "First we'll grab the BodyNodes that we care about:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:804 cb41f5c4c832406fb8af43e829f95bf7
+msgid ""
+"Now we want to compute the offset where the BallJoint constraint should "
+"be located:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:811 47e9be0361cf4ac08078b85efc13b86c
+msgid ""
+"The offset will be located half the default height up from the center of "
+"the tail BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:814 0f8f5c3407a34afda9d8bf380918c7ee
+msgid "Now we have everything we need to construct the constraint:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:821 eaa74e69e7c548d78e1289c39b0b2119
+msgid ""
+"In order for the constraint to work, we'll need to add it to the world's "
+"constraint solver:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:828 26c729e686dd4ee89d8d41f3616dae2a
+msgid ""
+"And in order to properly clean up the constraint when removing BodyNodes,"
+" we'll want to add it to our list of constraints:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:835 e02dca64147f41af84e3428b2a32d2a2
+msgid ""
+"And that's it! You're ready to run the full tutorialCollisions "
+"application!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:837 94757462672942848beca0bbeca14857
+msgid ""
+"**When running the application, keep in mind that the dynamics of "
+"collisions are finnicky, so you may see some unstable and even completely"
+" non-physical behavior. If the application freezes, you may need to force"
+" quit out of it.**"
+msgstr ""
+

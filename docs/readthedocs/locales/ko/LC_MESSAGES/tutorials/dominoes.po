@@ -1,0 +1,563 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-23 06:06-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../tutorials/dominoes.md:1 1b39c0448c4342b58a4820a6951f0ff2
+msgid "Dominoes"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:3 60a9974318e6453abc5951a83232bd51
+msgid "Overview"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:5 b9870b8e4c22425db26802555cdf5256
+msgid ""
+"This tutorial will demonstrate some of the more advanced features of "
+"DART's dynamics API which allow you to write robust controllers that work"
+" for real dynamic systems, such as robotic manipulators. We will show you"
+" how to:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:9 e2fcc6cde4b74a34abc724e76bd10fd8
+msgid "Clone Skeletons"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:10 158deb526d0e4c07a1b9638fcb3b6b97
+msgid "Load a URDF"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:11 b0d1a6307a5c4231b5454529edfe1fd7
+msgid "Write a stable PD controller w/ gravity and coriolis compensation"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:12 baec47aa42484fa9b1c77d993dd26a9e
+msgid "Write an operational space controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:14 6a8b159c57984aee9efe9597c4a8871e
+msgid ""
+"Please reference the source code in "
+"[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)"
+" and [**tutorialDominoes-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialDominoes-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:16 f9255f98972b4336a97c73091afdd975
+msgid "Lesson 1: Cloning Skeletons"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:18 a99b256bb6d44bcc8029ebd8bafb5885
+msgid ""
+"There are often times where you might want to create an exact replica of "
+"an existing Skeleton. DART offers cloning functionality that allows you "
+"to do this very easily."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:22 b063e7c530d144c281f05d613bee7c2c
+msgid "Lesson 1a: Create a new domino"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:24 a9bdac9a08dc4ad89df0e18cb43e3d2a
+msgid ""
+"Creating a new domino is straightforward. Find the function "
+"``attemptToCreateDomino`` in the ``MyWindow`` class. The class has a "
+"member called ``mFirstDomino`` which is the original domino created when "
+"the program starts up. To make a new one, we can just clone it:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:33 b107e3cb88d443c5afd74cf308bab1fb
+msgid ""
+"But keep in mind that every Skeleton that gets added to a world requires "
+"its own unique name. Creating a clone will keep the original name, so we "
+"should we give the new copy its own name:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:41 aeacf84a70414bfca1fc45c8dba6daeb
+msgid ""
+"So the easy part is finished, but now we need to get the domino to the "
+"correct position. First, let's grab the last domino that was placed in "
+"the environment:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:49 a22b88d65c764498afb739abdf0fc646
+msgid ""
+"Now we should compute what we want its position to be. The ``MyWindow`` "
+"class keeps a member called ``mTotalAngle`` which tracks how much the "
+"line of dominoes has turned so far. We'll use that to figure out what "
+"translational offset the new domino should have from the last domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:59 d1be2b70e5e948708793932344357a73
+msgid ""
+"And now we can compute the total position of the new domino. First, we'll"
+" copy the positions of the last domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:66 b8689ea426624f3481543de7c9615c36
+msgid "And then we'll add the translational offset to it:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:72 3b7a820b1b7249db809d8531e757097b
+msgid ""
+"Remember that the domino's root joint is a FreeJoint which has six "
+"degrees of freedom: the first three are for orientation and last three "
+"are for translation."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:75 7d0aa46c11164887b253e2b0fa897480
+msgid "Finally, we should add on the change in angle for the new domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:81 87a81653a8ee4595b950a52d67b1df85
+msgid "Be sure to uncomment the ``angle`` argument of the function."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:83 db0f4427b2a2494cbb6083cf03df82f7
+msgid "Now we can use ``x`` to set the positions of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:89 852e36624081409aaeac51bc9d7199b6
+msgid ""
+"The root FreeJoint is the only joint in the domino's Skeleton, so we can "
+"just use the ``Skeleton::setPositions`` function to set it."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:92 c764b1609d0e4feb89ddd34803462fed
+msgid "Now we'll add the Skeleton to the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:98 412a6e4181b542bf9de3bf56bfa1972d
+msgid "Lesson 1b: Make sure no dominoes are in collision"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:100 0bf342d98c1b442f81a54c9420227758
+msgid ""
+"Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to "
+"make sure that the newly inserted Skeleton is not starting out in "
+"collision with anything, because this could make for a very ugly (perhaps"
+" even broken) simulation."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:104 be73641fa10943bb9c5cf12ce5ce1586
+msgid "First, we'll tell the world to compute collisions:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:112 5750013b9e7440b88bb8eb5974a90983
+msgid ""
+"Now we'll look through and see if any dominoes are in collision with "
+"anything besides the floor. We ignore collisions with the floor because, "
+"mathemetically speaking, if they are in contact with the floor then they "
+"register as being in collision. But we want the dominoes to be in contact"
+" with the floor, so this is okay."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:135 acade1f686d54ddbb426e3716fe5de3e
+msgid ""
+"The only object that could possibly have collided with something else is "
+"the new domino, because we don't allow the application to create new "
+"things except for the dominoes. So if this registered as true, then we "
+"should take the new domino out of the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:148 318e909dd58e413ba3368fdb10500548
+msgid ""
+"Otherwise, if the new domino is in an okay position, we should add it to "
+"the history:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:161 a3ff39aef804409e94f94bb901721b55
+msgid "Lesson 1c: Delete the last domino added"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:163 97ae4b3df7a14831a4302a2f97494d69
+msgid ""
+"Ordinarily, removing a Skeleton from a scene is just a matter of calling "
+"the ``World::removeSkeleton`` function, but we have a little bit of "
+"bookkeeping to take care of for our particular application. First, we "
+"should check whether there are any dominoes to actually remove:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:175 2b583e09be8a4ad18984c450535ed766
+msgid ""
+"Then we should grab the last domino in the history, remove it from the "
+"history, and then take it out of the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:184 42aa3a70f3b7457f85684bd124c8bb03
+msgid ""
+"The ``SkeletonPtr`` class is really a ``std::shared_ptr<Skeleton>`` so we"
+" don't need to worry about ever calling ``delete`` on it. Instead, its "
+"resources will be freed when ``lastDomino`` goes out of scope."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:188 f740ec46b8124f779bdff5aa96d61399
+msgid "We should also make sure to do the bookkeepping for the angles:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:195 a284929d8536471e9fa86aa038275702
+msgid ""
+"**Now we can add and remove dominoes from the scene. Feel free to give it"
+" a try.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:197 6b1ee3c110db49b09fc8526263ed9a44
+msgid "Lesson 1d: Apply a force to the first domino"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:199 ea37a4622b5e4191a8e9813af1ad9a47
+msgid ""
+"But just setting up dominoes isn't much fun without being able to knock "
+"them down. We can quickly and easily knock down the dominoes by magically"
+" applying a force to the first one. In the ``timeStepping`` function of "
+"``MyWindow`` there is a label for **Lesson 1d**. This spot will get "
+"visited whenever the user presses 'f', so we'll apply an external force "
+"to the first domino here:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:212 c92ff016d94c4120a520ca1df446eedb
+msgid "Lesson 2: Loading and controlling a robotic manipulator"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:214 c3eb8fff87014b459967589e6dc3ab7d
+msgid ""
+"Striking something with a magical force is convenient, but not very "
+"believable. Instead, let's load a robotic manipulator and have it push "
+"over the first domino."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:217 266c1d9ef41948938141683dba5e3cdd
+msgid "Lesson 2a: Load a URDF file"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:219 3f03eb7e8f474a3193532d9b358c136a
+msgid ""
+"Our manipulator is going to be loaded from a URDF file. URDF files are "
+"loaded by the ``dart::io::DartLoader`` class (pending upcoming changes to"
+" DART's loading system). First, create a loader:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:227 a9e15239eef74b7989747815d15842c8
+msgid ""
+"Note that many URDF files use ROS's ``package:`` scheme to specify the "
+"locations of the resources that need to be loaded. We won't be using this"
+" in our example, but in general you should use the function "
+"``DartLoader::addPackageDirectory`` to specify the locations of these "
+"packages, because DART does not have the same package resolving abilities"
+" of ROS."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:233 e3da252ed242481089a0bcf722a43b79
+msgid "Now we'll have ``loader`` parse the file into a Skeleton:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:240 3822193f08e648ae89976e60b214c719
+msgid "And we should give the Skeleton a convenient name:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:246 7110a8004a514b93a4c2734efcb24b13
+msgid ""
+"Now we'll want to initialize the location and configuration of the "
+"manipulator. Experimentation has demonstrated that the following setup is"
+" good for our purposes:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:260 ff5f9c53df584b488c7be4fc7cb09d3d
+msgid ""
+"And lastly, be sure to return the Skeleton that we loaded rather than the"
+" dummy Skeleton that was originally there:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:267 5950ce30e36e442c9630275a54cb7db4
+msgid ""
+"**Feel free to load up the application to see the manipulator in the "
+"scene, although all it will be able to do is collapse pitifully onto the "
+"floor.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:270 2c09be41c46b4fd1ac58f06850a15b24
+msgid "Lesson 2b: Grab the desired joint angles"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:272 8969ba91e4ee4a7cbdb6fd0a62cecb2a
+msgid ""
+"To make the manipulator actually useful, we'll want to have the "
+"``Controller`` control its joint forces. For it to do that, the "
+"``Controller`` class will need to be informed of what we want the "
+"manipulator's joint angles to be. This is  easily done in the constructor"
+" of the ``Controller`` class:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:281 37edd61c138b48d1b5b9e0e320c9eb6a
+msgid ""
+"The function ``Skeleton::getPositions`` will get all the generalized "
+"coordinate positions of all the joints in the Skeleton, stacked in a "
+"single vector. These Skeleton API functions are useful when commanding or"
+" controlling an entire Skeleton with a single mathematical expression."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:286 d1180bf005a347b481e12b3031ccb799
+msgid "Lesson 2c: Write a stable PD controller for the manipulator"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:288 26fb87c1d4b34691a4dc5a030055753e
+msgid ""
+"Now that we know what configuration we want the manipulator to hold, we "
+"can write a PD controller that keeps them in place. Find the function "
+"``setPDForces`` in the ``Controller`` class."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:292 6b42326bd79c4043bd2d51818125c679
+msgid "First, we'll grab the current positions and velocities:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:299 b5f3a83a45b144ae84b1f31ac4d50dec
+msgid "Additionally, we'll integrate the position forward by one timestep:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:305 a3f4a25821f244dd829e2ff4334022fa
+msgid ""
+"This is not necessary for writing a regular PD controller, but instead "
+"this is to write a \"stable PD\" controller which has some better "
+"numerical stability properties than an ordinary discrete PD controller. "
+"You can try running with and without this line to see what effect it has "
+"on the stability."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:310 2817389847c74fd399e77ea531885567
+msgid "Now we'll compute our joint position error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:316 61507c10d3ce4163aa4a444f9efbe98e
+msgid "And our joint velocity error, assuming our desired joint velocity is zero:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:322 da3944dc434946feb4ff9b8494542d14
+msgid ""
+"Now we can grab our mass matrix, which we will use to scale our force "
+"terms:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:328 c1d7a4a8aa9e456d978441f14a1aeeb8
+msgid ""
+"And then combine all this into a PD controller that computes forces to "
+"minimize our error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:335 d2d31a2efdfa413995d1a788b5814c21
+msgid "Now we're ready to set these forces on the manipulator:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:341 81c8f7897145499a9bc0de31e862d57b
+msgid "**Feel free to give this PD controller a try to see how effective it is.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:343 9762bd5a8d644bcba2efe8b4e192df33
+msgid "Lesson 2d: Compensate for gravity and Coriolis forces"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:345 3fb57b9bba5444f8ae90a8bd818f1393
+msgid ""
+"One of the key features of DART is the ability to easily compute the "
+"gravity and Coriolis forces, allowing you to write much higher quality "
+"controllers than you would be able to otherwise. This is easily done like"
+" so:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:353 a4cc33c189de4f7cb96f26ba022b4fbc
+msgid ""
+"And now we can update our control law by just slapping this term onto the"
+" end of the equation:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:360 ea48293610aa4f55969cb09570f093ea
+msgid ""
+"**Give this new PD controller a try to see how its performance compares "
+"to the one without compensation**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:363 6648071340cd4db3b3f866e2d0d14e70
+msgid "Lesson 3: Writing an operational space controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:365 3d04a2382338448c84a816d83ad161d6
+msgid ""
+"While PD controllers are simply and handy, operational space controllers "
+"can be much more elegant and useful for performing tasks. Operational "
+"space controllers allow us to unify geometric tasks (like getting the end"
+" effector to a particular spot) and dynamics tasks (like applying a "
+"certain force with the end effector) all while remaining stable and "
+"smooth."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:371 bbee66340f954580a2a92a684dd7ee53
+msgid "Lesson 3a: Set up the information needed for an OS controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:373 5ef65565248d4a8a8df312f94de76550
+msgid ""
+"Unlike PD controllers, an operational space controller needs more "
+"information than just desired joint angles."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:376 cf5f42651c4047d7a7f51fcbe3ec6711
+msgid ""
+"First, we'll grab the last BodyNode on the manipulator and treat it as an"
+" end effector:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:383 1f44545ea29e43a98951a2978b5ec35f
+msgid ""
+"But we don't want to use the origin of the BodyNode frame as the origin "
+"of our Operational Space controller; instead we want to use a slight "
+"offset, to get to the tool area of the last BodyNode:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:391 7539c2bf282749c1875eb4c1cb2ff69a
+msgid ""
+"Also, our target will be the spot on top of the first domino, so we'll "
+"create a reference frame and place it there. First, create the "
+"SimpleFrame:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:398 425317d2122f404c81cf3f5d8a6c6691
+msgid ""
+"Then compute the transform needed to get from the center of the domino to"
+" the top of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:407 547d754ca2ed4f9fbc21060aa8506dda
+msgid ""
+"And then we should rotate the target's coordinate frame to make sure that"
+" lines up with the end effector's reference frame, otherwise the "
+"manipulator might try to push on the domino from a very strange angle:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:416 c7a72f8709434c41bcd8c0de7597780a
+msgid ""
+"Now we'll set the target so that it has a transform of ``target_offset`` "
+"with respect to the frame of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:423 337fd184bc0b420cb139e313532a5288
+msgid ""
+"And this gives us all the information we need to write an Operational "
+"Space controller."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:426 a9d6141b6df54f0a8b7d595bb441b43e
+msgid "Lesson 3b: Computing forces for OS Controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:428 23ad2156c092432fbacb868fc82f4bd2
+msgid ""
+"Find the function ``setOperationalSpaceForces()``. This is where we'll "
+"compute the forces for our operational space controller."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:431 ea9f6306f0cb41caa1fd6d16c35ed224
+msgid ""
+"One of the key ingredients in an operational space controller is the mass"
+" matrix. We can get this easily, just like we did for the PD controller:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:438 e87164c9ecb742e1bd8acf08adadab9a
+msgid ""
+"Next we'll want the Jacobian of the tool offset in the end effector. We "
+"can get it easily with this function:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:445 ebb21f4bf1ae4ff5906c992a29a4c3c4
+msgid ""
+"But operational space controllers typically use the Moore-Penrose "
+"pseudoinverse of the Jacobian rather than the Jacobian itself. There are "
+"many ways to compute the pseudoinverse of the Jacobian, but a simple way "
+"is like this:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:454 e5b70c10dc594d08b3f727f53d6cd965
+msgid ""
+"Note that this pseudoinverse is also damped so that it behaves better "
+"around singularities. This is method for computing the pseudoinverse is "
+"not very efficient in terms of the number of mathematical operations it "
+"performs, but it is plenty fast for our application. Consider using "
+"methods based on Singular Value Decomposition if you need to compute the "
+"pseudoinverse as fast as possible."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:460 d69acd3554ce49b4b2d4ad200313d896
+msgid ""
+"Next we'll want the time derivative of the Jacobian, as well as its "
+"pseudoinverse:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:471 f59bed82ce08491b92073df54ea24adb
+msgid ""
+"Notice that here we're compute the **classic** derivative, which means "
+"the derivative of the Jacobian with respect to time in classical "
+"coordinates rather than spatial coordinates. If you use spatial vector "
+"arithmetic, then you'll want to use ``BodyNode::getJacobianSpatialDeriv``"
+" instead."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:476 888942a9d7ad40f3bb4d991886e5367f
+msgid "Now we can compute the linear components of error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:484 0009103625c94ab993ab23002460aaf0
+msgid "And then the angular components of error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:491 069d42e82c894a918c003d178bb19b6e
+msgid "Then the time derivative of error, assuming our desired velocity is zero:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:498 47d19c4c225f439aae51ade16f18e8af
+msgid ""
+"Like with the PD controller, we can mix in terms to compensate for "
+"gravity and Coriolis forces:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:505 0695315ee79744a28890b8a3548a33cb
+msgid ""
+"The gains for the operational space controller need to be in matrix form,"
+" but we're storing the gains as scalars, so we'll need to conver them:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:515 400cc24c9dae41219dfb6d3b77f3f14b
+msgid ""
+"And we'll need to compute the joint forces needed to achieve our desired "
+"end effector force. This is easily done using the Jacobian transpose:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:524 22707018b9004e89a005236a96d3aa13
+msgid "And now we can mix everything together into the single control law:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:532 1d9a6084b90c4b52ab4945e980bb70de
+msgid "Then don't forget to pass the forces into the manipulator:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:538 18ddddbed92e4e0483559563d29e57cf
+msgid "**Now you're ready to try out the full dominoes app!**"
+msgstr ""
+

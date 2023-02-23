@@ -34,6 +34,8 @@ CTestTestfile.cmake
 # Documentation files
 doxygen/html/
 docs/readthedocs/site/
+docs/readthedocs/_build/
+*.mo
 
 # Python artifacts
 *.pyc

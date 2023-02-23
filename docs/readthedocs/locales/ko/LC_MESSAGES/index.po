@@ -10,38 +10,42 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-22 19:05-0800\n"
+"POT-Creation-Date: 2023-02-23 06:06-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: ko_KR\n"
-"Language-Team: ko_KR <LL@li.org>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../index.rst:50
+#: ../../index.rst:68
 msgid "Home"
 msgstr "홈"
 
-#: ../../index.rst:58
+#: ../../index.rst:76
 msgid "Installation"
 msgstr "설치"
 
-#: ../../index.rst:65
+#: ../../index.rst:83
 msgid "Tutorials"
 msgstr "튜토리얼"
 
-#: ../../index.rst:7
+#: ../../index.rst:95
+msgid "Developer Guide"
+msgstr "개발자 가이드"
+
+#: ../../index.rst:7 990c4f18f929405aa8aaf09142aa709d
 msgid "Welcome to DART 7's documentation!"
 msgstr "DART 7 문서에 오신걸 환영합니다!"
 
-#: ../../index.rst:10
+#: ../../index.rst:10 1fb2baef122d4704b2cbecde8737cfbc
 msgid "Introduction"
 msgstr "소개"
 
-#: ../../index.rst:12
+#: ../../index.rst:12 50ecf98aa8d14409af57e5eb40b1889b
 msgid ""
 "DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-"
 "platform, open-source library developed by the `Graphics Lab "
@@ -58,13 +62,8 @@ msgid ""
 "the application of Featherstone's Articulated Body Algorithm to compute "
 "motion dynamics."
 msgstr ""
-"DART (Dynamic Animation and Robotics Toolkit)은 Graphics Lab " "<http://www.cc.gatech.edu/~karenliu/Home.html>_과 Humanoid Robotics " "Lab <http://www.golems.org/>_에서 개발한, Georgia Institute of Technology " "<http://www.gatech.edu/>_의 협력으로 만들어진 크로스 플랫폼의 오픈소스 라이브러리이며, "
-"University of Washington <http://www.washington.edu/>_의 Personal" " Robotics Lab <http://personalrobotics.cs.washington.edu/>_과 Open " "Source Robotics Foundation <https://www.osrfoundation.org/>_에서도 기여하고 있습니다. "
-"로봇과 컴퓨터 애니메이션에서의 키네마틱 및 다이내믹 애플리케이션에 대한 데이터 구조 및 알고리즘을 제공합니다. "
-"DART는 관절이 있는 강체 시스템을 나타내기 위해 일반화된 좌표를 사용하고, Featherstone의 "
-"Articulated Body Algorithm을 사용하여 모션 다이내믹을 계산함으로써 정확성과 안정성을 갖추고 있습니다."
 
-#: ../../index.rst:15
+#: ../../index.rst:28 6eb2d085be724245b073984628eedfe9
 msgid ""
 "This document pertains to the new major version, DART 7, which is "
 "currently under heavy development. Please note that this early stage "
@@ -75,64 +74,63 @@ msgstr ""
 "언급되지 않은 버그나 다른 문제점이 발생할 수 있는 이른 상태의 버전임을 주의하시기 바랍니다. "
 "더 안정된 버전을 원하시면, DART 6.13을 사용하십시오."
 
-#: ../../index.rst:18
+#: ../../index.rst:34 7fdd0ddcb9284ef696a6f0914e510827
 msgid "Vision for DART 7"
 msgstr "DART 7의 비젼"
 
-#: ../../index.rst:20
+#: ../../index.rst:36 ebffa102d4474aa4bac119c8a8e6ab26
 msgid ""
 "Elevate the Python binding to a first-class component, ensuring full "
 "support and equivalent functionality to the C++ APIs, rather than "
 "remaining in an experimental stage."
 msgstr "파이썬 바인딩을 일등급 컴포넌트로 만들어 C++ API와 동등한 기능을 제공하고 실험 단계를 벗어나게 합니다."
 
-#: ../../index.rst:21
+#: ../../index.rst:37 f316e05c123b4891a5e739a9dfa63975
 msgid ""
 "Modularize the library so that users can select specific components to "
 "use with minimal required dependencies, rather than having to use the "
 "entire library, including unnecessary parts."
 msgstr "사용자가 필요한 최소한의 의존성을 사용하여 특정 컴포넌트를 선택할 수 있도록 라이브러리를 모듈화하여 불필요한 부분을 포함한 전체 라이브러리를 사용하지 않아도 됩니다."
 
-#: ../../index.rst:22
+#: ../../index.rst:38 b33af6b4fe3f49a1a6334161cfab9b02
 msgid ""
 "Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs, "
 "whenever available and enabled by the user, to maximize overall "
 "performance."
 msgstr "사용 가능하고 사용자가 활성화할 경우 SIMD, 멀티코어 CPU 및 GPU 등 하드웨어 가속을 활용하여 전반적인 성능을 극대화합니다."
 
-#: ../../index.rst:23
+#: ../../index.rst:39 ff411e372d65468493241c767d062018
 msgid ""
 "Support both single and double precision, with options to compile the "
 "library for required scalar types or leave the template code uncompiled."
 msgstr "단일 및 더블 정밀도를 모두 지원하며, 필요한 스칼라 유형으로 라이브러리를 컴파일하거나 템플릿 코드를 컴파일하지 않는 옵션이 있습니다."
 
-#: ../../index.rst:24
+#: ../../index.rst:40 f13d104517404849b9cbadbb520d153d
 msgid ""
 "Minimize dependencies to make the library usable without bringing in all "
 "transitive dependencies."
 msgstr "모든 종속성을 가져오지 않고도 라이브러리를 사용할 수 있도록 종속성을 최소화합니다."
 
-#: ../../index.rst:25
+#: ../../index.rst:41 f45445ad89f54e659477399e5c15bc3d
 msgid ""
 "Modernize implementation and public APIs to enable users to work with "
 "more intuitive and user-friendly APIs."
 msgstr "사용자가 더 직관적이고 사용하기 쉬운 API를 사용할 수 있도록 구현과 공개 API를 현대화합니다."
 
-#: ../../index.rst:26
+#: ../../index.rst:42 4fc08dc4a0694f3c93d5e61a65075ba8
 msgid ""
 "Provide various resources, such as a quick start guide, examples, and "
 "tutorials, to lower the initial learning curve for users."
 msgstr "사용자의 초기 학습 곡선을 낮추기 위해 빠른 시작 가이드, 예제 및 튜토리얼과 같은 다양한 리소스를 제공합니다."
 
-#: ../../index.rst:29
+#: ../../index.rst:45 e726034d9d7944f9b0142af87bc09c19
 msgid "Citation"
-msgstr "인용"
+msgstr "논문 인용"
 
-#: ../../index.rst:31
+#: ../../index.rst:47 3d576b46074a4e239f3bfbfac988c0fd
 msgid ""
 "If you use DART in an academic publication, please consider citing this "
 "`JOSS Paper <https://doi.org/10.21105/joss.00500>`_ [`BibTeX "
 "<https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
 msgstr ""
-"DART를 학술적 출판물에서 사용하시는 경우, 이 JOSS Paper <https://doi.org/10.21105/joss.00500>_ [BibTeX
-https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27`_]을 인용해 주세요."
+

@@ -43,4 +43,16 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
+# Setting for multi language
+source_encoding = 'utf-8'
 locale_dirs = ["locales/"]
+gettext_uuid = True
+gettext_compact = False
+
+# Options for LaTeX output
+latex_engine = 'xelatex'
+latex_elements = {
+    'preamble': r'''
+        \usepackage{kotex}
+    '''
+}
