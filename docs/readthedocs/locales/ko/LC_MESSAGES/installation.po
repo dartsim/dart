@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-23 06:06-0800\n"
+"POT-Creation-Date: 2023-02-23 08:44-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -21,96 +21,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../installation.rst:2 52964c9fc4274435b926c51febc99eaf
+#: ../../installation.rst:2 954c41208b6e4202ba00b951610d7890
+msgid "Installation"
+msgstr ""
+
+#: ../../installation.rst:5 49e76efd6e7c435abde8bfaafce6f522
 msgid "Python"
 msgstr ""
 
-#: ../../installation.rst:4 13c8a74a5b794546b0591e6ed014f020
+#: ../../installation.rst:7 f3786cd71425430aaf35fc3b739a4d19
 msgid ""
 "To install the Python bindings for DART using the `dartpy` package from "
 "PyPI, you can use the following command:"
 msgstr ""
 
-#: ../../installation.rst:10 2fe18ddc80c940e68e21e362eabc8f97
+#: ../../installation.rst:13 cc254eddf349401cb56e83580b61a287
 msgid "The following operating systems are currently supported:"
 msgstr ""
 
-#: ../../installation.rst:13 b4d82fc17d79474db1bd6fbfb954dd73
+#: ../../installation.rst:16 399a7e7f706a4e719bf6234094ac7d00
 msgid "Operating System"
 msgstr ""
 
-#: ../../installation.rst:13 d97d113274b9424fa94ba2feb2a228d6
+#: ../../installation.rst:16 f24c16fbdf6a47eaaa01dd7b1df6f546
 msgid "Python 3.7"
 msgstr ""
 
-#: ../../installation.rst:13 539a4e660c554df1b09214720be1c921
+#: ../../installation.rst:16 ac48165031754fc49a96cb492da7a85a
 msgid "Python 3.8"
 msgstr ""
 
-#: ../../installation.rst:13 54db386a9fd04815842f9f1345cbb0c3
+#: ../../installation.rst:16 d3edae06f8724eaeab89ab1621b3fcf1
 msgid "Python 3.9"
 msgstr ""
 
-#: ../../installation.rst:13 841fa641db0447c69d82c725ddd0e586
+#: ../../installation.rst:16 462386b78c1a41d689e7a7546bd284ed
 msgid "Python 3.10"
 msgstr ""
 
-#: ../../installation.rst:13 c3020fec45044dd0af0eccc142503a40
+#: ../../installation.rst:16 b7caac15f79c4925b8076486c23ca299
 msgid "Python 3.11"
 msgstr ""
 
-#: ../../installation.rst:16 4c164da34c214ee09ba65901f170927b
+#: ../../installation.rst:19 6888b191a86b42df8bda81b2e3b61e1b
 msgid "Linux x86_64"
 msgstr ""
 
-#: ../../installation.rst:16 ../../installation.rst:18
-#: ../../installation.rst:20 ../../installation.rst:22
-#: ../../installation.rst:24 ../../installation.rst:26
-#: 0161e05ecdb044c9a17a39d31e978f4f 0817c86c87a842cfa5ec13a84df1a4e2
-#: 29248595bf7747d6a66822a0db5996c0 2fdfcf397bad464ea8218721f91dfe1f
-#: 3d7c2b7dab0349e998d23044b974c05b 3e00cab45a0c43479c54802e85d59733
-#: 4e7e6e5cf51646dea60527011c8e4001 6228efb57c8f489e9932c8f898e3578c
-#: 644f9c75c03b428cae2b0e2f4508e02e 934e496d0cc64cc38ac954815beec6ed
-#: 9a82faa759f94a27bf34ada60f8fea15 b7a5b3eecce24c81b3d3a8a5f0934ff9
-#: d7d4bbdf32844baa9bfe3a6e236f4a36 d9339859dd5b44958bbfdce2f453205a
-#: dac9f9831f5b4e87aea8a62842ae0b33 df3e21fc8f0445e9af958558b153e505
-#: e42e741ad2d4484388cfc9d44e5ebb5f fcbca68dda334ffc906c1fdbddb5cf41
+#: ../../installation.rst:19 ../../installation.rst:21
+#: ../../installation.rst:23 ../../installation.rst:25
+#: ../../installation.rst:27 ../../installation.rst:29
+#: 0df4ab2b0e9c46fa85b8cdd78d748a48 22f5e9cdcd0d48e9b36f80ebcfd0c044
+#: 24aa274e076c46a1af2cff5938898511 26c797d6dc0e4d7d9821345676960ab1
+#: 28eb2750573649b09f1f9090afa14bad 2c2ee5ac14ca4dcfa728d9e782b7d5f2
+#: 33cb6986caf14ebfa8ac02427aca4a7d 52cec34d65c0426bbefb6e0361502036
+#: 54c1af951f494e1794cf4182d3ab9340 682fc0e8e79643e9aed6d580dc0739b3
+#: 6fba2529229a432c8dd4b26fb2487128 782d1b0599b043069032982b334e7214
+#: 9a2f33e03c7740a593ec67fd41858c8a b6ea9b26c01e4d8092b24300a03b6efd
+#: c6475d773d394d5ba1c8e88a0b87eb91 d21e70fa97014cd5838473fa3dac5e71
+#: f3e5ce1cc8fb45988230d1191c5c9e45 fa6d0e32f0754260b0efc6726bd6ae39
 msgid "O"
 msgstr ""
 
-#: ../../installation.rst:18 998568aed4a045a59335feb8ff244fab
+#: ../../installation.rst:21 a8070fe2f6d54d718b0548750a44742c
 msgid "Linux arm64"
 msgstr ""
 
-#: ../../installation.rst:18 ../../installation.rst:20
-#: ../../installation.rst:22 ../../installation.rst:24
-#: ../../installation.rst:26 119731a44edc4fac96c2a05b75a1b425
-#: 1e25535d17fb4cbcb8e57b260437e3de 358e721fc2cf4df7a26da5dcbdc70614
-#: 408cb50d5a5f4bd6bb56c6463e9e65c6 68e55867fcf94b90afbe645e07709c3b
-#: 772f60b6e90240c1a6a644b36a035ce6 88318db519d4480f87624455750c8dea
-#: 9e9b54cbb3414ae390dd65997bd575ba a650e1769c994bde9f27a137cc87f1fe
-#: a869035db51449b5a26f1870f3a3ad6c b8337329128c4f17b6dc50e94c89e22b
-#: ec55ed3237d04d97af18685a224ec075
+#: ../../installation.rst:21 ../../installation.rst:23
+#: ../../installation.rst:25 ../../installation.rst:27
+#: ../../installation.rst:29 1029d11b056a4848b01cf093bee56958
+#: 3610bf3c621543afa555f2baa17fe85b 384d1d22f05e481cb85ef9fb271ff6a7
+#: 5c42cc201a4b4a47bf1ca331e9391cff 69976567eeb14511a71435ea56afc8b6
+#: 6dd708e501d74056ae93f73b4a0cbc9e 842f44c4df174b94a0c3493b199b3110
+#: a7b27cca97534ad5a9c31a8424cf5aa1 c63197019aea41258c55adf02c34d405
+#: d6405233afc74d09b70d749a213a7a8b e2f719365c664ecb96d2276540036ed3
+#: f1abbb51b7e44276b1119468ecb7635c
 msgid "X"
 msgstr ""
 
-#: ../../installation.rst:20 0db54f3d73aa4d888e4d29c85baa7555
+#: ../../installation.rst:23 9639cb518b724681acb3f3089fdab40b
 msgid "macOS x86_64"
 msgstr ""
 
-#: ../../installation.rst:22 4135f809f11a4de8aa636dd45c4b7770
+#: ../../installation.rst:25 0f547fe4a2534c7d92df50ef28a57ad8
 msgid "macOS arm64"
 msgstr ""
 
-#: ../../installation.rst:24 9ff32af4bf8e4c598475aa7770cda1de
+#: ../../installation.rst:27 e0ff5aee2d28458f944336a96930c69a
 msgid "Windows x86_64"
 msgstr ""
 
-#: ../../installation.rst:26 c1ce25cef0a64fc1b71e051aab516e49
+#: ../../installation.rst:29 d7001c3bb6fc491fb4f5800b8b000dd6
 msgid "Windows arm64"
 msgstr ""
 
-#: ../../installation.rst:31 c379cfd5a01a46ae9097795da32b25b9
+#: ../../installation.rst:34 cca6b7c38ff34a52824c25fca65e34fb
 msgid ""
 "This table may not be up-to-date. For the latest information on the "
 "availability of the Python bindings for DART, please refer to the dartpy "
@@ -119,80 +123,83 @@ msgid ""
 "we can consider adding support."
 msgstr ""
 
-#: ../../installation.rst:34 f419d10e578944dfbd82fdf8a0361ebb
+#: ../../installation.rst:37 a74ea904246848019d61ae879facf079
 msgid "C++"
 msgstr ""
 
-#: ../../installation.rst:37 37cf1ec97b164671bb1c305b8d17feb8
+#: ../../installation.rst:40 c0648039cc2b489cb730bfa7352ba451
 msgid "Ubuntu"
 msgstr ""
 
-#: ../../installation.rst:39 6a85411091b746388b4057e6621cf98d
+#: ../../installation.rst:42 431cfc42360f45c0bd3152983f3ef2bc
 msgid "To install DART on Ubuntu, you can use the following commands:"
 msgstr ""
 
-#: ../../installation.rst:41 25f459192c8e4d2e948dceedf575b298
+#: ../../installation.rst:44 86643fff941b42f1bb78cc3a353f793d
 msgid "Add the DART PPA to your system:"
 msgstr ""
 
-#: ../../installation.rst:47 ../../installation.rst:104
-#: 0f7ec337ccf8422dab34a10d93067f98 a3dadbf81d3843048f31fc081458ec8b
+#: ../../installation.rst:50 ../../installation.rst:107
+#: 81ebb393ef6847189fb6de291caeb24f fe595e8f71824e848d702d46553c6162
 msgid "Update your package list:"
 msgstr ""
 
-#: ../../installation.rst:53 efeae98be9d74fb4aadd4cbb6a542353
+#: ../../installation.rst:56 f928a672e835401583eb7b7228711678
 msgid "Install the `libdart6-all-dev` package:"
 msgstr ""
 
-#: ../../installation.rst:60 e2922acfa893478cb09874d6dc065bb0
+#: ../../installation.rst:63 9f663c171682411e8386cb740088f211
 msgid "macOS"
 msgstr ""
 
-#: ../../installation.rst:62 7073c37e280543aea8207e9f654132d3
+#: ../../installation.rst:65 83a2ddfbf59f42469393b0186be147a5
 msgid "To install DART on macOS, you can use Homebrew:"
 msgstr ""
 
-#: ../../installation.rst:64 8ccebc70f5fd4712a74066f6605e81b3
+#: ../../installation.rst:67 b00335e3af3c45c282cf766ab8362534
 msgid "Install Homebrew if you haven't already:"
 msgstr ""
 
-#: ../../installation.rst:70 3defde9816ea48e18498eb7ce5d5029f
+#: ../../installation.rst:73 087982665f0040b4bbd78443ccbab3f2
 msgid "Install the `dartsim` formula:"
 msgstr ""
 
-#: ../../installation.rst:77 b53b61e2152e43ee9f62829e74acef73
+#: ../../installation.rst:80 4c45b30ba24e42308f5aef6a2a58e860
 msgid "Windows"
 msgstr ""
 
-#: ../../installation.rst:79 eed69e0e52184328a3064ad2e1cfb97b
+#: ../../installation.rst:82 26ad815166494bbaa9244fc0152c8c10
 msgid "To install DART on Windows, you can use vcpkg:"
 msgstr ""
 
-#: ../../installation.rst:81 91acdc9cfab44748adb17ee97f6f123a
+#: ../../installation.rst:84 2bb3462778e242f6a889b8823ed9d385
 msgid "Install vcpkg if you haven't already:"
 msgstr ""
 
-#: ../../installation.rst:89 aca863b6fb724f2787445eecd1ba8dc5
+#: ../../installation.rst:92 51801739f7894f6db5cd5e0267a46499
 msgid "Install the `dartsim` package:"
 msgstr ""
 
-#: ../../installation.rst:96 ad8c25141c164a5d8f0679df8be0763f
-msgid "Arch Linux (Experimental)"
+#: ../../installation.rst:99 f2df83bccfc647ecbc13a475ba7a3ebe
+msgid "Arch Linux"
 msgstr ""
 
-#: ../../installation.rst:100 fd922c6bfd5d474893c7119bdc4d0b21
+#: ../../installation.rst:103 346a7385628b4d6fa554c86655585d72
 msgid ""
 "The installation instructions for Arch Linux are currently experimental "
 "and may not work on all systems. Use at your own risk."
 msgstr ""
 
-#: ../../installation.rst:102 7dd465cbf3c94075a1676e560507ba4a
+#: ../../installation.rst:105 190ad668477745f2a71bf243ad4bcdd1
 msgid ""
 "To install DART on Arch Linux using the `yay` package manager, you can "
 "use the following commands:"
 msgstr ""
 
-#: ../../installation.rst:110 36ffe2913988404098a89679e3b3508e
+#: ../../installation.rst:113 55d944e0e221455eb1acb4e486b25d89
 msgid "Install the `libdart` package:"
 msgstr ""
+
+#~ msgid "Arch Linux (Experimental)"
+#~ msgstr ""
 

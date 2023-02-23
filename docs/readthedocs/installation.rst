@@ -1,5 +1,8 @@
+Installation
+============
+
 Python
-======
+------
 
 To install the Python bindings for DART using the `dartpy` package from PyPI, you can use the following command:
 
@@ -31,10 +34,10 @@ The following operating systems are currently supported:
    This table may not be up-to-date. For the latest information on the availability of the Python bindings for DART, please refer to the dartpy package on PyPI: https://pypi.org/project/dartpy/. If you would like to use dartpy on an unsupported OS or Python version, please let us know so we can consider adding support.
 
 C++
-===
+---
 
 Ubuntu
-------
+~~~~~~
 
 To install DART on Ubuntu, you can use the following commands:
 
@@ -57,7 +60,7 @@ To install DART on Ubuntu, you can use the following commands:
    sudo apt-get install libdart7-all-dev-nightly
 
 macOS
------
+~~~~~
 
 To install DART on macOS, you can use Homebrew:
 
@@ -74,7 +77,7 @@ To install DART on macOS, you can use Homebrew:
    brew install dartsim
 
 Windows
--------
+~~~~~~~
 
 To install DART on Windows, you can use vcpkg:
 
@@ -92,8 +95,8 @@ To install DART on Windows, you can use vcpkg:
 
    vcpkg install dartsim:x64-windows
 
-Arch Linux (Experimental)
--------------------------
+Arch Linux
+~~~~~~~~~~
 
 .. note::
 

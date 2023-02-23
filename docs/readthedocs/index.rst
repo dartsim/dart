@@ -76,25 +76,15 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Installation
+   :caption: User Guide
    
    installation
-
-.. toctree::
-   :maxdepth: 1
-   :numbered:
-   :hidden:
-   :caption: Tutorials
-
-   tutorials/introduction
-   tutorials/biped
-   tutorials/collisions
-   tutorials/dominoes
-   tutorials/multi-pendulum
+   tutorials
 
 .. toctree::
    :maxdepth: 1
    :hidden:
    :caption: Developer Guide
 
+   build
    python_binding

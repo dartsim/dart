@@ -1,0 +1,47 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-23 08:44-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../tutorials.rst:16 bfdc67d0632f4a0e8215890a040ce474
+msgid "Contents"
+msgstr ""
+
+#: ../../tutorials.rst:2 7ac59940dac34a84b9b266329a34c7d5
+msgid "Tutorials"
+msgstr ""
+
+#: ../../tutorials.rst:4 85988b0480bd423d9051691c97954168
+msgid ""
+"The purpose of this tutorial is to provide a quick introduction to using "
+"DART. We designed many hands-on exercises to make the learning effective "
+"and fun. To follow along with this tutorial, first locate the tutorial "
+"code in the directory: `dart/tutorials "
+"<https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials>`_."
+" For each of the four tutorials, we provide the skeleton code as the "
+"starting point (e.g. `tutorial_multi_pendulum "
+"<https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum>`_)"
+" and the final code as the answer to the tutorial (e.g. "
+"`tutorial_multi_pendulum_finished "
+"<https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum_finished>`_)."
+" The examples are based on the APIs of DART 7.0."
+msgstr ""
+
