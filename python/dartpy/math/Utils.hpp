@@ -128,7 +128,7 @@ std::string toRepr(
       if (i == 0) {
         out += fmt::format("{}([[", name);
       } else {
-        out += fmt::format("{: <{}}[[", "", name.size() + 2u);
+        out += fmt::format("{: <{}}[", "", name.size() + 2u);
       }
       for (auto j : common::Range(mat.cols())) {
         const auto val = mat(i, j);
@@ -139,7 +139,7 @@ std::string toRepr(
         }
       }
       if (i != mat.rows() - 1) {
-        out += "]\n";
+        out += "],\n";
       } else {
         out += "]])\n";
       }

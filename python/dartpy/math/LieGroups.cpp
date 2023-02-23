@@ -52,8 +52,6 @@ void LieGroups(py::module& m)
   auto so3
       = py::class_<SO3d>(m, "SO3")
             .def(py::init<>())
-            .def_static("Identity", &SO3d::Identity)
-            .def_static("Random", &SO3d::Random)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(py::self * py::self)
@@ -67,16 +65,16 @@ void LieGroups(py::module& m)
                 [](const SO3d& x) -> std::string {
                   return toRepr("SO3", x.toMatrix());
                 })
-            .def("setRandom", &SO3d::setRandom)
+            .def("set_random", &SO3d::setRandom)
             .def(
-                "isApprox",
+                "is_approx",
                 [](const SO3d& self, const SO3d& other, double tol) -> bool {
                   return self.isApprox(other, tol);
                 },
                 py::arg("other"),
                 py::arg("tol") = LieGroupTol<double>())
             .def(
-                "isIdentity",
+                "is_identity",
                 &SO3d::isIdentity,
                 py::arg("tol") = LieGroupTol<double>())
             .def(
@@ -88,15 +86,13 @@ void LieGroups(py::module& m)
                   return self.log(tol);
                 },
                 py::arg("tol") = LieGroupTol<double>())
-            .def("inverseInPlace", &SO3d::inverseInPlace)
-            .def("toMatrix", &SO3d::toMatrix);
+            .def("inverse_in_place", &SO3d::inverseInPlace)
+            .def("to_matrix", &SO3d::toMatrix);
 
   auto se3
       = py::class_<SE3d>(m, "SE3")
             .def(py::init<>())
             .def(py::init<const SO3d&, const Eigen::Vector3d&>())
-            .def_static("Identity", &SE3d::Identity)
-            .def_static("Random", &SE3d::Random)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(py::self * py::self)
@@ -111,14 +107,14 @@ void LieGroups(py::module& m)
                   return toRepr("SE3", x.toMatrix());
                 })
             .def(
-                "isApprox",
+                "is_approx",
                 [](const SE3d& self, const SE3d& other, double tol) -> bool {
                   return self.isApprox(other, tol);
                 },
                 py::arg("other"),
                 py::arg("tol") = LieGroupTol<double>())
             .def(
-                "isIdentity",
+                "is_identity",
                 &SE3d::isIdentity,
                 py::arg("tol") = LieGroupTol<double>())
             .def(
@@ -130,8 +126,11 @@ void LieGroups(py::module& m)
                   return self.log(tol);
                 },
                 py::arg("tol") = LieGroupTol<double>())
-            .def("inverseInPlace", &SE3d::inverseInPlace)
-            .def("toMatrix", &SE3d::toMatrix);
+            .def("inverse_in_place", &SE3d::inverseInPlace)
+            .def("to_matrix", &SE3d::toMatrix);
+
+  m.def("rand_so3", &SO3d::Random);
+  m.def("rand_se3", &SE3d::Random);
 
   py::implicitly_convertible<Eigen::Matrix3d, SO3d>();
   py::implicitly_convertible<Eigen::Matrix4d, SE3d>();
@@ -139,8 +138,8 @@ void LieGroups(py::module& m)
   auto so3_tangent
       = py::class_<SO3Tangentd>(m, "SO3Tangent")
             .def(py::init<>())
-            .def_static("Zero", &SO3Tangentd::Zero)
-            .def_static("Random", &SO3Tangentd::Random)
+            .def_static("zero", &SO3Tangentd::Zero)
+            .def_static("random", &SO3Tangentd::Random)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(
@@ -154,14 +153,14 @@ void LieGroups(py::module& m)
                   return toRepr("SO3Tangent", x.params().transpose());
                 })
             .def(
-                "isApprox",
+                "is_approx",
                 [](const SO3Tangentd& self,
                    const SO3Tangentd& other,
                    double tol) -> bool { return self.isApprox(other, tol); },
                 py::arg("other"),
                 py::arg("tol") = LieGroupTol<double>())
             .def(
-                "isZero",
+                "is_zero",
                 &SO3Tangentd::isZero,
                 py::arg("tol") = LieGroupTol<double>())
             .def(
@@ -174,8 +173,8 @@ void LieGroups(py::module& m)
   auto se3_tangent
       = py::class_<SE3Tangentd>(m, "SE3Tangent")
             .def(py::init<>())
-            .def_static("Zero", &SE3Tangentd::Zero)
-            .def_static("Random", &SE3Tangentd::Random)
+            .def_static("zero", &SE3Tangentd::Zero)
+            .def_static("random", &SE3Tangentd::Random)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(
@@ -189,14 +188,14 @@ void LieGroups(py::module& m)
                   return toRepr("SE3Tangent", x.params().transpose());
                 })
             .def(
-                "isApprox",
+                "is_approx",
                 [](const SE3Tangentd& self,
                    const SE3Tangentd& other,
                    double tol) -> bool { return self.isApprox(other, tol); },
                 py::arg("other"),
                 py::arg("tol") = LieGroupTol<double>())
             .def(
-                "isZero",
+                "is_zero",
                 &SE3Tangentd::isZero,
                 py::arg("tol") = LieGroupTol<double>())
             .def(
@@ -206,27 +205,30 @@ void LieGroups(py::module& m)
                 },
                 py::arg("tol") = LieGroupTol<double>());
 
+  m.def("rand_so3_tangent", &SO3Tangentd::Random);
+  m.def("rand_se3_tangent", &SE3Tangentd::Random);
+
   so3.attr("Tangent") = so3_tangent;
   se3.attr("Tangent") = se3_tangent;
 
   m.def(
-      "Exp",
+      "exp",
       [](const SO3Tangentd& dx, double tol) -> SO3d { return Exp(dx, tol); },
       py::arg("dx"),
       py::arg("tol") = LieGroupTol<double>());
   m.def(
-      "Log",
+      "log",
       [](const SO3d& x, double tol) -> SO3Tangentd { return Log(x, tol); },
       py::arg("x"),
       py::arg("tol") = LieGroupTol<double>());
 
   m.def(
-      "Exp",
+      "exp",
       [](const SE3Tangentd& dx, double tol) -> SE3d { return Exp(dx, tol); },
       py::arg("dx"),
       py::arg("tol") = LieGroupTol<double>());
   m.def(
-      "Log",
+      "log",
       [](const SE3d& x, double tol) -> SE3Tangentd { return Log(x, tol); },
       py::arg("x"),
       py::arg("tol") = LieGroupTol<double>());

@@ -2,44 +2,44 @@
 # All rights reserved.
 
 import pytest
-from dartpy.math import SE3, SO3, Exp, Log
+from dartpy.math import SE3, exp, log, rand_se3
 
 
 def test_identity():
     x = SE3()
-    assert x.isIdentity()
+    assert x.is_identity()
 
 
 def test_random():
-    x = SE3.Random()
+    x = rand_se3()
 
 
 def test_inverse():
     x = SE3()
-    assert x.inverse().inverse().isApprox(x)
+    assert x.inverse().inverse().is_approx(x)
     assert x.inverse().inverse() == x
 
 
 def test_inverse_in_place():
-    x = SE3.Random()
+    x = rand_se3()
     x_inv = x.inverse()
-    assert x_inv == x.inverseInPlace()
+    assert x_inv == x.inverse_in_place()
 
 
 def test_equality():
-    a = SE3.Identity()
-    b = SE3.Identity()
+    a = SE3()
+    b = SE3()
     assert a == b
 
-    c = SE3.Random()
+    c = rand_se3()
     d = c.inverse()
-    assert c * d == SE3.Identity()
+    assert c * d == SE3()
 
 
 def test_exp():
-    x = SE3.Random()
+    x = rand_se3()
     assert x == x.log().exp()
-    assert x == Exp(Log(x))
+    assert x == exp(log(x))
 
 
 if __name__ == "__main__":

@@ -73,3 +73,10 @@ If you use DART in an academic publication, please consider citing this `JOSS Pa
    tutorials/collisions
    tutorials/dominoes
    tutorials/multi-pendulum
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Developer Guide
+
+   python_binding
