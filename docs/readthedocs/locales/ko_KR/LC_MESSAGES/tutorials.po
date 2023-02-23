@@ -1,0 +1,2601 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-22 19:05-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko_KR\n"
+"Language-Team: ko_KR <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../tutorials/biped.md:1
+msgid "Biped"
+msgstr ""
+
+#: ../../tutorials/biped.md:3 ../../tutorials/collisions.md:3
+#: ../../tutorials/dominoes.md:3 ../../tutorials/multi-pendulum.md:3
+msgid "Overview"
+msgstr ""
+
+#: ../../tutorials/biped.md:4
+msgid ""
+"This tutorial demonstrates the dynamic features in DART useful for "
+"developing controllers for bipedal or wheel-based robots. The tutorial "
+"consists of seven Lessons covering the following topics:"
+msgstr ""
+
+#: ../../tutorials/biped.md:8
+msgid "Joint limits and self-collision."
+msgstr ""
+
+#: ../../tutorials/biped.md:9
+msgid "Actuators types and management."
+msgstr ""
+
+#: ../../tutorials/biped.md:10
+msgid "APIs for Jacobian matrices and other kinematic quantities."
+msgstr ""
+
+#: ../../tutorials/biped.md:11
+msgid "APIs for dynamic quantities."
+msgstr ""
+
+#: ../../tutorials/biped.md:12
+msgid "Skeleton editing."
+msgstr ""
+
+#: ../../tutorials/biped.md:14
+msgid ""
+"Please reference the source code in "
+"[**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp)"
+" and [**tutorialBiped-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialBiped-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/biped.md:16
+msgid "Lesson 1: Joint limits and self-collision"
+msgstr ""
+
+#: ../../tutorials/biped.md:17
+msgid ""
+"Let's start by locating the ``main`` function in tutorialBiped.cpp. We "
+"first create a floor and call ``loadBiped`` to load a bipedal figure "
+"described in SKEL format, which is an XML format representing a robot "
+"model. A SKEL file describes a ``World`` with one or more ``Skeleton``s "
+"in it. Here we load in a World from "
+"[**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel)"
+" and assign the bipedal figure to a ``Skeleton`` pointer called *biped*."
+msgstr ""
+
+#: ../../tutorials/biped.md:34
+msgid ""
+"Running the skeleton code (hit the spacebar) without any modification, "
+"you should see a human-like character collapse on the ground and fold in "
+"on itself. Before we attempt to control the biped, let's first make the "
+"biped a bit more realistic by enforcing more human-like joint limits."
+msgstr ""
+
+#: ../../tutorials/biped.md:39
+msgid ""
+"DART allows the user to set upper and lower bounds on each degree of "
+"freedom in the SKEL file or using provided APIs. For example, you should "
+"see the description of the right knee joint in **biped.skel**:"
+msgstr ""
+
+#: ../../tutorials/biped.md:56
+msgid ""
+"The &lt;upper> and &lt;lower> tags make sure that the knee can only flex "
+"but not extend. Alternatively, you can directly specify the joint limits "
+"in the code using ``setPositionUpperLimit`` and "
+"``setPositionLowerLimit``."
+msgstr ""
+
+#: ../../tutorials/biped.md:61
+msgid ""
+"In either case, the joint limits on the biped will not be activated until"
+" you call ``setPositionLimited``:"
+msgstr ""
+
+#: ../../tutorials/biped.md:73
+msgid ""
+"Once the joint limits are set, the next task is to enforce self-"
+"collision. By default, DART does not check self-collision within a "
+"skeleton. You can enable self-collision checking on the biped by"
+msgstr ""
+
+#: ../../tutorials/biped.md:84
+msgid ""
+"This function will enable self-collision on every pair of body nodes. If "
+"you wish to disable self-collisions on adjacent body nodes, call the "
+"following function"
+msgstr ""
+
+#: ../../tutorials/biped.md:90
+msgid ""
+"Running the program again, you should see that the character is still "
+"floppy like a ragdoll, but now the joints do not bend backward and the "
+"body nodes do not penetrate each other anymore."
+msgstr ""
+
+#: ../../tutorials/biped.md:94
+msgid "Lesson 2: Proportional-derivative control"
+msgstr ""
+
+#: ../../tutorials/biped.md:96
+msgid ""
+"To actively control its own motion, the biped must exert internal forces "
+"using actuators. In this Lesson, we will design one of the simplest "
+"controllers to produce internal forces that make the biped hold a target "
+"pose. The proportional-derivative (PD) control computes control force by "
+"&Tau; = -k<sub>p</sub> (&theta; - &theta;<sub>target</sub>) - "
+"k<sub>d</sub> &theta;&#775;, where &theta; and &theta;&#775; are the "
+"current position and velocity of a degree of freedom, "
+"&theta;<sub>target</sub> is the target position set by the controller, "
+"and k<sub>p</sub> and k<sub>d</sub> are the stiffness and damping "
+"coefficients. The detailed description of a PD controller can be found "
+"[here](https://en.wikipedia.org/wiki/PID_controller)."
+msgstr ""
+
+#: ../../tutorials/biped.md:108
+msgid ""
+"The first task is to set the biped to a particular configuration. You can"
+" use ``setPosition`` to set each degree of freedom individually:"
+msgstr ""
+
+#: ../../tutorials/biped.md:119
+msgid ""
+"Here the degree of freedom named \"j_thigh_left_z\" is set to 0.15 "
+"radian. Note that each degree of freedom in a skeleton has a numerical "
+"index which can be accessed by ``getIndexInSkeleton``. You can also set "
+"the entire configuration using a vector that holds the positions of all "
+"the degreed of freedoms using ``setPositions``."
+msgstr ""
+
+#: ../../tutorials/biped.md:127
+msgid ""
+"We continue to set more degrees of freedoms in the lower body to create a"
+" roughly stable standing pose."
+msgstr ""
+
+#: ../../tutorials/biped.md:139
+msgid ""
+"Now the biped will start in this configuration, but will not maintain "
+"this configuration as soon as the simulation starts. We need a controller"
+" to make this happen. Let's take a look at the constructor of our "
+"``Controller`` in the skeleton code:"
+msgstr ""
+
+#: ../../tutorials/biped.md:164
+msgid ""
+"Here we arbitrarily define the stiffness and damping coefficients to 1000"
+" and 50, except for the first six degrees of freedom. Because the global "
+"translation and rotation of the biped are not actuated, the first six "
+"degrees of freedom at the root do not exert any internal force. "
+"Therefore, we set the stiffness and damping coefficients to zero. At the "
+"end of the constructor, we set the target position of the PD controller "
+"to the current configuration of the biped."
+msgstr ""
+
+#: ../../tutorials/biped.md:172
+msgid ""
+"With these settings, we can compute the forces generated by the PD "
+"controller and add them to the internal forces of biped using "
+"``setForces``:"
+msgstr ""
+
+#: ../../tutorials/biped.md:188
+msgid ""
+"Note that the PD control force is *added* to the current internal force "
+"stored in mForces instead of overriding it."
+msgstr ""
+
+#: ../../tutorials/biped.md:191
+msgid ""
+"Now try to run the program and see what happens. The skeleton disappears "
+"almost immediately as soon as you hit the space bar! This is because our "
+"stiffness and damping coefficients are set way too high. As soon as the "
+"biped deviates from the target position, huge internal forces are "
+"generated to cause the numerical simulation to blow up."
+msgstr ""
+
+#: ../../tutorials/biped.md:198
+msgid ""
+"So let's lower those coefficients a bit. It turns out that each of the "
+"degrees of freedom needs to be individually tuned depending on many "
+"factors, such as the inertial properties of the body nodes, the type and "
+"properties of joints, and the current configuration of the system. "
+"Figuring out an appropriate set of coefficients can be a tedious process "
+"difficult to generalize across new tasks or different skeletons. In the "
+"next Lesson, we will introduce a much more efficient way to stabilize the"
+" PD controllers without endless tuning and trial-and-errors."
+msgstr ""
+
+#: ../../tutorials/biped.md:208
+msgid "Lesson 3: Stable PD control"
+msgstr ""
+
+#: ../../tutorials/biped.md:210
+msgid ""
+"SPD is a variation of PD control proposed by [Jie "
+"Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The basic idea "
+"of SPD is to compute control force using the predicted state at the next "
+"time step, instead of the current state. This Lesson will only "
+"demonstrate the implementation of SPD using DART without going into "
+"details of SPD derivation."
+msgstr ""
+
+#: ../../tutorials/biped.md:217
+msgid ""
+"The implementation of SPD involves accessing the current dynamic "
+"quantities in Lagrange's equations of motion. Fortunately, these "
+"quantities are readily available via DART API, which makes the full "
+"implementation of SPD simple and concise:"
+msgstr ""
+
+#: ../../tutorials/biped.md:238
+msgid ""
+"You can get mass matrix, Coriolis force, gravitational force, and "
+"constraint force projected onto generalized coordinates using function "
+"calls ``getMassMatrix``, ``getCoriolisForces``, ``getGravityForces``, and"
+" ``getConstraintForces``, respectively. Constraint forces include forces "
+"due to contacts, joint limits, and other joint constraints set by the "
+"user (e.g. the weld joint constraint in the multi-pendulum tutorial)."
+msgstr ""
+
+#: ../../tutorials/biped.md:249
+msgid ""
+"With SPD, a wide range of stiffness and damping coefficients will all "
+"result in stable motion. In fact, you can just leave them to our original"
+" values: 1000 and 50. By holding the target pose, now the biped can stand"
+" on the ground in balance indefinitely. However, if you apply an external"
+" push force on the biped (hit ',' or '.' key to apply a backward or "
+"forward push), the biped loses its balance quickly. We will demonstrate a"
+" more robust feedback controller in the next Lesson."
+msgstr ""
+
+#: ../../tutorials/biped.md:258
+msgid "Lesson 4: Ankle strategy"
+msgstr ""
+
+#: ../../tutorials/biped.md:260
+msgid ""
+"Ankle (or hip) strategy is an effective way to maintain standing balance."
+" The idea is to adjust the target position of ankles according to the "
+"deviation between the center of mass and the center of pressure projected"
+" on the ground. A simple linear feedback rule is used to update the "
+"target ankle position: &theta;<sub>a</sub> = -k<sub>p</sub> (x - p) - "
+"k<sub>d</sub> (x&#775; - p&#775;), where x and p indicate the center of "
+"mass and center of pressure in the anterior-posterior axis. k<sub>p</sub>"
+" and k<sub>d</sub> are the feedback gains defined by the user."
+msgstr ""
+
+#: ../../tutorials/biped.md:270
+msgid ""
+"To implement ankle strategy, let's first compute the deviation between "
+"the center of mass and an approximated center of pressure in the "
+"anterior-posterior axis:"
+msgstr ""
+
+#: ../../tutorials/biped.md:285
+msgid ""
+"DART provides various APIs to access useful kinematic information. For "
+"example, ``getCOM`` returns the center of mass of the skeleton and "
+"``getTransform`` returns transformation of the body node with respect to "
+"any coordinate frame specified by the parameter (world coordinate frame "
+"as default). DART APIs also come in handy when computing the derivative "
+"term,  -k<sub>d</sub> (x&#775; - p&#775;):"
+msgstr ""
+
+#: ../../tutorials/biped.md:303
+msgid ""
+"The linear/angular velocity/acceleration of any point in any coordinate "
+"frame can be easily accessed in DART. The full list of the APIs for "
+"accessing various velocities/accelerations can be found in the [API "
+"Documentation](http://dartsim.github.io/dart/). The  following table "
+"summarizes the essential APIs."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Function Name"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Description"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getSpatialVelocity"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the spatial velocity of this BodyNode in the coordinates of the "
+"BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getLinearVelocity"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the linear portion of classical velocity of the BodyNode relative "
+"to some other BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getAngularVelocity"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the angular portion of classical velocity of this BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getSpatialAcceleration"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the spatial acceleration of this BodyNode in the coordinates of "
+"the BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getLinearAcceleration"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the linear portion of classical acceleration of the BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getAngularAcceleration"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the angular portion of classical acceleration of this BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md:317
+msgid ""
+"The remaining of the ankle strategy implementation is just the matter of "
+"parameters tuning. We found that using different feedback rules for "
+"falling forward and backward result in more stable controller."
+msgstr ""
+
+#: ../../tutorials/biped.md:321
+msgid "Lesson 5: Skeleton editing"
+msgstr ""
+
+#: ../../tutorials/biped.md:323
+msgid ""
+"DART provides various functions to copy, delete, split, and merge parts "
+"of skeletons to alleviate the pain of building simulation models from "
+"scratch. In this Lesson, we will load a skateboard model from a SKEL file"
+" and merge our biped with the skateboard to create a wheel-based robot."
+msgstr ""
+
+#: ../../tutorials/biped.md:329
+msgid "We first load a skateboard from **skateboard.skel**:"
+msgstr ""
+
+#: ../../tutorials/biped.md:340
+msgid ""
+"Our goal is to make the skateboard Skeleton a subtree of the biped "
+"Skeleton connected to the left heel BodyNode via a newly created Euler "
+"joint. To do so, you need to first create an instance of "
+"``EulerJoint::Properties`` for this new joint."
+msgstr ""
+
+#: ../../tutorials/biped.md:355
+msgid ""
+"Here we increase the vertical distance between the child BodyNode and the"
+" joint by 0.1m to give some space between the skateboard and the left "
+"foot. Now you can merge the skateboard and the biped using this new Euler"
+" joint by"
+msgstr ""
+
+#: ../../tutorials/biped.md:368
+msgid ""
+"There are many other functions you can use to edit skeletons. Here is a "
+"table of some relevant functions for quick references."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Example"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "remove"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "bd1->remove()"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Remove the BodyNode bd1 and its subtree from their Skeleton."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "moveTo"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "bd1->moveTo(bd2)"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Move the BodyNode bd1 and its subtree under the BodyNode bd2."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "split"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "auto newSkel = bd1->split(\"new skeleton\")`"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Remove the BodyNode bd1 and its subtree from their current Skeleton and "
+"move them into a newly created Skeleton with \"new skeleton\" name."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "changeParentJointType"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "bd1->changeParentJointType&lt;BallJoint&gt;()"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Change the Joint type of the BodyNode bd1's parent joint to BallJoint"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "copyTo"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "bd1->copyTo(bd2)"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Create clones of the BodyNode bd1 and its subtree and attach the clones "
+"to the specified the BodyNode bd2."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "copyAs"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "auto newSkel = bd1->copyAs(\"new skeleton\")"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Create clones of the BodyNode bd1 and its subtree and create a new "
+"Skeleton with \"new skeleton\" name to attach them to."
+msgstr ""
+
+#: ../../tutorials/biped.md:381
+msgid "Lesson 6: Actuator types"
+msgstr ""
+
+#: ../../tutorials/biped.md:383
+msgid ""
+"DART provides five types of actuator. Each joint can select its own "
+"actuator type."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Type"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "FORCE"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "Take joint force and return the resulting joint acceleration."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "PASSIVE"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Take nothing (joint force = 0) and return the resulting joint "
+"acceleration."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "ACCELERATION"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Take desired joint acceleration and return the joint force to achieve the"
+" acceleration."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "VELOCITY"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Take desired joint velocity and return the joint force to achieve the "
+"velocity."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "LOCKED"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Lock the joint by setting the joint velocity and acceleration to zero and"
+" return the joint force to lock the joint."
+msgstr ""
+
+#: ../../tutorials/biped.md:394
+msgid ""
+"In this Lesson, we will switch the actuator type of the wheels from the "
+"default FORCE type to VELOCITY type."
+msgstr ""
+
+#: ../../tutorials/biped.md:406
+msgid ""
+"Once all four wheels are set to VELOCITY actuator type, you can command "
+"them by directly setting the desired velocity:"
+msgstr ""
+
+#: ../../tutorials/biped.md:419
+msgid ""
+"Note that ``setCommand`` only exerts commanding force in the current time"
+" step. If you wish the wheel to continue spinning at a particular speed, "
+"``setCommand`` needs to be called at every time step."
+msgstr ""
+
+#: ../../tutorials/biped.md:423
+msgid "We also set the stiffness and damping coefficients for the wheels to zero."
+msgstr ""
+
+#: ../../tutorials/biped.md:438
+msgid ""
+"This is because we do not want the velocity-based actuators to "
+"incorrectly affect the computation of SPD. If we use simple PD control "
+"scheme, the values of these spring and damping coefficients do not affect"
+" the dynamics of the system."
+msgstr ""
+
+#: ../../tutorials/biped.md:443
+msgid ""
+"Let's simulate what we've got so far. The biped now is connecting to the "
+"skateboard through a Euler joint. Once the simulation starts, you can use"
+" 'a' and 's' to increase or decrease the wheel speed. However, the biped "
+"falls on the floor immediately because the current target pose is not "
+"balanced for one-foot stance. We need to find a better target pose."
+msgstr ""
+
+#: ../../tutorials/biped.md:450
+msgid "Lesson 7: Inverse kinematics"
+msgstr ""
+
+#: ../../tutorials/biped.md:452
+msgid ""
+"Instead of manually designing a target pose, this time we will solve for "
+"a balanced pose by formulating an inverse kinematics (IK) problem and "
+"solving it using gradient descent method. In this example, a balanced "
+"pose is defined as a pose where the center of mass is well supported by "
+"the ground contact and the left foot lies flat on the ground. As such, we"
+" cast IK as an optimization problem that minimizes the horizontal "
+"deviation between the center of mass and the center of the left foot, as "
+"well as the vertical distance of the four corners of the left foot from "
+"the ground:"
+msgstr ""
+
+#: ../../tutorials/biped.md:464
+msgid ""
+"where <b>c</b> and <b>p</b> indicate the projected center of mass and "
+"center of pressure on the ground, and *p<sub>i</sub>* indicates the "
+"vertical height of one corner of the left foot."
+msgstr ""
+
+#: ../../tutorials/biped.md:468
+msgid ""
+"To compute the gradient of the above objective function, we need to "
+"evaluate the partial derivatives of each objective term with respect to "
+"the degrees of freedom, i.e., the computation of Jacobian matrix. DART "
+"provides a comprensive set of APIs for accessing various types of "
+"Jacobian. In this example, computing the gradient of the first term of "
+"the objective function requires the Jacobian of the center of mass of the"
+" Skeleton, as well as the Jacobian of the center of mass of a BodyNode:"
+msgstr ""
+
+#: ../../tutorials/biped.md:487
+msgid ""
+"``getCOMLinearJacobian`` returns the linear Jacobian of the center of "
+"mass of the Skeleton, while ``getLinearJacobian`` returns the Jacobian of"
+" a point on a BodyNode. The BodyNode and the local coordinate of the "
+"point are specified as parameters to this function. Here the point of "
+"interest is the center of mass of the left foot, which local coordinates "
+"can be accessed by ``getCOM`` with a parameter indicating the left foot "
+"being the frame of reference. We use ``getLinearJacobian`` again to "
+"compute the gradient of the second term of the objective function:"
+msgstr ""
+
+#: ../../tutorials/biped.md:507
+msgid ""
+"The full list of Jacobian APIs can be found in the [API "
+"Documentation](http://dartsim.github.io/dart/). The  following table "
+"summarizes the essential APIs."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getJacobian"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the generalized Jacobian targeting the origin of the BodyNode. The"
+" Jacobian is expressed in the Frame of this BodyNode."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getLinearJacobian"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the linear Jacobian targeting the origin of the BodyNode. You can "
+"specify a coordinate Frame to express the Jacobian in."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getAngularJacobian"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the angular Jacobian targeting the origin of the BodyNode. You can"
+" specify a coordinate Frame to express the Jacobian in."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getJacobianSpatialDeriv"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the spatial time derivative of the generalized Jacobian targeting "
+"the origin of the BodyNode. The Jacobian is expressed in the BodyNode's "
+"coordinate Frame."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getJacobianClassicDeriv"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the classical time derivative of the generalized Jacobian "
+"targeting the origin of the BodyNode. The Jacobian is expressed in the "
+"World coordinate Frame."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getLinearJacobianDeriv"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the linear Jacobian (classical) time derivative, in terms of any "
+"coordinate Frame."
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid "getAngularJacobianDeriv"
+msgstr ""
+
+#: ../../tutorials/biped.md
+msgid ""
+"Return the angular Jacobian (classical) time derivative, in terms of any "
+"coordinate Frame."
+msgstr ""
+
+#: ../../tutorials/biped.md:520
+msgid ""
+"This Lesson concludes the entire Biped tutorial. You should see a biped "
+"standing stably on the skateboard. With moderate "
+"acceleration/deceleration on the skateboard, the biped is able to "
+"maintain balance and hold the one-foot stance pose."
+msgstr ""
+
+#: ../../tutorials/collisions.md:1
+msgid "Collisions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:4
+msgid ""
+"This tutorial will show you how to programmatically create different "
+"kinds of bodies and set initial conditions for Skeletons. It will also "
+"demonstrate some use of DART's Frame Semantics."
+msgstr ""
+
+#: ../../tutorials/collisions.md:8
+msgid "The tutorial consists of five Lessons covering the following topics:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:10
+msgid "Creating a rigid body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:11
+msgid "Creating a soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:12
+msgid "Setting initial conditions and taking advantage of Frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:13
+msgid "Setting joint spring and damping properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:14
+msgid "Creating a closed kinematic chain"
+msgstr ""
+
+#: ../../tutorials/collisions.md:16
+msgid ""
+"Please reference the source code in "
+"[**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp)"
+" and [**tutorialCollisions-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialCollisions-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/collisions.md:18
+msgid "Lesson 1: Creating a rigid body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:20
+msgid ""
+"Start by going opening the Skeleton code "
+"[tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp)."
+" Find the function named ``addRigidBody``. You will notice that this is a"
+" templated function. If you're not familiar with templates, that's okay; "
+"we won't be doing anything too complicated with them. Different Joint "
+"types in DART are managed by a bunch of different classes, so we need to "
+"use templates if we want the same function to work with a variety of "
+"Joint types."
+msgstr ""
+
+#: ../../tutorials/collisions.md:27
+msgid "Lesson 1a: Setting joint properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:29
+msgid ""
+"The first thing we'll want to do is set the Joint properties for our new "
+"body. Whenever we create a BodyNode, we must also create a parent Joint "
+"for it. A BodyNode needs a parent Joint, even if that BodyNode is the "
+"root of the Skeleton, because we need its parent Joint to describe how "
+"it's attached to the world. A root BodyNode could be attached to the "
+"world by any kind of Joint. Most often, it will be attached by either a "
+"FreeJoint (if the body should be completely free to move with respect to "
+"the world) or a WeldJoint (if the body should be rigidly attached to the "
+"world, unable to move at all), but *any* Joint type is permissible."
+msgstr ""
+
+#: ../../tutorials/collisions.md:39
+msgid ""
+"Joint properties are managed in a nested class, which means it's a class "
+"which is defined inside of another class. For example, ``RevoluteJoint`` "
+"properties are managed in a class called ``RevoluteJoint::Properties`` "
+"while ``PrismaticJoint`` properties are managed in a class called "
+"``PrismaticJoint::Properties``. However, both ``RevoluteJoint`` and "
+"``PrismaticJoint`` inherit the ``SingleDofJoint`` class so the "
+"``RevoluteJoint::Properties`` and ``PrismaticJoint::Properties`` classes "
+"both inherit the ``SingleDofJoint::Properties`` class. The difference is "
+"that ``RevoluteJoint::Properties`` also inherits "
+"``RevoluteJoint::UniqueProperties`` whereas "
+"``PrismaticJoint::Properties`` inherits "
+"``PrismaticJoint::UniqueProperties`` instead. Many DART classes contain "
+"nested ``Properties`` classes like this which are compositions of their "
+"base class's nested ``Properties`` class and their own "
+"``UniqueProperties`` class. As you'll see later, this is useful for "
+"providing a consistent API that works cleanly for fundamentally different"
+" types of classes."
+msgstr ""
+
+#: ../../tutorials/collisions.md:53
+msgid "To create a ``Properties`` class for our Joint type, we'll want to say"
+msgstr ""
+
+#: ../../tutorials/collisions.md:58
+msgid ""
+"We need to include the ``typename`` keywords because of how the syntax "
+"works for templated functions. Leaving it out should make your compiler "
+"complain."
+msgstr ""
+
+#: ../../tutorials/collisions.md:61
+msgid ""
+"From here, we can set the Joint properties in any way we'd like. There "
+"are only a few things we care about right now: First, the Joint's name. "
+"Every Joint in a Skeleton needs to have a non-empty unique name. Those "
+"are the only restrictions that are placed on Joint names. If you try to "
+"make a Joint's name empty, it will be given a default name. If you try to"
+" make a Joint's name non-unique, DART will append a number tag to the end"
+" of the name in order to make it unique. It will also print out a warning"
+" during run time, which can be an eyesore (because it wants you to be "
+"aware when you are being negligent about naming things). For the sake of "
+"simplicity, let's just give it a name based off its child BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:75
+msgid "Don't forget to uncomment the function arguments."
+msgstr ""
+
+#: ../../tutorials/collisions.md:77
+msgid ""
+"Next we'll want to deal with offsetting the new BodyNode from its parent "
+"BodyNode. We can use the following to check if there is a parent "
+"BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:87
+msgid "Inside the brackets, we'll want to create the offset between bodies:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:93
+msgid ""
+"An ``math::Isometry3d`` is the Eigen library's version of a homogeneous "
+"transformation matrix. Here we are initializing it to an Identity matrix "
+"to start out. This is almost always something you should do when creating"
+" an math::Isometry3d, because otherwise its contents will be completely "
+"arbitrary trash."
+msgstr ""
+
+#: ../../tutorials/collisions.md:99
+msgid ""
+"We can easily compute the center point between the origins of the two "
+"bodies using our default height value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:106
+msgid ""
+"We can then offset the parent and child BodyNodes of this Joint using "
+"this transform:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:114
+msgid ""
+"Remember that all of that code should go inside the ``if(parent)`` "
+"condition. We do not want to create this offset for root BodyNodes, "
+"because later on we will rely on the assumption that the root Joint "
+"origin is lined up with the root BodyNode origin."
+msgstr ""
+
+#: ../../tutorials/collisions.md:119
+msgid "Lesson 1b: Create a Joint and BodyNode pair"
+msgstr ""
+
+#: ../../tutorials/collisions.md:121
+msgid ""
+"A single function is used to simultaneously create a new Joint and its "
+"child BodyNode. It's important to note that a Joint cannot be created "
+"without a child BodyNode to accompany it, and a BodyNode cannot be "
+"created with parent Joint to attach it to something. A parent Joint "
+"without a child BodyNode or vice-versa would be non-physical and "
+"nonsensical, so we don't allow it."
+msgstr ""
+
+#: ../../tutorials/collisions.md:127
+msgid ""
+"Use the following to create a new Joint & BodyNode, and obtain a pointer "
+"to that new BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:135
+msgid ""
+"There's a lot going on in this function, so let's break it down for a "
+"moment:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:141
+msgid ""
+"This is a Skeleton member function that takes template arguments. The "
+"first template argument specifies the type of Joint that you want to "
+"create. In our case, the type of Joint we want to create is actually a "
+"template argument of our current function, so we just pass that argument "
+"along. The second template argument of ``createJointAndBodyNodePair`` "
+"allows us to specify the BodyNode type that we want to create, but the "
+"default argument is a standard rigid  BodyNode, so we can leave the "
+"second argument blank."
+msgstr ""
+
+#: ../../tutorials/collisions.md:153
+msgid ""
+"Now for the function arguments: The first specifies the parent BodyNode. "
+"In the event that you want to create a root BodyNode, you can simply pass"
+" in a nullptr as the parent. The second argument is a "
+"``JointType::Properties`` struct, so we pass in the ``joint_properties`` "
+"object that we created earlier. The third argument is a "
+"``BodyNode::Properties`` struct, but we're going to set the BodyNode "
+"properties later, so we'll just toss the name in by wrapping it up in a "
+"``BodyNode::AspectProperties`` object and leave the rest as default "
+"values."
+msgstr ""
+
+#: ../../tutorials/collisions.md:161
+msgid "Now notice the very last thing on this line of code:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:167
+msgid ""
+"The function actually returns a ``std::pair`` of pointers to the new "
+"Joint and new BodyNode that were just created, but we only care about "
+"grabbing the  BodyNode once the function is finished, so we can append "
+"``.second`` to the end of the line so that we just grab the BodyNode "
+"pointer and ignore the Joint  pointer. The joint will of course still be "
+"created; we just have no need to  access it at this point."
+msgstr ""
+
+#: ../../tutorials/collisions.md:174
+msgid "Lesson 1c: Make a shape for the body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:176
+msgid ""
+"We'll take advantage of the Shape::ShapeType enumeration to specify what "
+"kind of Shape we want to produce for the body. In particular, we'll allow"
+" the user to specify three types of Shapes: ``Shape::BOX``, "
+"``Shape::CYLINDER``, and ``Shape::ELLIPSOID``."
+msgstr ""
+
+#: ../../tutorials/collisions.md:197
+msgid ""
+"``ShapePtr`` is simply a typedef for ``std::shared_ptr<Shape>``. DART has"
+" this typedef in order to improve space usage and readability, because "
+"this type gets used very often."
+msgstr ""
+
+#: ../../tutorials/collisions.md:201
+msgid ""
+"Now we want to construct each of the Shape types within their conditional"
+" statements. Each constructor is a bit different."
+msgstr ""
+
+#: ../../tutorials/collisions.md:204
+msgid ""
+"For box we pass in an math::Vector3d that contains the three dimensions "
+"of the box:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:213
+msgid "For cylinder we pass in a radius and a height:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:220
+msgid ""
+"For ellipsoid we pass in an math::Vector3d that contains the lengths of "
+"the three axes:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:227
+msgid ""
+"Since we actually want a sphere, all three axis lengths will be equal, so"
+" we can create an math::Vector3d filled with ones by using "
+"``math::Vector3d::Ones()`` and then multiply it by the length that we "
+"actually want for the three components."
+msgstr ""
+
+#: ../../tutorials/collisions.md:231
+msgid ""
+"Finally, we want to add this shape as a visualization **and** collision "
+"shape for the BodyNode:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:239
+msgid ""
+"We want to do this no matter which type was selected, so those two lines "
+"of code should be after all the condition statements."
+msgstr ""
+
+#: ../../tutorials/collisions.md:242
+msgid "Lesson 1d: Set up the inertia properties for the body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:244
+msgid ""
+"For the simulations to be physically accurate, it's important for the "
+"inertia properties of the body to match up with the geometric properties "
+"of the shape. We can create an ``Inertia`` object and set its values "
+"based on the shape's geometry, then give that ``Inertia`` to the "
+"BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:257
+msgid "Lesson 1e: Set the coefficient of restitution"
+msgstr ""
+
+#: ../../tutorials/collisions.md:259
+msgid "This is very easily done with the following function:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:265
+msgid "Lesson 1f: Set the damping coefficient"
+msgstr ""
+
+#: ../../tutorials/collisions.md:267
+msgid ""
+"In real life, joints have friction. This pulls energy out of systems over"
+" time, and makes those systems more stable. In our simulation, we'll "
+"ignore air friction, but we'll add friction in the joints between bodies "
+"in order to have better numerical and dynamic stability:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:281
+msgid ""
+"If this BodyNode has a parent BodyNode, then we set damping coefficients "
+"of its Joint to a default value."
+msgstr ""
+
+#: ../../tutorials/collisions.md:284
+msgid "Lesson 2: Creating a soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:286
+msgid ""
+"Find the templated function named ``addSoftBody``. This function will "
+"have a role identical to the ``addRigidBody`` function from earlier."
+msgstr ""
+
+#: ../../tutorials/collisions.md:289
+msgid "Lesson 2a: Set the Joint properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:291
+msgid ""
+"This portion is exactly the same as Lesson 1a. You can even copy the code"
+" directly from there if you'd like to."
+msgstr ""
+
+#: ../../tutorials/collisions.md:294
+msgid "Lesson 2b: Set the properties of the soft body"
+msgstr ""
+
+#: ../../tutorials/collisions.md:296
+msgid ""
+"Last time we set the BodyNode properties after creating it, but this time"
+" we'll set them beforehand."
+msgstr ""
+
+#: ../../tutorials/collisions.md:299
+msgid ""
+"First, let's create a struct for the properties that are unique to "
+"SoftBodyNodes:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:305
+msgid ""
+"Later we will combine this with a standard ``BodyNode::Properties`` "
+"struct, but for now let's fill it in. Up above we defined an enumeration "
+"for a couple different SoftBodyNode types. There is no official DART-"
+"native enumeration for this, we created our own to use for this function."
+" We'll want to fill in the ``SoftBodyNode::UniqueProperties`` struct "
+"based off of this enumeration:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:326
+msgid ""
+"Each of these types has a static function in the ``SoftBodyNodeHelper`` "
+"class that will set up your ``UniqueProperties`` for you. The arguments "
+"for each of the functions are a bit complicated, so here is how to call "
+"it for each type:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:330
+msgid "For the SOFT_BOX:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:342
+msgid "For the SOFT_CYLINDER:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:357
+msgid "And for the SOFT_ELLIPSOID:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:367
+msgid ""
+"Feel free to play around with the different parameters, like number of "
+"slices and number of stacks. However, be aware that some of those "
+"parameters have a minimum value, usually of 2 or 3. During runtime, you "
+"should be warned if you try to create one with a parameter that's too "
+"small."
+msgstr ""
+
+#: ../../tutorials/collisions.md:372
+msgid "Lastly, we'll want to fill in the softness coefficients:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:380
+msgid "Lesson 2c: Create the Joint and Soft Body pair"
+msgstr ""
+
+#: ../../tutorials/collisions.md:382
+msgid ""
+"This step is very similar to Lesson 1b, except now we'll want to specify "
+"that we're creating a soft BodyNode. First, let's create a full  "
+"``SoftBodyNode::Properties``:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:391
+msgid ""
+"This will combine the ``UniqueProperties`` of the SoftBodyNode with the "
+"standard properties of a BodyNode. Now we can pass the whole thing into "
+"the creation function:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:400
+msgid ""
+"Notice that this time it will return a ``SoftBodyNode`` pointer rather "
+"than a normal ``BodyNode`` pointer. This is one of the advantages of "
+"templates!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:403
+msgid "Lesson 2d: Zero out the BodyNode inertia"
+msgstr ""
+
+#: ../../tutorials/collisions.md:405
+msgid ""
+"A SoftBodyNode has two sources of inertia: the underlying inertia of the "
+"standard BodyNode class, and the point mass inertias of its soft skin. In"
+" our case, we only want the point mass inertias, so we should zero out "
+"the standard BodyNode inertia. However, zeroing out inertia values can be"
+" very dangerous, because it can easily result in singularities. So "
+"instead of completely zeroing them out, we will just make them small "
+"enough that they don't impact the simulation:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:420
+msgid "Lesson 2e: Make the shape transparent"
+msgstr ""
+
+#: ../../tutorials/collisions.md:422
+msgid ""
+"To help us visually distinguish between the soft and rigid portions of a "
+"body, we can make the soft part of the shape transparent. Upon creation, "
+"a SoftBodyNode will have exactly one visualization shape: the soft shape "
+"visualizer. We can grab that shape and reduce the value of its alpha "
+"channel:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:434
+msgid "Lesson 2f: Give a hard bone to the SoftBodyNode"
+msgstr ""
+
+#: ../../tutorials/collisions.md:436
+msgid ""
+"SoftBodyNodes are intended to be used as soft skins that are attached to "
+"rigid bones. We can create a rigid shape, place it in the SoftBodyNode, "
+"and give some inertia to the SoftBodyNode's base BodyNode class, to act "
+"as the inertia of the bone."
+msgstr ""
+
+#: ../../tutorials/collisions.md:441
+msgid ""
+"Find the function ``createSoftBody()``. Underneath the call to "
+"``addSoftBody``, we can create a box shape that matches the dimensions of"
+" the soft box, but scaled down:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:452
+msgid ""
+"And then we can add that shape to the visualization and collision shapes "
+"of the SoftBodyNode, just like normal:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:459
+msgid ""
+"And we'll want to make sure that we set the inertia of the underlying "
+"BodyNode, or else the behavior will not be realistic:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:469
+msgid ""
+"Note that the inertia of the inherited BodyNode is independent of the "
+"inertia of the SoftBodyNode's skin."
+msgstr ""
+
+#: ../../tutorials/collisions.md:472
+msgid "Lesson 2g: Add a rigid body attached by a WeldJoint"
+msgstr ""
+
+#: ../../tutorials/collisions.md:474
+msgid ""
+"To make a more interesting hybrid shape, we can attach a protruding rigid"
+" body to a SoftBodyNode using a WeldJoint. Find the "
+"``createHybridBody()`` function and see where we call the ``addSoftBody``"
+" function. Just below this, we'll create a new rigid body with a "
+"WeldJoint attachment:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:484
+msgid "Now we can give the new rigid BodyNode a regular box shape:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:494
+msgid ""
+"To make the box protrude, we'll shift it away from the center of its "
+"parent:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:502
+msgid ""
+"And be sure to set its inertia, or else the simulation will not be "
+"realistic:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:511
+msgid "Lesson 3: Setting initial conditions and taking advantage of Frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:513
+msgid ""
+"Find the ``addObject`` function in the ``MyWorld`` class. This function "
+"will be called whenever the user requests for an object to be added to "
+"the world. In this function, we want to set up the initial conditions for"
+" the object so that it gets thrown at the wall. We also want to make sure"
+" that it's not in collision with anything at the time that it's added, "
+"because that would result in problems for the simulation."
+msgstr ""
+
+#: ../../tutorials/collisions.md:520
+msgid "Lesson 3a: Set the starting position for the object"
+msgstr ""
+
+#: ../../tutorials/collisions.md:522
+msgid ""
+"We want to position the object in a reasonable place for us to throw it "
+"at the wall. We also want to have the ability to randomize its location "
+"along the y-axis."
+msgstr ""
+
+#: ../../tutorials/collisions.md:525
+msgid "First, let's create a zero vector for the position:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:530
+msgid ""
+"You'll notice that this is an math::Vector**6**d rather than the usual "
+"math::Vector**3**d. This vector has six components because the root "
+"BodyNode has 6 degrees of freedom: three for orientation and three for "
+"translation. Because we follow Roy Featherstone's Spatial Vector "
+"convention, the **first** three components are for **orientation** using "
+"a logmap (also known as angle-axis) and the **last** three components are"
+" for **translation**."
+msgstr ""
+
+#: ../../tutorials/collisions.md:537
+msgid ""
+"First, if randomness is turned on, we'll set the y-translation to a "
+"randomized value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:545
+msgid ""
+"``mDistribution(mMT)`` will generate a random value in the range \\[-1, "
+"1\\]  inclusive because of how we initialized the classes in the "
+"constructor of ``MyWindow``."
+msgstr ""
+
+#: ../../tutorials/collisions.md:549
+msgid "Then we always set the height to the default value:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:554
+msgid "Finally, we use this vector to set the positions of the root Joint:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:559
+msgid ""
+"We trust that the root Joint is a FreeJoint with 6 degrees of freedom "
+"because of how we constructed all the objects that are going to be thrown"
+" at the wall: They were all given a FreeJoint between the world and the "
+"root BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:563
+msgid "Lesson 3b: Set the object's name"
+msgstr ""
+
+#: ../../tutorials/collisions.md:565
+msgid ""
+"Every object in the world is required to have a non-empty unique name. "
+"Just like Joint names in a Skeleton, if we pass a Skeleton into a world "
+"with a non-unique name, the world will print out a complaint to us and "
+"then rename it. So avoid the ugly printout, we'll make sure the new "
+"object has a unique name ahead of time:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:574
+msgid "Lesson 3c: Add the object to the world without collisions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:576
+msgid ""
+"Before we add the Skeleton to the world, we want to make sure that it "
+"isn't actually placed inside of something accidentally. If an object in a"
+"  simulation starts off inside of another object, it can result in "
+"extremely non-physical simulations, perhaps even breaking the simulation "
+"entirely. We can access the world's collision detector directly to check "
+"make sure the new object is collision-free:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:588
+msgid ""
+"Now we shouldn't be surprised if the *other* objects are in collision "
+"with each other, so we'll need to check whether our new object overlaps "
+"with any existing objects.  First, we use the collision engine to create "
+"a group which contains our object. Then,  we get a group containing the "
+"existing objects in the world and use it to check for  collisions."
+msgstr ""
+
+#: ../../tutorials/collisions.md:603
+msgid ""
+"If the new skeleton doesn't overlap an existing object, we can add it to "
+"the world without any complaints:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:619
+msgid ""
+"Of course we should also print out a message so that user understands why"
+" we didn't throw a new object."
+msgstr ""
+
+#: ../../tutorials/collisions.md:622
+msgid "Lesson 3d: Creating reference frames"
+msgstr ""
+
+#: ../../tutorials/collisions.md:624
+msgid ""
+"DART has a unique feature that we call Frame Semantics. The Frame "
+"Semantics of DART allow you to create reference frames and use them to "
+"get and set data relative to arbitrary frames. There are two crucial "
+"Frame types currently used in DART: ``BodyNode``s and ``SimpleFrame``s."
+msgstr ""
+
+#: ../../tutorials/collisions.md:629
+msgid ""
+"The BodyNode class does not allow you to explicitly set its transform, "
+"velocity, or acceleration properties, because those are all strictly "
+"functions of the degrees of freedom that the BodyNode depends on. Because"
+" of this, the BodyNode is not a very convenient class if you want to "
+"create an arbitrary frame of reference. Instead, DART offers the "
+"``SimpleFrame`` class which gives you the freedom of arbitarily attaching"
+" it to any parent Frame and setting its transform, velocity, and "
+"acceleration to whatever you'd like. This makes SimpleFrame useful for "
+"specifying arbitrary reference frames."
+msgstr ""
+
+#: ../../tutorials/collisions.md:638
+msgid ""
+"We're going to set up a couple SimpleFrames and use them to easily "
+"specify the velocity properties that we want the Skeleton to have. First,"
+" we'll place a SimpleFrame at the Skeleton's center of mass:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:648
+msgid ""
+"Calling ``object->getCOM()`` will tell us the center of mass location "
+"with respect to the World Frame. We use that to set the translation of "
+"the SimpleFrame's relative transform so that the origin of the "
+"SimpleFrame will be located at the object's center of mass."
+msgstr ""
+
+#: ../../tutorials/collisions.md:653
+msgid "Now we'll set what we want the object's angular and linear speeds to be:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:671
+msgid "We just use the default values unless randomization is turned on."
+msgstr ""
+
+#: ../../tutorials/collisions.md:673
+msgid "Now we'll convert those speeds into directional velocities:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:680
+msgid ""
+"And now we'll use those vectors to set the velocity properties of the "
+"SimpleFrame:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:686
+msgid ""
+"The ``SimpleFrame::setClassicDerivatives()`` allows you to set the "
+"classic linear and angular velocities and accelerations of a SimpleFrame "
+"with respect to its parent Frame, which in this case is the World Frame. "
+"In DART, classic velocity and acceleration vectors are explicitly "
+"differentiated from spatial velocity and acceleration vectors. If you are"
+" unfamiliar with the term \"spatial vector\", then you'll most likely "
+"want to work in terms of classic velocity and acceleration."
+msgstr ""
+
+#: ../../tutorials/collisions.md:693
+msgid ""
+"Now we want to create a new SimpleFrame that will be a child of the "
+"previous one:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:699
+msgid ""
+"And we want the origin of this new Frame to line up with the root "
+"BodyNode of our object:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:706
+msgid ""
+"Now we'll use this reference frame to set the velocity of the root "
+"BodyNode. By setting the velocity of the root BodyNode equal to the "
+"velocity of this reference frame, we will ensure that the overall "
+"velocity of Skeleton's center of mass is equal to the velocity of the "
+"``center`` Frame from earlier."
+msgstr ""
+
+#: ../../tutorials/collisions.md:715
+msgid ""
+"Note that the FreeJoint uses spatial velocity and spatial acceleration "
+"for its degrees of freedom."
+msgstr ""
+
+#: ../../tutorials/collisions.md:718
+msgid "Now we're ready to toss around objects!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:720
+msgid "Lesson 4: Setting joint spring and damping properties"
+msgstr ""
+
+#: ../../tutorials/collisions.md:722
+msgid ""
+"Find the ``setupRing`` function. This is where we'll setup a chain of "
+"BodyNodes so that it behaves more like a closed ring."
+msgstr ""
+
+#: ../../tutorials/collisions.md:725
+msgid "Lesson 4a: Set the spring and damping coefficients"
+msgstr ""
+
+#: ../../tutorials/collisions.md:727
+msgid ""
+"We'll want to set the stiffness and damping coefficients of only the "
+"DegreesOfFreedom that are **between** two consecutive BodyNodes. The "
+"first six degrees of freedom are between the root BodyNode and the World,"
+" so we don't want to change the stiffness of them, or else the object "
+"will hover unnaturally in the air. But all the rest of the degrees of "
+"freedom should be set:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:742
+msgid "Lesson 4b: Set the rest positions of the joints"
+msgstr ""
+
+#: ../../tutorials/collisions.md:744
+msgid ""
+"We want to make sure that the ring's rest position works well for the "
+"structure it has. Using basic geometry, we know we can compute the "
+"exterior angle on each edge of a polygon like so:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:753
+msgid ""
+"Now it's important to remember that the joints we have between the "
+"BodyNodes are BallJoints, which use logmaps (a.k.a. angle-axis) to "
+"represent their positions. The BallJoint class provides a convenience "
+"function for converting rotations into a position vector for a BallJoint."
+" A similar function also exists for EulerJoint and FreeJoint."
+msgstr ""
+
+#: ../../tutorials/collisions.md:771
+msgid "Now we can set the rest positions component-wise:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:778
+msgid "Lesson 4c: Set the Joints to be in their rest positions"
+msgstr ""
+
+#: ../../tutorials/collisions.md:780
+msgid ""
+"Finally, we should set the ring so that all the degrees of freedom (past "
+"the root BodyNode) start out in their rest positions:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:791
+msgid "Lesson 5: Create a closed kinematic chain"
+msgstr ""
+
+#: ../../tutorials/collisions.md:793
+msgid ""
+"Find the ``addRing`` function in ``MyWindow``. In here, we'll want to "
+"create a dynamic constraint that attaches the first and last BodyNodes of"
+" the chain together by a BallJoint-style constraint."
+msgstr ""
+
+#: ../../tutorials/collisions.md:797
+msgid "First we'll grab the BodyNodes that we care about:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:804
+msgid ""
+"Now we want to compute the offset where the BallJoint constraint should "
+"be located:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:811
+msgid ""
+"The offset will be located half the default height up from the center of "
+"the tail BodyNode."
+msgstr ""
+
+#: ../../tutorials/collisions.md:814
+msgid "Now we have everything we need to construct the constraint:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:821
+msgid ""
+"In order for the constraint to work, we'll need to add it to the world's "
+"constraint solver:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:828
+msgid ""
+"And in order to properly clean up the constraint when removing BodyNodes,"
+" we'll want to add it to our list of constraints:"
+msgstr ""
+
+#: ../../tutorials/collisions.md:835
+msgid ""
+"And that's it! You're ready to run the full tutorialCollisions "
+"application!"
+msgstr ""
+
+#: ../../tutorials/collisions.md:837
+msgid ""
+"**When running the application, keep in mind that the dynamics of "
+"collisions are finnicky, so you may see some unstable and even completely"
+" non-physical behavior. If the application freezes, you may need to force"
+" quit out of it.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:1
+msgid "Dominoes"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:5
+msgid ""
+"This tutorial will demonstrate some of the more advanced features of "
+"DART's dynamics API which allow you to write robust controllers that work"
+" for real dynamic systems, such as robotic manipulators. We will show you"
+" how to:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:9
+msgid "Clone Skeletons"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:10
+msgid "Load a URDF"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:11
+msgid "Write a stable PD controller w/ gravity and coriolis compensation"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:12
+msgid "Write an operational space controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:14
+msgid ""
+"Please reference the source code in "
+"[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)"
+" and [**tutorialDominoes-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialDominoes-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:16
+msgid "Lesson 1: Cloning Skeletons"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:18
+msgid ""
+"There are often times where you might want to create an exact replica of "
+"an existing Skeleton. DART offers cloning functionality that allows you "
+"to do this very easily."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:22
+msgid "Lesson 1a: Create a new domino"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:24
+msgid ""
+"Creating a new domino is straightforward. Find the function "
+"``attemptToCreateDomino`` in the ``MyWindow`` class. The class has a "
+"member called ``mFirstDomino`` which is the original domino created when "
+"the program starts up. To make a new one, we can just clone it:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:33
+msgid ""
+"But keep in mind that every Skeleton that gets added to a world requires "
+"its own unique name. Creating a clone will keep the original name, so we "
+"should we give the new copy its own name:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:41
+msgid ""
+"So the easy part is finished, but now we need to get the domino to the "
+"correct position. First, let's grab the last domino that was placed in "
+"the environment:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:49
+msgid ""
+"Now we should compute what we want its position to be. The ``MyWindow`` "
+"class keeps a member called ``mTotalAngle`` which tracks how much the "
+"line of dominoes has turned so far. We'll use that to figure out what "
+"translational offset the new domino should have from the last domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:59
+msgid ""
+"And now we can compute the total position of the new domino. First, we'll"
+" copy the positions of the last domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:66
+msgid "And then we'll add the translational offset to it:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:72
+msgid ""
+"Remember that the domino's root joint is a FreeJoint which has six "
+"degrees of freedom: the first three are for orientation and last three "
+"are for translation."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:75
+msgid "Finally, we should add on the change in angle for the new domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:81
+msgid "Be sure to uncomment the ``angle`` argument of the function."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:83
+msgid "Now we can use ``x`` to set the positions of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:89
+msgid ""
+"The root FreeJoint is the only joint in the domino's Skeleton, so we can "
+"just use the ``Skeleton::setPositions`` function to set it."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:92
+msgid "Now we'll add the Skeleton to the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:98
+msgid "Lesson 1b: Make sure no dominoes are in collision"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:100
+msgid ""
+"Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to "
+"make sure that the newly inserted Skeleton is not starting out in "
+"collision with anything, because this could make for a very ugly (perhaps"
+" even broken) simulation."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:104
+msgid "First, we'll tell the world to compute collisions:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:112
+msgid ""
+"Now we'll look through and see if any dominoes are in collision with "
+"anything besides the floor. We ignore collisions with the floor because, "
+"mathemetically speaking, if they are in contact with the floor then they "
+"register as being in collision. But we want the dominoes to be in contact"
+" with the floor, so this is okay."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:135
+msgid ""
+"The only object that could possibly have collided with something else is "
+"the new domino, because we don't allow the application to create new "
+"things except for the dominoes. So if this registered as true, then we "
+"should take the new domino out of the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:148
+msgid ""
+"Otherwise, if the new domino is in an okay position, we should add it to "
+"the history:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:161
+msgid "Lesson 1c: Delete the last domino added"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:163
+msgid ""
+"Ordinarily, removing a Skeleton from a scene is just a matter of calling "
+"the ``World::removeSkeleton`` function, but we have a little bit of "
+"bookkeeping to take care of for our particular application. First, we "
+"should check whether there are any dominoes to actually remove:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:175
+msgid ""
+"Then we should grab the last domino in the history, remove it from the "
+"history, and then take it out of the world:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:184
+msgid ""
+"The ``SkeletonPtr`` class is really a ``std::shared_ptr<Skeleton>`` so we"
+" don't need to worry about ever calling ``delete`` on it. Instead, its "
+"resources will be freed when ``lastDomino`` goes out of scope."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:188
+msgid "We should also make sure to do the bookkeepping for the angles:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:195
+msgid ""
+"**Now we can add and remove dominoes from the scene. Feel free to give it"
+" a try.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:197
+msgid "Lesson 1d: Apply a force to the first domino"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:199
+msgid ""
+"But just setting up dominoes isn't much fun without being able to knock "
+"them down. We can quickly and easily knock down the dominoes by magically"
+" applying a force to the first one. In the ``timeStepping`` function of "
+"``MyWindow`` there is a label for **Lesson 1d**. This spot will get "
+"visited whenever the user presses 'f', so we'll apply an external force "
+"to the first domino here:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:212
+msgid "Lesson 2: Loading and controlling a robotic manipulator"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:214
+msgid ""
+"Striking something with a magical force is convenient, but not very "
+"believable. Instead, let's load a robotic manipulator and have it push "
+"over the first domino."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:217
+msgid "Lesson 2a: Load a URDF file"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:219
+msgid ""
+"Our manipulator is going to be loaded from a URDF file. URDF files are "
+"loaded by the ``dart::io::DartLoader`` class (pending upcoming changes to"
+" DART's loading system). First, create a loader:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:227
+msgid ""
+"Note that many URDF files use ROS's ``package:`` scheme to specify the "
+"locations of the resources that need to be loaded. We won't be using this"
+" in our example, but in general you should use the function "
+"``DartLoader::addPackageDirectory`` to specify the locations of these "
+"packages, because DART does not have the same package resolving abilities"
+" of ROS."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:233
+msgid "Now we'll have ``loader`` parse the file into a Skeleton:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:240
+msgid "And we should give the Skeleton a convenient name:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:246
+msgid ""
+"Now we'll want to initialize the location and configuration of the "
+"manipulator. Experimentation has demonstrated that the following setup is"
+" good for our purposes:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:260
+msgid ""
+"And lastly, be sure to return the Skeleton that we loaded rather than the"
+" dummy Skeleton that was originally there:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:267
+msgid ""
+"**Feel free to load up the application to see the manipulator in the "
+"scene, although all it will be able to do is collapse pitifully onto the "
+"floor.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:270
+msgid "Lesson 2b: Grab the desired joint angles"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:272
+msgid ""
+"To make the manipulator actually useful, we'll want to have the "
+"``Controller`` control its joint forces. For it to do that, the "
+"``Controller`` class will need to be informed of what we want the "
+"manipulator's joint angles to be. This is  easily done in the constructor"
+" of the ``Controller`` class:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:281
+msgid ""
+"The function ``Skeleton::getPositions`` will get all the generalized "
+"coordinate positions of all the joints in the Skeleton, stacked in a "
+"single vector. These Skeleton API functions are useful when commanding or"
+" controlling an entire Skeleton with a single mathematical expression."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:286
+msgid "Lesson 2c: Write a stable PD controller for the manipulator"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:288
+msgid ""
+"Now that we know what configuration we want the manipulator to hold, we "
+"can write a PD controller that keeps them in place. Find the function "
+"``setPDForces`` in the ``Controller`` class."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:292
+msgid "First, we'll grab the current positions and velocities:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:299
+msgid "Additionally, we'll integrate the position forward by one timestep:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:305
+msgid ""
+"This is not necessary for writing a regular PD controller, but instead "
+"this is to write a \"stable PD\" controller which has some better "
+"numerical stability properties than an ordinary discrete PD controller. "
+"You can try running with and without this line to see what effect it has "
+"on the stability."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:310
+msgid "Now we'll compute our joint position error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:316
+msgid "And our joint velocity error, assuming our desired joint velocity is zero:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:322
+msgid ""
+"Now we can grab our mass matrix, which we will use to scale our force "
+"terms:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:328
+msgid ""
+"And then combine all this into a PD controller that computes forces to "
+"minimize our error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:335
+msgid "Now we're ready to set these forces on the manipulator:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:341
+msgid "**Feel free to give this PD controller a try to see how effective it is.**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:343
+msgid "Lesson 2d: Compensate for gravity and Coriolis forces"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:345
+msgid ""
+"One of the key features of DART is the ability to easily compute the "
+"gravity and Coriolis forces, allowing you to write much higher quality "
+"controllers than you would be able to otherwise. This is easily done like"
+" so:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:353
+msgid ""
+"And now we can update our control law by just slapping this term onto the"
+" end of the equation:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:360
+msgid ""
+"**Give this new PD controller a try to see how its performance compares "
+"to the one without compensation**"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:363
+msgid "Lesson 3: Writing an operational space controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:365
+msgid ""
+"While PD controllers are simply and handy, operational space controllers "
+"can be much more elegant and useful for performing tasks. Operational "
+"space controllers allow us to unify geometric tasks (like getting the end"
+" effector to a particular spot) and dynamics tasks (like applying a "
+"certain force with the end effector) all while remaining stable and "
+"smooth."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:371
+msgid "Lesson 3a: Set up the information needed for an OS controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:373
+msgid ""
+"Unlike PD controllers, an operational space controller needs more "
+"information than just desired joint angles."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:376
+msgid ""
+"First, we'll grab the last BodyNode on the manipulator and treat it as an"
+" end effector:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:383
+msgid ""
+"But we don't want to use the origin of the BodyNode frame as the origin "
+"of our Operational Space controller; instead we want to use a slight "
+"offset, to get to the tool area of the last BodyNode:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:391
+msgid ""
+"Also, our target will be the spot on top of the first domino, so we'll "
+"create a reference frame and place it there. First, create the "
+"SimpleFrame:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:398
+msgid ""
+"Then compute the transform needed to get from the center of the domino to"
+" the top of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:407
+msgid ""
+"And then we should rotate the target's coordinate frame to make sure that"
+" lines up with the end effector's reference frame, otherwise the "
+"manipulator might try to push on the domino from a very strange angle:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:416
+msgid ""
+"Now we'll set the target so that it has a transform of ``target_offset`` "
+"with respect to the frame of the domino:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:423
+msgid ""
+"And this gives us all the information we need to write an Operational "
+"Space controller."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:426
+msgid "Lesson 3b: Computing forces for OS Controller"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:428
+msgid ""
+"Find the function ``setOperationalSpaceForces()``. This is where we'll "
+"compute the forces for our operational space controller."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:431
+msgid ""
+"One of the key ingredients in an operational space controller is the mass"
+" matrix. We can get this easily, just like we did for the PD controller:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:438
+msgid ""
+"Next we'll want the Jacobian of the tool offset in the end effector. We "
+"can get it easily with this function:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:445
+msgid ""
+"But operational space controllers typically use the Moore-Penrose "
+"pseudoinverse of the Jacobian rather than the Jacobian itself. There are "
+"many ways to compute the pseudoinverse of the Jacobian, but a simple way "
+"is like this:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:454
+msgid ""
+"Note that this pseudoinverse is also damped so that it behaves better "
+"around singularities. This is method for computing the pseudoinverse is "
+"not very efficient in terms of the number of mathematical operations it "
+"performs, but it is plenty fast for our application. Consider using "
+"methods based on Singular Value Decomposition if you need to compute the "
+"pseudoinverse as fast as possible."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:460
+msgid ""
+"Next we'll want the time derivative of the Jacobian, as well as its "
+"pseudoinverse:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:471
+msgid ""
+"Notice that here we're compute the **classic** derivative, which means "
+"the derivative of the Jacobian with respect to time in classical "
+"coordinates rather than spatial coordinates. If you use spatial vector "
+"arithmetic, then you'll want to use ``BodyNode::getJacobianSpatialDeriv``"
+" instead."
+msgstr ""
+
+#: ../../tutorials/dominoes.md:476
+msgid "Now we can compute the linear components of error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:484
+msgid "And then the angular components of error:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:491
+msgid "Then the time derivative of error, assuming our desired velocity is zero:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:498
+msgid ""
+"Like with the PD controller, we can mix in terms to compensate for "
+"gravity and Coriolis forces:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:505
+msgid ""
+"The gains for the operational space controller need to be in matrix form,"
+" but we're storing the gains as scalars, so we'll need to conver them:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:515
+msgid ""
+"And we'll need to compute the joint forces needed to achieve our desired "
+"end effector force. This is easily done using the Jacobian transpose:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:524
+msgid "And now we can mix everything together into the single control law:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:532
+msgid "Then don't forget to pass the forces into the manipulator:"
+msgstr ""
+
+#: ../../tutorials/dominoes.md:538
+msgid "**Now you're ready to try out the full dominoes app!**"
+msgstr ""
+
+#: ../../tutorials/introduction.md:1
+msgid "Introduction"
+msgstr ""
+
+#: ../../tutorials/introduction.md:3
+msgid ""
+"The purpose of this tutorial is to provide a quick introduction to using "
+"DART. We designed many hands-on exercises to make the learning effective "
+"and fun. To follow along with this tutorial, first locate the tutorial "
+"code in the directory: "
+"[dart/tutorials](https://github.com/dartsim/dart/tree/release-5.1/tutorials)."
+" For each of the four tutorials, we provide the skeleton code as the "
+"starting point (e.g. "
+"[tutorialMultiPendulum.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp))"
+" and the final code as the answer to the tutorial (e.g. "
+"[tutorialMultiPendulum-"
+"Finished.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialMultiPendulum-Finished.cpp)). The examples are based on the APIs"
+" of DART 5.0."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:1
+msgid "Multi Pendulum"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:5
+msgid ""
+"This tutorial will demonstrate some basic interaction with DART's "
+"dynamics API during simulation. This will show you how to:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:8
+msgid "Create a basic program to simulate a dynamic system"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:9
+msgid "Change the colors of shapes"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:10
+msgid "Add/remove shapes from visualization"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:11
+msgid "Apply internal forces in the joints"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:12
+msgid "Apply external forces to the bodies"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:13
+msgid "Alter the implicit spring and damping properties of joints"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:14
+msgid "Add/remove dynamic constraints"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:16
+msgid ""
+"Please reference the source code in "
+"[**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp)"
+" and [**tutorialMultiPendulum-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialMultiPendulum-Finished.cpp)."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:18
+msgid "Lesson 0: Simulate a passive multi-pendulum"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:20
+msgid ""
+"This is a warmup lesson that demonstrates how to set up a simulation "
+"program in DART. The example we will use throughout this tutorial is a "
+"pendulum with five rigid bodies swinging under gravity. DART allows the "
+"user to build various articulated rigid/soft body systems from scratch. "
+"It also loads models in URDF, SDF, and SKEL formats as demonstrated in "
+"the later tutorials."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:27
+msgid ""
+"In DART, an articulated dynamics model is represented by a ``Skeleton``. "
+"In the ``main`` function, we first create an empty skeleton named "
+"*pendulum*."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:35
+msgid ""
+"A Skeleton is a structure that consists of ``BodyNode``s (bodies) which "
+"are  connected by ``Joint``s. Every Joint has a child BodyNode, and every"
+" BodyNode  has a parent Joint. Even the root BodyNode has a Joint that "
+"attaches it to the  World. In the function ``makeRootBody``, we create a "
+"pair of a ``BallJoint``  and a BodyNode, and attach this pair to the "
+"currently empty pendulum skeleton."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:47
+msgid ""
+"Note that the first parameters is a nullptr, which indicates that this "
+"new BodyNode is the root of the pendulum. If we wish to append the new "
+"BodyNode to an existing BodyNode in the pendulum, we can do so by passing"
+" the pointer of the existing BodyNode as the first parameter. In fact, "
+"this is how we add more BodyNodes to the pendulum in the function "
+"``addBody``:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:58
+msgid ""
+"The simplest way to set up a simulation program in DART is to use "
+"``SimWindow`` class. A SimWindow owns an instance of ``World``  and "
+"simulates all the Skeletons in the World. In this example, we create a "
+"World with the pendulum skeleton in it, and assign the World to an "
+"instance of ``MyWindow``, a subclass derived from SimWindow."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:70
+msgid ""
+"Every single time step, the ``MyWindow::timeStepping`` function will be "
+"called and the state of the World will be simulated. The user can "
+"override the default timeStepping function to customize the simulation "
+"routine. For example, one can incorporate sensors, actuators, or user "
+"interaction in the forward simulation."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:77
+msgid "Lesson 1: Change shapes and applying forces"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:79
+msgid ""
+"We have a pendulum with five bodies, and we want to be able to apply "
+"forces to them during simulation. Additionally, we want to visualize "
+"these forces so we can more easily interpret what is happening in the "
+"simulation. For this reason, we'll discuss visualizing and forces at the "
+"same time."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:84
+msgid "Lesson 1a: Reset everything to default appearance"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:86
+msgid ""
+"At each step, we'll want to make sure that everything starts out with its"
+" default appearance. The default is for everything to be blue and there "
+"not to be any arrow attached to any body."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:90
+msgid ""
+"Find the function named ``timeStepping`` in the ``MyWindow`` class. The "
+"top of this function is where we will want to reset everything to the "
+"default appearance."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:93
+msgid ""
+"Each BodyNode contains visualization ``Shape``s that will be rendered "
+"during simulation. In our case, each BodyNode has two shapes:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:96
+msgid "One shape to visualize the parent joint"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:97
+msgid "One shape to visualize the body"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:99
+msgid ""
+"The default appearance for everything is to be colored blue, so we'll "
+"want to iterate through these two Shapes in each BodyNode, setting their "
+"colors to blue."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:116
+msgid ""
+"Additionally, there is the possibility that some BodyNodes will have an "
+"arrow shape attached if the user had been applying an external body force"
+" to it. By default, this arrow should not be attached, so in the outer "
+"for-loop, we should check for arrows and remove them:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:128
+msgid "Now everything will be reset to the default appearance."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:130
+msgid "Lesson 1b: Apply joint torques based on user input"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:132
+msgid ""
+"The ``MyWindow`` class in this tutorial has a variable called "
+"``mForceCountDown`` which is a ``std::vector<int>`` whose entries get set"
+" to a value of ``default_countdown`` each time the user presses a number "
+"key. If an entry in ``mForceCountDown`` is greater than zero, then that "
+"implies that the user wants a force to be applied for that entry."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:138
+msgid "There are two ways that forces can be applied:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:140
+msgid "As an internal joint force"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:141
+msgid "As an external body force"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:143
+msgid ""
+"First we'll consider applying a Joint force. Inside the for-loop that "
+"goes through each ``DegreeOfFreedom`` using ``getNumDofs()``, there is an"
+"  if-statement for ``mForceCountDown``. In that if-statement, we'll grab "
+"the relevant DegreeOfFreedom and set its generalized (joint) force:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:153
+msgid ""
+"The ``mPositiveSign`` boolean gets toggled when the user presses the "
+"minus sign '-' key. We use this boolean to decide whether the applied "
+"force should be positive or negative."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:157
+msgid ""
+"Now we'll want to visualize the fact that a Joint force is being applied."
+" We'll do this by highlighting the joint with the color red. First we'll "
+"grab the Shape that corresponds to this Joint:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:166
+msgid ""
+"Because of the way the pendulum bodies were constructed, we trust that "
+"the zeroth indexed visualization shape will be the shape that depicts the"
+" joint. So now we will color it red:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:174
+msgid "Lesson 1c: Apply body forces based on user input"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:176
+msgid ""
+"If mBodyForce is true, we'll want to apply an external force to the body "
+"instead of an internal force in the joint. First, inside the for-loop "
+"that iterates through each ``BodyNode`` using ``getNumBodyNodes()``, "
+"there is an if-statement for ``mForceCountDown``. In that if-statement, "
+"we'll grab the relevant BodyNode:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:185
+msgid ""
+"Now we'll create an ``math::Vector3d`` that describes the force and "
+"another one that describes the location for that force. An "
+"``math::Vector3d`` is the Eigen C++ library's version of a three-"
+"dimensional mathematical vector. Note that the ``d`` at the end of the "
+"name stands for ``double``, not for \"dimension\". An math::Vector3f "
+"would be a three-dimensional vector of floats, and an math::Vector3i "
+"would be a three-dimensional vector of integers."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:197
+msgid ""
+"The force will have a magnitude of ``default_force`` and it will point in"
+" the positive x-direction. The location of the force will be in the "
+"center of the negative x side of the body, as if a finger on the negative"
+" side is pushing the body in the positive direction. However, we need to "
+"account for sign changes:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:210
+msgid "That will flip the signs whenever the user is requesting a negative force."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:212
+msgid "Now we can add the external force:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:218
+msgid ""
+"The two ``true`` booleans at the end are indicating to DART that both the"
+" force and the location vectors are being expressed with respect to the "
+"body frame."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:221
+msgid ""
+"Now we'll want to visualize the force being applied to the body. First, "
+"we'll grab the Shape for the body and color it red:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:229
+msgid ""
+"Last time we grabbed the 0-index visualization shape, because we trusted "
+"that it was the shape that represented the parent Joint. This time we're "
+"grabbing the 1-index visualization shape, because we trust that it is the"
+" shape for the body."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:234
+msgid ""
+"Now we'll want to add an arrow to the visualization shapes of the body to"
+" represent the applied force. The ``MyWindow`` class already provides the"
+" arrow shape; we just need to add it:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:242
+msgid "Lesson 2: Set spring and damping properties for joints"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:244
+msgid ""
+"DART allows Joints to have implicit spring and damping properties. By "
+"default, these properties are zeroed out, so a joint will only exhibit "
+"the forces that are given to it by the ``Joint::setForces`` function. "
+"However, you can give a non-zero spring coefficient to a joint so that it"
+" behaves according to Hooke's Law, and you can give a non-zero damping "
+"coefficient to a joint which will result in linear damping. These forces "
+"are computed using implicit methods in order to improve numerical "
+"stability."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:252
+msgid "Lesson 2a: Set joint spring rest position"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:254
+msgid "First let's see how to get and set the rest positions."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:256
+msgid ""
+"Find the function named ``changeRestPosition`` in the ``MyWindow`` class."
+" This function will be called whenever the user presses the 'q' or 'a' "
+"button. We want those buttons to curl and uncurl the rest positions for "
+"the pendulum. To start, we'll go through all the generalized coordinates "
+"and change their rest positions by ``delta``:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:272
+msgid ""
+"However, it's important to note that the system can become somewhat "
+"unstable if we allow it to curl up too much, so let's put a limit on the "
+"magnitude of the rest angle. Right before ``dof->setRestPosition(q0);`` "
+"we can put:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:281
+msgid ""
+"And there's one last thing to consider: the first joint of the pendulum "
+"is a BallJoint. BallJoints have three degrees of freedom, which means if "
+"we alter the rest positions of *all* of the pendulum's degrees of "
+"freedom, then the pendulum will end up curling out of the x-z plane. You "
+"can allow this to happen if you want, or you can prevent it from "
+"happening by zeroing out the rest positions of the BallJoint's other two "
+"degrees of freedom:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:293
+msgid "Lesson 2b: Set joint spring stiffness"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:295
+msgid ""
+"Changing the rest position does not accomplish anything without having "
+"any spring stiffness. We can change the spring stiffness as follows:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:307
+msgid ""
+"However, it's important to realize that if the spring stiffness were ever"
+" to become negative, we would get some very nasty explosive behavior. "
+"It's also a bad idea to just trust the user to avoid decrementing it into"
+" being negative. So before the line "
+"``dof->setSpringStiffness(stiffness);`` you'll want to put:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:317
+msgid "Lesson 2c: Set joint damping"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:319
+msgid ""
+"Joint damping can be thought of as friction inside the joint actuator. It"
+" applies a resistive force to the joint which is proportional to the "
+"generalized velocities of the joint. This draws energy out of the system "
+"and generally results in more stable behavior."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:324
+msgid ""
+"The API for getting and setting the damping is just like the API for "
+"stiffness:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:337
+msgid ""
+"Again, we want to make sure that the damping coefficient is never "
+"negative. In fact, a negative damping coefficient would be far more "
+"harmful than a negative stiffness coefficient."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:341
+msgid "Lesson 3: Add and remove dynamic constraints"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:343
+msgid ""
+"Dynamic constraints in DART allow you to attach two BodyNodes together "
+"according to a selection of a few different Joint-style constraints. This"
+" allows you to create closed loop constraints, which is not possible "
+"using standard Joints. You can also create a dynamic constraint that "
+"attaches a BodyNode to the World instead of to another BodyNode."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:349
+msgid ""
+"In our case, we want to attach the last BodyNode to the World with a "
+"BallJoint style constraint whenever the function ``addConstraint()`` gets"
+" called. First, let's grab the last BodyNode in the pendulum:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:357
+msgid ""
+"Now we'll want to compute the location that the constraint should have. "
+"We want to connect the very end of the tip to the world, so the location "
+"would be:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:365
+msgid "Now we can create the BallJointConstraint:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:372
+msgid "And then add it to the world:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:378
+msgid ""
+"Now we also want to be able to remove this constraint. In the function "
+"``removeConstraint()``, we can put the following code:"
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:386
+msgid ""
+"Setting mBallConstraint to a nullptr will allow its smart pointer to "
+"delete it."
+msgstr ""
+
+#: ../../tutorials/multi-pendulum.md:388
+msgid "**Now you are ready to run the demo!**"
+msgstr ""
+

@@ -5,7 +5,7 @@
 
 ## Documentation
 
-For more information on DART, please visit the [DART documentation](https://dart.readthedocs.io/).
+For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
 
 ## Project Status
 

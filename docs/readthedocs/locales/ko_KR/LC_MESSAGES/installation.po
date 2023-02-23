@@ -1,0 +1,182 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-22 19:05-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko_KR\n"
+"Language-Team: ko_KR <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../installation.rst:2
+msgid "Python"
+msgstr ""
+
+#: ../../installation.rst:4
+msgid ""
+"To install the Python bindings for DART using the `dartpy` package from "
+"PyPI, you can use the following command:"
+msgstr ""
+
+#: ../../installation.rst:10
+msgid "The following operating systems are currently supported:"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Operating System"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Python 3.7"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Python 3.8"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Python 3.9"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Python 3.10"
+msgstr ""
+
+#: ../../installation.rst:13
+msgid "Python 3.11"
+msgstr ""
+
+#: ../../installation.rst:16
+msgid "Linux x86_64"
+msgstr ""
+
+#: ../../installation.rst:16 ../../installation.rst:18
+#: ../../installation.rst:20 ../../installation.rst:22
+#: ../../installation.rst:24 ../../installation.rst:26
+msgid "O"
+msgstr ""
+
+#: ../../installation.rst:18
+msgid "Linux arm64"
+msgstr ""
+
+#: ../../installation.rst:18 ../../installation.rst:20
+#: ../../installation.rst:22 ../../installation.rst:24
+#: ../../installation.rst:26
+msgid "X"
+msgstr ""
+
+#: ../../installation.rst:20
+msgid "macOS x86_64"
+msgstr ""
+
+#: ../../installation.rst:22
+msgid "macOS arm64"
+msgstr ""
+
+#: ../../installation.rst:24
+msgid "Windows x86_64"
+msgstr ""
+
+#: ../../installation.rst:26
+msgid "Windows arm64"
+msgstr ""
+
+#: ../../installation.rst:31
+msgid ""
+"This table may not be up-to-date. For the latest information on the "
+"availability of the Python bindings for DART, please refer to the dartpy "
+"package on PyPI: https://pypi.org/project/dartpy/. If you would like to "
+"use dartpy on an unsupported OS or Python version, please let us know so "
+"we can consider adding support."
+msgstr ""
+
+#: ../../installation.rst:34
+msgid "C++"
+msgstr ""
+
+#: ../../installation.rst:37
+msgid "Ubuntu"
+msgstr ""
+
+#: ../../installation.rst:39
+msgid "To install DART on Ubuntu, you can use the following commands:"
+msgstr ""
+
+#: ../../installation.rst:41
+msgid "Add the DART PPA to your system:"
+msgstr ""
+
+#: ../../installation.rst:47 ../../installation.rst:104
+msgid "Update your package list:"
+msgstr ""
+
+#: ../../installation.rst:53
+msgid "Install the `libdart6-all-dev` package:"
+msgstr ""
+
+#: ../../installation.rst:60
+msgid "macOS"
+msgstr ""
+
+#: ../../installation.rst:62
+msgid "To install DART on macOS, you can use Homebrew:"
+msgstr ""
+
+#: ../../installation.rst:64
+msgid "Install Homebrew if you haven't already:"
+msgstr ""
+
+#: ../../installation.rst:70
+msgid "Install the `dartsim` formula:"
+msgstr ""
+
+#: ../../installation.rst:77
+msgid "Windows"
+msgstr ""
+
+#: ../../installation.rst:79
+msgid "To install DART on Windows, you can use vcpkg:"
+msgstr ""
+
+#: ../../installation.rst:81
+msgid "Install vcpkg if you haven't already:"
+msgstr ""
+
+#: ../../installation.rst:89
+msgid "Install the `dartsim` package:"
+msgstr ""
+
+#: ../../installation.rst:96
+msgid "Arch Linux (Experimental)"
+msgstr ""
+
+#: ../../installation.rst:100
+msgid ""
+"The installation instructions for Arch Linux are currently experimental "
+"and may not work on all systems. Use at your own risk."
+msgstr ""
+
+#: ../../installation.rst:102
+msgid ""
+"To install DART on Arch Linux using the `yay` package manager, you can "
+"use the following commands:"
+msgstr ""
+
+#: ../../installation.rst:110
+msgid "Install the `libdart` package:"
+msgstr ""
+

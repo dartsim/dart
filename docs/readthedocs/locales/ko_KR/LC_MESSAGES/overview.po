@@ -1,0 +1,268 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-22 19:05-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko_KR\n"
+"Language-Team: ko_KR <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../overview.rst:7
+msgid "Overview"
+msgstr ""
+
+#: ../../overview.rst:9
+msgid ""
+"DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-"
+"platform, open-source library developed by the `Graphics Lab "
+"<http://www.cc.gatech.edu/~karenliu/Home.html>`_ and `Humanoid Robotics "
+"Lab <http://www.golems.org/>`_ at the `Georgia Institute of Technology "
+"<http://www.gatech.edu/>`_, with ongoing contributions from the `Personal"
+" Robotics Lab <http://personalrobotics.cs.washington.edu/>`_ at the "
+"`University of Washington <http://www.washington.edu/>`_ and the `Open "
+"Source Robotics Foundation <https://www.osrfoundation.org/>`_. It "
+"provides data structures and algorithms for kinematic and dynamic "
+"applications in robotics and computer animation. DART stands out due to "
+"its accuracy and stability, which are achieved through the use of "
+"generalized coordinates to represent articulated rigid body systems and "
+"the application of Featherstone's Articulated Body Algorithm to compute "
+"motion dynamics."
+msgstr ""
+"DART (Dynamic Animation and Robotics Toolkit)는 Graphics Lab <http://www.cc.gatech.edu/~karenliu/Home.html>_와 Humanoid Robotics Lab <http://www.golems.org/>_에서 개발한 공동, 크로스 플랫폼 오픈소스 라이브러리입니다.
+또한 Georgia Institute of Technology <http://www.gatech.edu/>_에서도 지속적으로 기여하고 있으며,
+University of Washington <http://www.washington.edu/>_의 Personal Robotics Lab <http://personalrobotics.cs.washington.edu/>_와 Open Source Robotics Foundation <https://www.osrfoundation.org/>_도 기여하고 있습니다. DART는 로봇 공학 및 컴퓨터 애니메이션의
+운동학 및 역학 응용 프로그램을 위한 데이터 구조 및 알고리즘을 제공합니다. DART는 굳이 묘사할 필요가 없을
+정도로 높은 정확성과 안정성을 가지고 있으며, 이는 관절의 연결체를 일반화된 좌표를 사용하여 나타내고,
+Featherstone의 Articulated Body Algorithm을 사용하여 모션 역학을 계산하기 때문입니다."
+
+#: ../../overview.rst:11
+msgid ""
+"For developers, DART offers full access to internal kinematic and dynamic"
+" quantities, such as the mass matrix, Coriolis and centrifugal forces, "
+"transformation matrices, and their derivatives, unlike many popular "
+"physics engines that treat the simulator as a black box. It also provides"
+" efficient computation of Jacobian matrices for arbitrary body points and"
+" coordinate frames. The frame semantics of DART allow users to define and"
+" use arbitrary reference frames (both inertial and non-inertial) to "
+"specify or request data."
+msgstr ""
+"개발자를 위해서, DART는 다른 많은 인기있는 물리 엔진들이 시뮬레이터를 블랙박스로 취급하는 반면, 질량 행렬, 코리올리스 및 원심력 힘, 변환 행렬과 그 도함수 등 내부 기하학적 및 동적인 양에 대한 전체적인 접근을 제공합니다. 또한 임의의 본 위치 및 좌표 프레임에 대한 자코비안 행렬의 효율적인 계산을 제공합니다. DART의 프레임 의미론은 사용자가 데이터를 지정하거나 요청하기 위해 비관성 및 비관성이 모두 포함 된 임의의 참조 프레임을 정의하고 사용할 수 있게 합니다."
+
+#: ../../overview.rst:13
+msgid ""
+"DART is suitable for real-time controllers due to its lazy evaluation, "
+"which automatically updates forward kinematics and dynamics values to "
+"ensure code safety. It also allows for the extension of the API to embed "
+"user-provided classes into DART data structures. Contacts and collisions "
+"are handled using an implicit time-stepping, velocity-based linear "
+"complementarity problem (LCP) to guarantee non-penetration, directional "
+"friction, and approximated Coulomb friction cone conditions."
+msgstr ""
+
+#: ../../overview.rst:15
+msgid ""
+"In summary, DART has applications in robotics and computer animation as "
+"it features a multibody dynamic simulator and various kinematic tools for"
+" control and motion planning."
+msgstr ""
+
+#: ../../overview.rst:18
+msgid "Features"
+msgstr ""
+
+#: ../../overview.rst:21
+msgid "General"
+msgstr ""
+
+#: ../../overview.rst:23
+msgid "Open-source C++ library licensed under the BSD license."
+msgstr ""
+
+#: ../../overview.rst:24
+msgid ""
+"Supports multiple platforms including Ubuntu, Archlinux, FreeBSD, macOS, "
+"and Windows."
+msgstr ""
+
+#: ../../overview.rst:25
+msgid "Fully integrated with Gazebo."
+msgstr ""
+
+#: ../../overview.rst:26
+msgid "Supports models in URDF and SDF formats."
+msgstr ""
+
+#: ../../overview.rst:27
+msgid ""
+"Provides default integration methods (semi-implicit Euler and RK4) and an"
+" extensible API for other numerical integration methods."
+msgstr ""
+
+#: ../../overview.rst:28
+msgid ""
+"Supports lazy evaluation and automatic updates of kinematic and dynamic "
+"quantities."
+msgstr ""
+
+#: ../../overview.rst:29
+msgid ""
+"Allows for the extension of the API to embed user-provided classes into "
+"its data structures."
+msgstr ""
+
+#: ../../overview.rst:30
+msgid "Provides comprehensive event recording in the simulation history."
+msgstr ""
+
+#: ../../overview.rst:31
+msgid "3D visualization API using OpenGL and OpenSceneGraph with ImGui support."
+msgstr ""
+
+#: ../../overview.rst:32
+msgid ""
+"Extensible API to interface with various optimization problems, such as "
+"nonlinear programming and multi-objective optimization."
+msgstr ""
+
+#: ../../overview.rst:35
+msgid "Collision Detection"
+msgstr ""
+
+#: ../../overview.rst:37
+msgid "Support for multiple collision detectors: FCL, Bullet, and ODE."
+msgstr ""
+
+#: ../../overview.rst:38
+msgid ""
+"Support for various collision shapes including primitive shapes, concave "
+"mesh, and probabilistic voxel grid."
+msgstr ""
+
+#: ../../overview.rst:39
+msgid "Support for minimum distance computation."
+msgstr ""
+
+#: ../../overview.rst:42
+msgid "Kinematics"
+msgstr ""
+
+#: ../../overview.rst:44
+msgid "Support for numerous types of Joints."
+msgstr ""
+
+#: ../../overview.rst:45
+msgid ""
+"Support for numerous primitive and arbitrary body shapes with "
+"customizable inertial and material properties."
+msgstr ""
+
+#: ../../overview.rst:46
+msgid ""
+"Support for flexible skeleton modeling, including cloning and "
+"reconfiguring skeletons or subsections of a skeleton."
+msgstr ""
+
+#: ../../overview.rst:47
+msgid ""
+"Comprehensive access to kinematic states (e.g. transformation, position, "
+"velocity, or acceleration) of arbitrary entities and coordinate frames."
+msgstr ""
+
+#: ../../overview.rst:48
+msgid "Comprehensive access to various Jacobian matrices and their derivatives."
+msgstr ""
+
+#: ../../overview.rst:49
+msgid "Flexible conversion of coordinate frames."
+msgstr ""
+
+#: ../../overview.rst:50
+msgid "Fully modular inverse kinematics framework."
+msgstr ""
+
+#: ../../overview.rst:51
+msgid "Plug-and-play hierarchical whole-body inverse kinematics solver."
+msgstr ""
+
+#: ../../overview.rst:52
+msgid "Analytic inverse kinematics interface with ikfast support."
+msgstr ""
+
+#: ../../overview.rst:55
+msgid "Dynamics"
+msgstr ""
+
+#: ../../overview.rst:57
+msgid ""
+"High performance for articulated dynamic systems using Lie Group "
+"representation and Featherstone hybrid algorithms."
+msgstr ""
+
+#: ../../overview.rst:58
+msgid ""
+"Exact enforcement of joints between body nodes using generalized "
+"coordinates."
+msgstr ""
+
+#: ../../overview.rst:59
+msgid ""
+"Comprehensive API for dynamic quantities and their derivatives, such as "
+"the mass matrix, Coriolis force, gravitational force, and other external "
+"and internal forces."
+msgstr ""
+
+#: ../../overview.rst:60
+msgid "Support for both rigid and soft body nodes."
+msgstr ""
+
+#: ../../overview.rst:61
+msgid ""
+"Modeling of viscoelastic joint dynamics with joint friction and hard "
+"joint limits."
+msgstr ""
+
+#: ../../overview.rst:62
+msgid "Support for various types of actuators."
+msgstr ""
+
+#: ../../overview.rst:63
+msgid ""
+"Handling of contacts and collisions using an implicit LCP to guarantee "
+"non-penetration, directional friction, and approximated Coulomb friction "
+"cone conditions."
+msgstr ""
+
+#: ../../overview.rst:64
+msgid ""
+"Use of the \"Island\" technique to subdivide constraint handling for "
+"efficient performance."
+msgstr ""
+
+#: ../../overview.rst:65
+msgid ""
+"Support for various Cartesian constraints and extensible API for user-"
+"defined constraints."
+msgstr ""
+
+#: ../../overview.rst:66
+msgid "Multiple constraint solvers: Lemke method, Dantzig method, and PSG method."
+msgstr ""
+
+#: ../../overview.rst:67
+msgid "Support for dynamic systems with closed-loop structures."
+msgstr ""
+

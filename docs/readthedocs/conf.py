@@ -42,3 +42,5 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+
+locale_dirs = ["locales/"]
