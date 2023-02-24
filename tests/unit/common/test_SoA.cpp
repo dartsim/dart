@@ -41,7 +41,7 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-TEST(SoATest, EmptyTest)
+GTEST_TEST(SoATest, EmptyTest)
 {
   SoA<int, double, char> soa;
   EXPECT_TRUE(soa.isEmpty());
@@ -52,7 +52,7 @@ TEST(SoATest, EmptyTest)
 }
 
 //==============================================================================
-TEST(SoATest, BasicTest)
+GTEST_TEST(SoATest, BasicTest)
 {
   SoA<int, double, char> soa;
   soa.getArray<0>().push_back(1);
@@ -66,7 +66,7 @@ TEST(SoATest, BasicTest)
 }
 
 //==============================================================================
-TEST(SoATest, IncreaseSizeTest)
+GTEST_TEST(SoATest, IncreaseSizeTest)
 {
   SoA<int, double, char> soa;
   EXPECT_TRUE(soa.isEmpty());
@@ -78,7 +78,7 @@ TEST(SoATest, IncreaseSizeTest)
 }
 
 //==============================================================================
-TEST(SoATest, SwapElementsTest)
+GTEST_TEST(SoATest, SwapElementsTest)
 {
   SoA<int, double, char> soa;
   soa.getArray<0>().push_back(1);
@@ -112,7 +112,7 @@ TEST(SoATest, SwapElementsTest)
 }
 
 //==============================================================================
-TEST(SoATest, isEmptyReturnsFalseWhenArraysAreNotEmpty)
+GTEST_TEST(SoATest, IsEmptyReturnsFalseWhenArraysAreNotEmpty)
 {
   SoA<int, float, int> soa;
   std::get<0>(soa.data) = {1, 2, 3};
@@ -123,14 +123,14 @@ TEST(SoATest, isEmptyReturnsFalseWhenArraysAreNotEmpty)
 }
 
 //==============================================================================
-TEST(SoATest, isEmptyReturnsTrueWhenArraysAreEmpty)
+GTEST_TEST(SoATest, IsEmptyReturnsTrueWhenArraysAreEmpty)
 {
   SoA<int, float, int> emptySoa;
   EXPECT_TRUE(emptySoa.isEmpty());
 }
 
 //==============================================================================
-TEST(SoATest, getSizeReturnsSizeOfArrays)
+GTEST_TEST(SoATest, GetSizeReturnsSizeOfArrays)
 {
   SoA<int, float, int> soa;
   std::get<0>(soa.data) = {1, 2, 3};
@@ -141,7 +141,7 @@ TEST(SoATest, getSizeReturnsSizeOfArrays)
 }
 
 //==============================================================================
-TEST(SoATest, getArrayReturnsConstReferenceToCorrectArray)
+GTEST_TEST(SoATest, GetArrayReturnsConstReferenceToCorrectArray)
 {
   SoA<int, float, int> soa;
   std::get<0>(soa.data) = {1, 2, 3};
@@ -155,4 +155,80 @@ TEST(SoATest, getArrayReturnsConstReferenceToCorrectArray)
   EXPECT_EQ(std::get<0>(soa.data), intArray);
   EXPECT_EQ(std::get<1>(soa.data), floatArray);
   // EXPECT_EQ(std::get<0>(soa.data), intArray2); // This should not compile
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, Clear)
+{
+  {
+    SoA<int, double, std::string> soa;
+    soa.pushBack(1, 3.14, std::string("foo"));
+    soa.pushBack(2, 6.28, std::string("bar"));
+
+    EXPECT_EQ(soa.getSize(), 2);
+
+    soa.clear();
+    EXPECT_TRUE(soa.isEmpty());
+    EXPECT_EQ(soa.getSize(), 0);
+  }
+
+  {
+    SoA<int, double, int> soa;
+    soa.pushBack(1, 3.14, 3);
+    soa.pushBack(2, 6.28, 4);
+
+    EXPECT_EQ(soa.getSize(), 2);
+
+    soa.clear();
+    EXPECT_TRUE(soa.isEmpty());
+    EXPECT_EQ(soa.getSize(), 0);
+  }
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, PushBackAddsElementsToAllArrays)
+{
+  {
+    SoA<int, double, std::string> soa;
+    soa.pushBack(1, 3.14, std::string("foo"));
+    soa.pushBack(2, 6.28, std::string("bar"));
+
+    EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
+    EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
+    EXPECT_EQ(std::vector<std::string>({"foo", "bar"}), soa.getArray<2>());
+  }
+
+  {
+    SoA<int, double, int> soa;
+    soa.pushBack(1, 3.14, 3);
+    soa.pushBack(2, 6.28, 4);
+
+    EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
+    EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
+    EXPECT_EQ(std::vector<int>({3, 4}), soa.getArray<2>());
+  }
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, EmplaceBackAddsElementsToAllArrays)
+{
+  {
+    SoA<int, double, std::string> soa;
+    soa.emplaceBack(1, 3.14, std::string("foo"));
+    soa.emplaceBack(2, 6.28, std::string("bar"));
+
+    EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
+    EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
+    EXPECT_EQ(std::vector<std::string>({"foo", "bar"}), soa.getArray<2>());
+  }
+
+  {
+    SoA<int, double, int> soa;
+    soa.emplaceBack(1, 3.14, 3);
+    soa.emplaceBack(2, 6.28, 4);
+
+    EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
+    EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
+    EXPECT_EQ(std::vector<int>({3, 4}), soa.getArray<2>());
+  }
 }

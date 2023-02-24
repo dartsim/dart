@@ -127,6 +127,23 @@ struct SoA
   template <typename T>
   [[nodiscard]] T& get(size_t i);
 
+  /// Clears all arrays.
+  void clear();
+
+  /// Adds elements to the end of each array.
+  ///
+  /// @tparam Us Types of the elements to add
+  /// @param args Elements to add to the arrays
+  template <typename... Us>
+  void pushBack(Us&&... args);
+
+  /// Constructs elements in place at the end of each array.
+  ///
+  /// @tparam Us Types of the arguments used to construct the elements
+  /// @param args Arguments used to construct the elements
+  template <typename... Us>
+  void emplaceBack(Us&&... args);
+
   /// Increases the size of all arrays
   ///
   /// @param N Number of elements to increase the size by
@@ -147,6 +164,15 @@ private:
 
   template <typename T>
   [[nodiscard]] std::vector<T>& dataFor();
+
+  template <size_t... Is>
+  void clearImpl(std::index_sequence<Is...>);
+
+  template <typename U, size_t... Is>
+  void pushBackImpl(U&& arg, std::index_sequence<Is...>);
+
+  template <typename U, size_t... Is>
+  void emplaceBackImpl(U&& arg, std::index_sequence<Is...>);
 
   template <typename T, size_t... Is>
   void increaseSizeImpl(
@@ -292,6 +318,63 @@ template <typename T>
 std::vector<T>& SoA<Ts...>::dataFor()
 {
   return std::get<std::vector<T>>(data);
+}
+
+//==============================================================================
+template <typename... Ts>
+void SoA<Ts...>::clear()
+{
+  clearImpl(std::make_index_sequence<sizeof...(Ts)>{});
+}
+
+//==============================================================================
+template <typename... Ts>
+template <typename... Us>
+void SoA<Ts...>::pushBack(Us&&... args)
+{
+  static_assert(
+      sizeof...(Ts) == sizeof...(Us),
+      "Incorrect number of arguments for pushBack.");
+
+  std::tuple<Us...> values{std::forward<Us>(args)...};
+  pushBackImpl(std::move(values), std::make_index_sequence<sizeof...(Us)>{});
+}
+
+//==============================================================================
+template <typename... Ts>
+template <typename... Us>
+void SoA<Ts...>::emplaceBack(Us&&... args)
+{
+  static_assert(
+      sizeof...(Ts) == sizeof...(Us),
+      "Incorrect number of arguments for pushBack.");
+
+  std::tuple<Us...> values{std::forward<Us>(args)...};
+  emplaceBackImpl(std::move(values), std::make_index_sequence<sizeof...(Us)>{});
+}
+
+//==============================================================================
+template <typename... Ts>
+template <size_t... Is>
+void SoA<Ts...>::clearImpl(std::index_sequence<Is...>)
+{
+  ((std::get<Is>(data).clear()), ...);
+}
+
+//==============================================================================
+template <typename... Ts>
+template <typename U, size_t... Is>
+void SoA<Ts...>::pushBackImpl(U&& arg, std::index_sequence<Is...>)
+{
+  ((std::get<Is>(data).push_back(std::get<Is>(arg))), ...);
+}
+
+//==============================================================================
+template <typename... Ts>
+template <typename U, size_t... Is>
+void SoA<Ts...>::emplaceBackImpl(U&& arg, std::index_sequence<Is...>)
+{
+  ((std::get<Is>(data).emplace_back(std::get<Is>(arg))), ...);
 }
 
 //==============================================================================
