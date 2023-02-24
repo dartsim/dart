@@ -75,12 +75,6 @@ jobs:
             experimental: false
             release_only: false
 
-          - os: ubuntu-latest
-            build: "cp311-manylinux_aarch64"
-            toolchain_file: ""
-            experimental: true
-            release_only: false
-
           - os: macos-latest
             build: "cp38-macosx_x86_64"
             toolchain_file: ""
