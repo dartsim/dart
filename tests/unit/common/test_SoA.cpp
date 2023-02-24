@@ -70,7 +70,7 @@ GTEST_TEST(SoATest, IncreaseSizeTest)
 {
   SoA<int, double, char> soa;
   EXPECT_TRUE(soa.isEmpty());
-  soa.increaseSizeAll(3);
+  soa.increaseSize(3);
   EXPECT_EQ(soa.getSize(), 3);
   EXPECT_EQ(soa.getArray<0>().size(), 3);
   EXPECT_EQ(soa.getArray<1>().size(), 3);
@@ -99,7 +99,7 @@ GTEST_TEST(SoATest, SwapElementsTest)
   EXPECT_EQ(soa.get<0>(2), 5);
   EXPECT_EQ(soa.get<1>(2), 6.0);
   EXPECT_EQ(soa.get<2>(2), 'c');
-  soa.swapElementsAll(0, 2);
+  soa.swapElements(0, 2);
   EXPECT_EQ(soa.get<0>(0), 5);
   EXPECT_EQ(soa.get<1>(0), 6.0);
   EXPECT_EQ(soa.get<2>(0), 'c');
@@ -230,5 +230,57 @@ GTEST_TEST(SoATest, EmplaceBackAddsElementsToAllArrays)
     EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
     EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
     EXPECT_EQ(std::vector<int>({3, 4}), soa.getArray<2>());
+  }
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, PushBackReturnsIterators)
+{
+  {
+    SoA<int, double, std::string> soa;
+    auto iterTuple = soa.pushBack(1, 3.14, "hello");
+    auto intIter = std::get<0>(iterTuple);
+    auto doubleIter = std::get<1>(iterTuple);
+    auto stringIter = std::get<2>(iterTuple);
+    EXPECT_EQ(*intIter, 1);
+    EXPECT_EQ(*doubleIter, 3.14);
+    EXPECT_EQ(*stringIter, "hello");
+  }
+
+  {
+    SoA<int, double, int> soa;
+    auto iterTuple = soa.pushBack(1, 3.14, 2);
+    auto intIter = std::get<0>(iterTuple);
+    auto doubleIter = std::get<1>(iterTuple);
+    auto stringIter = std::get<2>(iterTuple);
+    EXPECT_EQ(*intIter, 1);
+    EXPECT_EQ(*doubleIter, 3.14);
+    EXPECT_EQ(*stringIter, 2);
+  }
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, EmplaceBackReturnsIterators)
+{
+  {
+    SoA<int, double, std::string> soa;
+    auto iterTuple = soa.emplaceBack(1, 3.14, "hello");
+    auto intIter = std::get<0>(iterTuple);
+    auto doubleIter = std::get<1>(iterTuple);
+    auto stringIter = std::get<2>(iterTuple);
+    EXPECT_EQ(*intIter, 1);
+    EXPECT_EQ(*doubleIter, 3.14);
+    EXPECT_EQ(*stringIter, "hello");
+  }
+
+  {
+    SoA<int, double, int> soa;
+    auto iterTuple = soa.emplaceBack(1, 3.14, 2);
+    auto intIter = std::get<0>(iterTuple);
+    auto doubleIter = std::get<1>(iterTuple);
+    auto stringIter = std::get<2>(iterTuple);
+    EXPECT_EQ(*intIter, 1);
+    EXPECT_EQ(*doubleIter, 3.14);
+    EXPECT_EQ(*stringIter, 2);
   }
 }

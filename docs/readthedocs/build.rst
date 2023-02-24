@@ -13,7 +13,7 @@ DART is supported on the following operating systems and compilers:
 +-----------------------+-----------------------+
 | Operating System      | Compiler              |
 +=======================+=======================+
-| Ubuntu 22.04 or later | GCC 11.2 or later       |
+| Ubuntu 22.04 or later | GCC 11.2 or later     |
 +-----------------------+-----------------------+
 | Windows 2022 or later | Visual Studio 2022    |
 +-----------------------+-----------------------+
