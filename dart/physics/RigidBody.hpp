@@ -32,25 +32,82 @@
 
 #pragma once
 
-#include <dart/collision/Fwd.hpp>
+#include <dart/common/Containers.hpp>
 
-#include <dart/physics/Export.hpp>
+#include <dart/physics/Fwd.hpp>
 
 namespace dart::physics {
 
-DART_DECLARE_CLASS_POINTERS_S(RigidBody);
-DART_DECLARE_CLASS_POINTERS_S(RigidBodyBatch);
-DART_DECLARE_STRUCT_POINTERS_S(RigidBodyBatchData);
+template <typename S = double>
+class RigidBody
+{
+public:
+  using Scalar = S;
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
+  /// Constructor
+  explicit RigidBody(RigidBodyBatch<S>* batch);
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
-DART_DECLARE_CLASS_POINTERS_S(MultiBody);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
+  /// Destructor
+  virtual ~RigidBody();
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
+  [[nodiscard]] auto getPosition() const;
 
-DART_DECLARE_CLASS_POINTERS_S(World);
+private:
+  friend class RigidBodyBatch<S>;
+
+  /// Initialize the RigidBody
+  virtual bool init(size_t index)
+  {
+    m_index = index;
+    return true;
+  }
+
+  /// Finalize the RigidBody
+  virtual void finalize()
+  {
+    // Empty
+  }
+
+  [[nodiscard]] size_t getIndex() const
+  {
+    return m_index;
+  }
+
+  size_t m_index;
+  RigidBodyBatch<S>* m_batch;
+};
+
+DART_TEMPLATE_CLASS_HEADER(PHYSICS, RigidBody);
+
+} // namespace dart::physics
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+#include <dart/physics/RigidBodyBatch.hpp>
+
+namespace dart::physics {
+
+//==============================================================================
+template <typename S>
+RigidBody<S>::RigidBody(RigidBodyBatch<S>* batch) : m_batch(batch)
+{
+  DART_ASSERT(m_batch);
+}
+
+//==============================================================================
+template <typename S>
+RigidBody<S>::~RigidBody()
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S>
+auto RigidBody<S>::getPosition() const
+{
+  return m_batch->getPosition(m_index);
+}
 
 } // namespace dart::physics

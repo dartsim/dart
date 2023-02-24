@@ -32,25 +32,62 @@
 
 #pragma once
 
-#include <dart/collision/Fwd.hpp>
+#include <dart/common/Containers.hpp>
+#include <dart/common/SoA.hpp>
 
-#include <dart/physics/Export.hpp>
+#include <dart/physics/MultiBodyJoint.hpp>
+#include <dart/physics/MultiBodyLink.hpp>
 
 namespace dart::physics {
 
-DART_DECLARE_CLASS_POINTERS_S(RigidBody);
-DART_DECLARE_CLASS_POINTERS_S(RigidBodyBatch);
-DART_DECLARE_STRUCT_POINTERS_S(RigidBodyBatchData);
+template <typename S>
+struct RigidBodyBatchData
+{
+  common::SoA<bool, math::SE3<S>> pack;
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
+  /// @{ @name Size: number of multibodies
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
-DART_DECLARE_CLASS_POINTERS_S(MultiBody);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
+  std::vector<bool> removed;
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
+  /// @}
 
-DART_DECLARE_CLASS_POINTERS_S(World);
+  /// @{ @name Size: total number of links
+
+  // Link properties
+  std::vector<math::SE3<S>> transforms;
+
+  /// @}
+
+  [[nodiscard]] size_t getSize()
+  {
+    return removed.size();
+  }
+
+  void reset()
+  {
+    removed = {false};
+
+    transforms.resize(1);
+  }
+
+  void addBack()
+  {
+    pack.pushBack(false, math::SE3<S>());
+    removed.emplace_back(false);
+    transforms.emplace_back();
+  }
+
+  void removeBack()
+  {
+    if (removed.empty()) {
+      return;
+    }
+
+    removed.resize(removed.size() - 1);
+    transforms.resize(transforms.size() - 1);
+  }
+
+  void transferBackTo(size_t index) {}
+};
 
 } // namespace dart::physics

@@ -36,6 +36,7 @@
 
 #include <dart/physics/Fwd.hpp>
 #include <dart/physics/MultiBodyBatch.hpp>
+#include <dart/physics/RigidBodyBatch.hpp>
 
 #include <vector>
 
@@ -72,6 +73,8 @@ public:
   /// created in this world.
   virtual ~World();
 
+  [[nodiscard]] RigidBody<S>* createRigidBody();
+
   /// Create a new MultiBody object
   ///
   /// @return MultiBody<S>* Pointer to the newly created MultiBody object.
@@ -104,6 +107,7 @@ public:
       return;
     }
 
+    m_rigid_body_batch.bake();
     m_multibody_batch.bake();
   }
 
@@ -123,6 +127,8 @@ private:
 
   /// Step information
   StepInfo m_step_info;
+
+  RigidBodyBatch<S> m_rigid_body_batch;
 
   MultiBodyBatch<S> m_multibody_batch;
 
@@ -144,7 +150,9 @@ namespace dart::physics {
 //==============================================================================
 template <typename S>
 World<S>::World(common::AlignedAllocator& base_allocator)
-  : m_base_allocator(base_allocator), m_multibody_batch(this)
+  : m_base_allocator(base_allocator),
+    m_rigid_body_batch(this),
+    m_multibody_batch(this)
 {
   // Empty
 }
@@ -154,6 +162,13 @@ template <typename S>
 World<S>::~World()
 {
   // Empty
+}
+
+//==============================================================================
+template <typename S>
+RigidBody<S>* World<S>::createRigidBody()
+{
+  return m_rigid_body_batch.createRigidBody();
 }
 
 //==============================================================================

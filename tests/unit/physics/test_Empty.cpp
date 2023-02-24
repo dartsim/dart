@@ -47,7 +47,26 @@ using Types = testing::Types<float, double>;
 TYPED_TEST_SUITE(PhysicsEmptyTest, Types);
 
 //==============================================================================
-TYPED_TEST(PhysicsEmptyTest, Empty)
+TYPED_TEST(PhysicsEmptyTest, RigidBody)
+{
+  using S = typename TestFixture::Scalar;
+
+  auto world = World<S>();
+
+  auto rb_1 = world.createRigidBody();
+  EXPECT_TRUE(rb_1 != nullptr);
+
+  auto rb_2 = world.createRigidBody();
+  EXPECT_TRUE(rb_2 != nullptr);
+
+  math::Vector3<S> pos = rb_1->getPosition();
+  EXPECT_EQ(pos, math::Vector3<S>::Zero());
+
+  world.setSimulationMode();
+}
+
+//==============================================================================
+TYPED_TEST(PhysicsEmptyTest, MultiBody)
 {
   using S = typename TestFixture::Scalar;
 
