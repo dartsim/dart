@@ -4,7 +4,8 @@ Installation
 Python
 ------
 
-To install the Python bindings for DART using the `dartpy` package from PyPI, you can use the following command:
+To install the Python bindings for DART using the `dartpy` package from PyPI,
+you can use the following command:
 
 .. code-block:: bash
 
@@ -31,7 +32,11 @@ The following operating systems are currently supported:
 
 .. note::
 
-   This table may not be up-to-date. For the latest information on the availability of the Python bindings for DART, please refer to the dartpy package on PyPI: https://pypi.org/project/dartpy/. If you would like to use dartpy on an unsupported OS or Python version, please let us know so we can consider adding support.
+   This table may not be up-to-date. For the latest information on the
+   availability of the Python bindings for DART, please refer to the dartpy
+   package on PyPI: https://pypi.org/project/dartpy/. If you would like to use
+   dartpy on an unsupported OS or Python version, please let us know so we can
+   consider adding support.
 
 C++
 ---
@@ -95,14 +100,11 @@ To install DART on Windows, you can use vcpkg:
 
    vcpkg install dartsim:x64-windows
 
-Arch Linux
-~~~~~~~~~~
+Arch Linux (experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note::
-
-   The installation instructions for Arch Linux are currently experimental and may not work on all systems. Use at your own risk.
-
-To install DART on Arch Linux using the `yay` package manager, you can use the following commands:
+To install DART on Arch Linux using the `yay` package manager, you can use the
+following commands:
 
 1. Update your package list:
 
@@ -115,3 +117,20 @@ To install DART on Arch Linux using the `yay` package manager, you can use the f
 .. code-block:: bash
 
    yay -S libdart
+
+FreeBSD (experimental)
+~~~~~~~~~~~~~~~~~~~~~~
+
+To install DART on FreeBSD, you can use the following commands:
+
+1. Update your package list:
+
+.. code-block:: bash
+
+   pkg update
+
+2. Install the `dartsim` package:
+
+.. code-block:: bash
+
+   pkg install dartsim

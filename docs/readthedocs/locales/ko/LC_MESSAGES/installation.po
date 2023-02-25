@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-23 08:44-0800\n"
+"POT-Creation-Date: 2023-02-25 17:49-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -21,102 +21,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../installation.rst:2 954c41208b6e4202ba00b951610d7890
+#: ../../installation.rst:2 42aaefaa25154507bbc7c339a6a2bae6
 msgid "Installation"
 msgstr "설치"
 
-#: ../../installation.rst:5 49e76efd6e7c435abde8bfaafce6f522
+#: ../../installation.rst:5 77652df6aa5342368264edc4a4037fa7
 msgid "Python"
 msgstr "파이썬"
 
-#: ../../installation.rst:7 f3786cd71425430aaf35fc3b739a4d19
+#: ../../installation.rst:7 db501534d69449d5bf55cd1f1744c77b
 msgid ""
 "To install the Python bindings for DART using the `dartpy` package from "
 "PyPI, you can use the following command:"
-msgstr ""
-"PyPI의 dartpy 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 다음 명령을 사용할 수 "
-"있습니다:"
+msgstr "PyPI의 dartpy 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 다음 명령을 사용할 수 있습니다:"
 
-#: ../../installation.rst:13 cc254eddf349401cb56e83580b61a287
+#: ../../installation.rst:14 fcc1a87bd2224c20a821e841dff1f5d8
 msgid "The following operating systems are currently supported:"
 msgstr "현재 다음 운영 체제가 지원됩니다:"
 
-#: ../../installation.rst:16 399a7e7f706a4e719bf6234094ac7d00
+#: ../../installation.rst:17 ad75d2a46ca24435a94a7da8a264f9b4
 msgid "Operating System"
 msgstr "운영 체제"
 
-#: ../../installation.rst:16 f24c16fbdf6a47eaaa01dd7b1df6f546
+#: ../../installation.rst:17 d3dd263f85b6485ebed891af3ec96829
 msgid "Python 3.7"
 msgstr "파이썬 3.7"
 
-#: ../../installation.rst:16 ac48165031754fc49a96cb492da7a85a
+#: ../../installation.rst:17 2377181767bf4029940c62be956da0f7
 msgid "Python 3.8"
 msgstr "파이썬 3.8"
 
-#: ../../installation.rst:16 d3edae06f8724eaeab89ab1621b3fcf1
+#: ../../installation.rst:17 257c58bd95a44474830321db3f1c9ec9
 msgid "Python 3.9"
 msgstr "파이썬 3.9"
 
-#: ../../installation.rst:16 462386b78c1a41d689e7a7546bd284ed
+#: ../../installation.rst:17 818dec43c2d7473599ff30cc747a0152
 msgid "Python 3.10"
 msgstr "파이썬 3.10"
 
-#: ../../installation.rst:16 b7caac15f79c4925b8076486c23ca299
+#: ../../installation.rst:17 926371cb2cdc4b6aa97d1d99bacd2562
 msgid "Python 3.11"
 msgstr "파이썬 3.11"
 
-#: ../../installation.rst:19 6888b191a86b42df8bda81b2e3b61e1b
+#: ../../installation.rst:20 6c4d8648f9c14b96a1eabc8304e3698c
 msgid "Linux x86_64"
 msgstr "리눅스 x86_64"
 
-#: ../../installation.rst:19 ../../installation.rst:21
-#: ../../installation.rst:23 ../../installation.rst:25
-#: ../../installation.rst:27 ../../installation.rst:29
-#: 0df4ab2b0e9c46fa85b8cdd78d748a48 22f5e9cdcd0d48e9b36f80ebcfd0c044
-#: 24aa274e076c46a1af2cff5938898511 26c797d6dc0e4d7d9821345676960ab1
-#: 28eb2750573649b09f1f9090afa14bad 2c2ee5ac14ca4dcfa728d9e782b7d5f2
-#: 33cb6986caf14ebfa8ac02427aca4a7d 52cec34d65c0426bbefb6e0361502036
-#: 54c1af951f494e1794cf4182d3ab9340 682fc0e8e79643e9aed6d580dc0739b3
-#: 6fba2529229a432c8dd4b26fb2487128 782d1b0599b043069032982b334e7214
-#: 9a2f33e03c7740a593ec67fd41858c8a b6ea9b26c01e4d8092b24300a03b6efd
-#: c6475d773d394d5ba1c8e88a0b87eb91 d21e70fa97014cd5838473fa3dac5e71
-#: f3e5ce1cc8fb45988230d1191c5c9e45 fa6d0e32f0754260b0efc6726bd6ae39
+#: ../../installation.rst:20 ../../installation.rst:22
+#: ../../installation.rst:24 ../../installation.rst:26
+#: ../../installation.rst:28 ../../installation.rst:30
+#: 23b9af4bb3314886b7605a5c6cb8c0be 395f83fb4af347deb6d3a09ced8917cf
+#: 3960bdf086864f95b49cc1f0f64663d3 56bd4cb588574e51aa344a9f907059d6
+#: 5f715fcf5c134e68872ae8de64342e6c 6167a05533ca48a488a0222184dd0bb4
+#: 627691a9929b4d7ea45b1450b2479625 6e02ca88befb4b92b4100a30b7876676
+#: 75c9aefad6c44f5089a58c565e07eb66 7fd53b78c1044cbe8e5ba4239e667d65
+#: 8b8b33ab50414061a48f0c6f581d4911 b44599fedc9448dd97bf87baeac10963
+#: b48c1744c6954897b746db465f004fae b9e10035e85b4bef9eca4ef4dc950f29
+#: c3acd7b9741848759b843b696e5c5e34 cd9e0267bbba4f7dbb6af1793272c2d1
+#: f7958fb6b1d44321b2295c3c30ef49d8 fac425af1ae94d759841883e384c8952
 msgid "O"
 msgstr ""
 
-#: ../../installation.rst:21 a8070fe2f6d54d718b0548750a44742c
+#: ../../installation.rst:22 b93d6b56e2a145e2a47c6492b64ccb0c
 msgid "Linux arm64"
 msgstr "리눅스 arm64"
 
-#: ../../installation.rst:21 ../../installation.rst:23
-#: ../../installation.rst:25 ../../installation.rst:27
-#: ../../installation.rst:29 1029d11b056a4848b01cf093bee56958
-#: 3610bf3c621543afa555f2baa17fe85b 384d1d22f05e481cb85ef9fb271ff6a7
-#: 5c42cc201a4b4a47bf1ca331e9391cff 69976567eeb14511a71435ea56afc8b6
-#: 6dd708e501d74056ae93f73b4a0cbc9e 842f44c4df174b94a0c3493b199b3110
-#: a7b27cca97534ad5a9c31a8424cf5aa1 c63197019aea41258c55adf02c34d405
-#: d6405233afc74d09b70d749a213a7a8b e2f719365c664ecb96d2276540036ed3
-#: f1abbb51b7e44276b1119468ecb7635c
+#: ../../installation.rst:22 ../../installation.rst:24
+#: ../../installation.rst:26 ../../installation.rst:28
+#: ../../installation.rst:30 1dbdafa0b9fb4a19b04e618a85fb7892
+#: 383192b0384c40aebaafb55d5df246c9 531400c2f713409cbb67a7c758f2a111
+#: 61d7a68a5ad046bfb8b21f86da2eaad4 6ebbe1ed39ff4218be0205b1473c2bfa
+#: 7b818e63e0754071a88638009f584b8a aaa80fc1e5064c20ba971841330502ff
+#: b5d5d34d685849328feddd01d40d1242 c2261ae013c14c0599e7c8bbcb659dab
+#: c22bd4cd8b4549c98b4c60e35682ebd2 d3f53f9124a9475aa36f44f2406e7588
+#: ec471725611a4414907d72ebbeac1f36
 msgid "X"
 msgstr ""
 
-#: ../../installation.rst:23 9639cb518b724681acb3f3089fdab40b
+#: ../../installation.rst:24 20821757ae8c4999bb2e2b74e08f7734
 msgid "macOS x86_64"
 msgstr ""
 
-#: ../../installation.rst:25 0f547fe4a2534c7d92df50ef28a57ad8
+#: ../../installation.rst:26 1185d2be8ecf4c80986366ac33f170b0
 msgid "macOS arm64"
 msgstr ""
 
-#: ../../installation.rst:27 e0ff5aee2d28458f944336a96930c69a
+#: ../../installation.rst:28 1b210a68c5234750b900ac882544bcad
 msgid "Windows x86_64"
 msgstr "윈도우즈 x86_64"
 
-#: ../../installation.rst:29 d7001c3bb6fc491fb4f5800b8b000dd6
+#: ../../installation.rst:30 c7fbac18f58943a6a1570645fd10aeb0
 msgid "Windows arm64"
 msgstr "윈도우즈 arm64"
 
-#: ../../installation.rst:34 cca6b7c38ff34a52824c25fca65e34fb
+#: ../../installation.rst:35 bfcc6eb2239545129ca2e38f417638e4
 msgid ""
 "This table may not be up-to-date. For the latest information on the "
 "availability of the Python bindings for DART, please refer to the dartpy "
@@ -124,91 +122,102 @@ msgid ""
 "use dartpy on an unsupported OS or Python version, please let us know so "
 "we can consider adding support."
 msgstr ""
-"이 표는 최신 정보가 아닐 수 있습니다. DART의 Python 바인딩의 가용성에 대한 최신 정보는 "
-"PyPI의 dartpy 패키지를 참조해주시기 바랍니다: https://pypi.org/project/dartpy/. "
-"지원되지 않는 운영 체제나 Python 버전에서 dartpy를 사용하려면 알려주시기 바랍니다. 이를 "
-"토대로 추가 지원을 고려 하겠습니다."
+"이 표는 최신 정보가 아닐 수 있습니다. DART의 Python 바인딩의 가용성에 대한 최신 정보는 PyPI의 dartpy 패키지를"
+" 참조해주시기 바랍니다: https://pypi.org/project/dartpy/. 지원되지 않는 운영 체제나 Python "
+"버전에서 dartpy를 사용하려면 알려주시기 바랍니다. 이를 토대로 추가 지원을 고려 하겠습니다."
 
-#: ../../installation.rst:37 a74ea904246848019d61ae879facf079
+#: ../../installation.rst:42 a32b55e0a3dd4337837954d159df539b
 msgid "C++"
 msgstr ""
 
-#: ../../installation.rst:40 c0648039cc2b489cb730bfa7352ba451
+#: ../../installation.rst:45 6bb4338d941e4cdfbb74315b4efe7b1a
 msgid "Ubuntu"
 msgstr "우분투"
 
-#: ../../installation.rst:42 431cfc42360f45c0bd3152983f3ef2bc
+#: ../../installation.rst:47 975d73409ce041e7b6c3f6bfe0ff878e
 msgid "To install DART on Ubuntu, you can use the following commands:"
 msgstr "Ubuntu에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
 
-#: ../../installation.rst:44 86643fff941b42f1bb78cc3a353f793d
+#: ../../installation.rst:49 b3b3cc64bd6e4caab1d58bf878625ccc
 msgid "Add the DART PPA to your system:"
 msgstr "시스템에 DART PPA 추가:"
 
-#: ../../installation.rst:50 ../../installation.rst:107
-#: 81ebb393ef6847189fb6de291caeb24f fe595e8f71824e848d702d46553c6162
+#: ../../installation.rst:55 ../../installation.rst:109
+#: ../../installation.rst:126 6798d39af31e4a029d6a1b7c21ef96ab
+#: b07152e3d7ad4d86875bfe2324411136 f2da6e48ce294b2184ee97e368fe286c
 msgid "Update your package list:"
 msgstr "패키지 목록을 업데이트하세요:"
 
-#: ../../installation.rst:56 f928a672e835401583eb7b7228711678
+#: ../../installation.rst:61 a6ebdd36d4004f39bc2f20413c3ccd58
 msgid "Install the `libdart6-all-dev` package:"
 msgstr "libdart6-all-dev 패키지를 설치하세요:"
 
-#: ../../installation.rst:63 9f663c171682411e8386cb740088f211
+#: ../../installation.rst:68 6dd35f2913e545cea4ac0f2239af1519
 msgid "macOS"
 msgstr ""
 
-#: ../../installation.rst:65 83a2ddfbf59f42469393b0186be147a5
+#: ../../installation.rst:70 27e0e80bda3043a69729d2bb57511310
 msgid "To install DART on macOS, you can use Homebrew:"
 msgstr "macOS에서 DART를 설치하려면 Homebrew를 사용할 수 있습니다."
 
-#: ../../installation.rst:67 b00335e3af3c45c282cf766ab8362534
+#: ../../installation.rst:72 43fc7958e27a48b6b104b63b2043037a
 msgid "Install Homebrew if you haven't already:"
 msgstr "Homebrew를 아직 설치하지 않았다면 다음을 따라 설치하세요:"
 
-#: ../../installation.rst:73 087982665f0040b4bbd78443ccbab3f2
+#: ../../installation.rst:78 7c988901c0f447af9d32dd0d9d276c72
 msgid "Install the `dartsim` formula:"
 msgstr "dartsim formula를 설치하세요:"
 
-#: ../../installation.rst:80 4c45b30ba24e42308f5aef6a2a58e860
+#: ../../installation.rst:85 17b1e698035447d69067ec0aa18db5e3
 msgid "Windows"
 msgstr "윈도우즈"
 
-#: ../../installation.rst:82 26ad815166494bbaa9244fc0152c8c10
+#: ../../installation.rst:87 98a8121eaa1c49d195de29c3fea3e6c6
 msgid "To install DART on Windows, you can use vcpkg:"
 msgstr "Windows에서 DART를 설치하려면 vcpkg를 사용할 수 있습니다:"
 
-#: ../../installation.rst:84 2bb3462778e242f6a889b8823ed9d385
+#: ../../installation.rst:89 ec620946eba54421bcc565ccb859ec72
 msgid "Install vcpkg if you haven't already:"
 msgstr "vcpkg가 아직 설치되어 있지 않은 경우 다음을 따라 설치하세요:"
 
-#: ../../installation.rst:92 51801739f7894f6db5cd5e0267a46499
+#: ../../installation.rst:97 ../../installation.rst:132
+#: 07d4a421602941dd9dc133c1da48c40c 176291c8f24c4d7dbc81a12fc64880fc
 msgid "Install the `dartsim` package:"
 msgstr "dartsim 패키지를 설치하세요:"
 
-#: ../../installation.rst:99 f2df83bccfc647ecbc13a475ba7a3ebe
-msgid "Arch Linux"
+#: ../../installation.rst:104 7ecd83aab65b415abf4f37dbf8246051
+msgid "Arch Linux (experimental)"
 msgstr ""
 
-#: ../../installation.rst:103 346a7385628b4d6fa554c86655585d72
-msgid ""
-"The installation instructions for Arch Linux are currently experimental "
-"and may not work on all systems. Use at your own risk."
-msgstr ""
-"Arch Linux의 설치 지침은 현재 실험적이며 모든 시스템에서 작동하지 않을 수 있습니다. 사용에 "
-"주의해 주시기 바랍니다."
-
-#: ../../installation.rst:105 190ad668477745f2a71bf243ad4bcdd1
+#: ../../installation.rst:106 b6fb1c58e0ce469aa072951fa95b9400
 msgid ""
 "To install DART on Arch Linux using the `yay` package manager, you can "
 "use the following commands:"
-msgstr ""
-"yay 패키지 관리자를 사용하여 Arch Linux에 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
+msgstr "yay 패키지 관리자를 사용하여 Arch Linux에 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
 
-#: ../../installation.rst:113 55d944e0e221455eb1acb4e486b25d89
+#: ../../installation.rst:115 a63ead8bdb22485389f0cd8ece68db17
 msgid "Install the `libdart` package:"
 msgstr "`libdart` 패키지를 설치하세요:"
 
+#: ../../installation.rst:122 47c5b64c38dc420099c8950b7c392ba5
+msgid "FreeBSD (experimental)"
+msgstr ""
+
+#: ../../installation.rst:124 1caac1a1c174435ba1a13a724e5b2d47
+#, fuzzy
+msgid "To install DART on FreeBSD, you can use the following commands:"
+msgstr "Ubuntu에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
+
 #~ msgid "Arch Linux (Experimental)"
 #~ msgstr ""
+
+#~ msgid "Arch Linux"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The installation instructions for Arch "
+#~ "Linux are currently experimental and may"
+#~ " not work on all systems. Use "
+#~ "at your own risk."
+#~ msgstr "Arch Linux의 설치 지침은 현재 실험적이며 모든 시스템에서 작동하지 않을 수 있습니다. 사용에 주의해 주시기 바랍니다."
 

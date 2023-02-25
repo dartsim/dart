@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-25 08:33-0800\n"
+"POT-Creation-Date: 2023-02-25 17:49-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -21,221 +21,399 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../build.rst:4 1c44a356ec56454aa158bf08d2faf6c8
+#: ../../build.rst:4 5164d48a77c740138998f2cd265969d9
 msgid "Building DART"
 msgstr "DART 빌드하기"
 
-#: ../../build.rst:6 3043e05d9b014965aaf1d636a7978db9
+#: ../../build.rst:6 e83ddd3de679449a8f9a791edddc9ef8
 msgid ""
 "This guide describes how to build DART, a C++ library for robotics and "
 "motion planning, using CMake. DART also has Python bindings, called "
 "dartpy, which will be covered in a separate section."
 msgstr ""
-"이 가이드는 CMake를 사용하여 로봇 공학 및 모션 플래닝을 위한 C++ 라이브러리인 DART를 빌드하는 방법에 대해 설명합니다. DART에는 dartpy라는 Python 바인딩도 있으며, 별도의 섹션에서 다룰 것입니다."
+"이 가이드는 CMake를 사용하여 로봇 공학 및 모션 플래닝을 위한 C++ 라이브러리인 DART를 빌드하는 방법에 대해 설명합니다."
+" DART에는 dartpy라는 Python 바인딩도 있으며, 별도의 섹션에서 다룰 것입니다."
 
-#: ../../build.rst:9 a2877627b7314d12aefe2beec88401d1
+#: ../../build.rst:11 4aa6a4d7f05f491c873404fc51d39f3b
 msgid "Supported Environments"
 msgstr "지원되는 환경"
 
-#: ../../build.rst:11 5a8b85f34efd41e98bbbf6eb3fbbea9c
+#: ../../build.rst:13 e153fba7620641aaa08554d9fdf4456b
 msgid "DART is supported on the following operating systems and compilers:"
 msgstr "DART는 다음 운영 체제와 컴파일러에서 지원됩니다:"
 
-#: ../../build.rst:14 0739c212308243ee8e97c51c3f00c50e
+#: ../../build.rst:16 eecd6e09e570457dabd3295062019a29
 msgid "Operating System"
 msgstr "운영 체제"
 
-#: ../../build.rst:14 bf7ad00220664447b3e9e16cc69a0b93
+#: ../../build.rst:16 f15f22ee5d244ebf8eebd7e356abdd0d
 msgid "Compiler"
 msgstr "컴파일러"
 
-#: ../../build.rst:16 d731464ad33f4130a9aa964e98ab6194
+#: ../../build.rst:18 e0ff061c1eb34f508f7ee29f4797657f
 msgid "Ubuntu 22.04 or later"
 msgstr "우분투 22.04 이상"
 
-#: ../../build.rst:16 331f01f0155148c08df3109f2fb92d2b
+#: ../../build.rst:18 4b8b2f5b75664140bdcfc914fe0c2340
 msgid "GCC 11.2 or later"
 msgstr "GCC 11.2 이상"
 
-#: ../../build.rst:18 f15e0941adb74b15bfeef33a08da589e
+#: ../../build.rst:20 7bb766abc1e04800890a4e96e779dfff
 msgid "Windows 2022 or later"
 msgstr "윈도우즈 2022 이상"
 
-#: ../../build.rst:18 82319bbfedb04b8f9f8620818631ae28
+#: ../../build.rst:20 b02ac10d67b1423b84ff6fcacdd3469f
 msgid "Visual Studio 2022"
 msgstr "비주얼 스튜디오 2022"
 
-#: ../../build.rst:20 a973de8d911a4251a5649bb271124b29
+#: ../../build.rst:22 92f35b5450ec4d2f9df9432b4a3edb23
 msgid "macOS 13 or later"
 msgstr "맥OS 13 이상"
 
-#: ../../build.rst:20 a6e573391560446cafbd03ab461ed4c7
+#: ../../build.rst:22 c5db38b7ebbd4b118bd34ef06a21f28c
 msgid "Clang 13 or later"
 msgstr "Clang 13 이상"
 
-#: ../../build.rst:24 87522141a6e84e198e15996e14ad60c4
-msgid "Build System"
-msgstr "빌드 시스템"
+#: ../../build.rst:26 a31b4502220548f691a50ad56baa2c2d
+msgid "Prerequisites"
+msgstr "사전 요구 사항"
 
-#: ../../build.rst:26 322ed0424e284ea3851e3b5cf1f204f1
+#: ../../build.rst:28 ec77ab32d455427591a897401311bf6c
 msgid ""
-"DART uses CMake as its build system. CMake is a powerful tool that "
-"generates build files for a variety of build systems, including "
-"Makefiles, Visual Studio projects, and Xcode projects."
-msgstr ""
-"DART는 CMake를 빌드 시스템으로 사용합니다. CMake는 Makefiles, Visual Studio 프로젝트, Xcode 프로젝트 등 다양한 빌드 시스템에 대한 빌드 파일을 생성하는 강력한 도구입니다."
-
-#: ../../build.rst:29 2a6820a227504c3faf4bc67d41de975f
-msgid "CMake Options"
-msgstr "CMake 옵션"
-
-#: ../../build.rst:31 b25ad4ae7e2a4d7494fba949e35f027a
-msgid "DART provides the following CMake options:"
-msgstr "DART는 다음 CMake 옵션을 제공합니다:"
-
-#: ../../build.rst:34 6f081c9c559045309521298e7c5d7cb5
-msgid "Option"
-msgstr "옵션"
-
-#: ../../build.rst:34 207e8eb1aa6e4745aa8bc578a08c7de7
-msgid "Default Value"
-msgstr "기본값"
-
-#: ../../build.rst:34 c8e7b586adb249959e1b5bd92c149c4c
-msgid "Description"
-msgstr "설명"
-
-#: ../../build.rst:36 3340a6f525c9470dae61e5478d5d1ef3
-msgid "CMAKE_BUILD_TYPE"
+"Before you can build DART, you'll need to install the required and "
+"optional dependencies. The required dependencies are the minimum set of "
+"dependencies needed to build DART, while the optional dependencies enable"
+" additional features in DART."
 msgstr ""
 
-#: ../../build.rst:36 5320519c9219415fafefa5b5b9fd9f76
-msgid "Release"
+#: ../../build.rst:33 536cad76168d4d74889c6760e0cc8f0d
+msgid ""
+"The steps for installing dependencies may vary depending on your "
+"operating system and package manager. Below, we provide instructions for "
+"installing the required and optional dependencies on Ubuntu, macOS, and "
+"Windows, as well as some experimental guidance for other platforms."
 msgstr ""
 
-#: ../../build.rst:36 b32fb31546874e70a2427b949dea17c0
-msgid "Specifies the build type."
-msgstr "빌드 타입을 지정합니다."
-
-#: ../../build.rst:38 36c6fc2a00594c97a62ace8116c5ffb7
-msgid "DART_ENABLE_SIMD"
+#: ../../build.rst:40 c3636c1beb8d4d8a8e9dc4d5122ae106
+msgid ""
+"Please note that the dependencies and installation steps are subject to "
+"change, so we encourage you to report any issues you encounter and "
+"contribute to keeping the instructions up-to-date for the community. By "
+"working together, we can help ensure that the DART documentation is "
+"accurate and helpful for everyone who uses it."
 msgstr ""
 
-#: ../../build.rst:38 fc479e3f618a42ddbf72a98f53da2900
-msgid "ON"
+#: ../../build.rst:47 7be1dec540204d9fa3ba4fdc2689ae0f
+msgid "Ubuntu"
 msgstr ""
 
-#: ../../build.rst:38 a64313967da749ebb4c4eeafd0751abe
-msgid "Enables use of SIMD instructions."
-msgstr "SIMD 명령어 사용을 활성화합니다."
+#: ../../build.rst:49 04234ef1b1764fd4a5563c068ffb122a
+msgid ""
+"The dependencies for Ubuntu can be installed using the ``apt`` package "
+"manager. The following command will install the required dependencies:"
+msgstr ""
 
-#: ../../build.rst:40 ../../build.rst:153 ../../build.rst:158
-#: ../../build.rst:163 06d5772432264048a9d7b1e307b870e1
+#: ../../build.rst:58 ../../build.rst:79 ../../build.rst:97 ../../build.rst:115
+#: 574a3b1964574904af682a0bcaff817b 7f2abc44442440ef9e6a15460161f84b
+#: 9506842cd19e4797ac8723e71993beba a5cb39a14e98495bae89e4f3a46b1eca
+#, fuzzy
+msgid "The following command will install the optional dependencies:"
+msgstr "전체 기능을 빌드하려면 선택적 종속성을 설치합니다:"
+
+#: ../../build.rst:70 604d4bcf2baf44a9ae40464b45f0d157
+msgid "macOS"
+msgstr ""
+
+#: ../../build.rst:72 1f8d9ca63fe745aeb3915461336db553
+msgid ""
+"The dependencies for macOS can be installed using the ``brew`` package "
+"manager. The following command will install the required dependencies:"
+msgstr ""
+
+#: ../../build.rst:88 0dcecc2d5b6d4bd0a56b6725f919177d
+msgid "Windows"
+msgstr ""
+
+#: ../../build.rst:90 f3a731c507e346ab8be7d6561a78f82a
+msgid ""
+"The dependencies for Windows can be installed using the ``vcpkg`` package"
+" manager. The following command will install the required dependencies:"
+msgstr ""
+
+#: ../../build.rst:106 30a2b2f5702547bab62ef54d0d0129af
+msgid "Arch Linux (experimental)"
+msgstr ""
+
+#: ../../build.rst:108 a8cebd3014f9452ca864b9091333ff53
+msgid ""
+"The dependencies for Arch Linux can be installed using the ``yay`` "
+"package manager. The following command will install the required "
+"dependencies:"
+msgstr ""
+
+#: ../../build.rst:125 ff9dab84843c41298ae36ff304c477ff
+msgid "FreeBSD (experimental)"
+msgstr ""
+
+#: ../../build.rst:127 ../../build.rst:197 ../../build.rst:285
+#: 4d796c763f32455c9086080319866cf3 71614fc1f3d3496a8010dec92a8c369e
+#: c698e81cb8074c579fc7c00361b974dd
 msgid "TODO"
 msgstr ""
 
-#: ../../build.rst:45 35e243e80ac44e56b921778f07a0249b
+#: ../../build.rst:130 7c6c8d95877042eb8d7bdf6090feed75
+#, fuzzy
+msgid "Clone the DART Repository"
+msgstr "DART 리포지토리를 클론합니다:"
+
+#: ../../build.rst:132 857253e5d0bf460c80b5d4ebb68026be
+msgid ""
+"To get started with building DART, you'll need to clone the DART "
+"repository. Here's how to do it:"
+msgstr ""
+
+#: ../../build.rst:135 c886b1b21a024c9d87e444e79cb53f3c
+msgid ""
+"Clone the DART repository by running the following command in your "
+"terminal:"
+msgstr ""
+
+#: ../../build.rst:141 644341f6070e446990b99c87e005591b
+msgid ""
+"(Optional) If you want to build a specific version of DART, you can "
+"checkout a specific branch, tag, or commit."
+msgstr ""
+
+#: ../../build.rst:150 23704ae0e8f44670a8e48f36bd0272e1
+msgid ""
+"Please note that the DART repository is actively maintained, so there may"
+" be changes and updates to the repository over time. To get the latest "
+"information, we recommend referring to the DART GitHub repository."
+msgstr ""
+
+#: ../../build.rst:155 6500a417e1fe41c48c0c0f81aa3ec4b2
+msgid "Build Configuration"
+msgstr "빌드 구성"
+
+#: ../../build.rst:157 e13cfa35427b45cd8e0d4d43ef6870b5
+msgid ""
+"DART uses CMake as its build system. CMake is a powerful tool that "
+"generates build files for a variety of build systems, including "
+"Makefiles, Visual Studio projects, and Xcode projects. For more "
+"information about available generators, we recommend referring to the "
+"`CMake documentation <https://cmake.org/cmake/help/latest/manual/cmake-"
+"generators.7.html>`_."
+msgstr ""
+
+#: ../../build.rst:163 4bd97656bcf54a9eb60b0a1d38932f31
+#, fuzzy
+msgid ""
+"To configure the build, you'll need to create a build directory and run "
+"CMake from that directory. Here's how to do it:"
+msgstr ""
+"DART를 빌드하려면 먼저 빌드 디렉토리를 만들고 해당 디렉토리에서 CMake를 실행하여 빌드 시스템을 구성해야 합니다. 빌드 "
+"시스템을 구성하는 방법은 다음과 같습니다:"
+
+#: ../../build.rst:166 aa05d83ba3c64f5eaccffac5124253e5
+msgid ""
+"Create a build directory by running the following command in your "
+"terminal:"
+msgstr ""
+
+#: ../../build.rst:172 ../../build.rst:225 00660f238f3c4eed888a553d97ef5a2f
+#: aeee841f26864615b7e20108a91c94d9
+msgid "Change into the build directory by running the following command:"
+msgstr ""
+
+#: ../../build.rst:178 a01a61fcdcb5426fac053071cee8140b
+msgid "Run CMake from the build directory by running the following command:"
+msgstr ""
+
+#: ../../build.rst:184 c5e5f0ca68cb410da32ecd73f1709268
+msgid ""
+"If you want to configure the build, you can pass additional options to "
+"CMake. For example, you can specify the build type by passing the "
+"``-DCMAKE_BUILD_TYPE`` option. DART provides a number of CMake options "
+"that allow you to customize the build process. Here are some of the most "
+"important options:"
+msgstr ""
+
+#: ../../build.rst:191 0b8d872299f14408888fb7687868026f
+msgid "Option"
+msgstr "옵션"
+
+#: ../../build.rst:191 b3d8fbf1b3ed4eb8b5088ed7d48072c0
+msgid "Default Value"
+msgstr "기본값"
+
+#: ../../build.rst:191 1bcc9d1a51764adaa7fad365c7c973fb
+msgid "Description"
+msgstr "설명"
+
+#: ../../build.rst:193 e3cfa6f9689d4f98aec54f49fe8e7089
+msgid "CMAKE_BUILD_TYPE"
+msgstr ""
+
+#: ../../build.rst:193 02a0152e09c749f0b2fc494c1dd678c0
+msgid "Release"
+msgstr ""
+
+#: ../../build.rst:193 6d41cfdff7464edd89e92fdbe80a0c0f
+msgid "Specifies the build type."
+msgstr "빌드 타입을 지정합니다."
+
+#: ../../build.rst:195 6af101acb0484a319171b23bb59282d4
+msgid "DART_ENABLE_SIMD"
+msgstr ""
+
+#: ../../build.rst:195 3a1bc12e58ed4f12be15d23895d47e58
+msgid "ON"
+msgstr ""
+
+#: ../../build.rst:195 768b97537e4f403cb9f8e5a13b8c5aaa
+msgid "Enables use of SIMD instructions."
+msgstr "SIMD 명령어 사용을 활성화합니다."
+
+#: ../../build.rst:202 911d247c51744ad3841c9239e89094fd
 msgid ""
 "This list of options may not be exhaustive or up-to-date. Please refer to"
 " the main CMakeLists.txt file in the DART repository to confirm the list "
 "of available options. If you find any discrepancies or errors, please "
 "consider submitting a pull request to update this document."
 msgstr ""
-"이 옵션 목록은 모두를 포함하거나 최신 상태가 아닐 수 있습니다. 사용 가능한 옵션 목록을 확인하려면 DART 리포지토리의 주요 CMakeLists.txt 파일을 참조하십시오. 불일치나 오류가 발견되면 이 문서를 업데이트하기 위한 pull request를 제출하는 것을 고려해 주십시오."
+"이 옵션 목록은 모두를 포함하거나 최신 상태가 아닐 수 있습니다. 사용 가능한 옵션 목록을 확인하려면 DART 리포지토리의 주요 "
+"CMakeLists.txt 파일을 참조하십시오. 불일치나 오류가 발견되면 이 문서를 업데이트하기 위한 pull request를 "
+"제출하는 것을 고려해 주십시오."
 
-#: ../../build.rst:51 d583914849fb45a8bab45777bf09e1a7
-msgid "Building on Ubuntu"
-msgstr "우분투에서 빌드하기"
-
-#: ../../build.rst:53 711feff5081a4632a774b9aca35578f8
-msgid "To build DART on Ubuntu, follow the steps below."
-msgstr "우분투에서 DART를 빌드하려면 다음 단계를 따르십시오."
-
-#: ../../build.rst:56 583266e6222942efa804fdca2cafdac8
-msgid "Prerequisites"
-msgstr "사전 요구 사항"
-
-#: ../../build.rst:58 936ebfa0e58f4ada82ff103922d74b49
+#: ../../build.rst:207 72530230010d448595262c0bc9c8e9d0
 msgid ""
-"Consider removing DART installed at the system directory to avoid any "
-"potential conflicts:"
-msgstr "어떠한 잠재적인 충돌을 피하기 위해, 시스템 디렉토리에 설치된 DART를 제거하는 것을 고려해 주십시오:"
-
-#: ../../build.rst:64 2b8ba76e89394aaeaf1999e62b2b6332
-msgid ""
-"To build DART from source, you need to install the required dependencies "
-"and then build and install DART. Here's how to do it:"
-msgstr "소스로부터 DART를 빌드하려면 필요한 종속성을 설치한 다음 DART를 빌드하고 설치해야 합니다. 다음은 그 방법입니다:"
-
-#: ../../build.rst:76 c3d56b3c036d449397165873821b56ef
-msgid "To build the full features, install optional dependencies:"
-msgstr "전체 기능을 빌드하려면 선택적 종속성을 설치합니다:"
-
-#: ../../build.rst:99 715f477226b7450d8e9070972730da25
-msgid "Clone the DART repository:"
-msgstr "DART 리포지토리를 클론합니다:"
-
-#: ../../build.rst:105 cbf6c626df4149149a219e5c27dd484f
-msgid ""
-"(Optional) Change directory to the DART repository if you want to build a"
-" specific branch, tag, or commit:"
-msgstr "(선택 사항) 특정 브랜치, 태그 또는 커밋을 빌드하려면 DART 리포지토리로 디렉토리를 변경하십시오:"
-
-#: ../../build.rst:113 a325ad9b15af4f24abd3c2fb36e7d8e7
-msgid "Build Configuration"
-msgstr "빌드 구성"
-
-#: ../../build.rst:115 08513910970b4999a614d48e90fefc83
-msgid ""
-"To build DART, you first need to configure the build system by creating a"
-" build directory and running CMake from that directory. Here's how to "
-"configure the build system:"
+"Here are some example commands that you can use to configure the build on"
+" different platforms with different generators:"
 msgstr ""
-"DART를 빌드하려면 먼저 빌드 디렉토리를 만들고 해당 디렉토리에서 CMake를 실행하여 빌드 시스템을 구성해야 합니다. 빌드 시스템을 구성하는 방법은 다음과 같습니다:"
 
-#: ../../build.rst:117 10f0972819764702992611dac6e0756f
-msgid "Create a build directory:"
-msgstr "빌드 디렉토리를 만듭니다:"
+#: ../../build.rst:217 aceb0eef1be84314af6e9d2f97cb075f
+msgid "Building DART from Command Line"
+msgstr ""
 
-#: ../../build.rst:125 470d8ae74b564de8b407c6ea0843f21b
-msgid "Run CMake to generate build files:"
-msgstr "빌드 파일을 생성하기 위해 CMake를 실행합니다:"
-
-#: ../../build.rst:131 2b50fbcc833c4714a24725e3dcc2eda5
+#: ../../build.rst:219 f3cc5a08ce7d4c629d1fea176442454d
 msgid ""
-"This command generates build files in the build directory using the "
-"CMakeLists.txt file in the DART directory."
-msgstr "이 명령은 DART 디렉토리의 CMakeLists.txt 파일을 사용하여 빌드 디렉토리에 빌드 파일을 생성합니다."
+"Whether or not you configured the build for IDEs, you can still build "
+"DART from the command line using CMake's unified build commands."
+msgstr ""
 
-#: ../../build.rst:134 96a64538102f47e08b12f738fbdefb30
-msgid "Build Instructions"
-msgstr "빌드 지침"
-
-#: ../../build.rst:136 48a14de10d5444e78e95936d321897db
+#: ../../build.rst:222 84cee8e719804fdbb07f76c7bb8846de
 msgid ""
-"Once you have configured the build system, you can build DART using the "
-"following commands:"
+"To build DART from the command line, you'll need to run the build command"
+" from the build directory. Here's how to do it:"
+msgstr ""
+
+#: ../../build.rst:231 f6e3edd7de43438484fd65825c4ba3c6
+#, fuzzy
+msgid "Run the build command by running the following command:"
 msgstr "빌드 시스템을 구성한 후에는 다음 명령을 사용하여 DART를 빌드할 수 있습니다:"
 
-#: ../../build.rst:138 2395b84bffc946dcb8844a635eaef47d
-msgid "Build the project:"
-msgstr "프로젝트를 빌드합니다:"
+#: ../../build.rst:237 6d80cf0b90164b2abc04b9564f64c6e1
+msgid ""
+"DART provides a number of CMake targets that you can use to build "
+"different parts of the project. Here are some of the most important "
+"targets:"
+msgstr ""
 
-#: ../../build.rst:144 e9dd6ceea2874aed90a5f0a3ef594bdf
-msgid "Run the tests (optional):"
-msgstr "테스트를 실행합니다 (선택 사항):"
+#: ../../build.rst:240 32842ed98df441cbafc1665401a225a1
+msgid ""
+"``ALL``: Builds all the targets in the project, including building tests,"
+" examples, tutorials, and running tests."
+msgstr ""
 
-#: ../../build.rst:151 8683ac4b29014ddcb0007fc34097f552
-msgid "Building on macOS"
-msgstr "맥OS에서 빌드하기"
+#: ../../build.rst:242 e54585121179483693f0e81f28acfa49
+msgid "``all``: Builds core targets without tests, examples, and tutorials."
+msgstr ""
 
-#: ../../build.rst:156 e0ff8792adb14fe7ab9197fdec3a50b6
-msgid "Building on Windows"
-msgstr "윈도우즈에서 빌드하기"
+#: ../../build.rst:243 b956b60bfd1140ef8cadfb086acff848
+msgid "``tests``: Builds all the tests."
+msgstr ""
 
-#: ../../build.rst:161 75a1580ad5194722a199f314030c7871
+#: ../../build.rst:244 aed582fae22b4e6786bc7f92a91fbdfb
+msgid "``test``: Runs tests (need to build tests first)."
+msgstr ""
+
+#: ../../build.rst:245 1f5a44ef76c54ee2a5a73aee78f8bb79
+msgid "``tests_and_run``: Builds and runs tests."
+msgstr ""
+
+#: ../../build.rst:246 d660eef031ae40d2a64b154f29f600da
+msgid "``examples``: Builds all the examples."
+msgstr ""
+
+#: ../../build.rst:247 07713439bea64b829b9c282f0e2de843
+msgid "``tutorials``: Builds all the tutorials."
+msgstr ""
+
+#: ../../build.rst:248 bb9926cee9b64a0abff655f82411b68f
+msgid "``view_docs``: Builds the documentation and opens it in a web browser."
+msgstr ""
+
+#: ../../build.rst:249 181bc145c6cb4595a071b3e66698cbf3
+msgid "``install``: Installs the project."
+msgstr ""
+
+#: ../../build.rst:250 9dd694fbc44040d9af98182b96a3880a
+msgid ""
+"``dartpy``: Builds the Python bindings (it's encouraged to build using "
+"pip instead)."
+msgstr ""
+
+#: ../../build.rst:252 f0032171a5e64c0d95a9460610192538
+msgid "``pytest``: Runs Python tests (building tests if necessary)."
+msgstr ""
+
+#: ../../build.rst:253 bc7d18f9400d4a169ebc12e39935327f
+msgid "``coverage``: Runs tests and generates a coverage report."
+msgstr ""
+
+#: ../../build.rst:254 eb72852200ff4cd6b6039f42a382f461
+msgid "``coverage_html``: Runs tests and generates an HTML coverage report."
+msgstr ""
+
+#: ../../build.rst:255 6289ceac3ab142b7a3062a59da734776
+msgid ""
+"``coverage_view``: Runs tests, generates an HTML coverage report, and "
+"opens it in a web browser."
+msgstr ""
+
+#: ../../build.rst:260 cccb5813411f4c199f7d974601eb90ce
+msgid ""
+"Please note that this list of targets may not be exhaustive or up-to-"
+"date. To confirm the full list of available targets, we recommend "
+"referring to the main CMakeLists.txt file in the DART repository. If you "
+"find any discrepancies or errors, we encourage you to submit a pull "
+"request to update this document and help keep the documentation up-to-"
+"date for the community."
+msgstr ""
+
+#: ../../build.rst:268 f7957645c7cb41fea684fdf5668cbe03
+#, fuzzy
+msgid "Building DART from IDEs"
+msgstr "dartpy 빌드하기"
+
+#: ../../build.rst:270 03e227bba9c8480eb1a92fb62ceccd46
+msgid ""
+"If you configured the build for IDEs, you can build DART from the IDEs. "
+"This section doesn't cover how to build DART from IDEs. Please refer to "
+"the IDEs documentation for more information. However, it's always to "
+"welcome to submit a pull request to update this document with "
+"instructions for your favorite IDE!"
+msgstr ""
+
+#: ../../build.rst:276 b26b3d84ab024f3097853d5c23f9bd0d
 msgid "Building dartpy"
 msgstr "dartpy 빌드하기"
+
+#: ../../build.rst:278 f3fb2a26293e47fdb8ed4b6f4b7050f7
+msgid ""
+"In general, building dartpy from source is not necessary. The easiest way"
+" to install dartpy is to use pip:"
+msgstr ""
 
 #~ msgid "GCC 11 or later"
 #~ msgstr ""
@@ -269,4 +447,79 @@ msgstr "dartpy 빌드하기"
 
 #~ msgid "Enables support for graphics."
 #~ msgstr ""
+
+#~ msgid "Build System"
+#~ msgstr "빌드 시스템"
+
+#~ msgid ""
+#~ "DART uses CMake as its build "
+#~ "system. CMake is a powerful tool "
+#~ "that generates build files for a "
+#~ "variety of build systems, including "
+#~ "Makefiles, Visual Studio projects, and "
+#~ "Xcode projects."
+#~ msgstr ""
+#~ "DART는 CMake를 빌드 시스템으로 사용합니다. CMake는 "
+#~ "Makefiles, Visual Studio 프로젝트, Xcode "
+#~ "프로젝트 등 다양한 빌드 시스템에 대한 빌드 파일을"
+#~ " 생성하는 강력한 도구입니다."
+
+#~ msgid "CMake Options"
+#~ msgstr "CMake 옵션"
+
+#~ msgid "DART provides the following CMake options:"
+#~ msgstr "DART는 다음 CMake 옵션을 제공합니다:"
+
+#~ msgid "Building on Ubuntu"
+#~ msgstr "우분투에서 빌드하기"
+
+#~ msgid "To build DART on Ubuntu, follow the steps below."
+#~ msgstr "우분투에서 DART를 빌드하려면 다음 단계를 따르십시오."
+
+#~ msgid ""
+#~ "Consider removing DART installed at the"
+#~ " system directory to avoid any "
+#~ "potential conflicts:"
+#~ msgstr "어떠한 잠재적인 충돌을 피하기 위해, 시스템 디렉토리에 설치된 DART를 제거하는 것을 고려해 주십시오:"
+
+#~ msgid ""
+#~ "To build DART from source, you "
+#~ "need to install the required "
+#~ "dependencies and then build and install"
+#~ " DART. Here's how to do it:"
+#~ msgstr "소스로부터 DART를 빌드하려면 필요한 종속성을 설치한 다음 DART를 빌드하고 설치해야 합니다. 다음은 그 방법입니다:"
+
+#~ msgid ""
+#~ "(Optional) Change directory to the DART"
+#~ " repository if you want to build "
+#~ "a specific branch, tag, or commit:"
+#~ msgstr "(선택 사항) 특정 브랜치, 태그 또는 커밋을 빌드하려면 DART 리포지토리로 디렉토리를 변경하십시오:"
+
+#~ msgid "Create a build directory:"
+#~ msgstr "빌드 디렉토리를 만듭니다:"
+
+#~ msgid "Run CMake to generate build files:"
+#~ msgstr "빌드 파일을 생성하기 위해 CMake를 실행합니다:"
+
+#~ msgid ""
+#~ "This command generates build files in"
+#~ " the build directory using the "
+#~ "CMakeLists.txt file in the DART "
+#~ "directory."
+#~ msgstr "이 명령은 DART 디렉토리의 CMakeLists.txt 파일을 사용하여 빌드 디렉토리에 빌드 파일을 생성합니다."
+
+#~ msgid "Build Instructions"
+#~ msgstr "빌드 지침"
+
+#~ msgid "Build the project:"
+#~ msgstr "프로젝트를 빌드합니다:"
+
+#~ msgid "Run the tests (optional):"
+#~ msgstr "테스트를 실행합니다 (선택 사항):"
+
+#~ msgid "Building on macOS"
+#~ msgstr "맥OS에서 빌드하기"
+
+#~ msgid "Building on Windows"
+#~ msgstr "윈도우즈에서 빌드하기"
 
