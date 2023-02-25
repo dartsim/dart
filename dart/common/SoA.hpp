@@ -49,6 +49,8 @@ struct SoA
   /// Tuple containing the arrays of data
   std::tuple<std::vector<Ts>...> data;
 
+  /// @{ @name Capacity
+
   /// Checks if all arrays are empty
   ///
   /// @return True if all arrays are empty, false otherwise
@@ -58,6 +60,17 @@ struct SoA
   ///
   /// @return Size of the arrays
   [[nodiscard]] size_t getSize() const;
+
+  /// Increases the capacity of all arrays to a value that's greater or equal to
+  /// the specified value
+  ///
+  /// @param capacity New capacity of the arrays
+  void reserve(size_t capacity);
+
+  /// Returns the capacity of the arrays
+  [[nodiscard]] size_t getCapacity() const noexcept;
+
+  /// @}
 
   /// Returns a const reference to the array at the specified index
   ///
@@ -127,35 +140,42 @@ struct SoA
   template <typename T>
   [[nodiscard]] T& get(size_t i);
 
+  /// @{ @name Modifiers
+
   /// Clears all arrays.
   void clear() noexcept;
 
   /// Adds elements to the end of each array.
   ///
-  /// @tparam Us Types of the elements to add
-  /// @param args Elements to add to the arrays
+  /// @param values Elements to add to the arrays
   /// @return Tuple of iterators pointing to the pushed elements
-  template <typename... Us>
-  auto pushBack(Us&&... args);
+  auto pushBack(std::tuple<Ts...>&& values);
 
   /// Constructs elements in place at the end of each array.
   ///
-  /// @tparam Us Types of the arguments used to construct the elements
-  /// @param args Arguments used to construct the elements
+  /// @param values Arguments used to construct the elements
   /// @return Tuple of iterators pointing to the emplaced elements
-  template <typename... Us>
-  auto emplaceBack(Us&&... args);
+  auto emplaceBack(std::tuple<Ts...>&& values);
 
   /// Increases the size of all arrays
   ///
-  /// @param N Number of elements to increase the size by
-  void increaseSize(size_t N);
+  /// @param count Number of elements to increase the size by
+  void resize(size_t count);
+
+  /// Increases the size of all arrays and fills the new elements with the
+  /// specified values
+  ///
+  /// @param count Number of elements to increase the size by
+  /// @param values Values to fill the new elements with
+  void resize(size_t count, std::tuple<Ts...>&& values);
 
   /// Swaps the elements at the specified indices in all arrays
   ///
   /// @param i Index of the first element
   /// @param j Index of the second element
-  void swapElements(size_t i, size_t j);
+  void swap(size_t i, size_t j) noexcept;
+
+  /// @}
 
 private:
   template <typename T>
@@ -168,6 +188,9 @@ private:
   [[nodiscard]] std::vector<T>& dataFor();
 
   template <size_t... Is>
+  void reserveImpl(std::index_sequence<Is...>, size_t capacity);
+
+  template <size_t... Is>
   void clearImpl(std::index_sequence<Is...>) noexcept;
 
   template <typename U, size_t... Is>
@@ -176,16 +199,22 @@ private:
   template <typename U, size_t... Is>
   auto emplaceBackImpl(U&& arg, std::index_sequence<Is...>);
 
-  template <typename T, size_t... Is>
-  void increaseSizeImpl(
-      std::vector<T>& v, size_t N, std::index_sequence<Is...>);
-
   template <size_t... Is>
-  void increaseSizeImpl(std::index_sequence<Is...>, size_t N);
+  void resizeImpl(std::index_sequence<Is...>, size_t count);
+
+  template <typename U, size_t... Is>
+  void resizeImpl(std::index_sequence<Is...>, size_t count, U&& args);
+
+  template <typename T, typename U, size_t... Is>
+  void resizeImpl(
+      std::vector<T>& v, size_t count, U&& value, std::index_sequence<Is...>);
 
   template <typename T, size_t... Is>
-  void swapElementsImpl(
-      std::vector<T>& v, size_t i, size_t j, std::index_sequence<Is...>);
+  void swapImpl(
+      std::vector<T>& v,
+      size_t i,
+      size_t j,
+      std::index_sequence<Is...>) noexcept;
 };
 
 } // namespace dart::common
@@ -210,6 +239,28 @@ template <typename... Ts>
 size_t SoA<Ts...>::getSize() const
 {
   return std::get<0>(data).size();
+}
+
+//==============================================================================
+template <typename... Ts>
+void SoA<Ts...>::reserve(size_t capacity)
+{
+  reserveImpl(std::make_index_sequence<sizeof...(Ts)>{}, capacity);
+}
+
+//==============================================================================
+template <typename... Ts>
+template <size_t... Is>
+void SoA<Ts...>::reserveImpl(std::index_sequence<Is...>, size_t capacity)
+{
+  (std::get<Is>(data).reserve(capacity), ...);
+}
+
+//==============================================================================
+template <typename... Ts>
+size_t SoA<Ts...>::getCapacity() const noexcept
+{
+  return std::get<0>(data).capacity();
 }
 
 //==============================================================================
@@ -320,16 +371,10 @@ void SoA<Ts...>::clearImpl(std::index_sequence<Is...>) noexcept
 
 //==============================================================================
 template <typename... Ts>
-template <typename... Us>
-auto SoA<Ts...>::pushBack(Us&&... args)
+auto SoA<Ts...>::pushBack(std::tuple<Ts...>&& values)
 {
-  static_assert(
-      sizeof...(Ts) == sizeof...(Us),
-      "Incorrect number of arguments for pushBack.");
-
-  std::tuple<Us...> values{std::forward<Us>(args)...};
   return pushBackImpl(
-      std::move(values), std::make_index_sequence<sizeof...(Us)>{});
+      std::move(values), std::make_index_sequence<sizeof...(Ts)>{});
 }
 
 //==============================================================================
@@ -344,16 +389,10 @@ auto SoA<Ts...>::pushBackImpl(U&& arg, std::index_sequence<Is...>)
 
 //==============================================================================
 template <typename... Ts>
-template <typename... Us>
-auto SoA<Ts...>::emplaceBack(Us&&... args)
+auto SoA<Ts...>::emplaceBack(std::tuple<Ts...>&& values)
 {
-  static_assert(
-      sizeof...(Ts) == sizeof...(Us),
-      "Incorrect number of arguments for pushBack.");
-
-  std::tuple<Us...> values{std::forward<Us>(args)...};
   return emplaceBackImpl(
-      std::move(values), std::make_index_sequence<sizeof...(Us)>{});
+      std::move(values), std::make_index_sequence<sizeof...(Ts)>{});
 }
 
 //==============================================================================
@@ -368,35 +407,56 @@ auto SoA<Ts...>::emplaceBackImpl(U&& arg, std::index_sequence<Is...>)
 
 //==============================================================================
 template <typename... Ts>
-void SoA<Ts...>::increaseSize(size_t N)
+void SoA<Ts...>::resize(size_t count)
 {
-  increaseSizeImpl(std::make_index_sequence<sizeof...(Ts)>{}, N);
-}
-
-//==============================================================================
-template <typename... Ts>
-template <typename T, size_t... Is>
-void SoA<Ts...>::increaseSizeImpl(
-    std::vector<T>& v, size_t N, std::index_sequence<Is...>)
-{
-  v.resize(v.size() + N);
+  resizeImpl(std::make_index_sequence<sizeof...(Ts)>{}, count);
 }
 
 //==============================================================================
 template <typename... Ts>
 template <size_t... Is>
-void SoA<Ts...>::increaseSizeImpl(std::index_sequence<Is...>, size_t N)
+void SoA<Ts...>::resizeImpl(std::index_sequence<Is...>, size_t count)
 {
-  (increaseSizeImpl(
-       std::get<Is>(data), N, std::make_index_sequence<sizeof...(Ts)>{}),
+  (std::get<Is>(data).resize(count), ...);
+}
+
+//==============================================================================
+template <typename... Ts>
+void SoA<Ts...>::resize(size_t count, std::tuple<Ts...>&& values)
+{
+  resizeImpl(
+      std::make_index_sequence<sizeof...(Ts)>{}, count, std::move(values));
+}
+
+//==============================================================================
+template <typename... Ts>
+template <typename U, size_t... Is>
+void SoA<Ts...>::resizeImpl(std::index_sequence<Is...>, size_t count, U&& args)
+{
+  // Recursively call resizeImpl with each element in the tuple
+  (resizeImpl(
+       std::get<Is>(data),
+       count,
+       std::get<Is>(args),
+       std::make_index_sequence<sizeof...(Ts)>{}),
    ...);
 }
 
 //==============================================================================
 template <typename... Ts>
-void SoA<Ts...>::swapElements(size_t i, size_t j)
+template <typename T, typename U, size_t... Is>
+void SoA<Ts...>::resizeImpl(
+    std::vector<T>& v, size_t count, U&& value, std::index_sequence<Is...>)
 {
-  (swapElementsImpl(
+  // Resize the vector with the given count and value
+  v.resize(count, std::forward<U>(value));
+}
+
+//==============================================================================
+template <typename... Ts>
+void SoA<Ts...>::swap(size_t i, size_t j) noexcept
+{
+  (swapImpl(
        std::get<getIndex<Ts>()>(data),
        i,
        j,
@@ -407,8 +467,8 @@ void SoA<Ts...>::swapElements(size_t i, size_t j)
 //==============================================================================
 template <typename... Ts>
 template <typename T, size_t... Is>
-void SoA<Ts...>::swapElementsImpl(
-    std::vector<T>& v, size_t i, size_t j, std::index_sequence<Is...>)
+void SoA<Ts...>::swapImpl(
+    std::vector<T>& v, size_t i, size_t j, std::index_sequence<Is...>) noexcept
 {
   (void)v;
   ((std::swap(std::get<Is>(data)[i], std::get<Is>(data)[j])), ...);

@@ -41,7 +41,7 @@ using namespace dart;
 using namespace common;
 
 //==============================================================================
-GTEST_TEST(SoATest, EmptyTest)
+GTEST_TEST(SoATest, Empty)
 {
   SoA<int, double, char> soa;
   EXPECT_TRUE(soa.isEmpty());
@@ -52,7 +52,7 @@ GTEST_TEST(SoATest, EmptyTest)
 }
 
 //==============================================================================
-GTEST_TEST(SoATest, BasicTest)
+GTEST_TEST(SoATest, Basic)
 {
   SoA<int, double, char> soa;
   soa.getArray<0>().push_back(1);
@@ -66,19 +66,40 @@ GTEST_TEST(SoATest, BasicTest)
 }
 
 //==============================================================================
-GTEST_TEST(SoATest, IncreaseSizeTest)
+GTEST_TEST(SoATest, Resize)
 {
-  SoA<int, double, char> soa;
-  EXPECT_TRUE(soa.isEmpty());
-  soa.increaseSize(3);
-  EXPECT_EQ(soa.getSize(), 3);
-  EXPECT_EQ(soa.getArray<0>().size(), 3);
-  EXPECT_EQ(soa.getArray<1>().size(), 3);
-  EXPECT_EQ(soa.getArray<2>().size(), 3);
+  {
+    SoA<int, double, char> soa;
+    EXPECT_TRUE(soa.isEmpty());
+    soa.resize(3);
+    EXPECT_EQ(soa.getSize(), 3);
+    EXPECT_EQ(soa.getArray<0>().size(), 3);
+    EXPECT_EQ(soa.getArray<1>().size(), 3);
+    EXPECT_EQ(soa.getArray<2>().size(), 3);
+  }
+
+  {
+    SoA<int, char, int> soa;
+    EXPECT_TRUE(soa.isEmpty());
+    soa.resize(3, {1, 2, 3});
+    EXPECT_EQ(soa.getSize(), 3);
+
+    EXPECT_EQ(soa.get<0>(0), 1);
+    EXPECT_EQ(soa.get<0>(1), 1);
+    EXPECT_EQ(soa.get<0>(2), 1);
+
+    EXPECT_EQ(soa.get<1>(0), 2);
+    EXPECT_EQ(soa.get<1>(1), 2);
+    EXPECT_EQ(soa.get<1>(2), 2);
+
+    EXPECT_EQ(soa.get<2>(0), 3);
+    EXPECT_EQ(soa.get<2>(1), 3);
+    EXPECT_EQ(soa.get<2>(2), 3);
+  }
 }
 
 //==============================================================================
-GTEST_TEST(SoATest, SwapElementsTest)
+GTEST_TEST(SoATest, SwapElements)
 {
   SoA<int, double, char> soa;
   soa.getArray<0>().push_back(1);
@@ -99,7 +120,7 @@ GTEST_TEST(SoATest, SwapElementsTest)
   EXPECT_EQ(soa.get<0>(2), 5);
   EXPECT_EQ(soa.get<1>(2), 6.0);
   EXPECT_EQ(soa.get<2>(2), 'c');
-  soa.swapElements(0, 2);
+  soa.swap(0, 2);
   EXPECT_EQ(soa.get<0>(0), 5);
   EXPECT_EQ(soa.get<1>(0), 6.0);
   EXPECT_EQ(soa.get<2>(0), 'c');
@@ -162,8 +183,8 @@ GTEST_TEST(SoATest, Clear)
 {
   {
     SoA<int, double, std::string> soa;
-    soa.pushBack(1, 3.14, std::string("foo"));
-    soa.pushBack(2, 6.28, std::string("bar"));
+    soa.pushBack({1, 3.14, std::string("foo")});
+    soa.pushBack({2, 6.28, std::string("bar")});
 
     EXPECT_EQ(soa.getSize(), 2);
 
@@ -174,8 +195,8 @@ GTEST_TEST(SoATest, Clear)
 
   {
     SoA<int, double, int> soa;
-    soa.pushBack(1, 3.14, 3);
-    soa.pushBack(2, 6.28, 4);
+    soa.pushBack({1, 3.14, 3});
+    soa.pushBack({2, 6.28, 4});
 
     EXPECT_EQ(soa.getSize(), 2);
 
@@ -190,8 +211,8 @@ GTEST_TEST(SoATest, PushBackAddsElementsToAllArrays)
 {
   {
     SoA<int, double, std::string> soa;
-    soa.pushBack(1, 3.14, std::string("foo"));
-    soa.pushBack(2, 6.28, std::string("bar"));
+    soa.pushBack({1, 3.14, std::string("foo")});
+    soa.pushBack({2, 6.28, std::string("bar")});
 
     EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
     EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
@@ -200,8 +221,8 @@ GTEST_TEST(SoATest, PushBackAddsElementsToAllArrays)
 
   {
     SoA<int, double, int> soa;
-    soa.pushBack(1, 3.14, 3);
-    soa.pushBack(2, 6.28, 4);
+    soa.pushBack({1, 3.14, 3});
+    soa.pushBack({2, 6.28, 4});
 
     EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
     EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
@@ -214,8 +235,8 @@ GTEST_TEST(SoATest, EmplaceBackAddsElementsToAllArrays)
 {
   {
     SoA<int, double, std::string> soa;
-    soa.emplaceBack(1, 3.14, std::string("foo"));
-    soa.emplaceBack(2, 6.28, std::string("bar"));
+    soa.emplaceBack({1, 3.14, std::string("foo")});
+    soa.emplaceBack({2, 6.28, std::string("bar")});
 
     EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
     EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
@@ -224,8 +245,8 @@ GTEST_TEST(SoATest, EmplaceBackAddsElementsToAllArrays)
 
   {
     SoA<int, double, int> soa;
-    soa.emplaceBack(1, 3.14, 3);
-    soa.emplaceBack(2, 6.28, 4);
+    soa.emplaceBack({1, 3.14, 3});
+    soa.emplaceBack({2, 6.28, 4});
 
     EXPECT_EQ(std::vector<int>({1, 2}), soa.getArray<0>());
     EXPECT_EQ(std::vector<double>({3.14, 6.28}), soa.getArray<1>());
@@ -238,7 +259,7 @@ GTEST_TEST(SoATest, PushBackReturnsIterators)
 {
   {
     SoA<int, double, std::string> soa;
-    auto iterTuple = soa.pushBack(1, 3.14, "hello");
+    auto iterTuple = soa.pushBack({1, 3.14, "hello"});
     auto intIter = std::get<0>(iterTuple);
     auto doubleIter = std::get<1>(iterTuple);
     auto stringIter = std::get<2>(iterTuple);
@@ -249,7 +270,7 @@ GTEST_TEST(SoATest, PushBackReturnsIterators)
 
   {
     SoA<int, double, int> soa;
-    auto iterTuple = soa.pushBack(1, 3.14, 2);
+    auto iterTuple = soa.pushBack({1, 3.14, 2});
     auto intIter = std::get<0>(iterTuple);
     auto doubleIter = std::get<1>(iterTuple);
     auto stringIter = std::get<2>(iterTuple);
@@ -264,7 +285,7 @@ GTEST_TEST(SoATest, EmplaceBackReturnsIterators)
 {
   {
     SoA<int, double, std::string> soa;
-    auto iterTuple = soa.emplaceBack(1, 3.14, "hello");
+    auto iterTuple = soa.emplaceBack({1, 3.14, "hello"});
     auto intIter = std::get<0>(iterTuple);
     auto doubleIter = std::get<1>(iterTuple);
     auto stringIter = std::get<2>(iterTuple);
@@ -275,7 +296,7 @@ GTEST_TEST(SoATest, EmplaceBackReturnsIterators)
 
   {
     SoA<int, double, int> soa;
-    auto iterTuple = soa.emplaceBack(1, 3.14, 2);
+    auto iterTuple = soa.emplaceBack({1, 3.14, 2});
     auto intIter = std::get<0>(iterTuple);
     auto doubleIter = std::get<1>(iterTuple);
     auto stringIter = std::get<2>(iterTuple);
@@ -283,4 +304,12 @@ GTEST_TEST(SoATest, EmplaceBackReturnsIterators)
     EXPECT_EQ(*doubleIter, 3.14);
     EXPECT_EQ(*stringIter, 2);
   }
+}
+
+//==============================================================================
+GTEST_TEST(SoATest, ReserveCapacity)
+{
+  SoA<int, double, int> soa;
+  soa.reserve(100);
+  EXPECT_EQ(soa.getCapacity(), 100);
 }
