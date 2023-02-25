@@ -23,11 +23,11 @@ msgstr ""
 
 #: ../../python_binding.rst:2 44c1fbaf528844428616c69f5210444f
 msgid "Python Binding"
-msgstr ""
+msgstr "파이썬 바인딩"
 
 #: ../../python_binding.rst:5 f5e226525f6d4e81bda94c8f28a13777
 msgid "Naming Conventions"
-msgstr ""
+msgstr "네이밍 컨벤션"
 
 #: ../../python_binding.rst:7 9f1ef5d00d694e0fb4e94cae892721ac
 msgid ""
@@ -36,52 +36,57 @@ msgid ""
 "variables and member variables use snake_case, whereas in the Python "
 "bindings, both function names and variables use snake_case."
 msgstr ""
+"이 프로젝트는 C++ 코드와 Python 바인딩에 대해 다른 네이밍 컨벤션을 사용합니다. C++ 코드에서 함수 이름은 camelCase이고 변수 및 멤버 변수는 snake_case를 사용하며, Python 바인딩에서는 함수 이름과 변수 모두 snake_case를 사용합니다."
 
 #: ../../python_binding.rst:12 19f325ee810140d9a5447a6d39eb7d1e
 msgid "Here are the naming conventions used in the Python bindings:"
-msgstr ""
+msgstr "다음은 Python 바인딩에서 사용되는 네이밍 컨벤션입니다:"
 
 #: ../../python_binding.rst:14 1acdcc1580254a82adf1bfa68429ebe2
 msgid ""
 "Function names are in snake_case, with words separated by underscores "
 "(e.g. `calculate_average`)."
 msgstr ""
+"함수 이름은 underscore로 구분된 단어로 snake_case로 작성됩니다 (예: calculate_average)."
 
 #: ../../python_binding.rst:15 802244a93473499c9d682692c9bdb3e0
 msgid ""
 "Class names are in CamelCase, with the first letter of each word in "
 "uppercase (e.g. `MyClass`)."
-msgstr ""
+msgstr "클래스 이름은 첫 번째 글자를 대문자로하여 CamelCase로 작성됩니다 (예: MyClass)."
 
 #: ../../python_binding.rst:16 c80d4887ec1b49fc97ad8ad51c084b26
 msgid ""
 "Variables and member variables are in snake_case, with words separated by"
 " underscores (e.g. `my_variable`)."
 msgstr ""
+"변수와 멤버 변수는 underscore로 구분된 단어로 snake_case로 작성됩니다 (예: my_variable)."
 
 #: ../../python_binding.rst:17 bdcc41d22e7c424ca4211ade44f918c7
 msgid ""
 "Constants are in ALL_CAPS, with words separated by underscores (e.g. "
 "`MY_CONSTANT`)."
 msgstr ""
+"상수는 underscore로 구분된 단어로 ALL_CAPS로 작성됩니다 (예: MY_CONSTANT)."
 
 #: ../../python_binding.rst:18 95dae61597424b0b9d3754dd27a68bf2
 msgid ""
 "Namespaces are represented by modules, and are in lowercase, with words "
 "separated by underscores (e.g. `my_module.my_namespace`)."
 msgstr ""
+"네임스페이스는 모듈에 의해 표시되며, 밑줄로 구분된 단어로 소문자로 작성됩니다 (예: my_module.my_namespace)."
 
 #: ../../python_binding.rst:20 dc58eb468ecb49168ad1fcef863f2314
 msgid "For example, the identity member function is called isIdentity in C++:"
-msgstr ""
+msgstr "예를 들어, identity 멤버 함수는 C++에서 isIdentity로 호출됩니다:"
 
 #: ../../python_binding.rst:27 db31e2669e7b47b5965c9f624bcac273
 msgid "while it is called is_identity in Python:"
-msgstr ""
+msgstr "Python에서는 대신 is_identity로 불립니다:"
 
 #: ../../python_binding.rst:35 f0779504b84d479aaba4603c2c686812
 msgid "Motivations for Different Naming Conventions"
-msgstr ""
+msgstr "다른 네이밍 컨벤션의 동기"
 
 #: ../../python_binding.rst:37 ff603b0d9fd243c1bb94c54618c75d36
 msgid ""
@@ -91,6 +96,7 @@ msgid ""
 "names in the C++ community, while the snake_case convention is more "
 "common for function names in the Python community."
 msgstr ""
+"서로 다른 네이밍 컨벤션을 사용하는 이유는 각 언어에서 일반적으로 사용되는 관례를 따르기 위해서입니다. C++ 커뮤니티에서는 함수 이름에 camelCase 컨벤션이 더 일반적이며, Python 커뮤니티에서는 함수 이름에 snake_case 컨벤션이 더 일반적입니다."
 
 #: ../../python_binding.rst:43 99161e6d66e840e5819a47ca2eb2e48c
 msgid ""
@@ -103,4 +109,4 @@ msgid ""
 "naming conventions of each language can help with integration with other "
 "Python modules or projects."
 msgstr ""
-
+"각 언어에서 표준 네이밍 컨벤션을 사용함으로써, 각 언어에 익숙한 개발자들이 코드를 더 읽기 쉽고 이해하기 쉽게 만들 수 있습니다. 각 언어 내에서 일관성을 유지하는 것이 중요하지만, 코드를 사용하는 방법과 각 컨텍스트에서 네이밍 컨벤션이 의미하는 것을 다른 개발자들이 이해할 수 있도록 명확하게 문서화하는 것이 필수적입니다. 또한 각 언어의 네이밍 컨벤션을 따르면 다른 Python 모듈이나 프로젝트와 통합하는 데 도움이 될 수 있습니다."

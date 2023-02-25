@@ -69,7 +69,7 @@ If you use DART in an academic publication, please consider citing this
    :maxdepth: 1
    :hidden:
    :caption: Home
-   
+
    overview
    gallery
 
@@ -77,7 +77,7 @@ If you use DART in an academic publication, please consider citing this
    :maxdepth: 1
    :hidden:
    :caption: User Guide
-   
+
    installation
    tutorials
 

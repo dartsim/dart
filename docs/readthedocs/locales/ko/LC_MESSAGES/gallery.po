@@ -23,11 +23,11 @@ msgstr ""
 
 #: ../../gallery.rst:2 3241c01f44164dd3acd86ab2cc125972
 msgid "Gallery"
-msgstr ""
+msgstr "갤러리"
 
 #: ../../gallery.rst:5 ddb24f2b72ba46e4a4838d2cf4141670
 msgid "Built-in Examples"
-msgstr ""
+msgstr "DART 내장 예제"
 
 #: ../../gallery.rst:8 f48c997c27bb479d8482160d3a5b1300
 msgid "Atlas Simbicon"
@@ -46,6 +46,11 @@ msgid ""
 "<https://github.com/dartsim/dart/tree/b680dfa4dad11eeee4a7d5d1e0d621c9861a70d0/examples/atlas_simbicon>`_"
 " directory."
 msgstr ""
+"Atlas Simbicon 데모는 Simbicon에 의해 제어되는 Atlas 인간형 로봇을 시뮬레이션합니다. "
+"Simbicon은 간단한 양 다리 보행 제어기입니다. 이 데모는 관절 역학 및 강체 충돌이 있는 완전한 "
+"3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 "
+"버튼에는 ImGui를 사용합니다. 소스 코드는 examples/osg/osgAtlasSimbicon 디렉토리에서 찾을 "
+"수 있습니다.
 
 #: ../../gallery.rst:18 df61e363fc364b38be8908808f2d64a8
 msgid ""
@@ -54,22 +59,25 @@ msgid ""
 "its balance with disturbances. You can apply external forces to the torso"
 " using the keyboard:"
 msgstr ""
+"이 컨트롤러에는 'No Control', 'Short-Stride Walking' 및 'Normal-Stride Walking' "
+"세 가지 제어 모드가 있습니다. Atlas 로봇은 균형을 유지하면서 이상에도 걸을 수 있습니다. "
+"키보드를 사용하여 상체에 외력을 가할 수 있습니다."
 
 #: ../../gallery.rst:22 b8add8ba9d4d481089621d5c45be952a
 msgid "'A' Key: push forward the torso of Atlas"
-msgstr ""
+msgstr "'A' 키 : Atlas의 상체를 앞쪽으로 밀기"
 
 #: ../../gallery.rst:23 0c20a4e58f424f2d8b90a76252a285ac
 msgid "'S' Key: push backward the torso of Atlas"
-msgstr ""
+msgstr "'S' 키 : Atlas의 상체를 뒤쪽으로 밀기"
 
 #: ../../gallery.rst:24 f5d900063ea0435287abb5097baba8c8
 msgid "'D' Key: push left the torso of Atlas"
-msgstr ""
+msgstr "'D' 키 : Atlas의 상체를 왼쪽으로 밀기"
 
 #: ../../gallery.rst:25 fbbb94ad699344feb9670e43fec54108
 msgid "'F' Key: push right the torso of Atlas"
-msgstr ""
+msgstr "'F' 키 : Atlas의 상체를 오른쪽으로 밀기"
 
 #: ../../gallery.rst:27 f1bca535812f44428b20fa3d523a7abd
 msgid ""
@@ -77,10 +85,11 @@ msgid ""
 "location and initial pose, which is useful when it's fallen or bungee-"
 "jumped out of the ground."
 msgstr ""
+"'Reset Atlas' 버튼은 로봇을 초기 위치 및 초기 자세로 복원하는 데 사용됩니다. 로봇이 넘어지거나 땅에서 빠져 나왔을 때 유용합니다."
 
 #: ../../gallery.rst:30 5fad1bac9116468b870896885f932dc8
 msgid "Gravity can be varied using the slider at the 2D GUI."
-msgstr ""
+msgstr "중력은 2D GUI의 슬라이더를 사용하여 변화시킬 수 있습니다."
 
 #: ../../gallery.rst:39 85c4ac9887064bf180ac4c108f482bd6
 msgid "Tinkertoy"
@@ -96,6 +105,7 @@ msgid ""
 "<https://github.com/dartsim/dart/tree/b680dfa4dad11eeee4a7d5d1e0d621c9861a70d0/examples/tinkertoy>`_"
 " directory."
 msgstr ""
+"Tinkertoy 데모는 다양한 관절 유형으로 연결된 블록으로 이루어진 tinkertoy의 나무를 시뮬레이션합니다. 이 데모는 관절 역학 및 강체 충돌이 있는 완전한 3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 버튼에는 ImGui를 사용합니다. 소스 코드는 examples/osg/osgTinkertoy 디렉토리에서 찾을 수 있습니다."
 
 #: ../../gallery.rst:48 00695f148ea74acb96933246379d65f3
 msgid ""
@@ -105,24 +115,26 @@ msgid ""
 "spring-like force. Move the target around by clicking on its handles to "
 "change the direction of the force."
 msgstr ""
+"장면은 두 개의 tinkertoy 나무로 시작됩니다. 블록 중 하나를 왼쪽 클릭하여 해당 블록에 대상을 부착합니다. 시뮬레이션 중에 대상에 부착된 블록은 스프링과 같은 힘으로 대상 쪽으로 당겨집니다. 대상을 이동하려면 핸들을 클릭하여 힘의 방향을 변경합니다."
 
 #: ../../gallery.rst:54 95ef5b0d7591490ea00c2e2525d77341
 msgid ""
 "When simulation is paused, the user can change the structure of the "
 "tinkertoy by adding and removing blocks. Click on:"
 msgstr ""
+"시뮬레이션이 일시 중지되면 사용자는 블록을 추가하거나 제거하여 tinkertoy의 구조를 변경할 수 있습니다. 다음 중 하나를 클릭하세요:"
 
 #: ../../gallery.rst:57 bc1a0f0fb69f435b884fc15ce8ac8e32
 msgid "Add a Weld-Joint Block"
-msgstr ""
+msgstr "Weld-Joint 블록 추가"
 
 #: ../../gallery.rst:58 750e4fa68b7d40c893e198077c92a23b
 msgid "Add a Revolute-Joint Block"
-msgstr ""
+msgstr "Revolute-Joint 블록 추가"
 
 #: ../../gallery.rst:59 2a674b27756f4ddf8a56f07d90e2a2ed
 msgid "Add a Ball-Joint Block"
-msgstr ""
+msgstr "Ball-Joint 블록 추가"
 
 #: ../../gallery.rst:61 93b884fd5f24402a84fe3a0f410dc88c
 msgid ""
@@ -134,10 +146,11 @@ msgid ""
 "revolute joints, the joint axis will align with the target's z-axis (blue"
 " arrow)."
 msgstr ""
+"현재 대상 위치에 지정된 관절 유형을 가진 블록을 추가합니다. 새 블록은 대상이 현재 연결된 블록에 연결됩니다. Reset Target 버튼을 사용하여 대상을 모든 블록에서 분리하여 새 tinkertoy 나무를 구성할 수 있습니다. 새 블록은 대상의 x 축 (빨간 화살표)을 따라 이동합니다. 회전 관절의 경우 관절 축은 대상의 z 축 (파란 화살표)과 일치합니다."
 
 #: ../../gallery.rst:68 4d22a876f3bd4f56b24a0124b11be0ae
 msgid "Gravity can be toggled from the 2D GUI or by pressing the `G` key."
-msgstr ""
+msgstr "중력은 2D GUI에서 토글하거나 G 키를 눌러서 변경할 수 있습니다."
 
 #: ../../gallery.rst:77 3ff061e2115c49fc951f2cc5c340c3b1
 msgid "Examples on `Gazebo <http://www.gazebosim.org/>`_"
@@ -163,4 +176,10 @@ msgid ""
 "performance, the motion trajectories simulated by different physics "
 "engines are qualitatively similar."
 msgstr ""
-
+"비영리 단체인 OSRF(Open Source Robotic Foundation)는 4개의 물리 엔진(ODE, Bullet, "
+"DART 및 SimBody)에 대한 성능 비교(첫 번째 비디오)를 수행했습니다. 안정적인 보행 동작을 얻기 "
+"위해 각각의 물리 엔진을 사용하여 Atlas 로봇을 시뮬레이션했습니다. RTF(실시간 요소)는 물리 "
+"엔진의 속도를 측정하는 지표입니다. RTF < 1은 실제 시간보다 느리고 RTF > 1은 실제 시간보다 "
+"빠릅니다. DART는 1.6-1.9 RTF로 ODE(1.45), Bullet(0.15) 및 SimBody(0.1)보다 빠른 "
+"속도를 달성했습니다. 두 번째 비디오에서는 성능 차이에도 불구하고, 다른 물리 엔진에 의해 "
+"시뮬레이션된 동작 궤적이 질적으로 유사하다는 것을 보여줍니다."

@@ -23,11 +23,11 @@ msgstr ""
 
 #: ../../tutorials.rst:16 bfdc67d0632f4a0e8215890a040ce474
 msgid "Contents"
-msgstr ""
+msgstr "내용"
 
 #: ../../tutorials.rst:2 7ac59940dac34a84b9b266329a34c7d5
 msgid "Tutorials"
-msgstr ""
+msgstr "튜토리얼"
 
 #: ../../tutorials.rst:4 85988b0480bd423d9051691c97954168
 msgid ""
@@ -44,4 +44,9 @@ msgid ""
 "<https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum_finished>`_)."
 " The examples are based on the APIs of DART 7.0."
 msgstr ""
-
+"이 튜토리얼의 목적은 DART 사용에 대한 간단한 소개를 제공하는 것입니다. 학습을 효과적이고 "
+"재미있게 만들기 위해 다양한 실습 예제를 제공합니다. 이 튜토리얼을 따라하려면 먼저 "
+"dart/tutorials 디렉토리에서 튜토리얼 코드를 찾으십시오. 네 가지 튜토리얼마다 시작점으로 "
+"스켈레톤 코드(예: tutorial_multi_pendulum)와 튜토리얼에 대한 최종 코드(예: "
+"tutorial_multi_pendulum_finished)를 제공합니다. 이 예제는 DART 7.0 API를 기반으로 "
+"합니다."

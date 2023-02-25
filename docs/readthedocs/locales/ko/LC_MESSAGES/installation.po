@@ -23,49 +23,51 @@ msgstr ""
 
 #: ../../installation.rst:2 954c41208b6e4202ba00b951610d7890
 msgid "Installation"
-msgstr ""
+msgstr "설치"
 
 #: ../../installation.rst:5 49e76efd6e7c435abde8bfaafce6f522
 msgid "Python"
-msgstr ""
+msgstr "파이썬"
 
 #: ../../installation.rst:7 f3786cd71425430aaf35fc3b739a4d19
 msgid ""
 "To install the Python bindings for DART using the `dartpy` package from "
 "PyPI, you can use the following command:"
 msgstr ""
+"PyPI의 dartpy 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 다음 명령을 사용할 수 "
+"있습니다:"
 
 #: ../../installation.rst:13 cc254eddf349401cb56e83580b61a287
 msgid "The following operating systems are currently supported:"
-msgstr ""
+msgstr "현재 다음 운영 체제가 지원됩니다:"
 
 #: ../../installation.rst:16 399a7e7f706a4e719bf6234094ac7d00
 msgid "Operating System"
-msgstr ""
+msgstr "운영 체제"
 
 #: ../../installation.rst:16 f24c16fbdf6a47eaaa01dd7b1df6f546
 msgid "Python 3.7"
-msgstr ""
+msgstr "파이썬 3.7"
 
 #: ../../installation.rst:16 ac48165031754fc49a96cb492da7a85a
 msgid "Python 3.8"
-msgstr ""
+msgstr "파이썬 3.8"
 
 #: ../../installation.rst:16 d3edae06f8724eaeab89ab1621b3fcf1
 msgid "Python 3.9"
-msgstr ""
+msgstr "파이썬 3.9"
 
 #: ../../installation.rst:16 462386b78c1a41d689e7a7546bd284ed
 msgid "Python 3.10"
-msgstr ""
+msgstr "파이썬 3.10"
 
 #: ../../installation.rst:16 b7caac15f79c4925b8076486c23ca299
 msgid "Python 3.11"
-msgstr ""
+msgstr "파이썬 3.11"
 
 #: ../../installation.rst:19 6888b191a86b42df8bda81b2e3b61e1b
 msgid "Linux x86_64"
-msgstr ""
+msgstr "리눅스 x86_64"
 
 #: ../../installation.rst:19 ../../installation.rst:21
 #: ../../installation.rst:23 ../../installation.rst:25
@@ -84,7 +86,7 @@ msgstr ""
 
 #: ../../installation.rst:21 a8070fe2f6d54d718b0548750a44742c
 msgid "Linux arm64"
-msgstr ""
+msgstr "리눅스 arm64"
 
 #: ../../installation.rst:21 ../../installation.rst:23
 #: ../../installation.rst:25 ../../installation.rst:27
@@ -108,11 +110,11 @@ msgstr ""
 
 #: ../../installation.rst:27 e0ff5aee2d28458f944336a96930c69a
 msgid "Windows x86_64"
-msgstr ""
+msgstr "윈도우즈 x86_64"
 
 #: ../../installation.rst:29 d7001c3bb6fc491fb4f5800b8b000dd6
 msgid "Windows arm64"
-msgstr ""
+msgstr "윈도우즈 arm64"
 
 #: ../../installation.rst:34 cca6b7c38ff34a52824c25fca65e34fb
 msgid ""
@@ -122,6 +124,10 @@ msgid ""
 "use dartpy on an unsupported OS or Python version, please let us know so "
 "we can consider adding support."
 msgstr ""
+"이 표는 최신 정보가 아닐 수 있습니다. DART의 Python 바인딩의 가용성에 대한 최신 정보는 "
+"PyPI의 dartpy 패키지를 참조해주시기 바랍니다: https://pypi.org/project/dartpy/. "
+"지원되지 않는 운영 체제나 Python 버전에서 dartpy를 사용하려면 알려주시기 바랍니다. 이를 "
+"토대로 추가 지원을 고려 하겠습니다."
 
 #: ../../installation.rst:37 a74ea904246848019d61ae879facf079
 msgid "C++"
@@ -129,24 +135,24 @@ msgstr ""
 
 #: ../../installation.rst:40 c0648039cc2b489cb730bfa7352ba451
 msgid "Ubuntu"
-msgstr ""
+msgstr "우분투"
 
 #: ../../installation.rst:42 431cfc42360f45c0bd3152983f3ef2bc
 msgid "To install DART on Ubuntu, you can use the following commands:"
-msgstr ""
+msgstr "Ubuntu에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
 
 #: ../../installation.rst:44 86643fff941b42f1bb78cc3a353f793d
 msgid "Add the DART PPA to your system:"
-msgstr ""
+msgstr "시스템에 DART PPA 추가:"
 
 #: ../../installation.rst:50 ../../installation.rst:107
 #: 81ebb393ef6847189fb6de291caeb24f fe595e8f71824e848d702d46553c6162
 msgid "Update your package list:"
-msgstr ""
+msgstr "패키지 목록을 업데이트하세요:"
 
 #: ../../installation.rst:56 f928a672e835401583eb7b7228711678
 msgid "Install the `libdart6-all-dev` package:"
-msgstr ""
+msgstr "libdart6-all-dev 패키지를 설치하세요:"
 
 #: ../../installation.rst:63 9f663c171682411e8386cb740088f211
 msgid "macOS"
@@ -154,31 +160,31 @@ msgstr ""
 
 #: ../../installation.rst:65 83a2ddfbf59f42469393b0186be147a5
 msgid "To install DART on macOS, you can use Homebrew:"
-msgstr ""
+msgstr "macOS에서 DART를 설치하려면 Homebrew를 사용할 수 있습니다."
 
 #: ../../installation.rst:67 b00335e3af3c45c282cf766ab8362534
 msgid "Install Homebrew if you haven't already:"
-msgstr ""
+msgstr "Homebrew를 아직 설치하지 않았다면 다음을 따라 설치하세요:"
 
 #: ../../installation.rst:73 087982665f0040b4bbd78443ccbab3f2
 msgid "Install the `dartsim` formula:"
-msgstr ""
+msgstr "dartsim formula를 설치하세요:"
 
 #: ../../installation.rst:80 4c45b30ba24e42308f5aef6a2a58e860
 msgid "Windows"
-msgstr ""
+msgstr "윈도우즈"
 
 #: ../../installation.rst:82 26ad815166494bbaa9244fc0152c8c10
 msgid "To install DART on Windows, you can use vcpkg:"
-msgstr ""
+msgstr "Windows에서 DART를 설치하려면 vcpkg를 사용할 수 있습니다:"
 
 #: ../../installation.rst:84 2bb3462778e242f6a889b8823ed9d385
 msgid "Install vcpkg if you haven't already:"
-msgstr ""
+msgstr "vcpkg가 아직 설치되어 있지 않은 경우 다음을 따라 설치하세요:"
 
 #: ../../installation.rst:92 51801739f7894f6db5cd5e0267a46499
 msgid "Install the `dartsim` package:"
-msgstr ""
+msgstr "dartsim 패키지를 설치하세요:"
 
 #: ../../installation.rst:99 f2df83bccfc647ecbc13a475ba7a3ebe
 msgid "Arch Linux"
@@ -189,16 +195,19 @@ msgid ""
 "The installation instructions for Arch Linux are currently experimental "
 "and may not work on all systems. Use at your own risk."
 msgstr ""
+"Arch Linux의 설치 지침은 현재 실험적이며 모든 시스템에서 작동하지 않을 수 있습니다. 사용에 "
+"주의해 주시기 바랍니다."
 
 #: ../../installation.rst:105 190ad668477745f2a71bf243ad4bcdd1
 msgid ""
 "To install DART on Arch Linux using the `yay` package manager, you can "
 "use the following commands:"
 msgstr ""
+"yay 패키지 관리자를 사용하여 Arch Linux에 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
 
 #: ../../installation.rst:113 55d944e0e221455eb1acb4e486b25d89
 msgid "Install the `libdart` package:"
-msgstr ""
+msgstr "`libdart` 패키지를 설치하세요:"
 
 #~ msgid "Arch Linux (Experimental)"
 #~ msgstr ""
