@@ -30,23 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/collision/object.hpp"
 
-#include <dart/collision/fwd.hpp>
+namespace dart::collision {
 
-#include <dart/physics/Export.hpp>
-
-namespace dart::physics {
-
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
-
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
-DART_DECLARE_CLASS_POINTERS_S(MultiBody);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
-
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
-
-DART_DECLARE_CLASS_POINTERS_S(World);
-
-} // namespace dart::physics
+} // namespace dart::collision

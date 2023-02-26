@@ -30,10 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Empty.hpp"
+#include "dart/collision/collision.hpp"
 
-namespace dart::collision {
+#include <gtest/gtest.h>
 
-void empty() {}
+using namespace dart;
+using namespace collision;
 
-} // namespace dart::collision
+//==============================================================================
+TEST(EngineTest, Basics)
+{
+  auto engine = Engine();
+  (void)engine;
+
+  auto scene = engine.createScene();
+  EXPECT_NE(scene, nullptr);
+
+  auto object = scene->createObject<math::Sphere<double>>(1.5);
+  EXPECT_NE(object, nullptr);
+
+  scene->update();
+}

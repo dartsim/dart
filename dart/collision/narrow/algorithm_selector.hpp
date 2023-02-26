@@ -32,10 +32,14 @@
 
 #pragma once
 
-#include <dart/collision/Export.hpp>
-
-#include <dart/math/Fwd.hpp>
+#include <dart/collision/fwd.hpp>
 
 namespace dart::collision {
+
+template <typename S>
+class AlgorithmSelector
+{
+public:
+};
 
 } // namespace dart::collision

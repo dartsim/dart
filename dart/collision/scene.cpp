@@ -30,12 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/collision/Fwd.hpp>
+#include "dart/collision/scene.hpp"
 
 namespace dart::collision {
-
-DART_COLLISION_API void empty();
 
 } // namespace dart::collision

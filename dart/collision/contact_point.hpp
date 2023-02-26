@@ -34,19 +34,28 @@
 
 #include <dart/collision/fwd.hpp>
 
-#include <dart/physics/Export.hpp>
+namespace dart::collision {
 
-namespace dart::physics {
+template <typename S = double>
+struct ContactPoint
+{
+  using Scalar = S;
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
+  math::Vector3<S> local_point_a;
+  math::Vector3<S> local_point_b;
+  math::Vector3<S> normal;
+  S depth{0};
+  size_t lifetime{0};
+};
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
-DART_DECLARE_CLASS_POINTERS_S(MultiBody);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
+} // namespace dart::collision
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
+//==============================================================================
+// Implementation
+//==============================================================================
 
-DART_DECLARE_CLASS_POINTERS_S(World);
+namespace dart::collision {
 
-} // namespace dart::physics
+//==============================================================================
+
+} // namespace dart::collision

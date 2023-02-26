@@ -31,7 +31,7 @@ dart_add_component(
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   SUB_DIRECTORIES
-    detail
+    detail broad narrow
   GENERATE_EXPORT_HEADER
   GENERATE_META_HEADER
   FORMAT_CODE

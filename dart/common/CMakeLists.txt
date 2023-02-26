@@ -160,5 +160,3 @@ dart_add_component(
   GENERATE_META_HEADER
   FORMAT_CODE
 )
-
-return()

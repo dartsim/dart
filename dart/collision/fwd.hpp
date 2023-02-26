@@ -30,14 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Logging.hpp>
+#pragma once
 
-#include <gtest/gtest.h>
+#include <dart/collision/Export.hpp>
 
-using namespace dart;
+#include <dart/math/Fwd.hpp>
 
-//==============================================================================
-TEST(EmptyTest, Empty)
-{
-  EXPECT_TRUE(true);
-}
+namespace dart::collision {
+
+DART_DECLARE_STRUCT_POINTERS_S(ContactPoint);
+
+DART_DECLARE_CLASS_POINTERS_S(Engine);
+DART_DECLARE_CLASS_POINTERS_S(Scene);
+DART_DECLARE_CLASS_POINTERS_S(Object);
+
+template <typename S, typename T>
+class ObjectGeometryEmbedded;
+
+template <typename S>
+using NarrowPhaseCallback
+    = std::function<bool(const ContactPoint<S>& contact_point)>;
+
+} // namespace dart::collision

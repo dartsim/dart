@@ -34,19 +34,39 @@
 
 #include <dart/collision/fwd.hpp>
 
-#include <dart/physics/Export.hpp>
+#include <optional>
 
-namespace dart::physics {
+namespace dart::collision {
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBatch);
+template <typename S = double>
+bool checkCollision(
+    const math::SE3<S>& pose_1,
+    const math::SE3<S>& pose_2,
+    std::optional<NarrowPhaseCallback<S>> callback = std::nullopt);
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyBase);
-DART_DECLARE_CLASS_POINTERS_S(MultiBody);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyView);
+} // namespace dart::collision
 
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyLink);
-DART_DECLARE_CLASS_POINTERS_S(MultiBodyJoint);
+//==============================================================================
+// Implementation
+//==============================================================================
 
-DART_DECLARE_CLASS_POINTERS_S(World);
+#include <dart/common/Macros.hpp>
 
-} // namespace dart::physics
+namespace dart::collision {
+
+//==============================================================================
+template <typename S>
+bool checkCollision(
+    const math::SE3<S>& pose_1,
+    const math::SE3<S>& pose_2,
+    std::optional<NarrowPhaseCallback<S>> callback)
+{
+  (void)pose_1;
+  (void)pose_2;
+  if (callback) {
+    //
+  }
+  return false;
+}
+
+} // namespace dart::collision
