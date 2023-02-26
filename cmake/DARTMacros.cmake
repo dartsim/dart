@@ -1187,6 +1187,14 @@ function(dart_build_benchmarks)
       list(APPEND ${__TEST_LIST} ${target_name})
     endif()
 
+    # Add executable target
+    add_custom_target(
+      RUN_${target_name}
+      COMMAND ${target_name}
+      COMMENT "Running benchmark ${target_name}..."
+      VERBATIM
+    )
+
     dart_property_add(DART_${benchmark_type}_BENCHMARKS ${target_name})
   endforeach()
 

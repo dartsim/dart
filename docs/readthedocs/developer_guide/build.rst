@@ -248,6 +248,7 @@ parts of the project. Here are some of the most important targets:
 * ``tests_and_run``: Builds and runs tests.
 * ``examples``: Builds all the examples.
 * ``tutorials``: Builds all the tutorials.
+* ``benchmarks``: Builds all the benchmarks.
 * ``view_docs``: Builds the documentation and opens it in a web browser.
 * ``install``: Installs the project.
 * ``dartpy``: Builds the Python bindings (it's encouraged to build using pip

@@ -236,4 +236,7 @@
 
 namespace dart::common {
 
+template <typename DataT = std::uint32_t>
+class EntityT;
+
 } // namespace dart::common

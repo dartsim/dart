@@ -3,6 +3,8 @@
   <img src="https://raw.githubusercontent.com/dartsim/dart/master/docs/dart_logo_377x107.jpg" alt="DART: Dynamic Animation and Robotics Toolkit">
 </p>
 
+> Note: This is the README for the `main` branch. For the README for the latest stable release, please see [here](https://github.com/dartsim/dart/tree/release-6.13).
+
 ## Documentation
 
 For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)

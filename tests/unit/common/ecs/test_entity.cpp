@@ -30,34 +30,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <benchmark/benchmark.h>
+#include <dart/common/ecs/entity.hpp>
 
-// Compute the factorial of a given integer using a simple loop
-static int Factorial(int n)
+#include <gtest/gtest.h>
+
+using namespace dart;
+using namespace common;
+
+template <typename DataT>
+class EntityForTest : public EntityT<DataT>
 {
-  int result = 1;
-  for (int i = 1; i <= n; i++)
-  {
-    result *= i;
-  }
-  return result;
+public:
+  using Base = EntityT<DataT>;
+  using Base::DATA_BITS;
+  using Base::ID_BITS;
+  using Base::ID_MASK;
+  using Base::VERSION_BITS;
+  using Base::VERSION_MASK;
+};
+
+GTEST_TEST(EntityTest, StaticProperties)
+{
+  EXPECT_EQ(EntityForTest<std::uint16_t>::DATA_BITS, 16);
+  EXPECT_EQ(EntityForTest<std::uint16_t>::ID_BITS, 8);
+  EXPECT_EQ(EntityForTest<std::uint16_t>::VERSION_BITS, 8);
+
+  EXPECT_EQ(EntityForTest<std::uint32_t>::DATA_BITS, 32);
+  EXPECT_EQ(EntityForTest<std::uint32_t>::ID_BITS, 24);
+  EXPECT_EQ(EntityForTest<std::uint32_t>::VERSION_BITS, 8);
+
+  EXPECT_EQ(EntityForTest<std::uint64_t>::DATA_BITS, 64);
+  EXPECT_EQ(EntityForTest<std::uint64_t>::ID_BITS, 56);
+  EXPECT_EQ(EntityForTest<std::uint64_t>::VERSION_BITS, 8);
 }
 
-// Define a benchmark that measures the performance of the Factorial function
-static void BM_Factorial(benchmark::State& state)
+GTEST_TEST(EntityTest, DefaultConstruction)
 {
-  // Get the input value to be passed to the Factorial function
-  int n = state.range(0);
+  EntityT entity(0, 0);
 
-  // Call the Factorial function and measure the time it takes
-  for (auto _ : state)
-  {
-    Factorial(n);
-  }
+  EXPECT_EQ(entity.getId(), 0);
+  EXPECT_EQ(entity.getVersion(), 0);
 }
 
-// Register the benchmark with Google Benchmark
-BENCHMARK(BM_Factorial)->Arg(10)->Arg(20)->Arg(30)->Arg(40)->Arg(50);
+GTEST_TEST(EntityTest, CustomConstruction)
+{
+  EntityT entity(123, 45);
 
-// Run the benchmarks
-BENCHMARK_MAIN();
+  EXPECT_EQ(entity.getId(), 123);
+  EXPECT_EQ(entity.getVersion(), 45);
+}
+
+GTEST_TEST(EntityTest, Equality)
+{
+  EntityT entity1(123, 45);
+  EntityT entity2(123, 45);
+  EntityT entity3(45, 123);
+
+  EXPECT_EQ(entity1, entity2);
+  EXPECT_NE(entity1, entity3);
+}
+
+GTEST_TEST(EntityTest, Bitmasks)
+{
+  EntityT<std::uint32_t> entity(0xFF, 0xFF);
+
+  EXPECT_EQ(entity.getId(), 0xFF);
+  EXPECT_EQ(entity.getVersion(), 0xFF);
+}

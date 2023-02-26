@@ -35,28 +35,14 @@ else()
   endif()
 endif()
 
-set(benchmark_type "BENCHMARK_INTEGRATION")
+set(benchmark_type "BENCHMARK")
 
-# Glob all the benchmark files
-file(GLOB_RECURSE benchmark_files RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "benchmark_*.cpp")
-if(benchmark_files)
-  list(SORT benchmark_files)
-endif()
+add_subdirectory(common)
 
-if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
-  set(link_libraries)
-  set(link_dart_libraries
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-common
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-simulation
-    ${PROJECT_NAME}${DART_MAJOR_VERSION}-io
-  )
+add_subdirectory(integration)
 
-  dart_build_benchmarks(
-    TYPE ${benchmark_type}
-    TEST_LIST integration_benchmarks
-    SOURCES
-      benchmark_Kinematics.cpp
-    LINK_LIBRARIES ${link_libraries}
-    LINK_DART_LIBRARIES ${link_dart_libraries}
-  )
-endif()
+# Add custom target to build all the benchmarks
+get_property(benchmark_all GLOBAL PROPERTY DART_${benchmark_type}_BENCHMARKS)
+add_custom_target(benchmarks
+  DEPENDS ${benchmark_all}
+)
