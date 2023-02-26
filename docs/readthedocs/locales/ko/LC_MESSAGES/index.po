@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-23 08:44-0800\n"
+"POT-Creation-Date: 2023-02-25 19:23-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -21,27 +21,31 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../index.rst:68
+#: ../../index.rst:89
 msgid "Home"
 msgstr "홈"
 
-#: ../../index.rst:76
+#: ../../index.rst:97
 msgid "User Guide"
 msgstr "사용자 가이드"
 
-#: ../../index.rst:84
+#: ../../index.rst:105
 msgid "Developer Guide"
 msgstr "개발자 가이드"
 
-#: ../../index.rst:7 5e1d634880fa4307919e647d8c4c73e5
+#: ../../index.rst:115
+msgid "Community"
+msgstr ""
+
+#: ../../index.rst:7 d584aa398b19497baff45df31a4e8423
 msgid "Welcome to DART 7's documentation!"
 msgstr "DART 7 문서에 오신걸 환영합니다!"
 
-#: ../../index.rst:10 f3948a6d35274c7aba43f69d2a903e03
+#: ../../index.rst:10 67cdc2ca4ec749a88206c9103f9c17f8
 msgid "Introduction"
 msgstr "소개"
 
-#: ../../index.rst:12 0d91845827bd4835b9c72cf993f3cc95
+#: ../../index.rst:12 aac4250988724d4ea7fdc8f87aa810f7
 msgid ""
 "DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-"
 "platform, open-source library developed by the `Graphics Lab "
@@ -58,15 +62,13 @@ msgid ""
 "the application of Featherstone's Articulated Body Algorithm to compute "
 "motion dynamics."
 msgstr ""
-"DART (Dynamic Animation and Robotics Toolkit)는 조지아 공과 대학교의 그래픽스 "
-"연구실과 인간형 로봇 연구실에서 개발된 협업, 크로스 플랫폼, 오픈 소스 라이브러리로, 워싱턴 "
-"대학교 개인용 로봇 연구실과 오픈 소스 로봇 재단에서 지속적인 기여를 받고 있습니다. 이 "
-"라이브러리는 로봇 및 컴퓨터 애니메이션의 운동학 및 동역학 응용 프로그램을 위한 데이터 구조 및 "
-"알고리즘을 제공합니다. DART는 관절이 있는 강체 시스템을 나타내기 위해 일반화 좌표를 사용하고, "
-"Featherstone의 관절 본 알고리즘을 적용하여 움직임 동역학을 계산하여 정확성과 안정성을 제공하는 "
-"점에서 뛰어난 성능을 보입니다."
+"DART (Dynamic Animation and Robotics Toolkit)는 조지아 공과 대학교의 그래픽스 연구실과 인간형 "
+"로봇 연구실에서 개발된 협업, 크로스 플랫폼, 오픈 소스 라이브러리로, 워싱턴 대학교 개인용 로봇 연구실과 오픈 소스 로봇 재단에서"
+" 지속적인 기여를 받고 있습니다. 이 라이브러리는 로봇 및 컴퓨터 애니메이션의 운동학 및 동역학 응용 프로그램을 위한 데이터 구조 "
+"및 알고리즘을 제공합니다. DART는 관절이 있는 강체 시스템을 나타내기 위해 일반화 좌표를 사용하고, Featherstone의 "
+"관절 본 알고리즘을 적용하여 움직임 동역학을 계산하여 정확성과 안정성을 제공하는 점에서 뛰어난 성능을 보입니다."
 
-#: ../../index.rst:28 763133d2df994e23ade5f13080e241f0
+#: ../../index.rst:28 2812161c457b4691affd47010f8e9a5f
 msgid ""
 "This document pertains to the new major version, DART 7, which is "
 "currently under heavy development. Please note that this early stage "
@@ -76,18 +78,38 @@ msgstr ""
 "이 문서는 현재 개발 중인 새로운 주요 버전인 DART 7에 관련된 것입니다. 언급되지 않은 버그나 다른 문제점이 발생할 수 있는 "
 "이른 상태의 버전임을 주의하시기 바랍니다. 더 안정된 버전을 원하시면, DART 6.13을 사용하십시오."
 
-#: ../../index.rst:34 53c905afceab47b092631ea6f69ceeb7
+#: ../../index.rst:34 44a96648ad7d47bcb90ab96ebe4fe67a
+msgid "Updates"
+msgstr ""
+
+#: ../../index.rst:36 d43d6ef39d624f16a5a0d6af570fea34
+msgid "2022-12-31: DART version 6.13.0 released."
+msgstr ""
+
+#: ../../index.rst:39 a829b063426244ffb0ce5d08e0c4f2ea
+msgid "Social Media"
+msgstr ""
+
+#: ../../index.rst:41 4d323a3d0c364a5db711f97c4cabb360
+msgid ""
+"Stay updated with the latest news and developments about DART by "
+"following us on `Twitter <https://twitter.com/dartsim_org>`_ and "
+"subscribing to our `YouTube channel "
+"<https://www.youtube.com/@dartyoutube3531>`_."
+msgstr ""
+
+#: ../../index.rst:46 741b7f121d8040abb74db6e9f7a5934b
 msgid "Vision for DART 7"
 msgstr "DART 7의 비젼"
 
-#: ../../index.rst:36 0483b9bb484f461f9c38be74d948b125
+#: ../../index.rst:48 9ba519e8b2684eb29000628c39efa20a
 msgid ""
 "Elevate the Python binding to a first-class component, ensuring full "
 "support and equivalent functionality to the C++ APIs, rather than "
 "remaining in an experimental stage."
 msgstr "파이썬 바인딩을 일등급 컴포넌트로 만들어 C++ API와 동등한 기능을 제공하고 실험 단계를 벗어나게 합니다."
 
-#: ../../index.rst:37 a9697551cec54565aabb86e8606d43d9
+#: ../../index.rst:51 30edf7211ae9434496437b17f5f21ac8
 msgid ""
 "Modularize the library so that users can select specific components to "
 "use with minimal required dependencies, rather than having to use the "
@@ -96,14 +118,14 @@ msgstr ""
 "사용자가 필요한 최소한의 의존성을 사용하여 특정 컴포넌트를 선택할 수 있도록 라이브러리를 모듈화하여 불필요한 부분을 포함한 전체 "
 "라이브러리를 사용하지 않아도 됩니다."
 
-#: ../../index.rst:38 befd4d96521745d48e0aca6fef0473b1
+#: ../../index.rst:54 6ee80d15a69a4e1e9197878f00764e8e
 msgid ""
 "Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs, "
 "whenever available and enabled by the user, to maximize overall "
 "performance."
 msgstr "사용 가능하고 사용자가 활성화할 경우 SIMD, 멀티코어 CPU 및 GPU 등 하드웨어 가속을 활용하여 전반적인 성능을 극대화합니다."
 
-#: ../../index.rst:39 cd3d836460ad4889b6bf7b0be5c8cfe1
+#: ../../index.rst:56 ff8419fbf9f3463cb83e2278b5eb2b2e
 msgid ""
 "Support both single and double precision, with options to compile the "
 "library for required scalar types or leave the template code uncompiled."
@@ -111,35 +133,34 @@ msgstr ""
 "단일 및 더블 정밀도를 모두 지원하며, 필요한 스칼라 유형으로 라이브러리를 컴파일하거나 템플릿 코드를 컴파일하지 않는 옵션이 "
 "있습니다."
 
-#: ../../index.rst:40 a715f55b11164303a80e628d76140c08
+#: ../../index.rst:58 e440d60ae23a4c7ebe6fa1deec3fcf65
 msgid ""
 "Minimize dependencies to make the library usable without bringing in all "
 "transitive dependencies."
 msgstr "모든 종속성을 가져오지 않고도 라이브러리를 사용할 수 있도록 종속성을 최소화합니다."
 
-#: ../../index.rst:41 7bc4b6d7b1c3469c8525e733909a9ba0
+#: ../../index.rst:60 3a0363633ec84137b2d2f53ddc24c566
 msgid ""
 "Modernize implementation and public APIs to enable users to work with "
 "more intuitive and user-friendly APIs."
 msgstr "사용자가 더 직관적이고 사용하기 쉬운 API를 사용할 수 있도록 구현과 공개 API를 현대화합니다."
 
-#: ../../index.rst:42 de7a59c8866148079e285e411109a32f
+#: ../../index.rst:62 15c55b0de18e4a4d97d796706ed9c28c
 msgid ""
 "Provide various resources, such as a quick start guide, examples, and "
 "tutorials, to lower the initial learning curve for users."
 msgstr "사용자의 초기 학습 곡선을 낮추기 위해 빠른 시작 가이드, 예제 및 튜토리얼과 같은 다양한 리소스를 제공합니다."
 
-#: ../../index.rst:45 c27a749fb8634906a9878cda0425dea5
+#: ../../index.rst:66 ec589e05f4c248e49a1cad9b9cd20755
 msgid "Citation"
 msgstr "논문 인용"
 
-#: ../../index.rst:47 8c1f474453d84409b125815d959017d1
+#: ../../index.rst:68 b45c21ed75714796bdceb25c4566efdf
 msgid ""
 "If you use DART in an academic publication, please consider citing this "
 "`JOSS Paper <https://doi.org/10.21105/joss.00500>`_ [`BibTeX "
 "<https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
-msgstr ""
-"만약 학술 논문에서 DART를 사용하신다면, 이 JOSS 논문을 인용해 주시기 바랍니다."
+msgstr "만약 학술 논문에서 DART를 사용하신다면, 이 JOSS 논문을 인용해 주시기 바랍니다."
 
 #~ msgid "Installation"
 #~ msgstr "설치"

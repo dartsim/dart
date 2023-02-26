@@ -30,16 +30,37 @@ Articulated Body Algorithm to compute motion dynamics.
    contain bugs or other issues. If you prefer to use a more stable version,
    please use DART 6.13 instead.
 
+Updates
+-------
+
+* 2022-12-31: DART version 6.13.0 released.
+
+Social Media
+------------
+
+Stay updated with the latest news and developments about DART by following us
+on `Twitter <https://twitter.com/dartsim_org>`_ and subscribing to our
+`YouTube channel <https://www.youtube.com/@dartyoutube3531>`_.
+
 Vision for DART 7
 -----------------
 
-* Elevate the Python binding to a first-class component, ensuring full support and equivalent functionality to the C++ APIs, rather than remaining in an experimental stage.
-* Modularize the library so that users can select specific components to use with minimal required dependencies, rather than having to use the entire library, including unnecessary parts.
-* Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs, whenever available and enabled by the user, to maximize overall performance.
-* Support both single and double precision, with options to compile the library for required scalar types or leave the template code uncompiled.
-* Minimize dependencies to make the library usable without bringing in all transitive dependencies.
-* Modernize implementation and public APIs to enable users to work with more intuitive and user-friendly APIs.
-* Provide various resources, such as a quick start guide, examples, and tutorials, to lower the initial learning curve for users.
+* Elevate the Python binding to a first-class component, ensuring full support
+  and equivalent functionality to the C++ APIs, rather than remaining in an
+  experimental stage.
+* Modularize the library so that users can select specific components to use
+  with minimal required dependencies, rather than having to use the entire
+  library, including unnecessary parts.
+* Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs,
+  whenever available and enabled by the user, to maximize overall performance.
+* Support both single and double precision, with options to compile the library
+  for required scalar types or leave the template code uncompiled.
+* Minimize dependencies to make the library usable without bringing in all
+  transitive dependencies.
+* Modernize implementation and public APIs to enable users to work with more
+  intuitive and user-friendly APIs.
+* Provide various resources, such as a quick start guide, examples, and
+  tutorials, to lower the initial learning curve for users.
 
 Citation
 --------
@@ -88,3 +109,12 @@ If you use DART in an academic publication, please consider citing this
 
    build
    python_binding
+   contribution
+   license
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Community
+
+   who_uses_dart

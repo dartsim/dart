@@ -1,0 +1,185 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-25 19:25-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../who_uses_dart.rst:2 427c7f9dfa184ec3be615044b735b388
+msgid "Who Uses DART?"
+msgstr ""
+
+#: ../../who_uses_dart.rst:5 7dc29220c6a1434590e2d8ec2a0f80c0
+msgid "Software"
+msgstr ""
+
+#: ../../who_uses_dart.rst:7 cedb28aa0184472782b0f2c4776d52f5
+msgid ""
+"DART serves as the backend physics engine for several software projects, "
+"including:"
+msgstr ""
+
+#: ../../who_uses_dart.rst:10 eff96d8a0df74eb08a521581b08a1ada
+msgid ""
+"`Gazebo <https://gazebosim.org/>`_: Gazebo simulates multiple robots in a"
+" 3D environment, with extensive dynamic integration between objects. "
+"Gazebo supports multiple physics engines: ODE, Bullet, DART, and Simbody."
+" website, source on bitbucket"
+msgstr ""
+
+#: ../../who_uses_dart.rst:14 3742b2cbc6bc44519ed0bf7241756c41
+msgid ""
+"`Aikido <https://github.com/personalrobotics/aikido>`_: a C++ library, "
+"complete with Python bindings, for solving robotic motion planning and "
+"decision making problems. This library is tightly integrated with DART "
+"for kinematic/dynamics calculations and OMPL for motion planning."
+msgstr ""
+
+#: ../../who_uses_dart.rst:19 39f7c3280562488398b5f32341edb52a
+msgid ""
+"`robot_dart <https://github.com/resibots/robot_dart>`_: A generic and "
+"lightweight wrapper over DART simulator for fast and flexible robot "
+"simulations."
+msgstr ""
+
+#: ../../who_uses_dart.rst:24 eb1f8fb668a34e2ebe81356a7458c633
+msgid "Research"
+msgstr ""
+
+#: ../../who_uses_dart.rst:26 b9bee11babce464fa424f404fd5e8c67
+msgid ""
+"DART has been used in various research domains, including robotics, "
+"biomechanics, computer graphics, animation, and physics-based simulation."
+" Notable institutions, universities, or companies that have used DART in "
+"their research include Georgia Tech, Oxford University, MIT, Disney "
+"Research, and Toyota Research Institute."
+msgstr ""
+
+#: ../../who_uses_dart.rst:32 df68f92f28024d3abd1bf41083d1d091
+msgid "DART has been utilized in research areas such as:"
+msgstr ""
+
+#: ../../who_uses_dart.rst:34 e385308bfd0a4eb7bcf91242db2682cf
+msgid "Development of black-box priors for model-based policy search for robotics"
+msgstr ""
+
+#: ../../who_uses_dart.rst:35 a79d29f2b4294130a351e8e2d9527130
+msgid "Bayesian optimization with automatic prior selection"
+msgstr ""
+
+#: ../../who_uses_dart.rst:36 c45ef88dbfb24a04bda1d10cf85a9220
+msgid "Alternating optimization and quadrature for robust control"
+msgstr ""
+
+#: ../../who_uses_dart.rst:37 6254ea27d5e7406da63de5a037edceb1
+msgid "Reset-free trial-and-error learning for robot damage recovery"
+msgstr ""
+
+#: ../../who_uses_dart.rst:38 602152b8354c407ca549e8fa0375914b
+msgid "Data-driven approach to simulating realistic human joint constraints"
+msgstr ""
+
+#: ../../who_uses_dart.rst:39 15ac8e13e1e3492f84bf76c13e506249
+msgid "Multi-task learning with gradient-guided policy specialization"
+msgstr ""
+
+#: ../../who_uses_dart.rst:40 6e99c9a8ad18417b848e28c2b5e17fee
+msgid "Learning human behaviors for robot-assisted dressing"
+msgstr ""
+
+#: ../../who_uses_dart.rst:41 e647059260e241f991990089c3ae6434
+msgid "Expanding motor skills through relay neural networks"
+msgstr ""
+
+#: ../../who_uses_dart.rst:42 0a16994cc85b46e3b822fdbe96c9cbd3
+msgid "Learning to navigate cloth using haptics"
+msgstr ""
+
+#: ../../who_uses_dart.rst:43 e3426e8f879d4614a4144c693f55044c
+msgid "Simulation-based design of dynamic controllers for humanoid balancing"
+msgstr ""
+
+#: ../../who_uses_dart.rst:44 f90d7c8b0c864bdaada88efa3c0147df
+msgid "Humanoid manipulation planning using backward-forward search"
+msgstr ""
+
+#: ../../who_uses_dart.rst:45 75f3d882a80141e0a17abf684058631e
+msgid ""
+"Evolutionary optimization for parameterized whole-body dynamic motor "
+"skills"
+msgstr ""
+
+#: ../../who_uses_dart.rst:46 4d529ad38384402a8a845c6e1fce7800
+msgid "Dexterous manipulation of cloth"
+msgstr ""
+
+#: ../../who_uses_dart.rst:47 68dfe297d73445a4b36481526781c019
+msgid "Multiple contact planning for minimizing damage of humanoid falls"
+msgstr ""
+
+#: ../../who_uses_dart.rst:48 88e361c2e94642d7a9c7eb40a5a1cbdd
+msgid "Animating human dressing"
+msgstr ""
+
+#: ../../who_uses_dart.rst:49 3e94b010756d4b5e88a649ad2e38c10b
+msgid "Coupling cloth and rigid bodies for dexterous manipulation"
+msgstr ""
+
+#: ../../who_uses_dart.rst:50 af8aefc14a514f6d976a69fc2ed30f8b
+msgid ""
+"Orienting in mid-air through configuration changes to achieve a rolling "
+"landing for reducing impact after a fall"
+msgstr ""
+
+#: ../../who_uses_dart.rst:52 280520035359414d86fdb9f0961fdea7
+msgid "Dexterous manipulation using both palm and fingers"
+msgstr ""
+
+#: ../../who_uses_dart.rst:53 4fc6d6d00dff44ba8219e32e528f5d72
+msgid ""
+"Several conferences and journals where DART has been prominently featured"
+" include the International Conference on Robotics and Automation (ICRA), "
+"the AAAI Conference on Artificial Intelligence, IEEE Transactions on "
+"Evolutionary Computation, Computer Graphics Forum (Eurographics), and ACM"
+" Transactions on Graphics (presented at SIGGRAPH Asia)."
+msgstr ""
+
+#: ../../who_uses_dart.rst:59 209b2fc73dbc4c95aa5283df71286337
+msgid ""
+"As of February 2023, DART had over 777 stars on GitHub, and DART has been"
+" cited over 236 times, indicating its widespread adoption and use in the "
+"research community."
+msgstr ""
+
+#: ../../who_uses_dart.rst:63 8fdc9c843dd344618f94a720651667ef
+msgid "More research papers cited DART can be found at `Google Scholar`_."
+msgstr ""
+
+#: ../../who_uses_dart.rst:67 84b65730c5d6405295d4a55310a54475
+msgid ""
+"If you are using DART in your project and would like to be listed here, "
+"please send a pull request to the GitHub repository."
+msgstr ""
+
+#~ msgid ""
+#~ "DART is used by a number of "
+#~ "software projects as backend physics "
+#~ "engine."
+#~ msgstr ""
+
