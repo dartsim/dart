@@ -1,0 +1,410 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../developer_guide/build.rst:4 d6aec1c3080d4cdc9e5249fa039d69f7
+msgid "Build"
+msgstr ""
+
+#: ../../developer_guide/build.rst:7 9b24901bc0784bbb9ffe0c261fa2acce
+msgid "Building DART"
+msgstr ""
+
+#: ../../developer_guide/build.rst:9 c1f9cfd44d3944b4835837eca32de3f9
+msgid ""
+"This guide describes how to build DART, a C++ library for robotics and "
+"motion planning, using CMake. DART also has Python bindings, called "
+"dartpy, which will be covered in a separate section."
+msgstr ""
+
+#: ../../developer_guide/build.rst:14 72db031ba8834241885421a4088e9e14
+msgid "Supported Environments"
+msgstr ""
+
+#: ../../developer_guide/build.rst:16 8b9a9d08965a43fd938556d506f48bb6
+msgid "DART is supported on the following operating systems and compilers:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:19 17b4f5e906e640a6943c9ba2df66fae4
+msgid "Operating System"
+msgstr ""
+
+#: ../../developer_guide/build.rst:19 9e10270fa69f4121a736cbbda9959a13
+msgid "Compiler"
+msgstr ""
+
+#: ../../developer_guide/build.rst:21 2254f43762a947009a342336f0bc2f81
+msgid "Ubuntu 22.04 or later"
+msgstr ""
+
+#: ../../developer_guide/build.rst:21 9e9a9dbab5e54226a9b2b09e07c8982b
+msgid "GCC 11.2 or later"
+msgstr ""
+
+#: ../../developer_guide/build.rst:23 b11e2ef6edbd4cb59af8f8809c9f06b7
+msgid "Windows 2022 or later"
+msgstr ""
+
+#: ../../developer_guide/build.rst:23 5b796d7b9ae74027b93ff0e791502029
+msgid "Visual Studio 2022"
+msgstr ""
+
+#: ../../developer_guide/build.rst:25 fb427822f8c84fd8907f9213cc78e146
+msgid "macOS 13 or later"
+msgstr ""
+
+#: ../../developer_guide/build.rst:25 19d5e556d9f94ee8bb333c45089d70f1
+msgid "Clang 13 or later"
+msgstr ""
+
+#: ../../developer_guide/build.rst:29 58a4d3a5beef4706a8791420d780a5e2
+msgid "Prerequisites"
+msgstr ""
+
+#: ../../developer_guide/build.rst:31 fc51ddccca2844ec97f7c58018d94a9a
+msgid ""
+"Before you can build DART, you'll need to install the required and "
+"optional dependencies. The required dependencies are the minimum set of "
+"dependencies needed to build DART, while the optional dependencies enable"
+" additional features in DART."
+msgstr ""
+
+#: ../../developer_guide/build.rst:36 48ba26c1d5e044c596bbae929b0c3ef5
+msgid ""
+"The steps for installing dependencies may vary depending on your "
+"operating system and package manager. Below, we provide instructions for "
+"installing the required and optional dependencies on Ubuntu, macOS, and "
+"Windows, as well as some experimental guidance for other platforms."
+msgstr ""
+
+#: ../../developer_guide/build.rst:43 88e34695037c4592b8ef9b027a73e051
+msgid ""
+"Please note that the dependencies and installation steps are subject to "
+"change, so we encourage you to report any issues you encounter and "
+"contribute to keeping the instructions up-to-date for the community. By "
+"working together, we can help ensure that the DART documentation is "
+"accurate and helpful for everyone who uses it."
+msgstr ""
+
+#: ../../developer_guide/build.rst:50 b838090806704b41b0157a4aee615706
+msgid "Ubuntu"
+msgstr ""
+
+#: ../../developer_guide/build.rst:52 aed2d6ad78234971bacb17430a8f1def
+msgid ""
+"The dependencies for Ubuntu can be installed using the ``apt`` package "
+"manager. The following command will install the required dependencies:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:61 ../../developer_guide/build.rst:82
+#: ../../developer_guide/build.rst:100 ../../developer_guide/build.rst:118
+#: 79a687a8f65842a3afad99c150c3dbe5 7af8a45189a54b45ab7f996cbc2ca2bc
+#: a55222ff67704700bacc00da99756b1b b8db3c49937e4595ad5b6e1aa5151fde
+msgid "The following command will install the optional dependencies:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:73 0d7b9df3d5bd4e799faa7d61f20a9e56
+msgid "macOS"
+msgstr ""
+
+#: ../../developer_guide/build.rst:75 63aa3b00f1d54b99850c4b8e09946b74
+msgid ""
+"The dependencies for macOS can be installed using the ``brew`` package "
+"manager. The following command will install the required dependencies:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:91 dd03c1ea723e43098d2cc1465a82f9b0
+msgid "Windows"
+msgstr ""
+
+#: ../../developer_guide/build.rst:93 a123e527931d48dc88fee16630fa487a
+msgid ""
+"The dependencies for Windows can be installed using the ``vcpkg`` package"
+" manager. The following command will install the required dependencies:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:109 f77cef4799ae46dca25e719aca7c913d
+msgid "Arch Linux (experimental)"
+msgstr ""
+
+#: ../../developer_guide/build.rst:111 e57a2472e5d34b4e83d15a89332a1b9a
+msgid ""
+"The dependencies for Arch Linux can be installed using the ``yay`` "
+"package manager. The following command will install the required "
+"dependencies:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:128 578f61815592441a9a7dcc69fc786fe0
+msgid "FreeBSD (experimental)"
+msgstr ""
+
+#: ../../developer_guide/build.rst:130 ../../developer_guide/build.rst:200
+#: ../../developer_guide/build.rst:288 39ecdb5602fc42df8df79cb9506c162f
+#: 47da4a70b3114f93b8e81b221175894a 7118b97a2ed54d909a980e1b89ad997a
+msgid "TODO"
+msgstr ""
+
+#: ../../developer_guide/build.rst:133 420e79189672442c8ba1e9314647bd50
+msgid "Clone the DART Repository"
+msgstr ""
+
+#: ../../developer_guide/build.rst:135 b483320d5fb44d639f930dc3b9b14b53
+msgid ""
+"To get started with building DART, you'll need to clone the DART "
+"repository. Here's how to do it:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:138 771fc14397fc40fb84e9880cad39a58e
+msgid ""
+"Clone the DART repository by running the following command in your "
+"terminal:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:144 6fc07702a5b048eab70aeb442f3830d3
+msgid ""
+"(Optional) If you want to build a specific version of DART, you can "
+"checkout a specific branch, tag, or commit."
+msgstr ""
+
+#: ../../developer_guide/build.rst:153 50bd3c01a9764f50b74c1f42badf33d7
+msgid ""
+"Please note that the DART repository is actively maintained, so there may"
+" be changes and updates to the repository over time. To get the latest "
+"information, we recommend referring to the DART GitHub repository."
+msgstr ""
+
+#: ../../developer_guide/build.rst:158 4dee4ba0e0aa452fbe3cba135424b4cd
+msgid "Build Configuration"
+msgstr ""
+
+#: ../../developer_guide/build.rst:160 f6a27219b8be4201bce60ca32bd8cd4c
+msgid ""
+"DART uses CMake as its build system. CMake is a powerful tool that "
+"generates build files for a variety of build systems, including "
+"Makefiles, Visual Studio projects, and Xcode projects. For more "
+"information about available generators, we recommend referring to the "
+"`CMake documentation <https://cmake.org/cmake/help/latest/manual/cmake-"
+"generators.7.html>`_."
+msgstr ""
+
+#: ../../developer_guide/build.rst:166 2922d9d72a504eb883feb497c2c754fe
+msgid ""
+"To configure the build, you'll need to create a build directory and run "
+"CMake from that directory. Here's how to do it:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:169 82b2f8f4e7b64474988a5c0b696e5f60
+msgid ""
+"Create a build directory by running the following command in your "
+"terminal:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:175 ../../developer_guide/build.rst:228
+#: b8bfede97c304ec2b0a0e504ffbca01d b942abd5055a42d8a3221bad2fb9b363
+msgid "Change into the build directory by running the following command:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:181 108713b67f0d4d97a9e862ac8f43ed6f
+msgid "Run CMake from the build directory by running the following command:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:187 91fe5e07eae640a9a4d5aad8e9373fee
+msgid ""
+"If you want to configure the build, you can pass additional options to "
+"CMake. For example, you can specify the build type by passing the "
+"``-DCMAKE_BUILD_TYPE`` option. DART provides a number of CMake options "
+"that allow you to customize the build process. Here are some of the most "
+"important options:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:194 bc032900bfa84f67af8e04ea3658e97c
+msgid "Option"
+msgstr ""
+
+#: ../../developer_guide/build.rst:194 5b1294e4214f426882af5904de9d0b95
+msgid "Default Value"
+msgstr ""
+
+#: ../../developer_guide/build.rst:194 641dec6319284663a6b84051339780cb
+msgid "Description"
+msgstr ""
+
+#: ../../developer_guide/build.rst:196 c69e91cda9fe4464b9d17e6a177cd709
+msgid "CMAKE_BUILD_TYPE"
+msgstr ""
+
+#: ../../developer_guide/build.rst:196 6944e8e4b61341299608468a587f96b4
+msgid "Release"
+msgstr ""
+
+#: ../../developer_guide/build.rst:196 8c5d47caf9fa428a976c91ebf1c03065
+msgid "Specifies the build type."
+msgstr ""
+
+#: ../../developer_guide/build.rst:198 31ac75659ec2450e8a4f270e83e7a5ee
+msgid "DART_ENABLE_SIMD"
+msgstr ""
+
+#: ../../developer_guide/build.rst:198 74c6e7b4a0e947f0985f5cbb93d4bf6a
+msgid "ON"
+msgstr ""
+
+#: ../../developer_guide/build.rst:198 45d61d1691c94300a04cae7d8173d89c
+msgid "Enables use of SIMD instructions."
+msgstr ""
+
+#: ../../developer_guide/build.rst:205 a45b2440b4b4446fb0b8f1319fd191f8
+msgid ""
+"This list of options may not be exhaustive or up-to-date. Please refer to"
+" the main CMakeLists.txt file in the DART repository to confirm the list "
+"of available options. If you find any discrepancies or errors, please "
+"consider submitting a pull request to update this document."
+msgstr ""
+
+#: ../../developer_guide/build.rst:210 15236e18983946ee8c122b6ff79a3e65
+msgid ""
+"Here are some example commands that you can use to configure the build on"
+" different platforms with different generators:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:220 b66f5ca22d4c4a988004e11960743ea7
+msgid "Building DART from Command Line"
+msgstr ""
+
+#: ../../developer_guide/build.rst:222 56b5ed3a999946738094a3e5fcd3732a
+msgid ""
+"Whether or not you configured the build for IDEs, you can still build "
+"DART from the command line using CMake's unified build commands."
+msgstr ""
+
+#: ../../developer_guide/build.rst:225 de1cc0210530469da4890c2884205ef2
+msgid ""
+"To build DART from the command line, you'll need to run the build command"
+" from the build directory. Here's how to do it:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:234 0d95567fdc3a4ba286e2392cdef5d24d
+msgid "Run the build command by running the following command:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:240 ab22f511b6a54af5aa95d0bf5abac48d
+msgid ""
+"DART provides a number of CMake targets that you can use to build "
+"different parts of the project. Here are some of the most important "
+"targets:"
+msgstr ""
+
+#: ../../developer_guide/build.rst:243 e3f9a59b61a040439e0246a38c41e641
+msgid ""
+"``ALL``: Builds all the targets in the project, including building tests,"
+" examples, tutorials, and running tests."
+msgstr ""
+
+#: ../../developer_guide/build.rst:245 07e23938054e432ea2150be810133ae1
+msgid "``all``: Builds core targets without tests, examples, and tutorials."
+msgstr ""
+
+#: ../../developer_guide/build.rst:246 d0af9d55afe44c65821b88203a01db2d
+msgid "``tests``: Builds all the tests."
+msgstr ""
+
+#: ../../developer_guide/build.rst:247 27abcf4056ea4a49aba2640834ecdc9f
+msgid "``test``: Runs tests (need to build tests first)."
+msgstr ""
+
+#: ../../developer_guide/build.rst:248 39f9000bcc7b423abfb88d94022d5cc8
+msgid "``tests_and_run``: Builds and runs tests."
+msgstr ""
+
+#: ../../developer_guide/build.rst:249 73f6726af06d4fff8e9a22bcd8d0f9b5
+msgid "``examples``: Builds all the examples."
+msgstr ""
+
+#: ../../developer_guide/build.rst:250 44747d8b01574270938dcd52c2be1800
+msgid "``tutorials``: Builds all the tutorials."
+msgstr ""
+
+#: ../../developer_guide/build.rst:251 467cb765784a401294d8d4b1a0538b29
+msgid "``view_docs``: Builds the documentation and opens it in a web browser."
+msgstr ""
+
+#: ../../developer_guide/build.rst:252 31c1f2a44d894ecdaaae2e5d8f988689
+msgid "``install``: Installs the project."
+msgstr ""
+
+#: ../../developer_guide/build.rst:253 12ce25ba6eeb4724b8d52fdd63939fd3
+msgid ""
+"``dartpy``: Builds the Python bindings (it's encouraged to build using "
+"pip instead)."
+msgstr ""
+
+#: ../../developer_guide/build.rst:255 7b5c1b8a939c430f962422eeca286480
+msgid "``pytest``: Runs Python tests (building tests if necessary)."
+msgstr ""
+
+#: ../../developer_guide/build.rst:256 9a17006646bc445aa5b81ff21047ff24
+msgid "``coverage``: Runs tests and generates a coverage report."
+msgstr ""
+
+#: ../../developer_guide/build.rst:257 d037281546b34c42ad42bdc027a980de
+msgid "``coverage_html``: Runs tests and generates an HTML coverage report."
+msgstr ""
+
+#: ../../developer_guide/build.rst:258 862399cf871b4c95ab9a2c6bd1d83a2c
+msgid ""
+"``coverage_view``: Runs tests, generates an HTML coverage report, and "
+"opens it in a web browser."
+msgstr ""
+
+#: ../../developer_guide/build.rst:263 18c643dcea7745348b90da8fd9932aae
+msgid ""
+"Please note that this list of targets may not be exhaustive or up-to-"
+"date. To confirm the full list of available targets, we recommend "
+"referring to the main CMakeLists.txt file in the DART repository. If you "
+"find any discrepancies or errors, we encourage you to submit a pull "
+"request to update this document and help keep the documentation up-to-"
+"date for the community."
+msgstr ""
+
+#: ../../developer_guide/build.rst:271 652a01e02c154303add76a678a56b6a3
+msgid "Building DART from IDEs"
+msgstr ""
+
+#: ../../developer_guide/build.rst:273 d7316d33449e4b7d815a5c30ba824967
+msgid ""
+"If you configured the build for IDEs, you can build DART from the IDEs. "
+"This section doesn't cover how to build DART from IDEs. Please refer to "
+"the IDEs documentation for more information. However, it's always to "
+"welcome to submit a pull request to update this document with "
+"instructions for your favorite IDE!"
+msgstr ""
+
+#: ../../developer_guide/build.rst:279 c78cf1225bcc469e83fb5b72c3ec41ef
+msgid "Building dartpy"
+msgstr ""
+
+#: ../../developer_guide/build.rst:281 737806e9a40c478b8aba9f5ce689edd7
+msgid ""
+"In general, building dartpy from source is not necessary. The easiest way"
+" to install dartpy is to use pip:"
+msgstr ""
+

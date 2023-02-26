@@ -99,17 +99,18 @@ If you use DART in an academic publication, please consider citing this
    :hidden:
    :caption: User Guide
 
-   installation
-   tutorials
+   user_guide/installation
+   user_guide/tutorials
 
 .. toctree::
    :maxdepth: 1
    :hidden:
    :caption: Developer Guide
 
-   build
-   python_binding
-   contribution
+   developer_guide/build
+   developer_guide/contribution
+   developer_guide/code_style_guide
+   developer_guide/migration_guide
    license
 
 .. toctree::
@@ -117,4 +118,4 @@ If you use DART in an academic publication, please consider citing this
    :hidden:
    :caption: Community
 
-   who_uses_dart
+   community/who_uses_dart

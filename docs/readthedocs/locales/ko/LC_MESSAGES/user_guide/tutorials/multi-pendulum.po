@@ -1,0 +1,538 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../user_guide/tutorials/multi-pendulum.md:1
+#: 46eb16e45884458fbf226bac709f20f8
+msgid "Multi Pendulum"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:3
+#: 14c12d7fe7a94934a6cd69456fd59cb7
+msgid "Overview"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:5
+#: 78d58e7e1afc4abaa87f708fdbc252a8
+msgid ""
+"This tutorial will demonstrate some basic interaction with DART's "
+"dynamics API during simulation. This will show you how to:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:8
+#: 458e9396a24548f7823c79cd8b1dd5df
+msgid "Create a basic program to simulate a dynamic system"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:9
+#: 288518f74997452ab72c41c3a96eddf6
+msgid "Change the colors of shapes"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:10
+#: 66af8ccf036f4580af00f80c8a1b547f
+msgid "Add/remove shapes from visualization"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:11
+#: 7c1a3787227f4d97ba2130ffe6e331a2
+msgid "Apply internal forces in the joints"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:12
+#: 2088cbc2201e41fe9b5f68c33702243a
+msgid "Apply external forces to the bodies"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:13
+#: 41d347efdfc241dc97c9e469873dac77
+msgid "Alter the implicit spring and damping properties of joints"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:14
+#: 4daf47394b2f4fae9df17034b8608f91
+msgid "Add/remove dynamic constraints"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:16
+#: 780a73b9ebf54b9693d5875f11ec1eef
+msgid ""
+"Please reference the source code in "
+"[**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp)"
+" and [**tutorialMultiPendulum-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialMultiPendulum-Finished.cpp)."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:18
+#: 9b834efc9ce04f98a00eefd55b300347
+msgid "Lesson 0: Simulate a passive multi-pendulum"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:20
+#: fd03ce798d164f08b6cd2caf38c48488
+msgid ""
+"This is a warmup lesson that demonstrates how to set up a simulation "
+"program in DART. The example we will use throughout this tutorial is a "
+"pendulum with five rigid bodies swinging under gravity. DART allows the "
+"user to build various articulated rigid/soft body systems from scratch. "
+"It also loads models in URDF, SDF, and SKEL formats as demonstrated in "
+"the later tutorials."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:27
+#: 88562a8fcb5a430e834db39603e031b3
+msgid ""
+"In DART, an articulated dynamics model is represented by a ``Skeleton``. "
+"In the ``main`` function, we first create an empty skeleton named "
+"*pendulum*."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:35
+#: 97c1aaf10a8e4b2b8c89e3fac3498fd8
+msgid ""
+"A Skeleton is a structure that consists of ``BodyNode``s (bodies) which "
+"are  connected by ``Joint``s. Every Joint has a child BodyNode, and every"
+" BodyNode  has a parent Joint. Even the root BodyNode has a Joint that "
+"attaches it to the  World. In the function ``makeRootBody``, we create a "
+"pair of a ``BallJoint``  and a BodyNode, and attach this pair to the "
+"currently empty pendulum skeleton."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:47
+#: bfde1ffca96344a3aa14c87d1c10430e
+msgid ""
+"Note that the first parameters is a nullptr, which indicates that this "
+"new BodyNode is the root of the pendulum. If we wish to append the new "
+"BodyNode to an existing BodyNode in the pendulum, we can do so by passing"
+" the pointer of the existing BodyNode as the first parameter. In fact, "
+"this is how we add more BodyNodes to the pendulum in the function "
+"``addBody``:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:58
+#: f442138b3cc44ac8b902bf2403638ee7
+msgid ""
+"The simplest way to set up a simulation program in DART is to use "
+"``SimWindow`` class. A SimWindow owns an instance of ``World``  and "
+"simulates all the Skeletons in the World. In this example, we create a "
+"World with the pendulum skeleton in it, and assign the World to an "
+"instance of ``MyWindow``, a subclass derived from SimWindow."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:70
+#: eeea1c1b2dd3403890e22b98769488d2
+msgid ""
+"Every single time step, the ``MyWindow::timeStepping`` function will be "
+"called and the state of the World will be simulated. The user can "
+"override the default timeStepping function to customize the simulation "
+"routine. For example, one can incorporate sensors, actuators, or user "
+"interaction in the forward simulation."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:77
+#: 97040db0a9e946f190139f5e5641afab
+msgid "Lesson 1: Change shapes and applying forces"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:79
+#: d8b5cb2bd71f4deba2a8f39a170c9677
+msgid ""
+"We have a pendulum with five bodies, and we want to be able to apply "
+"forces to them during simulation. Additionally, we want to visualize "
+"these forces so we can more easily interpret what is happening in the "
+"simulation. For this reason, we'll discuss visualizing and forces at the "
+"same time."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:84
+#: b778cf14c9e443f6ba38ddfa65b2f2e1
+msgid "Lesson 1a: Reset everything to default appearance"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:86
+#: a1d659a3b15a40838aa81a65d990ac7d
+msgid ""
+"At each step, we'll want to make sure that everything starts out with its"
+" default appearance. The default is for everything to be blue and there "
+"not to be any arrow attached to any body."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:90
+#: 58e1412a011a48e48665c5124b063027
+msgid ""
+"Find the function named ``timeStepping`` in the ``MyWindow`` class. The "
+"top of this function is where we will want to reset everything to the "
+"default appearance."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:93
+#: d77eaba2437b418ea55fca002d9a768c
+msgid ""
+"Each BodyNode contains visualization ``Shape``s that will be rendered "
+"during simulation. In our case, each BodyNode has two shapes:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:96
+#: ea8c8cbcf8be4ea697686ac22d8cef0e
+msgid "One shape to visualize the parent joint"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:97
+#: f48bec4f13de48d7ba1490379a9dd76f
+msgid "One shape to visualize the body"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:99
+#: d178020ce1ee439a8407e7303a9e3a66
+msgid ""
+"The default appearance for everything is to be colored blue, so we'll "
+"want to iterate through these two Shapes in each BodyNode, setting their "
+"colors to blue."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:116
+#: fb89ba42ac2d4c428c82ed5769dc9a53
+msgid ""
+"Additionally, there is the possibility that some BodyNodes will have an "
+"arrow shape attached if the user had been applying an external body force"
+" to it. By default, this arrow should not be attached, so in the outer "
+"for-loop, we should check for arrows and remove them:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:128
+#: 46123cdfcc8f4715ba007da033649494
+msgid "Now everything will be reset to the default appearance."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:130
+#: a18342ab364642e6a4eed034cfee9115
+msgid "Lesson 1b: Apply joint torques based on user input"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:132
+#: a987d1fe97124f4eb4b31ec6c798eb58
+msgid ""
+"The ``MyWindow`` class in this tutorial has a variable called "
+"``mForceCountDown`` which is a ``std::vector<int>`` whose entries get set"
+" to a value of ``default_countdown`` each time the user presses a number "
+"key. If an entry in ``mForceCountDown`` is greater than zero, then that "
+"implies that the user wants a force to be applied for that entry."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:138
+#: d2c7409e13794727b230e6b7c974bc8b
+msgid "There are two ways that forces can be applied:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:140
+#: 417b9ab8fde14335b80cbb9c09e61926
+msgid "As an internal joint force"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:141
+#: 0f902d0972b343e592089b50b4cf545a
+msgid "As an external body force"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:143
+#: 068c8cdce82a401491c6725fb0ed2bb6
+msgid ""
+"First we'll consider applying a Joint force. Inside the for-loop that "
+"goes through each ``DegreeOfFreedom`` using ``getNumDofs()``, there is an"
+"  if-statement for ``mForceCountDown``. In that if-statement, we'll grab "
+"the relevant DegreeOfFreedom and set its generalized (joint) force:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:153
+#: 0b9f9c7806b54e25b6881b90a4f1d9f0
+msgid ""
+"The ``mPositiveSign`` boolean gets toggled when the user presses the "
+"minus sign '-' key. We use this boolean to decide whether the applied "
+"force should be positive or negative."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:157
+#: 8acc3ccb210d40e3a01092fb4c4dcb10
+msgid ""
+"Now we'll want to visualize the fact that a Joint force is being applied."
+" We'll do this by highlighting the joint with the color red. First we'll "
+"grab the Shape that corresponds to this Joint:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:166
+#: 598daba15ce148898fa759a020338544
+msgid ""
+"Because of the way the pendulum bodies were constructed, we trust that "
+"the zeroth indexed visualization shape will be the shape that depicts the"
+" joint. So now we will color it red:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:174
+#: 52c72327e12b451d94f6ff274d67c14f
+msgid "Lesson 1c: Apply body forces based on user input"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:176
+#: 3a97c567e7a94434a092077c57a914d1
+msgid ""
+"If mBodyForce is true, we'll want to apply an external force to the body "
+"instead of an internal force in the joint. First, inside the for-loop "
+"that iterates through each ``BodyNode`` using ``getNumBodyNodes()``, "
+"there is an if-statement for ``mForceCountDown``. In that if-statement, "
+"we'll grab the relevant BodyNode:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:185
+#: ed63872a287a440abbb9f96259cb6850
+msgid ""
+"Now we'll create an ``math::Vector3d`` that describes the force and "
+"another one that describes the location for that force. An "
+"``math::Vector3d`` is the Eigen C++ library's version of a three-"
+"dimensional mathematical vector. Note that the ``d`` at the end of the "
+"name stands for ``double``, not for \"dimension\". An math::Vector3f "
+"would be a three-dimensional vector of floats, and an math::Vector3i "
+"would be a three-dimensional vector of integers."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:197
+#: b46669ba512242e385883df4776548d1
+msgid ""
+"The force will have a magnitude of ``default_force`` and it will point in"
+" the positive x-direction. The location of the force will be in the "
+"center of the negative x side of the body, as if a finger on the negative"
+" side is pushing the body in the positive direction. However, we need to "
+"account for sign changes:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:210
+#: ad0a30ea91884af7970d90ad45a10711
+msgid "That will flip the signs whenever the user is requesting a negative force."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:212
+#: d57d3f05c8a542099970be2f6279769a
+msgid "Now we can add the external force:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:218
+#: bdf2572fc93a472eae95d671db6d6049
+msgid ""
+"The two ``true`` booleans at the end are indicating to DART that both the"
+" force and the location vectors are being expressed with respect to the "
+"body frame."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:221
+#: 64e2f94a40194e1780b391a16bc13129
+msgid ""
+"Now we'll want to visualize the force being applied to the body. First, "
+"we'll grab the Shape for the body and color it red:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:229
+#: 05114826ddb34bc9a164672ae0ecabd0
+msgid ""
+"Last time we grabbed the 0-index visualization shape, because we trusted "
+"that it was the shape that represented the parent Joint. This time we're "
+"grabbing the 1-index visualization shape, because we trust that it is the"
+" shape for the body."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:234
+#: 5e0aad2241284583a2e1813a2497f10b
+msgid ""
+"Now we'll want to add an arrow to the visualization shapes of the body to"
+" represent the applied force. The ``MyWindow`` class already provides the"
+" arrow shape; we just need to add it:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:242
+#: db2be6088b114287991ccb8c4f8a7cc1
+msgid "Lesson 2: Set spring and damping properties for joints"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:244
+#: 1581b921e88c4502bcbb85dd0c3de5e9
+msgid ""
+"DART allows Joints to have implicit spring and damping properties. By "
+"default, these properties are zeroed out, so a joint will only exhibit "
+"the forces that are given to it by the ``Joint::setForces`` function. "
+"However, you can give a non-zero spring coefficient to a joint so that it"
+" behaves according to Hooke's Law, and you can give a non-zero damping "
+"coefficient to a joint which will result in linear damping. These forces "
+"are computed using implicit methods in order to improve numerical "
+"stability."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:252
+#: ed42a042d58d48bca54c543cf108b7b1
+msgid "Lesson 2a: Set joint spring rest position"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:254
+#: bc8c43942da648cab0009aff2e8f8b86
+msgid "First let's see how to get and set the rest positions."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:256
+#: 021c9a06d09641a2b18341d471e7efba
+msgid ""
+"Find the function named ``changeRestPosition`` in the ``MyWindow`` class."
+" This function will be called whenever the user presses the 'q' or 'a' "
+"button. We want those buttons to curl and uncurl the rest positions for "
+"the pendulum. To start, we'll go through all the generalized coordinates "
+"and change their rest positions by ``delta``:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:272
+#: 63f22e9bd1e246fa9865d4ba8b29198f
+msgid ""
+"However, it's important to note that the system can become somewhat "
+"unstable if we allow it to curl up too much, so let's put a limit on the "
+"magnitude of the rest angle. Right before ``dof->setRestPosition(q0);`` "
+"we can put:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:281
+#: 3b554b4f28d3460c9c18509cada557e0
+msgid ""
+"And there's one last thing to consider: the first joint of the pendulum "
+"is a BallJoint. BallJoints have three degrees of freedom, which means if "
+"we alter the rest positions of *all* of the pendulum's degrees of "
+"freedom, then the pendulum will end up curling out of the x-z plane. You "
+"can allow this to happen if you want, or you can prevent it from "
+"happening by zeroing out the rest positions of the BallJoint's other two "
+"degrees of freedom:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:293
+#: 7e101389b96f4b30b9f361dce92b1f1a
+msgid "Lesson 2b: Set joint spring stiffness"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:295
+#: eb86ef9838684d238d12c89963e49f60
+msgid ""
+"Changing the rest position does not accomplish anything without having "
+"any spring stiffness. We can change the spring stiffness as follows:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:307
+#: 01aa5d5c40e5438c8a7fe24327a27beb
+msgid ""
+"However, it's important to realize that if the spring stiffness were ever"
+" to become negative, we would get some very nasty explosive behavior. "
+"It's also a bad idea to just trust the user to avoid decrementing it into"
+" being negative. So before the line "
+"``dof->setSpringStiffness(stiffness);`` you'll want to put:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:317
+#: 3ae2d3a1bb1d41798871835b1d1340c8
+msgid "Lesson 2c: Set joint damping"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:319
+#: 2cae9d33952a40be8feb7e048ff44c33
+msgid ""
+"Joint damping can be thought of as friction inside the joint actuator. It"
+" applies a resistive force to the joint which is proportional to the "
+"generalized velocities of the joint. This draws energy out of the system "
+"and generally results in more stable behavior."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:324
+#: 9b6fad5289244fb8805bb434ce1e07a6
+msgid ""
+"The API for getting and setting the damping is just like the API for "
+"stiffness:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:337
+#: 06fffed601dc4ac387214db3cb24c429
+msgid ""
+"Again, we want to make sure that the damping coefficient is never "
+"negative. In fact, a negative damping coefficient would be far more "
+"harmful than a negative stiffness coefficient."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:341
+#: 5105b5b141cf4bfb9aa4204be00839f4
+msgid "Lesson 3: Add and remove dynamic constraints"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:343
+#: 1f2ce123d19f46b688ce6f819cbb641e
+msgid ""
+"Dynamic constraints in DART allow you to attach two BodyNodes together "
+"according to a selection of a few different Joint-style constraints. This"
+" allows you to create closed loop constraints, which is not possible "
+"using standard Joints. You can also create a dynamic constraint that "
+"attaches a BodyNode to the World instead of to another BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:349
+#: 73708b81185a4baeb53a6d6ec42fa16a
+msgid ""
+"In our case, we want to attach the last BodyNode to the World with a "
+"BallJoint style constraint whenever the function ``addConstraint()`` gets"
+" called. First, let's grab the last BodyNode in the pendulum:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:357
+#: 4355f11860aa48f49b7240129be7a424
+msgid ""
+"Now we'll want to compute the location that the constraint should have. "
+"We want to connect the very end of the tip to the world, so the location "
+"would be:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:365
+#: 5ce5273c83dc4e3f87e39ed60aa89455
+msgid "Now we can create the BallJointConstraint:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:372
+#: 380abc0c9c1f4b0692d8aaf43dfe5b10
+msgid "And then add it to the world:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:378
+#: d39289430991460992ffeaac0fe52d31
+msgid ""
+"Now we also want to be able to remove this constraint. In the function "
+"``removeConstraint()``, we can put the following code:"
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:386
+#: 323f9b24986b4b568cbf682e2ef15c62
+msgid ""
+"Setting mBallConstraint to a nullptr will allow its smart pointer to "
+"delete it."
+msgstr ""
+
+#: ../../user_guide/tutorials/multi-pendulum.md:388
+#: 1040411d104446068298b2098264ac8f
+msgid "**Now you are ready to run the demo!**"
+msgstr ""
+

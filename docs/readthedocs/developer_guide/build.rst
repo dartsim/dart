@@ -1,14 +1,17 @@
 .. _building_dart:
 
+Build
+=====
+
 Building DART
-=============
+-------------
 
 This guide describes how to build DART, a C++ library for robotics and motion
 planning, using CMake. DART also has Python bindings, called dartpy, which will
 be covered in a separate section.
 
 Supported Environments
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 DART is supported on the following operating systems and compilers:
 
@@ -23,7 +26,7 @@ DART is supported on the following operating systems and compilers:
 +-----------------------+-----------------------+
 
 Prerequisites
--------------
+~~~~~~~~~~~~~
 
 Before you can build DART, you'll need to install the required and optional
 dependencies. The required dependencies are the minimum set of dependencies
@@ -44,7 +47,7 @@ some experimental guidance for other platforms.
    and helpful for everyone who uses it.
 
 Ubuntu
-~~~~~~
+^^^^^^
 
 The dependencies for Ubuntu can be installed using the ``apt`` package
 manager. The following command will install the required dependencies:
@@ -67,7 +70,7 @@ The following command will install the optional dependencies:
       opencl-clhpp-headers
 
 macOS
-~~~~~
+^^^^^
 
 The dependencies for macOS can be installed using the ``brew`` package
 manager. The following command will install the required dependencies:
@@ -85,7 +88,7 @@ The following command will install the optional dependencies:
       spdlog tinyxml2 urdfdom yaml-cpp
 
 Windows
-~~~~~~~
+^^^^^^^
 
 The dependencies for Windows can be installed using the ``vcpkg`` package
 manager. The following command will install the required dependencies:
@@ -103,7 +106,7 @@ The following command will install the optional dependencies:
       opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
 
 Arch Linux (experimental)
-~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The dependencies for Arch Linux can be installed using the ``yay`` package
 manager. The following command will install the required dependencies:
@@ -122,12 +125,12 @@ The following command will install the optional dependencies:
       urdfdom pybind11
 
 FreeBSD (experimental)
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 TODO
 
 Clone the DART Repository
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To get started with building DART, you'll need to clone the DART repository.
 Here's how to do it:
@@ -152,7 +155,7 @@ Here's how to do it:
    information, we recommend referring to the DART GitHub repository.
 
 Build Configuration
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 DART uses CMake as its build system. CMake is a powerful tool that generates
 build files for a variety of build systems, including Makefiles, Visual Studio
@@ -214,7 +217,7 @@ different platforms with different generators:
    $ cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=Release
 
 Building DART from Command Line
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Whether or not you configured the build for IDEs, you can still build DART from
 the command line using CMake's unified build commands.
@@ -265,7 +268,7 @@ parts of the project. Here are some of the most important targets:
    community.
 
 Building DART from IDEs
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 If you configured the build for IDEs, you can build DART from the IDEs. This
 section doesn't cover how to build DART from IDEs. Please refer to the IDEs
@@ -273,7 +276,7 @@ documentation for more information. However, it's always to welcome to submit a
 pull request to update this document with instructions for your favorite IDE!
 
 Building dartpy
-===============
+---------------
 
 In general, building dartpy from source is not necessary. The easiest way to
 install dartpy is to use pip:
