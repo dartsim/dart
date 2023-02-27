@@ -96,3 +96,58 @@ GTEST_TEST(TemplateUtilsTest, IsContiguousContainer)
   EXPECT_FALSE((is_contiguous_container<std::list<int>>::value));
   EXPECT_FALSE((is_contiguous_container<std::deque<int>>::value));
 }
+
+// Test FunctionTraits for a function pointer
+GTEST_TEST(TemplateUtilsTest, FunctionTraits_FunctionPointer)
+{
+  auto func = [](int, bool, double) {
+    return 42;
+  };
+  using traits = FunctionTraits<decltype(func)>;
+  EXPECT_EQ(traits::num_args, 3u);
+  EXPECT_EQ(
+      (std::is_same_v<typename traits::args, std::tuple<int, bool, double>>),
+      true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<0>::type, int>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<1>::type, bool>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<2>::type, double>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::return_type, int>), true);
+}
+
+// Test FunctionTraits for a non-const member function pointer
+GTEST_TEST(TemplateUtilsTest, FunctionTraits_MemberFunctionPointer)
+{
+  struct Foo
+  {
+    int bar(bool, double)
+    {
+      return 42;
+    }
+  };
+  using traits = FunctionTraits<decltype(&Foo::bar)>;
+  EXPECT_EQ(traits::num_args, 2u);
+  EXPECT_EQ(
+      (std::is_same_v<typename traits::args, std::tuple<bool, double>>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<0>::type, bool>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<1>::type, double>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::return_type, int>), true);
+}
+
+// Test FunctionTraits for a const member function pointer
+GTEST_TEST(TemplateUtilsTest, FunctionTraits_ConstMemberFunctionPointer)
+{
+  struct Foo
+  {
+    int bar(bool, double) const
+    {
+      return 42;
+    }
+  };
+  using traits = FunctionTraits<decltype(&Foo::bar)>;
+  EXPECT_EQ(traits::num_args, 2u);
+  EXPECT_EQ(
+      (std::is_same_v<typename traits::args, std::tuple<bool, double>>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<0>::type, bool>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::arg<1>::type, double>), true);
+  EXPECT_EQ((std::is_same_v<typename traits::return_type, int>), true);
+}

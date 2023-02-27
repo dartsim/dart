@@ -35,7 +35,9 @@
 #if defined(_MSC_VER) || defined(__apple_build_version__)
   #include <array>
 #endif
+#include <functional>
 #include <iterator>
+#include <tuple>
 #include <type_traits>
 
 // DETAIL_DART_CREATE_MEMBER_CHECK is a macro that can be used to check if a
@@ -85,8 +87,9 @@ template <typename T>
 struct is_const_contiguous_iterator
 {
   static constexpr bool value
-      = is_contiguous_iterator_v<
-            T> && std::is_const_v<typename std::remove_reference<decltype(*std::declval<T>())>::type>;
+      = is_contiguous_iterator_v<T>
+        && std::is_const_v<
+            typename std::remove_reference<decltype(*std::declval<T>())>::type>;
 };
 
 /// A convenience variable template that returns `true` if the given type `T`
@@ -103,8 +106,9 @@ template <typename T>
 struct is_non_const_contiguous_iterator
 {
   static constexpr bool value
-      = is_contiguous_iterator_v<
-            T> && !std::is_const_v<typename std::remove_reference<decltype(*std::declval<T>())>::type>;
+      = is_contiguous_iterator_v<T>
+        && !std::is_const_v<
+            typename std::remove_reference<decltype(*std::declval<T>())>::type>;
 };
 
 /// A convenience variable template that returns `true` if the given type `T`
@@ -160,6 +164,87 @@ struct is_contiguous_container<
 /// satisfies `is_contiguous_container<T>`.
 template <typename T>
 constexpr bool is_contiguous_container_v = is_contiguous_container<T>::value;
+
+template <typename Function>
+struct FunctionTraits;
+
+template <typename Func>
+struct FunctionTraits : public FunctionTraits<decltype(&Func::operator())>
+{
+  // Empty
+};
+
+template <typename ReturnT, typename... Args>
+struct FunctionTraits<ReturnT (*)(Args...)>
+{
+  static constexpr size_t num_args = sizeof...(Args);
+
+  template <size_t Index>
+  struct arg
+  {
+    using type = typename std::tuple_element<Index, std::tuple<Args...>>::type;
+  };
+
+  using return_type = ReturnT;
+  using args = std::tuple<Args...>;
+};
+
+template <typename Class, typename ReturnT, typename... Args>
+struct FunctionTraits<ReturnT (Class::*)(Args...)>
+{
+  static constexpr size_t num_args = sizeof...(Args);
+
+  template <size_t Index>
+  struct arg
+  {
+    using type = typename std::tuple_element<Index, std::tuple<Args...>>::type;
+  };
+
+  using return_type = ReturnT;
+  using args = std::tuple<Args...>;
+};
+
+template <typename Class, typename ReturnT, typename... Args>
+struct FunctionTraits<ReturnT (Class::*)(Args...) const>
+{
+  static constexpr size_t num_args = sizeof...(Args);
+
+  template <size_t Index>
+  struct arg
+  {
+    using type = typename std::tuple_element<Index, std::tuple<Args...>>::type;
+  };
+
+  using return_type = ReturnT;
+  using args = std::tuple<Args...>;
+};
+
+template <typename Function>
+struct FunctionTraits<std::function<Function>> : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Function>
+struct FunctionTraits<const std::function<Function>&>
+  : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Function>
+struct FunctionTraits<std::function<Function>&>
+  : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Function>
+struct FunctionTraits<std::function<Function>&&>
+  : public FunctionTraits<Function>
+{
+  // Empty
+};
 
 } // namespace dart::common
 
