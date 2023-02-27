@@ -239,4 +239,10 @@ namespace dart::common {
 template <typename DataT = std::uint32_t>
 class EntityT;
 
+template <typename EntityType_ = EntityT<std::uint32_t>>
+class EntityManagerT;
+
+template <typename... ComponentTypes>
+class View;
+
 } // namespace dart::common

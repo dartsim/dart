@@ -48,7 +48,7 @@
 namespace dart::common {
 
 /// A class template for managing entities in a game or simulation.
-template <typename EntityType_ = EntityT<std::uint32_t>>
+template <typename EntityType_>
 class EntityManagerT
 {
 public:
