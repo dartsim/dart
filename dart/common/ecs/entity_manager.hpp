@@ -176,6 +176,21 @@ public:
   template <typename T>
   [[nodiscard]] bool hasComponent(EntityType entity) const;
 
+  /// Returns true if the given entity has all of the given components.
+  ///
+  /// @param entity The entity to check.
+  /// @return True if the entity has all of the given components, false
+  /// otherwise.
+  template <typename... Components>
+  [[nodiscard]] bool hasComponents(EntityType entity) const;
+
+  /// @}
+
+  /// @{ @name Entity Iteration
+
+  template <typename... Components>
+  View<This, Components...> view();
+
   /// @}
 
 #ifndef NDEBUG
@@ -245,6 +260,8 @@ private:
   /// The minimum number of free indices in the queue before reusing one
   static constexpr uint32_t MINIMUM_FREE_INDICES = 1024u;
 
+  std::vector<EntityType> m_entities;
+
   /// The entity versions
   ///
   /// The version is incremented every time an entity is destroyed.
@@ -290,6 +307,8 @@ using EntityManager = EntityManagerT<EntityT<std::uint32_t>>;
 //==============================================================================
 // Implementation
 //==============================================================================
+
+#include <dart/common/ecs/view.hpp>
 
 #include <typeinfo>
 
@@ -510,6 +529,36 @@ template <typename T>
 bool EntityManagerT<EntityType>::hasComponent(EntityType entity) const
 {
   return tryComponent<T>(std::move(entity)) != nullptr;
+}
+
+//==============================================================================
+template <typename EntityType>
+template <typename... Components>
+bool EntityManagerT<EntityType>::hasComponents(EntityType entity) const
+{
+  // Check if entity exists and has all required components
+  auto it = m_entity_comp_map.find(entity);
+  if (it == m_entity_comp_map.end()) {
+    return false;
+  }
+
+  const std::unordered_map<std::type_index, std::size_t>& comp_to_index
+      = it->second;
+  bool has_all_components = true;
+
+  // Check if entity has all required components
+  ((has_all_components &= (comp_to_index.count(typeid(Components)) > 0)), ...);
+
+  return has_all_components;
+}
+
+//==============================================================================
+template <typename EntityType>
+template <typename... Components>
+View<EntityManagerT<EntityType>, Components...>
+EntityManagerT<EntityType>::view()
+{
+  return View<This, Components...>(*this);
 }
 
 #ifndef NDEBUG

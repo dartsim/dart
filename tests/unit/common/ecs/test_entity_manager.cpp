@@ -178,6 +178,29 @@ TEST_F(EntityManagerTest, TwoEntitiesSingleComponent)
   EXPECT_NE(em.tryComponent<TestComponent>(e_2), nullptr);
 }
 
+struct TestComponent1 {};
+struct TestComponent2 {};
+
+TEST_F(EntityManagerTest, HasComponents) {
+  auto entity = em.create();
+
+  // Test with no components
+  EXPECT_FALSE(em.hasComponents<TestComponent1>(entity));
+
+  // Add a component and test again
+  em.addComponent<TestComponent1>(entity);
+  EXPECT_TRUE(em.hasComponents<TestComponent1>(entity));
+  EXPECT_FALSE(em.hasComponents<TestComponent2>(entity));
+
+  // Add another component and test again
+  em.addComponent<TestComponent2>(entity);
+  auto has = em.hasComponents<TestComponent1, TestComponent2>(entity);
+  EXPECT_TRUE(has);
+
+  // Test with a non-existent entity
+  EXPECT_FALSE(em.hasComponents<TestComponent1>(Entity()));
+}
+
 TEST_F(EntityManagerTest, StressTest)
 {
   // Define the number of entities and components to create
@@ -308,4 +331,23 @@ TEST_F(EntityManagerTest, EntityAndComponentModification)
   EXPECT_FALSE(em.isValid(e1));
   EXPECT_FALSE(em.isValid(e2));
   EXPECT_FALSE(em.isValid(e3));
+}
+
+TEST_F(EntityManagerTest, ViewBasics)
+{
+  // Create an entity and add a TestComponent to it
+  auto e_1 = em.create();
+  auto e_2 = em.create();
+  (void)e_2;
+
+  auto& e_1_comp = em.addComponent<TestComponent>(e_1, 12);
+  (void)e_1_comp;
+
+  auto view = em.view<TestComponent>();
+  (void)view;
+
+  view.each([](const Entity& entity, const TestComponent& test_comp) {
+    (void)entity;
+    (void)test_comp;
+  });
 }

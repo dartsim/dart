@@ -55,7 +55,7 @@ public:
   using VersionType = std::uint8_t;
 
   /// Constructs an invalid Entity object
-  EntityT() = default;
+  EntityT();
 
   /// Constructs an Entity object with the given index and version.
   ///
@@ -159,6 +159,14 @@ struct hash<::dart::common::EntityT<DataT>>
 } // namespace std
 
 namespace dart::common {
+
+//==============================================================================
+template <typename DataT>
+EntityT<DataT>::EntityT()
+  : EntityT(0, std::numeric_limits<VersionType>::max())
+{
+  static_assert(sizeof(DataT) * DataT(8) > VERSION_BITS);
+}
 
 //==============================================================================
 template <typename DataT>

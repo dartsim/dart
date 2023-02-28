@@ -165,6 +165,22 @@ struct is_contiguous_container<
 template <typename T>
 constexpr bool is_contiguous_container_v = is_contiguous_container<T>::value;
 
+//------------------------------------------------------------------------------
+// FunctionTraits
+//------------------------------------------------------------------------------
+
+template <typename Function>
+struct is_lambda : std::integral_constant<
+                       bool,
+                       std::is_class<Function>::value
+                           && !std::is_convertible<Function, const char*>::value
+                           && !std::is_convertible<Function, char*>::value
+                           && !std::is_convertible<Function, const void*>::value
+                           && !std::is_convertible<Function, void*>::value>
+{
+  // Empty
+};
+
 template <typename Function>
 struct FunctionTraits;
 
@@ -242,6 +258,24 @@ struct FunctionTraits<std::function<Function>&>
 template <typename Function>
 struct FunctionTraits<std::function<Function>&&>
   : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Function, typename... Args>
+struct FunctionTraits<std::function<Function>(Args...)> : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Class, typename Function, typename... Args>
+struct FunctionTraits<std::function<Function>(Class::*)(Args...)> : public FunctionTraits<Function>
+{
+  // Empty
+};
+
+template <typename Class, typename Function, typename... Args>
+struct FunctionTraits<std::function<Function>(Class::*)(Args...) const> : public FunctionTraits<Function>
 {
   // Empty
 };
