@@ -42,6 +42,12 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+html_logo = "_static/img/dart_logo_long_200.png"
+html_favicon = "_static/img/dart_logo_32.png"
+html_theme_options = {
+    "logo_only": True,
+    "display_version": True,
+}
 
 # Setting for multi language
 source_encoding = "utf-8"
