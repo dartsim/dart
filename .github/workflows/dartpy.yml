@@ -139,7 +139,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
         shell: cmd
         env:
-          VCPKG_BUILD_TAG: v2023.01.16-2
+          VCPKG_BUILD_TAG: v2023.02.24-0
           VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
         run: |
           choco install -y wget

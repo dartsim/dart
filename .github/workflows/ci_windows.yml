@@ -29,7 +29,7 @@ jobs:
           # and building dartpy is disabled for now due to the lack of sufficient disk space in the CI
         enable_simd: [ON]
     env:
-      VCPKG_BUILD_TAG: v2023.01.16-2
+      VCPKG_BUILD_TAG: v2023.02.24-0
       VCPKG_DEPS_ZIP: vcpkg-dartsim-deps-v7.0.zip
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ${{ matrix.build_dartpy }}
