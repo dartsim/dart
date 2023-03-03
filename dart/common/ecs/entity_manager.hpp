@@ -330,15 +330,37 @@ EntityManagerT<EntityType>::create()
     m_versions.push_back(0);
   }
 
-  return Entity(id, m_versions[id]);
+  auto entity = Entity(id, m_versions[id]);
+
+  m_entity_comp_map.insert({entity, {}});
+
+  return entity;
 }
 
 //==============================================================================
 template <typename EntityType>
 void EntityManagerT<EntityType>::destroy(EntityType entity)
 {
+  auto it = m_entity_comp_map.find(entity);
+  if (it == m_entity_comp_map.end()) {
+    return;
+  }
+
+  // Erase components of the entity from the maps
+  auto& comp_to_index = it->second;
+  for (auto comp_it = comp_to_index.begin(); comp_it != comp_to_index.end();
+       ++comp_it) {
+    auto& comp_entity_map = m_comp_entity_map[comp_it->first];
+    auto entity_set_it = comp_entity_map.find(comp_it->second);
+    if (entity_set_it != comp_entity_map.end()) {
+      entity_set_it->second = Entity();
+    }
+    m_entity_comp_map.erase(it);
+  }
+
+  // Mark the entity as destroyed and add its index to the free list
   const auto id = entity.getId();
-  m_versions[id]++;
+  ++m_versions[id];
   m_free_ids.push_back(id);
 }
 
@@ -403,10 +425,10 @@ bool EntityManagerT<EntityType>::removeComponent(EntityType entity)
   const std::size_t comp_index = comp_it->second;
   comp_map.erase(comp_it);
 
-  if (comp_map.empty()) {
-    // The entity no longer has any components, remove it from the map
-    m_entity_comp_map.erase(it);
-  }
+//  if (comp_map.empty()) {
+//    // The entity no longer has any components, remove it from the map
+//    m_entity_comp_map.erase(it);
+//  }
 
   // Update m_comp_vectors -----------------------------------------------------
 
