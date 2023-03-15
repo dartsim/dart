@@ -15,7 +15,7 @@ jobs:
     name: API Documentation
     runs-on: ubuntu-latest
     env:
-      DART_DEV_IMAGE: dartsim/dart-dev
+      DART_DEV_IMAGE: jslee02/dart-dev
       DOCKER_TAG: bionic-docs
       BUILD_TYPE: Release
       COMPILER: gcc

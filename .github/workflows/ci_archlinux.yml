@@ -28,8 +28,8 @@ jobs:
         build_dartpy: [ON]
         enable_simd: [OFF]
     env:
-      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
-      DART_DEV_IMAGE: dartsim/dart-dev
+      # Hosted on: https://hub.docker.com/repository/docker/jslee02/dart-dev
+      DART_DEV_IMAGE: jslee02/dart-dev
       DOCKER_TAG: ${{ matrix.os }}-v7.0
       PLATFORM: ${{ matrix.platform }}
       COMPILER: ${{ matrix.compiler }}

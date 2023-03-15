@@ -102,8 +102,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-full_image_name_deploy=dartsim/dart:$os-$dart_version
-full_image_name_dev=dartsim/dart-dev:$os-$dart_version
+full_image_name_deploy=jslee02/dart:$os-$dart_version
+full_image_name_dev=jslee02/dart-dev:$os-$dart_version
 
 if [ "$build_test" = true ]; then
   test_command="&& make -j$num_cores tests && ctest --output-on-failure"

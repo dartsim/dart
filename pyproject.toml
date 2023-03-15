@@ -29,10 +29,10 @@ testpaths = ["tests"]
 
 # https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
 [tool.cibuildwheel]
-manylinux-x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
-manylinux-aarch64-image = "dartsim/dart-dev:manylinux2014_aarch64-v7.0"
-manylinux-pypy_x86_64-image = "dartsim/dart-dev:manylinux2014_x86_64-v7.0"
-manylinux-pypy_aarch64-image = "dartsim/dart-dev:manylinux2014_aarch64-v7.0"
+manylinux-x86_64-image = "jslee02/dart-dev:manylinux2014_x86_64-v7.0"
+manylinux-aarch64-image = "jslee02/dart-dev:manylinux2014_aarch64-v7.0"
+manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux2014_x86_64-v7.0"
+manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux2014_aarch64-v7.0"
 test-requires = "pytest"
 test-command = "pytest {project}/python/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
