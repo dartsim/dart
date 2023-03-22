@@ -63,6 +63,7 @@ environment-pass = ["DART_IN_CI"]
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"]
+environment = { HOMEBREW_NO_INSTALL_CLEANUP = 1 }
 before-all = [
     "brew update > /dev/null",
     "brew bundle || brew bundle",
