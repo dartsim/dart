@@ -17,6 +17,7 @@ For more information on DART, please visit the DART documentation: [English](htt
 | dartpy publish    | [![dartpy](https://github.com/dartsim/dart/actions/workflows/dartpy.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/dartpy.yml) |
 | Doc, Coverage, Linter | [![Documentation Status](https://readthedocs.org/projects/dart/badge/?version=latest)](https://dart.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![CodeQL](https://github.com/dartsim/dart/actions/workflows/codeql.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/codeql.yml) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dartsim/dart&amp;utm_campaign=Badge_Grade) |
 | Maintenance       | [![Percentage of issues still open](http://isitmaintained.com/badge/open/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Percentage of issues still open") [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Average time to resolve an issue") |
+| Packages          | [![Packaging status](https://repology.org/badge/vertical-allrepos/dartsim.svg)](https://repology.org/project/dartsim/versions) |
 
 ## Citation
 
