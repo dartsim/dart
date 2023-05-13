@@ -329,8 +329,6 @@ bool DartLoader::addMimicJointsRecursive(
     const std::string& mimicJointName = jt->mimic->joint_name;
 
     dynamics::Joint* joint = _skel->getJoint(jointName);
-    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
-
     if (!joint) {
       dterr << "Failed to configure a mimic joint [" << jointName
             << "] because the joint isn't found in Skeleton ["
@@ -338,6 +336,7 @@ bool DartLoader::addMimicJointsRecursive(
       return false;
     }
 
+    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
     if (!mimicJoint) {
       dterr << "Failed to configure a mimic joint [" << jointName
             << "] because the joint to mimic [" << mimicJoint
@@ -345,12 +344,8 @@ bool DartLoader::addMimicJointsRecursive(
       return false;
     }
 
-    dynamics::Joint::Properties properties = joint->getJointProperties();
-    properties.mActuatorType = dynamics::Joint::MIMIC;
-    properties.mMimicJoint = mimicJoint;
-    properties.mMimicMultiplier = multiplier;
-    properties.mMimicOffset = offset;
-    joint->setProperties(properties);
+    joint->setActuatorType(dynamics::Joint::MIMIC);
+    joint->setMimicJoint(mimicJoint, multiplier, offset);
   }
 
   for (std::size_t i = 0; i < _lk->child_links.size(); ++i) {

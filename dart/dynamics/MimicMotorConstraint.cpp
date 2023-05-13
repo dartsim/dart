@@ -51,21 +51,16 @@ double MimicMotorConstraint::mConstraintForceMixing = DART_CFM;
 //==============================================================================
 MimicMotorConstraint::MimicMotorConstraint(
     dynamics::Joint* joint,
-    const dynamics::Joint* mimicJoint,
-    double multiplier,
-    double offset)
+    const std::vector<dynamics::MimicDofProperties>& mimicDofProperties)
   : ConstraintBase(),
     mJoint(joint),
-    mMimicJoint(mimicJoint),
-    mMultiplier(multiplier),
-    mOffset(offset),
+    mMimicProps(mimicDofProperties),
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
   assert(joint);
-  assert(mimicJoint);
+  assert(joint->getNumDofs() <= mMimicProps.size());
   assert(mBodyNode);
-  assert(joint->getNumDofs() == mimicJoint->getNumDofs());
 
   mLifeTime[0] = 0;
   mLifeTime[1] = 0;
@@ -125,14 +120,18 @@ double MimicMotorConstraint::getConstraintForceMixing()
 //==============================================================================
 void MimicMotorConstraint::update()
 {
-  // Reset dimention
+  // Reset dimension
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
+    const auto& mimicProp = mMimicProps[i];
+
     double timeStep = mJoint->getSkeleton()->getTimeStep();
-    double qError = mMimicJoint->getPosition(i) * mMultiplier + mOffset
-                    - mJoint->getPosition(i);
+    double qError
+        = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
+              * mimicProp.mMultiplier
+          + mimicProp.mOffset - mJoint->getPosition(i);
     double desiredVelocity = math::clamp(
         qError / timeStep,
         mJoint->getVelocityLowerLimit(i),

@@ -36,6 +36,7 @@
 #include <dart/dynamics/EmbeddedAspect.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/MimicDofProperties.hpp>
 #include <dart/dynamics/detail/JointAspect.hpp>
 
 #include <dart/math/Fwd.hpp>
@@ -139,20 +140,39 @@ public:
   /// Get actuator type
   ActuatorType getActuatorType() const;
 
-  /// Set mimic joint
+  /// Set the mimic joint with a single reference joint and the same multiplier
+  /// and offset for all dependent joint's DoFs.
   void setMimicJoint(
-      const Joint* _mimicJoint,
-      double _mimicMultiplier = 1.0,
-      double _mimicOffset = 0.0);
+      const Joint* referenceJoint,
+      double mimicMultiplier = 1.0,
+      double mimicOffset = 0.0);
 
-  /// Get mimic joint
-  const Joint* getMimicJoint() const;
+  /// Sets the mimic joint properties for a specific DoF of the dependent joint.
+  void setMimicJointDof(std::size_t index, const MimicDofProperties& mimicProp);
 
-  /// Get mimic joint multiplier
-  double getMimicMultiplier() const;
+  /// Sets the mimic joint properties for all DoFs of the dependent joint using
+  /// a vector of MimicDofProperties.
+  void setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps);
 
-  /// Get mimic joint offset
-  double getMimicOffset() const;
+  /// Sets the mimic joint properties for specific DoFs of the dependent joint
+  /// using a map of DoF index and MimicDofProperties.
+  void setMimicJointDofs(
+      const std::map<std::size_t, MimicDofProperties>& mimicPropMap);
+
+  /// Returns the reference joint for the specified DoF of the dependent joint.
+  const Joint* getMimicJoint(std::size_t index = 0) const;
+
+  /// Returns the mimic joint multiplier for the specified DoF of the dependent
+  /// joint.
+  double getMimicMultiplier(std::size_t index = 0) const;
+
+  /// Returns the mimic joint offset for the specified DoF of the dependent
+  /// joint.
+  double getMimicOffset(std::size_t index = 0) const;
+
+  /// Returns the vector of MimicDofProperties for all DoFs of the dependent
+  /// joint.
+  const std::vector<MimicDofProperties>& getMimicDofProperties() const;
 
   /// Return true if this joint is kinematic joint.
   ///

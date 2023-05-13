@@ -514,10 +514,7 @@ void ConstraintSolver::updateConstraints()
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
           && joint->getMimicJoint()) {
         mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint,
-            joint->getMimicJoint(),
-            joint->getMimicMultiplier(),
-            joint->getMimicOffset()));
+            joint, joint->getMimicDofProperties()));
       }
     }
   }

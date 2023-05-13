@@ -126,11 +126,8 @@ struct DART_DYNAMICS_API JointProperties
   /// Actuator type
   ActuatorType mActuatorType;
 
-  /// Mimic joint
-  const Joint* mMimicJoint;
-
-  /// Mimic joint properties
-  double mMimicMultiplier, mMimicOffset;
+  /// Vector of MimicDofProperties for each dependent DoF in the joint.
+  std::vector<MimicDofProperties> mMimicDofProps;
 
   /// Constructor
   JointProperties(

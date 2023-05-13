@@ -87,9 +87,8 @@ template <typename T>
 struct is_const_contiguous_iterator
 {
   static constexpr bool value
-      = is_contiguous_iterator_v<T>
-        && std::is_const_v<
-            typename std::remove_reference<decltype(*std::declval<T>())>::type>;
+      = is_contiguous_iterator_v<
+            T> && std::is_const_v<typename std::remove_reference<decltype(*std::declval<T>())>::type>;
 };
 
 /// A convenience variable template that returns `true` if the given type `T`
@@ -106,9 +105,8 @@ template <typename T>
 struct is_non_const_contiguous_iterator
 {
   static constexpr bool value
-      = is_contiguous_iterator_v<T>
-        && !std::is_const_v<
-            typename std::remove_reference<decltype(*std::declval<T>())>::type>;
+      = is_contiguous_iterator_v<
+            T> && !std::is_const_v<typename std::remove_reference<decltype(*std::declval<T>())>::type>;
 };
 
 /// A convenience variable template that returns `true` if the given type `T`

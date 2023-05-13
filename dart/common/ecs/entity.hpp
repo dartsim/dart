@@ -115,7 +115,8 @@ protected:
   static constexpr Data DATA_BITS = sizeof(Data) * Data(8);
 
   /// The number of bits used to represent the entity version number in the data
-  static constexpr Data VERSION_BITS = sizeof(VersionType) * Data(8); // [0, 255]
+  static constexpr Data VERSION_BITS
+      = sizeof(VersionType) * Data(8); // [0, 255]
 
   /// The number of bits used to represent the entity ID in the data
   static constexpr Data ID_BITS

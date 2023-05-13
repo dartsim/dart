@@ -112,7 +112,7 @@ double ServoMotorConstraint::getConstraintForceMixing()
 //==============================================================================
 void ServoMotorConstraint::update()
 {
-  // Reset dimention
+  // Reset dimension
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();

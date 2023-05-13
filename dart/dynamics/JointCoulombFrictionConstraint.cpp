@@ -111,7 +111,7 @@ double JointCoulombFrictionConstraint::getConstraintForceMixing()
 //==============================================================================
 void JointCoulombFrictionConstraint::update()
 {
-  // Reset dimention
+  // Reset dimension
   mDim = 0;
 
   std::size_t dof = mJoint->getNumDofs();
