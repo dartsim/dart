@@ -173,11 +173,11 @@ public:                                                                        \
 // Define static creator function that returns std::unique_ptr to the object
 #define DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)                          \
   duke /*! Create unique instance of this class */                             \
-      _DART_DEFINE_OBJECT_CREATOR(                                             \
-          class_name,                                                          \
-          DART_UNIQUE_PTR_CREATOR_NAME,                                        \
-          std::unique_ptr,                                                     \
-          ::std::make_unique)
+  _DART_DEFINE_OBJECT_CREATOR(                                                 \
+      class_name,                                                              \
+      DART_UNIQUE_PTR_CREATOR_NAME,                                            \
+      std::unique_ptr,                                                         \
+      ::std::make_unique)
 
 // Define static creator function that returns std::unique_ptr to the object
 // where the constructor is protected

@@ -9,15 +9,16 @@ if(pytest_not_found)
   message(WARNING "Running the tests requires pytest. Please install it manually"
     " (try: ${PYTHON_EXECUTABLE} -m pip install pytest)"
   )
-  set(DARTPY_PYTEST_FOUND FALSE PARENT_SCOPE)
+  set(DARTPY_PYTEST_FOUND FALSE)
 elseif(pytest_version VERSION_LESS 3.0)
   message(WARNING "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
     "Please update it (try: ${PYTHON_EXECUTABLE} -m pip install -U pytest)"
   )
-  set(DARTPY_PYTEST_FOUND FALSE PARENT_SCOPE)
+  set(DARTPY_PYTEST_FOUND FALSE)
 else()
-  set(DARTPY_PYTEST_FOUND TRUE PARENT_SCOPE)
+  set(DARTPY_PYTEST_FOUND TRUE)
 endif()
+set(DARTPY_PYTEST_FOUND ${DARTPY_PYTEST_FOUND} PARENT_SCOPE)
 
 set(dartpy_test_utils
   util.py

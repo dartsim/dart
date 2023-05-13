@@ -71,12 +71,20 @@ JointProperties::JointProperties(
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
     mIsPositionLimitEnforced(_isPositionLimitEnforced),
-    mActuatorType(_actuatorType),
-    mMimicJoint(_mimicJoint),
-    mMimicMultiplier(_mimicMultiplier),
-    mMimicOffset(_mimicOffset)
+    mActuatorType(_actuatorType)
 {
-  // Do nothing
+  mMimicDofProps.resize(6);
+  // TODO: Dof 6, which is the max value at the moment, is used because
+  // JointProperties doesn't have the Dof information
+
+  for (auto i = 0u; i < mMimicDofProps.size(); ++i)
+  {
+    auto& prop = mMimicDofProps[i];
+    prop.mReferenceJoint = _mimicJoint;
+    prop.mReferenceDofIndex = i;
+    prop.mMultiplier = _mimicMultiplier;
+    prop.mOffset = _mimicOffset;
+  }
 }
 
 } // namespace detail
@@ -119,10 +127,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
-  setMimicJoint(
-      properties.mMimicJoint,
-      properties.mMimicMultiplier,
-      properties.mMimicOffset);
+  setMimicJointDofs(properties.mMimicDofProps);
 }
 
 //==============================================================================
@@ -206,29 +211,69 @@ Joint::ActuatorType Joint::getActuatorType() const
 
 //==============================================================================
 void Joint::setMimicJoint(
-    const Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
+    const Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
 {
-  mAspectProperties.mMimicJoint = _mimicJoint;
-  mAspectProperties.mMimicMultiplier = _mimicMultiplier;
-  mAspectProperties.mMimicOffset = _mimicOffset;
+  std::size_t numDofs = getNumDofs();
+  mAspectProperties.mMimicDofProps.resize(numDofs);
+
+  for (std::size_t i = 0; i < numDofs; ++i)
+  {
+    MimicDofProperties prop;
+    prop.mReferenceJoint = referenceJoint;
+    prop.mReferenceDofIndex = i;
+    prop.mMultiplier = mimicMultiplier;
+    prop.mOffset = mimicOffset;
+    setMimicJointDof(i, prop);
+  }
 }
 
 //==============================================================================
-const Joint* Joint::getMimicJoint() const
+void Joint::setMimicJointDof(
+    std::size_t index, const MimicDofProperties& mimicProp)
 {
-  return mAspectProperties.mMimicJoint;
+  mAspectProperties.mMimicDofProps[index] = mimicProp;
 }
 
 //==============================================================================
-double Joint::getMimicMultiplier() const
+void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 {
-  return mAspectProperties.mMimicMultiplier;
+  mAspectProperties.mMimicDofProps = mimicProps;
 }
 
 //==============================================================================
-double Joint::getMimicOffset() const
+void Joint::setMimicJointDofs(
+    const std::map<std::size_t, MimicDofProperties>& mimicPropMap)
 {
-  return mAspectProperties.mMimicOffset;
+  for (const auto& pair : mimicPropMap)
+  {
+    const auto& index = pair.first;
+    const auto& prop = pair.second;
+    setMimicJointDof(index, prop);
+  }
+}
+
+//==============================================================================
+const Joint* Joint::getMimicJoint(std::size_t index) const
+{
+  return mAspectProperties.mMimicDofProps[index].mReferenceJoint;
+}
+
+//==============================================================================
+double Joint::getMimicMultiplier(std::size_t index) const
+{
+  return mAspectProperties.mMimicDofProps[index].mMultiplier;
+}
+
+//==============================================================================
+double Joint::getMimicOffset(std::size_t index) const
+{
+  return mAspectProperties.mMimicDofProps[index].mOffset;
+}
+
+//==============================================================================
+const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
+{
+  return mAspectProperties.mMimicDofProps;
 }
 
 //==============================================================================

@@ -174,7 +174,7 @@ double JointLimitConstraint::getConstraintForceMixing()
 //==============================================================================
 void JointLimitConstraint::update()
 {
-  // Reset dimention
+  // Reset dimension
   mDim = 0;
 
   const int dof = static_cast<int>(mJoint->getNumDofs());
