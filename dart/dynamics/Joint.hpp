@@ -595,12 +595,12 @@ public:
   /// \param[in] _index Index of joint axis.
   virtual double getDampingCoefficient(std::size_t _index) const = 0;
 
-  /// Set joint Coulomb friction froce.
+  /// Set joint Coulomb friction force.
   /// \param[in] _index Index of joint axis.
-  /// \param[in] _friction Joint Coulomb friction froce given index.
+  /// \param[in] _friction Joint Coulomb friction force given index.
   virtual void setCoulombFriction(std::size_t _index, double _friction) = 0;
 
-  /// Get joint Coulomb friction froce.
+  /// Get joint Coulomb friction force.
   /// \param[in] _index Index of joint axis.
   virtual double getCoulombFriction(std::size_t _index) const = 0;
 
