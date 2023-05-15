@@ -2,7 +2,7 @@ import dartpy as dart
 import numpy as np
 
 
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world):
         super(MyWorldNode, self).__init__(world)
 
@@ -30,12 +30,12 @@ def main():
 
     node = MyWorldNode(world)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     # Grid settings
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
     grid.setOffset([0, -0.55, 0])
     viewer.addAttachment(grid)
 

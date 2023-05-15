@@ -2,7 +2,7 @@ import dartpy as dart
 import numpy as np
 
 
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, shadow):
         super(MyWorldNode, self).__init__(world, shadow)
 
@@ -14,8 +14,8 @@ def main():
     world = dart.io.SkelParser.readWorld("dart://sample/skel/cubes.skel")
     world.setGravity([0, -9.81, 0])
 
-    viewer = dart.gui.osg.Viewer()
-    shadow = dart.gui.osg.WorldNode.createDefaultShadowTechnique(viewer)
+    viewer = dart.gui.Viewer()
+    shadow = dart.gui.WorldNode.createDefaultShadowTechnique(viewer)
 
     node = MyWorldNode(world, shadow)
     viewer.addWorldNode(node)

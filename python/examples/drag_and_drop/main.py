@@ -8,7 +8,7 @@ def main():
     tf = dart.math.Isometry3()
 
     tf.set_translation([4, -4, 0])
-    frame = dart.gui.osg.InteractiveFrame(
+    frame = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(), "interactive frame", tf, 2
     )
     world.addSimpleFrame(frame)
@@ -40,9 +40,9 @@ def main():
     z_marker.getVisualAspect(True).setColor([0, 0, 0.9])
     world.addSimpleFrame(z_marker)
 
-    node = dart.gui.osg.WorldNode(world)
+    node = dart.gui.WorldNode(world)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.enableDragAndDrop(frame)
     viewer.enableDragAndDrop(draggable)
