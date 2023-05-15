@@ -100,6 +100,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: User Guide
 
    user_guide/installation
+   user_guide/examples
    user_guide/tutorials
 
 .. toctree::
