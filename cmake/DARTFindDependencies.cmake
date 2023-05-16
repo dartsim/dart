@@ -160,6 +160,7 @@ endif()
 dart_find_package(OpenGL)
 dart_find_package(GLUT)
 dart_find_package(OpenSceneGraph)
+dart_find_package(CURL)
 
 #=======================
 # Misc. dependencies

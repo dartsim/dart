@@ -30,19 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.hpp"
 #include "dart/io/DartResourceRetriever.hpp"
 
 #include <gtest/gtest.h>
 
-#include <iostream>
-
 using namespace dart;
+using namespace io;
 
 //==============================================================================
 TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
 {
-  auto retriever = io::DartResourceRetriever::create();
+  auto retriever = DartResourceRetriever::create();
 
   EXPECT_FALSE(retriever->exists("unknown://test"));
   EXPECT_FALSE(retriever->exists("unknown://sample/test"));
@@ -63,4 +61,26 @@ TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
   EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
   EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
   EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
+}
+
+//==============================================================================
+TEST(DartResourceRetrieverTests, GetDataFromGitHub)
+{
+  DartResourceRetriever retriever;
+
+  // Replace this URI with a valid DART data file hosted on GitHub
+  const std::string testGitHubUri = "dart://sample/urdf/KR5/ground.urdf";
+
+  // Check if the resource exists on GitHub
+  ASSERT_TRUE(retriever.exists(common::Uri(testGitHubUri)));
+
+  // Retrieve the resource from GitHub
+  auto resource = retriever.retrieve(common::Uri(testGitHubUri));
+  ASSERT_NE(resource, nullptr);
+
+  // Perform additional checks on the resource (e.g., size, contents)
+  // This depends on the specific data file you are testing
+  // For example:
+  // ASSERT_EQ(resource->getSize(), expectedSize);
+  // ASSERT_EQ(resource->readAll(), expectedContents);
 }

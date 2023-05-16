@@ -67,7 +67,6 @@ if(TARGET ${PROJECT_NAME}${DART_MAJOR_VERSION}-io)
 
   set(sources
     test_CompositeResourceRetriever.cpp
-    test_DartResourceRetriever.cpp
     test_FileInfoWorld.cpp
     test_InverseKinematics.cpp
     test_MjcfParser.cpp

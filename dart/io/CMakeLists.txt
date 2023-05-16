@@ -26,8 +26,12 @@ dart_add_component(
     common math optimization collision dynamics simulation
   DEPENDENT_PACKAGES_REQUIRED
     tinyxml2
+  DEPENDENT_PACKAGES_OPTIONAL
+    CURL
   TARGET_LINK_LIBRARIES_PUBLIC
     tinyxml2::tinyxml2
+  TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL
+    CURL::libcurl
   TARGET_COMPILE_FEATURES_PUBLIC
     cxx_std_17
   SUB_DIRECTORIES
