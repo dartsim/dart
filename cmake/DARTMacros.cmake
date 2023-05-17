@@ -661,6 +661,11 @@ function(dart_add_component)
       return()
     endif()
   endforeach()
+  foreach(dep ${_ARG_TARGET_LINK_LIBRARIES_PUBLIC_OPTIONAL})
+    if(TARGET ${dep})
+      list(APPEND link_libraries_public ${dep})
+    endif()
+  endforeach()
 
   # Check required dependencies
   foreach(package ${_ARG_DEPENDENT_PACKAGES_REQUIRED})
