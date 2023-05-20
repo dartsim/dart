@@ -55,7 +55,7 @@ DartResourceRetriever::DartResourceRetriever()
   // and install DART from source.
   addDataDirectory(DART_DATA_GLOBAL_PATH);
 
-  // 3. Search the directoy set by the environment variable,
+  // 3. Search the directory set by the environment variable,
   // DART_DATA_LOCAL_PATH. Method 2 can fail because some package manager use
   // temporary install directory (e.g., Launchpad PPA).
   const char* dartDataPathEnv = std::getenv("DART_DATA_LOCAL_PATH");
