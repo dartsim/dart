@@ -42,9 +42,50 @@ namespace python {
 
 void Joint(py::module& m)
 {
-  ::py::class_<dart::dynamics::detail::JointProperties>(m, "JointProperties")
+  ::py::enum_<dart::dynamics::detail::ActuatorType>(m, "ActuatorType")
+      .value("FORCE", dart::dynamics::detail::ActuatorType::FORCE)
+      .value("PASSIVE", dart::dynamics::detail::ActuatorType::PASSIVE)
+      .value("SERVO", dart::dynamics::detail::ActuatorType::SERVO)
+      .value("MIMIC", dart::dynamics::detail::ActuatorType::MIMIC)
+      .value("ACCELERATION", dart::dynamics::detail::ActuatorType::ACCELERATION)
+      .value("VELOCITY", dart::dynamics::detail::ActuatorType::VELOCITY)
+      .value("LOCKED", dart::dynamics::detail::ActuatorType::LOCKED)
+      .export_values();
+
+  m.attr("DefaultActuatorType") = dart::dynamics::detail::DefaultActuatorType;
+
+  ::py::class_<dart::dynamics::MimicDofProperties>(m, "MimicDofProperties")
       .def(::py::init<>())
-      .def(::py::init<const std::string&>(), ::py::arg("name"))
+      .def_readwrite(
+          "mReferenceJoint",
+          &dart::dynamics::MimicDofProperties::mReferenceJoint)
+      .def_readwrite(
+          "mReferenceDofIndex",
+          &dart::dynamics::MimicDofProperties::mReferenceDofIndex)
+      .def_readwrite(
+          "mMultiplier", &dart::dynamics::MimicDofProperties::mMultiplier)
+      .def_readwrite("mOffset", &dart::dynamics::MimicDofProperties::mOffset);
+
+  ::py::class_<dart::dynamics::detail::JointProperties>(m, "JointProperties")
+      .def(
+          ::py::init<
+              const std::string&,
+              const Eigen::Isometry3d&,
+              const Eigen::Isometry3d&,
+              bool,
+              dart::dynamics::detail::ActuatorType,
+              const dart::dynamics::Joint*,
+              double,
+              double>(),
+          ::py::arg("name") = "Joint",
+          ::py::arg("T_ParentBodyToJoint") = Eigen::Isometry3d::Identity(),
+          ::py::arg("T_ChildBodyToJoint") = Eigen::Isometry3d::Identity(),
+          ::py::arg("isPositionLimitEnforced") = false,
+          ::py::arg("actuatorType")
+          = dart::dynamics::detail::DefaultActuatorType,
+          ::py::arg("mimicJoint") = nullptr,
+          ::py::arg("mimicMultiplier") = 1.0,
+          ::py::arg("mimicOffset") = 0.0)
       .def_readwrite("mName", &dart::dynamics::detail::JointProperties::mName)
       .def_readwrite(
           "mT_ParentBodyToJoint",
@@ -59,13 +100,8 @@ void Joint(py::module& m)
           "mActuatorType",
           &dart::dynamics::detail::JointProperties::mActuatorType)
       .def_readwrite(
-          "mMimicJoint", &dart::dynamics::detail::JointProperties::mMimicJoint)
-      .def_readwrite(
-          "mMimicMultiplier",
-          &dart::dynamics::detail::JointProperties::mMimicMultiplier)
-      .def_readwrite(
-          "mMimicOffset",
-          &dart::dynamics::detail::JointProperties::mMimicOffset);
+          "mMimicDofProps",
+          &dart::dynamics::detail::JointProperties::mMimicDofProps);
 
   ::py::class_<
       dart::common::SpecializedForAspect<dart::common::EmbeddedPropertiesAspect<
@@ -912,26 +948,7 @@ void Joint(py::module& m)
           "notifyAccelerationUpdated",
           +[](dart::dynamics::Joint* self) -> void {
             return self->notifyAccelerationUpdated();
-          })
-      .def_readonly_static("FORCE", &dart::dynamics::Joint::FORCE)
-      .def_readonly_static("PASSIVE", &dart::dynamics::Joint::PASSIVE)
-      .def_readonly_static("SERVO", &dart::dynamics::Joint::SERVO)
-      .def_readonly_static("ACCELERATION", &dart::dynamics::Joint::ACCELERATION)
-      .def_readonly_static("VELOCITY", &dart::dynamics::Joint::VELOCITY)
-      .def_readonly_static("LOCKED", &dart::dynamics::Joint::LOCKED)
-      .def_readonly_static(
-          "DefaultActuatorType", &dart::dynamics::Joint::DefaultActuatorType);
-
-  auto attr = m.attr("Joint");
-
-  ::py::enum_<dart::dynamics::detail::ActuatorType>(attr, "ActuatorType")
-      .value("FORCE", dart::dynamics::detail::ActuatorType::FORCE)
-      .value("PASSIVE", dart::dynamics::detail::ActuatorType::PASSIVE)
-      .value("SERVO", dart::dynamics::detail::ActuatorType::SERVO)
-      .value("MIMIC", dart::dynamics::detail::ActuatorType::MIMIC)
-      .value("ACCELERATION", dart::dynamics::detail::ActuatorType::ACCELERATION)
-      .value("VELOCITY", dart::dynamics::detail::ActuatorType::VELOCITY)
-      .value("LOCKED", dart::dynamics::detail::ActuatorType::LOCKED);
+          });
 }
 
 } // namespace python

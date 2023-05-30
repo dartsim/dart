@@ -33,8 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 
+#include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+
+#include "dart/dynamics/MimicDofProperties.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -127,11 +131,8 @@ struct JointProperties
   /// Actuator type
   ActuatorType mActuatorType;
 
-  /// Mimic joint
-  const Joint* mMimicJoint;
-
-  /// Mimic joint properties
-  double mMimicMultiplier, mMimicOffset;
+  /// Vector of MimicDofProperties for each dependent DoF in the joint.
+  std::vector<MimicDofProperties> mMimicDofProps;
 
   /// Constructor
   JointProperties(

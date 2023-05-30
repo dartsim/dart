@@ -33,7 +33,10 @@
 #ifndef DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
 #define DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
 
+#include <vector>
+
 #include "dart/constraint/ConstraintBase.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 
 namespace dart {
 
@@ -48,12 +51,14 @@ namespace constraint {
 class MimicMotorConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
+  /// Constructor that creates a MimicMotorConstraint using the given
+  /// MimicDofProperties for each dependent joint's DoF.
+  /// \param[in] joint The dependent joint.
+  /// \param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
+  /// of the dependent joint.
   explicit MimicMotorConstraint(
       dynamics::Joint* joint,
-      const dynamics::Joint* mimicJoint,
-      double multiplier = 1.0,
-      double offset = 0.0);
+      const std::vector<dynamics::MimicDofProperties>& mimicDofProperties);
 
   /// Destructor
   ~MimicMotorConstraint() override;
@@ -114,39 +119,36 @@ protected:
   bool isActive() const override;
 
 private:
-  ///
+  /// Dependent joint whose motion is influenced by the reference joint.
   dynamics::Joint* mJoint;
 
-  ///
-  const dynamics::Joint* mMimicJoint;
+  /// Vector of MimicDofProperties for the dependent joint.
+  std::vector<dynamics::MimicDofProperties> mMimicProps;
 
-  ///
-  double mMultiplier, mOffset;
-
-  ///
+  /// BodyNode associated with the dependent joint.
   dynamics::BodyNode* mBodyNode;
 
-  /// Index of applied impulse
+  /// Index of the applied impulse for the dependent joint.
   std::size_t mAppliedImpulseIndex;
 
-  ///
+  /// Array storing the lifetime of each constraint (in iterations).
   std::size_t mLifeTime[6];
   // TODO(JS): Lifetime should be considered only when we use iterative lcp
   // solver
 
-  ///
+  /// Array indicating whether each constraint is active or not.
   bool mActive[6];
 
-  ///
+  /// Array storing the negative velocity errors for each constraint.
   double mNegativeVelocityError[6];
 
-  ///
+  /// Array storing the previous values of the constraint forces.
   double mOldX[6];
 
-  ///
+  /// Array storing the upper bounds for the constraint forces.
   double mUpperBound[6];
 
-  ///
+  /// Array storing the lower bounds for the constraint forces.
   double mLowerBound[6];
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
