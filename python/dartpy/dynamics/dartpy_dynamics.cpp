@@ -77,6 +77,7 @@ void Chain(py::module& sm);
 void Skeleton(py::module& sm);
 
 void InverseKinematics(py::module& sm);
+void WholeBodyIK(py::module& sm);
 void Inertia(py::module& sm);
 
 void ConstraintBase(py::module& sm);
@@ -140,7 +141,8 @@ PYBIND11_MODULE(dartpy_dynamics, sm)
   Skeleton(sm);
 
   InverseKinematics(sm);
-
+  WholeBodyIK(sm);
+  
   Inertia(sm);
 
   ConstraintBase(sm);
