@@ -142,7 +142,7 @@ PYBIND11_MODULE(dartpy_dynamics, sm)
 
   InverseKinematics(sm);
   WholeBodyIK(sm);
-  
+
   Inertia(sm);
 
   ConstraintBase(sm);
