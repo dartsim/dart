@@ -29,45 +29,43 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#include <dart/dart.hpp>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
+
+#include <dart/dart.hpp>
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-
 void WholeBodyIK(py::module& m)
 {
+  py::class_<
+      dart::dynamics::HierarchicalIK,
+      dart::common::Subject,
+      std::shared_ptr<dart::dynamics::HierarchicalIK>>(m, "HierarchicalIK");
 
-    ::py::class_<
-        dart::dynamics::HierarchicalIK,
-        dart::common::Subject,
-        std::shared_ptr<dart::dynamics::HierarchicalIK>>(
-        m, "HierarchicalIK");
-
-    ::py::class_<
+  py::class_<
       dart::dynamics::WholeBodyIK,
       dart::dynamics::HierarchicalIK,
-      std::shared_ptr<dart::dynamics::WholeBodyIK>>(
-      m, "WholeBodyIK")
-        .def(
-            ::py::init(
-                +[](const std::shared_ptr<dart::dynamics::Skeleton>& skel)
-                    -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
-                    return dart::dynamics::WholeBodyIK::create(skel);
-                }),
-            ::py::arg("skel"))
-        .def(
-            "solveAndApply",
-            +[](dart::dynamics::WholeBodyIK* self) -> bool {
-                return self->solveAndApply();
-            });
+      std::shared_ptr<dart::dynamics::WholeBodyIK>>(m, "WholeBodyIK")
+      .def(
+          py::init(
+              +[](const std::shared_ptr<dart::dynamics::Skeleton>& skel)
+                  -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
+                return dart::dynamics::WholeBodyIK::create(skel);
+              }),
+          py::arg("skel"))
+      .def(
+          "solveAndApply", +[](dart::dynamics::WholeBodyIK* self) -> bool {
+            return self->solveAndApply();
+          });
 }
+
 } // namespace python
 } // namespace dart
