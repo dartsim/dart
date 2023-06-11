@@ -27,11 +27,32 @@ date-released: 2023-01-17
 url: "https://github.com/dartsim/dart/tree/v6.13.0"
 preferred-citation:
   type: article
+  authors:
+    - family-names: "Lee"
+      given-names: "Jeongseok"
+      orcid: "https://orcid.org/0000-0002-2146-7502"
+    - family-names: "Grey"
+      given-names: "Michael X."
+    - family-names: "Ha"
+      given-names: "Sehoon"
+    - family-names: "Kunz"
+      given-names: "Tobias"
+    - family-names: "Jain"
+      given-names: "Sumit"
+    - family-names: "Ye"
+      given-names: "Yuting"
+    - family-names: "Srinivasa"
+      given-names: "Siddhartha S."
+    - family-names: "Stilman"
+      given-names: "Mike"
+    - family-names: "Liu"
+      given-names: "C. Karen"
   doi: 10.21105/joss.00500
   journal: "Journal of Open Source Software"
   month: 2
   start: 500
   end: 500
-  year: 2018
-  volume: 3
+  title: "DART: Dynamic Animation and Robotics Toolkit"
   issue: 22
+  volume: 3
+  year: 2018
