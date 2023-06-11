@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use DART in an academic publication, please consider citing this JOSS Paper as below."
+authors:
+  - family-names: "Lee"
+    given-names: "Jeongseok"
+    orcid: "https://orcid.org/0000-0002-2146-7502"
+  - family-names: "Grey"
+    given-names: "Michael X."
+  - family-names: "Ha"
+    given-names: "Sehoon"
+  - family-names: "Kunz"
+    given-names: "Tobias"
+  - family-names: "Jain"
+    given-names: "Sumit"
+  - family-names: "Ye"
+    given-names: "Yuting"
+  - family-names: "Srinivasa"
+    given-names: "Siddhartha S."
+  - family-names: "Stilman"
+    given-names: "Mike"
+  - family-names: "Liu"
+    given-names: "C. Karen"
+title: "DART: Dynamic Animation and Robotics Toolkit"
+version: 6.13.0
+doi: 10.5281/zenodo.7542588
+date-released: 2023-01-17
+url: "https://github.com/dartsim/dart/tree/v6.13.0"
