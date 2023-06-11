@@ -353,7 +353,7 @@ protected:
   int mFrame;
 
   /// Constraint solver
-  std::unique_ptr<dynamics::ConstraintSolver> mConstraintSolver;
+  dynamics::UniqueConstraintSolverPtr mConstraintSolver;
 
   ///
   Recording* mRecording;
