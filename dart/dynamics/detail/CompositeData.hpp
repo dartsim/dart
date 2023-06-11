@@ -315,7 +315,7 @@ public:
   /// the arguments that get passed in. It will simply ignore all the arguments
   /// silently.
   template <typename... Args>
-  void copy(const Args&... args)
+  void copyRelevantData(const Args&... args)
   {
     _findData(args...);
   }
