@@ -13,7 +13,7 @@ if(DART_DOWNLOAD_DEPENDENT_PACKAGES)
     PROJECT_NAME benchmark
     WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/.deps
     GIT_URL https://github.com/google/benchmark.git
-    GIT_TAG v1.7.1
+    GIT_TAG v1.8.0
   )
 
   # Set options
