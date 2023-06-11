@@ -72,7 +72,8 @@ BENCHMARK_DEFINE_F(EntityManagerFixture, CreateManyEntities)
 (benchmark::State& state)
 {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(em.create());
+    auto entity = em.create();
+    benchmark::DoNotOptimize(entity);
   }
 }
 BENCHMARK_REGISTER_F(EntityManagerFixture, CreateManyEntities)
@@ -102,7 +103,7 @@ BENCHMARK_DEFINE_F(EntityManagerFixture, CreateAndDestroyEntities)
 (benchmark::State& state)
 {
   while (state.KeepRunning()) {
-    const auto entity = em.create();
+    auto entity = em.create();
     benchmark::DoNotOptimize(entity);
     em.destroy(entity);
   }
@@ -130,7 +131,8 @@ BENCHMARK_DEFINE_F(EntityManagerFixture, IsValidEntities)
 (benchmark::State& state)
 {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(em.isValid(entities.front()));
+    auto isValid = em.isValid(entities.front());
+    benchmark::DoNotOptimize(isValid);
   }
 }
 BENCHMARK_REGISTER_F(EntityManagerFixture, IsValidEntities)
@@ -142,7 +144,8 @@ BENCHMARK_DEFINE_F(EntityManagerFixture, AreEqualEntities)
 (benchmark::State& state)
 {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(entities.front() == entities.back());
+    bool areEqual = entities.front() == entities.back();
+    benchmark::DoNotOptimize(areEqual);
   }
 }
 BENCHMARK_REGISTER_F(EntityManagerFixture, AreEqualEntities)
@@ -154,7 +157,8 @@ BENCHMARK_DEFINE_F(EntityManagerFixture, AreUnequalEntities)
 (benchmark::State& state)
 {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(entities.front() != entities.back());
+    bool areEqual = entities.front() != entities.back();
+    benchmark::DoNotOptimize(areEqual);
   }
 }
 BENCHMARK_REGISTER_F(EntityManagerFixture, AreUnequalEntities)
