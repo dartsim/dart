@@ -25,3 +25,13 @@ version: 6.13.0
 doi: 10.5281/zenodo.7542588
 date-released: 2023-01-17
 url: "https://github.com/dartsim/dart/tree/v6.13.0"
+preferred-citation:
+  type: article
+  doi: 10.21105/joss.00500
+  journal: "Journal of Open Source Software"
+  month: 2
+  start: 500
+  end: 500
+  year: 2018
+  volume: 3
+  issue: 22
