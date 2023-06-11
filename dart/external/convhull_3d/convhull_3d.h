@@ -562,7 +562,7 @@ static CH_FLOAT rnd(int x, int y)
  * Reference: "The Quickhull Algorithm for Convex Hull, C. Bradford Barber, David P. Dobkin
  *             and Hannu Huhdanpaa, Geometry Center Technical Report GCG53, July 30, 1993"
  */
-void convhull_3d_build
+inline void convhull_3d_build
 (
     ch_vertex* const in_vertices,
     const int nVert,
@@ -573,7 +573,7 @@ void convhull_3d_build
     convhull_3d_build_alloc(in_vertices, nVert, out_faces, nOut_faces, NULL);
 }
 
-void convhull_3d_build_alloc
+inline void convhull_3d_build_alloc
 (
     ch_vertex* const in_vertices,
     const int nVert,
@@ -1030,7 +1030,7 @@ void convhull_3d_build_alloc
     ch_stateful_free(allocator, df);
 }
 
-void convhull_3d_export_obj
+inline void convhull_3d_export_obj
 (
     ch_vertex* const vertices,
     const int nVert,
@@ -1115,7 +1115,7 @@ void convhull_3d_export_obj
     fclose(obj_file);
 }
 
-void convhull_3d_export_m
+inline void convhull_3d_export_m
 (
     ch_vertex* const vertices,
     const int nVert,
@@ -1151,7 +1151,7 @@ void convhull_3d_export_m
     fclose(m_file);
 }
 
-void extract_vertices_from_obj_file
+inline void extract_vertices_from_obj_file
 (
     char* const obj_filename,
     ch_vertex** out_vertices,
@@ -1160,7 +1160,7 @@ void extract_vertices_from_obj_file
     extract_vertices_from_obj_file_alloc(obj_filename, out_vertices, out_nVert, NULL);
 }
 
-void extract_vertices_from_obj_file_alloc
+inline void extract_vertices_from_obj_file_alloc
 (
     char* const obj_filename,
     ch_vertex** out_vertices,
@@ -1235,7 +1235,7 @@ void extract_vertices_from_obj_file_alloc
  * Reference: "The Quickhull Algorithm for Convex Hull, C. Bradford Barber, David P. Dobkin
  *             and Hannu Huhdanpaa, Geometry Center Technical Report GCG53, July 30, 1993"
  */
-void convhull_nd_build
+inline void convhull_nd_build
 (
     CH_FLOAT* const in_vertices,
     const int nVert,
@@ -1249,7 +1249,7 @@ void convhull_nd_build
     convhull_nd_build_alloc(in_vertices, nVert, d, out_faces, out_cf, out_df, nOut_faces, NULL);
 }
 
-void convhull_nd_build_alloc
+inline void convhull_nd_build_alloc
 (
     CH_FLOAT* const in_vertices,
     const int nVert,
@@ -1733,7 +1733,7 @@ void convhull_nd_build_alloc
     ch_stateful_free(allocator, df);
 }
 
-void delaunay_nd_mesh
+inline void delaunay_nd_mesh
 (
     const float* points,
     const int nPoints,
@@ -1745,7 +1745,7 @@ void delaunay_nd_mesh
     delaunay_nd_mesh_alloc(points, nPoints, nd, Mesh, nMesh, NULL);
 }
 
-void delaunay_nd_mesh_alloc
+inline void delaunay_nd_mesh_alloc
 (
     const float* points,
     const int nPoints,
