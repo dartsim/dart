@@ -458,28 +458,31 @@ void JointConstraint::applyUnitImpulse(std::size_t index)
         BodyNode* refJointChildBodyNode = refJoint->getChildBodyNode();
 
         skeleton->clearConstraintImpulses();
-        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+        if (mimicProp.mCoupled && refJoint->isDynamic()
+            && skeleton != refSkeleton) {
           refSkeleton->clearConstraintImpulses();
         }
 
         mJoint->setConstraintImpulse(i, 1.0);
-        if (refJoint->isDynamic()) {
+        if (mimicProp.mCoupled && refJoint->isDynamic()) {
           DART_ASSERT(mJoint != refJoint || i != refDof);
           refJoint->setConstraintImpulse(refDof, -1.0);
         }
 
         skeleton->updateBiasImpulse(mBodyNode);
-        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+        if (mimicProp.mCoupled && refJoint->isDynamic()
+            && skeleton != refSkeleton) {
           refSkeleton->updateBiasImpulse(refJointChildBodyNode);
         }
 
         skeleton->updateVelocityChange();
-        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+        if (mimicProp.mCoupled && refJoint->isDynamic()
+            && skeleton != refSkeleton) {
           refSkeleton->updateVelocityChange();
         }
 
         mJoint->setConstraintImpulse(i, 0.0);
-        if (refJoint->isDynamic()) {
+        if (mimicProp.mCoupled && refJoint->isDynamic()) {
           refJoint->setConstraintImpulse(refDof, 0.0);
         }
       } else {
@@ -531,12 +534,44 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
 void JointConstraint::excite()
 {
   mJoint->getSkeleton()->setImpulseApplied(true);
+
+  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+    std::size_t dof = mJoint->getNumDofs();
+    for (std::size_t i = 0; i < dof; ++i) {
+      if (mActive[i] == false) {
+        continue;
+      }
+
+      const auto& mimicProp = mJoint->getMimicDofProperties()[i];
+      Joint* refJoint = mimicProp.mReferenceJoint;
+      const SkeletonPtr& refSkeleton = refJoint->getSkeleton();
+      if (mimicProp.mCoupled) {
+        refSkeleton->setImpulseApplied(true);
+      }
+    }
+  }
 }
 
 //==============================================================================
 void JointConstraint::unexcite()
 {
   mJoint->getSkeleton()->setImpulseApplied(false);
+
+  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+    std::size_t dof = mJoint->getNumDofs();
+    for (std::size_t i = 0; i < dof; ++i) {
+      if (mActive[i] == false) {
+        continue;
+      }
+
+      const auto& mimicProp = mJoint->getMimicDofProperties()[i];
+      Joint* refJoint = mimicProp.mReferenceJoint;
+      const SkeletonPtr& refSkeleton = refJoint->getSkeleton();
+      if (mimicProp.mCoupled) {
+        refSkeleton->setImpulseApplied(false);
+      }
+    }
+  }
 }
 
 //==============================================================================
@@ -549,8 +584,17 @@ void JointConstraint::applyImpulse(double* lambda)
       continue;
     }
 
-    mJoint->setConstraintImpulse(
-        i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
+    mJoint->addConstraintImpulse(i, lambda[localIndex]);
+
+    if (mJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+      const auto& mimicProp = mJoint->getMimicDofProperties()[i];
+      auto& refJoint = mimicProp.mReferenceJoint;
+      if (mimicProp.mCoupled && refJoint->isDynamic()) {
+        const auto& refDof = mimicProp.mReferenceDofIndex;
+        DART_ASSERT(mJoint != refJoint || i != refDof);
+        refJoint->addConstraintImpulse(refDof, -lambda[localIndex]);
+      }
+    }
 
     mOldX[static_cast<int>(i)] = lambda[localIndex];
 

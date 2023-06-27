@@ -420,6 +420,9 @@ public:
   void setConstraintImpulse(std::size_t index, double impulse) override;
 
   // Documentation inherited
+  void addConstraintImpulse(std::size_t index, double impulse) override;
+
+  // Documentation inherited
   double getConstraintImpulse(std::size_t index) const override;
 
   // Documentation inherited

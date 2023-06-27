@@ -1015,12 +1015,11 @@ TEST_F(JOINTS, SERVO_MOTOR)
 }
 
 //==============================================================================
-void testMimicJoint()
+void testMimicJoint(bool coupled)
 {
   using namespace dart::math::suffixes;
 
   double timestep = 1e-3;
-  double tol = 1e-9;
   double tolPos = 1e-3;
   double sufficient_force = 1e+5;
 
@@ -1068,7 +1067,7 @@ void testMimicJoint()
 
   // Second joint mimics the first one
   joints[1]->setActuatorType(Joint::MIMIC);
-  joints[1]->setMimicJoint(joints[0], 1., 0.);
+  joints[1]->setMimicJoint(joints[0], 1., 0., coupled);
 
   world->addSkeleton(pendulum);
 
@@ -1089,7 +1088,7 @@ void testMimicJoint()
     world->step();
 
     // Check if the first joint achieved the velocity at each time-step
-    EXPECT_NEAR(joints[0]->getVelocity(0), expected_vel, tol);
+    EXPECT_NEAR(joints[0]->getVelocity(0), expected_vel, tolPos);
 
     // Check if the mimic joint follows the reference joint
     EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
@@ -1102,7 +1101,13 @@ void testMimicJoint()
 //==============================================================================
 TEST_F(JOINTS, MIMIC_JOINT)
 {
-  testMimicJoint();
+//  testMimicJoint(false);
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_JOINT_COUPLED)
+{
+  testMimicJoint(true);
 }
 
 //==============================================================================

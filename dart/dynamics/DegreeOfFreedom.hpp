@@ -310,6 +310,10 @@ public:
   /// Set the constraint impulse of this generalized coordinate
   void setConstraintImpulse(double _impulse);
 
+  /// Add a constraint impulse to the existing impulse for this generalized
+  /// coordinate.
+  void addConstraintImpulse(double impulse);
+
   /// Get the constraint impulse of this generalized coordinate
   double getConstraintImpulse() const;
 

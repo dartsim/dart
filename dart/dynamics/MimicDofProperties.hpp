@@ -54,6 +54,12 @@ struct MimicDofProperties
 
   /// Offset added to the reference joint's DoF value.
   double mOffset = 0.0;
+
+  /// Indicates whether the mimicked DoF is coupled with the reference DoF. If
+  /// set to true, the reference DoF will also receive a reactive constraint
+  /// force equal to the negative of the constraint force applied to the
+  /// mimicked DoF.
+  bool mCoupled = false;
 };
 
 } // namespace dynamics

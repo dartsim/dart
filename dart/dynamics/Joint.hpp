@@ -145,7 +145,8 @@ public:
   void setMimicJoint(
       Joint* referenceJoint,
       double mimicMultiplier = 1.0,
-      double mimicOffset = 0.0);
+      double mimicOffset = 0.0,
+      bool coupled = false);
 
   /// Sets the mimic joint properties for a specific DoF of the dependent joint.
   void setMimicJointDof(std::size_t index, const MimicDofProperties& mimicProp);
@@ -169,6 +170,9 @@ public:
   /// Returns the mimic joint offset for the specified DoF of the dependent
   /// joint.
   double getMimicOffset(std::size_t index = 0) const;
+
+  /// Returns whether the mimicked DoF is coupled with the reference DoF.
+  bool getMimicCoupled(std::size_t index = 0) const;
 
   /// Returns the vector of MimicDofProperties for all DoFs of the dependent
   /// joint.
@@ -557,6 +561,9 @@ public:
 
   /// Set a single constraint impulse
   virtual void setConstraintImpulse(std::size_t _index, double _impulse) = 0;
+
+  /// Add a constraint impulse to the existing impulse.
+  virtual void addConstraintImpulse(std::size_t index, double impulse) = 0;
 
   /// Get a single constraint impulse
   virtual double getConstraintImpulse(std::size_t _index) const = 0;

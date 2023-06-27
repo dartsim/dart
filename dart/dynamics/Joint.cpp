@@ -206,7 +206,10 @@ Joint::ActuatorType Joint::getActuatorType() const
 
 //==============================================================================
 void Joint::setMimicJoint(
-    Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
+    Joint* referenceJoint,
+    double mimicMultiplier,
+    double mimicOffset,
+    bool coupled)
 {
   std::size_t numDofs = getNumDofs();
   mAspectProperties.mMimicDofProps.resize(numDofs);
@@ -217,6 +220,7 @@ void Joint::setMimicJoint(
     prop.mReferenceDofIndex = i;
     prop.mMultiplier = mimicMultiplier;
     prop.mOffset = mimicOffset;
+    prop.mCoupled = coupled;
     setMimicJointDof(i, prop);
   }
 }
@@ -261,6 +265,12 @@ double Joint::getMimicMultiplier(std::size_t index) const
 double Joint::getMimicOffset(std::size_t index) const
 {
   return mAspectProperties.mMimicDofProps[index].mOffset;
+}
+
+//==============================================================================
+bool Joint::getMimicCoupled(std::size_t index) const
+{
+  return mAspectProperties.mMimicDofProps[index].mCoupled;
 }
 
 //==============================================================================

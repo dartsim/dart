@@ -419,6 +419,12 @@ void DegreeOfFreedom::setConstraintImpulse(double _impulse)
 }
 
 //==============================================================================
+void DegreeOfFreedom::addConstraintImpulse(double impulse)
+{
+  mJoint->addConstraintImpulse(mIndexInJoint, impulse);
+}
+
+//==============================================================================
 double DegreeOfFreedom::getConstraintImpulse() const
 {
   return mJoint->getConstraintImpulse(mIndexInJoint);
