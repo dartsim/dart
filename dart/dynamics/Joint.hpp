@@ -143,7 +143,7 @@ public:
   /// Set the mimic joint with a single reference joint and the same multiplier
   /// and offset for all dependent joint's DoFs.
   void setMimicJoint(
-      const Joint* referenceJoint,
+      Joint* referenceJoint,
       double mimicMultiplier = 1.0,
       double mimicOffset = 0.0);
 

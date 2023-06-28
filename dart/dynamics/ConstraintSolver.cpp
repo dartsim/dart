@@ -45,7 +45,6 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/JointConstraint.hpp"
 #include "dart/dynamics/JointCoulombFrictionConstraint.hpp"
-#include "dart/dynamics/MimicMotorConstraint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftContactConstraint.hpp"
@@ -485,7 +484,6 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Destroy previous joint constraints
   mJointConstraints.clear();
-  mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   // Create new joint constraints
@@ -507,38 +505,26 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->getActuatorType() == dynamics::Joint::SERVO
+          || joint->getActuatorType() == dynamics::Joint::MIMIC) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
-      }
-
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
       }
     }
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointConstraints) {
-    jointLimitConstraint->update();
+  for (auto& constraint : mJointConstraints) {
+    constraint->update();
 
-    if (jointLimitConstraint->isActive())
-      mActiveConstraints.push_back(jointLimitConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 
-  for (auto& mimicMotorConstraint : mMimicMotorConstraints) {
-    mimicMotorConstraint->update();
+  for (auto& constraint : mJointCoulombFrictionConstraints) {
+    constraint->update();
 
-    if (mimicMotorConstraint->isActive())
-      mActiveConstraints.push_back(mimicMotorConstraint);
-  }
-
-  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints) {
-    jointFrictionConstraint->update();
-
-    if (jointFrictionConstraint->isActive())
-      mActiveConstraints.push_back(jointFrictionConstraint);
+    if (constraint->isActive())
+      mActiveConstraints.push_back(constraint);
   }
 }
 

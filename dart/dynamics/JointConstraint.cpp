@@ -361,6 +361,35 @@ void JointConstraint::update()
 
         ++mDim;
       }
+    } else if (mJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+      const auto& mimicProp = mJoint->getMimicDofProperties()[i];
+      const double qError
+          = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
+                * mimicProp.mMultiplier
+            + mimicProp.mOffset - mJoint->getPosition(i);
+      const double desiredVelocity = math::clamp(
+          qError / timeStep, velocityLowerLimits[i], velocityUpperLimits[i]);
+
+      mDesiredVelocityChange[i] = desiredVelocity - velocities[i];
+
+      if (mDesiredVelocityChange[i] != 0.0) {
+        // Note that we are computing impulse not force
+        mImpulseUpperBound[i]
+            = mJoint->getForceUpperLimit(static_cast<std::size_t>(i))
+              * timeStep;
+        mImpulseLowerBound[i]
+            = mJoint->getForceLowerLimit(static_cast<std::size_t>(i))
+              * timeStep;
+
+        if (mActive[i]) {
+          ++(mLifeTime[i]);
+        } else {
+          mActive[i] = true;
+          mLifeTime[i] = 0;
+        }
+
+        ++mDim;
+      }
     }
   }
 }
@@ -421,11 +450,45 @@ void JointConstraint::applyUnitImpulse(std::size_t index)
     }
 
     if (localIndex == index) {
-      skeleton->clearConstraintImpulses();
-      mJoint->setConstraintImpulse(i, 1.0);
-      skeleton->updateBiasImpulse(mBodyNode);
-      skeleton->updateVelocityChange();
-      mJoint->setConstraintImpulse(i, 0.0);
+      if (mJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+        const auto& mimicProp = mJoint->getMimicDofProperties()[i];
+        auto& refJoint = mimicProp.mReferenceJoint;
+        const auto& refDof = mimicProp.mReferenceDofIndex;
+        const SkeletonPtr& refSkeleton = refJoint->getSkeleton();
+        BodyNode* refJointChildBodyNode = refJoint->getChildBodyNode();
+
+        skeleton->clearConstraintImpulses();
+        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+          refSkeleton->clearConstraintImpulses();
+        }
+
+        mJoint->setConstraintImpulse(i, 1.0);
+        if (refJoint->isDynamic()) {
+          DART_ASSERT(mJoint != refJoint || i != refDof);
+          refJoint->setConstraintImpulse(refDof, -1.0);
+        }
+
+        skeleton->updateBiasImpulse(mBodyNode);
+        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+          refSkeleton->updateBiasImpulse(refJointChildBodyNode);
+        }
+
+        skeleton->updateVelocityChange();
+        if (refJoint->isDynamic() && skeleton != refSkeleton) {
+          refSkeleton->updateVelocityChange();
+        }
+
+        mJoint->setConstraintImpulse(i, 0.0);
+        if (refJoint->isDynamic()) {
+          refJoint->setConstraintImpulse(refDof, 0.0);
+        }
+      } else {
+        skeleton->clearConstraintImpulses();
+        mJoint->setConstraintImpulse(i, 1.0);
+        skeleton->updateBiasImpulse(mBodyNode);
+        skeleton->updateVelocityChange();
+        mJoint->setConstraintImpulse(i, 0.0);
+      }
     }
 
     ++localIndex;

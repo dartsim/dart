@@ -138,7 +138,7 @@ struct DART_DYNAMICS_API JointProperties
       = math::Isometry3d::Identity(),
       bool _isPositionLimitEnforced = false,
       ActuatorType _actuatorType = DefaultActuatorType,
-      const Joint* _mimicJoint = nullptr,
+      Joint* _mimicJoint = nullptr,
       double _mimicMultiplier = 1.0,
       double _mimicOffset = 0.0);
 

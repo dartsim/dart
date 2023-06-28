@@ -44,7 +44,7 @@ class Joint;
 struct MimicDofProperties
 {
   /// Pointer to the reference joint used for mimicking behavior.
-  const Joint* mReferenceJoint;
+  Joint* mReferenceJoint;
 
   /// Index of the reference DoF in the reference joint.
   std::size_t mReferenceDofIndex = 0;

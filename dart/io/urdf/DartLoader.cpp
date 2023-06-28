@@ -336,7 +336,7 @@ bool DartLoader::addMimicJointsRecursive(
       return false;
     }
 
-    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
+    dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
     if (!mimicJoint) {
       dterr << "Failed to configure a mimic joint [" << jointName
             << "] because the joint to mimic [" << mimicJoint

@@ -75,7 +75,7 @@ void Joint(py::module& m)
               const Eigen::Isometry3d&,
               bool,
               dart::dynamics::detail::ActuatorType,
-              const dart::dynamics::Joint*,
+              dart::dynamics::Joint*,
               double,
               double>(),
           ::py::arg("name") = "Joint",

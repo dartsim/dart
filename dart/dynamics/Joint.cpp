@@ -64,7 +64,7 @@ JointProperties::JointProperties(
     const math::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
     ActuatorType _actuatorType,
-    const Joint* _mimicJoint,
+    Joint* _mimicJoint,
     double _mimicMultiplier,
     double _mimicOffset)
   : mName(_name),
@@ -206,7 +206,7 @@ Joint::ActuatorType Joint::getActuatorType() const
 
 //==============================================================================
 void Joint::setMimicJoint(
-    const Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
+    Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
 {
   std::size_t numDofs = getNumDofs();
   mAspectProperties.mMimicDofProps.resize(numDofs);
