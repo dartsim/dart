@@ -42,7 +42,7 @@ jobs:
       - name: Event Information
         run: |
           echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}' (${{ github.event.client_payload.ref }})"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: dartsim/dart
           ref: ${{ github.event.client_payload.ref }}

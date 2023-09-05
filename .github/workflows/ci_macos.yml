@@ -31,7 +31,7 @@ jobs:
       ENABLE_SIMD: ${{ matrix.enable_simd }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Dependencies
         env:
           INSTALL_OSG_HEAD: OFF
