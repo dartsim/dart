@@ -149,7 +149,7 @@ jobs:
 
       - name: Build wheels
         if: ${{ matrix.release_only == false || github.ref == 'refs/heads/main' }}
-        uses: pypa/cibuildwheel@v2.15.0
+        uses: pypa/cibuildwheel@v2.16.0
         env:
           # Common
           DART_IN_CI: ON
