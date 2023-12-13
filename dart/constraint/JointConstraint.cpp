@@ -238,7 +238,7 @@ void JointConstraint::update()
         // the position error.
 
         const double C1 = mErrorAllowance * A1;
-        double bouncing_vel = -std::max(B1, C1) / timeStep;
+        double bouncing_vel = -std::min(B1, C1) / timeStep;
         assert(bouncing_vel >= 0);
         bouncing_vel = std::min(bouncing_vel, mMaxErrorReductionVelocity);
 
@@ -280,7 +280,7 @@ void JointConstraint::update()
         // the position error.
 
         const double C2 = mErrorAllowance * A2;
-        double bouncing_vel = -std::min(B2, C2) / timeStep;
+        double bouncing_vel = -std::max(B2, C2) / timeStep;
         assert(bouncing_vel <= 0);
         bouncing_vel = std::max(bouncing_vel, -mMaxErrorReductionVelocity);
 
