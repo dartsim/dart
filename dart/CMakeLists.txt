@@ -48,6 +48,7 @@ dart_add_project(
     simulation
     io
     gui
+    v2
   GENERATE_META_HEADER
 )
 
