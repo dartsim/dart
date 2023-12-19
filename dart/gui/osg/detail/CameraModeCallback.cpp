@@ -131,8 +131,7 @@ void CameraModeCallback::setCameraMode(CameraMode mode)
   if (mode != CameraMode::RGBA && mode != CameraMode::DEPTH)
   {
     DART_WARN(
-        "Unsupported camera mode '{}'. Use RGBA or DEPTH.",
-        static_cast<int>(mode));
+        "Unsupported camera mode '{}'. Use RGBA or DEPTH.", toString(mode));
     return;
   }
 
