@@ -30,10 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#include <dart/v2/world.hpp>
+#include <dart/v2/multibody.hpp>
 
-namespace dart::v2 {
+#include <gtest/gtest.h>
 
-//
+using namespace dart;
+using namespace v2;
 
-} // namespace dart::v2
+//==============================================================================
+TEST(WorldTest, DefaultConstructor)
+{
+  auto world = World<double>();
+  (void)world;
+  EXPECT_TRUE(true);
+}
+
+//==============================================================================
+TEST(WorldTest, CreateMultibody)
+{
+  auto world = World<double>();
+  auto mb = world.createMultibody();
+  EXPECT_NE(world.getEntity(), mb.getEntity());
+}

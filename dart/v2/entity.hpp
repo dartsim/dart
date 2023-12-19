@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#pragma once
+
+#include <dart/v2/entt.hpp>
+#include <dart/v2/fwd.hpp>
 
 namespace dart::v2 {
 

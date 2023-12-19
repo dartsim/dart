@@ -32,10 +32,32 @@
 
 #pragma once
 
-#include <vector>
+#include <dart/v2/fwd.hpp>
+#include <dart/v2/entt.hpp>
+#include <dart/v2/entity_holder.hpp>
 
-namespace dart {
+#include <memory>
 
-//
+namespace dart::v2 {
 
-} // namespace dart
+template <typename S>
+class World : public EntityHolder
+{
+public:
+  using Scalar = S;
+
+  World();
+
+  World(std::shared_ptr<entt::registry> context, Entity entity);
+
+  ~World();
+
+  Multibody<S> createMultibody();
+
+private:
+  bool m_owned_context{false};
+};
+
+} // namespace dart::v2
+
+#include <dart/v2/world_inl.hpp>

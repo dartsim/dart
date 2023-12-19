@@ -30,10 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#pragma once
+
+#include <dart/v2/entt.hpp>
+#include <dart/v2/fwd.hpp>
 
 namespace dart::v2 {
 
-//
+class EntityHolder
+{
+public:
+  EntityHolder() = default;
+
+  explicit EntityHolder(
+      std::shared_ptr<entt::registry> context, entt::entity entity)
+    : m_context(std::move(context)), m_entity(std::move(entity))
+  {
+    // Empty
+  }
+
+  [[nodiscard]] std::shared_ptr<entt::registry> getContext()
+  {
+    return m_context;
+  }
+
+  [[nodiscard]] std::shared_ptr<const entt::registry> getContext() const
+  {
+    return m_context;
+  }
+
+  [[nodiscard]] Entity getEntity() const
+  {
+    return m_entity;
+  }
+
+protected:
+  std::shared_ptr<entt::registry> m_context;
+  entt::entity m_entity;
+};
 
 } // namespace dart::v2

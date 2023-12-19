@@ -30,10 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#pragma once
+
+#include <dart/v2/entity_holder.hpp>
+#include <dart/v2/fwd.hpp>
 
 namespace dart::v2 {
 
-//
+template <typename S>
+class Multibody : public EntityHolder
+{
+public:
+  using Scalar = S;
+
+  Multibody() = default;
+
+  explicit Multibody(std::shared_ptr<entt::registry> context, Entity entity)
+    : EntityHolder(std::move(context), std::move(entity))
+  {
+    // Empty
+  }
+
+  virtual ~Multibody() = default;
+};
 
 } // namespace dart::v2
+
+#include <dart/v2/multibody_inl.hpp>

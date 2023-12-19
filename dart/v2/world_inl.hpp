@@ -30,10 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#pragma once
+
+#include <dart/v2/world.hpp>
 
 namespace dart::v2 {
 
-//
+template <typename S>
+World<S>::World() : EntityHolder(), m_owned_context(true)
+{
+  m_context = std::make_shared<entt::registry>();
+  m_entity = m_context->create();
+}
+
+template <typename S>
+World<S>::World(std::shared_ptr<entt::registry> context, Entity entity)
+  : EntityHolder(std::move(context), std::move(entity)), m_owned_context(false)
+{
+  // Empty
+}
+
+template <typename S>
+World<S>::~World()
+{
+  if (m_owned_context) {
+    // TODO: clean up
+    m_context.reset();
+    m_owned_context = false;
+  }
+}
+
+template <typename S>
+Multibody<S> World<S>::createMultibody()
+{
+  const auto entity = m_context->create();
+
+  auto mb = Multibody<S>(m_context, entity);
+
+  return mb;
+}
 
 } // namespace dart::v2

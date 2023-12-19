@@ -30,10 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/v2/world.hpp"
+#pragma once
+
+#include <dart/v2/entity.hpp>
 
 namespace dart::v2 {
 
-//
+using Entity = entt::entity;
+
+template <typename S>
+class Multibody;
+
+template <typename S>
+class World;
 
 } // namespace dart::v2
