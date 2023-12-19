@@ -2198,6 +2198,12 @@ void Skeleton::registerNode(Node* _newNode)
 //==============================================================================
 void Skeleton::destructOldTree(std::size_t tree)
 {
+  // Invalidate the tree indices of every BodyNode that are being removed
+  DataCache& treeToDestroy = mTreeCache[tree];
+  for (auto& bodyNode : treeToDestroy.mBodyNodes) {
+    bodyNode->mTreeIndex = INVALID_INDEX;
+  }
+
   mTreeCache.erase(mTreeCache.begin() + tree);
   mTreeNodeMaps.erase(mTreeNodeMaps.begin() + tree);
 
