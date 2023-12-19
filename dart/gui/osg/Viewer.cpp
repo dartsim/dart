@@ -52,6 +52,19 @@ namespace dart {
 namespace gui {
 namespace osg {
 
+std::string toString(CameraMode mode)
+{
+  switch (mode)
+  {
+    case CameraMode::RGBA:
+      return "RGBA";
+    case CameraMode::DEPTH:
+      return "DEPTH";
+    default:
+      return "UNKNOWN";
+  }
+}
+
 class SaveScreen : public ::osg::Camera::DrawCallback
 {
 public:
