@@ -9,18 +9,12 @@
   * macOS 12 (Monterey) / Clang 14 / amd64
   * Windows / MSVC 19.37 / amd64
 
-* Dependency
-
-  * Added required dependencies: fmt
-  * Added optional dependencies: spdlog
-  * Removed required dependencies: Boost
-
 * Build
 
   * Fixed build with urdfdom 4.0.0: [#1779](https://github.com/dartsim/dart/pull/1779)
   * Fixed invalid array access in moving skeleton subtree: [#1778](https://github.com/dartsim/dart/pull/1778)
 
-* Dynamic
+* Dynamics
 
   * Fixed joint not recovering after reaching position limits in servo mode: [#1774](https://github.com/dartsim/dart/pull/1774)
 
