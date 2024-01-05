@@ -216,7 +216,7 @@ std::shared_ptr<World> parseWorldURDF(
           auto* origin = entity_xml->FirstChildElement("origin");
           if (origin)
           {
-            if (!parsePose(entity.origin, origin))
+            if (!urdf_parsing::parsePose(entity.origin, origin))
             {
               dtwarn << "[ERROR] Missing origin tag for '"
                      << entity.model->getName() << "'\n";
