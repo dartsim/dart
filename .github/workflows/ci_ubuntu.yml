@@ -22,21 +22,21 @@ jobs:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-focal, ubuntu-jammy]
+        os: [ubuntu-focal, ubuntu-jammy, ubuntu-noble]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
         build_dartpy: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-jammy
+          - os: ubuntu-noble
             build_type: Debug
             codecov: ON
             check_format: ON
             build_dartpy: ON
     env:
-      # Hosted on: https://hub.docker.com/repository/docker/dartsim/dart-dev
-      DART_DEV_IMAGE: dartsim/dart-dev
+      # Hosted on: https://hub.docker.com/repository/docker/jslee02/dart-dev
+      DART_DEV_IMAGE: jslee02/dart-dev
       DOCKER_TAG: ${{ matrix.os }}-v6.13
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}

@@ -171,6 +171,15 @@ double length(const dart::collision::fcl::Vector3& t);
 /// Returns squared norm of a 3-dim vector
 double length2(const dart::collision::fcl::Vector3& t);
 
+[[nodiscard]] inline dart::collision::fcl::Transform3 getTransform3Identity()
+{
+#if FCL_VERSION_AT_LEAST(0, 6, 0)
+  return dart::collision::fcl::Transform3::Identity();
+#else
+  return dart::collision::fcl::Transform3();
+#endif
+}
+
 /// Returns translation component of a transform
 dart::collision::fcl::Vector3 getTranslation(
     const dart::collision::fcl::Transform3& T);

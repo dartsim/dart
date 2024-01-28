@@ -242,6 +242,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   if(GCC_VERSION VERSION_LESS 7.3.0)
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 7.3.0 or greater.")
   endif()
+  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
+    # TODO: These warnings should be properly addressed and these compiler options removed
+    add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
+  endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   if(DART_FAST_DEBUG)
@@ -511,7 +515,7 @@ endif()
 
 find_program(
   CLANG_FORMAT_EXECUTABLE
-  NAMES clang-format-12
+  NAMES clang-format-14
 )
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
