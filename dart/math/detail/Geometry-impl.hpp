@@ -35,7 +35,7 @@
 
 #include <unordered_map>
 
-#include "dart/external/convhull_3d/convhull_3d.h"
+#include "dart/external/convhull_3d/safe_convhull_3d.h"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {
