@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     name: ${{ matrix.build_type }}
-    runs-on: macos-12
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Dependencies
         env:
-          INSTALL_OSG_HEAD: OFF  # To avoid building OSG, until 3.7 is released.
+          INSTALL_OSG_HEAD: OFF # To avoid building OSG, until 3.7 is released.
         run: .ci/install_osx.sh
       - name: Build
         run: sudo -E .ci/build.sh

@@ -16,7 +16,7 @@ on:
 jobs:
   build_2022:
     name: ${{ matrix.build_type }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
