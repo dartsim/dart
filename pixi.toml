@@ -8,7 +8,12 @@ platforms = ["linux-64"]
 
 [tasks]
 configure = "cmake -G Ninja -S . -B build"
-build = { cmd = "cmake --build build --parallel", depends_on = ["configure"] }
+build = { cmd = "cmake --build build -j --target all", depends_on = [
+    "configure",
+] }
+build_dartpy = { cmd = "cmake --build build -j4 --target dartpy", depends_on = [
+    "configure",
+] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
