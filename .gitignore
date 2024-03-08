@@ -31,3 +31,6 @@ data/screencap/*
 # Python
 dist/
 *.egg-info
+# pixi environments
+.pixi
+
