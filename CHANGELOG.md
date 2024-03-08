@@ -1,5 +1,23 @@
 ## DART 6
 
+### [DART 6.13.1 (2024-01-04)](https://github.com/dartsim/dart/milestone/74?closed=1)
+
+* Tested Platforms
+
+  * Ubuntu Focal on amd64 / GCC 9.4 / amd64
+  * Ubuntu Jammy on amd64 / GCC 11.3 / amd64
+  * macOS 12 (Monterey) / Clang 14 / amd64
+  * Windows / MSVC 19.37 / amd64
+
+* Build
+
+  * Fixed build with urdfdom 4.0.0: [#1779](https://github.com/dartsim/dart/pull/1779)
+  * Fixed invalid array access in moving skeleton subtree: [#1778](https://github.com/dartsim/dart/pull/1778)
+
+* Dynamics
+
+  * Fixed joint not recovering after reaching position limits in servo mode: [#1774](https://github.com/dartsim/dart/pull/1774)
+
 ### [DART 6.13.0 (2022-12-31)](https://github.com/dartsim/dart/milestone/69?closed=1)
 
 * Supported Platforms

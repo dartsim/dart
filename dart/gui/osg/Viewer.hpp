@@ -83,9 +83,11 @@ enum class CameraMode
 
   /// To render the depth buffer
   ///
-  /// \warning The DEPTH mode currently not compatible with the ImGui wigets.
+  /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
   DEPTH,
 };
+
+[[nodiscard]] std::string toString(CameraMode mode);
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ViewerAttachment : public virtual ::osg::Group

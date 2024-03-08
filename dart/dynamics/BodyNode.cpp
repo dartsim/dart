@@ -176,7 +176,10 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 /// SET_FLAGS : A version of SKEL_SET_FLAGS that assumes a SkeletonPtr named
 /// 'skel' has already been locked
 #define SET_FLAGS(X)                                                           \
-  skel->mTreeCache[mTreeIndex].mDirty.X = true;                                \
+  if (mTreeIndex != INVALID_INDEX)                                             \
+  {                                                                            \
+    skel->mTreeCache[mTreeIndex].mDirty.X = true;                              \
+  }                                                                            \
   skel->mSkelCache.mDirty.X = true;
 
 /// CHECK_FLAG : Check if the dirty flag X for the tree of this BodyNode is
