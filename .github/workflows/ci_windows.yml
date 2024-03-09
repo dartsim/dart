@@ -6,9 +6,13 @@ on:
   push:
     branches:
       - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
   pull_request:
     branches:
       - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
   schedule:
     # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
@@ -24,24 +28,30 @@ jobs:
         build_type: [Release]
         # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
         build_shared_libs: [OFF]
+
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       VCPKG_ROOT: "C:/dartsim/vcpkg"
-      VCPKG_BUILD_TAG: v6.13-2022.07.25-0
+      ZIP_NAME: vcpkg-dartsim-deps-v6.14.zip
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Dependencies
-        shell: cmd
-        run: |
-          mkdir -p C:\dartsim
-          choco install -y wget
-          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+
+      - name: Download vcpkg
+        id: download-vcpkg
+        uses: dawidd6/action-download-artifact@v3.1.2
+        with:
+          workflow: "cache_vcpkg.yml"
+          workflow_conclusion: success
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.VCPKG_ROOT }}
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -U pytest
+
       - name: Build
         shell: cmd
         run: |
