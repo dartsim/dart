@@ -29,7 +29,7 @@ jobs:
         build_dartpy: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-noble
+          - os: ubuntu-jammy
             build_type: Debug
             codecov: ON
             check_format: ON
