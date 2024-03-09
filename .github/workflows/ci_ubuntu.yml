@@ -22,14 +22,14 @@ jobs:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-focal, ubuntu-jammy, ubuntu-noble]
+        os: [ubuntu-jammy, ubuntu-noble]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
         build_dartpy: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-noble
+          - os: ubuntu-jammy
             build_type: Debug
             codecov: ON
             check_format: ON
@@ -62,3 +62,13 @@ jobs:
             --env-file ./.ci/docker/env.list \
             $DART_DEV_IMAGE:$DOCKER_TAG \
             /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
+
+  build_with_pixi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: prefix-dev/setup-pixi@v0.2.0
+        with:
+          cache: true
+      - run: pixi run build

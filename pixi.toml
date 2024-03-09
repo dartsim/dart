@@ -1,0 +1,41 @@
+[project]
+name = "DART"
+version = "6.14.0"
+description = "Dynamic Animation and Robotics Toolkit"
+authors = ["Jeongseok Lee <jslee02@gmail.com>"]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tasks]
+configure = "cmake -G Ninja -S . -B build"
+build = { cmd = "cmake --build build -j --target all", depends_on = [
+    "configure",
+] }
+build_dartpy = { cmd = "cmake --build build -j4 --target dartpy", depends_on = [
+    "configure",
+] }
+
+[dependencies]
+assimp = ">=5.3.1,<5.4"
+bullet-cpp = ">=3.25,<4"
+console_bridge = ">=1.0.2,<1.1"
+eigen = ">=3.4.0,<3.5"
+fcl = ">=0.7.0,<0.8"
+fmt = ">=10.2.1,<10.3"
+freeglut = ">=3.2.2,<3.3"
+libccd-double = ">=2.1,<3"
+libode = ">=0.16.2,<0.17"
+lz4 = ">=4.3.3,<4.4"
+octomap = ">=1.9.8,<1.10"
+spdlog = ">=1.12.0,<1.13"
+tinyxml2 = ">=10.0.0,<10.1"
+urdfdom = ">=4.0.0,<4.1"
+ipopt = ">=3.14.14,<3.15"
+nlopt = ">=2.7.1,<2.8"
+pagmo = ">=2.19.0,<2.20"
+flann = ">=1.9.2,<1.10"
+
+[build-dependencies]
+cmake = "3.22.*"
+ninja = ">=1.11.1,<1.12"
+pkg-config = ">=0.29.2,<0.30"
