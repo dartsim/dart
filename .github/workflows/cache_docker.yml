@@ -5,10 +5,12 @@ on:
     branches: ["**"]
     paths:
       - ".github/workflows/cache_docker.yml"
+      - "docker/dev/**"
   pull_request:
     branches: ["**"]
     paths:
       - ".github/workflows/cache_docker.yml"
+      - "docker/dev/**"
   release:
     types: [published]
   schedule:
