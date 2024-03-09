@@ -106,7 +106,7 @@ jobs:
           @echo off
           setlocal
           set file="${{ matrix.zip-name }}.zip"
-          set maxbytesize=2000000000
+          set maxbytesize=2500000000
 
           FOR /F "usebackq" %%A IN ('%file%') DO set size=%%~zA
 
