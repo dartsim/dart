@@ -1,0 +1,57 @@
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM jslee02/dart-dev:fedora-min-v8.0
+
+# Use /bin/bash to use pushd/popd
+SHELL ["/bin/bash", "-c"]
+
+RUN dnf makecache -y --refresh
+
+# ==============================================================================
+# Build tools
+# ==============================================================================
+RUN dnf install -y \
+    clang \
+    cmake \
+    curl \
+    doxygen \
+    gcovr \
+    git \
+    lcov \
+    pkg-config \
+    valgrind
+
+# ==============================================================================
+# DART required dependencies
+# ==============================================================================
+RUN dnf install -y \
+    assimp-devel \
+    eigen3-devel \
+    fcl-devel \
+    fmt-devel \
+    glew-devel \
+    glfw-devel \
+    libccd-devel
+
+# ==============================================================================
+# DART optional dependencies
+# ==============================================================================
+
+RUN dnf install -y \
+    bullet-devel \
+    coin-or-Ipopt-devel \
+    nlopt-devel \
+    octomap-devel \
+    ode-devel \
+    OpenSceneGraph-devel \
+    spdlog-devel \
+    tinyxml2-devel \
+    urdfdom-devel
+
+# ==============================================================================
+# Python binding dependencies
+# ==============================================================================
+
+RUN dnf install -y \
+    python3 \
+    python-numpy \
+    python-pytest

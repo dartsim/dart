@@ -1,0 +1,25 @@
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM fedora:latest
+
+RUN dnf makecache -y --refresh
+
+#===============================================================================
+# Build tools
+#===============================================================================
+RUN dnf install -y \
+    clang \
+    cmake \
+    doxygen \
+    valgrind
+
+# ==============================================================================
+# DART required dependencies
+# ==============================================================================
+RUN dnf install -y \
+    assimp-devel \
+    eigen3-devel \
+    fcl-devel \
+    fmt-devel \
+    glew-devel \
+    glfw-devel \
+    libccd-devel

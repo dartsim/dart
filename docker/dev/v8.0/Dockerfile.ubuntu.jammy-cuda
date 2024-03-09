@@ -1,0 +1,42 @@
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM jslee02/dart-dev:ubuntu-jammy-v8.0
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Use /bin/bash to use pushd/popd
+SHELL ["/bin/bash", "-c"]
+
+# Update apt-get
+RUN apt-get update -qq
+
+# ==============================================================================
+# Build tools
+# ==============================================================================
+
+ENV UBUNTU_VERSION="2204"
+ENV PIN_FILENAME="cuda-ubuntu${UBUNTU_VERSION}.pin"
+ENV PIN_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/${PIN_FILENAME}"
+ENV APT_KEY_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/3bf863cc.pub"
+ENV REPO_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/"
+
+RUN echo "PIN_FILENAME ${PIN_FILENAME}"
+RUN echo "PIN_URL ${PIN_URL}"
+RUN echo "APT_KEY_URL ${APT_KEY_URL}"
+
+RUN apt-get install -y --no-install-recommends \
+    wget \
+    dirmngr \
+    gpg-agent \
+    && wget ${PIN_URL} \
+    && mv ${PIN_FILENAME} /etc/apt/preferences.d/cuda-repository-pin-600 \
+    && apt-key adv --fetch-keys ${APT_KEY_URL} \
+    && add-apt-repository "deb ${REPO_URL} /"
+
+RUN apt-get install -y --no-install-recommends \
+    nvidia-cuda-toolkit
+
+# ==============================================================================
+# Clean up
+# ==============================================================================
+
+RUN rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,27 @@
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM jslee02/dart-dev:archlinux-min-v8.0
+
+# ==============================================================================
+# DART optional dependencies
+# ==============================================================================
+RUN yay -Syu --needed --noconfirm \
+    bullet \
+    coin-or-ipopt \
+    nlopt \
+    octomap \
+    ode \
+    openscenegraph \
+    pagmo \
+    spdlog \
+    tinyxml2 \
+    urdfdom \
+    imgui
+
+# ==============================================================================
+# Python binding dependencies
+# ==============================================================================
+RUN yay -Syu --needed --noconfirm \
+    python3 \
+    python-numpy \
+    python-pytest \
+    pybind11

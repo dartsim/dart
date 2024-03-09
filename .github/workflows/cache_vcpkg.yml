@@ -7,6 +7,8 @@ on:
       - ".github/workflows/cache_vcpkg.yml"
   pull_request:
     branches: ["**"]
+    paths:
+      - ".github/workflows/cache_vcpkg.yml"
   release:
     types: [published]
   schedule:
@@ -54,11 +56,11 @@ jobs:
           - zip-name: "vcpkg-dartsim-deps-v6.14"
             deps: "assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt flann freeglut glfw3 nlopt ode opengl osg pagmo2 pybind11 tinyxml2 urdfdom"
 
-          - zip-name: "vcpkg-dartsim-deps-min-v7.0"
-            deps: "assimp ccd eigen3 entt fcl fmt spdlog"
+          # - zip-name: "vcpkg-dartsim-deps-min-v7.0"
+          #   deps: "assimp ccd eigen3 entt fcl fmt spdlog"
 
-          - zip-name: "vcpkg-dartsim-deps-cuda-v7.0"
-            deps: "assimp ccd eigen3 entt fcl fmt spdlog bullet3 coin-or-ipopt cuda freeglut glfw3 nlopt ode opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp"
+          # - zip-name: "vcpkg-dartsim-deps-cuda-v7.0"
+          #   deps: "assimp ccd eigen3 entt fcl fmt spdlog bullet3 coin-or-ipopt cuda freeglut glfw3 nlopt ode opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp"
 
           # - zip-name: "vcpkg-dartsim-deps-v8.0"
           #   deps: "eigen3 fmt pkgconf assimp bullet3 ccd coin-or-ipopt fcl glew imgui nlopt ode opencl opengl osg pybind11 spdlog tbb tinyxml2 urdfdom"

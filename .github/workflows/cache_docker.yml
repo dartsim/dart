@@ -1,0 +1,379 @@
+name: Cache Docker
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/cache_docker.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/cache_docker.yml"
+  release:
+    types: [published]
+  schedule:
+    # Run at 02:00 UTC every Friday
+    # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
+    - cron: "0 2 * * FRI"
+
+env:
+  DOCKER_REPO: jslee02/dart-dev # https://hub.docker.com/repository/docker/jslee02/dart-dev
+
+jobs:
+  ubuntu:
+    name: ubuntu
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [focal, jammy, noble]
+        dart_version: [v6.13, v6.14]
+        platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
+        build_min: [OFF]
+        include:
+          - distro: jammy
+            build_min: ON
+            dart_version: v7.0
+            platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          - distro: lunar
+            build_min: ON
+            dart_version: v7.0
+            platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          # - distro: jammy
+          #   build_min: ON
+          #   dart_version: v8.0
+          #   platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          # - distro: jammy-cuda
+          #   build_min: OFF
+          #   dart_version: v8.0
+          #   platforms: linux/amd64,linux/arm64
+          # - distro: lunar
+          #   build_min: ON
+          #   dart_version: v8.0
+          #   platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+    env:
+      UBUNTU_VERSION: ${{ matrix.distro }}
+      DART_VERSION: ${{ matrix.dart_version }}
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push (min)
+        id: docker_build_min
+        uses: docker/build-push-action@v4
+        if: ${{ matrix.build_min == 'ON' }}
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.ubuntu.${{ env.UBUNTU_VERSION }}-min
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:ubuntu-${{ env.UBUNTU_VERSION }}-min-${{ env.DART_VERSION }}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.ubuntu.${{ env.UBUNTU_VERSION }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:ubuntu-${{ env.UBUNTU_VERSION }}-${{ env.DART_VERSION }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # Bionic image for API documentation builds
+  bionic-docs:
+    name: bionic-docs
+    runs-on: ubuntu-latest
+    env:
+      UBUNTU_VERSION: bionic
+      DART_VERSION: docs
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ env.UBUNTU_VERSION }}-${{ env.DART_VERSION }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # Archlinux on amd64
+  archlinux:
+    name: archlinux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [archlinux]
+        # dart_version: [v7.0, v8.0]
+        dart_version: [v7.0]
+        build_min: [ON]
+    env:
+      OS_VERSION: ${{ matrix.distro }}
+      DART_VERSION: ${{ matrix.dart_version }}
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push (min)
+        if: ${{ matrix.build_min == 'ON' }}
+        id: docker_build_min
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}-min
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-min-${{ env.DART_VERSION }}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-${{ env.DART_VERSION }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # Fedora
+  fedora:
+    name: fedora
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [fedora]
+        # dart_version: [v7.0, v8.0]
+        dart_version: [v7.0]
+        platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
+        build_min: [ON]
+    env:
+      OS_VERSION: ${{ matrix.distro }}
+      DART_VERSION: ${{ matrix.dart_version }}
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push (min)
+        id: docker_build_min
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}-min
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-min-${{ env.DART_VERSION }}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-${{ env.DART_VERSION }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # Manylinux min
+  manylinux_min:
+    name: manylinux (min)
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile.manylinux2014_aarch64-min]
+        base_image: [quay.io/pypa/manylinux2014_aarch64]
+        image: [manylinux2014_aarch64-min]
+        platforms: ["linux/arm64"]
+        dart_version: [v7.0]
+        experimental: [true]
+        include:
+          - dockerfile: Dockerfile.manylinux2014_ppc64le-min
+            base_image: quay.io/pypa/manylinux2014_ppc64le
+            image: manylinux2014_ppc64le-min
+            platforms: "linux/ppc64le"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux2014_s390x-min
+            base_image: quay.io/pypa/manylinux2014_s390x
+            image: manylinux2014_s390x-min
+            platforms: "linux/s390x"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_aarch64-min
+            base_image: quay.io/pypa/manylinux_2_28_aarch64
+            image: manylinux_2_28_aarch64-min
+            platforms: "linux/arm64"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_ppc64le-min
+            base_image: quay.io/pypa/manylinux_2_28_ppc64le
+            image: manylinux_2_28_ppc64le-min
+            platforms: "linux/ppc64le"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_s390x-min
+            base_image: quay.io/pypa/manylinux_2_28_s390x
+            image: manylinux_2_28_s390x-min
+            platforms: "linux/s390x"
+            dart_version: v7.0
+            experimental: true
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ matrix.dart_version }}/${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          build-args: BASE_IMAGE=${{ matrix.base_image }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ matrix.image }}-${{ matrix.dart_version }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # Manylinux
+  manylinux:
+    name: manylinux
+    needs: [manylinux_min]
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile.manylinux2014_x86_64]
+        base_image: [quay.io/pypa/manylinux2014_x86_64]
+        image: [manylinux2014_x86_64]
+        platforms: ["linux/amd64"]
+        dart_version: [v7.0]
+        experimental: [false]
+        include:
+          - dockerfile: Dockerfile.manylinux2014_aarch64
+            base_image: jslee02/dart-dev:manylinux2014_aarch64-min-v7.0
+            image: manylinux2014_aarch64
+            platforms: "linux/arm64"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux2014_ppc64le
+            base_image: jslee02/dart-dev:manylinux2014_ppc64le-min-v7.0
+            image: manylinux2014_ppc64le
+            platforms: "linux/ppc64le"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux2014_s390x
+            base_image: jslee02/dart-dev:manylinux2014_s390x-min-v7.0
+            image: manylinux2014_s390x
+            platforms: "linux/s390x"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_x86_64
+            base_image: quay.io/pypa/manylinux_2_28_x86_64
+            image: manylinux_2_28_x86_64
+            platforms: "linux/amd64"
+            dart_version: v7.0
+            experimental: false
+
+          - dockerfile: Dockerfile.manylinux_2_28_aarch64
+            base_image: jslee02/dart-dev:manylinux_2_28_aarch64-min-v7.0
+            image: manylinux_2_28_aarch64
+            platforms: "linux/arm64"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_ppc64le
+            base_image: jslee02/dart-dev:manylinux_2_28_ppc64le-min-v7.0
+            image: manylinux_2_28_ppc64le
+            platforms: "linux/ppc64le"
+            dart_version: v7.0
+            experimental: true
+
+          - dockerfile: Dockerfile.manylinux_2_28_s390x
+            base_image: jslee02/dart-dev:manylinux_2_28_s390x-min-v7.0
+            image: manylinux_2_28_s390x
+            platforms: "linux/s390x"
+            dart_version: v7.0
+            experimental: true
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          file: ./docker/dev/${{ matrix.dart_version }}/${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          build-args: BASE_IMAGE=${{ matrix.base_image }}
+          push: true
+          tags: ${{ env.DOCKER_REPO }}:${{ matrix.image }}-${{ matrix.dart_version }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
