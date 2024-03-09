@@ -72,4 +72,3 @@ jobs:
         with:
           cache: true
       - run: pixi run build
-      - run: pixi run build_dartpy
