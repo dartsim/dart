@@ -15,7 +15,7 @@ RUN apt-get update -qq
 RUN apt-get install -y --no-install-recommends \
     build-essential \
     clang \
-    clang-format-12 \
+    clang-format-14 \
     cmake \
     curl \
     doxygen \

@@ -5,10 +5,12 @@ on:
     branches: ["**"]
     paths:
       - ".github/workflows/cache_docker.yml"
+      - "docker/dev/**"
   pull_request:
     branches: ["**"]
     paths:
       - ".github/workflows/cache_docker.yml"
+      - "docker/dev/**"
   release:
     types: [published]
   schedule:
@@ -26,8 +28,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [focal, jammy, noble]
-        dart_version: [v6.13, v6.14]
+        distro: [jammy, noble]
+        dart_version: [v6.14]
         platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
         build_min: [OFF]
         include:
