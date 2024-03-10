@@ -36,7 +36,7 @@ jobs:
           %VCPKG_ROOT%\bootstrap-vcpkg.bat
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: base
           path: ${{ env.VCPKG_ROOT }}
@@ -116,7 +116,7 @@ jobs:
           )
 
       - name: Upload Vcpkg Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.zip-name }}
           path: ./${{ matrix.zip-name }}.zip
