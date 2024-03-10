@@ -59,7 +59,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -100,7 +100,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -138,7 +138,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -185,7 +185,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -267,7 +267,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -357,7 +357,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
