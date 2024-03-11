@@ -72,7 +72,7 @@ jobs:
       # https://github.com/marketplace/actions/build-and-push-docker-images
       - name: Build and push (min)
         id: docker_build_min
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         if: ${{ matrix.build_min == 'ON' }}
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.ubuntu.${{ env.UBUNTU_VERSION }}-min
@@ -81,7 +81,7 @@ jobs:
           tags: ${{ env.DOCKER_REPO }}:ubuntu-${{ env.UBUNTU_VERSION }}-min-${{ env.DART_VERSION }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.ubuntu.${{ env.UBUNTU_VERSION }}
           platforms: ${{ matrix.platforms }}
@@ -113,7 +113,7 @@ jobs:
       # https://github.com/marketplace/actions/build-and-push-docker-images
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile
           push: true
@@ -152,14 +152,14 @@ jobs:
       - name: Build and push (min)
         if: ${{ matrix.build_min == 'ON' }}
         id: docker_build_min
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}-min
           push: true
           tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-min-${{ env.DART_VERSION }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}
           push: true
@@ -198,7 +198,7 @@ jobs:
       # https://github.com/marketplace/actions/build-and-push-docker-images
       - name: Build and push (min)
         id: docker_build_min
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}-min
           platforms: ${{ matrix.platforms }}
@@ -206,7 +206,7 @@ jobs:
           tags: ${{ env.DOCKER_REPO }}:${{ env.OS_VERSION }}-min-${{ env.DART_VERSION }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile.${{ env.OS_VERSION }}
           platforms: ${{ matrix.platforms }}
@@ -280,7 +280,7 @@ jobs:
       # https://github.com/marketplace/actions/build-and-push-docker-images
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ matrix.dart_version }}/${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
@@ -370,7 +370,7 @@ jobs:
       # https://github.com/marketplace/actions/build-and-push-docker-images
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           file: ./docker/dev/${{ matrix.dart_version }}/${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
