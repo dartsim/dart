@@ -70,7 +70,7 @@ jobs:
 
     steps:
       - name: Download Base Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: base
           path: ${{ env.VCPKG_ROOT }}
