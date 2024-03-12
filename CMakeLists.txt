@@ -118,8 +118,11 @@ message(STATUS "")
 
 # Print build tool information
 message(STATUS "[ Build Tools ]")
-message(STATUS "- CMake: ${CMAKE_VERSION}")
-message(STATUS "- C++  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "- CMake               : ${CMAKE_VERSION}")
+message(STATUS "- C++                 : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+if(MSVC)
+  message(STATUS "- CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+endif()
 message(STATUS "")
 
 #===============================================================================

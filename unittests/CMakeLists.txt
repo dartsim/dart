@@ -140,8 +140,16 @@ add_custom_target(
 )
 
 # Add custom target to build all the tests and run the tests
-add_custom_target(tests_and_run COMMAND ${CMAKE_CTEST_COMMAND}
-  DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
-)
+if(MSVC)
+  add_custom_target(tests_and_run
+    COMMAND ${CMAKE_CTEST_COMMAND} --rerun-failed --output-on-failure -C ${CMAKE_BUILD_TYPE}
+    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+  )
+else()
+  add_custom_target(tests_and_run
+    COMMAND ${CMAKE_CTEST_COMMAND} --rerun-failed --output-on-failure
+    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+  )
+endif()
 
 dart_format_add(GTestUtils.hpp)

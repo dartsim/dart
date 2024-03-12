@@ -21,7 +21,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.build_type }}
+    name: mac-${{ matrix.build_type }}
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -40,3 +40,15 @@ jobs:
         run: .ci/install_osx.sh
       - name: Build
         run: sudo -E .ci/build.sh
+
+  build_on_pixi:
+    name: mac-pixi
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.5.1
+        with:
+          cache: true
+      - run: |
+          pixi run test_all

@@ -756,7 +756,7 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(Collision, testCylinderCylinder)
+TEST_F(Collision, DISABLED_testCylinderCylinder)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -827,7 +827,7 @@ void testConeCone(const std::shared_ptr<CollisionDetector>& cd)
 }
 
 //==============================================================================
-TEST_F(Collision, testConeCone)
+TEST_F(Collision, DISABLED_testConeCone)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);

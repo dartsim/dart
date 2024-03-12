@@ -1,6 +1,6 @@
 # https://help.github.com/en/articles/workflow-syntax-for-github-actions
 
-name: CI Ubuntu
+name: CI Linux
 
 on:
   push:
@@ -20,15 +20,15 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
 
 jobs:
-  build:
+  build_on_docker:
     if: github.event_name != 'workflow_dispatch'
-    name: ${{ matrix.os }}.${{ matrix.build_type }}
+    name: linux-docker-${{ matrix.os }}-${{ matrix.build_type }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-jammy, ubuntu-noble]
+        os: [ubuntu-jammy, ubuntu-noble, archlinux]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]
@@ -44,6 +44,7 @@ jobs:
       # Hosted on: https://hub.docker.com/repository/docker/jslee02/dart-dev
       DART_DEV_IMAGE: jslee02/dart-dev
       DOCKER_TAG: ${{ matrix.os }}-v6.14
+      PLATFORM: linux/amd64
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: "${{ matrix.build_dartpy }}"
@@ -52,7 +53,7 @@ jobs:
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
       - name: Checkout
         uses: actions/checkout@v4
       - name: Pull dev container
@@ -64,12 +65,14 @@ jobs:
           fi
           docker run \
             $ci_env -e CI=true \
+            --platform $PLATFORM \
             --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
             --env-file ./.ci/docker/env.list \
             $DART_DEV_IMAGE:$DOCKER_TAG \
             /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
 
-  build_with_pixi:
+  build_on_pixi:
+    name: ubuntu-pixi
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -77,4 +80,5 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.5.1
         with:
           cache: true
-      - run: pixi run build
+      - run: |
+          pixi run test_all

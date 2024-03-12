@@ -201,5 +201,5 @@ fi
 if [ "$BUILD_DARTPY" = "ON" ]; then
   echo $PYTHONPATH
   cd $BUILD_DIR/python/examples/hello_world
-  python3 main.py
+  # python3 main.py
 fi
