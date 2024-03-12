@@ -43,7 +43,7 @@ jobs:
         run: echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Pull dev container
         run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
