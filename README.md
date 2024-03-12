@@ -8,6 +8,7 @@
 | API Documentation | [![API Documentation](https://github.com/dartsim/dart/actions/workflows/api_doc.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/api_doc.yml) |
 | Coverage          | [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) |
 | Static Analysis   | [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dartsim/dart&amp;utm_campaign=Badge_Grade) |
+| Packages          | [![Packaging status](https://repology.org/badge/vertical-allrepos/dartsim.svg)](https://repology.org/project/dartsim/versions) |
 
 ## Resources
 
