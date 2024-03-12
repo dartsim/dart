@@ -31,23 +31,17 @@ jobs:
         # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
         build_shared_libs: [OFF]
 
-    env:
-      BUILD_TYPE: ${{ matrix.build_type }}
-      VCPKG_ROOT: "C:/dartsim/vcpkg"
-      ZIP_NAME: vcpkg-dartsim-deps-v6.14
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Download vcpkg
-        id: download-vcpkg
-        uses: dawidd6/action-download-artifact@v3.1.2
+      - uses: johnwason/vcpkg-action@v6
         with:
-          workflow: "cache_vcpkg.yml"
-          workflow_conclusion: success
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.VCPKG_ROOT }}
+          pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt flann freeglut glfw3 nlopt ode opengl osg pagmo2 pybind11 tinyxml2 urdfdom
+          triplet: x64-windows-release
+          revision: "2024.02.14"
+          github-binarycache: true
+          token: ${{ github.token }}
 
       - name: Install Python dependencies
         run: |
@@ -60,8 +54,8 @@ jobs:
           mkdir build
           cd build
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
-            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
