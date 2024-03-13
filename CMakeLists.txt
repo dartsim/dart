@@ -178,6 +178,8 @@ else()
   option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
 endif()
 
+option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
+
 #===============================================================================
 # Find dependencies
 #===============================================================================
@@ -250,8 +252,13 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if(GCC_VERSION VERSION_LESS 7.3.0)
-    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 7.3.0 or greater.")
+  if(DART_BUILD_WHEELS)
+    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
+  else()
+    set(gcc_required_version 11.2.0)
+  endif()
+  if(GCC_VERSION VERSION_LESS ${gcc_required_version})
+    message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ ${gcc_required_version} or greater.")
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # TODO: These warnings should be properly addressed and these compiler options removed

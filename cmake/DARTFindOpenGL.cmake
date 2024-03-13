@@ -10,7 +10,11 @@ cmake_policy(PUSH)
 
 # Use GLVND over the legacy OpenGL libraries
 if(POLICY CMP0072)
-  cmake_policy(SET CMP0072 NEW)
+  if(DART_BUILD_WHEELS)
+    cmake_policy(SET CMP0072 OLD)
+  else()
+    cmake_policy(SET CMP0072 NEW)
+  endif()
 endif()
 
 # Use OpenGL config if available
