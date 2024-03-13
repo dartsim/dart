@@ -21,6 +21,7 @@ TAGS
 *.dep
 *.manifest
 *.rsp
+*.pyc
 *~
 .idea/*
 /nbproject/
