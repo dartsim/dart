@@ -1,37 +1,69 @@
+# Custom build files
 build/
 .build/
-syntax: glob
+
+# Vim swap files
 *.swp
 *.swo
+
+# CMake files
 CPack*
 CTest*
 Testing/
+
+# Emacs TAGS file
 TAGS
+
+# macOS system files
 .DS_Store
+
+# Eclipse project files
 .cproject
 .project
+
+# Visual Studio Code workspace
 .vscode
+
+# Backup & temporary files
 *.orig
+*.bak
+*~
+*.temp
+
+# Binary & build artifacts
 *.idb
 *.pdb
 *.ncb
 *.suo
-*.htm
 *.user
 *.dep
 *.manifest
 *.rsp
+
+# Python bytecode
 *.pyc
-*~
+
+# Web files
+*.htm
+
+# JetBrains IDE
 .idea/*
+
+# NetBeans project
 /nbproject/
+
+# Doxygen documentation
 /doxygen/html/
+
+# Sphinx documentation
 docs/readthedocs/site
+
+# Data files
 data/screencap/*
 
-# Python
+# Python distribution artifacts
 dist/
 *.egg-info
+
 # pixi environments
 .pixi
-
