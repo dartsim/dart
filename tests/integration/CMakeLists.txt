@@ -96,11 +96,6 @@ if(TARGET dart-utils-urdf)
   endif()
 endif()
 
-if(TARGET dart-planning)
-  dart_add_test("integration" test_NearestNeighbor)
-  target_link_libraries(test_NearestNeighbor dart-planning)
-endif()
-
 dart_format_add(
   GeneratedWamIkFast.cpp
   SharedLibraryWamIkFast.hpp

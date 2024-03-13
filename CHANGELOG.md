@@ -9,6 +9,10 @@
   * macOS 12 (Monterey) / Clang 14 / amd64
   * Windows / MSVC 19.37 / amd64
 
+* Breaking Changes
+
+  * Removed planning component
+
 ### [DART 6.13.1 (2024-01-04)](https://github.com/dartsim/dart/milestone/74?closed=1)
 
 * Tested Platforms

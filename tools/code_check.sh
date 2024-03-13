@@ -12,7 +12,6 @@ CHECK_DIRS="#../dart/collision\
             #../dart/lcpsolver\
             #../dart/math\
             #../dart/optimizer\
-            #../dart/planning\
             #../dart/renderer\
             #../dart/simulation\
             #../dart/utils\
