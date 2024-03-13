@@ -2,7 +2,7 @@
 
 coverage:
   ignore:
-    - "unittests"
+    - "tests"
     - "dart/external"
     - "dart/gui"
 

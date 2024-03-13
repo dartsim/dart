@@ -1,5 +1,5 @@
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest/include)
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest)
+include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/tests/gtest/include)
+include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/tests/gtest)
 
 function(dartc_add_test test_type target_name) # ARGN for source files
 

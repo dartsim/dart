@@ -39,4 +39,4 @@ assignees: ''
 
 #### Code to Reproduce
 > Please remember that with a working code it's easier to reproduce the bug and it's much faster to fix it.
-> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/master/unittests/regression/test_Issue000Template.cpp).
+> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/master/tests/regression/test_Issue000Template.cpp).
