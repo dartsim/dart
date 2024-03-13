@@ -21,11 +21,12 @@ on:
 
 jobs:
   build:
-    name: mac-${{ matrix.build_type }}
-    runs-on: macos-latest
+    name: ${{ matrix.os }}-${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [macos-latest]
         build_type: [Release]
     env:
       COMPILER: clang
@@ -42,8 +43,12 @@ jobs:
         run: sudo -E .ci/build.sh
 
   build_on_pixi:
-    name: mac-pixi
-    runs-on: macos-latest
+    name: ${{ matrix.os }}-pixi
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
