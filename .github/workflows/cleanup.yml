@@ -1,18 +1,19 @@
-name: Remove Expired Workflow Runs
+# https://github.com/orgs/community/discussions/26256#discussioncomment-8756475
+
+name: Remove Expired Workflows
 on:
-  schedule: [{ cron: "30 1 * * *" }] # Schedule to run the workflow every day at 1:30 AM
+  schedule: [{ cron: "0 3 * * 0" }] # Run every Sunday at 3 AM
   workflow_dispatch:
 
 jobs:
   clean:
-    name: Delete Expired Workflow Runs
+    name: Delete Expired Workflows
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Run Delete Script
         run: sh ./.ci/cleanup.sh dartsim dart
-        working-directory: .github/actions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
