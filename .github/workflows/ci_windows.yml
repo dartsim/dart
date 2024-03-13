@@ -49,26 +49,26 @@ jobs:
 
       - name: Build
         run: |
-          cmake ^
-            -S . ^
-            -B build ^
-            -G "Visual Studio 17 2022" ^
-            -A x64 ^
-            -Wno-dev ${{ matrix.toolset }} ^
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
-            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
-            -DDART_VERBOSE=ON ^
+          cmake `
+            -S . `
+            -B build `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
+            -Wno-dev ${{ matrix.toolset }} `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DDART_MSVC_DEFAULT_OPTIONS=ON `
+            -DDART_VERBOSE=ON `
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
-          cmake ^
-            --build build ^
-            --config %BUILD_TYPE% ^
-            --target ALL_BUILD ^
+          cmake `
+            --build build `
+            --config %BUILD_TYPE% `
+            --target ALL_BUILD `
             --parallel
-          ctest ^
-            --test-dir build ^
-            --rerun-failed ^
-            --output-on-failure ^
+          ctest `
+            --test-dir build `
+            --rerun-failed `
+            --output-on-failure `
             --config %BUILD_TYPE%
 
   # build_on_pixi:
