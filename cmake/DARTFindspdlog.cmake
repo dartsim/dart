@@ -2,7 +2,7 @@
 # All rights reserved.
 #
 # The list of contributors can be found at:
-#   https://github.com/dartsim/dart/blob/master/LICENSE
+#   https://github.com/dartsim/dart/blob/main/LICENSE
 #
 # This file is provided under the "BSD-style" License
 
