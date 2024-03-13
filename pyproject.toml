@@ -1,0 +1,78 @@
+# Copyright (c) 2011-2023, The DART development contributors
+# All rights reserved.
+
+[build-system]
+requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12", "requests"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+files = "setup.py"
+python_version = "3.7"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["ninja"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]
+testpaths = ["tests"]
+
+# https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
+[tool.cibuildwheel]
+manylinux-x86_64-image = "jslee02/dart-dev:manylinux2014_x86_64-v7.0"
+manylinux-aarch64-image = "jslee02/dart-dev:manylinux2014_aarch64-v7.0"
+manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux2014_x86_64-v7.0"
+manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux2014_aarch64-v7.0"
+test-requires = "pytest"
+test-command = "pytest {project}/python/tests"
+# https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
+skip = [
+    # Common
+    "pp*",
+
+    # Linux
+    "*musllinux*",
+    "cp36-*linux*",
+
+    # macOS
+    "cp36-macosx*",
+    "cp37-macosx*",
+
+    # macOS (arm64)
+    "cp39-macosx_arm64",
+
+    # Windows
+    "cp*-win32",
+    "cp36-win*",
+    "cp37-win*",
+]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+environment-pass = ["DART_IN_CI"]
+
+[tool.cibuildwheel.macos]
+archs = ["auto64"]
+environment = { HOMEBREW_NO_INSTALL_CLEANUP = 1 }
+before-all = [
+    "brew update > /dev/null",
+    "brew bundle || brew bundle",
+    "brew install open-scene-graph --HEAD",
+    "sw_vers",
+]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64", "ARM64"]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
