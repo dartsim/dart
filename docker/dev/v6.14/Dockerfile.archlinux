@@ -12,7 +12,6 @@ RUN yay -Syu --needed --noconfirm \
     freeglut \
     nlopt \
     octomap \
-    ode \
     opencl-clhpp \
     opencl-headers \
     opencl-icd-loader \
@@ -21,6 +20,7 @@ RUN yay -Syu --needed --noconfirm \
     spdlog \
     tinyxml2 \
     urdfdom
+# TODO: ode is removed because the collision test with ODE on arch is failing
 
 # ==============================================================================
 # Python binding dependencies
