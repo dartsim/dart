@@ -37,7 +37,7 @@ jobs:
       - uses: johnwason/vcpkg-action@v6
         with:
           pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt flann freeglut glfw3 nlopt ode opengl osg pagmo2 pybind11 tinyxml2 urdfdom
-          triplet: x64-windows-release
+          triplet: x64-windows
           revision: "2024.02.14"
           github-binarycache: true
           token: ${{ github.token }}
