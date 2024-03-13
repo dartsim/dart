@@ -95,7 +95,6 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_BUILD_DARTPY "Build dartpy" ON)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
@@ -398,12 +397,8 @@ endif()
 
 add_subdirectory(python)
 
-if(DART_BUILD_EXTRAS)
-  add_subdirectory(extras)
-endif()
-
 # Add 'ALL' target that builds everything
-set(all_target_candidates tests_and_run dartpy pytest dartc)
+set(all_target_candidates tests_and_run dartpy pytest)
 foreach(target_candidate ${all_target_candidates})
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
