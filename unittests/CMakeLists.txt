@@ -30,19 +30,18 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-# GoogleTest setup
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest/include)
-include_directories(BEFORE SYSTEM ${DART_SOURCE_DIR}/unittests/gtest)
-add_library(gtest STATIC gtest/src/gtest-all.cc)
-add_library(gtest_main STATIC gtest/src/gtest_main.cc)
-target_link_libraries(gtest_main gtest)
-if(NOT WIN32)
-  target_link_libraries(gtest pthread)
-endif()
-set_target_properties(
-  gtest PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${DART_BINARY_DIR}/lib
+# Set up GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest
+  GIT_TAG v1.14.0
 )
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 #===============================================================================
 # This function uses following global properties:
