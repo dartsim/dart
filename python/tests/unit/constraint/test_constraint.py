@@ -1,7 +1,8 @@
 import platform
-import pytest
+
 import dartpy as dart
 import numpy as np
+import pytest
 
 
 def test_ball_joint_constraint():

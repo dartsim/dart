@@ -1,6 +1,7 @@
-import pytest
 import math
+
 import dartpy as dart
+import pytest
 
 
 # Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial

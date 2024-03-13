@@ -1,16 +1,16 @@
 ﻿import contextlib
-import os
-import re
-import sys
-import platform
-import subprocess
-import glob
-
-from codecs import open  # To use a consistent encoding
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
-from distutils.version import LooseVersion
 import distutils.log
+import glob
+import os
+import platform
+import re
+import subprocess
+import sys
+from codecs import open  # To use a consistent encoding
+from distutils.version import LooseVersion
+
+from setuptools import Extension, setup
+from setuptools.command.build_ext import build_ext
 
 # Get the current directory path.
 dart_root = os.path.abspath(os.path.dirname(__file__))

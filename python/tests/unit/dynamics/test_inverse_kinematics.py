@@ -1,8 +1,9 @@
-import platform
-import pytest
 import math
-import numpy as np
+import platform
+
 import dartpy as dart
+import numpy as np
+import pytest
 
 
 def test_solve_for_free_joint():
