@@ -88,13 +88,13 @@ freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
 configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON"
-build = { cmd = "cmake --build build -j --target all -C Release", depends_on = [
+build = { cmd = "cmake --build build --config Release -j --target all", depends_on = [
     "configure",
 ] }
-test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure -C Release", depends_on = [
+test = { cmd = "ctest --test-dir build --build-config Release --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
-test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
+test_all = { cmd = "cmake --build build --config Release -j4 --target ALL", depends_on = [
     "configure",
 ] }
 
