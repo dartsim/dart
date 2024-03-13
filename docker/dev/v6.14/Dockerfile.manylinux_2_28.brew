@@ -1,0 +1,30 @@
+ARG BASE_IMAGE=quay.io/pypa/manylinux_2_28_x86_64
+FROM $BASE_IMAGE
+
+ARG NUM_CORES=14
+
+# Install essential dev tools
+RUN yum groupinstall -y 'Development Tools'
+
+# Install Homebrew on Linux and follow-ups
+RUN useradd -m -s /bin/zsh linuxbrew && \
+    usermod -aG root linuxbrew &&  \
+    mkdir -p /home/linuxbrew/.linuxbrew && \
+    chown -R linuxbrew: /home/linuxbrew/.linuxbrew
+USER linuxbrew
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+RUN chown -R $CONTAINER_USER: /home/linuxbrew/.linuxbrew
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
+RUN brew install gcc
+
+# Build dependencies
+RUN brew install cmake pkg-config
+
+# DART dependencies
+RUN brew install assimp bullet eigen fcl fmt flann freeglut ipopt libccd nlopt octomap ode pagmo spdlog tinyxml2 urdfdom yaml-cpp
+RUN brew install open-scene-graph --HEAD
+
+# dartpy dependencies
+RUN brew install pybind11
+
+USER root

@@ -1,5 +1,5 @@
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM jslee02/dart-dev:archlinux-min-v7.0
+FROM --platform=$TARGETPLATFORM jslee02/dart-dev:archlinux-min-v6.14
 
 USER builder
 
