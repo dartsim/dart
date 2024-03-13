@@ -24,10 +24,8 @@ RUN apt-get update \
     libnlopt-cxx-dev \
     coinor-libipopt-dev \
     libbullet-dev \
-    liblz4-dev \
     libode-dev \
     liboctomap-dev \
-    libflann-dev \
     libtinyxml2-dev \
     liburdfdom-dev \
     libxi-dev \

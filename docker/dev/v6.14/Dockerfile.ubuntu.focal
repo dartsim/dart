@@ -47,8 +47,6 @@ RUN apt-get install -y --no-install-recommends \
     libxi-dev \
     libxmu-dev \
     libbullet-dev \
-    liblz4-dev \
-    libflann-dev \
     libtinyxml2-dev \
     liburdfdom-dev \
     liburdfdom-headers-dev \
