@@ -6,17 +6,15 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT DARTPY_PYTHON_VERSION)
-  set(DARTPY_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
-endif()
+# Set up pybind11
+include(FetchContent)
+FetchContent_Declare(
+  pybind11
+  GIT_REPOSITORY https://github.com/pybind/pybind11
+  GIT_TAG v2.11.1
+)
+FetchContent_MakeAvailable(pybind11)
 
-# Find pybind11, including PythonInterp and PythonLibs
-# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION ${DARTPY_PYTHON_VERSION})
-if(WIN32)
-  set(PYBIND11_FINDPYTHON TRUE)
-endif()
-find_package(pybind11 2.2.0 QUIET)
 if(NOT pybind11_FOUND)
   message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
   return()
