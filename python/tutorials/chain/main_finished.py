@@ -3,11 +3,11 @@ import numpy as np
 import dartpy as dart
 
 
-default_height = 1.0 # m
+default_height = 1.0  # m
 default_width = 0.2  # m
 default_depth = 0.2  # m
 
-default_torque = 15.0 # N-m
+default_torque = 15.0  # N-m
 default_force = 15.0  # N
 default_countdown = 200  # Number of timesteps for applying force
 
@@ -44,7 +44,7 @@ def set_geometry(body):
 
 def make_root_body(chain, name):
     joint_prop = dart.dynamics.BallJointProperties()
-    joint_prop.mName = name + '_joint'
+    joint_prop.mName = name + "_joint"
     joint_prop.mRestPositions = np.ones(3) * default_rest_position
     joint_prop.mSpringStiffnesses = np.ones(3) * default_stiffness
     joint_prop.mDampingCoefficients = np.ones(3) * default_damping
@@ -79,7 +79,9 @@ def add_body(chain, parent, name):
     body_prop = dart.dynamics.BodyNodeProperties(body_aspect_prop)
 
     # Create a new BodyNode, attached to its parent by a RevoluteJoint
-    [joint, body] = chain.createRevoluteJointAndBodyNodePair(parent, joint_prop, body_prop)
+    [joint, body] = chain.createRevoluteJointAndBodyNodePair(
+        parent, joint_prop, body_prop
+    )
 
     joint.setRestPosition(0, default_rest_position)
     joint.setSpringStiffness(0, default_stiffness)
@@ -119,18 +121,18 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 def main():
     # Create an empty Skeleton with the name 'chain'
-    chain = dart.dynamics.Skeleton('chain')
+    chain = dart.dynamics.Skeleton("chain")
 
     # Add each body to the last BodyNode in the pendulum
-    body = make_root_body(chain, 'body1')
-    body = add_body(chain, body, 'body2')
-    body = add_body(chain, body, 'body3')
-    body = add_body(chain, body, 'body4')
-    body = add_body(chain, body, 'body5')
+    body = make_root_body(chain, "body1")
+    body = add_body(chain, body, "body2")
+    body = add_body(chain, body, "body3")
+    body = add_body(chain, body, "body4")
+    body = add_body(chain, body, "body5")
 
     # Set the initial position of the first DegreeOfFreedom so that the pendulum
     # starts to swing right away
-    chain.setPosition(1, 120 * math.pi / 180.0);
+    chain.setPosition(1, 120 * math.pi / 180.0)
 
     world = dart.simulation.World()
     world.addSkeleton(chain)

@@ -9,31 +9,32 @@ def main():
 
     tf.set_translation([4, -4, 0])
     frame = dart.gui.osg.InteractiveFrame(
-        dart.dynamics.Frame.World(), 'interactive frame', tf, 2)
+        dart.dynamics.Frame.World(), "interactive frame", tf, 2
+    )
     world.addSimpleFrame(frame)
 
     tf.set_translation([-4, 4, 0])
-    draggable = dart.dynamics.SimpleFrame(frame, 'draggable', tf)
+    draggable = dart.dynamics.SimpleFrame(frame, "draggable", tf)
     draggable.setShape(dart.dynamics.BoxShape([1, 1, 1]))
     draggable.getVisualAspect(True).setColor([0.9, 0, 0])
     world.addSimpleFrame(draggable)
 
     tf.set_translation([8, 0, 0])
-    x_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'X', tf)
+    x_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "X", tf)
     x_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     x_marker.setShape(x_shape)
     x_marker.getVisualAspect(True).setColor([0.9, 0, 0])
     world.addSimpleFrame(x_marker)
 
     tf.set_translation([0, 8, 0])
-    y_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Y', tf)
+    y_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "Y", tf)
     y_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     y_marker.setShape(y_shape)
     y_marker.getVisualAspect(True).setColor([0, 0.9, 0])
     world.addSimpleFrame(y_marker)
 
     tf.set_translation([0, 0, 8])
-    z_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), 'Z', tf)
+    z_marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "Z", tf)
     z_shape = dart.dynamics.BoxShape([0.2, 0.2, 0.2])
     z_marker.setShape(z_shape)
     z_marker.getVisualAspect(True).setColor([0, 0, 0.9])

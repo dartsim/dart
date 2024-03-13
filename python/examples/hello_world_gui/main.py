@@ -51,9 +51,9 @@ def main():
     viewer.addAttachment(grid)
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([2.0, 1.0, 2.0],
-                                 [0.00, 0.00, 0.00],
-                                 [-0.24, 0.94, -0.25])
+    viewer.setCameraHomePosition(
+        [2.0, 1.0, 2.0], [0.00, 0.00, 0.00], [-0.24, 0.94, -0.25]
+    )
     viewer.run()
 
 

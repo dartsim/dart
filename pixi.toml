@@ -34,6 +34,8 @@ pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.1.1,<8.2"
 doxygen = ">=1.10.0,<1.11"
 setuptools = ">=69.1.1,<69.2"
+black = ">=24.2.0,<24.3"
+isort = ">=5.13.2,<5.14"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"

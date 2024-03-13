@@ -23,9 +23,9 @@ def test_seed():
 
     for i in range(N):
         Random.setSeed(i)
-        first.append(Random.uniform(min, max));
-        second.append(Random.uniform(min, max));
-        third.append(Random.uniform(min, max));
+        first.append(Random.uniform(min, max))
+        second.append(Random.uniform(min, max))
+        third.append(Random.uniform(min, max))
 
     for i in range(N):
         Random.setSeed(i)

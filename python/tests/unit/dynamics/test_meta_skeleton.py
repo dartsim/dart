@@ -11,17 +11,17 @@ def test_basic():
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
-    shoulder = kr5.getBodyNode('shoulder')
+    shoulder = kr5.getBodyNode("shoulder")
     assert shoulder is not None
 
-    elbow = kr5.getBodyNode('elbow')
+    elbow = kr5.getBodyNode("elbow")
     assert elbow is not None
 
-    chain1 = dart.dynamics.Chain(shoulder, elbow, False, 'midchain')
+    chain1 = dart.dynamics.Chain(shoulder, elbow, False, "midchain")
     assert chain1 is not None
     assert chain1.getNumBodyNodes() is 2
 
-    chain2 = dart.dynamics.Chain(shoulder, elbow, True, 'midchain')
+    chain2 = dart.dynamics.Chain(shoulder, elbow, True, "midchain")
     assert chain2 is not None
     assert chain2.getNumBodyNodes() is 3
 
