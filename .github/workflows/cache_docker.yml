@@ -41,18 +41,6 @@ jobs:
             build_min: ON
             dart_version: v7.0
             platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
-          # - distro: jammy
-          #   build_min: ON
-          #   dart_version: v8.0
-          #   platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
-          # - distro: jammy-cuda
-          #   build_min: OFF
-          #   dart_version: v8.0
-          #   platforms: linux/amd64,linux/arm64
-          # - distro: lunar
-          #   build_min: ON
-          #   dart_version: v8.0
-          #   platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
     env:
       UBUNTU_VERSION: ${{ matrix.distro }}
       DART_VERSION: ${{ matrix.dart_version }}
@@ -174,7 +162,6 @@ jobs:
       fail-fast: false
       matrix:
         distro: [fedora]
-        # dart_version: [v7.0, v8.0]
         dart_version: [v7.0]
         platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
         build_min: [ON]
