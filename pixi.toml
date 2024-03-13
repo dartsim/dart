@@ -99,3 +99,6 @@ test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure -C Rel
 test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
     "configure",
 ] }
+
+[target.win-64.build-dependencies]
+freeglut = ">=3.2.2,<3.3"
