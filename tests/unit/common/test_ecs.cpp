@@ -55,7 +55,9 @@ void update(entt::registry& registry)
   view.each([](const auto& /*pos*/, auto& /*vel*/) { /* ... */ });
 
   // use an extended callback
-  view.each([](const auto /*entity*/, const auto& /*pos*/, auto& /*vel*/) { /* ... */ });
+  view.each([](const auto /*entity*/,
+               const auto& /*pos*/,
+               auto& /*vel*/) { /* ... */ });
 
   // use a range-for
   for (auto [entity, pos, vel] : view.each())

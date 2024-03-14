@@ -8,6 +8,8 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [tasks]
 clean = "rm -rf build"
+lint = { cmd= "cmake --build build --target format", depends_on = ["configure"] }
+check-lint = { cmd= "cmake --build build --target check-format", depends_on = ["configure"] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
