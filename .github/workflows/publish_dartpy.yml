@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
   schedule:
     - cron: "0 10 * * 0,3"
 
