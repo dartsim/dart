@@ -26,9 +26,6 @@ urdfdom = ">=4.0.0,<4.1"
 ipopt = ">=3.14.14,<3.15"
 nlopt = ">=2.7.1,<2.8"
 pagmo = ">=2.19.0,<2.20"
-glfw = ">=3.4,<4"
-glew = ">=2.1.0,<2.2"
-pyopengl = ">=3.1.6,<3.2"
 numpy = ">=1.26.4,<1.27"
 
 [build-dependencies]
@@ -44,7 +41,6 @@ pip = ">=24.0,<25"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
-xorg-libx11 = ">=1.8.7,<1.9"
 
 [target.linux-64.tasks]
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
