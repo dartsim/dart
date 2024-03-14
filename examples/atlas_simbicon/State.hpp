@@ -33,12 +33,13 @@
 #ifndef EXAMPLES_ATLASSIMBICON_STATE_HPP_
 #define EXAMPLES_ATLASSIMBICON_STATE_HPP_
 
+#include <dart/dart.hpp>
+
+#include <Eigen/Dense>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include <Eigen/Dense>
-#include <dart/dart.hpp>
 
 #define ATLAS_DEFAULT_KD 1.0 // No more than 1.0
 #define ATLAS_DEFAULT_KP 1e+3

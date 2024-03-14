@@ -32,16 +32,16 @@
 
 #include "dart/gui/osg/WorldNode.hpp"
 
-#include <deque>
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/simulation/World.hpp"
 
 #include <osg/NodeCallback>
 #include <osgShadow/ShadowMap>
 #include <osgShadow/ShadowedScene>
 
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/simulation/World.hpp"
+#include <deque>
 
 namespace dart {
 namespace gui {

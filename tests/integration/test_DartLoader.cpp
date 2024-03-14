@@ -30,16 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 using namespace dart;
 using dart::common::Uri;

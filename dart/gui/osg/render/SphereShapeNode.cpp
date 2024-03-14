@@ -32,6 +32,10 @@
 
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
 
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/gui/osg/Utils.hpp"
+
 #include <osg/BlendFunc>
 #include <osg/CullFace>
 #include <osg/Depth>
@@ -39,10 +43,6 @@
 #include <osg/Light>
 #include <osg/Material>
 #include <osg/ShapeDrawable>
-
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

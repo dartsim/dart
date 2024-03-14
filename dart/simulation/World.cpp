@@ -38,16 +38,16 @@
 
 #include "dart/simulation/World.hpp"
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace simulation {

@@ -33,10 +33,6 @@
 #ifndef DART_DYNAMICS_SHAPE_HPP_
 #define DART_DYNAMICS_SHAPE_HPP_
 
-#include <memory>
-
-#include <Eigen/Dense>
-
 #include "dart/common/Castable.hpp"
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Deprecated.hpp"
@@ -45,6 +41,10 @@
 #include "dart/common/VersionCounter.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/math/Geometry.hpp"
+
+#include <Eigen/Dense>
+
+#include <memory>
 
 namespace dart {
 namespace dynamics {

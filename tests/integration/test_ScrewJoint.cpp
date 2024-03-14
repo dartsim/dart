@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <tuple>
+#include "dart/dart.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/dart.hpp"
+#include <tuple>
 
 using namespace dart;
 

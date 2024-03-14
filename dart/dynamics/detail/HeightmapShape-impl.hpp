@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
+
+#include <algorithm>
+#include <limits>
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {

@@ -33,11 +33,11 @@
 #ifndef DART_COMMON_DETAIL_ALIGNEDALLOCATOR_HPP_
 #define DART_COMMON_DETAIL_ALIGNEDALLOCATOR_HPP_
 
-#include <memory>
+#include "dart/config.hpp"
 
 #include <Eigen/Core>
 
-#include "dart/config.hpp"
+#include <memory>
 
 namespace dart {
 namespace common {

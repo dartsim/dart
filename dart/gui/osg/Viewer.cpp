@@ -32,11 +32,6 @@
 
 #include "dart/gui/osg/Viewer.hpp"
 
-#include <iomanip>
-
-#include <osg/OperationThread>
-#include <osgDB/WriteFile>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -47,6 +42,11 @@
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/detail/CameraModeCallback.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <osg/OperationThread>
+#include <osgDB/WriteFile>
+
+#include <iomanip>
 
 namespace dart {
 namespace gui {

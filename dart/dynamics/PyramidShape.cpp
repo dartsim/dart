@@ -32,12 +32,12 @@
 
 #include "dart/dynamics/PyramidShape.hpp"
 
-#include <cmath>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {

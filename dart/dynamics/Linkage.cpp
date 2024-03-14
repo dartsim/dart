@@ -32,10 +32,10 @@
 
 #include "dart/dynamics/Linkage.hpp"
 
+#include "dart/dynamics/FreeJoint.hpp"
+
 #include <algorithm>
 #include <unordered_set>
-
-#include "dart/dynamics/FreeJoint.hpp"
 
 namespace dart {
 namespace dynamics {

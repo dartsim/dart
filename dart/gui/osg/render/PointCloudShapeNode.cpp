@@ -32,6 +32,11 @@
 
 #include "dart/gui/osg/render/PointCloudShapeNode.hpp"
 
+#include "dart/dynamics/PointCloudShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
+
 #include <osg/Billboard>
 #include <osg/CullFace>
 #include <osg/Geode>
@@ -41,11 +46,6 @@
 #include <osg/Point>
 #include <osg/ShapeDrawable>
 #include <osg/Texture2D>
-
-#include "dart/dynamics/PointCloudShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

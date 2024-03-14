@@ -32,14 +32,14 @@
 
 #include "dart/gui/osg/render/PlaneShapeNode.hpp"
 
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
+
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
-
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
 
 namespace dart {
 namespace gui {

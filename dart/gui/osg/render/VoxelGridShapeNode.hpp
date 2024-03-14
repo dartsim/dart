@@ -37,10 +37,10 @@
 
 #if HAVE_OCTOMAP
 
+  #include "dart/gui/osg/render/ShapeNode.hpp"
+
   #include <osg/MatrixTransform>
   #include <osg/ShapeDrawable>
-
-  #include "dart/gui/osg/render/ShapeNode.hpp"
 
 namespace dart {
 

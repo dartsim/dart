@@ -33,11 +33,11 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
+#include <Eigen/Dense>
+
 #include <functional>
 #include <memory>
 #include <vector>
-
-#include <Eigen/Dense>
 
 namespace dart {
 namespace optimizer {

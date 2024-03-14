@@ -35,8 +35,7 @@
 // should NOT be used anywhere outside of this file (testAspect.cpp).
 #define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
@@ -45,7 +44,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using namespace dart::common;
 

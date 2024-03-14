@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <vector>
+#include "MyWindow.hpp"
 
-#include <dart/dart.hpp>
 #include <dart/utils/utils.hpp>
 
-#include "MyWindow.hpp"
+#include <dart/dart.hpp>
+
+#include <iostream>
+#include <vector>
 
 int main(int argc, char* argv[])
 {

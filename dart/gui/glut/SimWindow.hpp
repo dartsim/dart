@@ -33,13 +33,13 @@
 #ifndef DART_GUI_GLUT_SIMWINDOW_HPP_
 #define DART_GUI_GLUT_SIMWINDOW_HPP_
 
-#include <vector>
-
-#include <Eigen/Dense>
-
 #include "dart/common/Deprecated.hpp"
 #include "dart/gui/glut/Win3D.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <Eigen/Dense>
+
+#include <vector>
 
 namespace dart {
 namespace gui {

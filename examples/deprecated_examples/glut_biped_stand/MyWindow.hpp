@@ -33,13 +33,15 @@
 #ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
 #define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
 
-#include <cstdarg>
+#include "Controller.hpp"
 
-#include <Eigen/Dense>
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 
-#include "Controller.hpp"
+#include <dart/dart.hpp>
+
+#include <Eigen/Dense>
+
+#include <cstdarg>
 
 class MyWindow : public dart::gui::glut::SimWindow
 {

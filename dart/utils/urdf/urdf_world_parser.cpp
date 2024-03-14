@@ -36,15 +36,15 @@
 
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
+#include "dart/common/Console.hpp"
+#include "dart/utils/urdf/IncludeUrdf.hpp"
+
+#include <tinyxml2.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
-
-#include <tinyxml2.h>
-
-#include "dart/common/Console.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
 
 const bool debug = false;
 

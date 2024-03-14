@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 
-#include <ode/ode.h>
-
 #include "dart/collision/CollisionGroup.hpp"
+
+#include <ode/ode.h>
 
 namespace dart {
 namespace collision {

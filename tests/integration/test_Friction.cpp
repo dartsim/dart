@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dynamics;

@@ -32,11 +32,11 @@
 
 #include "dart/dynamics/ConeShape.hpp"
 
-#include <cmath>
-
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {

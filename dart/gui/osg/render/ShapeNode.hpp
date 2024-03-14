@@ -33,9 +33,9 @@
 #ifndef DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 #define DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 
-#include <memory>
-
 #include <osg/Node>
+
+#include <memory>
 
 namespace dart {
 

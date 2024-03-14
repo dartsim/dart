@@ -33,11 +33,11 @@
 #ifndef DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
 
-#include <Eigen/Core>
-#include <tinyxml2.h>
-
 #include "dart/common/Optional.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
+
+#include <Eigen/Core>
+#include <tinyxml2.h>
 
 namespace dart {
 namespace utils {

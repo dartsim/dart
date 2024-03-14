@@ -31,6 +31,7 @@
  */
 
 #include <dart/common/String.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;

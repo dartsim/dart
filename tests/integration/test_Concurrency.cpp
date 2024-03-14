@@ -30,14 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <chrono>
-#include <future>
+#include "TestHelpers.hpp"
+#include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/simulation/World.hpp"
-
-#include "TestHelpers.hpp"
+#include <chrono>
+#include <future>
 
 using namespace dart;
 using namespace dynamics;

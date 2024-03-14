@@ -39,8 +39,9 @@
 #ifndef EXAMPLES_TESTDROP_MYWINDOW_HPP_
 #define EXAMPLES_TESTDROP_MYWINDOW_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
+#include <dart/dart.hpp>
 
 /// \brief
 class MyWindow : public dart::gui::glut::SoftSimWindow

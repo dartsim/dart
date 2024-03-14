@@ -33,12 +33,11 @@
 // The tests in this file are inspired by the tests in:
 // https://github.com/osrf/gazebo/blob/01b395a5fa92eb054c72f9a2027cdcfd35f287f4/test/integration/joint_force_torque.cc
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/dart.hpp"
 #include "dart/utils/sdf/sdf.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dart::math;

@@ -33,13 +33,14 @@
 #ifndef DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 #define DART_OPTIMIZER_GENERICMULTIOBJECTIVEPROBLEM_HPP_
 
-#include <cstddef>
-#include <vector>
+#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/MultiObjectiveProblem.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/optimizer/Function.hpp"
-#include "dart/optimizer/MultiObjectiveProblem.hpp"
+#include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace optimizer {

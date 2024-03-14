@@ -30,10 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -42,7 +39,9 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/VskParser.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 using namespace dart;
 using namespace math;

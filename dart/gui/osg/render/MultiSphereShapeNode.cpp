@@ -32,17 +32,17 @@
 
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/Utils.hpp"
+#include "dart/math/Icosphere.hpp"
+
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Light>
 #include <osg/Material>
-
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/Utils.hpp"
-#include "dart/math/Icosphere.hpp"
 
 namespace dart {
 namespace gui {

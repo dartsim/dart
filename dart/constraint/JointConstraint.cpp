@@ -32,13 +32,13 @@
 
 #include "dart/constraint/JointConstraint.hpp"
 
-#include <algorithm>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
+
+#include <algorithm>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01

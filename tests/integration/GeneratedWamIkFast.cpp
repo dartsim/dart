@@ -28,10 +28,11 @@ using namespace ikfast;
 IKFAST_COMPILE_ASSERT(IKFAST_VERSION == 71);
 
 #include <algorithm>
-#include <cmath>
 #include <complex>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 #define IKFAST_STRINGIZE2(s) #s
 #define IKFAST_STRINGIZE(s) IKFAST_STRINGIZE2(s)

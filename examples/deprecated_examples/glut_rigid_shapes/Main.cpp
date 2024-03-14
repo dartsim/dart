@@ -36,13 +36,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "MyWindow.hpp"
+
+#include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+
 #include <fcl/config.h>
 
-#include "MyWindow.hpp"
+#include <iostream>
 
 int main(int argc, char* argv[])
 {

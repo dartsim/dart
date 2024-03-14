@@ -33,11 +33,11 @@
 #ifndef DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
-#include <string>
+#include "dart/common/Castable.hpp"
 
 #include <Eigen/Core>
 
-#include "dart/common/Castable.hpp"
+#include <string>
 
 namespace dart {
 namespace constraint {

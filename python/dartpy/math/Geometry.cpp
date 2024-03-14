@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <pybind11/pybind11.h>
-
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
+
+#include <dart/dart.hpp>
+
+#include <pybind11/pybind11.h>
 
 // TODO(JS): For some reason, passing const reference causes segfault errors.
 // Use "pass-by-value" for now.

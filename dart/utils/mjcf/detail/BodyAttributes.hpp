@@ -33,15 +33,15 @@
 #ifndef DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 
-#include <string>
-
-#include <Eigen/Dense>
-#include <tinyxml2.h>
-
 #include "dart/common/Optional.hpp"
 #include "dart/math/MathTypes.hpp"
 #include "dart/utils/mjcf/detail/Error.hpp"
 #include "dart/utils/mjcf/detail/Inertial.hpp"
+
+#include <Eigen/Dense>
+#include <tinyxml2.h>
+
+#include <string>
 
 namespace dart {
 namespace utils {

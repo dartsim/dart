@@ -39,12 +39,6 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
-#include <set>
-#include <string>
-#include <vector>
-
-#include <Eigen/Dense>
-
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/SmartPointer.hpp"
@@ -54,6 +48,12 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/Recording.hpp"
 #include "dart/simulation/SmartPointer.hpp"
+
+#include <Eigen/Dense>
+
+#include <set>
+#include <string>
+#include <vector>
 
 namespace dart {
 

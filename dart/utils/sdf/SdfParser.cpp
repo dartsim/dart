@@ -32,16 +32,6 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <map>
-#include <string>
-
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-#include <tinyxml2.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/ResourceRetriever.hpp"
@@ -65,6 +55,16 @@
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+#include <tinyxml2.h>
+
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <string>
 
 namespace dart {
 namespace utils {

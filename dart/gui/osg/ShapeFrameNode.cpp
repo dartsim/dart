@@ -32,10 +32,6 @@
 
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include <osg/Geode>
-#include <osg/Group>
-#include <osg/Node>
-
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
@@ -51,6 +47,10 @@
 #include "dart/gui/osg/render/ShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/SphereShapeNode.hpp"
+
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/Node>
 #if HAVE_OCTOMAP
   #include "dart/gui/osg/render/VoxelGridShapeNode.hpp"
 #endif

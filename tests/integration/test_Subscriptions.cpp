@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dynamics;

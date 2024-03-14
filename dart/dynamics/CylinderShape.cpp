@@ -32,9 +32,9 @@
 
 #include "dart/dynamics/CylinderShape.hpp"
 
-#include <cmath>
-
 #include "dart/math/Helpers.hpp"
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {

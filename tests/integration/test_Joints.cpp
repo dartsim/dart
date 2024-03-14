@@ -30,11 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <array>
-#include <iostream>
-
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -53,7 +49,10 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
+
+#include <array>
+#include <iostream>
 
 using namespace dart;
 using namespace dart::math;

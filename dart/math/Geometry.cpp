@@ -32,15 +32,16 @@
 
 #include "dart/math/Geometry.hpp"
 
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+
 #include <algorithm>
-#include <cassert>
-#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.hpp"
-#include "dart/math/Helpers.hpp"
+#include <cassert>
+#include <cmath>
 
 #define DART_EPSILON 1e-6
 

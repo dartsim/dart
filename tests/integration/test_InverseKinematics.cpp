@@ -30,14 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/config.hpp"
 #include "dart/math/Helpers.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 using namespace Eigen;
 using namespace dart;

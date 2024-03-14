@@ -32,10 +32,6 @@
 
 #include "dart/dynamics/BodyNode.hpp"
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
@@ -46,6 +42,10 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {

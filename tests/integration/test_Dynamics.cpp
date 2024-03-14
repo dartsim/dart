@@ -30,11 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <Eigen/Dense>
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -45,7 +41,10 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
-#include "TestHelpers.hpp"
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 using namespace Eigen;
 using namespace dart;

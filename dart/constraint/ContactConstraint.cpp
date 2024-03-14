@@ -32,14 +32,14 @@
 
 #include "dart/constraint/ContactConstraint.hpp"
 
-#include <iostream>
-
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/math/Helpers.hpp"
+
+#include <iostream>
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0

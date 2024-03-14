@@ -32,11 +32,12 @@
 
 #include "dart/common/Uri.hpp"
 
-#include <cassert>
+#include "dart/common/Console.hpp"
+
 #include <regex>
 #include <sstream>
 
-#include "dart/common/Console.hpp"
+#include <cassert>
 
 static bool startsWith(const std::string& _target, const std::string& _prefix)
 {

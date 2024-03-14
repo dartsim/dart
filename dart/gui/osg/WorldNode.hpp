@@ -33,13 +33,13 @@
 #ifndef DART_GUI_OSG_WORLDNODE_HPP_
 #define DART_GUI_OSG_WORLDNODE_HPP_
 
-#include <memory>
-#include <unordered_map>
+#include "dart/gui/osg/Viewer.hpp"
 
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
 
-#include "dart/gui/osg/Viewer.hpp"
+#include <memory>
+#include <unordered_map>
 
 namespace dart {
 

@@ -40,9 +40,9 @@
  * '-' will make the joints move in the negative direction.
  */
 
-#include <dart/dart.hpp>
-
 #include "MyWindow.hpp"
+
+#include <dart/dart.hpp>
 
 int main(int argc, char* argv[])
 {

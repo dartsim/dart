@@ -30,11 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <Eigen/Dense>
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -45,7 +41,10 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
-#include "TestHelpers.hpp"
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include <iostream>
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test

@@ -30,13 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
+#include <dart/gui/osg/osg.hpp>
+
+#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
-#include <dart/gui/osg/osg.hpp>
-#include <dart/utils/urdf/urdf.hpp>
-#include <dart/utils/utils.hpp>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::common;

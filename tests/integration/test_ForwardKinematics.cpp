@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "TestHelpers.hpp"
+#include "dart/utils/urdf/DartLoader.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/utils/urdf/DartLoader.hpp"
-
-#include "TestHelpers.hpp"
+#include <iostream>
 
 std::vector<std::size_t> twoLinkIndices;
 

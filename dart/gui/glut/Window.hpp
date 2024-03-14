@@ -33,10 +33,10 @@
 #ifndef DART_GUI_GLUT_WINDOW_HPP_
 #define DART_GUI_GLUT_WINDOW_HPP_
 
-#include <vector>
-
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
+
+#include <vector>
 
 namespace dart {
 namespace gui {

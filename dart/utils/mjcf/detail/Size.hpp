@@ -33,9 +33,9 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SIZE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SIZE_HPP_
 
-#include <tinyxml2.h>
-
 #include "dart/utils/mjcf/detail/Error.hpp"
+
+#include <tinyxml2.h>
 
 namespace dart {
 namespace utils {

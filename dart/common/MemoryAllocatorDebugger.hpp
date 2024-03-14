@@ -33,11 +33,11 @@
 #ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 #define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 
+#include "dart/common/MemoryAllocator.hpp"
+
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
-
-#include "dart/common/MemoryAllocator.hpp"
 
 namespace dart::common {
 

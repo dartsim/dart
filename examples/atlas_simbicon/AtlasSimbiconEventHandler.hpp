@@ -33,11 +33,13 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_
 
-#include <dart/dart.hpp>
+#include "AtlasSimbiconWorldNode.hpp"
+
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
 
-#include "AtlasSimbiconWorldNode.hpp"
+#include <dart/dart.hpp>
 
 class AtlasSimbiconEventHandler : public osgGA::GUIEventHandler
 {

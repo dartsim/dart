@@ -33,9 +33,9 @@
 #ifndef DART_INTEGRATION_INTEGRATOR_HPP_
 #define DART_INTEGRATION_INTEGRATOR_HPP_
 
-#include <vector>
-
 #include <Eigen/Dense>
+
+#include <vector>
 
 namespace dart {
 namespace integration {

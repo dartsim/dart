@@ -33,9 +33,9 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 
-#include <type_traits>
-
 #include "dart/dynamics/InverseKinematics.hpp"
+
+#include <type_traits>
 
 namespace dart {
 namespace dynamics {

@@ -35,6 +35,7 @@
 #if HAVE_BULLET
 
   #include <dart/collision/bullet/bullet.hpp>
+
   #include <pybind11/pybind11.h>
 
 namespace py = pybind11;

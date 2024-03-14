@@ -33,12 +33,12 @@
 #ifndef DART_MATH_ICOSPHERE_HPP_
 #define DART_MATH_ICOSPHERE_HPP_
 
-#include <map>
-#include <vector>
+#include "dart/math/TriMesh.hpp"
 
 #include <Eigen/Core>
 
-#include "dart/math/TriMesh.hpp"
+#include <map>
+#include <vector>
 
 namespace dart {
 namespace math {

@@ -32,7 +32,10 @@
 
 #include "dart/gui/osg/render/PyramidShapeNode.hpp"
 
-#include <array>
+#include "dart/dynamics/PyramidShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 #include <osg/CullFace>
 #include <osg/Depth>
@@ -41,10 +44,7 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/dynamics/PyramidShape.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/gui/osg/ShapeFrameNode.hpp"
-#include "dart/gui/osg/Utils.hpp"
+#include <array>
 
 namespace dart {
 namespace gui {

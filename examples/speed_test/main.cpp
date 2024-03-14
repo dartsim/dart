@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <chrono>
-#include <numeric>
+#include "dart/utils/utils.hpp"
 
 #include <dart/dart.hpp>
 
-#include "dart/utils/utils.hpp"
+#include <chrono>
+#include <numeric>
 
 double testForwardKinematicSpeed(
     dart::dynamics::SkeletonPtr skel,

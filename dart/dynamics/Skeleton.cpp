@@ -32,11 +32,6 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
-#include <algorithm>
-#include <queue>
-#include <string>
-#include <vector>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -51,6 +46,11 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <algorithm>
+#include <queue>
+#include <string>
+#include <vector>
 
 #define SET_ALL_FLAGS(X)                                                       \
   for (auto& cache : mTreeCache)                                               \

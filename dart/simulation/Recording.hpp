@@ -39,11 +39,11 @@
 #ifndef DART_SIMULATION_RECORDING_HPP_
 #define DART_SIMULATION_RECORDING_HPP_
 
-#include <vector>
+#include "dart/dynamics/Skeleton.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/Skeleton.hpp"
+#include <vector>
 
 namespace dart {
 

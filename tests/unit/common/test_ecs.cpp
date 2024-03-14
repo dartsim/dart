@@ -31,6 +31,7 @@
  */
 
 #include <dart/common/ecs/entt.hpp>
+
 #include <gtest/gtest.h>
 
 namespace {

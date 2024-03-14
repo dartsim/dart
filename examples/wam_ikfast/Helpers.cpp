@@ -32,9 +32,9 @@
 
 #include "Helpers.hpp"
 
-#include <sstream>
-
 #include <dart/utils/urdf/urdf.hpp>
+
+#include <sstream>
 
 //==============================================================================
 dart::dynamics::SkeletonPtr createGround()

@@ -33,14 +33,14 @@
 #ifndef DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 #define DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 
-#include <memory>
-#include <string>
-
-#include <Eigen/Core>
-
 #include "dart/common/ClassWithVirtualBase.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <Eigen/Core>
+
+#include <memory>
+#include <string>
 
 namespace dart {
 namespace dynamics {

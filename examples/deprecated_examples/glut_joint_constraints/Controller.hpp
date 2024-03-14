@@ -33,10 +33,11 @@
 #ifndef EXAMPLES_JOINTCONSTRAINTS_CONTROLLER_HPP_
 #define EXAMPLES_JOINTCONSTRAINTS_CONTROLLER_HPP_
 
-#include <vector>
+#include <dart/dart.hpp>
 
 #include <Eigen/Dense>
-#include <dart/dart.hpp>
+
+#include <vector>
 
 class Controller
 {

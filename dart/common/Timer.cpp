@@ -32,9 +32,10 @@
 
 #include "dart/common/Timer.hpp"
 
-#include <ctime>
 #include <iostream>
 #include <string>
+
+#include <ctime>
 
 // #if defined _WIN64 || defined _WIN32
 // #define CLOCKS_PER_SEC 1000

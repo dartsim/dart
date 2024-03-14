@@ -32,8 +32,6 @@
 
 #include "dart/constraint/ConstraintSolver.hpp"
 
-#include <algorithm>
-
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -54,6 +52,8 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+
+#include <algorithm>
 
 namespace dart {
 namespace constraint {

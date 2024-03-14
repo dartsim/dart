@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include "MyWindow.hpp"
+
 #include <dart/utils/utils.hpp>
 
-#include "MyWindow.hpp"
+#include <dart/dart.hpp>
 
 using namespace dart;
 using namespace math;

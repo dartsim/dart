@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 #define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 
-#include <cassert>
-#include <sstream>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/NameManager.hpp"
+
+#include <sstream>
+
+#include <cassert>
 
 namespace dart {
 namespace common {

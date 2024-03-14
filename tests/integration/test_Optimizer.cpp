@@ -31,14 +31,7 @@
  */
 
 // For problem
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
-#include <Eigen/Dense>
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -48,7 +41,14 @@
 #include "dart/optimizer/GradientDescentSolver.hpp"
 #include "dart/optimizer/Problem.hpp"
 
-#include "TestHelpers.hpp"
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+#include <cstdio>
 #if HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.hpp"
 #endif

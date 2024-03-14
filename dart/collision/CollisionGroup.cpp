@@ -32,12 +32,12 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 
-#include <cassert>
-
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <cassert>
 
 namespace dart {
 namespace collision {

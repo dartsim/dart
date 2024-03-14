@@ -33,18 +33,18 @@
 #ifndef DART_UTILS_XMLHELPERS_HPP_
 #define DART_UTILS_XMLHELPERS_HPP_
 
-#include <string>
-
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-#include <tinyxml2.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/MathTypes.hpp"
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <tinyxml2.h>
+
+#include <string>
 
 namespace dart {
 namespace utils {

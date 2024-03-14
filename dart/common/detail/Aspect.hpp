@@ -33,11 +33,11 @@
 #ifndef DART_COMMON_DETAIL_ASPECT_HPP_
 #define DART_COMMON_DETAIL_ASPECT_HPP_
 
-#include <cassert>
-
 #include "dart/common/Aspect.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+
+#include <cassert>
 
 namespace dart {
 namespace common {

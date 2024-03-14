@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_FRAME_HPP_
 #define DART_DYNAMICS_FRAME_HPP_
 
-#include <set>
+#include "dart/dynamics/Entity.hpp"
+#include "dart/math/MathTypes.hpp"
 
 #include <Eigen/Geometry>
 
-#include "dart/dynamics/Entity.hpp"
-#include "dart/math/MathTypes.hpp"
+#include <set>
 
 namespace dart {
 namespace dynamics {

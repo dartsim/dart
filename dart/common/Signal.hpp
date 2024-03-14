@@ -33,12 +33,12 @@
 #ifndef DART_COMMON_SIGNAL_HPP_
 #define DART_COMMON_SIGNAL_HPP_
 
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/detail/ConnectionBody.hpp"
+
 #include <functional>
 #include <memory>
 #include <set>
-
-#include "dart/common/Deprecated.hpp"
-#include "dart/common/detail/ConnectionBody.hpp"
 
 namespace dart {
 namespace common {

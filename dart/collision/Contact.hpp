@@ -33,10 +33,10 @@
 #ifndef DART_COLLISION_CONTACT_HPP_
 #define DART_COLLISION_CONTACT_HPP_
 
-#include <Eigen/Dense>
-
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <Eigen/Dense>
 
 namespace dart {
 namespace collision {

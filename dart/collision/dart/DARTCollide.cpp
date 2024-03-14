@@ -32,8 +32,6 @@
 
 #include "dart/collision/dart/DARTCollide.hpp"
 
-#include <memory>
-
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -41,6 +39,8 @@
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <memory>
 
 namespace dart {
 namespace collision {

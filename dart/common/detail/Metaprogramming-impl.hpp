@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 #define DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 
-#include <type_traits>
-
 #include "dart/common/Metaprogramming.hpp"
+
+#include <type_traits>
 
 namespace dart::common::detail {
 

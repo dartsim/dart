@@ -30,11 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 
 using dart::common::LocalResourceRetriever;
 using dart::common::Resource;

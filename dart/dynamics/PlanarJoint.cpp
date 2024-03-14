@@ -32,12 +32,12 @@
 
 #include "dart/dynamics/PlanarJoint.hpp"
 
-#include <string>
-
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <string>
 
 namespace dart {
 namespace dynamics {

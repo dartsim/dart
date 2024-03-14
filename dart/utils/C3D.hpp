@@ -33,12 +33,13 @@
 #ifndef DART_UTILS_C3D_HPP_
 #define DART_UTILS_C3D_HPP_
 
-#include <ctime>
-#include <vector>
+#include "dart/math/MathTypes.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.hpp"
+#include <vector>
+
+#include <ctime>
 
 ////////////////////////////////////////////////////////////////////////////////
 //  C3D file reader and writer

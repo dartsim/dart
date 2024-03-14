@@ -32,11 +32,11 @@
 
 #include "dart/dynamics/ScrewJoint.hpp"
 
-#include <string>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+
+#include <string>
 
 namespace dart {
 namespace dynamics {

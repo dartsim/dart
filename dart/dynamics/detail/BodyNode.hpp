@@ -33,10 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODE_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODE_HPP_
 
-#include <utility>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <utility>
 
 namespace dart {
 namespace dynamics {

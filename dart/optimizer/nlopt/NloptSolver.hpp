@@ -33,10 +33,10 @@
 #ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 #define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
-#include <nlopt.hpp>
-
 #include "dart/common/Deprecated.hpp"
 #include "dart/optimizer/Solver.hpp"
+
+#include <nlopt.hpp>
 
 namespace dart {
 namespace optimizer {

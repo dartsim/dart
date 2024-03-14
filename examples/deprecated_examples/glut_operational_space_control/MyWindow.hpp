@@ -33,10 +33,11 @@
 #ifndef EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_HPP_
 #define EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_HPP_
 
-#include <dart/dart.hpp>
+#include "Controller.hpp"
+
 #include <dart/gui/gui.hpp>
 
-#include "Controller.hpp"
+#include <dart/dart.hpp>
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::glut::SimWindow

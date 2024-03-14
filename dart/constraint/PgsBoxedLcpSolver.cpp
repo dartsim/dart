@@ -32,14 +32,14 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
-#include <cmath>
-#include <cstring>
-
-#include <Eigen/Dense>
-
 #include "dart/external/odelcpsolver/matrix.h"
 #include "dart/external/odelcpsolver/misc.h"
 #include "dart/math/Constants.hpp"
+
+#include <Eigen/Dense>
+
+#include <cmath>
+#include <cstring>
 
 #define PGS_EPSILON 10e-9
 

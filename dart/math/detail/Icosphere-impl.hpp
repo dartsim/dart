@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <array>
-
 #include "dart/math/Constants.hpp"
 #include "dart/math/Icosphere.hpp"
+
+#include <array>
 
 namespace dart {
 namespace math {

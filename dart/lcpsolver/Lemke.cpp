@@ -32,11 +32,12 @@
 
 #include "dart/lcpsolver/Lemke.hpp"
 
-#include <cmath>
+#include "dart/math/Helpers.hpp"
+
 #include <iostream>
 #include <vector>
 
-#include "dart/math/Helpers.hpp"
+#include <cmath>
 
 namespace dart {
 namespace lcpsolver {

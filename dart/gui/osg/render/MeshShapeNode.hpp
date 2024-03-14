@@ -33,12 +33,12 @@
 #ifndef DART_GUI_OSG_RENDER_MESHSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_MESHSHAPENODE_HPP_
 
-#include <map>
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 #include <osg/Material>
 #include <osg/MatrixTransform>
 
-#include "dart/gui/osg/render/ShapeNode.hpp"
+#include <map>
 
 struct aiNode;
 

@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+
+#include <dart/dart.hpp>
 
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode

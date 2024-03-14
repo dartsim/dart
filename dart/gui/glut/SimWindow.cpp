@@ -38,10 +38,6 @@
 
 #include "dart/gui/glut/SimWindow.hpp"
 
-#include <cstdio>
-#include <iostream>
-#include <string>
-
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -64,6 +60,11 @@
 #include "dart/gui/glut/LoadGlut.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/FileInfoWorld.hpp"
+
+#include <iostream>
+#include <string>
+
+#include <cstdio>
 
 namespace dart {
 namespace gui {

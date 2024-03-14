@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "dart/config.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/config.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
+#include <iostream>
 
 using namespace dart;
 

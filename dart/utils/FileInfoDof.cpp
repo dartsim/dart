@@ -32,13 +32,13 @@
 
 #include "dart/utils/FileInfoDof.hpp"
 
-#include <fstream>
-#include <string>
-
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/Recording.hpp"
+
+#include <fstream>
+#include <string>
 
 namespace dart {
 namespace utils {

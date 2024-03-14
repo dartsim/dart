@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "TestHelpers.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <gtest/gtest.h>
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-
-#include "TestHelpers.hpp"
+#include <iostream>
 
 using namespace dart;
 using namespace math;

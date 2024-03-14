@@ -32,13 +32,13 @@
 
 #include "dart/optimizer/MultiObjectiveProblem.hpp"
 
-#include <algorithm>
-#include <limits>
-#include <numeric>
-
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
+
+#include <algorithm>
+#include <limits>
+#include <numeric>
 
 namespace dart {
 namespace optimizer {

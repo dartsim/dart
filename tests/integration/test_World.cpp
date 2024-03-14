@@ -30,10 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <gtest/gtest.h>
-
+#include "TestHelpers.hpp"
 #include "dart/collision/collision.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -41,7 +38,9 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/SkelParser.hpp"
 
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
+
+#include <iostream>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif

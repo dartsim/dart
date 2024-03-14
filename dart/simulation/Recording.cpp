@@ -38,9 +38,9 @@
 
 #include "dart/simulation/Recording.hpp"
 
-#include <iostream>
-
 #include "dart/dynamics/Skeleton.hpp"
+
+#include <iostream>
 
 namespace dart {
 namespace simulation {

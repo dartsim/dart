@@ -32,11 +32,11 @@
 
 #include "dart/optimizer/GradientDescentSolver.hpp"
 
-#include <iostream>
-
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Problem.hpp"
+
+#include <iostream>
 
 namespace dart {
 namespace optimizer {

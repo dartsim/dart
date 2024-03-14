@@ -32,10 +32,10 @@
 
 #include "dart/utils/FileInfoWorld.hpp"
 
+#include "dart/simulation/Recording.hpp"
+
 #include <fstream>
 #include <string>
-
-#include "dart/simulation/Recording.hpp"
 
 namespace dart {
 namespace utils {

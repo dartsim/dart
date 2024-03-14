@@ -33,11 +33,13 @@
 #include <dart/config.hpp>
 #if HAVE_NLOPT
 
-  #include <dart/dart.hpp>
-  #include <dart/optimizer/nlopt/nlopt.hpp>
-  #include <pybind11/pybind11.h>
-
   #include "eigen_pybind.h"
+
+  #include <dart/optimizer/nlopt/nlopt.hpp>
+
+  #include <dart/dart.hpp>
+
+  #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 

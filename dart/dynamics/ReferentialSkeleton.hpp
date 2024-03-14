@@ -33,11 +33,11 @@
 #ifndef DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 #define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 
-#include <unordered_map>
-#include <unordered_set>
-
 #include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
+
+#include <unordered_map>
+#include <unordered_set>
 
 namespace dart {
 namespace dynamics {

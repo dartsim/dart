@@ -33,15 +33,14 @@
 #ifndef DART_GUI_OSG_DRAGANDDROP_HPP_
 #define DART_GUI_OSG_DRAGANDDROP_HPP_
 
-#include <functional>
-
-#include <Eigen/Geometry>
-
+#include "DefaultEventHandler.hpp"
 #include "dart/common/sub_ptr.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Shape.hpp"
 
-#include "DefaultEventHandler.hpp"
+#include <Eigen/Geometry>
+
+#include <functional>
 
 namespace dart {
 

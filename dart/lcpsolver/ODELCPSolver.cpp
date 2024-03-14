@@ -32,12 +32,12 @@
 
 #include "dart/lcpsolver/ODELCPSolver.hpp"
 
-#include <cstdio>
-
 #include "dart/common/Macros.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/external/odelcpsolver/misc.h"
 #include "dart/lcpsolver/Lemke.hpp"
+
+#include <cstdio>
 
 namespace dart {
 namespace lcpsolver {

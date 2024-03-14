@@ -33,13 +33,13 @@
 #ifndef DART_OPTIMIZER_MULTIOBJECTIVESOLVER_HPP_
 #define DART_OPTIMIZER_MULTIOBJECTIVESOLVER_HPP_
 
-#include <iostream>
-#include <memory>
-#include <vector>
+#include "dart/optimizer/Population.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/optimizer/Population.hpp"
+#include <iostream>
+#include <memory>
+#include <vector>
 
 namespace dart {
 namespace optimizer {

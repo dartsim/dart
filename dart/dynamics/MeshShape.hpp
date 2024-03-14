@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
-#include <string>
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 #include <assimp/scene.h>
 
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/dynamics/Shape.hpp"
+#include <string>
 
 namespace dart {
 namespace dynamics {

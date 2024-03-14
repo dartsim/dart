@@ -33,11 +33,11 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
-#include <Eigen/Core>
-
 #include "dart/collision/Contact.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+
+#include <Eigen/Core>
 
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
 #define DART_FRICTION_COEFF_THRESHOLD 1e-3
