@@ -41,8 +41,10 @@
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/SmartPointer.hpp>
-#include <dart/common/Factory.hpp>
+
 #include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/common/Factory.hpp>
 
 #include <Eigen/Dense>
 

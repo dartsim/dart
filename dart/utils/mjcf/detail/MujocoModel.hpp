@@ -33,8 +33,6 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 #define DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 
-#include <dart/common/ResourceRetriever.hpp>
-#include <dart/common/Uri.hpp>
 #include <dart/utils/mjcf/detail/Asset.hpp>
 #include <dart/utils/mjcf/detail/Compiler.hpp>
 #include <dart/utils/mjcf/detail/Default.hpp>
@@ -43,6 +41,9 @@
 #include <dart/utils/mjcf/detail/Option.hpp>
 #include <dart/utils/mjcf/detail/Size.hpp>
 #include <dart/utils/mjcf/detail/Worldbody.hpp>
+
+#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <tinyxml2.h>
 

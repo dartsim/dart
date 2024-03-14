@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
+
 #include <dart/dynamics/MimicDofProperties.hpp>
 
 #include <vector>

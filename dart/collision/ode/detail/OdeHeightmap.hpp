@@ -34,6 +34,7 @@
 #define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 
 #include <dart/collision/ode/detail/OdeGeom.hpp>
+
 #include <dart/dynamics/HeightmapShape.hpp>
 
 #include <ode/ode.h>

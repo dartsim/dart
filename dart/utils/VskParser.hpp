@@ -33,10 +33,12 @@
 #ifndef DART_UTILS_VSKPARSER_HPP_
 #define DART_UTILS_VSKPARSER_HPP_
 
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/math/Constants.hpp>
+
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/math/Constants.hpp>
 
 namespace dart {
 namespace utils {

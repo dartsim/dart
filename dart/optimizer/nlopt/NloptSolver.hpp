@@ -33,8 +33,9 @@
 #ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 #define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/optimizer/Solver.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 #include <nlopt.hpp>
 

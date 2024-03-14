@@ -40,8 +40,10 @@
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/SmartPointer.hpp>
-#include <dart/common/Observer.hpp>
+
 #include <dart/dynamics/SmartPointer.hpp>
+
+#include <dart/common/Observer.hpp>
 
 #include <unordered_map>
 #include <unordered_set>

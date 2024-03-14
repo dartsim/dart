@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_NODE_HPP_
 #define DART_DYNAMICS_NODE_HPP_
 
+#include <dart/dynamics/SmartPointer.hpp>
+
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 
 #include <memory>
 

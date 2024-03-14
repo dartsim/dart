@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/Console.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/HeightmapShape.hpp>
+
+#include <dart/common/Console.hpp>
 
 #include <algorithm>
 #include <limits>

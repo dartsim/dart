@@ -33,15 +33,18 @@
 #ifndef DART_UTILS_URDF_DARTLOADER_HPP_
 #define DART_UTILS_URDF_DARTLOADER_HPP_
 
-#include <dart/common/LocalResourceRetriever.hpp>
-#include <dart/common/ResourceRetriever.hpp>
-#include <dart/common/Uri.hpp>
+#include <dart/utils/CompositeResourceRetriever.hpp>
+#include <dart/utils/PackageResourceRetriever.hpp>
+
+#include <dart/simulation/World.hpp>
+
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-#include <dart/simulation/World.hpp>
-#include <dart/utils/CompositeResourceRetriever.hpp>
-#include <dart/utils/PackageResourceRetriever.hpp>
+
+#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

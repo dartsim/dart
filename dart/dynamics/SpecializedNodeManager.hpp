@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 
-#include <dart/common/Virtual.hpp>
 #include <dart/dynamics/NodeManagerJoiner.hpp>
 #include <dart/dynamics/detail/BasicNodeManager.hpp>
+
+#include <dart/common/Virtual.hpp>
 
 namespace dart {
 namespace dynamics {

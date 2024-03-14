@@ -33,9 +33,10 @@
 #ifndef DART_GUI_OSG_SUPPORTPOLYGONVISUAL_HPP_
 #define DART_GUI_OSG_SUPPORTPOLYGONVISUAL_HPP_
 
-#include <dart/dynamics/SmartPointer.hpp>
 #include <dart/gui/osg/ShapeFrameNode.hpp>
 #include <dart/gui/osg/Viewer.hpp>
+
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <osg/Geode>
 

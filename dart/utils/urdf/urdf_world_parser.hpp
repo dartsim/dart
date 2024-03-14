@@ -37,12 +37,13 @@
 
 #pragma once
 
-#include <string>
-
+#include <dart/utils/urdf/BackwardCompatibility.hpp>
 #include <dart/utils/urdf/IncludeUrdf.hpp>
+
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-#include <dart/utils/urdf/BackwardCompatibility.hpp>
+
+#include <string>
 
 namespace dart {
 namespace utils {

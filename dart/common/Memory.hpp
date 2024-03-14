@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_MEMORY_HPP_
 #define DART_COMMON_MEMORY_HPP_
 
+#include <dart/config.hpp>
+
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/detail/AlignedAllocator.hpp>
-#include <dart/config.hpp>
 
 #include <map>
 #include <memory>

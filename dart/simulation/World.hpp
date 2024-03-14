@@ -39,15 +39,19 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/simulation/Recording.hpp>
+#include <dart/simulation/SmartPointer.hpp>
+
+#include <dart/constraint/SmartPointer.hpp>
+
 #include <dart/collision/CollisionOption.hpp>
+
+#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/constraint/SmartPointer.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/simulation/Recording.hpp>
-#include <dart/simulation/SmartPointer.hpp>
 
 #include <Eigen/Dense>
 

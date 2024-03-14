@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
 
 #include <dart/constraint/DynamicJointConstraint.hpp>
+
 #include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>

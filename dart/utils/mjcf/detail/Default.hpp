@@ -33,12 +33,13 @@
 #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 #define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 
-#include <dart/common/Optional.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
 #include <dart/utils/mjcf/detail/GeomAttributes.hpp>
 #include <dart/utils/mjcf/detail/JointAttributes.hpp>
 #include <dart/utils/mjcf/detail/MeshAttributes.hpp>
 #include <dart/utils/mjcf/detail/WeldAttributes.hpp>
+
+#include <dart/common/Optional.hpp>
 
 #include <tinyxml2.h>
 

@@ -34,6 +34,7 @@
 #define DART_COLLISION_COLLISIONOBJECT_HPP_
 
 #include <dart/collision/SmartPointer.hpp>
+
 #include <dart/dynamics/SmartPointer.hpp>
 
 #include <Eigen/Dense>

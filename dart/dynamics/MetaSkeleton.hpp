@@ -33,12 +33,14 @@
 #ifndef DART_DYNAMICS_METASKELETON_HPP_
 #define DART_DYNAMICS_METASKELETON_HPP_
 
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/InvalidIndex.hpp>
+
+#include <dart/math/Geometry.hpp>
+
 #include <dart/common/LockableReference.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/dynamics/Frame.hpp>
-#include <dart/dynamics/InvalidIndex.hpp>
-#include <dart/math/Geometry.hpp>
 
 #include <Eigen/Dense>
 

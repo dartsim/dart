@@ -13,8 +13,9 @@
     "This header is deprecated as of DART 6.6. "                               \
     "Please use dart/gui/glut/MotionBlurSimWindow.hpp instead.")
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/gui/glut/MotionBlurSimWindow.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 namespace dart {
 namespace gui {
