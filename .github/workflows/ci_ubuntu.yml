@@ -83,6 +83,11 @@ jobs:
         with:
           cache: true
 
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.2
+        with:
+          packages: libgl1-mesa-dev
+          version: 1.0
+
       - name: Check Lint
         run: pixi run check-lint
 
