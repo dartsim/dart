@@ -44,6 +44,7 @@ numpy = ">=1.26.4,<1.27"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
+xorg-libx11 = ">=1.8.7,<1.9"
 
 [target.linux-64.tasks]
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
