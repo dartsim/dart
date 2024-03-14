@@ -43,6 +43,7 @@ set(pybind_module dartpy)
 #
 pybind11_add_module(${pybind_module}
   MODULE
+  EXCLUDE_FROM_ALL
   ${dartpy_headers}
   ${dartpy_sources}
 )
