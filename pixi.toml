@@ -38,6 +38,7 @@ setuptools = ">=69.1.1,<69.2"
 black = ">=24.2.0,<24.3"
 isort = ">=5.13.2,<5.14"
 pip = ">=24.0,<25"
+numpy = ">=1.26.4,<1.27"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
