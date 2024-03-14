@@ -5,8 +5,12 @@
 requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12", "requests"]
 build-backend = "setuptools.build_meta"
 
+[tool.black]
+exclude = '/(build|dist|docs|examples|external|python|\.pixi)/'
+
 [tool.isort]
 profile = "black"
+skip = ['build', 'dist', 'docs', 'examples', 'external', 'python', '.pixi']
 
 [tool.mypy]
 files = "setup.py"

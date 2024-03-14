@@ -8,8 +8,6 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [tasks]
 clean = "rm -rf build"
-lint = { cmd= "cmake --build build --target format", depends_on = ["configure"] }
-check-lint = { cmd= "cmake --build build --target check-format", depends_on = ["configure"] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
@@ -50,6 +48,8 @@ xorg-libx11 = ">=1.8.7,<1.9"
 
 [target.linux-64.tasks]
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
+check-lint = { cmd= "black . --check && isort . --check", depends_on = ["configure"] }
 build = { cmd = "cmake --build build -j --target all", depends_on = [
     "configure",
 ] }
@@ -71,6 +71,8 @@ clang-format-14 = ">=14.0.6,<14.1"
 
 [target.osx-64.tasks]
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
+check-lint = { cmd= "cmake --build build --target check-format && black . --check && isort . --check", depends_on = ["configure"] }
 build = { cmd = "cmake --build build -j --target all", depends_on = [
     "configure",
 ] }
@@ -92,6 +94,8 @@ clang-format-14 = ">=14.0.6,<14.1"
 
 [target.osx-arm64.tasks]
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
+check-lint = { cmd= "cmake --build build --target check-format && black . --check && isort . --check", depends_on = ["configure"] }
 build = { cmd = "cmake --build build -j --target all", depends_on = [
     "configure",
 ] }
@@ -116,6 +120,8 @@ freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
 configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON"
+lint = { cmd= "black . && isort .", depends_on = ["configure"] }
+check-lint = { cmd= "black . --check && isort . --check", depends_on = ["configure"] }
 build = { cmd = "cmake --build build --config Release -j --target all", depends_on = [
     "configure",
 ] }

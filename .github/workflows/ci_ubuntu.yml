@@ -88,4 +88,6 @@ jobs:
 
       - name: Test DART and dartpy
         run: |
-          pixi run test_all
+          pixi run test
+          pixi run test_dartpy
+
