@@ -59,10 +59,10 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
-test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+test_dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
     "configure",
 ] }
-test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
+test_all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
@@ -80,10 +80,10 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
-test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+test_dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
     "configure",
 ] }
-test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
+test_all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
@@ -101,10 +101,10 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
-test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+test_dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
     "configure",
 ] }
-test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
+test_all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
@@ -125,10 +125,10 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 test = { cmd = "ctest --test-dir build --build-config Release --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
-test_dartpy = { cmd = "cmake --build build --config Release -j4 --target pytest", depends_on = [
+test_dartpy = { cmd = "cmake --build build --config Release -j --target pytest", depends_on = [
     "configure",
 ] }
-test_all = { cmd = "cmake --build build --config Release -j4 --target ALL", depends_on = [
+test_all = { cmd = "cmake --build build --config Release -j --target ALL", depends_on = [
     "configure",
 ] }
 
