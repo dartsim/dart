@@ -48,28 +48,32 @@ jobs:
           pip install -U pytest
 
       - name: Build
+        shell: cmd
         run: |
-          cmake `
-            -S . `
-            -B build `
-            -G "Visual Studio 17 2022" `
-            -A x64 `
-            -Wno-dev ${{ matrix.toolset }} `
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-            -DDART_MSVC_DEFAULT_OPTIONS=ON `
-            -DDART_VERBOSE=ON `
-            -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
-          cmake `
-            --build build `
-            --config ${{ matrix.build_type }} `
-            --target ALL_BUILD `
-            --parallel
-          ctest `
-            --test-dir build `
-            --rerun-failed `
-            --output-on-failure `
-            --build-config ${{ matrix.build_type }}
+          cmake ^
+            -S . ^
+            -B build ^
+            -G "Visual Studio 17 2022" ^
+            -A x64 ^
+            -Wno-dev ${{ matrix.toolset }} ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
+            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
+            -DDART_VERBOSE=ON ^
+            -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
+            || exit /b
+          cmake ^
+            --build build ^
+            --config ${{ matrix.build_type }} ^
+            --target ALL_BUILD ^
+            --parallel ^
+            || exit /b
+          ctest ^
+            --test-dir build ^
+            --rerun-failed ^
+            --output-on-failure ^
+            --build-config ${{ matrix.build_type }} ^
+            || exit /b
 
   build_on_pixi:
     name: win-pixi
