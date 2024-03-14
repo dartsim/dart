@@ -46,7 +46,7 @@ freeglut = ">=3.2.2,<3.3"
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
 lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd= "black . --check && isort . --check", depends_on = ["configure"] }
-build = { cmd = "cmake --build build -j --target all", depends_on = [
+build = { cmd = "cmake --build build -j", depends_on = [
     "configure",
 ] }
 build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
@@ -69,7 +69,7 @@ clang-format-14 = ">=14.0.6,<14.1"
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
 lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd= "cmake --build build --target check-format && black . --check && isort . --check", depends_on = ["configure"] }
-build = { cmd = "cmake --build build -j --target all", depends_on = [
+build = { cmd = "cmake --build build -j", depends_on = [
     "configure",
 ] }
 build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
@@ -92,7 +92,7 @@ clang-format-14 = ">=14.0.6,<14.1"
 configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
 lint = { cmd= "cmake --build build --target format && black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd= "cmake --build build --target check-format && black . --check && isort . --check", depends_on = ["configure"] }
-build = { cmd = "cmake --build build -j --target all", depends_on = [
+build = { cmd = "cmake --build build -j", depends_on = [
     "configure",
 ] }
 build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
@@ -118,7 +118,7 @@ freeglut = ">=3.2.2,<3.3"
 configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON"
 lint = { cmd= "black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd= "black . --check && isort . --check", depends_on = ["configure"] }
-build = { cmd = "cmake --build build --config Release -j --target all", depends_on = [
+build = { cmd = "cmake --build build --config Release -j", depends_on = [
     "configure",
 ] }
 build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
