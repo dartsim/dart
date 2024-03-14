@@ -31,6 +31,7 @@ pagmo = ">=2.19.0,<2.20"
 glfw = ">=3.4,<4"
 glew = ">=2.1.0,<2.2"
 pyopengl = ">=3.1.6,<3.2"
+numpy = ">=1.26.4,<1.27"
 
 [build-dependencies]
 cmake = "3.22.*"
@@ -42,7 +43,6 @@ setuptools = ">=69.1.1,<69.2"
 black = ">=24.2.0,<24.3"
 isort = ">=5.13.2,<5.14"
 pip = ">=24.0,<25"
-numpy = ">=1.26.4,<1.27"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
@@ -58,6 +58,9 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 ] }
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
+] }
+test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+    "configure",
 ] }
 test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
     "configure",
@@ -77,6 +80,9 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
 ] }
+test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+    "configure",
+] }
 test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
     "configure",
 ] }
@@ -94,6 +100,9 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 ] }
 test = { cmd = "ctest --test-dir build --rerun-failed --output-on-failure", depends_on = [
     "build",
+] }
+test_dartpy = { cmd = "cmake --build build -j4 --target pytest", depends_on = [
+    "configure",
 ] }
 test_all = { cmd = "cmake --build build -j4 --target ALL", depends_on = [
     "configure",
@@ -115,6 +124,9 @@ build_dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
 ] }
 test = { cmd = "ctest --test-dir build --build-config Release --rerun-failed --output-on-failure", depends_on = [
     "build",
+] }
+test_dartpy = { cmd = "cmake --build build --config Release -j4 --target pytest", depends_on = [
+    "configure",
 ] }
 test_all = { cmd = "cmake --build build --config Release -j4 --target ALL", depends_on = [
     "configure",
