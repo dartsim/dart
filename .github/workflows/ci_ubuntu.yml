@@ -88,5 +88,5 @@ jobs:
 
       - name: Test DART and dartpy
         run: |
-          pixi run test
+          pixi run build
 
