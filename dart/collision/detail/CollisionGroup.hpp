@@ -33,9 +33,9 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
 namespace dart {
 namespace collision {

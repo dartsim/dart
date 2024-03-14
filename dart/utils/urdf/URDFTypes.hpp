@@ -37,6 +37,6 @@
     "This header has been deprecated in DART 6.2. "                            \
     "Please include dart/utils/urdf/BackwardCompatibility.hpp intead.")
 
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include <dart/utils/urdf/BackwardCompatibility.hpp>
 
 #endif // DART_UTILS_URDF_URDFTYPES_HPP_

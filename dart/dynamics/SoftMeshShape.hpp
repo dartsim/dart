@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 #define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Shape.hpp>
 
 #include <Eigen/Dense>
 #include <assimp/scene.h>

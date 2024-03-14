@@ -35,7 +35,7 @@
 
 #include <random>
 #include <pagmo/pagmo.hpp>
-#include "dart/optimizer/MultiObjectiveSolver.hpp"
+#include <dart/optimizer/MultiObjectiveSolver.hpp>
 
 #define DART_PAGMO_DEFAULT_SOLVER Algorithm::Global_MOEAD
 

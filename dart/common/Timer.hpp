@@ -36,12 +36,12 @@
 #include <string>
 
 #ifdef _WIN32
-  #include "dart/common/IncludeWindows.hpp"
+  #include <dart/common/IncludeWindows.hpp>
 #else
   #include <sys/time.h>
 #endif
 
-#include "dart/common/Deprecated.hpp"
+#include <dart/common/Deprecated.hpp>
 
 namespace dart {
 namespace common {

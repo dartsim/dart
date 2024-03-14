@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_MACROS_HPP_
 #define DART_COMMON_MACROS_HPP_
 
-#include "dart/common/Logging.hpp"
+#include <dart/common/Logging.hpp>
 
 #include <cassert>
 

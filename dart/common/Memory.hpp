@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_MEMORY_HPP_
 #define DART_COMMON_MEMORY_HPP_
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/common/detail/AlignedAllocator.hpp"
-#include "dart/config.hpp"
+#include <dart/common/Deprecated.hpp>
+#include <dart/common/detail/AlignedAllocator.hpp>
+#include <dart/config.hpp>
 
 #include <map>
 #include <memory>
@@ -225,6 +225,6 @@ public:                                                                        \
     DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)
 #endif
 
-#include "dart/common/detail/Memory-impl.hpp"
+#include <dart/common/detail/Memory-impl.hpp>
 
 #endif // DART_COMMON_MEMORY_HPP_

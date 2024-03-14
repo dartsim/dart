@@ -37,6 +37,6 @@
     "This header has been deprecated in DART 6.1. "                            \
     "Please include CollisionResult.hpp intead.")
 
-#include "dart/collision/CollisionResult.hpp"
+#include <dart/collision/CollisionResult.hpp>
 
 #endif // DART_COLLISION_RESULT_HPP_

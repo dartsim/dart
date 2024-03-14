@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_MEMORYALLOCATOR_HPP_
 #define DART_COMMON_MEMORYALLOCATOR_HPP_
 
-#include "dart/common/Castable.hpp"
+#include <dart/common/Castable.hpp>
 
 #include <iostream>
 #include <string>
@@ -113,6 +113,6 @@ public:
 
 } // namespace dart::common
 
-#include "dart/common/detail/MemoryAllocator-impl.hpp"
+#include <dart/common/detail/MemoryAllocator-impl.hpp>
 
 #endif // DART_COMMON_MEMORYALLOCATOR_HPP_

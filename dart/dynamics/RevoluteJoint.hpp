@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_HPP_
 #define DART_DYNAMICS_REVOLUTEJOINT_HPP_
 
-#include "dart/dynamics/detail/RevoluteJointAspect.hpp"
+#include <dart/dynamics/detail/RevoluteJointAspect.hpp>
 
 namespace dart {
 namespace dynamics {

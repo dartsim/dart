@@ -33,7 +33,7 @@
 #ifndef DART_INTEGRATION_RK4INTEGRATOR_HPP_
 #define DART_INTEGRATION_RK4INTEGRATOR_HPP_
 
-#include "dart/integration/Integrator.hpp"
+#include <dart/integration/Integrator.hpp>
 
 namespace dart {
 namespace integration {

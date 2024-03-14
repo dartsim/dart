@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
-#include "dart/optimizer/ipopt/BackwardCompatibility.hpp"
+#include <dart/optimizer/ipopt/BackwardCompatibility.hpp>
 
 #include <memory>
 #if IPOPT_VERSION_GE(3, 13, 0)
@@ -44,7 +44,7 @@
   #include <coin/IpTNLP.hpp>
 #endif
 
-#include "dart/optimizer/Solver.hpp"
+#include <dart/optimizer/Solver.hpp>
 
 namespace dart {
 namespace optimizer {

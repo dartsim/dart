@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
 #define DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
 
-#include "dart/dynamics/MetaSkeleton.hpp"
+#include <dart/dynamics/MetaSkeleton.hpp>
 
 namespace dart::dynamics {
 

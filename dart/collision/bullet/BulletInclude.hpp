@@ -36,7 +36,7 @@
 // clang-format off
 
 // dart/config.hpp must be included before any Bullet headers.
-#include "dart/config.hpp"
+#include <dart/config.hpp>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>

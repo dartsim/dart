@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_REVOLUTEJOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_REVOLUTEJOINTASPECT_HPP_
 
-#include "dart/dynamics/GenericJoint.hpp"
+#include <dart/dynamics/GenericJoint.hpp>
 
 #include <Eigen/Dense>
 

@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
 #define DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
 
-#include "dart/common/LockableReference.hpp"
+#include <dart/common/LockableReference.hpp>
 
 namespace dart {
 namespace common {

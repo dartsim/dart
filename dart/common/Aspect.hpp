@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_ASPECT_HPP_
 #define DART_COMMON_ASPECT_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/Cloneable.hpp"
-#include "dart/common/detail/NoOp.hpp"
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Cloneable.hpp>
+#include <dart/common/detail/NoOp.hpp>
 
 #include <string>
 
@@ -210,6 +210,6 @@ protected:
   DART_COMMON_SET_ASPECT_PROPERTY(Type, Name)                                  \
   DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)
 
-#include "dart/common/detail/Aspect.hpp"
+#include <dart/common/detail/Aspect.hpp>
 
 #endif // DART_COMMON_ASPECT_HPP_

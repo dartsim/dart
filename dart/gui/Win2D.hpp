@@ -37,8 +37,8 @@
     "This header is deprecated as of DART 6.6. "                               \
     "Please use dart/gui/glut/Win2D.hpp instead.")
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/gui/glut/Win2D.hpp"
+#include <dart/common/Deprecated.hpp>
+#include <dart/gui/glut/Win2D.hpp>
 
 namespace dart {
 namespace gui {

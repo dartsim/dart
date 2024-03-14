@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_COMPOSITE_HPP_
 #define DART_COMMON_COMPOSITE_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/detail/CompositeData.hpp"
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/detail/CompositeData.hpp>
 
 namespace dart {
 namespace common {
@@ -200,6 +200,6 @@ void createAspects(T* comp);
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/Composite.hpp"
+#include <dart/common/detail/Composite.hpp>
 
 #endif // DART_COMMON_COMPOSITE_HPP_

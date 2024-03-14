@@ -33,7 +33,7 @@
 #ifndef DART_GUI_RENDERINTERFACE_HPP_
 #define DART_GUI_RENDERINTERFACE_HPP_
 
-#include "dart/math/MathTypes.hpp"
+#include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>
 #include <assimp/scene.h>

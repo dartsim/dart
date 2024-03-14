@@ -33,15 +33,15 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
-#include "dart/collision/CollisionOption.hpp"
-#include "dart/collision/CollisionResult.hpp"
-#include "dart/collision/DistanceOption.hpp"
-#include "dart/collision/DistanceResult.hpp"
-#include "dart/collision/RaycastOption.hpp"
-#include "dart/collision/RaycastResult.hpp"
-#include "dart/collision/SmartPointer.hpp"
-#include "dart/common/Observer.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
+#include <dart/collision/SmartPointer.hpp>
+#include <dart/common/Observer.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -539,6 +539,6 @@ private:
 } // namespace collision
 } // namespace dart
 
-#include "dart/collision/detail/CollisionGroup.hpp"
+#include <dart/collision/detail/CollisionGroup.hpp>
 
 #endif // DART_COLLISION_COLLISIONGROUP_HPP_

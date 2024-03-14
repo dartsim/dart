@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 
-#include "dart/dynamics/InverseKinematics.hpp"
+#include <dart/dynamics/InverseKinematics.hpp>
 
 #include <type_traits>
 

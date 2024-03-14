@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
 
-#include "dart/constraint/BoxedLcpSolver.hpp"
+#include <dart/constraint/BoxedLcpSolver.hpp>
 
 namespace dart {
 namespace constraint {

@@ -35,7 +35,7 @@
 
 #include <string>
 #include <pagmo/pagmo.hpp>
-#include "dart/optimizer/MultiObjectiveProblem.hpp"
+#include <dart/optimizer/MultiObjectiveProblem.hpp>
 
 namespace dart {
 namespace optimizer {

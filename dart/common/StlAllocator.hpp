@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_STLALLOCATOR_HPP_
 #define DART_COMMON_STLALLOCATOR_HPP_
 
-#include "dart/common/MemoryAllocator.hpp"
+#include <dart/common/MemoryAllocator.hpp>
 
 #include <memory>
 
@@ -106,6 +106,6 @@ private:
 
 } // namespace dart::common
 
-#include "dart/common/detail/StlAllocator-impl.hpp"
+#include <dart/common/detail/StlAllocator-impl.hpp>
 
 #endif // DART_COMMON_STLALLOCATOR_HPP_

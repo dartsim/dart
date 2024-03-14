@@ -115,6 +115,6 @@ Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
 
 } // namespace dart::gui::osg
 
-#include "dart/gui/osg/detail/Utils-impl.hpp"
+#include <dart/gui/osg/detail/Utils-impl.hpp>
 
 #endif // DART_GUI_OSG_UTILS_HPP_

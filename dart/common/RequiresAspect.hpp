@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_REQUIRESASPECT_HPP_
 #define DART_COMMON_REQUIRESASPECT_HPP_
 
-#include "dart/common/ClassWithVirtualBase.hpp"
-#include "dart/common/SpecializedForAspect.hpp"
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/SpecializedForAspect.hpp>
 
 namespace dart {
 namespace common {
@@ -74,6 +74,6 @@ class RequiresAspect<ReqAspect1, OtherReqAspects...>
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/RequiresAspect.hpp"
+#include <dart/common/detail/RequiresAspect.hpp>
 
 #endif // DART_COMMON_REQUIRESASPECT_HPP_

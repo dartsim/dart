@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Logging.hpp"
-#include "dart/common/StlAllocator.hpp"
+#include <dart/common/Logging.hpp>
+#include <dart/common/StlAllocator.hpp>
 
 namespace dart::common {
 

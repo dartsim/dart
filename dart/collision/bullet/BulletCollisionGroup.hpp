@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONGROUP_HPP_
 
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/bullet/BulletInclude.hpp"
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/bullet/BulletInclude.hpp>
 
 namespace dart {
 namespace collision {

@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 #define DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Shape.hpp>
 
 namespace dart {
 namespace dynamics {
@@ -190,6 +190,6 @@ using HeightmapShaped = HeightmapShape<double>;
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/HeightmapShape-impl.hpp"
+#include <dart/dynamics/detail/HeightmapShape-impl.hpp>
 
 #endif // DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_

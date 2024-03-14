@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
+#include <dart/constraint/ConstraintBase.hpp>
 
 namespace dart {
 

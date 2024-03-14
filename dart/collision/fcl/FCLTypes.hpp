@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_FCL_FCLTTYPES_HPP_
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
-#include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include <dart/collision/fcl/BackwardCompatibility.hpp>
 
 #include <Eigen/Dense>
 

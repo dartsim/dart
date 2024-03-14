@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_BOXSHAPE_HPP_
 #define DART_DYNAMICS_BOXSHAPE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Shape.hpp>
 
 namespace dart {
 namespace dynamics {

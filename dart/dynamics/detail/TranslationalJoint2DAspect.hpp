@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 
-#include "dart/dynamics/GenericJoint.hpp"
-#include "dart/dynamics/detail/PlanarJointAspect.hpp"
+#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/PlanarJointAspect.hpp>
 
 #include <Eigen/Dense>
 

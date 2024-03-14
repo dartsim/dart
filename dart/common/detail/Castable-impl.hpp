@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_DETAIL_CASTABLE_HPP_
 #define DART_COMMON_DETAIL_CASTABLE_HPP_
 
-#include "dart/common/Castable.hpp"
-#include "dart/common/Metaprogramming.hpp"
+#include <dart/common/Castable.hpp>
+#include <dart/common/Metaprogramming.hpp>
 
 namespace dart::common {
 

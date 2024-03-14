@@ -63,6 +63,6 @@
         Alias_##member<AmbiguitySeed_##member>>::value;                        \
   }
 
-#include "dart/common/detail/Metaprogramming-impl.hpp"
+#include <dart/common/detail/Metaprogramming-impl.hpp>
 
 #endif // DART_COMMON_METAPROGRAMMING_HPP_

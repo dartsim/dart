@@ -33,7 +33,7 @@
 #ifndef DART_GUI_GLFUNCS_HPP_
 #define DART_GUI_GLFUNCS_HPP_
 
-#include "dart/common/Deprecated.hpp"
+#include <dart/common/Deprecated.hpp>
 
 #include <Eigen/Eigen>
 

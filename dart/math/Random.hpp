@@ -220,6 +220,6 @@ private:
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/Random-impl.hpp"
+#include <dart/math/detail/Random-impl.hpp>
 
 #endif // DART_MATH_RANDOM_HPP_

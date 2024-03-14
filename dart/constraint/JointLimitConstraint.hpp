@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
 #define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
+#include <dart/constraint/ConstraintBase.hpp>
 
 #include <Eigen/Dense>
 

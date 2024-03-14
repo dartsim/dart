@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 #define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 
-#include "dart/common/MemoryAllocator.hpp"
+#include <dart/common/MemoryAllocator.hpp>
 
 namespace dart::common {
 

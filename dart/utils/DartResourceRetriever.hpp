@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_DARTRESOURCERETRIEVER_HPP_
 #define DART_UTILS_DARTRESOURCERETRIEVER_HPP_
 
-#include "dart/common/ResourceRetriever.hpp"
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <unordered_map>
 #include <vector>

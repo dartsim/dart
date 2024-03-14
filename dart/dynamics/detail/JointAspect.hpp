@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 
-#include "dart/dynamics/MimicDofProperties.hpp"
+#include <dart/dynamics/MimicDofProperties.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

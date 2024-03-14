@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_HPP_
 #define DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_HPP_
 
-#include "dart/dynamics/TemplatedJacobianNode.hpp"
+#include <dart/dynamics/TemplatedJacobianNode.hpp>
 
 namespace dart {
 namespace dynamics {

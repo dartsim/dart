@@ -103,6 +103,6 @@ using Meshd = Mesh<double>;
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/Mesh-impl.hpp"
+#include <dart/math/detail/Mesh-impl.hpp>
 
 #endif // DART_MATH_MESH_HPP_

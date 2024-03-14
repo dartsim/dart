@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
-#include "dart/collision/detail/UnorderedPairs.hpp"
-#include "dart/common/Deprecated.hpp"
+#include <dart/collision/detail/UnorderedPairs.hpp>
+#include <dart/common/Deprecated.hpp>
 
 namespace dart {
 

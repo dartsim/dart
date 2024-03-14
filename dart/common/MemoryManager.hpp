@@ -36,8 +36,8 @@
 #ifndef NDEBUG
   #include <mutex>
 #endif
-#include "dart/common/FreeListAllocator.hpp"
-#include "dart/common/PoolAllocator.hpp"
+#include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/PoolAllocator.hpp>
 
 #include <iostream>
 
@@ -184,6 +184,6 @@ private:
 
 } // namespace dart::common
 
-#include "dart/common/detail/MemoryManager-impl.hpp"
+#include <dart/common/detail/MemoryManager-impl.hpp>
 
 #endif // DART_COMMON_MEMORYMANAGER_HPP_

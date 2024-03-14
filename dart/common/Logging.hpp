@@ -141,6 +141,6 @@ void fatal(const S& format_str, Args&&... args);
 
 } // namespace dart::common
 
-#include "dart/common/detail/Logging-impl.hpp"
+#include <dart/common/detail/Logging-impl.hpp>
 
 #endif // DART_COMMON_LOGGING_HPP_

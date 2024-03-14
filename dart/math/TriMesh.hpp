@@ -33,7 +33,7 @@
 #ifndef DART_MATH_TRIMESH_HPP_
 #define DART_MATH_TRIMESH_HPP_
 
-#include "dart/math/Mesh.hpp"
+#include <dart/math/Mesh.hpp>
 
 #include <memory>
 
@@ -116,6 +116,6 @@ using TriMeshd = TriMesh<double>;
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/TriMesh-impl.hpp"
+#include <dart/math/detail/TriMesh-impl.hpp>
 
 #endif // DART_MATH_TRIMESH_HPP_

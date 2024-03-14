@@ -33,7 +33,7 @@
 #ifndef DART_MATH_ICOSPHERE_HPP_
 #define DART_MATH_ICOSPHERE_HPP_
 
-#include "dart/math/TriMesh.hpp"
+#include <dart/math/TriMesh.hpp>
 
 #include <Eigen/Core>
 
@@ -101,6 +101,6 @@ using Icosphered = Icosphere<double>;
 } // namespace math
 } // namespace dart
 
-#include "dart/math/detail/Icosphere-impl.hpp"
+#include <dart/math/detail/Icosphere-impl.hpp>
 
 #endif // DART_MATH_ICOSPHERE_HPP_

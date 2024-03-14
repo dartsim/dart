@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_RENDER_CONESHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_CONESHAPENODE_HPP_
 
-#include "dart/gui/osg/render/ShapeNode.hpp"
+#include <dart/gui/osg/render/ShapeNode.hpp>
 
 #include <osg/MatrixTransform>
 

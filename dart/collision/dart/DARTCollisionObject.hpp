@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 
-#include "dart/collision/CollisionObject.hpp"
+#include <dart/collision/CollisionObject.hpp>
 
 #include <Eigen/Dense>
 

@@ -33,8 +33,8 @@
 #ifndef DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 #define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/constraint/SmartPointer.hpp"
+#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/SmartPointer.hpp>
 
 namespace dart {
 namespace constraint {

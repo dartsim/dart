@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
 #define DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
 
-#include "dart/gui/osg/Viewer.hpp"
+#include <dart/gui/osg/Viewer.hpp>
 
 #include <osg/NodeCallback>
 

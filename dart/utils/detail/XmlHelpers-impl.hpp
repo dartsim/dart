@@ -33,8 +33,8 @@
 #ifndef DART_UTILS_DETAIL_XMLHELPERS_IMPL_HPP_
 #define DART_UTILS_DETAIL_XMLHELPERS_IMPL_HPP_
 
-#include "dart/common/String.hpp"
-#include "dart/utils/XmlHelpers.hpp"
+#include <dart/common/String.hpp>
+#include <dart/utils/XmlHelpers.hpp>
 
 namespace dart::utils {
 

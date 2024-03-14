@@ -33,7 +33,7 @@
 #ifndef DART_MATH_DETAIL_MESH_IMPL_HPP_
 #define DART_MATH_DETAIL_MESH_IMPL_HPP_
 
-#include "dart/math/Mesh.hpp"
+#include <dart/math/Mesh.hpp>
 
 namespace dart {
 namespace math {

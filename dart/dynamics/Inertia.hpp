@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_INERTIA_HPP_
 #define DART_DYNAMICS_INERTIA_HPP_
 
-#include "dart/math/MathTypes.hpp"
+#include <dart/math/MathTypes.hpp>
 
 #include <array>
 

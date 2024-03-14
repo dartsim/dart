@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_ZERODOFJOINT_HPP_
 #define DART_DYNAMICS_ZERODOFJOINT_HPP_
 
-#include "dart/dynamics/Joint.hpp"
+#include <dart/dynamics/Joint.hpp>
 
 #include <string>
 

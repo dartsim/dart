@@ -33,9 +33,9 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/common/Filesystem.hpp"
-#include "dart/common/Platform.hpp"
+#include <dart/common/Deprecated.hpp>
+#include <dart/common/Filesystem.hpp>
+#include <dart/common/Platform.hpp>
 
 #include <memory>
 #include <string>
@@ -50,7 +50,7 @@
 
 #elif DART_OS_WINDOWS
 
-  #include "dart/common/IncludeWindows.hpp"
+  #include <dart/common/IncludeWindows.hpp>
 using hInstance = HINSTANCE__*;
   #define DYNLIB_HANDLE hInstance
 

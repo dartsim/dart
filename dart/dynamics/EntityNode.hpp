@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_ENTITYNODE_HPP_
 #define DART_DYNAMICS_ENTITYNODE_HPP_
 
-#include "dart/dynamics/detail/EntityNodeAspect.hpp"
+#include <dart/dynamics/detail/EntityNodeAspect.hpp>
 
 namespace dart {
 namespace dynamics {
@@ -72,6 +72,6 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/EntityNode.hpp"
+#include <dart/dynamics/detail/EntityNode.hpp>
 
 #endif // DART_DYNAMICS_ENTITYNODE_HPP_

@@ -138,6 +138,6 @@ using StopwatchNS = Stopwatch<std::chrono::nanoseconds>;
 
 } // namespace dart::common
 
-#include "dart/common/detail/Stopwatch-impl.hpp"
+#include <dart/common/detail/Stopwatch-impl.hpp>
 
 #endif // DART_COMMON_STOPWATCH_HPP_

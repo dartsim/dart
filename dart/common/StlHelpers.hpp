@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_STLHELPERS_HPP_
 #define DART_COMMON_STLHELPERS_HPP_
 
-#include "dart/common/Memory.hpp"
+#include <dart/common/Memory.hpp>
 
 #include <vector>
 

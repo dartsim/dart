@@ -33,8 +33,8 @@
 #ifndef DART_CONSTRAINT_PGSLCPSOLVER_HPP_
 #define DART_CONSTRAINT_PGSLCPSOLVER_HPP_
 
-#include "dart/config.hpp"
-#include "dart/constraint/LCPSolver.hpp"
+#include <dart/config.hpp>
+#include <dart/constraint/LCPSolver.hpp>
 
 #include <cstddef>
 

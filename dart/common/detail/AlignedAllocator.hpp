@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_ALIGNEDALLOCATOR_HPP_
 #define DART_COMMON_DETAIL_ALIGNEDALLOCATOR_HPP_
 
-#include "dart/config.hpp"
+#include <dart/config.hpp>
 
 #include <Eigen/Core>
 

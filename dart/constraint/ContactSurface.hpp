@@ -33,9 +33,9 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
-#include "dart/collision/Contact.hpp"
-#include "dart/constraint/SmartPointer.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
+#include <dart/collision/Contact.hpp>
+#include <dart/constraint/SmartPointer.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 
 #include <Eigen/Core>
 

@@ -33,8 +33,8 @@
 #ifndef DART_COLLISION_CONTACT_HPP_
 #define DART_COLLISION_CONTACT_HPP_
 
-#include "dart/collision/SmartPointer.hpp"
-#include "dart/dynamics/SmartPointer.hpp"
+#include <dart/collision/SmartPointer.hpp>
+#include <dart/dynamics/SmartPointer.hpp>
 
 #include <Eigen/Dense>
 
@@ -97,6 +97,6 @@ struct Contact
 } // namespace collision
 } // namespace dart
 
-#include "dart/collision/detail/Contact-impl.hpp"
+#include <dart/collision/detail/Contact-impl.hpp>
 
 #endif // DART_COLLISION_CONTACT_HPP_

@@ -33,14 +33,14 @@
 #ifndef DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 
-#include "dart/config.hpp"
+#include <dart/config.hpp>
 
 #include <Eigen/Core>
 
 #include <memory>
 
 #if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
-  #include "dart/common/detail/AlignedAllocator.hpp"
+  #include <dart/common/detail/AlignedAllocator.hpp>
 #else
   #include <Eigen/StdVector>
 #endif

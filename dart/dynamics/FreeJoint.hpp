@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
-#include "dart/common/Deprecated.hpp"
-#include "dart/dynamics/GenericJoint.hpp"
+#include <dart/common/Deprecated.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
 
 #include <Eigen/Dense>
 

@@ -80,6 +80,6 @@ private:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/Singleton-impl.hpp"
+#include <dart/common/detail/Singleton-impl.hpp>
 
 #endif // DART_COMMON_SINGLETON_HPP_

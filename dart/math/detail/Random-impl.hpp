@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Random.hpp"
+#include <dart/math/Random.hpp>
 
 //==============================================================================
 // This workaround is necessary for old Eigen (< 3.3). See the details here:

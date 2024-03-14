@@ -161,6 +161,6 @@ private:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/LockableReference-impl.hpp"
+#include <dart/common/detail/LockableReference-impl.hpp>
 
 #endif // DART_COMMON_LOCKABLEREFERENCE_HPP_

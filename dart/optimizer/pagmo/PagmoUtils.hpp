@@ -34,7 +34,7 @@
 #define DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
 
 #include <pagmo/pagmo.hpp>
-#include "dart/optimizer/MultiObjectiveSolver.hpp"
+#include <dart/optimizer/MultiObjectiveSolver.hpp>
 
 namespace dart {
 namespace optimizer {

@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_
 #define DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_
 
-#include "dart/dynamics/Shape.hpp"
+#include <dart/dynamics/Shape.hpp>
 
 #include <vector>
 
