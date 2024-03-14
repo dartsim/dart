@@ -142,11 +142,6 @@ inline double acotanh(double _X)
   return log((_X + 1) / (_X - 1)) / 2;
 }
 
-inline double round(double _x)
-{
-  return floor(_x + 0.5);
-}
-
 inline double round2(double _x)
 {
   int gintx = static_cast<int>(std::floor(_x));
