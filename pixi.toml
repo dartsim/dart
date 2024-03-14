@@ -26,6 +26,7 @@ urdfdom = ">=4.0.0,<4.1"
 ipopt = ">=3.14.14,<3.15"
 nlopt = ">=2.7.1,<2.8"
 pagmo = ">=2.19.0,<2.20"
+glfw = ">=3.4,<4"
 
 [build-dependencies]
 cmake = "3.22.*"
