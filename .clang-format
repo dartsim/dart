@@ -84,10 +84,12 @@ IncludeCategories:
     Priority: 31
   - Regex: '^<dart\/common\/.*\.h(pp)?>$'
     Priority: 32
-  - Regex: '^<dart\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/common\/.*\.h(pp)?>$'
     Priority: 33
+  - Regex: '^<dart\/.*\.h(pp)?>$'
+    Priority: 40
   - Regex: '^<dart\/external\/.*\.h(pp)?>$'
-    Priority: 34
+    Priority: 50
 
   # 3rd-party headers
   - Regex: '^<.*\.h(pp)?>$'

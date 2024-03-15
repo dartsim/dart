@@ -5,35 +5,40 @@
 #include <Eigen/Core>
 
 /* Version number */
-#define DART_MAJOR_VERSION @DART_MAJOR_VERSION@
-#define DART_MINOR_VERSION @DART_MINOR_VERSION@
-#define DART_PATCH_VERSION @DART_PATCH_VERSION@
+#define DART_MAJOR_VERSION @DART_MAJOR_VERSION @
+#define DART_MINOR_VERSION @DART_MINOR_VERSION @
+#define DART_PATCH_VERSION @DART_PATCH_VERSION @
 
 #define DART_VERSION "@DART_VERSION@"
 #define DART_DESCRIPTION "@DART_PKG_DESC@"
 
-#define DART_VERSION_AT_LEAST(x,y,z) \
-  (DART_MAJOR_VERSION > x || (DART_MAJOR_VERSION >= x && \
-  (DART_MINOR_VERSION > y || (DART_MINOR_VERSION >= y && \
-  DART_PATCH_VERSION >= z))))
+#define DART_VERSION_AT_LEAST(x, y, z)                                         \
+  (DART_MAJOR_VERSION > x                                                      \
+   || (DART_MAJOR_VERSION >= x                                                 \
+       && (DART_MINOR_VERSION > y                                              \
+           || (DART_MINOR_VERSION >= y && DART_PATCH_VERSION >= z))))
 
-#define DART_MAJOR_MINOR_VERSION_AT_LEAST(x,y) \
-  (DART_MAJOR_VERSION > x || (DART_MAJOR_VERSION >= x && \
-  (DART_MINOR_VERSION > y || (DART_MINOR_VERSION >= y))))
+#define DART_MAJOR_MINOR_VERSION_AT_LEAST(x, y)                                \
+  (DART_MAJOR_VERSION > x                                                      \
+   || (DART_MAJOR_VERSION >= x                                                 \
+       && (DART_MINOR_VERSION > y || (DART_MINOR_VERSION >= y))))
 
-#define DART_VERSION_AT_MOST(x,y,z) \
-  (DART_MAJOR_VERSION < x || (DART_MAJOR_VERSION <= x && \
-  (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y && \
-  DART_PATCH_VERSION <= z))))
+#define DART_VERSION_AT_MOST(x, y, z)                                          \
+  (DART_MAJOR_VERSION < x                                                      \
+   || (DART_MAJOR_VERSION <= x                                                 \
+       && (DART_MINOR_VERSION < y                                              \
+           || (DART_MINOR_VERSION <= y && DART_PATCH_VERSION <= z))))
 
-#define DART_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
-  (DART_MAJOR_VERSION < x || (DART_MAJOR_VERSION <= x && \
-  (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
+#define DART_MAJOR_MINOR_VERSION_AT_MOST(x, y)                                 \
+  (DART_MAJOR_VERSION < x                                                      \
+   || (DART_MAJOR_VERSION <= x                                                 \
+       && (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
 
-#define EIGEN_VERSION_AT_MOST(x,y,z) \
-  (EIGEN_WORLD_VERSION < x || (EIGEN_WORLD_VERSION <= x && \
-  (EIGEN_MAJOR_VERSION < y || (EIGEN_MAJOR_VERSION <= y && \
-  EIGEN_MINOR_VERSION <= z))))
+#define EIGEN_VERSION_AT_MOST(x, y, z)                                         \
+  (EIGEN_WORLD_VERSION < x                                                     \
+   || (EIGEN_WORLD_VERSION <= x                                                \
+       && (EIGEN_MAJOR_VERSION < y                                             \
+           || (EIGEN_MAJOR_VERSION <= y && EIGEN_MINOR_VERSION <= z))))
 
 // Detect the compiler
 #if defined(__clang__)
@@ -57,7 +62,8 @@
 #cmakedefine01 HAVE_ODE
 #cmakedefine01 HAVE_OCTOMAP
 // TODO(JS): Change names to DART_HAVE_*
-// TODO(JS): Use target_compile_definitions(<target_name> PUBLIC -DDART_HAVE_*=1)
+// TODO(JS): Use target_compile_definitions(<target_name> PUBLIC
+// -DDART_HAVE_*=1)
 
 #cmakedefine01 DART_ENABLE_SIMD
 
@@ -66,7 +72,8 @@
 #define DART_DATA_PATH "@DART_SOURCE_DIR@/data/"
 
 #define DART_DATA_LOCAL_PATH "@DART_SOURCE_DIR@/data/"
-#define DART_DATA_GLOBAL_PATH "@CMAKE_INSTALL_PREFIX@/@DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH@/data/"
+#define DART_DATA_GLOBAL_PATH                                                  \
+  "@CMAKE_INSTALL_PREFIX@/@DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH@/data/"
 
 // See #451
 #cmakedefine01 ASSIMP_AISCENE_CTOR_DTOR_DEFINED
@@ -75,5 +82,7 @@
 // Workaround for the fact that Bullet does not add the definition to
 // BULLET_DEFINITIONS or generate a #cmakedefine header.
 #cmakedefine BT_USE_DOUBLE_PRECISION
+
+#cmakedefine01 DART_USE_SYSTEM_ENTT
 
 #endif // #ifndef DART_CONFIG_HPP_

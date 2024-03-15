@@ -43,6 +43,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(DARTMacros)
+include(dart_defs)
 
 # CMake component helper. It uses the following variables:
 # - LIBRARY_INSTALL_DIR
@@ -73,13 +74,13 @@ set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp")
 #===============================================================================
 # Build options
 #===============================================================================
-option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
+dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
 else()
-  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
@@ -88,19 +89,20 @@ endif()
 # local machines are different then the projects will be built with different
 # compile options, which may cause runtime errors especially memory alignment
 # errors.
-option(DART_ENABLE_SIMD
+dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
-option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-option(DART_BUILD_DARTPY "Build dartpy" ON)
-option(DART_CODECOV "Turn on codecov support" OFF)
-option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
+dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+dart_option(DART_BUILD_DARTPY "Build dartpy" ON)
+dart_option(DART_CODECOV "Turn on codecov support" OFF)
+dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
 # to always generate ANSI-formatted colors regardless of the output medium types.
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
-option(DART_FORCE_COLORED_OUTPUT
+dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
+dart_option(DART_USE_SYSTEM_ENTT "Use system EnTT" OFF)
 
 #===============================================================================
 # Print intro
@@ -110,6 +112,8 @@ message(STATUS "============================================")
 message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
 message(STATUS "")
+
+dart_print_options()
 
 # Print build tool information
 message(STATUS "[ Build Tools ]")

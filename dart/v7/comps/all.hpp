@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -15,6 +15,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,51 +36,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#pragma once
 
-#include <pybind11/pybind11.h>
+#include <dart/v7/ecs/entity.hpp>
 
-namespace py = pybind11;
+namespace dart::v7 {
 
-namespace dart {
-namespace python {
-
-void eigen_geometry(py::module& m);
-
-void dart_v7(py::module& m);
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimizer(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_constraint(py::module& m);
-void dart_simulation(py::module& m);
-void dart_utils(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+struct SkeletonTag
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+};
 
-#ifdef DARTPY_VERSION_INFO
-  m.attr("__version__") = DARTPY_VERSION_INFO;
-#else
-  m.attr("__version__") = "dev";
-#endif
-
-  eigen_geometry(m);
-
-  dart_v7(m);
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
-}
-
-} // namespace python
-} // namespace dart
+} // namespace dart::v7

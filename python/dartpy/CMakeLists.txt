@@ -59,6 +59,7 @@ target_include_directories(${pybind_module}
 )
 
 set(dartpy_libraries
+  v7
   dart
   dart-utils
   dart-utils-urdf
@@ -72,12 +73,7 @@ foreach(dartpy_library ${dartpy_libraries})
 endforeach()
 
 target_link_libraries(${pybind_module}
-  PUBLIC
-    dart
-    dart-utils
-    dart-utils-urdf
-    dart-gui
-    dart-gui-osg
+  PUBLIC ${dartpy_libraries}
 )
 if(TARGET dart-optimizer-nlopt)
   target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
@@ -109,10 +105,12 @@ if(BUILD_SHARED_LIBS)
     "Install the shared libraries to be able to import ${pybind_module}."
   )
 endif()
+
+# TODO: Fix installing dartpy to site-packages directory
 # Install the pybind module to site-packages directory
-install(TARGETS ${pybind_module}
-  LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
-)
+# install(TARGETS ${pybind_module}
+#   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
+# )
 
 list(REMOVE_ITEM dartpy_headers
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h

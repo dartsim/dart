@@ -14,6 +14,7 @@ brew 'octomap'
 brew 'ode'
 #brew 'open-scene-graph'  # disabled until 3.7.0 is released
 brew 'pagmo'
+brew 'skypjack/entt/entt'
 brew 'spdlog'
 brew 'tinyxml2'
 brew 'urdfdom'

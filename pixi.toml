@@ -8,6 +8,9 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [tasks]
 clean = "rm -rf build"
+build-v7 = { cmd= "cmake --build build --target v7 --parallel", depends_on = ["configure"] }
+configure_local = { cmd= "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
+install_local = { cmd= "cmake --install build --prefix $CONDA_PREFIX", depends_on = ["configure_local", "build"] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"

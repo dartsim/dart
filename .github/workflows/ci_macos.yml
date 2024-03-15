@@ -32,6 +32,7 @@ jobs:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DARTPY: ON
+      DART_USE_SYSTEM_ENTT: ON
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,4 +65,3 @@ jobs:
       - name: Test DART and dartpy
         run: |
           pixi run build
-  

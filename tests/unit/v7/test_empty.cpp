@@ -30,51 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/v7/world.hpp>
 
-#include <pybind11/pybind11.h>
+#include <gtest/gtest.h>
 
-namespace py = pybind11;
+using namespace dart;
 
-namespace dart {
-namespace python {
-
-void eigen_geometry(py::module& m);
-
-void dart_v7(py::module& m);
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimizer(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_constraint(py::module& m);
-void dart_simulation(py::module& m);
-void dart_utils(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+TEST(EmptyTest, Empty)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-#ifdef DARTPY_VERSION_INFO
-  m.attr("__version__") = DARTPY_VERSION_INFO;
-#else
-  m.attr("__version__") = "dev";
-#endif
-
-  eigen_geometry(m);
-
-  dart_v7(m);
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  EXPECT_TRUE(true);
 }
-
-} // namespace python
-} // namespace dart

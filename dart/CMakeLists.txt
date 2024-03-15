@@ -13,6 +13,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Source directories
 #===============================================================================
+# v7
 # common
 # math
 # integration
@@ -59,6 +60,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
 # gui-osg - (gui), {dart-gui-osg}
+
+add_subdirectory(v7)
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -124,6 +127,7 @@ target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
     ${PROJECT_NAME}-external-odelcpsolver
+    v7
     Eigen3::Eigen
     ccd
     fcl

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/ecs/entt.hpp>
+#include <dart/v7/ecs/include_entt.hpp>
 
 #include <gtest/gtest.h>
 
