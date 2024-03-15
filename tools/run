@@ -34,7 +34,7 @@ help() {
 
   Options:
     -o <name>       OS version. Available <name>: {ubuntu-bionic, ubuntu-focal (default), ubuntu-impish}
-    -v <version>    DART version. Available <version>: {v6.10, v7.0 (default)}
+    -v <version>    DART version. Available <version>: {v6.14 (default)}
     -c              Clean build. Empty the build directory before building.
     -j <num_cores>  Number of cores to use for build. Use -j 1 to disable parallel build. Single core will be used if this option is not specified.
     --dev           Use Docker image for development rather than release image.

@@ -49,86 +49,87 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         build: ["cp37-manylinux_x86_64"]
-        toolchain_file: [""]
         experimental: [false]
         release_only: [true]
 
         include:
           - os: ubuntu-latest
             build: "cp38-manylinux_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: ubuntu-latest
             build: "cp39-manylinux_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: ubuntu-latest
             build: "cp310-manylinux_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: ubuntu-latest
             build: "cp311-manylinux_x86_64"
-            toolchain_file: ""
+            experimental: false
+            release_only: true
+
+          - os: ubuntu-latest
+            build: "cp312-manylinux_x86_64"
             experimental: false
             release_only: false
 
           - os: macos-latest
             build: "cp38-macosx_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: macos-latest
             build: "cp39-macosx_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: macos-latest
             build: "cp310-macosx_x86_64"
-            toolchain_file: ""
             experimental: false
             release_only: true
 
           - os: macos-latest
             build: "cp311-macosx_x86_64"
-            toolchain_file: ""
+            experimental: false
+            release_only: true
+
+          - os: macos-latest
+            build: "cp312-macosx_x86_64"
             experimental: false
             release_only: false
 
           - os: windows-latest
             build: "cp38-win_amd64"
-            toolchain_file: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: false
             release_only: true
 
           - os: windows-latest
             build: "cp39-win_amd64"
-            toolchain_file: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: false
             release_only: true
 
           - os: windows-latest
             build: "cp310-win_amd64"
-            toolchain_file: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
             experimental: false
             release_only: true
 
           - os: windows-latest
             build: "cp311-win_amd64"
-            toolchain_file: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+            experimental: false
+            release_only: true
+
+          - os: windows-latest
+            build: "cp312-win_amd64"
             experimental: false
             release_only: false
 
           - os: windows-latest
-            build: "cp311-win_arm64"
-            toolchain_file: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+            build: "cp312-win_arm64"
             experimental: true
             release_only: false
 
@@ -142,15 +143,15 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
         uses: johnwason/vcpkg-action@v6
         with:
-          pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt freeglut glfw3 nlopt ode opengl osg pagmo2 pybind11 tinyxml2 urdfdom
+          pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt freeglut glfw3 nlopt ode opengl osg pagmo2 tinyxml2 urdfdom
           triplet: x64-windows
           revision: "2024.02.14"
           github-binarycache: true
           token: ${{ github.token }}
 
       - name: Build wheels
-        if: ${{ matrix.release_only == false || github.ref == 'refs/heads/main' }}
-        uses: pypa/cibuildwheel@v2.16.2
+        if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
+        uses: pypa/cibuildwheel@v2.17.0
         env:
           # Common
           DART_IN_CI: ON
@@ -159,11 +160,26 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: 10.15
 
           # Windows
-          CMAKE_TOOLCHAIN_FILE: ${{ matrix.toolchain_file }}
+          CMAKE_TOOLCHAIN_FILE: ""
+
+
+      - name: Build wheels (Windows)
+        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
+        uses: pypa/cibuildwheel@v2.17.0
+        env:
+          # Common
+          DART_IN_CI: ON
+
+          # macOS
+          MACOSX_DEPLOYMENT_TARGET: 10.15
+
+          # Windows
+          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
+          name: ${{ matrix.build }}
 
   # TODO: Disabled because installing from source doesn't work when the deps are not
   # installed in the system

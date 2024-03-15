@@ -55,7 +55,7 @@ RUN git clone https://github.com/flexible-collision-library/fcl.git -b '0.7.0' \
 # Bullet
 RUN git clone https://github.com/bulletphysics/bullet3.git -b 3.25 \
     && mkdir -p bullet3/build \
-    && cmake bullet3 -B bullet3/build -DCMAKE_BUILD_TYPE=Release -DBUILD_UNIT_TESTS=OFF -DBUILD_CPU_DEMOS=OFF \
+    && cmake bullet3 -B bullet3/build -DCMAKE_BUILD_TYPE=Release -DBUILD_UNIT_TESTS=OFF -DBUILD_CPU_DEMOS=OFF -DBUILD_BULLET2_DEMOS=OFF \
     && cmake --build bullet3/build --target install -j${NUM_CORES} \
     && rm -rf bullet3
 
@@ -93,10 +93,3 @@ RUN git clone https://github.com/ros/urdfdom.git -b 3.0.0 \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom
-
-# pybind11
-RUN git clone https://github.com/pybind/pybind11.git -b 'v2.10.3' \
-    && mkdir -p pybind11/build \
-    && cmake pybind11 -B pybind11/build -DCMAKE_BUILD_TYPE=Release -DPYBIND11_TEST=OFF \
-    && cmake --build pybind11/build --target install -j${NUM_CORES} \
-    && rm -rf pybind11

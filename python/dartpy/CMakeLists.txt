@@ -6,6 +6,8 @@
 #
 # This file is provided under the "BSD-style" License
 
+find_package(Python3 COMPONENTS Interpreter Development)
+
 # Set up pybind11
 include(FetchContent)
 FetchContent_Declare(
@@ -56,6 +58,19 @@ target_include_directories(${pybind_module}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+set(dartpy_libraries
+  dart
+  dart-utils
+  dart-utils-urdf
+  dart-gui
+  dart-gui-osg
+)
+foreach(dartpy_library ${dartpy_libraries})
+  if(NOT TARGET ${dartpy_library})
+    message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")
+  endif()
+endforeach()
+
 target_link_libraries(${pybind_module}
   PUBLIC
     dart
@@ -63,7 +78,6 @@ target_link_libraries(${pybind_module}
     dart-utils-urdf
     dart-gui
     dart-gui-osg
-    ${PYTHON_LIBRARIES}
 )
 if(TARGET dart-optimizer-nlopt)
   target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
@@ -74,6 +88,10 @@ endif()
 if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
 endif()
+
+target_compile_definitions(${pybind_module}
+  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
+)
 
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")

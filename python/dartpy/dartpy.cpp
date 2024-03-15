@@ -55,6 +55,12 @@ PYBIND11_MODULE(dartpy, m)
 {
   m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
 
+#ifdef DARTPY_VERSION_INFO
+  m.attr("__version__") = DARTPY_VERSION_INFO;
+#else
+  m.attr("__version__") = "dev";
+#endif
+
   eigen_geometry(m);
 
   dart_common(m);

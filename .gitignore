@@ -65,5 +65,8 @@ data/screencap/*
 dist/
 *.egg-info
 
+# Python wheel files
+*.whl
+
 # pixi environments
 .pixi
