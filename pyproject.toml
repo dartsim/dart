@@ -73,7 +73,6 @@ environment-pass = ["DART_IN_CI"]
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"] # TODO: Add universal2 and arm64
-environment = { HOMEBREW_NO_INSTALL_CLEANUP = 1 }
 before-all = [
     "brew update > /dev/null",
     "brew bundle || brew bundle",
@@ -83,6 +82,3 @@ before-all = [
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64", "ARM64"]
-
-[[tool.cibuildwheel.overrides]]
-select = "*-musllinux*"
