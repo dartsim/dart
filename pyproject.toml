@@ -47,27 +47,32 @@ skip = [
     # Linux
     "*musllinux*",
     "cp36-*linux*",
+    "cp37-*linux*",
 
     # macOS
     "cp36-macosx*",
     "cp37-macosx*",
-
-    # macOS (arm64)
-    "cp39-macosx_arm64",
+    "cp38-macosx*",
+    "cp39-macosx*",
+    "cp310-macosx*",
+    "cp311-macosx*",
 
     # Windows
     "cp*-win32",
     "cp36-win*",
     "cp37-win*",
+    "cp38-win*",
+    "cp39-win*",
+    "cp310-win*",
+    "cp311-win*",
 ]
 
 [tool.cibuildwheel.linux]
-# archs = ["x86_64", "aarch64"]
 archs = ["x86_64"]
 environment-pass = ["DART_IN_CI"]
 
 [tool.cibuildwheel.macos]
-archs = ["auto64"]
+archs = ["auto64"] # TODO: Add universal2 and arm64
 environment = { HOMEBREW_NO_INSTALL_CLEANUP = 1 }
 before-all = [
     "brew update > /dev/null",

@@ -182,6 +182,17 @@ if(DART_ENABLE_SIMD)
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
+else()
+  # TODO: Improve this part to detect the system's architecture and apply the
+  # appropriate SIMD instructions.
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=neon")
+    # Remove SSE flags if set elsewhere
+    string(REPLACE "-msse" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "-msse2" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "-msse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "-mssse3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  endif()
 endif()
 
 # Active log level

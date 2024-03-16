@@ -48,30 +48,25 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        build: ["cp37-manylinux_x86_64"]
+        build: ["cp38-manylinux_x86_64"]
         experimental: [false]
-        release_only: [true]
+        release_only: [false]
 
         include:
           - os: ubuntu-latest
-            build: "cp38-manylinux_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: ubuntu-latest
             build: "cp39-manylinux_x86_64"
             experimental: false
-            release_only: true
+            release_only: false
 
           - os: ubuntu-latest
             build: "cp310-manylinux_x86_64"
             experimental: false
-            release_only: true
+            release_only: false
 
           - os: ubuntu-latest
             build: "cp311-manylinux_x86_64"
             experimental: false
-            release_only: true
+            release_only: false
 
           - os: ubuntu-latest
             build: "cp312-manylinux_x86_64"
@@ -79,49 +74,9 @@ jobs:
             release_only: false
 
           - os: macos-latest
-            build: "cp38-macosx_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: macos-latest
-            build: "cp39-macosx_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: macos-latest
-            build: "cp310-macosx_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: macos-latest
-            build: "cp311-macosx_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: macos-latest
             build: "cp312-macosx_x86_64"
             experimental: false
             release_only: false
-
-          - os: windows-latest
-            build: "cp38-win_amd64"
-            experimental: false
-            release_only: true
-
-          - os: windows-latest
-            build: "cp39-win_amd64"
-            experimental: false
-            release_only: true
-
-          - os: windows-latest
-            build: "cp310-win_amd64"
-            experimental: false
-            release_only: true
-
-          - os: windows-latest
-            build: "cp311-win_amd64"
-            experimental: false
-            release_only: true
 
           - os: windows-latest
             build: "cp312-win_amd64"
@@ -130,7 +85,7 @@ jobs:
 
           - os: windows-latest
             build: "cp312-win_arm64"
-            experimental: true
+            experimental: false
             release_only: false
 
     env:
@@ -161,7 +116,6 @@ jobs:
 
           # Windows
           CMAKE_TOOLCHAIN_FILE: ""
-
 
       - name: Build wheels (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}

@@ -74,6 +74,7 @@ class CMakeBuild(build_ext):
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
+            f"-DDART_VERBOSE=ON",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
