@@ -4,10 +4,11 @@
 
 * Tested Platforms
 
-  * Ubuntu Focal on amd64 / GCC 9.4 / amd64
-  * Ubuntu Jammy on amd64 / GCC 11.3 / amd64
-  * macOS 12 (Monterey) / Clang 14 / amd64
-  * Windows / MSVC 19.37 / amd64
+  * Linux
+    * Ubuntu 22.04 LTS on amd64 / GCC 11.2 / amd64
+    * (experimental) Arch Linux
+  * macOS 12 (Monterey) / Clang 13 / amd64
+  * Windows / Microsoft Visual Studio 2022 / amd64
 
 * Breaking Changes
 
