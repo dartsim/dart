@@ -233,9 +233,13 @@ endif()
 
 if(MSVC)
   set_target_properties(
-    ${target} PROPERTIES
+    dart PROPERTIES
     STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
   )
+endif()
+
+if(DART_CODECOV)
+  target_link_libraries(dart PUBLIC coverage_config)
 endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)

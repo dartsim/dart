@@ -59,8 +59,7 @@ Population PagmoTypes::convertPopulation(
   const auto& pagmoX = pagmoPop.get_x();
   const auto& pagmoF = pagmoPop.get_f();
 
-  for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
-  {
+  for (std::size_t i = 0u; i < pagmoPop.size(); ++i) {
     const Eigen::VectorXd x = convertVector(pagmoX[i]);
     const Eigen::VectorXd f = convertVector(pagmoF[i]);
     pop.set(i, x, f);
@@ -75,8 +74,7 @@ pagmo::population PagmoTypes::convertPopulation(
 {
   pagmo::population pagmoPop(pagmoProb, pop.getSize());
 
-  for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
-  {
+  for (std::size_t i = 0u; i < pagmoPop.size(); ++i) {
     const std::vector<double> pagmoX = convertVector(pop.getDecisionVector(i));
     const std::vector<double> pagmoF = convertVector(pop.getFitnessVector(i));
     pagmoPop.set_xf(i, pagmoX, pagmoF);

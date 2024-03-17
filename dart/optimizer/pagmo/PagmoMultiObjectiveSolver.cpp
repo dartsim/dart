@@ -32,8 +32,6 @@
 
 #include "dart/optimizer/pagmo/PagmoMultiObjectiveSolver.hpp"
 
-#include <memory>
-#include <Eigen/Dense>
 #include "dart/common/Console.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/math/Constants.hpp"
@@ -41,6 +39,10 @@
 #include "dart/optimizer/MultiObjectiveProblem.hpp"
 #include "dart/optimizer/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 #include "dart/optimizer/pagmo/PagmoUtils.hpp"
+
+#include <Eigen/Dense>
+
+#include <memory>
 
 namespace dart {
 namespace optimizer {
@@ -120,20 +122,16 @@ static pagmo::algorithm createNsga2(
 static pagmo::algorithm createPagmoAlgorithm(
     const PagmoMultiObjectiveSolver::Properties& properties)
 {
-  switch (properties.mAlgorithm)
-  {
+  switch (properties.mAlgorithm) {
 #ifdef PAGMO_WITH_NLOPT
-    case PagmoMultiObjectiveSolver::Algorithm::Local_nlopt_COBYLA:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Local_nlopt_COBYLA: {
       return createNloptCobyla(properties);
     }
 #endif
-    case PagmoMultiObjectiveSolver::Algorithm::Global_MOEAD:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Global_MOEAD: {
       return createMoead(properties);
     }
-    case PagmoMultiObjectiveSolver::Algorithm::Global_NSGA2:
-    {
+    case PagmoMultiObjectiveSolver::Algorithm::Global_NSGA2: {
       return createNsga2(properties);
     }
   }
@@ -161,8 +159,7 @@ bool PagmoMultiObjectiveSolver::solve(std::size_t numEvolutions)
 
   mPopulations.clear();
   mPopulations.reserve(archi.size());
-  for (std::size_t i = 0u; i < archi.size(); ++i)
-  {
+  for (std::size_t i = 0u; i < archi.size(); ++i) {
     mPopulations.emplace_back(
         PagmoTypes::convertPopulation(archi[i].get_population(), prob));
   }

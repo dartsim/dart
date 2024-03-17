@@ -1,6 +1,10 @@
 # Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
 
 coverage:
+  status:
+    project:
+      default:
+        threshold: 1%
   ignore:
     - "tests"
     - "dart/external"

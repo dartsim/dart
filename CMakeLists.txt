@@ -103,6 +103,7 @@ dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 dart_option(DART_USE_SYSTEM_ENTT "Use system EnTT" OFF)
+dart_option(DART_IN_CI "Indicate building DART as part of CI" OFF)
 
 #===============================================================================
 # Print intro
@@ -128,11 +129,38 @@ message(STATUS "")
 # CodeCov settings
 #===============================================================================
 if(DART_CODECOV)
-  include(CodeCoverage)
-  setup_target_for_coverage(codecov ctest coverage)
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
+  # Set up custom targets for code coverage
+  dart_coverage(
+    INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dart
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dart
   )
+
+  # Code Coverage Configuration
+  add_library(coverage_config INTERFACE)
+
+  # CodeCov can only be enabled in Debug mode
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(FATAL_ERROR "CodeCov can only be enabled in Debug mode")
+  endif()
+
+  # CodeCov can only be enabled with GCC or Clang
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(FATAL_ERROR "CodeCov can only be enabled with GCC or Clang")
+  endif()
+
+  # Add required flags (GCC & LLVM/Clang)
+  target_compile_options(coverage_config INTERFACE
+    -O0        # no optimization
+    -g         # generate debug info
+    --coverage # sets all required flags
+  )
+
+  # Add required flags (GCC & LLVM/Clang)
+  target_link_options(coverage_config INTERFACE --coverage)
+
+  # Export CodeCov configuration
+  install(TARGETS coverage_config DESTINATION lib EXPORT coverage_config)
+  install(EXPORT coverage_config DESTINATION ${CONFIG_INSTALL_DIR})
 endif()
 
 #===============================================================================
@@ -669,6 +697,11 @@ message(STATUS "Run 'make install' to install all the C++ components")
 if(TARGET dartpy)
   message(STATUS "Run 'make dartpy' to build dartpy")
   message(STATUS "Run 'make install' to install dartpy")
+endif()
+if(TARGET coverage)
+  message(STATUS "- 'coverage'     : generage coverage report")
+  message(STATUS "- 'coverage_html': generage coverage report in html")
+  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
 endif()
 
 #===============================================================================
