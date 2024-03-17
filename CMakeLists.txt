@@ -192,7 +192,7 @@ include(DARTFindDependencies)
 #===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
+execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/case_sensitive_filesystem
                 RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
 if(${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
   set(FILESYSTEM_CASE_SENSITIVE TRUE)
@@ -563,7 +563,7 @@ if(CLANG_FORMAT_EXECUTABLE)
 
     add_custom_target(check-format
                       COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
-                      COMMAND ${DART_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
+                      COMMAND ${DART_SOURCE_DIR}/scripts/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
                       COMMAND ${CMAKE_COMMAND} -E echo "Done."
                       DEPENDS ${CLANG_FORMAT_EXECUTABLE}
                       WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart)

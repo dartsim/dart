@@ -192,7 +192,7 @@ sources.extend(glob("dart/**/*", recursive=True))
 sources.extend(glob("python/**/*", recursive=True))
 sources.extend(glob("doxygen/**/*", recursive=True))
 sources.extend(glob("examples/**/*", recursive=True))
-sources.extend(glob("tools/**/*", recursive=True))
+sources.extend(glob("scripts/**/*", recursive=True))
 sources.extend(glob("tutorials/**/*", recursive=True))
 
 
