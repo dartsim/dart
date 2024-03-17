@@ -46,8 +46,7 @@ void MyWindow::drawWorld() const
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
-  switch (_key)
-  {
+  switch (_key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)

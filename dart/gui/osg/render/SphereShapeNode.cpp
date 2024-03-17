@@ -112,8 +112,7 @@ void SphereShapeNode::refresh()
 //==============================================================================
 void SphereShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode
         = new SphereShapeGeode(mSphereShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -155,8 +154,7 @@ void SphereShapeGeode::refresh()
 //==============================================================================
 void SphereShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable = new SphereShapeDrawable(mSphereShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -190,8 +188,7 @@ void SphereShapeDrawable::refresh(bool firstTime)
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape
         = new ::osg::Sphere(::osg::Vec3(0, 0, 0), mSphereShape->getRadius());
@@ -201,24 +198,20 @@ void SphereShapeDrawable::refresh(bool firstTime)
   }
 
   if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     setColor(color);
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

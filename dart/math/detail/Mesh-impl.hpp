@@ -92,8 +92,7 @@ bool Mesh<S>::isEmpty() const
 template <typename S>
 void Mesh<S>::translate(const Vector3& translation)
 {
-  for (auto& vertex : mVertices)
-  {
+  for (auto& vertex : mVertices) {
     vertex += translation;
   }
 }
@@ -114,15 +113,12 @@ Mesh<S>& Mesh<S>::operator+=(const Mesh& other)
 
   // Insert vertex normals if both meshes have normals. Otherwise, clean the
   // vertex normals.
-  if ((isEmpty() || hasVertexNormals()) && other.hasVertexNormals())
-  {
+  if ((isEmpty() || hasVertexNormals()) && other.hasVertexNormals()) {
     mVertexNormals.insert(
         mVertexNormals.end(),
         other.mVertexNormals.begin(),
         other.mVertexNormals.end());
-  }
-  else
-  {
+  } else {
     mVertexNormals.clear();
   }
 
@@ -144,8 +140,7 @@ Mesh<S>::Mesh()
 template <typename S>
 void Mesh<S>::normalizeVertexNormals()
 {
-  for (auto& normal : mVertexNormals)
-  {
+  for (auto& normal : mVertexNormals) {
     normal.normalize();
   }
 }

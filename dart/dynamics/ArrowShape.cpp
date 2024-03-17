@@ -103,11 +103,9 @@ void ArrowShape::setProperties(const Properties& _properties)
 //==============================================================================
 void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
-  for (std::size_t i = 0; i < mMesh->mNumMeshes; ++i)
-  {
+  for (std::size_t i = 0; i < mMesh->mNumMeshes; ++i) {
     aiMesh* mesh = mMesh->mMeshes[i];
-    for (std::size_t j = 0; j < mesh->mNumVertices; ++j)
-    {
+    for (std::size_t j = 0; j < mesh->mNumVertices; ++j) {
       mesh->mColors[0][j]
           = aiColor4D(_color[0], _color[1], _color[2], _color[3]);
     }
@@ -128,8 +126,7 @@ static void constructArrowTip(
     const ArrowShape::Properties& properties)
 {
   std::size_t resolution = (mesh->mNumVertices - 1) / 2;
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     double theta
         = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
 
@@ -139,8 +136,7 @@ static void constructArrowTip(
     double z = base;
     mesh->mVertices[2 * i].Set(x, y, z);
 
-    if (base != tip)
-    {
+    if (base != tip) {
       x *= properties.mHeadRadiusScale;
       y *= properties.mHeadRadiusScale;
     }
@@ -159,8 +155,7 @@ static void constructArrowBody(
     const ArrowShape::Properties& properties)
 {
   std::size_t resolution = mesh->mNumVertices / 2;
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     double theta
         = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
 
@@ -204,23 +199,17 @@ void ArrowShape::configureArrow(
   headLength = std::min(maxHeadLength, std::max(minHeadLength, headLength));
 
   // construct the tail
-  if (mProperties.mDoubleArrow)
-  {
+  if (mProperties.mDoubleArrow) {
     constructArrowTip(mMesh->mMeshes[0], headLength, 0, mProperties);
-  }
-  else
-  {
+  } else {
     constructArrowTip(mMesh->mMeshes[0], 0, 0, mProperties);
   }
 
   // construct the main body
-  if (mProperties.mDoubleArrow)
-  {
+  if (mProperties.mDoubleArrow) {
     constructArrowBody(
         mMesh->mMeshes[1], headLength, length - headLength, mProperties);
-  }
-  else
-  {
+  } else {
     constructArrowBody(mMesh->mMeshes[1], 0, length - headLength, mProperties);
   }
 
@@ -233,8 +222,7 @@ void ArrowShape::configureArrow(
   Eigen::Vector3d v = mHead - mTail;
   Eigen::Vector3d z = Eigen::Vector3d::UnitZ();
 
-  if (v.norm() > 0)
-  {
+  if (v.norm() > 0) {
     v.normalize();
     Eigen::Vector3d axis = z.cross(v);
     if (axis.norm() > 0)
@@ -297,8 +285,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   scene->mMaterials[0] = new aiMaterial;
 
   // allocate memory
-  for (std::size_t i = 0; i < 3; ++i)
-  {
+  for (std::size_t i = 0; i < 3; ++i) {
     std::size_t numVertices
         = (i == 0 || i == 2) ? 2 * resolution + 1 : 2 * resolution;
 
@@ -313,8 +300,7 @@ void ArrowShape::instantiate(std::size_t resolution)
     std::size_t numFaces = (i == 0 || i == 2) ? 3 * resolution : numVertices;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t j = 0; j < numFaces; ++j)
-    {
+    for (std::size_t j = 0; j < numFaces; ++j) {
       mesh->mFaces[j].mNumIndices = 3;
       mesh->mFaces[j].mIndices = new unsigned int[3];
     }
@@ -324,8 +310,7 @@ void ArrowShape::instantiate(std::size_t resolution)
 
   // set normals
   aiMesh* mesh = scene->mMeshes[0];
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     mesh->mNormals[2 * i].Set(0.0f, 0.0f, 1.0f);
 
     double theta
@@ -335,8 +320,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   mesh->mNormals[mesh->mNumVertices - 1].Set(0.0f, 0.0f, -1.0f);
 
   mesh = scene->mMeshes[1];
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     double theta
         = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
     mesh->mNormals[2 * i].Set(cos(theta), sin(theta), 0.0f);
@@ -344,8 +328,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   }
 
   mesh = scene->mMeshes[2];
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     mesh->mNormals[2 * i].Set(0.0f, 0.0f, -1.0f);
 
     double theta
@@ -357,8 +340,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   // set faces
   mesh = scene->mMeshes[0];
   aiFace* face;
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     // Back of head
     face = &mesh->mFaces[3 * i];
     face->mIndices[0] = 2 * i;
@@ -378,8 +360,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   }
 
   mesh = scene->mMeshes[1];
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     face = &mesh->mFaces[2 * i];
     face->mIndices[0] = 2 * i;
     face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 3 : 1;
@@ -392,8 +373,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   }
 
   mesh = scene->mMeshes[2];
-  for (std::size_t i = 0; i < resolution; ++i)
-  {
+  for (std::size_t i = 0; i < resolution; ++i) {
     // Back of head
     face = &mesh->mFaces[3 * i];
     face->mIndices[0] = 2 * i;

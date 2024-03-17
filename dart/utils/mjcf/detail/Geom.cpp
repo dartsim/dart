@@ -54,8 +54,7 @@ Errors Geom::read(
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "geom")
-  {
+  if (std::string(element->Name()) != "geom") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Geom> from the provided element");
@@ -63,23 +62,17 @@ Errors Geom::read(
   }
 
   // Initialize the attributes from proper default
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string className = getAttributeString(element, "class");
     const auto& defaultClass = defaults.getDefault(className);
-    if (defaultClass)
-    {
+    if (defaultClass) {
       mAttributes = defaultClass->getGeomAttributes();
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_INVALID,
           "Failed to find default with class name '" + className + "'"));
     }
-  }
-  else
-  {
+  } else {
     mAttributes = defaultAttributes;
   }
 
@@ -97,8 +90,7 @@ static bool canUseFromTo(
   if (!fromto)
     return false;
 
-  switch (type)
-  {
+  switch (type) {
     case detail::GeomType::CAPSULE:
     case detail::GeomType::ELLIPSOID:
     case detail::GeomType::CYLINDER:
@@ -114,12 +106,9 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
 {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
-  }
-  else if (autoName)
-  {
+  } else if (autoName) {
     static unsigned int index = 0;
     mName = "geom (" + std::to_string(index++) + ")";
   }
@@ -139,8 +128,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
   mGap = mAttributes.mGap;
 
   // Size
-  switch (mType)
-  {
+  switch (mType) {
     case GeomType::PLANE:
     case GeomType::HFIELD:
     case GeomType::SPHERE: {
@@ -149,8 +137,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     }
     case GeomType::CAPSULE:
     case GeomType::CYLINDER: {
-      if (mAttributes.mFromTo)
-      {
+      if (mAttributes.mFromTo) {
         const double radius = mAttributes.mSize[0];
         mSize[0] = radius;
 
@@ -158,17 +145,14 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLength = 0.5 * (from - to).norm();
         mSize[1] = halfLength;
-      }
-      else
-      {
+      } else {
         mSize = mAttributes.mSize;
       }
       break;
     }
     case GeomType::ELLIPSOID:
     case GeomType::BOX: {
-      if (mAttributes.mFromTo)
-      {
+      if (mAttributes.mFromTo) {
         const double halfLengthX = mAttributes.mSize[0];
         mSize[0] = halfLengthX;
 
@@ -179,9 +163,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         const Eigen::Vector3d to = (*mAttributes.mFromTo).tail<3>();
         const double halfLengthZ = 0.5 * (from - to).norm();
         mSize[2] = halfLengthZ;
-      }
-      else
-      {
+      } else {
         mSize = mAttributes.mSize;
       }
       break;
@@ -191,18 +173,14 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     }
   }
 
-  if (mAttributes.mMass)
-  {
+  if (mAttributes.mMass) {
     mMass = *mAttributes.mMass;
     mVolume = computeVolume();
-    if (mVolume > 1e-6)
-    {
+    if (mVolume > 1e-6) {
       mDensity = mMass / mVolume;
     }
     mInertia = computeInertia();
-  }
-  else
-  {
+  } else {
     mDensity = mAttributes.mDensity;
     mVolume = computeVolume();
     mMass = mDensity * mVolume;
@@ -210,8 +188,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
   }
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  if (canUseFromTo(mType, mAttributes.mFromTo))
-  {
+  if (canUseFromTo(mType, mAttributes.mFromTo)) {
     assert(mAttributes.mFromTo);
     const Eigen::Vector6d& fromto = *mAttributes.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
@@ -221,9 +198,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     tf.linear()
         = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), dir)
               .toRotationMatrix();
-  }
-  else
-  {
+  } else {
     tf.translation() = mAttributes.mPos;
     tf.linear() = compileRotation(
         mAttributes.mQuat,
@@ -234,23 +209,16 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         compiler);
   }
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
     mRelativeTransform = tf;
-  }
-  else
-  {
+  } else {
     mWorldTransform = tf;
   }
 
-  if (mAttributes.mType == GeomType::HFIELD)
-  {
-    if (mAttributes.mHField)
-    {
+  if (mAttributes.mType == GeomType::HFIELD) {
+    if (mAttributes.mHField) {
       mHField = *mAttributes.mHField;
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find 'hfield' attribute when the geom type is set to "
@@ -258,8 +226,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     }
   }
 
-  if (mAttributes.mMesh)
-  {
+  if (mAttributes.mMesh) {
     mMesh = *mAttributes.mMesh;
 
     // When 'type' attribute is specified to a geometric primitive, namely one
@@ -275,8 +242,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     // reference to the mesh used for fitting.
     if (mType == GeomType::SPHERE || mType == GeomType::CAPSULE
         || mType == GeomType::CYLINDER || mType == GeomType::ELLIPSOID
-        || mType == GeomType::BOX)
-    {
+        || mType == GeomType::BOX) {
       errors.push_back(Error(
           ErrorCode::UNDEFINED_ERROR,
           "Fitting primitive shapes to mesh is not supported yet. Setting "
@@ -287,13 +253,10 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
       mDensity = 1000;
       mSize.setConstant(0.1);
     }
-  }
-  else
-  {
+  } else {
     // If 'type' attribute is specified to "mesh", then 'mesh' attribute must
     // be specified.
-    if (mAttributes.mType == GeomType::MESH)
-    {
+    if (mAttributes.mType == GeomType::MESH) {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find 'mesh' attribute when the geom type is set to "
@@ -318,26 +281,17 @@ Errors Geom::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
-    if (parent != nullptr)
-    {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+    if (parent != nullptr) {
       mWorldTransform = parent->getWorldTransform() * mRelativeTransform;
-    }
-    else
-    {
+    } else {
       mWorldTransform = mRelativeTransform;
     }
-  }
-  else
-  {
-    if (parent != nullptr)
-    {
+  } else {
+    if (parent != nullptr) {
       mRelativeTransform
           = parent->getWorldTransform().inverse() * mWorldTransform;
-    }
-    else
-    {
+    } else {
       mRelativeTransform = mWorldTransform;
     }
   }
@@ -558,8 +512,7 @@ const Eigen::Isometry3d& Geom::getWorldTransform() const
 //==============================================================================
 double Geom::computeVolume() const
 {
-  switch (mType)
-  {
+  switch (mType) {
     case GeomType::SPHERE:
       return dynamics::SphereShape::computeVolume(getSphereRadius());
     case GeomType::CAPSULE:
@@ -583,8 +536,7 @@ double Geom::computeVolume() const
 //==============================================================================
 Eigen::Matrix3d Geom::computeInertia() const
 {
-  switch (mType)
-  {
+  switch (mType) {
     case GeomType::SPHERE:
       return dynamics::SphereShape::computeInertia(getSphereRadius(), mMass);
     case GeomType::CAPSULE:

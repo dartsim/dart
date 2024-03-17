@@ -127,8 +127,7 @@ bool sub_ptr<T>::valid()
 template <class T>
 void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
 {
-  if (_subject == mSubjectBase)
-  {
+  if (_subject == mSubjectBase) {
     mT = nullptr;
     mSubjectBase = nullptr;
   }

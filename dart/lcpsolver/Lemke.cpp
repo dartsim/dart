@@ -69,8 +69,7 @@ int Lemke(
   int maxiter = 1000;
   int err = 0;
 
-  if (_q.minCoeff() >= 0)
-  {
+  if (_q.minCoeff() >= 0) {
     // LOG(INFO) << "Trivial solution exists.";
     *_z = Eigen::VectorXd::Zero(n);
     return err;
@@ -106,30 +105,25 @@ int Lemke(
 
   // TODO: here suppose initial guess z0 is [0,0,0,...], this contradicts to
   // ODE's w always initilized as 0
-  for (int i = 0; i < n; ++i)
-  {
+  for (int i = 0; i < n; ++i) {
     nonbas.push_back(i);
   }
 
   Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
-  if (!bas.empty())
-  {
+  if (!bas.empty()) {
     Eigen::MatrixXd B_copy = B;
-    for (std::size_t i = 0; i < bas.size(); ++i)
-    {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
       B.col(i) = _M.col(bas[i]);
     }
-    for (std::size_t i = 0; i < nonbas.size(); ++i)
-    {
+    for (std::size_t i = 0; i < nonbas.size(); ++i) {
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     // TODO: check the condition number to return err = 3
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(B);
     double cond = svd.singularValues()(0)
                   / svd.singularValues()(svd.singularValues().size() - 1);
-    if (cond > 1e16)
-    {
+    if (cond > 1e16) {
       (*_z) = Eigen::VectorXd::Zero(n);
       err = 3;
       return err;
@@ -138,11 +132,9 @@ int Lemke(
   }
 
   // Check if initial basis provides solution
-  if (x.minCoeff() >= 0)
-  {
+  if (x.minCoeff() >= 0) {
     Eigen::VectorXd __z = Eigen::VectorXd::Zero(2 * n);
-    for (std::size_t i = 0; i < bas.size(); ++i)
-    {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
       (__z).row(bas[i]) = x.row(i);
     }
     (*_z) = __z.head(n);
@@ -153,8 +145,7 @@ int Lemke(
   Eigen::VectorXd minuxX = -x;
   int lvindex;
   double tval = minuxX.maxCoeff(&lvindex);
-  for (std::size_t i = 0; i < nonbas.size(); ++i)
-  {
+  for (std::size_t i = 0; i < nonbas.size(); ++i) {
     bas.push_back(nonbas[i] + n);
   }
   leaving = bas[lvindex];
@@ -162,8 +153,7 @@ int Lemke(
   bas[lvindex] = t; // pivoting in the artificial variable
 
   Eigen::VectorXd U = Eigen::VectorXd::Zero(n);
-  for (int i = 0; i < n; ++i)
-  {
+  for (int i = 0; i < n; ++i) {
     if (x[i] < 0)
       U[i] = 1;
   }
@@ -172,20 +162,14 @@ int Lemke(
   x[lvindex] = tval;
   B.col(lvindex) = Be;
 
-  for (iter = 0; iter < maxiter; ++iter)
-  {
-    if (leaving == t)
-    {
+  for (iter = 0; iter < maxiter; ++iter) {
+    if (leaving == t) {
       break;
-    }
-    else if (leaving < n)
-    {
+    } else if (leaving < n) {
       entering = n + leaving;
       Be = Eigen::VectorXd::Zero(n);
       Be[leaving] = -1;
-    }
-    else
-    {
+    } else {
       entering = leaving - n;
       Be = _M.col(entering);
     }
@@ -194,8 +178,7 @@ int Lemke(
 
     // Find new leaving variable
     std::vector<int> j;
-    for (int i = 0; i < n; ++i)
-    {
+    for (int i = 0; i < n; ++i) {
       if (d[i] > piv_tol)
         j.push_back(i);
     }
@@ -207,18 +190,15 @@ int Lemke(
 
     std::size_t jSize = j.size();
     Eigen::VectorXd minRatio(jSize);
-    for (std::size_t i = 0; i < jSize; ++i)
-    {
+    for (std::size_t i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
     double theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
     std::vector<double> tmpd;
-    for (std::size_t i = 0; i < jSize; ++i)
-    {
-      if (x[j[i]] / d[j[i]] <= theta)
-      {
+    for (std::size_t i = 0; i < jSize; ++i) {
+      if (x[j[i]] / d[j[i]] <= theta) {
         tmpJ.push_back(j[i]);
         tmpd.push_back(d[j[i]]);
       }
@@ -238,32 +218,25 @@ int Lemke(
 
     j = tmpJ;
     jSize = j.size();
-    if (jSize == 0)
-    {
+    if (jSize == 0) {
       err = 4;
       break;
     }
     lvindex = -1;
 
     // Check if artificial among these
-    for (std::size_t i = 0; i < jSize; ++i)
-    {
+    for (std::size_t i = 0; i < jSize; ++i) {
       if (bas[j[i]] == t)
         lvindex = i;
     }
 
-    if (lvindex != -1)
-    {
+    if (lvindex != -1) {
       lvindex = j[lvindex]; // Always use artificial if possible
-    }
-    else
-    {
+    } else {
       theta = tmpd[0];
       lvindex = 0;
-      for (std::size_t i = 0; i < jSize; ++i)
-      {
-        if (tmpd[i] - theta > piv_tol)
-        { // Bubble sorting
+      for (std::size_t i = 0; i < jSize; ++i) {
+        if (tmpd[i] - theta > piv_tol) { // Bubble sorting
           theta = tmpd[i];
           lvindex = i;
         }
@@ -294,17 +267,13 @@ int Lemke(
     bas[lvindex] = entering;
   }
 
-  if (iter >= maxiter && leaving != t)
-  {
+  if (iter >= maxiter && leaving != t) {
     err = 1;
   }
 
-  if (err == 0)
-  {
-    for (std::size_t i = 0; i < bas.size(); ++i)
-    {
-      if (bas[i] < _z->size())
-      {
+  if (err == 0) {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
+      if (bas[i] < _z->size()) {
         (*_z)[bas[i]] = x[i];
       }
     }
@@ -312,14 +281,11 @@ int Lemke(
     Eigen::VectorXd __z = _z->head(n);
     *_z = __z;
 
-    if (!validate(_M, *_z, _q))
-    {
+    if (!validate(_M, *_z, _q)) {
       // _z = VectorXd::Zero(n);
       err = 3;
     }
-  }
-  else
-  {
+  } else {
     *_z = Eigen::VectorXd::Zero(n); // solve failed, return a 0 vector
   }
 
@@ -346,8 +312,7 @@ bool validate(
   int n = _z.size();
 
   Eigen::VectorXd w = _M * _z + _q;
-  for (int i = 0; i < n; ++i)
-  {
+  for (int i = 0; i < n; ++i) {
     if (w(i) < -threshold || _z(i) < -threshold)
       return false;
     if (std::abs(w(i) * _z(i)) > threshold)

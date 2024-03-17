@@ -43,18 +43,14 @@ T* MemoryManager::construct(Type type, Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
   void* object = allocate(type, sizeof(T));
-  if (!object)
-  {
+  if (!object) {
     return nullptr;
   }
 
   // Call constructor. Return nullptr if failed.
-  try
-  {
+  try {
     new (object) T(std::forward<Args>(args)...);
-  }
-  catch (...)
-  {
+  } catch (...) {
     deallocate(type, object, sizeof(T));
     return nullptr;
   }
@@ -80,8 +76,7 @@ T* MemoryManager::constructUsingPool(Args&&... args) noexcept
 template <typename T>
 void MemoryManager::destroy(Type type, T* object) noexcept
 {
-  if (!object)
-  {
+  if (!object) {
     return;
   }
   object->~T();

@@ -69,8 +69,7 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "compiler")
-  {
+  if (std::string(element->Name()) != "compiler") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <compiler> from the provided element");
@@ -78,49 +77,38 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // boundmass
-  if (hasAttribute(element, "boundmass"))
-  {
+  if (hasAttribute(element, "boundmass")) {
     mBoundMass = getAttributeDouble(element, "boundmass");
   }
 
   // boundinertia
-  if (hasAttribute(element, "boundinertia"))
-  {
+  if (hasAttribute(element, "boundinertia")) {
     mBoundInertia = getAttributeDouble(element, "boundinertia");
   }
 
   // settotalmass
-  if (hasAttribute(element, "settotalmass"))
-  {
+  if (hasAttribute(element, "settotalmass")) {
     mSetTotalMass = getAttributeDouble(element, "settotalmass");
   }
 
   // balanceinertia
-  if (hasAttribute(element, "balanceinertia"))
-  {
+  if (hasAttribute(element, "balanceinertia")) {
     mBalanceInertia = getAttributeBool(element, "balanceinertia");
   }
 
   // strippath
-  if (hasAttribute(element, "strippath"))
-  {
+  if (hasAttribute(element, "strippath")) {
     mStripPath = getAttributeBool(element, "strippath");
   }
 
   // coordinate
-  if (hasAttribute(element, "coordinate"))
-  {
+  if (hasAttribute(element, "coordinate")) {
     const std::string coordiante = getAttributeString(element, "coordinate");
-    if (coordiante == "local")
-    {
+    if (coordiante == "local") {
       mCoordinate = Coordinate::LOCAL;
-    }
-    else if (coordiante == "global")
-    {
+    } else if (coordiante == "global") {
       mCoordinate = Coordinate::GLOBAL;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'coordinate': " + coordiante);
@@ -129,19 +117,13 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // angle
-  if (hasAttribute(element, "angle"))
-  {
+  if (hasAttribute(element, "angle")) {
     const std::string angle = getAttributeString(element, "angle");
-    if (angle == "degree")
-    {
+    if (angle == "degree") {
       mAngle = Angle::DEGREE;
-    }
-    else if (angle == "radian")
-    {
+    } else if (angle == "radian") {
       mAngle = Angle::RADIAN;
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'angle': " + angle);
@@ -150,89 +132,72 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // fitaabb
-  if (hasAttribute(element, "fitaabb"))
-  {
+  if (hasAttribute(element, "fitaabb")) {
     mFitAabb = getAttributeBool(element, "fitaabb");
   }
-  if (mFitAabb)
-  {
+  if (mFitAabb) {
     dtwarn << "[MjcfParser] 'fitaabb' attribute is set to true, but DART does "
            << "not support this feature yet.\n";
   }
 
   // eulerseq
-  if (hasAttribute(element, "eulerseq"))
-  {
+  if (hasAttribute(element, "eulerseq")) {
     mEulerSeq = getAttributeString(element, "eulerseq");
   }
 
   // meshdir
-  if (hasAttribute(element, "meshdir"))
-  {
+  if (hasAttribute(element, "meshdir")) {
     mMeshDir = getAttributeString(element, "meshdir");
   }
 
   // texturedir
-  if (hasAttribute(element, "texturedir"))
-  {
+  if (hasAttribute(element, "texturedir")) {
     mTextureDir = getAttributeString(element, "texturedir");
   }
 
   // discardvisual
-  if (hasAttribute(element, "discardvisual"))
-  {
+  if (hasAttribute(element, "discardvisual")) {
     mDiscardVisual = getAttributeBool(element, "discardvisual");
   }
 
   // convexhull
-  if (hasAttribute(element, "convexhull"))
-  {
+  if (hasAttribute(element, "convexhull")) {
     mConvexHull = getAttributeBool(element, "convexhull");
   }
 
   // userthread
-  if (hasAttribute(element, "userthread"))
-  {
+  if (hasAttribute(element, "userthread")) {
     mUserThread = getAttributeBool(element, "userthread");
   }
 
   // fusestatic
-  if (hasAttribute(element, "fusestatic"))
-  {
+  if (hasAttribute(element, "fusestatic")) {
     mFuseStatic = getAttributeBool(element, "fusestatic");
   }
 
   // inertiafromgeom
-  if (hasAttribute(element, "inertiafromgeom"))
-  {
+  if (hasAttribute(element, "inertiafromgeom")) {
     const std::string inertiafromgeom
         = getAttributeString(element, "inertiafromgeom");
-    if (inertiafromgeom == "false")
-    {
+    if (inertiafromgeom == "false") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_FALSE;
 #else
       mInertiaFromGeom = InertiaFromGeom::FALSE;
 #endif
-    }
-    else if (inertiafromgeom == "true")
-    {
+    } else if (inertiafromgeom == "true") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_TRUE;
 #else
       mInertiaFromGeom = InertiaFromGeom::TRUE;
 #endif
-    }
-    else if (inertiafromgeom == "auto")
-    {
+    } else if (inertiafromgeom == "auto") {
 #if DART_OS_WINDOWS
       mInertiaFromGeom = InertiaFromGeom::IFG_AUTO;
 #else
       mInertiaFromGeom = InertiaFromGeom::AUTO;
 #endif
-    }
-    else
-    {
+    } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
           "Invalid attribute for 'inertiafromgeom': " + inertiafromgeom);
@@ -241,8 +206,7 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   }
 
   // inertiagrouprange
-  if (hasAttribute(element, "inertiagrouprange"))
-  {
+  if (hasAttribute(element, "inertiagrouprange")) {
     mInertiaGroupRange = getAttributeVector2i(element, "inertiagrouprange");
   }
 

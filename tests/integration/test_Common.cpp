@@ -45,8 +45,7 @@ TEST(Common, Timer)
 
   // Run for 2 seconds
   timer1.start();
-  for (int i = 0; i < 1e+3; ++i)
-  {
+  for (int i = 0; i < 1e+3; ++i) {
     timer2.start();
 #ifdef _WIN32
     Sleep(2); // 2 milliseconds

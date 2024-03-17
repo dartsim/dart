@@ -55,8 +55,7 @@ void DARTCollisionGroup::initializeEngineData()
 void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
-      == mCollisionObjects.end())
-  {
+      == mCollisionObjects.end()) {
     mCollisionObjects.push_back(object);
   }
 }

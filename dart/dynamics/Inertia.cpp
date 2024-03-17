@@ -76,20 +76,13 @@ Inertia::Inertia(
 //==============================================================================
 void Inertia::setParameter(Param _param, double _value)
 {
-  if (_param == MASS)
-  {
+  if (_param == MASS) {
     mMass = _value;
-  }
-  else if (_param <= COM_Z)
-  {
+  } else if (_param <= COM_Z) {
     mCenterOfMass[_param - 1] = _value;
-  }
-  else if (_param <= I_YZ)
-  {
+  } else if (_param <= I_YZ) {
     mCenterOfMass[_param - 4] = _value;
-  }
-  else
-  {
+  } else {
     dtwarn << "[Inertia::setParameter] Attempting to set Param #" << _param
            << ", but inertial parameters only go up to " << I_YZ
            << ". Nothing will be set.\n";
@@ -223,13 +216,10 @@ bool Inertia::verifyMoment(
     const Eigen::Matrix3d& _moment, bool _printWarnings, double _tolerance)
 {
   bool valid = true;
-  for (int i = 0; i < 3; ++i)
-  {
-    if (_moment(i, i) <= 0)
-    {
+  for (int i = 0; i < 3; ++i) {
+    if (_moment(i, i) <= 0) {
       valid = false;
-      if (_printWarnings)
-      {
+      if (_printWarnings) {
         dtwarn << "[Inertia::verifyMoment] Invalid entry for (" << i << "," << i
                << "): " << _moment(i, i) << ". Value should be positive "
                << "and greater than zero.\n";
@@ -237,15 +227,11 @@ bool Inertia::verifyMoment(
     }
   }
 
-  for (int i = 0; i < 3; ++i)
-  {
-    for (int j = i + 1; j < 3; ++j)
-    {
-      if (std::abs(_moment(i, j) - _moment(j, i)) > _tolerance)
-      {
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 3; ++j) {
+      if (std::abs(_moment(i, j) - _moment(j, i)) > _tolerance) {
         valid = false;
-        if (_printWarnings)
-        {
+        if (_printWarnings) {
           dtwarn << "[Inertia::verifyMoment] Values for entries (" << i << ","
                  << j << ") and (" << j << "," << i << ") differ by "
                  << _moment(i, j) - _moment(j, i) << " which is more than the "
@@ -264,13 +250,10 @@ bool Inertia::verifySpatialTensor(
 {
   bool valid = true;
 
-  for (std::size_t i = 0; i < 6; ++i)
-  {
-    if (_spatial(i, i) <= 0)
-    {
+  for (std::size_t i = 0; i < 6; ++i) {
+    if (_spatial(i, i) <= 0) {
       valid = false;
-      if (_printWarnings)
-      {
+      if (_printWarnings) {
         std::string component = i < 3 ? "moment of inertia diagonal" : "mass";
         dtwarn << "[Inertia::verifySpatialTensor] Invalid entry for (" << i
                << "," << i << "): " << _spatial(i, i) << ". Value should be "
@@ -281,12 +264,9 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Off-diagonals of top left block
-  for (std::size_t i = 0; i < 3; ++i)
-  {
-    for (std::size_t j = i + 1; j < 3; ++j)
-    {
-      if (std::abs(_spatial(i, j) - _spatial(j, i)) > _tolerance)
-      {
+  for (std::size_t i = 0; i < 3; ++i) {
+    for (std::size_t j = i + 1; j < 3; ++j) {
+      if (std::abs(_spatial(i, j) - _spatial(j, i)) > _tolerance) {
         valid = false;
         dtwarn << "[Inertia::verifySpatialTensor] Values for entries (" << i
                << "," << j << ") and (" << j << "," << i << ") differ by "
@@ -297,12 +277,9 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Off-diagonals of bottom right block
-  for (std::size_t i = 3; i < 6; ++i)
-  {
-    for (std::size_t j = i + 1; j < 6; ++j)
-    {
-      if (_spatial(i, j) != 0)
-      {
+  for (std::size_t i = 3; i < 6; ++i) {
+    for (std::size_t j = i + 1; j < 6; ++j) {
+      if (_spatial(i, j) != 0) {
         valid = false;
         if (_printWarnings)
           dtwarn << "[Inertia::verifySpatialTensor] Invalid entry for (" << i
@@ -310,8 +287,7 @@ bool Inertia::verifySpatialTensor(
                  << "exactly zero.\n";
       }
 
-      if (_spatial(j, i) != 0)
-      {
+      if (_spatial(j, i) != 0) {
         valid = false;
         if (_printWarnings)
           dtwarn << "[Inertia::verifySpatialTensor] Invalid entry for (" << j
@@ -322,14 +298,11 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Diagonals of the bottom left and top right blocks
-  for (std::size_t k = 0; k < 2; ++k)
-  {
-    for (std::size_t i = 0; i < 3; ++i)
-    {
+  for (std::size_t k = 0; k < 2; ++k) {
+    for (std::size_t i = 0; i < 3; ++i) {
       std::size_t i1 = k == 0 ? i + 3 : i;
       std::size_t i2 = k == 0 ? i : i + 3;
-      if (_spatial(i1, i2) != 0)
-      {
+      if (_spatial(i1, i2) != 0) {
         valid = false;
         if (_printWarnings)
           dtwarn << "[Inertia::verifySpatialTensor] Invalid entry for (" << i1
@@ -340,20 +313,16 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Check skew-symmetry in bottom left and top right
-  for (std::size_t k = 0; k < 2; ++k)
-  {
-    for (std::size_t i = 0; i < 3; ++i)
-    {
-      for (std::size_t j = i + 1; j < 3; ++j)
-      {
+  for (std::size_t k = 0; k < 2; ++k) {
+    for (std::size_t i = 0; i < 3; ++i) {
+      for (std::size_t j = i + 1; j < 3; ++j) {
         std::size_t i1 = k == 0 ? i + 3 : i;
         std::size_t j1 = k == 0 ? j : j + 3;
 
         std::size_t i2 = k == 0 ? j + 3 : j;
         std::size_t j2 = k == 0 ? i : i + 3;
 
-        if (std::abs(_spatial(i1, j1) + _spatial(i2, j2)) > _tolerance)
-        {
+        if (std::abs(_spatial(i1, j1) + _spatial(i2, j2)) > _tolerance) {
           valid = false;
           if (_printWarnings)
             dtwarn << "[Inertia::verifySpatialTensor] Mismatch between entries "
@@ -371,18 +340,15 @@ bool Inertia::verifySpatialTensor(
   // Note that we only need to check three of the components from each block,
   // because the last test ensures that both blocks are skew-symmetric
   // themselves
-  for (std::size_t i = 0; i < 3; ++i)
-  {
-    for (std::size_t j = i + 1; j < 3; ++j)
-    {
+  for (std::size_t i = 0; i < 3; ++i) {
+    for (std::size_t j = i + 1; j < 3; ++j) {
       std::size_t i1 = i;
       std::size_t j1 = j + 3;
 
       std::size_t i2 = j1;
       std::size_t j2 = i1;
 
-      if (std::abs(_spatial(i1, j1) - _spatial(i2, j2)) > _tolerance)
-      {
+      if (std::abs(_spatial(i1, j1) - _spatial(i2, j2)) > _tolerance) {
         valid = false;
         if (_printWarnings)
           dtwarn << "[Inertia::verifySpatialTensor] Values for  entries "

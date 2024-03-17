@@ -86,8 +86,7 @@ protected:
     typename State::Owner* owner
         = dynamic_cast<typename State::Owner*>(newComposite);
 
-    if (owner && mProxyState.getOwner() != owner)
-    {
+    if (owner && mProxyState.getOwner() != owner) {
       // Link the ProxyState to its new owner
       mProxyState = State(owner, mProxyState.get());
     }
@@ -149,8 +148,7 @@ protected:
     typename Properties::Owner* owner
         = dynamic_cast<typename Properties::Owner*>(newComposite);
 
-    if (owner && mProxyProperties.getOwner() != owner)
-    {
+    if (owner && mProxyProperties.getOwner() != owner) {
       // Link the ProxyProperties to its new owner
       mProxyProperties = Properties(owner, mProxyProperties.get());
     }

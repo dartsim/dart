@@ -113,8 +113,7 @@ ConstBodyNodePtr Node::getBodyNodePtr() const
 //==============================================================================
 bool Node::isRemoved() const
 {
-  if (nullptr == mBodyNode)
-  {
+  if (nullptr == mBodyNode) {
     REPORT_INVALID_NODE(isRemoved);
     return true;
   }
@@ -138,8 +137,7 @@ std::shared_ptr<const Skeleton> Node::getSkeleton() const
 std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
   std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
-  if (nullptr == destructor)
-  {
+  if (nullptr == destructor) {
     destructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(this));
     mDestructor = destructor;
   }
@@ -155,8 +153,7 @@ Node::Node(BodyNode* _bn)
     mIndexInSkeleton(INVALID_INDEX),
     mIndexInTree(INVALID_INDEX)
 {
-  if (nullptr == mBodyNode)
-  {
+  if (nullptr == mBodyNode) {
     REPORT_INVALID_NODE(Node);
     return;
   }
@@ -185,8 +182,7 @@ std::string Node::registerNameChange(const std::string& newName)
 //==============================================================================
 void Node::attach()
 {
-  if (nullptr == mBodyNode)
-  {
+  if (nullptr == mBodyNode) {
     REPORT_INVALID_NODE(attach);
     return;
   }
@@ -210,8 +206,7 @@ void Node::attach()
   BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
   NodeDestructorPtr destructor = getOrCreateDestructor();
-  if (INVALID_INDEX == mIndexInBodyNode)
-  {
+  if (INVALID_INDEX == mIndexInBodyNode) {
     // If the Node was not in the map, then its destructor should not be in the
     // set
     assert(destructors.find(destructor) == destructors.end());
@@ -239,8 +234,7 @@ void Node::attach()
 //==============================================================================
 void Node::stageForRemoval()
 {
-  if (nullptr == mBodyNode)
-  {
+  if (nullptr == mBodyNode) {
     REPORT_INVALID_NODE(stageForRemoval);
     return;
   }
@@ -258,8 +252,7 @@ void Node::stageForRemoval()
 
   BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
-  if (mBodyNode->mNodeMap.end() == it)
-  {
+  if (mBodyNode->mNodeMap.end() == it) {
     // If the Node was not in the map, then its index should be invalid
     assert(INVALID_INDEX == mIndexInBodyNode);
 

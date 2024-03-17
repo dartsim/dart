@@ -66,8 +66,7 @@ void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void FCLCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
-  for (auto collObj : collObjects)
-  {
+  for (auto collObj : collObjects) {
     auto casted = static_cast<FCLCollisionObject*>(collObj);
 
     mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());

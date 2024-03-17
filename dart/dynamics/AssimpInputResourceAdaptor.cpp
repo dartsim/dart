@@ -80,8 +80,7 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
 {
   // TODO: How do we support text mode?
   if (pMode != std::string("r") && pMode != std::string("rb")
-      && pMode != std::string("rt"))
-  {
+      && pMode != std::string("rt")) {
     dtwarn << "[AssimpInputResourceRetrieverAdaptor::Open] Unsupported mode '"
            << pMode << "'. Only 'r', 'rb', and 'rt' are supported.\n";
     return nullptr;
@@ -140,8 +139,7 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
   using common::Resource;
 
   Resource::SeekType origin;
-  switch (pOrigin)
-  {
+  switch (pOrigin) {
     case aiOrigin_CUR:
       origin = Resource::SEEKTYPE_CUR;
       break;

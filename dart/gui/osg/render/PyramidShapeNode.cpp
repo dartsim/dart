@@ -118,8 +118,7 @@ void PyramidShapeNode::refresh()
 //==============================================================================
 void PyramidShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new PyramidShapeGeode(mPyramidShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
@@ -159,8 +158,7 @@ void PyramidShapeGeode::refresh()
 //==============================================================================
 void PyramidShapeGeode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable = new PyramidShapeDrawable(mPyramidShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
@@ -185,8 +183,7 @@ PyramidShapeDrawable::PyramidShapeDrawable(
     mNormals(new ::osg::Vec3Array),
     mColors(new ::osg::Vec4Array)
 {
-  for (auto& e : mElements)
-  {
+  for (auto& e : mElements) {
     e = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::TRIANGLES);
     addPrimitiveSet(e);
   }
@@ -201,8 +198,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (firstTime)
-  {
+  if (firstTime) {
     for (auto& e : mElements)
       e->resize(3);
 
@@ -245,8 +241,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-      || firstTime)
-  {
+      || firstTime) {
     const float w = static_cast<float>(mPyramidShape->getBaseWidth());
     const float d = static_cast<float>(mPyramidShape->getBaseDepth());
     const float h = static_cast<float>(mPyramidShape->getBaseWidth());
@@ -268,8 +263,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
 
     mNormals->clear();
     mNormals->reserve(mElements.size()); // 6
-    for (const auto& e : mElements)
-    {
+    for (const auto& e : mElements) {
       const auto& v1 = mVertices->at(e->at(0));
       const auto& v2 = mVertices->at(e->at(1));
       const auto& v3 = mVertices->at(e->at(2));
@@ -282,8 +276,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
   }
 
   if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     mColors->resize(1);
@@ -292,16 +285,13 @@ void PyramidShapeDrawable::refresh(bool firstTime)
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

@@ -154,8 +154,7 @@ public:
   /// shared_ptr
   void set(const std::shared_ptr<IkType>& sptr)
   {
-    if (nullptr == sptr)
-    {
+    if (nullptr == sptr) {
       mIK = nullptr;
       mJacNodePtr = nullptr;
       return;
@@ -309,8 +308,7 @@ public:
   template <class OtherIkT, class OtherJacNodePtrT>
   void set(const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodePtrT>& _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mWeakIK = nullptr;
       mWeakJacNode = nullptr;
       return;

@@ -110,8 +110,7 @@ void CylinderShapeNode::refresh()
 //==============================================================================
 void CylinderShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new CylinderShapeGeode(
         mCylinderShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -152,8 +151,7 @@ void CylinderShapeGeode::refresh()
 //==============================================================================
 void CylinderShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable = new CylinderShapeDrawable(mCylinderShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -188,8 +186,7 @@ void CylinderShapeDrawable::refresh(bool firstTime)
 
   if (mCylinderShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     double R = mCylinderShape->getRadius();
     double h = mCylinderShape->getHeight();
     ::osg::ref_ptr<::osg::Cylinder> osg_shape
@@ -199,24 +196,20 @@ void CylinderShapeDrawable::refresh(bool firstTime)
   }
 
   if (mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     setColor(color);
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

@@ -106,8 +106,7 @@ void UnorderedPairs<T>::removePair(const T* left, const T* right)
   // Remove the pair only when it already exists
   const auto resultLeft = mList.find(bodyNodeLess);
   const bool foundLeft = (resultLeft != mList.end());
-  if (foundLeft)
-  {
+  if (foundLeft) {
     auto& associatedRights = resultLeft->second;
     associatedRights.erase(bodyNodeGreater);
 
@@ -135,8 +134,7 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 
   const auto resultLeft = mList.find(less);
   const bool foundLeft = (resultLeft != mList.end());
-  if (foundLeft)
-  {
+  if (foundLeft) {
     auto& associatedRights = resultLeft->second;
 
     const auto resultRight = associatedRights.find(greater);

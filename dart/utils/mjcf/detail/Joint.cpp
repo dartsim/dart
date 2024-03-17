@@ -48,8 +48,7 @@ Errors Joint::read(
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "joint")
-  {
+  if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Joint> from the provided element");
@@ -57,23 +56,17 @@ Errors Joint::read(
   }
 
   // Initialize the attributes from proper default
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string className = getAttributeString(element, "class");
     const auto& defaultClass = defaults.getDefault(className);
-    if (defaultClass)
-    {
+    if (defaultClass) {
       mAttributes = defaultClass->getJointAttributes();
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_INVALID,
           "Failed to find default with class name '" + className + "'"));
     }
-  }
-  else
-  {
+  } else {
     mAttributes = defaultAttributes;
   }
 
@@ -89,8 +82,7 @@ Errors Joint::preprocess(const Compiler& /*compiler*/)
 {
   Errors errors;
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
 
@@ -116,19 +108,13 @@ Errors Joint::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL)
-  {
+  if (compiler.getCoordinate() == Coordinate::LOCAL) {
     // Do nothing
-  }
-  else
-  {
-    if (parent != nullptr)
-    {
+  } else {
+    if (parent != nullptr) {
       mPos = parent->getWorldTransform().inverse() * mPos;
       mAxis = parent->getWorldTransform().linear().transpose() * mAxis;
-    }
-    else
-    {
+    } else {
       // Do nothing
     }
   }

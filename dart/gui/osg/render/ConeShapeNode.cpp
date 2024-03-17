@@ -110,8 +110,7 @@ void ConeShapeNode::refresh()
 //==============================================================================
 void ConeShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new ConeShapeGeode(mConeShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
@@ -151,8 +150,7 @@ void ConeShapeGeode::refresh()
 //==============================================================================
 void ConeShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable = new ConeShapeDrawable(mConeShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
@@ -186,8 +184,7 @@ void ConeShapeDrawable::refresh(bool firstTime)
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     double R = mConeShape->getRadius();
     double h = mConeShape->getHeight();
     ::osg::ref_ptr<::osg::Cone> osg_shape
@@ -197,24 +194,20 @@ void ConeShapeDrawable::refresh(bool firstTime)
   }
 
   if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     setColor(color);
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

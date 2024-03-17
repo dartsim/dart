@@ -294,8 +294,7 @@ public:                                                                        \
 
 //==============================================================================
 #define DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, func)                  \
-  if (treeIndex >= treeIts.size())                                             \
-  {                                                                            \
+  if (treeIndex >= treeIts.size()) {                                           \
     dterr << "[" << #func << "] Requesting an invalid tree (" << treeIndex     \
           << "). "                                                             \
           << "The number of trees in this Skeleton is: " << treeIts.size()     \

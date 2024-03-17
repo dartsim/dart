@@ -56,8 +56,7 @@ Errors Equality::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "equality")
-  {
+  if (std::string(element->Name()) != "equality") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Equality> from the provided element");
@@ -66,8 +65,7 @@ Errors Equality::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 
   // Read multiple <weld>
   ElementEnumerator weldElements(element, "weld");
-  while (weldElements.next())
-  {
+  while (weldElements.next()) {
     Weld weld = Weld();
     const Errors bodyErrors = weld.read(weldElements.get(), defaults);
     errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());

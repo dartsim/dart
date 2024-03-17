@@ -55,11 +55,9 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  if (!mMapPointerToSize.empty())
-  {
+  if (!mMapPointerToSize.empty()) {
     size_t totalSize = 0;
-    for (auto it : mMapPointerToSize)
-    {
+    for (auto it : mMapPointerToSize) {
       void* pointer = it.first;
       size_t size = it.second;
       totalSize += size;
@@ -99,8 +97,7 @@ void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
 {
   void* newPtr = mInternalAllocator.allocate(bytes);
 
-  if (newPtr)
-  {
+  if (newPtr) {
     std::lock_guard<std::mutex> lock(mMutex);
     mSize += bytes;
     mPeak = std::max(mPeak, mSize);
@@ -117,8 +114,7 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
   std::lock_guard<std::mutex> lock(mMutex);
 
   auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end())
-  {
+  if (it == mMapPointerToSize.end()) {
     DART_DEBUG(
         "Cannot deallocate memory {} not allocated by this allocator.",
         pointer);
@@ -126,8 +122,7 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
   }
 
   auto allocatedSize = it->second;
-  if (bytes != allocatedSize)
-  {
+  if (bytes != allocatedSize) {
     DART_DEBUG(
         "Cannot deallocate memory at {} of {} bytes that is different from the "
         "allocated size {}, which is a critical bug.",
@@ -157,14 +152,12 @@ bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
   std::lock_guard<std::mutex> lock(mMutex);
 
   const auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end())
-  {
+  if (it == mMapPointerToSize.end()) {
     return false;
   }
 
   const auto& allocatedSize = it->second;
-  if (size != allocatedSize)
-  {
+  if (size != allocatedSize) {
     return false;
   }
 
@@ -189,13 +182,11 @@ T& MemoryAllocatorDebugger<T>::getInternalAllocator()
 template <typename T>
 void MemoryAllocatorDebugger<T>::print(std::ostream& os, int indent) const
 {
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[" << getType() << "]\n";
   }
   const std::string spaces(indent, ' ');
-  if (indent != 0)
-  {
+  if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
   std::lock_guard<std::mutex> lock(mMutex);

@@ -55,12 +55,9 @@ const Mesh& Asset::getMesh(std::size_t index) const
 const Mesh* Asset::getMesh(const std::string& name) const
 {
   const auto result = mMeshMap.find(name);
-  if (result != mMeshMap.end())
-  {
+  if (result != mMeshMap.end()) {
     return result->second;
-  }
-  else
-  {
+  } else {
     return nullptr;
   }
 }
@@ -70,8 +67,7 @@ Errors Asset::read(tinyxml2::XMLElement* element)
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "asset")
-  {
+  if (std::string(element->Name()) != "asset") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <Asset> from the provided element");
@@ -80,14 +76,12 @@ Errors Asset::read(tinyxml2::XMLElement* element)
 
   // Read multiple <mesh>
   ElementEnumerator meshElements(element, "mesh");
-  while (meshElements.next())
-  {
+  while (meshElements.next()) {
     Mesh mesh = Mesh();
     const auto bodyErrors = mesh.read(meshElements.get());
     errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
 
-    if (bodyErrors.empty())
-    {
+    if (bodyErrors.empty()) {
       mMeshes.emplace_back(std::move(mesh));
     }
   }
@@ -100,8 +94,7 @@ Errors Asset::preprocess(const Compiler& compiler)
 {
   Errors errors;
 
-  for (Mesh& mesh : mMeshes)
-  {
+  for (Mesh& mesh : mMeshes) {
     const Errors meshErrors = mesh.preprocess(compiler);
     errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
   }
@@ -114,8 +107,7 @@ Errors Asset::compile(const Compiler& compiler)
 {
   Errors errors;
 
-  for (Mesh& mesh : mMeshes)
-  {
+  for (Mesh& mesh : mMeshes) {
     mMeshMap[mesh.getName()] = &mesh;
 
     const Errors meshErrors = mesh.compile(compiler);
@@ -130,8 +122,7 @@ Errors Asset::postprocess(const Compiler& compiler)
 {
   Errors errors;
 
-  for (Mesh& mesh : mMeshes)
-  {
+  for (Mesh& mesh : mMeshes) {
     const Errors meshErrors = mesh.postprocess(compiler);
     errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
   }

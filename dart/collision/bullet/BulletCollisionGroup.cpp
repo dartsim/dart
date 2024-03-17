@@ -75,8 +75,7 @@ void BulletCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void BulletCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
-  for (auto collObj : collObjects)
-  {
+  for (auto collObj : collObjects) {
     auto casted = static_cast<BulletCollisionObject*>(collObj);
 
     mBulletCollisionWorld->addCollisionObject(

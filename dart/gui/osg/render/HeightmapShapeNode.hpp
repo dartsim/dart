@@ -174,8 +174,7 @@ void HeightmapShapeNode<S>::refresh()
 template <typename S>
 void HeightmapShapeNode<S>::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new HeightmapShapeGeode<S>(
         mHeightmapShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
@@ -224,8 +223,7 @@ void HeightmapShapeGeode<S>::refresh()
 template <typename S>
 void HeightmapShapeGeode<S>::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable
         = new HeightmapShapeDrawable<S>(mHeightmapShape, mVisualAspect, this);
     addDrawable(mDrawable);
@@ -315,8 +313,7 @@ void setVertices(
 
   faces.clear();
   normals.clear();
-  if (rows < 2 || cols < 2)
-  {
+  if (rows < 2 || cols < 2) {
     vertices.clear();
     return;
   }
@@ -325,10 +322,8 @@ void setVertices(
 
   // Note that heightmap(i, j) represents the height value at (j, -i) in XY
   // coordinates.
-  for (auto i = 0; i < rows; ++i)
-  {
-    for (auto j = 0; j < cols; ++j)
-    {
+  for (auto i = 0; i < rows; ++i) {
+    for (auto j = 0; j < cols; ++j) {
       const auto index = cols * i + j;
       vertices[index].set(
           j * scale.x(), -(i * scale.y()), heightmap(i, j) * scale.z());
@@ -362,10 +357,8 @@ void setVertices(
 
   // For row-major matrix
   faces.reserve(6 * (rows - 1) * (cols - 1));
-  for (auto i = 1; i < rows; ++i)
-  {
-    for (auto j = 1; j < cols; ++j)
-    {
+  for (auto i = 1; i < rows; ++i) {
+    for (auto j = 1; j < cols; ++j) {
       // Indices for matrix
       const auto p1i = i - 1;
       const auto p1j = j - 1;
@@ -395,10 +388,8 @@ void setVertices(
   }
 
   normals.reserve(heightmap.size());
-  for (auto i = 0; i < rows; ++i)
-  {
-    for (auto j = 0; j < cols; ++j)
-    {
+  for (auto i = 0; i < rows; ++i) {
+    for (auto j = 0; j < cols; ++j) {
       // Indices for matrix
       const auto p2i = i - 1;
       const auto p2j = j;

@@ -73,8 +73,7 @@ void testContactWithKinematicJoint(
   world->addSkeleton(skeleton1);
   world->addSkeleton(skeleton2);
 
-  for (auto i = 0u; i < 100; ++i)
-  {
+  for (auto i = 0u; i < 100; ++i) {
     skeleton1->setCommand(3, 0.1);
 
     world->step();
@@ -82,8 +81,7 @@ void testContactWithKinematicJoint(
     EXPECT_EQ(bodyNode1->getLinearVelocity()[0], 0.1);
 
     // Need few steps to settle down
-    if (i > 15)
-    {
+    if (i > 15) {
       EXPECT_NEAR(bodyNode2->getLinearVelocity()[0], 0.1, tol);
     }
   }

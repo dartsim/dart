@@ -77,8 +77,7 @@ JointProperties::JointProperties(
   // TODO: Dof 6, which is the max value at the moment, is used because
   // JointProperties doesn't have the Dof information
 
-  for (auto i = 0u; i < mMimicDofProps.size(); ++i)
-  {
+  for (auto i = 0u; i < mMimicDofProps.size(); ++i) {
     auto& prop = mMimicDofProps[i];
     prop.mReferenceJoint = _mimicJoint;
     prop.mReferenceDofIndex = i;
@@ -164,8 +163,7 @@ Joint& Joint::operator=(const Joint& _otherJoint)
 //==============================================================================
 const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 {
-  if (mAspectProperties.mName == _name)
-  {
+  if (mAspectProperties.mName == _name) {
     if (_renameDofs)
       updateDegreeOfFreedomNames();
     return mAspectProperties.mName;
@@ -173,15 +171,12 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 
   const SkeletonPtr& skel
       = mChildBodyNode ? mChildBodyNode->getSkeleton() : nullptr;
-  if (skel)
-  {
+  if (skel) {
     skel->mNameMgrForJoints.removeName(mAspectProperties.mName);
     mAspectProperties.mName = _name;
 
     skel->addEntryToJointNameMgr(this, _renameDofs);
-  }
-  else
-  {
+  } else {
     mAspectProperties.mName = _name;
 
     if (_renameDofs)
@@ -216,8 +211,7 @@ void Joint::setMimicJoint(
   std::size_t numDofs = getNumDofs();
   mAspectProperties.mMimicDofProps.resize(numDofs);
 
-  for (std::size_t i = 0; i < numDofs; ++i)
-  {
+  for (std::size_t i = 0; i < numDofs; ++i) {
     MimicDofProperties prop;
     prop.mReferenceJoint = referenceJoint;
     prop.mReferenceDofIndex = i;
@@ -244,8 +238,7 @@ void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 void Joint::setMimicJointDofs(
     const std::map<std::size_t, MimicDofProperties>& mimicPropMap)
 {
-  for (const auto& pair : mimicPropMap)
-  {
+  for (const auto& pair : mimicPropMap) {
     const auto& index = pair.first;
     const auto& prop = pair.second;
     setMimicJointDof(index, prop);
@@ -279,8 +272,7 @@ const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 //==============================================================================
 bool Joint::isKinematic() const
 {
-  switch (mAspectProperties.mActuatorType)
-  {
+  switch (mAspectProperties.mActuatorType) {
     case FORCE:
     case PASSIVE:
     case SERVO:
@@ -387,8 +379,7 @@ const math::Jacobian Joint::getLocalJacobianTimeDeriv() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getRelativeTransform() const
 {
-  if (mNeedTransformUpdate)
-  {
+  if (mNeedTransformUpdate) {
     updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
@@ -399,8 +390,7 @@ const Eigen::Isometry3d& Joint::getRelativeTransform() const
 //==============================================================================
 const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
 {
-  if (mNeedSpatialVelocityUpdate)
-  {
+  if (mNeedSpatialVelocityUpdate) {
     updateRelativeSpatialVelocity();
     mNeedSpatialVelocityUpdate = false;
   }
@@ -411,8 +401,7 @@ const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
 //==============================================================================
 const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
 {
-  if (mNeedSpatialAccelerationUpdate)
-  {
+  if (mNeedSpatialAccelerationUpdate) {
     updateRelativeSpatialAcceleration();
     mNeedSpatialAccelerationUpdate = false;
   }
@@ -423,8 +412,7 @@ const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
 //==============================================================================
 const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 {
-  if (mNeedPrimaryAccelerationUpdate)
-  {
+  if (mNeedPrimaryAccelerationUpdate) {
     updateRelativePrimaryAcceleration();
     mNeedPrimaryAccelerationUpdate = false;
   }
@@ -437,34 +425,26 @@ Eigen::Vector6d Joint::getWrenchToChildBodyNode(
     const Frame* withRespectTo) const
 {
   const BodyNode* childBodyNode = getChildBodyNode();
-  if (!childBodyNode)
-  {
+  if (!childBodyNode) {
     return Eigen::Vector6d::Zero();
   }
 
   const Eigen::Vector6d& F2 = childBodyNode->getBodyForce();
   const BodyNode* parentBodyNode = getParentBodyNode();
 
-  if (withRespectTo == nullptr)
-  {
+  if (withRespectTo == nullptr) {
     // (Default) Wrench applying to the child body node, where the reference
     // frame is the joint frame
     return math::dAdT(getTransformFromChildBodyNode(), -F2);
-  }
-  else if (withRespectTo == childBodyNode)
-  {
+  } else if (withRespectTo == childBodyNode) {
     // Wrench applying to the child body node, where the reference frame is the
     // child body frame
     return -F2;
-  }
-  else if (withRespectTo == parentBodyNode)
-  {
+  } else if (withRespectTo == parentBodyNode) {
     // Wrench applying to the child body node, where the reference frame is the
     // parent body frame
     return math::dAdInvT(getRelativeTransform(), -F2);
-  }
-  else
-  {
+  } else {
     // Wrench applying to the child body node, where the reference frame is an
     // arbitrary frame
     return math::dAdT(withRespectTo->getTransform(childBodyNode), -F2);
@@ -524,22 +504,17 @@ std::size_t Joint::getTreeIndex() const
 bool Joint::checkSanity(bool _printWarnings) const
 {
   bool sane = true;
-  for (std::size_t i = 0; i < getNumDofs(); ++i)
-  {
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
     if (getInitialPosition(i) < getPositionLowerLimit(i)
-        || getPositionUpperLimit(i) < getInitialPosition(i))
-    {
-      if (_printWarnings)
-      {
+        || getPositionUpperLimit(i) < getInitialPosition(i)) {
+      if (_printWarnings) {
         dtwarn << "[Joint::checkSanity] Initial position of index " << i << " ["
                << getDofName(i) << "] in Joint [" << getName() << "] is "
                << "outside of its position limits\n"
                << " -- Initial Position: " << getInitialPosition(i) << "\n"
                << " -- Limits: [" << getPositionLowerLimit(i) << ", "
                << getPositionUpperLimit(i) << "]\n";
-      }
-      else
-      {
+      } else {
         return false;
       }
 
@@ -547,19 +522,15 @@ bool Joint::checkSanity(bool _printWarnings) const
     }
 
     if (getInitialVelocity(i) < getVelocityLowerLimit(i)
-        || getVelocityUpperLimit(i) < getInitialVelocity(i))
-    {
-      if (_printWarnings)
-      {
+        || getVelocityUpperLimit(i) < getInitialVelocity(i)) {
+      if (_printWarnings) {
         dtwarn << "[Joint::checkSanity] Initial velocity of index " << i << " ["
                << getDofName(i) << "] is Joint [" << getName() << "] is "
                << "outside of its velocity limits\n"
                << " -- Initial Velocity: " << getInitialVelocity(i) << "\n"
                << " -- Limits: [" << getVelocityLowerLimit(i) << ", "
                << getVelocityUpperLimit(i) << "]\n";
-      }
-      else
-      {
+      } else {
         return false;
       }
 
@@ -707,8 +678,7 @@ void Joint::notifyPositionUpdate()
 //==============================================================================
 void Joint::notifyPositionUpdated()
 {
-  if (mChildBodyNode)
-  {
+  if (mChildBodyNode) {
     mChildBodyNode->dirtyTransform();
     mChildBodyNode->dirtyJacobian();
     mChildBodyNode->dirtyJacobianDeriv();
@@ -723,8 +693,7 @@ void Joint::notifyPositionUpdated()
   mNeedSpatialAccelerationUpdate = true;
 
   SkeletonPtr skel = getSkeleton();
-  if (skel)
-  {
+  if (skel) {
     std::size_t tree = mChildBodyNode->mTreeIndex;
     skel->dirtyArticulatedInertia(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
@@ -741,8 +710,7 @@ void Joint::notifyVelocityUpdate()
 //==============================================================================
 void Joint::notifyVelocityUpdated()
 {
-  if (mChildBodyNode)
-  {
+  if (mChildBodyNode) {
     mChildBodyNode->dirtyVelocity();
     mChildBodyNode->dirtyJacobianDeriv();
   }

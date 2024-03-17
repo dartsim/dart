@@ -65,17 +65,14 @@ Linkage::Criteria Chain::Criteria::convert() const
   target.mChain = true;
   target.mPolicy = Linkage::Criteria::INCLUDE;
 
-  if (!mIncludeUpstreamParentJoint)
-  {
+  if (!mIncludeUpstreamParentJoint) {
     if (target.mNode.lock()
-        && target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock()))
-    {
+        && target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock())) {
       criteria.mStart.mPolicy = Linkage::Criteria::EXCLUDE;
     }
 
     if (criteria.mStart.mNode.lock()
-        && criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock()))
-    {
+        && criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock())) {
       target.mPolicy = Linkage::Criteria::EXCLUDE;
     }
   }
@@ -89,16 +86,14 @@ Linkage::Criteria Chain::Criteria::convert() const
 Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
 {
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
-  if (!startBodyNode)
-  {
+  if (!startBodyNode) {
     dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
            << "start node of the input criteria is not valid anymore. Using "
            << "the returning Criteria will lead to creating an empty Chain.\n";
     return Chain::Criteria(nullptr, nullptr);
   }
 
-  if (criteria.mTargets.size() != 1u)
-  {
+  if (criteria.mTargets.size() != 1u) {
     dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
            << "input criteria is not for Chain. The number of targets should "
            << "be one while the input is " << criteria.mTargets.size() << ". "
@@ -108,8 +103,7 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
   }
   const Linkage::Criteria::Target& target = criteria.mTargets[0];
   BodyNodePtr targetBodyNode = target.mNode.lock();
-  if (!targetBodyNode)
-  {
+  if (!targetBodyNode) {
     dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
            << "end node of the input criteria is not valid anymore. Using the "
            << "returning Criteria will lead to creating an empty Chain.\n";
@@ -173,8 +167,7 @@ ChainPtr Chain::cloneChain(const std::string& cloneName) const
 {
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
-  if (!bodyNode)
-  {
+  if (!bodyNode) {
     dtwarn << "[Chain::cloneMetaSkeleton] Failed to clone because the "
            << "start node of the criteria in this Chain is not valid anymore. "
            << "Returning nullptr.\n";
@@ -211,8 +204,7 @@ bool Chain::isStillChain() const
 
   // Make sure there are no Branches and no parent FreeJoints on the BodyNodes
   // on the inside of the chain
-  for (std::size_t i = 1; i < mBodyNodes.size() - 1; ++i)
-  {
+  for (std::size_t i = 1; i < mBodyNodes.size() - 1; ++i) {
     if (mBodyNodes[i]->getNumChildBodyNodes() > 1)
       return false;
 
@@ -222,8 +214,7 @@ bool Chain::isStillChain() const
 
   // Make sure there is not a FreeJoint at the final BodyNode (which was not
   // tested above)
-  if (mBodyNodes.size() > 1)
-  {
+  if (mBodyNodes.size() > 1) {
     if (dynamic_cast<FreeJoint*>(mBodyNodes.back()->getParentJoint()))
       return false;
   }

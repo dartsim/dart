@@ -40,8 +40,7 @@ namespace detail {
 TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     PlaneType planeType)
 {
-  switch (planeType)
-  {
+  switch (planeType) {
     case PlaneType::ARBITRARY:
     case PlaneType::XY:
       setXYPlane();
@@ -75,8 +74,7 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
 TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     const TranslationalJoint2DUniqueProperties& other)
 {
-  switch (other.mPlaneType)
-  {
+  switch (other.mPlaneType) {
     case PlaneType::ARBITRARY:
       setArbitraryPlane(other.mTransAxes);
       break;
@@ -97,10 +95,8 @@ TranslationalJoint2DUniqueProperties&
 TranslationalJoint2DUniqueProperties::operator=(
     const TranslationalJoint2DUniqueProperties& other)
 {
-  if (this != &other)
-  {
-    switch (other.mPlaneType)
-    {
+  if (this != &other) {
+    switch (other.mPlaneType) {
       case PlaneType::ARBITRARY:
         setArbitraryPlane(other.mTransAxes);
         break;

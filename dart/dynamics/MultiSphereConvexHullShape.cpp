@@ -140,8 +140,7 @@ void MultiSphereConvexHullShape::updateBoundingBox() const
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
   Eigen::Vector3d max = -min;
 
-  for (const auto& sphere : mSpheres)
-  {
+  for (const auto& sphere : mSpheres) {
     const auto& radius = sphere.first;
     const Eigen::Vector3d& pos = sphere.second;
     const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);

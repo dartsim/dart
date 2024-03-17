@@ -226,8 +226,7 @@ bool compareStringAndFile(
   auto itr = content.begin();
 
   char c = ifs.get();
-  while (ifs.good())
-  {
+  while (ifs.good()) {
     if (*itr != c)
       return false;
 

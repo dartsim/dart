@@ -86,8 +86,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 {
   Errors errors;
 
-  if (std::string(element->Name()) != "weld")
-  {
+  if (std::string(element->Name()) != "weld") {
     errors.emplace_back(
         ErrorCode::INCORRECT_ELEMENT_TYPE,
         "Failed to find <weld> from the provided element");
@@ -97,23 +96,17 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   const Default* currentDefault = nullptr;
 
   // Read 'class' attribute
-  if (hasAttribute(element, "class"))
-  {
+  if (hasAttribute(element, "class")) {
     const std::string className = getAttributeString(element, "class");
     const auto& defaultClass = defaults.getDefault(className);
-    if (defaultClass)
-    {
+    if (defaultClass) {
       currentDefault = &(*defaultClass);
-    }
-    else
-    {
+    } else {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_INVALID,
           "Failed to find default with childclass name '" + className + "'"));
     }
-  }
-  else
-  {
+  } else {
     currentDefault = defaults.getRootDefault();
   }
   assert(currentDefault != nullptr);
@@ -124,20 +117,17 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   const Errors attrErrors = appendWeldAttributes(mAttributes, element);
   errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
 
-  if (mAttributes.mName)
-  {
+  if (mAttributes.mName) {
     mName = *mAttributes.mName;
   }
   mActive = mAttributes.mActive;
   mSolRef = mAttributes.mSolRef;
   mSolImp = mAttributes.mSolImp;
   mBody1 = mAttributes.mBody1;
-  if (mAttributes.mBody2)
-  {
+  if (mAttributes.mBody2) {
     mBody2 = *mAttributes.mBody2;
   }
-  if (!mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero()))
-  {
+  if (!mAttributes.mRelPose.tail<4>().isApprox(Eigen::Vector4d::Zero())) {
     mRelativeTransfrom = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond quat;
     quat.w() = mAttributes.mRelPose[3];

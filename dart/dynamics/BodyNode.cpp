@@ -59,8 +59,7 @@ template <
 static void extractDataFromNodeTypeMap(
     DataMap& dataMap, const BodyNode::NodeMap& nodeMap)
 {
-  for (const auto& node_it : nodeMap)
-  {
+  for (const auto& node_it : nodeMap) {
     const std::vector<Node*>& nodes = node_it.second;
 
     std::pair<typename DataMap::iterator, bool> insertion
@@ -74,8 +73,7 @@ static void extractDataFromNodeTypeMap(
 
     data->getVector().resize(nodes.size());
 
-    for (std::size_t i = 0; i < nodes.size(); ++i)
-    {
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
       std::unique_ptr<DataType>& datum = data->getVector()[i];
       datum = (nodes[i]->*getData)();
     }
@@ -94,31 +92,24 @@ static void setNodesFromDataTypeMap(
   typename BodyNode::NodeMap::iterator node_it = nodeMap.begin();
   typename DataMap::const_iterator data_it = dataMap.begin();
 
-  while (nodeMap.end() != node_it && dataMap.end() != data_it)
-  {
-    if (node_it->first == data_it->first)
-    {
+  while (nodeMap.end() != node_it && dataMap.end() != data_it) {
+    if (node_it->first == data_it->first) {
       const std::vector<Node*>& node_vec = node_it->second;
       const std::vector<std::unique_ptr<DataType> >& data_vec
           = data_it->second->getVector();
 
       // TODO(MXG): Should we report if the dimensions are mismatched?
       std::size_t stop = std::min(node_vec.size(), data_vec.size());
-      for (std::size_t i = 0; i < stop; ++i)
-      {
+      for (std::size_t i = 0; i < stop; ++i) {
         if (data_vec[i])
           (node_vec[i]->*setData)(*data_vec[i]);
       }
 
       ++node_it;
       ++data_it;
-    }
-    else if (node_it->first < data_it->first)
-    {
+    } else if (node_it->first < data_it->first) {
       ++node_it;
-    }
-    else
-    {
+    } else {
       ++data_it;
     }
   }
@@ -166,8 +157,7 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 #define SKEL_SET_FLAGS(X)                                                      \
   {                                                                            \
     SkeletonPtr skel = getSkeleton();                                          \
-    if (skel)                                                                  \
-    {                                                                          \
+    if (skel) {                                                                \
       skel->mTreeCache[mTreeIndex].mDirty.X = true;                            \
       skel->mSkelCache.mDirty.X = true;                                        \
     }                                                                          \
@@ -176,8 +166,7 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 /// SET_FLAGS : A version of SKEL_SET_FLAGS that assumes a SkeletonPtr named
 /// 'skel' has already been locked
 #define SET_FLAGS(X)                                                           \
-  if (mTreeIndex != INVALID_INDEX)                                             \
-  {                                                                            \
+  if (mTreeIndex != INVALID_INDEX) {                                           \
     skel->mTreeCache[mTreeIndex].mDirty.X = true;                              \
   }                                                                            \
   skel->mSkelCache.mDirty.X = true;
@@ -332,8 +321,7 @@ void BodyNode::setProperties(const AspectProperties& _properties)
 //==============================================================================
 void BodyNode::setAspectState(const AspectState& state)
 {
-  if (mAspectState.mFext != state.mFext)
-  {
+  if (mAspectState.mFext != state.mFext) {
     mAspectState.mFext = state.mFext;
     SKEL_SET_FLAGS(mExternalForces);
   }
@@ -385,8 +373,7 @@ BodyNode& BodyNode::operator=(const BodyNode& otherBodyNode)
 //==============================================================================
 void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
 {
-  if (nullptr == otherBodyNode)
-  {
+  if (nullptr == otherBodyNode) {
     dterr << "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes "
           << "of a nullptr, which is not allowed!\n";
     assert(false);
@@ -394,8 +381,7 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
   }
 
   const NodeMap& otherMap = otherBodyNode->mNodeMap;
-  for (const auto& vec : otherMap)
-  {
+  for (const auto& vec : otherMap) {
     for (const auto& node : vec.second)
       node->cloneNode(this)->attach();
   }
@@ -404,8 +390,7 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
 //==============================================================================
 void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 {
-  if (nullptr == otherBodyNode)
-  {
+  if (nullptr == otherBodyNode) {
     dterr << "[BodyNode::matchNodes] You have asked to match the Nodes of a "
           << "nullptr, which is not allowed!\n";
     assert(false);
@@ -429,8 +414,7 @@ const std::string& BodyNode::setName(const std::string& _name)
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
-  {
+  if (skel) {
     skel->mNameMgrForBodyNodes.removeName(mAspectProperties.mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if (softnode)
@@ -441,9 +425,7 @@ const std::string& BodyNode::setName(const std::string& _name)
 
     if (softnode)
       skel->addEntryToSoftBodyNodeNameMgr(softnode);
-  }
-  else
-  {
+  } else {
     mAspectProperties.mName = _name;
   }
 
@@ -496,8 +478,7 @@ void BodyNode::setCollidable(bool _isCollidable)
 //==============================================================================
 void checkMass(const BodyNode& bodyNode, const double mass)
 {
-  if (mass <= 0.0)
-  {
+  if (mass <= 0.0) {
     dtwarn << "[BodyNode] A negative or zero mass [" << mass
            << "] is set to BodyNode [" << bodyNode.getName()
            << "], which can cause invalid physical behavior or segfault. "
@@ -747,8 +728,7 @@ static bool checkSkeletonNodeAgreement(
     const std::string& _function,
     const std::string& _operation)
 {
-  if (nullptr == _newSkeleton)
-  {
+  if (nullptr == _newSkeleton) {
     dterr << "[BodyNode::" << _function << "] Attempting to " << _operation
           << " a BodyNode tree starting "
           << "from [" << _bodyNode->getName() << "] in the Skeleton named ["
@@ -757,8 +737,7 @@ static bool checkSkeletonNodeAgreement(
     return false;
   }
 
-  if (_newParent && _newSkeleton != _newParent->getSkeleton())
-  {
+  if (_newParent && _newSkeleton != _newParent->getSkeleton()) {
     dterr << "[BodyNode::" << _function << "] Mismatch between the specified "
           << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
           << ") and the specified new parent BodyNode ["
@@ -795,8 +774,7 @@ bool BodyNode::moveTo(BodyNode* _newParent)
 bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 {
   if (checkSkeletonNodeAgreement(
-          this, _newSkeleton, _newParent, "moveTo", "move"))
-  {
+          this, _newSkeleton, _newParent, "moveTo", "move")) {
     return getSkeleton()->moveBodyNodeTree(
         getParentJoint(), this, _newSkeleton, _newParent);
   }
@@ -833,8 +811,7 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(
     bool _recursive) const
 {
   if (checkSkeletonNodeAgreement(
-          this, _newSkeleton, _newParent, "copyTo", "copy"))
-  {
+          this, _newSkeleton, _newParent, "copyTo", "copy")) {
     return getSkeleton()->cloneBodyNodeTree(
         nullptr, this, _newSkeleton, _newParent, _recursive);
   }
@@ -895,8 +872,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   assert(_body != nullptr);
 
   if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body)
-      != mChildBodyNodes.end())
-  {
+      != mChildBodyNodes.end()) {
     dtwarn << "[BodyNode::addChildBodyNode] Attempting to add a BodyNode '"
            << _body->getName() << "' as a child BodyNode of '" << getName()
            << "', which is already its parent." << std::endl;
@@ -1106,8 +1082,7 @@ const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
   dofs.reserve(getNumDependentGenCoords());
   for (std::vector<BodyNode*>::reverse_iterator rit = bn_chain.rbegin();
        rit != bn_chain.rend();
-       ++rit)
-  {
+       ++rit) {
     std::size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
     for (std::size_t i = 0; i < nDofs; ++i)
       dofs.push_back((*rit)->getParentJoint()->getDof(i));
@@ -1368,8 +1343,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
   assert(_skeleton);
-  if (mReferenceCount > 0)
-  {
+  if (mReferenceCount > 0) {
     mReferenceSkeleton = mSkeleton.lock();
   }
 
@@ -1404,8 +1378,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   mDependentDofs.reserve(mDependentGenCoordIndices.size());
   mConstDependentDofs.clear();
   mConstDependentDofs.reserve(mDependentGenCoordIndices.size());
-  for (const std::size_t& index : mDependentGenCoordIndices)
-  {
+  for (const std::size_t& index : mDependentGenCoordIndices) {
     mDependentDofs.push_back(_skeleton->getDof(index));
     mConstDependentDofs.push_back(_skeleton->getDof(index));
   }
@@ -1413,10 +1386,8 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
   std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (std::size_t i = 0; i < nDepGenCoordIndices; ++i)
-  {
-    for (std::size_t j = i + 1; j < nDepGenCoordIndices; ++j)
-    {
+  for (std::size_t i = 0; i < nDepGenCoordIndices; ++i) {
+    for (std::size_t j = i + 1; j < nDepGenCoordIndices; ++j) {
       assert(
           mDependentGenCoordIndices[i] != mDependentGenCoordIndices[j]
           && "Duplicated index is found in mDependentGenCoordIndices.");
@@ -1468,8 +1439,8 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
     return;
 
   // Check if it's already accounted for in our Non-BodyNode Entities
-  if (mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
-  {
+  if (mNonBodyNodeEntities.find(_newChildEntity)
+      != mNonBodyNodeEntities.end()) {
     dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity ["
            << _newChildEntity->getName() << "] as a child Entity of ["
            << getName() << "], which is already its parent." << std::endl;
@@ -1510,8 +1481,7 @@ void BodyNode::dirtyTransform()
   mNeedTransformUpdate = true;
 
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
-  {
+  if (skel) {
     // All of these depend on the world transform of this BodyNode, so they must
     // be dirtied whenever mNeedTransformUpdate is dirtied, and if
     // mTransformUpdate is already dirty, then these must already be dirty as
@@ -1543,8 +1513,7 @@ void BodyNode::dirtyVelocity()
   mIsPartialAccelerationDirty = true;
 
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
-  {
+  if (skel) {
     SET_FLAGS(mCoriolisForces);
     SET_FLAGS(mCoriolisAndGravityForces);
   }
@@ -1701,8 +1670,7 @@ void BodyNode::updateTransmittedForceID(
   mF -= math::dad(V, mI * V);
 
   //
-  for (const auto& childBodyNode : mChildBodyNodes)
-  {
+  for (const auto& childBodyNode : mChildBodyNodes) {
     Joint* childJoint = childBodyNode->getParentJoint();
     assert(childJoint != nullptr);
 
@@ -1722,8 +1690,7 @@ void BodyNode::updateArtInertia(double _timeStep) const
   mArtInertiaImplicit = mArtInertia;
 
   // and add child articulated body inertia
-  for (const auto& child : mChildBodyNodes)
-  {
+  for (const auto& child : mChildBodyNodes) {
     Joint* childJoint = child->getParentJoint();
 
     childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
@@ -1764,8 +1731,7 @@ void BodyNode::updateBiasForce(
   assert(!math::isNan(mBiasForce));
 
   // And add child bias force
-  for (const auto& childBodyNode : mChildBodyNodes)
-  {
+  for (const auto& childBodyNode : mChildBodyNodes) {
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasForceTo(
@@ -1792,8 +1758,7 @@ void BodyNode::updateBiasImpulse()
   mBiasImpulse = -mConstraintImpulse;
 
   // And add child bias impulse
-  for (auto& childBodyNode : mChildBodyNodes)
-  {
+  for (auto& childBodyNode : mChildBodyNodes) {
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasImpulseTo(
@@ -1830,15 +1795,12 @@ void BodyNode::updateTransmittedImpulse()
 //==============================================================================
 void BodyNode::updateAccelerationFD()
 {
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     // Update joint acceleration
     mParentJoint->updateAcceleration(
         getArticulatedInertiaImplicit(),
         mParentBodyNode->getSpatialAcceleration());
-  }
-  else
-  {
+  } else {
     // Update joint acceleration
     mParentJoint->updateAcceleration(
         getArticulatedInertiaImplicit(), Eigen::Vector6d::Zero());
@@ -1851,8 +1813,7 @@ void BodyNode::updateAccelerationFD()
 //==============================================================================
 void BodyNode::updateVelocityChangeFD()
 {
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     // Update joint velocity change
     mParentJoint->updateVelocityChange(
         getArticulatedInertia(), mParentBodyNode->mDelV);
@@ -1860,9 +1821,7 @@ void BodyNode::updateVelocityChangeFD()
     // Transmit spatial acceleration of parent body to this body
     mDelV = math::AdInvT(
         mParentJoint->getRelativeTransform(), mParentBodyNode->mDelV);
-  }
-  else
-  {
+  } else {
     // Update joint velocity change
     mParentJoint->updateVelocityChange(
         getArticulatedInertia(), Eigen::Vector6d::Zero());
@@ -2058,12 +2017,10 @@ Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 bool BodyNode::isReactive() const
 {
   const ConstSkeletonPtr& skel = getSkeleton();
-  if (skel && skel->isMobile() && getNumDependentGenCoords() > 0)
-  {
+  if (skel && skel->isMobile() && getNumDependentGenCoords() > 0) {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
-    while (body != nullptr)
-    {
+    while (body != nullptr) {
       if (body->mParentJoint->isDynamic())
         return true;
 
@@ -2074,9 +2031,7 @@ bool BodyNode::isReactive() const
     // when necessary.
 
     return false;
-  }
-  else
-  {
+  } else {
     return false;
   }
 }
@@ -2099,15 +2054,13 @@ void BodyNode::aggregateGravityForceVector(
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mG_F += math::dAdInvT(
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mG_F);
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
+  if (nGenCoords > 0) {
     Eigen::VectorXd g
         = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
     std::size_t iStart = mParentJoint->getIndexInTree(0);
@@ -2118,14 +2071,11 @@ void BodyNode::aggregateGravityForceVector(
 //==============================================================================
 void BodyNode::updateCombinedVector()
 {
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     mCg_dV = math::AdInvT(
                  mParentJoint->getRelativeTransform(), mParentBodyNode->mCg_dV)
              + getPartialAcceleration();
-  }
-  else
-  {
+  } else {
     mCg_dV = getPartialAcceleration();
   }
 }
@@ -2149,14 +2099,12 @@ void BodyNode::aggregateCombinedVector(
 
   for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
+  if (nGenCoords > 0) {
     Eigen::VectorXd Cg
         = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
     std::size_t iStart = mParentJoint->getIndexInTree(0);
@@ -2171,15 +2119,13 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mFext_F += math::dAdInvT(
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mFext_F);
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
+  if (nGenCoords > 0) {
     Eigen::VectorXd Fext
         = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
     std::size_t iStart = mParentJoint->getIndexInTree(0);
@@ -2197,16 +2143,14 @@ void BodyNode::aggregateSpatialToGeneralized(
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mArbitrarySpatial += math::dAdInvT(
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mArbitrarySpatial);
   }
 
   // Project the spatial quantity to generalized coordinates
   const auto numDofs = mParentJoint->getNumDofs();
-  if (numDofs > 0u)
-  {
+  if (numDofs > 0u) {
     const std::size_t iStart = mParentJoint->getIndexInTree(0);
     _generalized.segment(iStart, numDofs)
         = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
@@ -2218,8 +2162,7 @@ void BodyNode::updateMassMatrix()
 {
   mM_dV.setZero();
   std::size_t dof = mParentJoint->getNumDofs();
-  if (dof > 0)
-  {
+  if (dof > 0) {
     mM_dV.noalias() += mParentJoint->getRelativeJacobian()
                        * mParentJoint->getAccelerations();
     assert(!math::isNan(mM_dV));
@@ -2243,8 +2186,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mM_F += math::dAdInvT(
         (*it)->getParentJoint()->getRelativeTransform(), (*it)->mM_F);
   }
@@ -2254,8 +2196,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 
   //
   std::size_t dof = mParentJoint->getNumDofs();
-  if (dof > 0)
-  {
+  if (dof > 0) {
     std::size_t iStart = mParentJoint->getIndexInTree(0);
     _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mM_F;
@@ -2278,8 +2219,7 @@ void BodyNode::aggregateAugMassMatrix(
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     mM_F += math::dAdInvT(
         (*it)->getParentJoint()->getRelativeTransform(), (*it)->mM_F);
   }
@@ -2289,12 +2229,10 @@ void BodyNode::aggregateAugMassMatrix(
 
   //
   std::size_t dof = mParentJoint->getNumDofs();
-  if (dof > 0)
-  {
+  if (dof > 0) {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (std::size_t i = 0; i < dof; ++i)
-    {
+    for (std::size_t i = 0; i < dof; ++i) {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
@@ -2317,8 +2255,7 @@ void BodyNode::updateInvMassMatrix()
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     (*it)->getParentJoint()->addChildBiasForceForInvMassMatrix(
         mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
   }
@@ -2339,8 +2276,7 @@ void BodyNode::updateInvAugMassMatrix()
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
-       ++it)
-  {
+       ++it) {
     (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
         mInvM_c, (*it)->getArticulatedInertiaImplicit(), (*it)->mInvM_c);
   }
@@ -2356,8 +2292,7 @@ void BodyNode::updateInvAugMassMatrix()
 void BodyNode::aggregateInvMassMatrix(
     Eigen::MatrixXd& _InvMCol, std::size_t _col)
 {
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     //
     mParentJoint->getInvMassMatrixSegment(
         _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
@@ -2365,9 +2300,7 @@ void BodyNode::aggregateInvMassMatrix(
     //
     mInvM_U = math::AdInvT(
         mParentJoint->getRelativeTransform(), mParentBodyNode->mInvM_U);
-  }
-  else
-  {
+  } else {
     //
     mParentJoint->getInvMassMatrixSegment(
         _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
@@ -2384,8 +2317,7 @@ void BodyNode::aggregateInvMassMatrix(
 void BodyNode::aggregateInvAugMassMatrix(
     Eigen::MatrixXd& _InvMCol, std::size_t _col, double /*_timeStep*/)
 {
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     //
     mParentJoint->getInvAugMassMatrixSegment(
         _InvMCol,
@@ -2396,9 +2328,7 @@ void BodyNode::aggregateInvAugMassMatrix(
     //
     mInvM_U = math::AdInvT(
         mParentJoint->getRelativeTransform(), mParentBodyNode->mInvM_U);
-  }
-  else
-  {
+  } else {
     //
     mParentJoint->getInvAugMassMatrixSegment(
         _InvMCol,
@@ -2437,8 +2367,7 @@ void BodyNode::updateBodyJacobian() const
   const std::size_t ascendantDof = getNumDependentGenCoords() - localDof;
 
   // Parent Jacobian
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     assert(
         static_cast<std::size_t>(mParentBodyNode->getJacobian().cols())
             + mParentJoint->getNumDofs()
@@ -2489,8 +2418,7 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
   const auto numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
   // Parent Jacobian: Ad(T(i, parent(i)), dJ_parent(i))
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
     assert(
@@ -2538,8 +2466,7 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
   assert(getNumDependentGenCoords() >= numLocalDOFs);
   const std::size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
-  if (mParentBodyNode)
-  {
+  if (mParentBodyNode) {
     const math::Jacobian& dJ_parent
         = mParentBodyNode->getJacobianClassicDeriv();
     const math::Jacobian& J_parent = mParentBodyNode->getWorldJacobian();

@@ -105,8 +105,7 @@ void BoxShapeNode::refresh()
 //==============================================================================
 void BoxShapeNode::extractData(bool /*firstTime*/)
 {
-  if (nullptr == mGeode)
-  {
+  if (nullptr == mGeode) {
     mGeode = new BoxShapeGeode(mBoxShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
@@ -145,8 +144,7 @@ void BoxShapeGeode::refresh()
 //==============================================================================
 void BoxShapeGeode::extractData()
 {
-  if (nullptr == mDrawable)
-  {
+  if (nullptr == mDrawable) {
     mDrawable = new BoxShapeDrawable(mBoxShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
@@ -178,8 +176,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-      || firstTime)
-  {
+      || firstTime) {
     const Eigen::Vector3d& d = mBoxShape->getSize();
     ::osg::ref_ptr<::osg::Box> osg_shape
         = new ::osg::Box(::osg::Vec3(0, 0, 0), d[0], d[1], d[2]);
@@ -188,24 +185,20 @@ void BoxShapeDrawable::refresh(bool firstTime)
   }
 
   if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime)
-  {
+      || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     setColor(color);
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color.a()) > 1 - getAlphaThreshold())
-    {
+    if (std::abs(color.a()) > 1 - getAlphaThreshold()) {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
       ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
       depth->setWriteMask(true);
       ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-    else
-    {
+    } else {
       ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
       ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
       ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;

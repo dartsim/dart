@@ -162,8 +162,7 @@ void BallJoint::updateRelativeTransform() const
 //==============================================================================
 void BallJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
-  {
+  if (_mandatory) {
     mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint)
                     .leftCols<3>();
   }
@@ -178,8 +177,7 @@ void BallJoint::updateRelativeJacobianTimeDeriv() const
 //==============================================================================
 const Eigen::Isometry3d& BallJoint::getR() const
 {
-  if (mNeedTransformUpdate)
-  {
+  if (mNeedTransformUpdate) {
     updateRelativeTransform();
     mNeedTransformUpdate = false;
   }

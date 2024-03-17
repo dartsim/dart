@@ -132,8 +132,7 @@ void enableDragAndDrops(
   for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(wam->getBodyNode(i), false, false);
 
-  for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i) {
     dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
     if (!ee->getIK())
       continue;

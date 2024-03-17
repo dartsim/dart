@@ -44,8 +44,7 @@ std::string ResourceRetriever::readAll(const Uri& uri)
 {
   auto resource = retrieve(uri);
 
-  if (!resource)
-  {
+  if (!resource) {
     std::stringstream ss;
     ss << "Failed retrieving a resource from '" << uri.toString() << "'.";
     throw std::runtime_error(ss.str());

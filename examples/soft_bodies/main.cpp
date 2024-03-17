@@ -55,15 +55,13 @@ public:
     TimeSlice slice;
     slice.reserve(mWorld->getNumSkeletons());
 
-    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
-    {
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
       State state;
       state.mConfig = skeleton->getConfiguration();
       state.mAspectStates.reserve(skeleton->getNumBodyNodes());
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      {
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
         BodyNode* bn = skeleton->getBodyNode(j);
         state.mAspectStates.push_back(bn->getCompositeState());
       }
@@ -96,15 +94,13 @@ public:
     std::cout << "Moving to time step #" << index << std::endl;
 
     const TimeSlice& slice = mHistory[index];
-    for (std::size_t i = 0; i < slice.size(); ++i)
-    {
+    for (std::size_t i = 0; i < slice.size(); ++i) {
       const State& state = slice[i];
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
 
       skeleton->setConfiguration(state.mConfig);
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      {
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
         BodyNode* bn = skeleton->getBodyNode(j);
         bn->setCompositeState(state.mAspectStates[j]);
       }
@@ -162,40 +158,33 @@ public:
     if (!mRecWorld)
       return false;
 
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      if (ea.getKey() == '[')
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == '[') {
         mRecWorld->moveBackward(1);
         return true;
       }
 
-      if (ea.getKey() == ']')
-      {
+      if (ea.getKey() == ']') {
         mRecWorld->moveForward(1);
         return true;
       }
 
-      if (ea.getKey() == '{')
-      {
+      if (ea.getKey() == '{') {
         mRecWorld->moveBackward(10);
         return true;
       }
 
-      if (ea.getKey() == '}')
-      {
+      if (ea.getKey() == '}') {
         mRecWorld->moveForward(10);
         return true;
       }
 
-      if (ea.getKey() == 'r')
-      {
+      if (ea.getKey() == 'r') {
         mRecWorld->restart();
         return true;
       }
 
-      if (ea.getKey() == '\\')
-      {
+      if (ea.getKey() == '\\') {
         mRecWorld->moveToEnd();
         return true;
       }

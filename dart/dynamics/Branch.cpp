@@ -69,8 +69,7 @@ Branch::Criteria::operator Linkage::Criteria() const
 Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
 {
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
-  if (!startBodyNode)
-  {
+  if (!startBodyNode) {
     dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
            << "start node of the input criteria is not valid anymore. Using "
            << "the returning Criteria will lead to creating an empty Branch.\n";
@@ -100,8 +99,7 @@ BranchPtr Branch::cloneBranch(const std::string& cloneName) const
 {
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
-  if (!bodyNode)
-  {
+  if (!bodyNode) {
     dtwarn << "[Branch::cloneMetaSkeleton] Failed to clone because the "
            << "start node of the criteria in this Branch is not valid anymore. "
            << "Returning nullptr.\n";
@@ -133,8 +131,7 @@ bool Branch::isStillBranch() const
   if (!isAssembled())
     return false;
 
-  for (std::size_t i = 0; i < mBodyNodes.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
     BodyNode* bn = mBodyNodes[i];
     if (bn->getNumChildBodyNodes() != mNumChildNodes[i])
       return false;
@@ -157,8 +154,7 @@ void Branch::update()
 
   mNumChildNodes.clear();
   mNumChildNodes.reserve(mBodyNodes.size());
-  for (std::size_t i = 0; i < mBodyNodes.size(); ++i)
-  {
+  for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
     mNumChildNodes.push_back(mBodyNodes[i]->getNumChildBodyNodes());
   }
 }

@@ -273,8 +273,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
 
   mConnectionForShapeVersionChange.disconnect();
 
-  if (shape)
-  {
+  if (shape) {
     mConnectionForShapeVersionChange
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
             assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());

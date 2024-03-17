@@ -46,8 +46,7 @@ namespace common {
 LocalResource::LocalResource(const std::string& _path)
   : mFile(std::fopen(_path.c_str(), "rb"))
 {
-  if (!mFile)
-  {
+  if (!mFile) {
     dtwarn << "[LocalResource::constructor] Failed opening file '" << _path
            << "' for reading: " << std::strerror(errno) << "\n";
   }
@@ -59,8 +58,7 @@ LocalResource::~LocalResource()
   if (!mFile)
     return;
 
-  if (std::fclose(mFile) == EOF)
-  {
+  if (std::fclose(mFile) == EOF) {
     dtwarn << "[LocalResource::destructor] Failed closing file: "
            << std::strerror(errno) << "\n";
   }
@@ -79,8 +77,7 @@ std::size_t LocalResource::getSize()
     return 0;
 
   const long offset = std::ftell(mFile);
-  if (offset == -1L)
-  {
+  if (offset == -1L) {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
               " getting current offset: "
            << std::strerror(errno) << "\n";
@@ -89,8 +86,7 @@ std::size_t LocalResource::getSize()
 
   // The SEEK_END option is not required by the C standard. However, it is
   // required by POSIX.
-  if (std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile))
-  {
+  if (std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile)) {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
               " seeking to the end of the file: "
            << std::strerror(errno) << "\n";
@@ -98,8 +94,7 @@ std::size_t LocalResource::getSize()
   }
 
   const long size = std::ftell(mFile);
-  if (size == -1L)
-  {
+  if (size == -1L) {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
               " getting end of file offset: "
            << std::strerror(errno) << "\n";
@@ -110,15 +105,13 @@ std::size_t LocalResource::getSize()
   // NFS mount.
   //
   // See here: http://stackoverflow.com/a/18193383/111426
-  else if (size == std::numeric_limits<long>::max())
-  {
+  else if (size == std::numeric_limits<long>::max()) {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Computed"
               " file size of LONG_MAX. Is this a directory?\n";
     return 0;
   }
 
-  if (std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile))
-  {
+  if (std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile)) {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
               " restoring offset: "
            << std::strerror(errno) << "\n";
@@ -135,8 +128,7 @@ std::size_t LocalResource::tell()
     return 0;
 
   const long offset = std::ftell(mFile);
-  if (offset == -1L)
-  {
+  if (offset == -1L) {
     dtwarn << "[LocalResource::tell] Failed getting current offset: "
            << std::strerror(errno) << "\n";
   }
@@ -145,8 +137,7 @@ std::size_t LocalResource::tell()
   // NFS mount.
   //
   // See here: http://stackoverflow.com/a/18193383/111426
-  else if (offset == std::numeric_limits<long>::max())
-  {
+  else if (offset == std::numeric_limits<long>::max()) {
     dtwarn << "[LocalResource::tell] Failed getting current offset: ftell"
               " returned LONG_MAX. Is this a directory?\n";
     return -1L;
@@ -160,8 +151,7 @@ std::size_t LocalResource::tell()
 bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 {
   int origin;
-  switch (_mode)
-  {
+  switch (_mode) {
     case Resource::SEEKTYPE_CUR:
       origin = SEEK_CUR;
       break;
@@ -182,8 +172,7 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 
   if (!std::fseek(mFile, _offset, origin) && !std::ferror(mFile))
     return true;
-  else
-  {
+  else {
     dtwarn << "[LocalResource::seek] Failed seeking: " << std::strerror(errno)
            << "\n";
     return false;
@@ -198,8 +187,7 @@ std::size_t LocalResource::read(
     return 0;
 
   const std::size_t result = std::fread(_buffer, _size, _count, mFile);
-  if (std::ferror(mFile))
-  {
+  if (std::ferror(mFile)) {
     dtwarn << "[LocalResource::read] Failed reading file: "
            << std::strerror(errno) << "\n";
   }

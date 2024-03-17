@@ -58,8 +58,7 @@ public:
   {
     int dofs = mIdeal.size();
     if (mLower.size() != dofs || mWeights.size() != dofs
-        || mUpper.size() != dofs)
-    {
+        || mUpper.size() != dofs) {
       dterr << "[RelaxedPose::RelaxedPose] Dimension mismatch:\n"
             << "  ideal:   " << mIdeal.size() << "\n"
             << "  lower:   " << mLower.size() << "\n"
@@ -90,20 +89,15 @@ public:
   {
     mResultVector.setZero();
 
-    if (enforceIdealPosture)
-    {
-      for (int i = 0; i < _x.size(); ++i)
-      {
+    if (enforceIdealPosture) {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
-    }
-    else
-    {
-      for (int i = 0; i < _x.size(); ++i)
-      {
+    } else {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
@@ -135,31 +129,23 @@ static inline bool checkDist(Eigen::Vector3d& p, double a, double b)
   double dmax = a + b;
   double dmin = fabs(a - b);
 
-  if (d > dmax)
-  {
+  if (d > dmax) {
     p *= dmax / d;
     return false;
-  }
-  else if (d < dmin)
-  {
+  } else if (d < dmin) {
     p *= dmin / d;
     return false;
-  }
-  else
-  {
+  } else {
     return true;
   }
 }
 
 static inline void clamp_sincos(double& sincos, bool& valid)
 {
-  if (sincos < -1)
-  {
+  if (sincos < -1) {
     valid = false;
     sincos = -1;
-  }
-  else if (sincos > 1)
-  {
+  } else if (sincos > 1) {
     valid = false;
     sincos = 1;
   }
@@ -202,12 +188,10 @@ public:
     mSolutions.clear();
     mSolutions.reserve(8);
 
-    if (!configured)
-    {
+    if (!configured) {
       configure();
 
-      if (!configured)
-      {
+      if (!configured) {
         dtwarn
             << "[HuboArmIK::computeSolutions] This analytical IK was not able "
             << "to configure properly, so it will not be able to compute "
@@ -217,16 +201,14 @@ public:
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if (nullptr == base)
-    {
+    if (nullptr == base) {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform an IK on a "
             << "limb that no longer exists [" << getMethodName() << "]!\n";
       assert(false);
       return mSolutions;
     }
 
-    if (nullptr == mWristEnd)
-    {
+    if (nullptr == mWristEnd) {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform IK without "
             << "a wrist!\n";
       assert(false);
@@ -264,8 +246,7 @@ public:
     double y = p.y();
     double z = p.z();
 
-    for (std::size_t i = 0; i < 8; ++i)
-    {
+    for (std::size_t i = 0; i < 8; ++i) {
       const int flipEP = alterantives(i, 0);
       const int incWY = alterantives(i, 1);
       const int flipShoulder = alterantives(i, 2);
@@ -289,15 +270,12 @@ public:
 
       double s2, theta2;
 
-      if (std::abs(denom) < zeroSize)
-      {
+      if (std::abs(denom) < zeroSize) {
         isValid = false;
         const double& prevWY = skel->getPosition(mDofs[WY]);
         theta2 = incWY ? prevWY : constantsd::pi() - prevWY;
         s2 = sin(theta2);
-      }
-      else
-      {
+      } else {
         s2 = numer / denom;
         clamp_sincos(s2, isValid);
         theta2 = incWY ? constantsd::pi() - asin(s2) : asin(s2);
@@ -341,8 +319,7 @@ public:
       testQ(SR) = euler[1];
       testQ(SY) = euler[2];
 
-      for (std::size_t j = 0; j < 6; ++j)
-      {
+      for (std::size_t j = 0; j < 6; ++j) {
         testQ[j] = dart::math::wrapToPi(testQ[j]);
         if (std::abs(testQ[j]) < zeroSize)
           testQ[j] = 0.0;
@@ -375,8 +352,7 @@ protected:
     mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
 
     BodyNode* base = mBaseLink.lock();
-    if (nullptr == base)
-    {
+    if (nullptr == base) {
       dterr << "[HuboArmIK::configure] base link is a nullptr\n";
       assert(false);
       return;
@@ -384,8 +360,7 @@ protected:
 
     const SkeletonPtr& skel = base->getSkeleton();
     const BodyNodePtr& pelvis = skel->getBodyNode("Body_TSY");
-    if (nullptr == pelvis)
-    {
+    if (nullptr == pelvis) {
       dterr << "[HuboArmIK::configure] Could not find Hubo's pelvis "
             << "(Body_TSY)\n";
       assert(false);
@@ -396,11 +371,9 @@ protected:
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
-    for (std::size_t i = 0; i < 6; ++i)
-    {
+    for (std::size_t i = 0; i < 6; ++i) {
       Joint* joint = bn->getParentJoint();
-      if (joint->getNumDofs() != 1)
-      {
+      if (joint->getNumDofs() != 1) {
         dterr << "[HuboArmIK::configure] Invalid number of DOFs ("
               << joint->getNumDofs() << ") in the Joint [" << joint->getName()
               << "]\n";
@@ -440,8 +413,7 @@ protected:
     alterantives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
         0, 1, -1, 0, 0;
 
-    for (std::size_t i = 0; i < 6; ++i)
-    {
+    for (std::size_t i = 0; i < 6; ++i) {
       dofs[i]->setPosition(saved_q[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
     }
@@ -494,12 +466,10 @@ public:
     mSolutions.clear();
     mSolutions.reserve(8);
 
-    if (!configured)
-    {
+    if (!configured) {
       configure();
 
-      if (!configured)
-      {
+      if (!configured) {
         dtwarn
             << "[HuboLegIK::computeSolutions] This analytical IK was not able "
             << "to configure properly, so it will not be able to compute "
@@ -509,8 +479,7 @@ public:
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if (nullptr == base)
-    {
+    if (nullptr == base) {
       dterr << "[HuboLegIK::computeSolutions] Attempting to perform IK on a "
             << "limb that no longer exists!\n";
       assert(false);
@@ -543,8 +512,7 @@ public:
     az = Binv(2, 2);
     pz = Binv(2, 3);
 
-    for (std::size_t i = 0; i < 8; ++i)
-    {
+    for (std::size_t i = 0; i < 8; ++i) {
       bool isValid = true;
 
       C4 = ((px + L6) * (px + L6) - L4 * L4 - L5 * L5 + py * py + pz * pz)
@@ -627,8 +595,7 @@ protected:
     mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
 
     BodyNode* base = mBaseLink.lock();
-    if (nullptr == base)
-    {
+    if (nullptr == base) {
       dterr << "[HuboLegIK::configure] base link is a nullptr\n";
       assert(false);
       return;
@@ -636,8 +603,7 @@ protected:
 
     const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
     BodyNode* pelvis = skel->getBodyNode("Body_TSY");
-    if (nullptr == pelvis)
-    {
+    if (nullptr == pelvis) {
       dterr << "[HuboLegIK::configure] Could not find Hubo's pelvis "
             << "(Body_TSY)\n";
       assert(false);
@@ -648,11 +614,9 @@ protected:
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
-    for (std::size_t i = 0; i < 6; ++i)
-    {
+    for (std::size_t i = 0; i < 6; ++i) {
       Joint* joint = bn->getParentJoint();
-      if (joint->getNumDofs() != 1)
-      {
+      if (joint->getNumDofs() != 1) {
         dterr << "[HuboLegIK::configure] Invalid number of DOFs ("
               << joint->getNumDofs() << ") in the Joint [" << joint->getName()
               << "]\n";
@@ -695,8 +659,7 @@ protected:
     alternatives << 1, 1, 1, 1, 1, -1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1,
         -1, -1, 1, -1, -1, -1;
 
-    for (std::size_t i = 0; i < 6; ++i)
-    {
+    for (std::size_t i = 0; i < 6; ++i) {
       dofs[i]->setPosition(saved_q[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
     }
@@ -756,10 +719,8 @@ public:
 
     mAnyMovement = false;
 
-    for (bool move : mMoveComponents)
-    {
-      if (move)
-      {
+    for (bool move : mMoveComponents) {
+      if (move) {
         mAnyMovement = true;
         break;
       }
@@ -768,8 +729,7 @@ public:
 
   void customPreRefresh() override
   {
-    if (mAnyMovement)
-    {
+    if (mAnyMovement) {
       Eigen::Isometry3d old_tf = mHubo->getBodyNode(0)->getWorldTransform();
       Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
       Eigen::Vector3d forward = old_tf.linear().col(0);
@@ -792,8 +752,7 @@ public:
       double elevationStep = 0.2 * linearStep;
       double rotationalStep = 2.0 * constantsd::pi() / 180.0;
 
-      if (mAmplifyMovement)
-      {
+      if (mAmplifyMovement) {
         linearStep *= 2.0;
         elevationStep *= 2.0;
         rotationalStep *= 2.0;
@@ -871,11 +830,9 @@ public:
   {
     mRestConfig = mHubo->getPositions();
 
-    for (std::size_t i = 0; i < mHubo->getNumEndEffectors(); ++i)
-    {
+    for (std::size_t i = 0; i < mHubo->getNumEndEffectors(); ++i) {
       const InverseKinematicsPtr ik = mHubo->getEndEffector(i)->getIK();
-      if (ik)
-      {
+      if (ik) {
         mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
         mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
         mConstraintActive.push_back(false);
@@ -897,49 +854,39 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    if (nullptr == mHubo)
-    {
+    if (nullptr == mHubo) {
       return false;
     }
 
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType())
-    {
-      if (ea.getKey() == 'p')
-      {
+    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
+      if (ea.getKey() == 'p') {
         for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i)
           std::cout << mHubo->getDof(i)->getName() << ": "
                     << mHubo->getDof(i)->getPosition() << std::endl;
         return true;
       }
 
-      if (ea.getKey() == 't')
-      {
+      if (ea.getKey() == 't') {
         // Reset all the positions except for x, y, and yaw
-        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i)
-        {
+        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i) {
           if (i < 2 || 4 < i)
             mHubo->getDof(i)->setPosition(mRestConfig[i]);
         }
         return true;
       }
 
-      if ('1' <= ea.getKey() && ea.getKey() <= '9')
-      {
+      if ('1' <= ea.getKey() && ea.getKey() <= '9') {
         std::size_t index = ea.getKey() - '1';
-        if (index < mConstraintActive.size())
-        {
+        if (index < mConstraintActive.size()) {
           EndEffector* ee = mHubo->getEndEffector(mEndEffectorIndex[index]);
           const InverseKinematicsPtr& ik = ee->getIK();
-          if (ik && mConstraintActive[index])
-          {
+          if (ik && mConstraintActive[index]) {
             mConstraintActive[index] = false;
 
             ik->getErrorMethod().setBounds(mDefaultBounds[index]);
             ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
             mWorld->removeSimpleFrame(ik->getTarget());
-          }
-          else if (ik)
-          {
+          } else if (ik) {
             mConstraintActive[index] = true;
 
             // Use the standard default bounds instead of our custom default
@@ -952,15 +899,13 @@ public:
         return true;
       }
 
-      if ('x' == ea.getKey())
-      {
+      if ('x' == ea.getKey()) {
         EndEffector* ee = mHubo->getEndEffector("l_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      if ('c' == ea.getKey())
-      {
+      if ('c' == ea.getKey()) {
         EndEffector* ee = mHubo->getEndEffector("r_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
@@ -969,8 +914,7 @@ public:
       if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
         mTeleop->mAmplifyMovement = true;
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'W':
           mMoveComponents[TeleoperationWorld::MOVE_W] = true;
@@ -1005,8 +949,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':
@@ -1028,8 +971,7 @@ public:
         }
       }
 
-      if (mOptimizationKey == ea.getKey())
-      {
+      if (mOptimizationKey == ea.getKey()) {
         if (mPosture)
           mPosture->enforceIdealPosture = true;
 
@@ -1041,10 +983,8 @@ public:
       }
     }
 
-    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType())
-    {
-      if (ea.getKey() == mOptimizationKey)
-      {
+    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
+      if (ea.getKey() == mOptimizationKey) {
         if (mPosture)
           mPosture->enforceIdealPosture = false;
 
@@ -1058,8 +998,7 @@ public:
       if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
         mTeleop->mAmplifyMovement = false;
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'W':
           mMoveComponents[TeleoperationWorld::MOVE_W] = false;
@@ -1094,8 +1033,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':
@@ -1179,12 +1117,10 @@ SkeletonPtr createHubo()
   SkeletonPtr hubo
       = loader.parseSkeleton(DART_DATA_PATH "/urdf/drchubo/drchubo.urdf");
 
-  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
-  {
+  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     BodyNode* bn = hubo->getBodyNode(i);
     if (bn->getName().substr(0, 7) == "Body_LF"
-        || bn->getName().substr(0, 7) == "Body_RF")
-    {
+        || bn->getName().substr(0, 7) == "Body_RF") {
       bn->remove();
       --i;
     }
@@ -1402,8 +1338,7 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(hubo->getBodyNode(i), false, false);
 
-  for (std::size_t i = 0; i < hubo->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < hubo->getNumEndEffectors(); ++i) {
     EndEffector* ee = hubo->getEndEffector(i);
     if (!ee->getIK())
       continue;

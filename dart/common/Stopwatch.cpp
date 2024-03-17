@@ -53,8 +53,7 @@ double toc(bool print)
 //==============================================================================
 double tocS(bool print)
 {
-  if (!print)
-  {
+  if (!print) {
     return sw.elapsedS();
   }
 
@@ -68,8 +67,7 @@ double tocS(bool print)
 //==============================================================================
 double tocMS(bool print)
 {
-  if (!print)
-  {
+  if (!print) {
     return sw.elapsedMS();
   }
 
@@ -83,8 +81,7 @@ double tocMS(bool print)
 //==============================================================================
 double tocUS(bool print)
 {
-  if (!print)
-  {
+  if (!print) {
     return sw.elapsedUS();
   }
 
@@ -98,8 +95,7 @@ double tocUS(bool print)
 //==============================================================================
 double tocNS(bool print)
 {
-  if (!print)
-  {
+  if (!print) {
     return sw.elapsedNS();
   }
 

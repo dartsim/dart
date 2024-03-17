@@ -94,16 +94,12 @@ TEST(SdfParser, SDFJointProperties)
     EXPECT_NEAR(joint->getSpringStiffness(idx), 3, epsilon);
   };
 
-  for (auto& joint : skel->getJoints())
-  {
+  for (auto& joint : skel->getJoints()) {
     if (joint->getType() == PrismaticJoint::getStaticType()
         || joint->getType() == RevoluteJoint::getStaticType()
-        || joint->getType() == ScrewJoint::getStaticType())
-    {
+        || joint->getType() == ScrewJoint::getStaticType()) {
       testProperties(joint, 0);
-    }
-    else if (joint->getType() == UniversalJoint::getStaticType())
-    {
+    } else if (joint->getType() == UniversalJoint::getStaticType()) {
       testProperties(joint, 0);
       testProperties(joint, 1);
     }
@@ -128,8 +124,7 @@ TEST(SdfParser, ParsingSDFFiles)
   for (const auto& worldFile : worldFiles)
     worlds.push_back(SdfParser::readWorld(worldFile));
 
-  for (auto world : worlds)
-  {
+  for (auto world : worlds) {
     EXPECT_TRUE(nullptr != world);
 
     for (auto i = 0u; i < numSteps; ++i)
@@ -148,8 +143,7 @@ TEST(SdfParser, ParsingSDFFiles)
   for (const auto& skeletonFile : skeletonFiles)
     skeletons.push_back(SdfParser::readSkeleton(skeletonFile));
 
-  for (auto skeleton : skeletons)
-  {
+  for (auto skeleton : skeletons) {
     EXPECT_TRUE(nullptr != skeleton);
 
     world->addSkeleton(skeleton);

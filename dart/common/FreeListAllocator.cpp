@@ -54,20 +54,16 @@ FreeListAllocator::~FreeListAllocator()
 
   // Forcefully deallocate all the memory blocks if destructing this allocator
   // without deallocating individual memories allocated by this allocator.
-  if (mTotalAllocatedSize != 0)
-  {
+  if (mTotalAllocatedSize != 0) {
     MemoryBlockHeader* currBlock = mFirstMemoryBlock;
-    while (currBlock)
-    {
+    while (currBlock) {
       MemoryBlockHeader* currSubBlock = currBlock;
       MemoryBlockHeader* next = currBlock->mNext;
       size_t sizeToDeallocate = 0;
 
-      while (currSubBlock)
-      {
+      while (currSubBlock) {
         sizeToDeallocate += currSubBlock->mSize + sizeof(MemoryBlockHeader);
-        if (!currSubBlock->mIsNextContiguous)
-        {
+        if (!currSubBlock->mIsNextContiguous) {
           next = currSubBlock->mNext;
           break;
         }
@@ -90,8 +86,7 @@ FreeListAllocator::~FreeListAllocator()
 
   // Deallocate memory blocks
   MemoryBlockHeader* curr = mFirstMemoryBlock;
-  while (curr)
-  {
+  while (curr) {
     DART_ASSERT(!curr->mIsAllocated); // TODO(JS): This means some of pointers
     // are not deallocated
     MemoryBlockHeader* next = curr->mNext;
@@ -120,8 +115,7 @@ MemoryAllocator& FreeListAllocator::getBaseAllocator()
 void* FreeListAllocator::allocate(size_t bytes) noexcept
 {
   // Not allowed to allocate zero bytes
-  if (bytes == 0)
-  {
+  if (bytes == 0) {
     return nullptr;
   }
 
@@ -135,25 +129,21 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   MemoryBlockHeader* curr = mFirstMemoryBlock;
 
   // Use free block if available
-  if (mFreeBlock)
-  {
+  if (mFreeBlock) {
     // Ensure the free block is not in use
     DART_ASSERT(!mFreeBlock->mIsAllocated);
 
     // Use the free block if the requested size is equal to or smaller than
     // the free block
-    if (bytes <= mFreeBlock->mSize)
-    {
+    if (bytes <= mFreeBlock->mSize) {
       curr = mFreeBlock;
       mFreeBlock = nullptr;
     }
   }
 
   // Search for a memory block that is not used and has sufficient free space
-  while (curr)
-  {
-    if (!curr->mIsAllocated && bytes <= curr->mSize)
-    {
+  while (curr) {
+    if (!curr->mIsAllocated && bytes <= curr->mSize) {
       curr->split(bytes);
       break;
     }
@@ -162,11 +152,9 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   }
 
   // If failed to find an avaliable memory block, allocate a new memory block
-  if (curr == nullptr)
-  {
+  if (curr == nullptr) {
     // Allocate a sufficient size
-    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2))
-    {
+    if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
       return nullptr;
     }
 
@@ -184,8 +172,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   curr->mIsAllocated = true;
 
   // Set free block if the next block is free
-  if (curr->mNext != nullptr && !curr->mNext->mIsAllocated)
-  {
+  if (curr->mNext != nullptr && !curr->mNext->mIsAllocated) {
     mFreeBlock = curr->mNext;
   }
 
@@ -200,8 +187,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   DART_UNUSED(bytes, pointer);
 
   // Cannot deallocate nullptr or zero bytes
-  if (pointer == nullptr || bytes == 0)
-  {
+  if (pointer == nullptr || bytes == 0) {
     return;
   }
 
@@ -217,15 +203,13 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
   MemoryBlockHeader* curr = block;
 
   if (block->mPrev != nullptr && !block->mPrev->mIsAllocated
-      && block->mPrev->mIsNextContiguous)
-  {
+      && block->mPrev->mIsNextContiguous) {
     curr = block->mPrev;
     block->mPrev->merge(block);
   }
 
   if (curr->mNext != nullptr && !curr->mNext->mIsAllocated
-      && curr->mIsNextContiguous)
-  {
+      && curr->mIsNextContiguous) {
     curr->merge(curr->mNext);
   }
 
@@ -272,20 +256,17 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[FreeListAllocator]\n";
   }
   const std::string spaces(indent, ' ');
-  if (indent != 0)
-  {
+  if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
   os << spaces << "reserved_size: " << mTotalAllocatedBlockSize << "\n";
   os << spaces << "memory_blocks:\n";
   auto curr = mFirstMemoryBlock;
-  while (curr)
-  {
+  while (curr) {
     os << spaces << "- block_addr: " << curr << "\n";
     os << spaces << "  size: " << curr->mSize << "\n";
     os << spaces << "  prev: " << curr->mPrev << "\n";
@@ -312,8 +293,7 @@ FreeListAllocator::MemoryBlockHeader::MemoryBlockHeader(
     mIsAllocated(false),
     mIsNextContiguous(isNextContiguous)
 {
-  if (prev)
-  {
+  if (prev) {
     prev->mNext = this;
   }
 }
@@ -342,8 +322,7 @@ void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
   DART_ASSERT(sizeToSplit <= mSize);
   DART_ASSERT(!mIsAllocated);
 
-  if (sizeToSplit + sizeof(MemoryBlockHeader) >= mSize)
-  {
+  if (sizeToSplit + sizeof(MemoryBlockHeader) >= mSize) {
     // TODO(JS): Treat this as en error?
     return;
   }
@@ -359,8 +338,7 @@ void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
           mNext,
           mIsNextContiguous);
   mNext = new_block;
-  if (new_block->mNext)
-  {
+  if (new_block->mNext) {
     new_block->mNext->mPrev = new_block;
   }
   DART_ASSERT(mNext != this);
@@ -383,8 +361,7 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 
   mSize += other->mSize + sizeof(MemoryBlockHeader);
   mNext = other->mNext;
-  if (other->mNext)
-  {
+  if (other->mNext) {
     other->mNext->mPrev = this;
   }
   mIsNextContiguous = other->mIsNextContiguous;
@@ -398,13 +375,11 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 #ifndef NDEBUG
 bool FreeListAllocator::MemoryBlockHeader::isValid() const
 {
-  if (mPrev != nullptr && mPrev->mNext != this)
-  {
+  if (mPrev != nullptr && mPrev->mNext != this) {
     return false;
   }
 
-  if (mNext != nullptr && mNext->mPrev != this)
-  {
+  if (mNext != nullptr && mNext->mPrev != this) {
     return false;
   }
 

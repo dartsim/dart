@@ -114,8 +114,7 @@ public:
   /// Set the Node for this NodePtr
   void set(NodeT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mBodyNodePtr = nullptr;
       mDestructor = nullptr;
       mNode = nullptr;
@@ -222,8 +221,7 @@ public:
   /// Set the Node for this WeakNodePtr
   void set(NodeT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mNode = nullptr;
       mWeakDestructor.reset();
       mWeakBodyNodePtr = nullptr;

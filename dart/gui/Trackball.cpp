@@ -93,8 +93,7 @@ void Trackball::draw(int _winWidth, int _winHeight)
   glLineWidth(4.0);
   glColor3f(1.0f, 1.0f, 0.0f);
   glBegin(GL_LINE_LOOP);
-  for (int i = 0; i < 360; i += 4)
-  {
+  for (int i = 0; i < 360; i += 4) {
     double theta = i / 180.0 * pi;
     double x = mRadius * cos(theta);
     double y = mRadius * sin(theta);
@@ -159,15 +158,12 @@ Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const
 
   mag = pointOnSphere(0) * pointOnSphere(0)
         + pointOnSphere(1) * pointOnSphere(1);
-  if (mag > 1.0)
-  {
+  if (mag > 1.0) {
     double scale = 1.0 / sqrt(mag);
     pointOnSphere(0) *= scale;
     pointOnSphere(1) *= scale;
     pointOnSphere(2) = 0.0;
-  }
-  else
-  {
+  } else {
     pointOnSphere(2) = sqrt(1 - mag);
   }
 

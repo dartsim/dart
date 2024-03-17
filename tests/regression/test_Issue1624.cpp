@@ -57,8 +57,7 @@ TEST(Issue1624, ContactGrouping)
   const double dt = 0.001;
   world->setTimeStep(dt);
   std::size_t maxSteps = 1000;
-  for (std::size_t i = 0; i < maxSteps; i++)
-  {
+  for (std::size_t i = 0; i < maxSteps; i++) {
     world->step();
   }
 

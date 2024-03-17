@@ -93,8 +93,7 @@ const Eigen::Isometry3d& Frame::getWorldTransform() const
   if (mAmWorld)
     return mWorldTransform;
 
-  if (mNeedTransformUpdate)
-  {
+  if (mNeedTransformUpdate) {
     mWorldTransform
         = mParentFrame->getWorldTransform() * getRelativeTransform();
     mNeedTransformUpdate = false;
@@ -140,8 +139,7 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
   if (mAmWorld)
     return mVelocity;
 
-  if (mNeedVelocityUpdate)
-  {
+  if (mNeedVelocityUpdate) {
     mVelocity
         = math::AdInvT(
               getRelativeTransform(), getParentFrame()->getSpatialVelocity())
@@ -160,8 +158,7 @@ Eigen::Vector6d Frame::getSpatialVelocity(
   if (this == _relativeTo)
     return Eigen::Vector6d::Zero();
 
-  if (_relativeTo->isWorld())
-  {
+  if (_relativeTo->isWorld()) {
     if (this == _inCoordinatesOf)
       return getSpatialVelocity();
 
@@ -201,8 +198,7 @@ Eigen::Vector6d Frame::getSpatialVelocity(
   Eigen::Vector6d v = getSpatialVelocity();
   v.tail<3>().noalias() += v.head<3>().cross(_offset);
 
-  if (_relativeTo->isWorld())
-  {
+  if (_relativeTo->isWorld()) {
     if (this == _inCoordinatesOf)
       return v;
 
@@ -250,8 +246,7 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
   if (mAmWorld)
     return mAcceleration;
 
-  if (mNeedAccelerationUpdate)
-  {
+  if (mNeedAccelerationUpdate) {
     mAcceleration = math::AdInvT(
                         getRelativeTransform(),
                         getParentFrame()->getSpatialAcceleration())
@@ -278,8 +273,7 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
   if (this == _relativeTo)
     return Eigen::Vector6d::Zero();
 
-  if (_relativeTo->isWorld())
-  {
+  if (_relativeTo->isWorld()) {
     if (this == _inCoordinatesOf)
       return getSpatialAcceleration();
 
@@ -326,8 +320,7 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
   Eigen::Vector6d a = getSpatialAcceleration();
   a.tail<3>().noalias() += a.head<3>().cross(_offset);
 
-  if (_relativeTo->isWorld())
-  {
+  if (_relativeTo->isWorld()) {
     if (this == _inCoordinatesOf)
       return a;
 
@@ -564,10 +557,8 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
   if (mParentFrame == _newParentFrame)
     return;
 
-  if (_newParentFrame)
-  {
-    if (_newParentFrame->descendsFrom(this))
-    {
+  if (_newParentFrame) {
+    if (_newParentFrame->descendsFrom(this)) {
       if (!(this->isWorld() && _newParentFrame->isWorld()))
       // We make an exception here for the World Frame, because it's
       // special/unique
@@ -581,15 +572,13 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  if (mParentFrame && !mParentFrame->isWorld())
-  {
+  if (mParentFrame && !mParentFrame->isWorld()) {
     FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
     if (it != mParentFrame->mChildFrames.end())
       mParentFrame->mChildFrames.erase(it);
   }
 
-  if (nullptr == _newParentFrame)
-  {
+  if (nullptr == _newParentFrame) {
     Entity::changeParentFrame(_newParentFrame);
     return;
   }

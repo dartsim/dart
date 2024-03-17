@@ -62,8 +62,7 @@ public:
   {
     int dofs = mIdeal.size();
     if (mLower.size() != dofs || mWeights.size() != dofs
-        || mUpper.size() != dofs)
-    {
+        || mUpper.size() != dofs) {
       dterr << "[RelaxedPose::RelaxedPose] Dimension mismatch:\n"
             << "  ideal:   " << mIdeal.size() << "\n"
             << "  lower:   " << mLower.size() << "\n"
@@ -94,22 +93,17 @@ public:
   {
     mResultVector.setZero();
 
-    if (enforceIdealPosture)
-    {
+    if (enforceIdealPosture) {
       // Try to get the robot into the best possible posture
-      for (int i = 0; i < _x.size(); ++i)
-      {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
-    }
-    else
-    {
+    } else {
       // Only adjust the posture if it is really bad
-      for (int i = 0; i < _x.size(); ++i)
-      {
+      for (int i = 0; i < _x.size(); ++i) {
         if (mIdeal.size() <= i)
           break;
 
@@ -169,10 +163,8 @@ public:
 
     mAnyMovement = false;
 
-    for (bool move : mMoveComponents)
-    {
-      if (move)
-      {
+    for (bool move : mMoveComponents) {
+      if (move) {
         mAnyMovement = true;
         break;
       }
@@ -181,8 +173,7 @@ public:
 
   void customPreRefresh() override
   {
-    if (mAnyMovement)
-    {
+    if (mAnyMovement) {
       Eigen::Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
       Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
       Eigen::Vector3d forward = old_tf.linear().col(0);
@@ -242,8 +233,7 @@ public:
     else
       iter = 0;
 
-    if (iter == 1000)
-    {
+    if (iter == 1000) {
       std::cout << "Failing!" << std::endl;
     }
   }
@@ -280,8 +270,7 @@ public:
     mRestConfig = mAtlas->getPositions();
 
     mLegs.reserve(12);
-    for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
-    {
+    for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
       if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_")
         mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
     }
@@ -291,8 +280,7 @@ public:
     mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
 
     mAtlas->eachEndEffector([&](EndEffector* ee) {
-      if (const InverseKinematicsPtr ik = ee->getIK())
-      {
+      if (const InverseKinematicsPtr ik = ee->getIK()) {
         mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
         mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
         mConstraintActive.push_back(false);
@@ -314,15 +302,12 @@ public:
   virtual bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    if (nullptr == mAtlas)
-    {
+    if (nullptr == mAtlas) {
       return false;
     }
 
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType())
-    {
-      if (ea.getKey() == 'p')
-      {
+    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
+      if (ea.getKey() == 'p') {
         for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
           std::cout << mAtlas->getDof(i)->getName() << ": "
                     << mAtlas->getDof(i)->getPosition() << std::endl;
@@ -330,34 +315,27 @@ public:
         return true;
       }
 
-      if (ea.getKey() == 't')
-      {
+      if (ea.getKey() == 't') {
         // Reset all the positions except for x, y, and yaw
-        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
-        {
+        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
           if (i < 2 || 4 < i)
             mAtlas->getDof(i)->setPosition(mRestConfig[i]);
         }
         return true;
       }
 
-      if ('1' <= ea.getKey() && ea.getKey() <= '9')
-      {
+      if ('1' <= ea.getKey() && ea.getKey() <= '9') {
         std::size_t index = ea.getKey() - '1';
-        if (index < mConstraintActive.size())
-        {
+        if (index < mConstraintActive.size()) {
           EndEffector* ee = mAtlas->getEndEffector(mEndEffectorIndex[index]);
           const InverseKinematicsPtr& ik = ee->getIK();
-          if (ik && mConstraintActive[index])
-          {
+          if (ik && mConstraintActive[index]) {
             mConstraintActive[index] = false;
 
             ik->getErrorMethod().setBounds(mDefaultBounds[index]);
             ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
             mWorld->removeSimpleFrame(ik->getTarget());
-          }
-          else if (ik)
-          {
+          } else if (ik) {
             mConstraintActive[index] = true;
 
             // Use the standard default bounds instead of our custom default
@@ -370,22 +348,19 @@ public:
         return true;
       }
 
-      if ('x' == ea.getKey())
-      {
+      if ('x' == ea.getKey()) {
         EndEffector* ee = mAtlas->getEndEffector("l_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      if ('c' == ea.getKey())
-      {
+      if ('c' == ea.getKey()) {
         EndEffector* ee = mAtlas->getEndEffector("r_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
           mMoveComponents[TeleoperationWorld::MOVE_W] = true;
           break;
@@ -412,8 +387,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':
@@ -427,8 +401,7 @@ public:
         }
       }
 
-      if (mOptimizationKey == ea.getKey())
-      {
+      if (mOptimizationKey == ea.getKey()) {
         if (mPosture)
           mPosture->enforceIdealPosture = true;
 
@@ -440,10 +413,8 @@ public:
       }
     }
 
-    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType())
-    {
-      if (ea.getKey() == mOptimizationKey)
-      {
+    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
+      if (ea.getKey() == mOptimizationKey) {
         if (mPosture)
           mPosture->enforceIdealPosture = false;
 
@@ -454,8 +425,7 @@ public:
         return true;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
           mMoveComponents[TeleoperationWorld::MOVE_W] = false;
           break;
@@ -482,8 +452,7 @@ public:
           break;
       }
 
-      switch (ea.getKey())
-      {
+      switch (ea.getKey()) {
         case 'w':
         case 'a':
         case 's':

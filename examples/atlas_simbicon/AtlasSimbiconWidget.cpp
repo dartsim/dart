@@ -64,24 +64,20 @@ void AtlasSimbiconWidget::render()
   if (!ImGui::Begin(
           "Atlas Control",
           nullptr,
-          ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar))
-  {
+          ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
     // Early out if the window is collapsed, as an optimization.
     ImGui::End();
     return;
   }
 
   // Menu
-  if (ImGui::BeginMenuBar())
-  {
-    if (ImGui::BeginMenu("Menu"))
-    {
+  if (ImGui::BeginMenuBar()) {
+    if (ImGui::BeginMenu("Menu")) {
       if (ImGui::MenuItem("Exit"))
         mViewer->setDone(true);
       ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Help"))
-    {
+    if (ImGui::BeginMenu("Help")) {
       if (ImGui::MenuItem("About DART"))
         mViewer->showAbout();
       ImGui::EndMenu();
@@ -92,8 +88,7 @@ void AtlasSimbiconWidget::render()
   ImGui::Text("Altas robot controlled by Simbicon");
   ImGui::Spacing();
 
-  if (ImGui::CollapsingHeader("Help"))
-  {
+  if (ImGui::CollapsingHeader("Help")) {
     ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
     ImGui::Text("User Guid:\n");
     ImGui::Text("%s", mViewer->getInstructions().c_str());
@@ -106,11 +101,9 @@ void AtlasSimbiconWidget::render()
     ImGui::PopTextWrapPos();
   }
 
-  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
     int e = mViewer->isSimulating() ? 0 : 1;
-    if (mViewer->isAllowingSimulation())
-    {
+    if (mViewer->isAllowingSimulation()) {
       if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
         mViewer->simulate(true);
       ImGui::SameLine();
@@ -119,8 +112,8 @@ void AtlasSimbiconWidget::render()
     }
   }
 
-  if (ImGui::CollapsingHeader("World Options", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+  if (ImGui::CollapsingHeader(
+          "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
     // Gravity
     ImGui::SliderFloat("Gravity Acc.", &mGuiGravityAcc, 5.0, 20.0, "-%.2f");
     setGravity(mGuiGravityAcc);
@@ -129,15 +122,13 @@ void AtlasSimbiconWidget::render()
 
     // Headlights
     mGuiHeadlights = mViewer->checkHeadlights();
-    if (ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights))
-    {
+    if (ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights)) {
       mViewer->switchHeadlights(mGuiHeadlights);
     }
 
     // Shadow
     mShadow = mNode->isShadowed();
-    if (ImGui::Checkbox("Shadow On/Off", &mShadow))
-    {
+    if (ImGui::Checkbox("Shadow On/Off", &mShadow)) {
       if (mShadow)
         mNode->showShadow();
       else
@@ -145,8 +136,7 @@ void AtlasSimbiconWidget::render()
     }
 
     // Depth
-    if (ImGui::Checkbox("Depth mode", &mDepthMode))
-    {
+    if (ImGui::Checkbox("Depth mode", &mDepthMode)) {
       if (mDepthMode)
         mViewer->setCameraMode(dart::gui::osg::CameraMode::DEPTH);
       else
@@ -155,8 +145,7 @@ void AtlasSimbiconWidget::render()
   }
 
   if (ImGui::CollapsingHeader(
-          "Atlas Simbicon Options", ImGuiTreeNodeFlags_DefaultOpen))
-  {
+          "Atlas Simbicon Options", ImGuiTreeNodeFlags_DefaultOpen)) {
     const auto reset = ImGui::Button("Reset Atlas");
     if (reset)
       mNode->reset();
@@ -168,10 +157,8 @@ void AtlasSimbiconWidget::render()
     ImGui::RadioButton("Short-Stride Walking", &mGuiControlMode, 1);
     ImGui::RadioButton("Normal-Stride Walking", &mGuiControlMode, 2);
 
-    if (mGuiControlMode != mControlMode)
-    {
-      switch (mGuiControlMode)
-      {
+    if (mGuiControlMode != mControlMode) {
+      switch (mGuiControlMode) {
         case 0:
           mNode->switchToNoControl();
           break;

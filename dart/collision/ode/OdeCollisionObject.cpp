@@ -84,8 +84,7 @@ OdeCollisionObject::OdeCollisionObject(
   const auto geomId = mOdeGeom->getOdeGeomId();
   assert(geomId);
 
-  if (mOdeGeom->isPlaceable())
-  {
+  if (mOdeGeom->isPlaceable()) {
     // if the geometry already has a pose, it is to be considered
     // a constant relative pose to the body.
     // Get the geometry pose to ensure this offset is set correctly.
@@ -185,56 +184,39 @@ detail::OdeGeom* createOdeGeom(
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
 
-  if (const auto sphere = shape->as<SphereShape>())
-  {
+  if (const auto sphere = shape->as<SphereShape>()) {
     const auto radius = sphere->getRadius();
 
     geom = new detail::OdeSphere(collObj, radius);
-  }
-  else if (const auto box = shape->as<BoxShape>())
-  {
+  } else if (const auto box = shape->as<BoxShape>()) {
     const Eigen::Vector3d& size = box->getSize();
 
     geom = new detail::OdeBox(collObj, size);
-  }
-  else if (const auto capsule = shape->as<CapsuleShape>())
-  {
+  } else if (const auto capsule = shape->as<CapsuleShape>()) {
     const auto radius = capsule->getRadius();
     const auto height = capsule->getHeight();
 
     geom = new detail::OdeCapsule(collObj, radius, height);
-  }
-  else if (const auto cylinder = shape->as<CylinderShape>())
-  {
+  } else if (const auto cylinder = shape->as<CylinderShape>()) {
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
     geom = new detail::OdeCylinder(collObj, radius, height);
-  }
-  else if (const auto plane = shape->as<PlaneShape>())
-  {
+  } else if (const auto plane = shape->as<PlaneShape>()) {
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
     geom = new detail::OdePlane(collObj, normal, offset);
-  }
-  else if (const auto shapeMesh = shape->as<MeshShape>())
-  {
+  } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const Eigen::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
-  }
-  else if (const auto heightMap = shape->as<HeightmapShapef>())
-  {
+  } else if (const auto heightMap = shape->as<HeightmapShapef>()) {
     geom = new detail::OdeHeightmapf(collObj, heightMap);
-  }
-  else if (const auto heightMap = shape->as<HeightmapShaped>())
-  {
+  } else if (const auto heightMap = shape->as<HeightmapShaped>()) {
     geom = new detail::OdeHeightmapd(collObj, heightMap);
-  }
-  else
-  {
+  } else {
     dterr << "[OdeCollisionDetector] Attempting to create an unsupported shape "
           << "type '" << shape->getType() << "'. Creating a sphere with 0.01 "
           << "radius instead.\n";

@@ -61,8 +61,7 @@ void update(entt::registry& registry)
                auto& /*vel*/) { /* ... */ });
 
   // use a range-for
-  for (auto [entity, pos, vel] : view.each())
-  {
+  for (auto [entity, pos, vel] : view.each()) {
     (void)entity;
     (void)pos;
     (void)vel;
@@ -70,8 +69,7 @@ void update(entt::registry& registry)
   }
 
   // use forward iterators and get only the components of interest
-  for (auto entity : view)
-  {
+  for (auto entity : view) {
     auto& vel = view.get<velocity>(entity);
     (void)vel;
     // ...
@@ -84,12 +82,10 @@ GTEST_TEST(EcsTest, Basics)
 {
   entt::registry registry;
 
-  for (auto i = 0u; i < 10u; ++i)
-  {
+  for (auto i = 0u; i < 10u; ++i) {
     const auto entity = registry.create();
     registry.emplace<position>(entity, i * 1.f, i * 1.f);
-    if (i % 2 == 0)
-    {
+    if (i % 2 == 0) {
       registry.emplace<velocity>(entity, i * .1f, i * .1f);
     }
   }

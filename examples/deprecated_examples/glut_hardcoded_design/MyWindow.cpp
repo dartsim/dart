@@ -51,12 +51,10 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
   static bool inverse = false;
   static const double dDOF = 0.1;
-  switch (_key)
-  {
+  switch (_key) {
     case '-': {
       inverse = !inverse;
-    }
-    break;
+    } break;
     case '1':
     case '2':
     case '3': {
@@ -67,8 +65,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose()
                 << std::endl;
       glutPostRedisplay();
-    }
-    break;
+    } break;
     default:
       Win3D::keyboard(_key, _x, _y);
   }

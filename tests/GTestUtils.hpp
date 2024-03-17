@@ -41,23 +41,20 @@
 
 //==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
-  if (!::dart::test::equals(vec1, vec2))                                       \
-  {                                                                            \
+  if (!::dart::test::equals(vec1, vec2)) {                                     \
     std::stringstream ss;                                                      \
     ss << "Expected equality of these vectors:\n"                              \
        << "  Expected: " << vec1.transpose() << "\n"                           \
        << "  Actual  : " << vec2.transpose() << "\n";                          \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 // do {} while (0) is to require semicolon after the macro
 
 //==============================================================================
 #define EXPECT_MATRIX_DOUBLE_EQ(mat1, mat2)                                    \
-  if (!::dart::test::equals(mat1, mat2))                                       \
-  {                                                                            \
+  if (!::dart::test::equals(mat1, mat2)) {                                     \
     std::stringstream ss;                                                      \
     ss << "Expected equality of these matrices:\n"                             \
        << "  Expected:\n"                                                      \
@@ -66,14 +63,12 @@
        << "  " << mat2.matrix() << "\n";                                       \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_ROTATION_DOUBLE_EQ(rot1, rot2)                                  \
-  if (!::dart::test::rotationEquals(rot1, rot2))                               \
-  {                                                                            \
+  if (!::dart::test::rotationEquals(rot1, rot2)) {                             \
     std::stringstream ss;                                                      \
     ss << "Expected equality of these rotations:\n"                            \
        << "  Expected:\n"                                                      \
@@ -82,14 +77,12 @@
        << "  " << rot2 << "\n";                                                \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_TRANSFORM_DOUBLE_EQ(tf1, tf2)                                   \
-  if (!::dart::test::equals(tf1, tf2))                                         \
-  {                                                                            \
+  if (!::dart::test::equals(tf1, tf2)) {                                       \
     std::stringstream ss;                                                      \
     ss << "Expected equality of these transforms:\n"                           \
        << "  Expected:\n"                                                      \
@@ -98,14 +91,12 @@
        << "  " << tf2.matrix() << "\n";                                        \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_VECTOR_NEAR(vec1, vec2, abs_error)                              \
-  if (!::dart::test::equals(vec1, vec2, abs_error))                            \
-  {                                                                            \
+  if (!::dart::test::equals(vec1, vec2, abs_error)) {                          \
     std::stringstream ss;                                                      \
     ss << "The element-wise difference between:\n"                             \
        << vec1.transpose() << "\n"                                             \
@@ -114,14 +105,12 @@
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_MATRIX_NEAR(mat1, mat2, abs_error)                              \
-  if (!::dart::test::equals(mat1, mat2, abs_error))                            \
-  {                                                                            \
+  if (!::dart::test::equals(mat1, mat2, abs_error)) {                          \
     std::stringstream ss;                                                      \
     ss << "The element-wise difference between:\n"                             \
        << mat1.matrix() << "\n"                                                \
@@ -130,14 +119,12 @@
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_ROTATION_NEAR(rot1, rot2, abs_error)                            \
-  if (!::dart::test::rotationEquals(rot1, rot2, abs_error))                    \
-  {                                                                            \
+  if (!::dart::test::rotationEquals(rot1, rot2, abs_error)) {                  \
     std::stringstream ss;                                                      \
     ss << "The distance between:\n"                                            \
        << rot1 << "\n"                                                         \
@@ -146,14 +133,12 @@
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 //==============================================================================
 #define EXPECT_TRANSFORM_NEAR(tf1, tf2, abs_error)                             \
-  if (!::dart::test::equals(tf1, tf2, abs_error))                              \
-  {                                                                            \
+  if (!::dart::test::equals(tf1, tf2, abs_error)) {                            \
     std::stringstream ss;                                                      \
     ss << "The distance between:\n"                                            \
        << tf1.matrix() << "\n"                                                 \
@@ -162,8 +147,7 @@
        << "exceeds " << abs_error << ".\n";                                    \
     GTEST_NONFATAL_FAILURE_(ss.str().c_str());                                 \
   }                                                                            \
-  do                                                                           \
-  {                                                                            \
+  do {                                                                         \
   } while (0)
 
 namespace dart {
@@ -186,22 +170,15 @@ struct EqualsImpl
       return false;
 
     // Check each index
-    for (std::size_t i = 0; i < m1; i++)
-    {
-      for (std::size_t j = 0; j < n1; j++)
-      {
-        if (std::isnan(expected(i, j)) ^ std::isnan(actual(i, j)))
-        {
+    for (std::size_t i = 0; i < m1; i++) {
+      for (std::size_t j = 0; j < n1; j++) {
+        if (std::isnan(expected(i, j)) ^ std::isnan(actual(i, j))) {
           return false;
-        }
-        else if (std::abs(expected(i, j)) > 1)
-        {
+        } else if (std::abs(expected(i, j)) > 1) {
           // Test relative error for values that are larger than 1
           if (std::abs((expected(i, j) - actual(i, j)) / expected(i, j)) > tol)
             return false;
-        }
-        else if (std::abs(expected(i, j) - actual(i, j)) > tol)
-        {
+        } else if (std::abs(expected(i, j) - actual(i, j)) > tol) {
           return false;
         }
       }
@@ -233,23 +210,16 @@ struct EqualsImpl<
       return false;
 
     // Check each index
-    for (std::size_t i = 0; i < m1; i++)
-    {
-      for (std::size_t j = 0; j < n1; j++)
-      {
+    for (std::size_t i = 0; i < m1; i++) {
+      for (std::size_t j = 0; j < n1; j++) {
         if (std::isnan(static_cast<double>(expected(i, j)))
-            ^ std::isnan(static_cast<double>(actual(i, j))))
-        {
+            ^ std::isnan(static_cast<double>(actual(i, j)))) {
           return false;
-        }
-        else if (std::abs(expected(i, j)) > 1)
-        {
+        } else if (std::abs(expected(i, j)) > 1) {
           // Test relative error for values that are larger than 1
           if (std::abs((expected(i, j) - actual(i, j)) / expected(i, j)) > tol)
             return false;
-        }
-        else if (std::abs(expected(i, j) - actual(i, j)) > tol)
-        {
+        } else if (std::abs(expected(i, j) - actual(i, j)) > tol) {
           return false;
         }
       }

@@ -50,11 +50,9 @@ void InputHandler::initialize()
 {
   mRestConfig = mWam->getPositions();
 
-  for (std::size_t i = 0; i < mWam->getNumEndEffectors(); ++i)
-  {
+  for (std::size_t i = 0; i < mWam->getNumEndEffectors(); ++i) {
     const InverseKinematicsPtr ik = mWam->getEndEffector(i)->getIK();
-    if (ik)
-    {
+    if (ik) {
       mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
       mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
       mConstraintActive.push_back(false);
@@ -70,39 +68,31 @@ bool InputHandler::handle(
   if (!mWam)
     return false;
 
-  if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType())
-  {
-    if (ea.getKey() == 'p' || ea.getKey() == 'P')
-    {
+  if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
+    if (ea.getKey() == 'p' || ea.getKey() == 'P') {
       for (std::size_t i = 0; i < mWam->getNumDofs(); ++i)
         std::cout << mWam->getDof(i)->getName() << ": "
                   << mWam->getDof(i)->getPosition() << std::endl;
       return true;
     }
 
-    if (ea.getKey() == 't' || ea.getKey() == 'T')
-    {
+    if (ea.getKey() == 't' || ea.getKey() == 'T') {
       mWam->setPositions(mRestConfig);
       return true;
     }
 
-    if ('1' <= ea.getKey() && ea.getKey() <= '9')
-    {
+    if ('1' <= ea.getKey() && ea.getKey() <= '9') {
       std::size_t index = ea.getKey() - '1';
-      if (index < mConstraintActive.size())
-      {
+      if (index < mConstraintActive.size()) {
         EndEffector* ee = mWam->getEndEffector(mEndEffectorIndex[index]);
         const InverseKinematicsPtr& ik = ee->getIK();
-        if (ik && mConstraintActive[index])
-        {
+        if (ik && mConstraintActive[index]) {
           mConstraintActive[index] = false;
 
           ik->getErrorMethod().setBounds(mDefaultBounds[index]);
           ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
           mWorld->removeSimpleFrame(ik->getTarget());
-        }
-        else if (ik)
-        {
+        } else if (ik) {
           mConstraintActive[index] = true;
 
           // Use the standard default bounds instead of our custom default

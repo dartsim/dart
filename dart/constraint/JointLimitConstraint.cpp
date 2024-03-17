@@ -86,8 +86,7 @@ const std::string& JointLimitConstraint::getStaticType()
 void JointLimitConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range
-  if (allowance < 0.0)
-  {
+  if (allowance < 0.0) {
     dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -107,14 +106,12 @@ double JointLimitConstraint::getErrorAllowance()
 void JointLimitConstraint::setErrorReductionParameter(double erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (erp < 0.0)
-  {
+  if (erp < 0.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (erp > 1.0)
-  {
+  if (erp > 1.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
@@ -133,8 +130,7 @@ double JointLimitConstraint::getErrorReductionParameter()
 void JointLimitConstraint::setMaxErrorReductionVelocity(double erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (erv < 0.0)
-  {
+  if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity[" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
@@ -154,8 +150,7 @@ double JointLimitConstraint::getMaxErrorReductionVelocity()
 void JointLimitConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9)
-  {
+  if (cfm < 1e-9) {
     dtwarn << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
@@ -188,22 +183,17 @@ void JointLimitConstraint::update()
   const Eigen::VectorXd velocityLowerLimits = mJoint->getVelocityLowerLimits();
   const Eigen::VectorXd velocityUpperLimits = mJoint->getVelocityUpperLimits();
 
-  for (int i = 0; i < dof; ++i)
-  {
+  for (int i = 0; i < dof; ++i) {
     // Check lower position bound
     mViolation[i] = positions[i] - positionLowerLimits[i];
-    if (mViolation[i] < 0.0)
-    {
+    if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -velocities[i];
       mLowerBound[i] = 0.0;
       mUpperBound[i] = static_cast<double>(dInfinity);
 
-      if (mIsPositionLimitViolated[i])
-      {
+      if (mIsPositionLimitViolated[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mIsPositionLimitViolated[i] = true;
         mLifeTime[i] = 0;
       }
@@ -214,18 +204,14 @@ void JointLimitConstraint::update()
 
     // Check upper position bound
     mViolation[i] = positions[i] - positionUpperLimits[i];
-    if (mViolation[i] > 0.0)
-    {
+    if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -velocities[i];
       mLowerBound[i] = -static_cast<double>(dInfinity);
       mUpperBound[i] = 0.0;
 
-      if (mIsPositionLimitViolated[i])
-      {
+      if (mIsPositionLimitViolated[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mIsPositionLimitViolated[i] = true;
         mLifeTime[i] = 0;
       }
@@ -238,18 +224,14 @@ void JointLimitConstraint::update()
 
     // Check lower velocity bound
     mViolation[i] = velocities[i] - velocityLowerLimits[i];
-    if (mViolation[i] < 0.0)
-    {
+    if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -mViolation[i];
       mLowerBound[i] = 0.0;
       mUpperBound[i] = static_cast<double>(dInfinity);
 
-      if (mIsVelocityLimitViolated[i])
-      {
+      if (mIsVelocityLimitViolated[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mIsVelocityLimitViolated[i] = true;
         mLifeTime[i] = 0;
       }
@@ -260,18 +242,14 @@ void JointLimitConstraint::update()
 
     // Check upper velocity bound
     mViolation[i] = velocities[i] - velocityUpperLimits[i];
-    if (mViolation[i] > 0.0)
-    {
+    if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -mViolation[i];
       mLowerBound[i] = -static_cast<double>(dInfinity);
       mUpperBound[i] = 0.0;
 
-      if (mIsVelocityLimitViolated[i])
-      {
+      if (mIsVelocityLimitViolated[i]) {
         ++(mLifeTime[i]);
-      }
-      else
-      {
+      } else {
         mIsVelocityLimitViolated[i] = true;
         mLifeTime[i] = 0;
       }
@@ -289,10 +267,8 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 {
   std::size_t index = 0;
   const int dof = static_cast<int>(mJoint->getNumDofs());
-  for (int i = 0; i < dof; ++i)
-  {
-    if (mIsPositionLimitViolated[i])
-    {
+  for (int i = 0; i < dof; ++i) {
+    if (mIsPositionLimitViolated[i]) {
       assert(lcp->w[index] == 0.0);
 
       double bouncingVel = -mViolation[i];
@@ -313,8 +289,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
       lcp->hi[index] = mUpperBound[i];
 
 #ifndef NDEBUG // Debug mode
-      if (lcp->lo[index] > lcp->hi[index])
-      {
+      if (lcp->lo[index] > lcp->hi[index]) {
         std::cout << "dim: " << mDim << std::endl;
         std::cout << "lb: " << mLowerBound[i] << std::endl;
         std::cout << "ub: " << mUpperBound[i] << std::endl;
@@ -333,8 +308,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
       index++;
     }
 
-    if (mIsVelocityLimitViolated[i])
-    {
+    if (mIsVelocityLimitViolated[i]) {
       assert(lcp->w[index] == 0.0);
 
       lcp->b[index] = mNegativeVel[i];
@@ -362,16 +336,13 @@ void JointLimitConstraint::applyUnitImpulse(std::size_t index)
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (!mIsPositionLimitViolated[static_cast<int>(i)]
-        && !mIsVelocityLimitViolated[static_cast<int>(i)])
-    {
+        && !mIsVelocityLimitViolated[static_cast<int>(i)]) {
       continue;
     }
 
-    if (localIndex == index)
-    {
+    if (localIndex == index) {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
@@ -392,11 +363,9 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (!mIsPositionLimitViolated[static_cast<int>(i)]
-        && !mIsVelocityLimitViolated[static_cast<int>(i)])
-    {
+        && !mIsVelocityLimitViolated[static_cast<int>(i)]) {
       continue;
     }
 
@@ -410,8 +379,7 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (withCfm)
-  {
+  if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
@@ -436,11 +404,9 @@ void JointLimitConstraint::applyImpulse(double* lambda)
 {
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
-  for (std::size_t i = 0; i < dof; ++i)
-  {
+  for (std::size_t i = 0; i < dof; ++i) {
     if (!mIsPositionLimitViolated[static_cast<int>(i)]
-        && !mIsVelocityLimitViolated[static_cast<int>(i)])
-    {
+        && !mIsVelocityLimitViolated[static_cast<int>(i)]) {
       continue;
     }
 

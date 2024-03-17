@@ -105,8 +105,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (hasSkeleton(skeleton))
-  {
+  if (hasSkeleton(skeleton)) {
     dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
            << "skeleton '" << skeleton->getName()
            << "', which already exists in the ConstraintSolver.\n";
@@ -139,8 +138,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!hasSkeleton(skeleton))
-  {
+  if (!hasSkeleton(skeleton)) {
     dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
            << "skeleton '" << skeleton->getName()
            << "', which doesn't exist in the ConstraintSolver.\n";
@@ -172,8 +170,7 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 {
   assert(constraint);
 
-  if (containConstraint(constraint))
-  {
+  if (containConstraint(constraint)) {
     dtwarn << "Constraint solver already contains constraint that you are "
            << "trying to add." << std::endl;
     return;
@@ -187,8 +184,7 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
   assert(constraint);
 
-  if (!containConstraint(constraint))
-  {
+  if (!containConstraint(constraint)) {
     dtwarn << "Constraint solver deos not contain constraint that you are "
            << "trying to remove." << std::endl;
     return;
@@ -274,8 +270,7 @@ void ConstraintSolver::setCollisionDetector(
 void ConstraintSolver::setCollisionDetector(
     const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
-  if (!collisionDetector)
-  {
+  if (!collisionDetector) {
     dtwarn << "[ConstraintSolver::setCollisionDetector] Attempting to assign "
            << "nullptr as the new collision detector to the constraint solver, "
            << "which is not allowed. Ignoring.\n";
@@ -366,8 +361,7 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
-  for (auto& skeleton : mSkeletons)
-  {
+  for (auto& skeleton : mSkeletons) {
     skeleton->clearConstraintImpulses();
     DART_SUPPRESS_DEPRECATED_BEGIN
     skeleton->clearCollidingBodies();
@@ -414,8 +408,7 @@ bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
       skeleton != nullptr, "Not allowed to insert null pointer skeleton.");
 #endif
 
-  for (const auto& itrSkel : mSkeletons)
-  {
+  for (const auto& itrSkel : mSkeletons) {
     if (itrSkel == skeleton)
       return true;
   }
@@ -426,13 +419,10 @@ bool ConstraintSolver::hasSkeleton(const ConstSkeletonPtr& skeleton) const
 //==============================================================================
 bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
-  if (!hasSkeleton(skeleton))
-  {
+  if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
     return true;
-  }
-  else
-  {
+  } else {
     dtwarn << "Skeleton [" << skeleton->getName()
            << "] is already in ConstraintSolver." << std::endl;
     return false;
@@ -452,13 +442,10 @@ bool ConstraintSolver::containConstraint(
 bool ConstraintSolver::checkAndAddConstraint(
     const ConstraintBasePtr& constraint)
 {
-  if (!containConstraint(constraint))
-  {
+  if (!containConstraint(constraint)) {
     mManualConstraints.push_back(constraint);
     return true;
-  }
-  else
-  {
+  } else {
     dtwarn << "Constraint is already in ConstraintSolver." << std::endl;
     return false;
   }
@@ -473,8 +460,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update manual constraints
   //----------------------------------------------------------------------------
-  for (auto& manualConstraint : mManualConstraints)
-  {
+  for (auto& manualConstraint : mManualConstraints) {
     manualConstraint->update();
 
     if (manualConstraint->isActive())
@@ -519,12 +505,10 @@ void ConstraintSolver::updateConstraints()
   std::vector<collision::Contact*> contacts;
 
   // Create new contact constraints
-  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
-  {
+  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
     auto& contact = mCollisionResult.getContact(i);
 
-    if (collision::Contact::isZeroNormal(contact.normal))
-    {
+    if (collision::Contact::isZeroNormal(contact.normal)) {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
       continue;
@@ -548,13 +532,10 @@ void ConstraintSolver::updateConstraints()
     if (contact.penetrationDepth < 0.0)
       continue;
 
-    if (isSoftContact(contact))
-    {
+    if (isSoftContact(contact)) {
       mSoftContactConstraints.push_back(
           std::make_shared<SoftContactConstraint>(contact, mTimeStep));
-    }
-    else
-    {
+    } else {
       // Increment the count of contacts between the two collision objects
       ++contactPairMap[std::make_pair(
           contact.collisionObject1, contact.collisionObject2)];
@@ -564,8 +545,7 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : contacts)
-  {
+  for (auto* contact : contacts) {
     std::size_t numContacts = 1;
     auto it = contactPairMap.find(
         std::make_pair(contact->collisionObject1, contact->collisionObject2));
@@ -583,8 +563,7 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add the new soft contact constraints to dynamic constraint list
-  for (const auto& softContactConstraint : mSoftContactConstraints)
-  {
+  for (const auto& softContactConstraint : mSoftContactConstraints) {
     softContactConstraint->update();
 
     if (softContactConstraint->isActive())
@@ -600,21 +579,17 @@ void ConstraintSolver::updateConstraints()
   mJointCoulombFrictionConstraints.clear();
 
   // Create new joint constraints
-  for (const auto& skel : mSkeletons)
-  {
+  for (const auto& skel : mSkeletons) {
     const std::size_t numJoints = skel->getNumJoints();
-    for (std::size_t i = 0; i < numJoints; i++)
-    {
+    for (std::size_t i = 0; i < numJoints; i++) {
       dynamics::Joint* joint = skel->getJoint(i);
 
       if (joint->isKinematic())
         continue;
 
       const std::size_t dof = joint->getNumDofs();
-      for (std::size_t j = 0; j < dof; ++j)
-      {
-        if (joint->getCoulombFriction(j) != 0.0)
-        {
+      for (std::size_t j = 0; j < dof; ++j) {
+        if (joint->getCoulombFriction(j) != 0.0) {
           mJointCoulombFrictionConstraints.push_back(
               std::make_shared<JointCoulombFrictionConstraint>(joint));
           break;
@@ -622,14 +597,12 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO)
-      {
+          || joint->getActuatorType() == dynamics::Joint::SERVO) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint())
-      {
+          && joint->getMimicJoint()) {
         mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
             joint, joint->getMimicDofProperties()));
       }
@@ -637,24 +610,21 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointConstraints)
-  {
+  for (auto& jointLimitConstraint : mJointConstraints) {
     jointLimitConstraint->update();
 
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
   }
 
-  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
-  {
+  for (auto& mimicMotorConstraint : mMimicMotorConstraints) {
     mimicMotorConstraint->update();
 
     if (mimicMotorConstraint->isActive())
       mActiveConstraints.push_back(mimicMotorConstraint);
   }
 
-  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
-  {
+  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints) {
     jointFrictionConstraint->update();
 
     if (jointFrictionConstraint->isActive())
@@ -681,15 +651,12 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (const auto& activeConstraint : mActiveConstraints)
-  {
+  for (const auto& activeConstraint : mActiveConstraints) {
     bool found = false;
     const auto& skel = activeConstraint->getRootSkeleton();
 
-    for (const auto& constrainedGroup : mConstrainedGroups)
-    {
-      if (constrainedGroup.mRootSkeleton == skel)
-      {
+    for (const auto& constrainedGroup : mConstrainedGroups) {
+      if (constrainedGroup.mRootSkeleton == skel) {
         found = true;
         break;
       }
@@ -705,8 +672,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (const auto& activeConstraint : mActiveConstraints)
-  {
+  for (const auto& activeConstraint : mActiveConstraints) {
     const auto& skel = activeConstraint->getRootSkeleton();
     mConstrainedGroups[skel->mUnionIndex].addConstraint(activeConstraint);
   }
@@ -756,8 +722,7 @@ void ConstraintSolver::addContactSurfaceHandler(
     ContactSurfaceHandlerPtr handler)
 {
   // sanity check, do not add the same handler twice
-  if (handler == mContactSurfaceHandler)
-  {
+  if (handler == mContactSurfaceHandler) {
     dterr << "Adding the same contact surface handler for the second time, "
           << "ignoring.\n";
     return;
@@ -773,10 +738,8 @@ bool ConstraintSolver::removeContactSurfaceHandler(
   bool found = false;
   ContactSurfaceHandlerPtr current = mContactSurfaceHandler;
   ContactSurfaceHandlerPtr previous = nullptr;
-  while (current != nullptr)
-  {
-    if (current == handler)
-    {
+  while (current != nullptr) {
+    if (current == handler) {
       if (previous != nullptr)
         previous->mParent = current->mParent;
       else

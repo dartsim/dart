@@ -91,8 +91,7 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
 
   int count = 1;
   std::string newName;
-  do
-  {
+  do {
     std::stringstream ss;
     if (mNameBeforeNumber)
       ss << mPrefix << _name << mInfix << count++ << mAffix;
@@ -124,15 +123,13 @@ std::string NameManager<T>::issueNewNameAndAdd(
 template <class T>
 bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 {
-  if (_name.empty())
-  {
+  if (_name.empty()) {
     dtwarn << "[NameManager::addName] (" << mManagerName
            << ") Empty name is not allowed!\n";
     return false;
   }
 
-  if (hasName(_name))
-  {
+  if (hasName(_name)) {
     dtwarn << "[NameManager::addName] (" << mManagerName << ") The name ["
            << _name << "] already exists!\n";
     return false;

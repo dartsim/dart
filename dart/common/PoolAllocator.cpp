@@ -49,24 +49,18 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
       "sizeof(MemoryUnit) should be equal to or greater than 8.");
 
   // Global setting
-  if (!mInitialized)
-  {
+  if (!mInitialized) {
     // Fill mUnitSizes from 8 to 1024 with 8 interval
-    for (auto i = 0u; i < HEAP_COUNT; ++i)
-    {
+    for (auto i = 0u; i < HEAP_COUNT; ++i) {
       mUnitSizes[i] = (i + 1) * 8;
     }
 
     auto j = 0u;
     mMapSizeToHeapIndex[0] = -1;
-    for (auto i = 1u; i <= MAX_UNIT_SIZE; ++i)
-    {
-      if (i <= mUnitSizes[j])
-      {
+    for (auto i = 1u; i <= MAX_UNIT_SIZE; ++i) {
+      if (i <= mUnitSizes[j]) {
         mMapSizeToHeapIndex[i] = j;
-      }
-      else
-      {
+      } else {
         mMapSizeToHeapIndex[i] = ++j;
       }
     }
@@ -90,8 +84,7 @@ PoolAllocator::~PoolAllocator()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  for (int i = 0; i < mCurrentMemoryBlockIndex; ++i)
-  {
+  for (int i = 0; i < mCurrentMemoryBlockIndex; ++i) {
     mBaseAllocator.deallocate(mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE);
   }
   mBaseAllocator.deallocate(
@@ -120,15 +113,13 @@ int PoolAllocator::getNumAllocatedMemoryBlocks() const
 void* PoolAllocator::allocate(size_t bytes) noexcept
 {
   // Cannot allocate zero bytes
-  if (bytes == 0)
-  {
+  if (bytes == 0) {
     return nullptr;
   }
 
   // Use the default allocator to allocate memory that is greater than
   // MAX_UNIT_SIZE
-  if (bytes > MAX_UNIT_SIZE)
-  {
+  if (bytes > MAX_UNIT_SIZE) {
     DART_TRACE(
         "Cannot allocate memory of size > {} using PoolAllocator.",
         MAX_UNIT_SIZE);
@@ -140,14 +131,12 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
 
   const int heapIndex = mMapSizeToHeapIndex[bytes];
 
-  if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex])
-  {
+  if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) {
     mFreeMemoryUnits[heapIndex] = unit->mNext;
     return unit;
   }
 
-  if (mCurrentMemoryBlockIndex == mMemoryBlocksSize)
-  {
+  if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
     mMemoryBlocksSize += 64;
     mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
@@ -168,8 +157,7 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
   DART_ASSERT(unitCount > 0);
   void* memoryUnitsBegin = static_cast<void*>(newBlock->mMemoryUnits);
   char* memoryUnitsBeginChar = static_cast<char*>(memoryUnitsBegin);
-  for (size_t i = 0u; i < unitCount - 1; ++i)
-  {
+  for (size_t i = 0u; i < unitCount - 1; ++i) {
     void* unitPointer = static_cast<void*>(memoryUnitsBeginChar + unitSize * i);
     void* nextUnitPointer
         = static_cast<void*>(memoryUnitsBeginChar + unitSize * (i + 1));
@@ -193,13 +181,11 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
 void PoolAllocator::deallocate(void* pointer, size_t bytes)
 {
   // Cannot deallocate nullptr or zero bytes
-  if (pointer == nullptr || bytes == 0)
-  {
+  if (pointer == nullptr || bytes == 0) {
     return;
   }
 
-  if (bytes > MAX_UNIT_SIZE)
-  {
+  if (bytes > MAX_UNIT_SIZE) {
     return mBaseAllocator.deallocate(pointer, bytes);
   }
 
@@ -219,13 +205,11 @@ void PoolAllocator::print(std::ostream& os, int indent) const
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[PoolAllocator]\n";
   }
   const std::string spaces(indent, ' ');
-  if (indent != 0)
-  {
+  if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
   os << spaces << "allocated_memory_block_count: " << mMemoryBlocksSize << "\n";

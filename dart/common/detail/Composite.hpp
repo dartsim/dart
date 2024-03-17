@@ -36,8 +36,7 @@
 #include <dart/common/Composite.hpp>
 
 #define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(Func, T, ReturnType)            \
-  if (requiresAspect<T>())                                                     \
-  {                                                                            \
+  if (requiresAspect<T>()) {                                                   \
     dterr << "[Composite::" #Func << "] Illegal request to remove required "   \
           << "Aspect [" << typeid(T).name() << "]!\n";                         \
     assert(false);                                                             \
@@ -103,8 +102,7 @@ void Composite::removeAspect()
 {
   AspectMap::iterator it = mAspectMap.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(removeAspect, T, DART_BLANK)
-  if (mAspectMap.end() != it)
-  {
+  if (mAspectMap.end() != it) {
     removeFromComposite(it->second.get());
     it->second = nullptr;
   }
@@ -117,8 +115,7 @@ std::unique_ptr<T> Composite::releaseAspect()
   std::unique_ptr<T> extraction = nullptr;
   AspectMap::iterator it = mAspectMap.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(releaseAspect, T, nullptr)
-  if (mAspectMap.end() != it)
-  {
+  if (mAspectMap.end() != it) {
     removeFromComposite(it->second.get());
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
   }

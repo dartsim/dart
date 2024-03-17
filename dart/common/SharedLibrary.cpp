@@ -83,8 +83,7 @@ SharedLibrary::SharedLibrary(
 {
   mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
 
-  if (!mInstance)
-  {
+  if (!mInstance) {
     dterr << "[SharedLibrary::load] Failed to load dynamic library '"
           << canonicalPath << "': " << getLastError() << "\n";
   }
@@ -96,8 +95,7 @@ SharedLibrary::~SharedLibrary()
   if (!isValid())
     return;
 
-  if (DYNLIB_UNLOAD(mInstance))
-  {
+  if (DYNLIB_UNLOAD(mInstance)) {
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
           << mPath << "': " << getLastError() << "\n";
   }
@@ -129,8 +127,7 @@ void* SharedLibrary::getSymbol(const std::string& symbolName) const
 
   auto symbol = DYNLIB_GETSYM(mInstance, symbolName.c_str());
 
-  if (!symbol)
-  {
+  if (!symbol) {
     dtwarn << "[SharedLibrary::getSymbol] Failed to load a symbol '"
            << symbolName << "'.\n";
     return nullptr;

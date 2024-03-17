@@ -65,8 +65,7 @@ void Win2D::resize(int _w, int _h)
 
 void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
 {
-  switch (_key)
-  {
+  switch (_key) {
     case ',': // slow down
       mDisplayTimeout += 2;
       break;
@@ -90,15 +89,12 @@ void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
 void Win2D::click(int /*_button*/, int /*_state*/, int _x, int _y)
 {
   mMouseDown = !mMouseDown;
-  if (mMouseDown)
-  {
+  if (mMouseDown) {
     mTranslate = true;
 
     mMouseX = _x;
     mMouseY = _y;
-  }
-  else
-  {
+  } else {
     mTranslate = false;
   }
   glutPostRedisplay();
@@ -106,8 +102,7 @@ void Win2D::click(int /*_button*/, int /*_state*/, int _x, int _y)
 
 void Win2D::drag(int _x, int _y)
 {
-  if (mMouseDown)
-  {
+  if (mMouseDown) {
     mTransX += (_x - mMouseX);
     mTransY += (_y - mMouseY);
 
@@ -141,8 +136,7 @@ void Win2D::render()
   // draw axis
   // translate back to the center
   glTranslatef(-mTransX, mTransY, 0.0);
-  if (mTranslate)
-  {
+  if (mTranslate) {
     glLineWidth(2.0);
 
     glColor3f(1.0f, 0.0f, 0.0f);

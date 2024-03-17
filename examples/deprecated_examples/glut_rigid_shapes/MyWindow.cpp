@@ -84,8 +84,7 @@ Isometry3d getRandomTransform()
 //==============================================================================
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
-  switch (key)
-  {
+  switch (key) {
     case ' ': // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
@@ -97,8 +96,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mSimulating = false;
       break;
     case '[': // step backward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame--;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
@@ -106,8 +104,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
@@ -138,8 +135,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     }
     case 'a': // Remove the skeleton added at last
     case 'A': {
-      if (mWorld->getNumSkeletons() > 1)
-      {
+      if (mWorld->getNumSkeletons() > 1) {
         mWorld->removeSkeleton(
             mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
       }

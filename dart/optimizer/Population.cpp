@@ -43,8 +43,7 @@ namespace {
 //==============================================================================
 bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
 {
-  if (problem.getSolutionDimension() != static_cast<std::size_t>(x.size()))
-  {
+  if (problem.getSolutionDimension() != static_cast<std::size_t>(x.size())) {
     dtwarn << "[Population] Attempting to add an incompatible decision vector. "
            << "The dimension of the decision vector '" << x.size()
            << "' should be '" << problem.getSolutionDimension() << "'.\n";
@@ -57,8 +56,7 @@ bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
 //==============================================================================
 bool isValidF(const MultiObjectiveProblem& problem, const Eigen::VectorXd& f)
 {
-  if (problem.getFitnessDimension() != static_cast<std::size_t>(f.size()))
-  {
+  if (problem.getFitnessDimension() != static_cast<std::size_t>(f.size())) {
     dtwarn << "[Population] Attempting to add an incompatible decision vector. "
            << "The dimension of the decision vector '" << f.size()
            << "' should be '" << problem.getFitnessDimension() << "'.\n";
@@ -180,8 +178,7 @@ std::ostream& Population::print(std::ostream& os) const
   os << "Population size: " << getSize() << "\n\n";
   os << "List of individuals: \n";
 
-  for (std::size_t i = 0u; i < getSize(); ++i)
-  {
+  for (std::size_t i = 0u; i < getSize(); ++i) {
     os << "#" << i << ":\n";
     os << "\tDecision vector:\t"
        << mPopulation.col(static_cast<int>(i)).transpose() << "\n";

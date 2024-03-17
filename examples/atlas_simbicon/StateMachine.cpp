@@ -59,8 +59,8 @@ StateMachine::StateMachine(const std::string& _name)
 //==============================================================================
 StateMachine::~StateMachine()
 {
-  for (vector<State*>::iterator it = mStates.begin(); it != mStates.end(); ++it)
-  {
+  for (vector<State*>::iterator it = mStates.begin(); it != mStates.end();
+       ++it) {
     delete *it;
   }
 }
@@ -156,8 +156,7 @@ void StateMachine::transiteTo(State* _state, double _currentTime)
   mCurrentState = _state;
   mCurrentState->begin(_currentTime);
 
-  if (mVerbosity)
-  {
+  if (mVerbosity) {
     dtmsg << "Transition: [" << prevStateName << "] --> [" << nextStateName
           << "]." << endl;
   }
@@ -192,8 +191,7 @@ void StateMachine::setVerbosity(bool verbosity)
 bool StateMachine::_containState(const State* _state) const
 {
   for (vector<State*>::const_iterator it = mStates.begin(); it != mStates.end();
-       ++it)
-  {
+       ++it) {
     if (*it == _state)
       return true;
   }
@@ -213,10 +211,8 @@ State* StateMachine::_findState(const string& _name) const
   State* state = nullptr;
 
   for (vector<State*>::const_iterator it = mStates.begin(); it != mStates.end();
-       ++it)
-  {
-    if ((*it)->getName() == _name)
-    {
+       ++it) {
+    if ((*it)->getName() == _name) {
       state = *it;
       break;
     }

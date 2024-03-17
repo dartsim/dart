@@ -62,8 +62,7 @@ void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
   glLoadIdentity();
   glRasterPos2f(x, y);
   unsigned int length = s.length();
-  for (unsigned int c = 0; c < length; c++)
-  {
+  for (unsigned int c = 0; c < length; c++) {
     if (bigFont)
       glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c));
     else

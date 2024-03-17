@@ -70,8 +70,7 @@
 
 /* sort so that a<=b */
 #define DART_SORT(a, b)                                                        \
-  if (a > b)                                                                   \
-  {                                                                            \
+  if (a > b) {                                                                 \
     float c;                                                                   \
     c = a;                                                                     \
     a = b;                                                                     \
@@ -92,32 +91,21 @@
 
 #define DART_COMPUTE_INTERVALS(                                                \
     VV0, VV1, VV2, D0, D1, D2, D0D1, D0D2, isect0, isect1)                     \
-  if (D0D1 > 0.0f)                                                             \
-  {                                                                            \
+  if (D0D1 > 0.0f) {                                                           \
     /* here we know that D0D2<=0.0 */                                          \
     /* that is D0, D1 are on the same side, D2 on the other or on the plane */ \
     DART_ISECT(VV2, VV0, VV1, D2, D0, D1, isect0, isect1);                     \
-  }                                                                            \
-  else if (D0D2 > 0.0f)                                                        \
-  {                                                                            \
+  } else if (D0D2 > 0.0f) {                                                    \
     /* here we know that d0d1<=0.0 */                                          \
     DART_ISECT(VV1, VV0, VV2, D1, D0, D2, isect0, isect1);                     \
-  }                                                                            \
-  else if (D1 * D2 > 0.0f || D0 != 0.0f)                                       \
-  {                                                                            \
+  } else if (D1 * D2 > 0.0f || D0 != 0.0f) {                                   \
     /* here we know that d0d1<=0.0 or that D0!=0.0 */                          \
     DART_ISECT(VV0, VV1, VV2, D0, D1, D2, isect0, isect1);                     \
-  }                                                                            \
-  else if (D1 != 0.0f)                                                         \
-  {                                                                            \
+  } else if (D1 != 0.0f) {                                                     \
     DART_ISECT(VV1, VV0, VV2, D1, D0, D2, isect0, isect1);                     \
-  }                                                                            \
-  else if (D2 != 0.0f)                                                         \
-  {                                                                            \
+  } else if (D2 != 0.0f) {                                                     \
     DART_ISECT(VV2, VV0, VV1, D2, D0, D1, isect0, isect1);                     \
-  }                                                                            \
-  else                                                                         \
-  {                                                                            \
+  } else {                                                                     \
     /* triangles are coplanar */                                               \
     return COPLANAR_CONTACT;                                                   \
   }
@@ -207,9 +195,9 @@ inline int tri_tri_intersect(
   du0du2 = du0 * du2;
   du1du2 = du1 * du2;
 
-  if (du0du1 > 0.0f && du0du2 > 0.0f)
-  {                    /* same sign on all of them + not equal 0 ? */
-    return NO_CONTACT; /* no intersection occurs */
+  if (du0du1 > 0.0f
+      && du0du2 > 0.0f) { /* same sign on all of them + not equal 0 ? */
+    return NO_CONTACT;    /* no intersection occurs */
   }
   /* compute plane of triangle (U0,U1,U2) */
   DART_SUB(E1, U1, U0);
@@ -241,9 +229,9 @@ inline int tri_tri_intersect(
   dv0dv2 = dv0 * dv2;
   dv1dv2 = dv1 * dv2;
 
-  if (dv0dv1 > 0.0f && dv0dv2 > 0.0f)
-  {                    /* same sign on all of them + not equal 0 ? */
-    return NO_CONTACT; /* no intersection occurs */
+  if (dv0dv1 > 0.0f
+      && dv0dv2 > 0.0f) { /* same sign on all of them + not equal 0 ? */
+    return NO_CONTACT;    /* no intersection occurs */
   }
   /* compute direction of intersection line */
   DART_CROSS(D, N1, N2);
@@ -281,81 +269,53 @@ inline int tri_tri_intersect(
   // if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return NO_CONTACT;
 
   float res[4][3];
-  if (du0du1 > 0)
-  {
+  if (du0du1 > 0) {
     edge_tri_intersect(U2, U0, du2, du0, res[0]);
     edge_tri_intersect(U2, U1, du2, du1, res[1]);
-  }
-  else if (du0du2 > 0)
-  {
+  } else if (du0du2 > 0) {
     edge_tri_intersect(U1, U0, du1, du0, res[0]);
     edge_tri_intersect(U1, U2, du1, du2, res[1]);
-  }
-  else if (du1du2 > 0)
-  {
+  } else if (du1du2 > 0) {
     edge_tri_intersect(U0, U1, du0, du1, res[0]);
     edge_tri_intersect(U0, U2, du0, du2, res[1]);
-  }
-  else if (du0 == 0)
-  {
+  } else if (du0 == 0) {
     DART_SET(res[0], U0);
     edge_tri_intersect(U1, U2, du1, du2, res[1]);
-  }
-  else if (du1 == 0)
-  {
+  } else if (du1 == 0) {
     DART_SET(res[0], U1);
     edge_tri_intersect(U0, U2, du0, du2, res[1]);
-  }
-  else if (du2 == 0)
-  {
+  } else if (du2 == 0) {
     DART_SET(res[0], U2);
     edge_tri_intersect(U0, U1, du0, du1, res[1]);
-  }
-  else
-  {
+  } else {
     std::cerr << "contact error" << std::endl;
   }
 
-  if (dv0dv1 > 0)
-  {
+  if (dv0dv1 > 0) {
     edge_tri_intersect(V2, V0, dv2, dv0, res[2]);
     edge_tri_intersect(V2, V1, dv2, dv1, res[3]);
-  }
-  else if (dv0dv2 > 0)
-  {
+  } else if (dv0dv2 > 0) {
     edge_tri_intersect(V1, V0, dv1, dv0, res[2]);
     edge_tri_intersect(V1, V2, dv1, dv2, res[3]);
-  }
-  else if (dv1dv2 > 0)
-  {
+  } else if (dv1dv2 > 0) {
     edge_tri_intersect(V0, V1, dv0, dv1, res[2]);
     edge_tri_intersect(V0, V2, dv0, dv2, res[3]);
-  }
-  else if (dv0 == 0)
-  {
+  } else if (dv0 == 0) {
     DART_SET(res[2], V0);
     edge_tri_intersect(V1, V2, dv1, dv2, res[3]);
-  }
-  else if (dv1 == 0)
-  {
+  } else if (dv1 == 0) {
     DART_SET(res[2], V1);
     edge_tri_intersect(V0, V2, dv0, dv2, res[3]);
-  }
-  else if (dv2 == 0)
-  {
+  } else if (dv2 == 0) {
     DART_SET(res[2], V2);
     edge_tri_intersect(V0, V1, dv0, dv1, res[3]);
-  }
-  else
-  {
+  } else {
     std::cerr << "contact error" << std::endl;
   }
 
   for (int i = 3; i > 0; i--)
-    for (int j = 0; j < i; j++)
-    {
-      if (res[j][index] > res[j + 1][index])
-      {
+    for (int j = 0; j < i; j++) {
+      if (res[j][index] > res[j + 1][index]) {
         for (int k = 0; k < 3; k++)
           DART_SWAP(res[j][k], res[j + 1][k]);
       }

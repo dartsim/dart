@@ -53,8 +53,7 @@ CAllocator::~CAllocator()
 //==============================================================================
 void* CAllocator::allocate(size_t bytes) noexcept
 {
-  if (bytes == 0)
-  {
+  if (bytes == 0) {
     return nullptr;
   }
 
@@ -73,13 +72,11 @@ void CAllocator::deallocate(void* pointer, size_t bytes)
 //==============================================================================
 void CAllocator::print(std::ostream& os, int indent) const
 {
-  if (indent == 0)
-  {
+  if (indent == 0) {
     os << "[CAllocator]\n";
   }
   const std::string spaces(indent, ' ');
-  if (indent != 0)
-  {
+  if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
 }

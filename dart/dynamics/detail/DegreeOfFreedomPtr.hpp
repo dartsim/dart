@@ -137,8 +137,7 @@ public:
   /// Set the DegreeOfFreedom for this DegreeOfFreedomPtr
   void set(DegreeOfFreedomT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mBodyNodePtr = nullptr;
       return;
     }
@@ -305,8 +304,7 @@ public:
   /// Set the DegreeOfFreedom for this WeakDegreeOfFreedomPtr
   void set(DegreeOfFreedomT* _ptr)
   {
-    if (nullptr == _ptr)
-    {
+    if (nullptr == _ptr) {
       mWeakBodyNode = nullptr;
       mIndex = 0;
       return;

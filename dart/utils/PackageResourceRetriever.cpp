@@ -76,8 +76,7 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
   if (!resolvePackageUri(_uri, packageName, relativePath))
     return false;
 
-  for (const std::string& packagePath : getPackagePaths(packageName))
-  {
+  for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
     fileUri.fromPath(packagePath + relativePath);
 
@@ -95,8 +94,7 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
   if (!resolvePackageUri(_uri, packageName, relativePath))
     return nullptr;
 
-  for (const std::string& packagePath : getPackagePaths(packageName))
-  {
+  for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
     fileUri.fromPath(packagePath + relativePath);
 
@@ -113,8 +111,7 @@ std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
   if (!resolvePackageUri(uri, packageName, relativePath))
     return "";
 
-  for (const std::string& packagePath : getPackagePaths(packageName))
-  {
+  for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
     fileUri.fromPath(packagePath + relativePath);
 
@@ -138,8 +135,7 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
   const auto it = mPackageMap.find(_packageName);
   if (it != std::end(mPackageMap))
     return it->second;
-  else
-  {
+  else {
     dtwarn << "[PackageResourceResolver::getPackagePaths] Unable to resolve"
               "path to package '"
            << _packageName
@@ -158,8 +154,7 @@ bool PackageResourceRetriever::resolvePackageUri(
   if (_uri.mScheme.get_value_or("file") != "package")
     return false;
 
-  if (!_uri.mAuthority)
-  {
+  if (!_uri.mAuthority) {
     dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
               " package name from URI '"
            << _uri.toString() << "'.\n";
@@ -167,8 +162,7 @@ bool PackageResourceRetriever::resolvePackageUri(
   }
   _packageName = *_uri.mAuthority;
 
-  if (!_uri.mPath)
-  {
+  if (!_uri.mPath) {
     dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
               " relative path from URI '"
            << _uri.toString() << "'.\n";

@@ -67,16 +67,13 @@ std::size_t VersionCounter::getVersion() const
 void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
 {
   VersionCounter* next = dependent;
-  do
-  {
-    if (next == this)
-    {
+  do {
+    if (next == this) {
       dterr
           << "[VersionCounter::setVersionDependentObject] Attempting to "
           << "create a circular version dependency with the following loop:\n";
       next = dependent;
-      while (next != this)
-      {
+      while (next != this) {
         std::cerr << " -- " << next << "\n";
         next = next->mDependent;
       }

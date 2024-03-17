@@ -43,18 +43,13 @@ void ConstraintSolver::eachConstraint(Func func) const
 {
   if constexpr (std::is_same_v<
                     std::invoke_result_t<Func, const ConstraintBase*>,
-                    bool>)
-  {
-    for (auto i = 0u; i < getNumConstraints(); ++i)
-    {
+                    bool>) {
+    for (auto i = 0u; i < getNumConstraints(); ++i) {
       if (!func(getConstraint(i)))
         return;
     }
-  }
-  else
-  {
-    for (auto i = 0u; i < getNumConstraints(); ++i)
-    {
+  } else {
+    for (auto i = 0u; i < getNumConstraints(); ++i) {
       func(getConstraint(i));
     }
   }
@@ -66,18 +61,13 @@ void ConstraintSolver::eachConstraint(Func func)
 {
   if constexpr (std::is_same_v<
                     std::invoke_result_t<Func, ConstraintBase*>,
-                    bool>)
-  {
-    for (auto i = 0u; i < getNumConstraints(); ++i)
-    {
+                    bool>) {
+    for (auto i = 0u; i < getNumConstraints(); ++i) {
       if (!func(getConstraint(i)))
         return;
     }
-  }
-  else
-  {
-    for (auto i = 0u; i < getNumConstraints(); ++i)
-    {
+  } else {
+    for (auto i = 0u; i < getNumConstraints(); ++i) {
       func(getConstraint(i));
     }
   }

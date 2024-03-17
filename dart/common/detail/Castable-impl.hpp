@@ -49,12 +49,9 @@ bool Castable<Base>::is() const
 {
   if constexpr (
       has_member_getType<Base>::value
-      && has_member_getStaticType<Derived>::value)
-  {
+      && has_member_getStaticType<Derived>::value) {
     return (base().getType() == Derived::getStaticType());
-  }
-  else
-  {
+  } else {
     return (dynamic_cast<const Derived*>(&base()) != nullptr);
   }
 }

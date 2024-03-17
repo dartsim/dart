@@ -103,8 +103,7 @@ void Collision::unrotatedTest(
   coll2_transform.setIdentity();
 
   // Let's drop box2 until it collide with box1
-  do
-  {
+  do {
     position[_idxAxis] = pos;
     dart::collision::fcl::setTranslation(coll2_transform, position);
 
@@ -127,8 +126,7 @@ void Collision::unrotatedTest(
 
   // printResult(result);
 
-  for (std::size_t i = 0; i < result.numContacts(); ++i)
-  {
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
     EXPECT_GE(result.getContact(i).penetration_depth, 0.0);
     //		EXPECT_NEAR(result.getContact(i).normal[_idxAxis], -1.0);
     EXPECT_EQ(dart::collision::fcl::length(result.getContact(i).normal), 1.0);
@@ -167,8 +165,7 @@ void Collision::dropWithRotation(
   //==========================================================================
   // Dropping test in x, y, z aixs each.
   //==========================================================================
-  for (int _idxAxis = 0; _idxAxis < 3; ++_idxAxis)
-  {
+  for (int _idxAxis = 0; _idxAxis < 3; ++_idxAxis) {
     result.clear();
 
     groundObject.side = dart::collision::fcl::Vector3(100, 100, 100);
@@ -181,8 +178,7 @@ void Collision::dropWithRotation(
     double posDelta = -0.0001;
     double initPos = 10.0;
     dropping_position = dart::collision::fcl::Vector3(0, 0, 0);
-    do
-    {
+    do {
       dropping_position[_idxAxis] = initPos;
       dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
@@ -198,8 +194,7 @@ void Collision::dropWithRotation(
 
     dart::collision::fcl::Transform3 objectTransfInv = objectTransf;
     objectTransfInv.inverse();
-    for (std::size_t i = 0; i < result.numContacts(); ++i)
-    {
+    for (std::size_t i = 0; i < result.numContacts(); ++i) {
       dart::collision::fcl::Vector3 posWorld = dart::collision::fcl::transform(
           objectTransfInv, result.getContact(i).pos);
       std::cout << "----- CONTACT " << i << " --------" << std::endl;
@@ -223,8 +218,7 @@ void Collision::printResult(
   std::cout << "====== [ RESULT ] ======" << std::endl;
   std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
 
-  for (std::size_t i = 0; i < _result.numContacts(); ++i)
-  {
+  for (std::size_t i = 0; i < _result.numContacts(); ++i) {
     std::cout << "----- CONTACT " << i << " --------" << std::endl;
     std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
     std::cout << "penetration_depth: "
@@ -281,8 +275,7 @@ TEST_F(Collision, FCL_BOX_BOX)
   dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
   // Let's drop the object until it collide with ground
-  do
-  {
+  do {
     dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
     ::fcl::collide(
@@ -295,8 +288,7 @@ TEST_F(Collision, FCL_BOX_BOX)
             << dart::collision::fcl::getTranslation(objectTransf) << std::endl
             << "Number of contacts: " << result.numContacts() << std::endl;
 
-  for (std::size_t i = 0; i < result.numContacts(); ++i)
-  {
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
     std::cout << "----- CONTACT " << i << " --------" << std::endl;
     std::cout << "contact_points: " << result.getContact(i).pos << std::endl;
     std::cout << "penetration_depth: " << result.getContact(i).penetration_depth
@@ -469,8 +461,7 @@ void testSphereSphere(
   double tol2 = tol;
   if (cd->getType() == FCLCollisionDetector::getStaticType()
       && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
-             == FCLCollisionDetector::MESH)
-  {
+             == FCLCollisionDetector::MESH) {
     tol2 *= 1e+12;
     // FCL returns less accurate contact normals for sphere-sphere since we're
     // using sphere-like rough meshes instead of analytical sphere shapes.
@@ -485,14 +476,11 @@ void testSphereSphere(
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
   result.clear();
-  if (cd->getType() == FCLCollisionDetector::getStaticType())
-  {
+  if (cd->getType() == FCLCollisionDetector::getStaticType()) {
     EXPECT_FALSE(group->collide(option, &result));
     // FCL is not able to detect collisions when an object completely (strictly)
     // contanins the other object (no collisions between the hulls)
-  }
-  else
-  {
+  } else {
     EXPECT_TRUE(group->collide(option, &result));
     // TODO(JS): BulletCollsionDetector includes a bug related to this.
     // (see #876)
@@ -502,8 +490,7 @@ void testSphereSphere(
     {
       EXPECT_EQ(result.getNumContacts(), 1u);
     }
-    for (auto i = 0u; i < result.getNumContacts(); ++i)
-    {
+    for (auto i = 0u; i < result.getNumContacts(); ++i) {
       std::cout << "point: " << result.getContact(i).point.transpose()
                 << std::endl;
     }
@@ -556,8 +543,7 @@ bool checkBoundingBox(
     const Eigen::Vector3d& point,
     double tol = 1e-12)
 {
-  for (auto i = 0u; i < 3u; ++i)
-  {
+  for (auto i = 0u; i < 3u; ++i) {
     if (min[i] - tol > point[i] || point[i] > max[i] + tol)
       return false;
   }
@@ -611,8 +597,7 @@ void testBoxBox(
   if (!checkNumContacts)
     std::cout << "# of contants: " << numContacts << "\n";
 
-  for (const auto& contact : result.getContacts())
-  {
+  for (const auto& contact : result.getContacts()) {
     const auto& point = contact.point;
 
     const auto result = checkBoundingBox(min, max, point, tol);
@@ -1072,8 +1057,7 @@ void testHeightmapBox(
   EXPECT_EQ(result.getNumContacts(), 0u);
 
   // expect collision if moved just slightly above the lower terrain bound
-  if (collidesUnderTerrain)
-  {
+  if (collidesUnderTerrain) {
     result.clear();
     transZ = adjMinH * zScale - boxSize * S(0.499) - useOdeThck;
     boxFrame->setTranslation(Vector3(0.0, 0.0, transZ).template cast<double>());
@@ -1130,8 +1114,7 @@ void testHeightmapBox(
   Vector3 inMiddle(0.0, 0.0, halfHeight * zScale);
   boxFrame->setTranslation(inMiddle.template cast<double>());
   // TODO(JS): Disabled temporarily
-  if (cd->getType() != "bullet")
-  {
+  if (cd->getType() != "bullet") {
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_GT(result.getNumContacts(), 0u);
   }
@@ -1145,8 +1128,7 @@ void testHeightmapBox(
 
   // ... however it still should collide if translated the
   // other way inside the slope
-  if (collidesUnderTerrain)
-  {
+  if (collidesUnderTerrain) {
     result.clear();
     Vector3 underSlope = inMiddle - normal * boxShift;
     boxFrame->setTranslation(underSlope.template cast<double>());
@@ -1550,8 +1532,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   EXPECT_EQ(joint5->getActuatorType(), Joint::VELOCITY);
   EXPECT_EQ(joint6->getActuatorType(), Joint::LOCKED);
 
-  for (std::size_t i = 0; i < numFrames; ++i)
-  {
+  for (std::size_t i = 0; i < numFrames; ++i) {
     const double time = world->getTime();
 
     joint1->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));

@@ -70,10 +70,8 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
   if (!resolveDataUri(uri, relativePath))
     return false;
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -85,9 +83,7 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
              << "data path. For example:\n"
              << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
     }
-  }
-  else
-  {
+  } else {
     if (mLocalRetriever->exists(uri))
       return true;
   }
@@ -102,10 +98,8 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
   if (!resolveDataUri(uri, relativePath))
     return nullptr;
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -117,9 +111,7 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
            << "'. Please make sure you set the environment variable for DART "
            << "data path. For example:\n"
            << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
-  }
-  else
-  {
+  } else {
     if (const auto resource = mLocalRetriever->retrieve(uri))
       return resource;
   }
@@ -134,10 +126,8 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
   if (!resolveDataUri(uri, relativePath))
     return "";
 
-  if (uri.mAuthority.get() == "sample")
-  {
-    for (const auto& dataPath : mDataDirectories)
-    {
+  if (uri.mAuthority.get() == "sample") {
+    for (const auto& dataPath : mDataDirectories) {
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
@@ -152,9 +142,7 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
            << "'. Please make sure you set the environment variable for "
            << "DART data path. For example:\n"
            << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
-  }
-  else
-  {
+  } else {
     const auto path = mLocalRetriever->getFilePath(uri);
 
     // path is empty if the file specified by fileUri doesn't exist.
@@ -170,12 +158,9 @@ void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)
 {
   // Strip a trailing slash.
   std::string normalizedDataDirectory;
-  if (!dataDirectory.empty() && dataDirectory.back() == '/')
-  {
+  if (!dataDirectory.empty() && dataDirectory.back() == '/') {
     normalizedDataDirectory = dataDirectory.substr(0, dataDirectory.size() - 1);
-  }
-  else
-  {
+  } else {
     normalizedDataDirectory = dataDirectory;
   }
 
@@ -189,8 +174,7 @@ bool DartResourceRetriever::resolveDataUri(
   if (uri.mScheme.get_value_or("dart") != "dart")
     return false;
 
-  if (!uri.mPath)
-  {
+  if (!uri.mPath) {
     dtwarn << "[DartResourceRetriever::resolveDataUri] Failed extracting"
               " relative path from URI '"
            << uri.toString() << "'.\n";

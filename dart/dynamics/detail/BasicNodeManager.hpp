@@ -183,8 +183,7 @@ template <class NodeType>
 std::size_t BasicNodeManagerForSkeleton::getNumNodes(
     std::size_t treeIndex) const
 {
-  if (treeIndex >= mTreeNodeMaps.size())
-  {
+  if (treeIndex >= mTreeNodeMaps.size()) {
     dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
@@ -205,8 +204,7 @@ template <class NodeType>
 NodeType* BasicNodeManagerForSkeleton::getNode(
     std::size_t treeIndex, std::size_t nodeIndex)
 {
-  if (treeIndex >= mTreeNodeMaps.size())
-  {
+  if (treeIndex >= mTreeNodeMaps.size()) {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
@@ -216,8 +214,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
 
   const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
-  if (nodeMap.end() == it)
-  {
+  if (nodeMap.end() == it) {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are no Nodes of the requested type in this tree\n";
@@ -225,8 +222,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
     return nullptr;
   }
 
-  if (nodeIndex >= it->second.size())
-  {
+  if (nodeIndex >= it->second.size()) {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are only (" << it->second.size() << ") Nodes of the "
@@ -288,18 +284,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         func(get##AspectName(i));                                              \
       }                                                                        \
     }                                                                          \
@@ -309,18 +300,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         func(get##AspectName(i));                                              \
       }                                                                        \
     }                                                                          \
@@ -362,18 +348,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         func(get##AspectName(treeIndex, i));                                   \
       }                                                                        \
     }                                                                          \
@@ -383,18 +364,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         func(get##AspectName(treeIndex, i));                                   \
       }                                                                        \
     }                                                                          \
@@ -416,18 +392,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         func(get##AspectName(i));                                              \
       }                                                                        \
     }                                                                          \
@@ -437,18 +408,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(); ++i)                   \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         func(get##AspectName(i));                                              \
       }                                                                        \
     }                                                                          \
@@ -477,18 +443,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         func(get##AspectName(treeIndex, i));                                   \
       }                                                                        \
     }                                                                          \
@@ -498,18 +459,13 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   {                                                                            \
     if constexpr (std::is_same_v<                                              \
                       std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>)                                                   \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+                      bool>) {                                                 \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
       }                                                                        \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i)          \
-      {                                                                        \
+    } else {                                                                   \
+      for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         func(get##AspectName(treeIndex, i));                                   \
       }                                                                        \
     }                                                                          \

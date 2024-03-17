@@ -97,14 +97,11 @@ template <class NodeType>
 math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
-  {
+  if (this == _inCoordinatesOf) {
     const math::Jacobian& J = static_cast<const NodeType*>(this)->getJacobian();
 
     return J.bottomRows<3>();
-  }
-  else if (_inCoordinatesOf->isWorld())
-  {
+  } else if (_inCoordinatesOf->isWorld()) {
     const math::Jacobian& JWorld
         = static_cast<const NodeType*>(this)->getWorldJacobian();
 
@@ -137,13 +134,10 @@ template <class NodeType>
 math::AngularJacobian TemplatedJacobianNode<NodeType>::getAngularJacobian(
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
-  {
+  if (this == _inCoordinatesOf) {
     const math::Jacobian& J = static_cast<const NodeType*>(this)->getJacobian();
     return J.topRows<3>();
-  }
-  else if (_inCoordinatesOf->isWorld())
-  {
+  } else if (_inCoordinatesOf->isWorld()) {
     const math::Jacobian& JWorld
         = static_cast<const NodeType*>(this)->getWorldJacobian();
     return JWorld.topRows<3>();

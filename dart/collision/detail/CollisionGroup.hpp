@@ -69,8 +69,7 @@ void CollisionGroup::addShapeFramesOf(
 {
   assert(otherGroup);
 
-  if (otherGroup && this != otherGroup)
-  {
+  if (otherGroup && this != otherGroup) {
     for (const auto& info : otherGroup->mObjectInfoList)
       addShapeFrame(info->mFrame);
   }
@@ -115,8 +114,7 @@ void CollisionGroup::subscribeTo(
   const auto inserted = mBodyNodeSources.insert(BodyNodeSources::value_type(
       bodyNode.get(), BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
 
-  if (inserted.second)
-  {
+  if (inserted.second) {
     const BodyNodeSources::iterator& entry = inserted.first;
     bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
         [&](const dynamics::ShapeNode* shapeNode) {
@@ -136,13 +134,11 @@ void CollisionGroup::subscribeTo(
   const auto inserted = mSkeletonSources.insert(SkeletonSources::value_type(
       skeleton.get(), SkeletonSource(skeleton, skeleton->getVersion())));
 
-  if (inserted.second)
-  {
+  if (inserted.second) {
     SkeletonSource& entry = inserted.first->second;
 
     const std::size_t numBodies = skeleton->getNumBodyNodes();
-    for (std::size_t i = 0u; i < numBodies; ++i)
-    {
+    for (std::size_t i = 0u; i < numBodies; ++i) {
       const dynamics::BodyNode* bn = skeleton->getBodyNode(i);
 
       auto& childInfo
@@ -191,10 +187,8 @@ void CollisionGroup::removeShapeFramesOf(
 {
   assert(otherGroup);
 
-  if (otherGroup)
-  {
-    if (this == otherGroup)
-    {
+  if (otherGroup) {
+    if (this == otherGroup) {
       removeAllShapeFrames();
       return;
     }
@@ -241,8 +235,7 @@ void CollisionGroup::unsubscribeFrom(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
   auto it = mBodyNodeSources.find(bodyNode);
-  if (it != mBodyNodeSources.end())
-  {
+  if (it != mBodyNodeSources.end()) {
     for (const auto& entry : it->second.mObjects)
       removeShapeFrameInternal(entry.first, bodyNode);
 
@@ -258,10 +251,8 @@ void CollisionGroup::unsubscribeFrom(
     const dynamics::Skeleton* skeleton, const Others*... others)
 {
   auto it = mSkeletonSources.find(skeleton);
-  if (it != mSkeletonSources.end())
-  {
-    for (const auto& entry : it->second.mObjects)
-    {
+  if (it != mSkeletonSources.end()) {
+    for (const auto& entry : it->second.mObjects) {
       removeShapeFrameInternal(
           entry.first, static_cast<const dynamics::MetaSkeleton*>(skeleton));
     }

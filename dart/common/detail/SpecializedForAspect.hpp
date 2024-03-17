@@ -206,13 +206,10 @@ void SpecializedForAspect<SpecAspect>::_set(
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-  if (aspect)
-  {
+  if (aspect) {
     mSpecAspectIterator->second = aspect->cloneAspect();
     addToComposite(mSpecAspectIterator->second.get());
-  }
-  else
-  {
+  } else {
     mSpecAspectIterator->second = nullptr;
   }
 }

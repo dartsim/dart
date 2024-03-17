@@ -128,8 +128,7 @@ void TranslationalJoint::updateRelativeTransform() const
 //==============================================================================
 void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
-  {
+  if (_mandatory) {
     mJacobian.bottomRows<3>()
         = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
 

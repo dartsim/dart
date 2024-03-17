@@ -212,8 +212,7 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
   bool foundMin = false;
   bool foundMax = false;
 
-  for (int i = 0; i < maxTry; ++i)
-  {
+  for (int i = 0; i < maxTry; ++i) {
     const I val = math::Random::uniform<I>(min, max);
 
     if (val == min)
@@ -305,16 +304,14 @@ TEST(Random, SetSeed)
   std::vector<int> second;
   std::vector<int> third;
 
-  for (unsigned int i = 0; i < N; ++i)
-  {
+  for (unsigned int i = 0; i < N; ++i) {
     math::Random::setSeed(i);
     first.push_back(math::Random::uniform(min, max));
     second.push_back(math::Random::uniform(min, max));
     third.push_back(math::Random::uniform(min, max));
   }
 
-  for (unsigned int i = 0; i < N; ++i)
-  {
+  for (unsigned int i = 0; i < N; ++i) {
     math::Random::setSeed(i);
     EXPECT_EQ(math::Random::getSeed(), static_cast<unsigned int>(i));
     EXPECT_EQ(first[i], math::Random::uniform(min, max));

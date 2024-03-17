@@ -41,16 +41,11 @@ namespace dart::gui::osg {
 template <typename T>
 constexpr T getAlphaThreshold()
 {
-  if constexpr (std::is_same_v<T, float>)
-  {
+  if constexpr (std::is_same_v<T, float>) {
     return 1e-6;
-  }
-  else if constexpr (std::is_same_v<T, double>)
-  {
+  } else if constexpr (std::is_same_v<T, double>) {
     return 1e-9;
-  }
-  else
-  {
+  } else {
     return 1e-9;
   }
 }

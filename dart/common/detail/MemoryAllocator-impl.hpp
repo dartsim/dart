@@ -50,18 +50,14 @@ T* MemoryAllocator::construct(Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
   void* object = allocate(sizeof(T));
-  if (!object)
-  {
+  if (!object) {
     return nullptr;
   }
 
   // Call constructor. Return nullptr if failed.
-  try
-  {
+  try {
     new (object) T(std::forward<Args>(args)...);
-  }
-  catch (...)
-  {
+  } catch (...) {
     deallocate(object, sizeof(T));
     return nullptr;
   }
@@ -89,8 +85,7 @@ T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
 template <typename T>
 void MemoryAllocator::destroy(T* object) noexcept
 {
-  if (!object)
-  {
+  if (!object) {
     return;
   }
   object->~T();
