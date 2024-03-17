@@ -50,23 +50,23 @@ jobs:
         os: [ubuntu-latest]
         build: ["cp38-manylinux_x86_64"]
         experimental: [false]
-        release_only: [false]
+        release_only: [true]
 
         include:
           - os: ubuntu-latest
             build: "cp39-manylinux_x86_64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: ubuntu-latest
             build: "cp310-manylinux_x86_64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: ubuntu-latest
             build: "cp311-manylinux_x86_64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: ubuntu-latest
             build: "cp312-manylinux_x86_64"
@@ -85,8 +85,8 @@ jobs:
 
           - os: windows-latest
             build: "cp312-win_arm64"
-            experimental: false
-            release_only: false
+            experimental: true
+            release_only: true
 
     env:
       CIBW_BUILD: ${{ matrix.build }}
@@ -133,7 +133,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
-          name: ${{ matrix.build }}
+          name: ${{ matrix.os }}-${{ matrix.build }}
 
   # TODO: Disabled because installing from source doesn't work when the deps are not
   # installed in the system
@@ -154,7 +154,7 @@ jobs:
     # needs: [build_wheels, build_sdist]
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # upload to PyPI on every tag starting with 'release-'
     # if: github.event_name == 'push' && startsWith(github.ref, 'release-')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
@@ -164,8 +164,12 @@ jobs:
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
-          name: artifact
+          # name: artifact
           path: dist
+          merge-multiple: true
+
+      - name: List files in dist
+        run: ls -lR dist/
 
       - uses: pypa/gh-action-pypi-publish@v1.8.14
         with:
