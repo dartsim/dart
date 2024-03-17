@@ -233,6 +233,19 @@ if(MSVC)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
+  # There is a known bug in GCC 12.1 and above that leads to spurious 
+  # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
+  # -Warray-bounds warnings from gcc/x86_64-linux-gnu/12/include/avx512fintrin.h.
+  # The bug is tracked here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
+  # The following workaround can be removed once the bug is fixed.
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.1)
+    add_compile_options(-Wno-array-bounds)
+    add_compile_options(-Wno-dangling-pointer)
+    add_compile_options(-Wno-maybe-uninitialized)
+    add_compile_options(-Wno-stringop-overflow)
+    add_compile_options(-Wno-uninitialized)
+  endif()
+
   add_compile_options(-Wall -Wextra -fPIC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
@@ -241,6 +254,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if(GCC_VERSION VERSION_LESS 7.3.0)
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 7.3.0 or greater.")
+  endif()
+  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
+    # TODO: These warnings should be properly addressed and these compiler options removed
+    add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")

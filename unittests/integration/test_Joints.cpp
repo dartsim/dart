@@ -1120,11 +1120,11 @@ void testMimicJoint()
     // Check if the first joint achieved the velocity at each time-step
     EXPECT_NEAR(joints[0]->getVelocity(0), expected_vel, tol);
 
-    // Check if the mimic joint follows the "master" joint
+    // Check if the mimic joint follows the reference joint
     EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
   }
 
-  // In the end, check once more if the mimic joint followed the "master" joint
+  // In the end, check once more if the mimic joint followed the reference joint
   EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
 }
 

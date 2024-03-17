@@ -2075,15 +2075,15 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     return computeClosestPointOnLineSegment(_p, _support[0], _support[1]);
   }
 
-  double best = std::numeric_limits<double>::infinity(), check;
-  Eigen::Vector2d test, result;
+  double best = std::numeric_limits<double>::infinity();
+  Eigen::Vector2d result = Eigen::Vector2d::Zero();
   for (std::size_t i = 0; i < _support.size(); ++i)
   {
     const Eigen::Vector2d& p1 = (i == 0) ? _support.back() : _support[i - 1];
     const Eigen::Vector2d& p2 = _support[i];
 
-    test = computeClosestPointOnLineSegment(_p, p1, p2);
-    check = (test - _p).norm();
+    const Eigen::Vector2d test = computeClosestPointOnLineSegment(_p, p1, p2);
+    const double check = (test - _p).norm();
     if (check < best)
     {
       best = check;
