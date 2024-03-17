@@ -16,7 +16,7 @@ on:
 jobs:
   build_2022:
     name: ${{ matrix.build_type }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
@@ -24,34 +24,34 @@ jobs:
         build_type: [Release]
         # build_shared_libs: [ON, OFF]  # TODO(JS): Enable once shared lib build is resolved
         build_shared_libs: [OFF]
-    env:
-      BUILD_TYPE: ${{ matrix.build_type }}
-      VCPKG_ROOT: "C:/dartsim/vcpkg"
-      VCPKG_BUILD_TAG: v6.13-2022.07.25-0
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Dependencies
-        shell: cmd
-        run: |
-          mkdir -p C:\dartsim
-          choco install -y wget
-          wget -q https://github.com/dartsim/vcpkg-build/releases/download/%VCPKG_BUILD_TAG%/vcpkg-dartsim-dependencies.zip
-          unzip -qq vcpkg-dartsim-dependencies.zip -d C:\dartsim
+        uses: actions/checkout@v4
+
+      - uses: johnwason/vcpkg-action@v6
+        with:
+          pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 coin-or-ipopt flann freeglut glfw3 nlopt ode opengl osg pagmo2 pybind11 tinyxml2 urdfdom
+          triplet: x64-windows
+          revision: "2024.02.14"
+          github-binarycache: true
+          token: ${{ github.token }}
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -U pytest
+
       - name: Build
         shell: cmd
         run: |
           mkdir build
           cd build
           cmake .. -G "Visual Studio 17 2022" -A x64 -Wno-dev ${{ matrix.toolset }} ^
-            -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
-          cmake --build . --config %BUILD_TYPE% --target ALL_BUILD --parallel
-          ctest --rerun-failed --output-on-failure -C %BUILD_TYPE%
+          cmake --build . --config ${{ matrix.build_type }} --target ALL_BUILD --parallel
+          ctest --rerun-failed --output-on-failure -C ${{ matrix.build_type }}

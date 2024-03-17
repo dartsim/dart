@@ -78,7 +78,7 @@ private:
   struct Data
   {
     /// Position of the inertial frame.
-    Eigen::Vector3d mPos;
+    Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
 
     /// Quaternion
     Eigen::Quaterniond mQuat{Eigen::Quaterniond::Identity()};
@@ -104,7 +104,7 @@ private:
     Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
 
     /// Mass of the body.
-    double mMass;
+    double mMass{0};
 
     /// Diagonal inertia matrix, expressing the body inertia relative to the
     /// inertial frame.
@@ -117,16 +117,16 @@ private:
   Data mData;
 
   /// Position of the inertial frame.
-  Eigen::Vector3d mPos;
+  Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
 
   Eigen::Isometry3d mRelativeTransform{Eigen::Isometry3d::Identity()};
   Eigen::Isometry3d mWorldTransform{Eigen::Isometry3d::Identity()};
 
   /// Mass of the body.
-  double mMass;
+  double mMass{0};
 
-  Eigen::Vector3d mDiagonalInertia;
-  Eigen::Vector3d mOffDiagonalInertia;
+  Eigen::Vector3d mDiagonalInertia{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mOffDiagonalInertia{Eigen::Vector3d::Zero()};
 };
 
 } // namespace detail

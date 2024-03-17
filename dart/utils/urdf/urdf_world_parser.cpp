@@ -42,12 +42,9 @@
 #include <sstream>
 
 #include <tinyxml2.h>
-#include <urdf_model/model.h>
-#include <urdf_model/pose.h>
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_world/world.h>
 
 #include "dart/common/Console.hpp"
+#include "dart/utils/urdf/IncludeUrdf.hpp"
 
 const bool debug = false;
 

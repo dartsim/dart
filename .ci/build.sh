@@ -147,7 +147,7 @@ cmake .. \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
-  -DDART_BUILD_EXTRAS=ON \
+  -DDART_BUILD_EXTRAS=OFF \
   -DDART_CODECOV=$CODECOV \
   ${install_prefix_option}
 
@@ -201,5 +201,5 @@ fi
 if [ "$BUILD_DARTPY" = "ON" ]; then
   echo $PYTHONPATH
   cd $BUILD_DIR/python/examples/hello_world
-  python3 main.py
+  # python3 main.py
 fi

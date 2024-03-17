@@ -989,14 +989,16 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       // fclCollGeom.reset(new fcl::Cone(radius, height));
       auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
       auto fclCone = fcl::Cone(radius, height);
-      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      ::fcl::generateBVHModel(
+          *fclMesh, fclCone, fcl::getTransform3Identity(), 16, 16);
       geom = fclMesh;
     }
     else
     {
       auto fclMesh = new ::fcl::BVHModel<fcl::OBBRSS>();
       auto fclCone = fcl::Cone(radius, height);
-      ::fcl::generateBVHModel(*fclMesh, fclCone, fcl::Transform3(), 16, 16);
+      ::fcl::generateBVHModel(
+          *fclMesh, fclCone, fcl::getTransform3Identity(), 16, 16);
       geom = fclMesh;
     }
   }
@@ -1006,7 +1008,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     const auto pyramid = std::static_pointer_cast<const PyramidShape>(shape);
     // Use mesh since FCL doesn't support pyramid shape.
-    geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::Transform3());
+    geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   }
   else if (PlaneShape::getStaticType() == shapeType)
   {
@@ -1022,9 +1024,10 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
     {
       geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
-      dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
-             << "FCLCollisionDetector. We create a thin box mesh insted, where "
-             << "the size is [1000 0 1000].\n";
+      dtwarn
+          << "[FCLCollisionDetector] PlaneShape is not supported by "
+          << "FCLCollisionDetector. We create a thin box mesh instead, where "
+          << "the size is [1000 0 1000].\n";
     }
   }
   else if (MeshShape::getStaticType() == shapeType)
