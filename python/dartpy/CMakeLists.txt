@@ -6,23 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(Python3 COMPONENTS Interpreter Development)
-
-# Set up pybind11
-include(FetchContent)
-FetchContent_Declare(
-  pybind11
-  GIT_REPOSITORY https://github.com/pybind/pybind11
-  GIT_TAG v2.11.1
-)
-FetchContent_MakeAvailable(pybind11)
-
-if(NOT pybind11_FOUND)
-  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
-  return()
-endif()
-
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+execute_process(COMMAND ${Python3_EXECUTABLE} -c
   "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
