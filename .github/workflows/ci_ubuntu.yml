@@ -67,9 +67,9 @@ jobs:
             $ci_env -e CI=true \
             --platform $PLATFORM \
             --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
-            --env-file ./.ci/docker/env.list \
+            --env-file ./scripts/docker/env.list \
             $DART_DEV_IMAGE:$DOCKER_TAG \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./.ci/build.sh"
+            /bin/sh -c "cd $GITHUB_WORKSPACE && ./scripts/build.sh"
 
   build_on_pixi:
     name: ubuntu-pixi
@@ -94,4 +94,3 @@ jobs:
       - name: Test DART and dartpy
         run: |
           pixi run build
-

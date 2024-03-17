@@ -119,7 +119,7 @@ fi
 
 # Build API documentation and exit
 if [ $BUILD_DOCS = "ON" ]; then
-  . "${BUILD_DIR}/.ci/build_docs.sh"
+  . "${BUILD_DIR}/scripts/build_docs.sh"
   exit 0
 fi
 

@@ -14,6 +14,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Delete Script
-        run: sh ./.ci/cleanup.sh dartsim dart
+        run: sh ./scripts/cleanup.sh dartsim dart
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

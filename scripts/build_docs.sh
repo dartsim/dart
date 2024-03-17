@@ -17,7 +17,7 @@ DART_DOCS_OUTPUT_DIR="${BUILD_DIR}/gh-pages"
 mkdir -p ${DART_DOCS_OUTPUT_DIR}
 
 # Initialize list of API versions
-cat <<EOF > ${DART_DOCS_OUTPUT_DIR}/index.md
+cat <<EOF >${DART_DOCS_OUTPUT_DIR}/index.md
 # DART API Documentation
 EOF
 
@@ -29,12 +29,12 @@ cd ${DART_DOCS_BUILD_DIR}
 # Add entries
 while read version; do
   if [[ ${version} == DART* ]]; then
-    printf "\n### ${version}\n\n" >> ${DART_DOCS_OUTPUT_DIR}/index.md
+    printf "\n### ${version}\n\n" >>${DART_DOCS_OUTPUT_DIR}/index.md
     continue
   fi
 
   # Add entry to list of API versions
-  printf "* [${version}](https://dartsim.github.io/dart/${version}/)\n" >> ${DART_DOCS_OUTPUT_DIR}/index.md
+  printf "* [${version}](https://dartsim.github.io/dart/${version}/)\n" >>${DART_DOCS_OUTPUT_DIR}/index.md
 
   # Build documentation
   git -C ${DART_CLONE_DIR} checkout ${version}
@@ -43,4 +43,4 @@ while read version; do
   make docs
 
   mv doxygen/html ${DART_DOCS_OUTPUT_DIR}/${version}
-done < ${DART_CLONE_DIR}/.ci/docs_versions.txt
+done <${DART_CLONE_DIR}/scripts/docs_versions.txt
