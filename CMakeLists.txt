@@ -591,14 +591,14 @@ endif()
 #===============================================================================
 if(DOXYGEN_FOUND)
 
-  set(DOXYGEN_DOXYFILE_IN      "${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in"    )
-  set(DOXYGEN_DOXYFILE         "${PROJECT_BINARY_DIR}/doxygen/Doxyfile"       )
-  set(DOXYGEN_HTML_INDEX       "${PROJECT_BINARY_DIR}/doxygen/html/index.html")
-  set(DOXYGEN_OUTPUT_ROOT      "${PROJECT_BINARY_DIR}/doxygen/html"           )
+  set(DOXYGEN_DOXYFILE_IN      "${PROJECT_SOURCE_DIR}/docs/doxygen/Doxyfile.in"    )
+  set(DOXYGEN_DOXYFILE         "${PROJECT_BINARY_DIR}/docs/doxygen/Doxyfile"       )
+  set(DOXYGEN_HTML_INDEX       "${PROJECT_BINARY_DIR}/docs/doxygen/html/index.html")
+  set(DOXYGEN_OUTPUT_ROOT      "${PROJECT_BINARY_DIR}/docs/doxygen/html"           )
   set(DOXYGEN_GENERATE_TAGFILE "${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag"   )
   set(DOXYGEN_INCLUDE_PATH     "${PROJECT_SOURCE_DIR}"                        )
   set(DOXYGEN_INPUT_ROOT       "${PROJECT_SOURCE_DIR}/dart"                   )
-  set(DOXYGEN_EXTRA_INPUTS     "${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox"   )
+  set(DOXYGEN_EXTRA_INPUTS     "${PROJECT_SOURCE_DIR}/docs/doxygen/mainpage.dox"   )
   set(DOXYGEN_EXCLUDE          "${PROJECT_SOURCE_DIR}/dart/external"          )
   set(DOXYGEN_STRIP_FROM_PATH  "${CMAKE_CURRENT_SOURCE_DIR}"                  )
 
@@ -612,7 +612,7 @@ if(DOXYGEN_FOUND)
   # - DOXYGEN_STRIP_FROM_PATH
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
   file(
-    COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png"
+    COPY "${PROJECT_SOURCE_DIR}/docs/doxygen/DART logo.png"
     DESTINATION ${DOXYGEN_OUTPUT_ROOT}
   )
   add_custom_command(

@@ -53,7 +53,7 @@ TAGS
 /nbproject/
 
 # Doxygen documentation
-/doxygen/html/
+docs/doxygen/html/
 
 # Sphinx documentation
 docs/readthedocs/site
