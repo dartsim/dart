@@ -1,4 +1,6 @@
-# Overview
+# Multi Pendulum
+
+## Overview
 
 This tutorial will demonstrate some basic interaction with DART's dynamics
 API during simulation. This will show you how to:
@@ -13,7 +15,7 @@ API during simulation. This will show you how to:
 
 Please reference the source code in [**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp) and [**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum-Finished.cpp).
 
-# Lesson 0: Simulate a passive multi-pendulum
+## Lesson 0: Simulate a passive multi-pendulum
 
 This is a warmup lesson that demonstrates how to set up a simulation
 program in DART. The example we will use throughout this tutorial is a
@@ -72,7 +74,7 @@ routine. For example, one can incorporate sensors, actuators, or user
 interaction in the forward simulation.
 
 
-# Lesson 1: Change shapes and applying forces
+## Lesson 1: Change shapes and applying forces
 
 We have a pendulum with five bodies, and we want to be able to apply forces to
 them during simulation. Additionally, we want to visualize these forces so we
@@ -180,16 +182,16 @@ for ``mForceCountDown``. In that if-statement, we'll grab the relevant BodyNode:
 BodyNode* bn = mPendulum->getBodyNode(i);
 ```
 
-Now we'll create an ``Eigen::Vector3d`` that describes the force and another one
-that describes the location for that force. An ``Eigen::Vector3d`` is the Eigen
+Now we'll create an ``math::Vector3d`` that describes the force and another one
+that describes the location for that force. An ``math::Vector3d`` is the Eigen
 C++ library's version of a three-dimensional mathematical vector. Note that the
 ``d`` at the end of the name stands for ``double``, not for "dimension". An
-Eigen::Vector3f would be a three-dimensional vector of floats, and an
-Eigen::Vector3i would be a three-dimensional vector of integers.
+math::Vector3f would be a three-dimensional vector of floats, and an
+math::Vector3i would be a three-dimensional vector of integers.
 
 ```cpp
-Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
-Eigen::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+math::Vector3d force = default_force * math::Vector3d::UnitX();
+math::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
 ```
 
 The force will have a magnitude of ``default_force`` and it will point in the
@@ -237,7 +239,7 @@ shape; we just need to add it:
 bn->createShapeNodeWith<VisualAspect>(mArrow);
 ```
 
-# Lesson 2: Set spring and damping properties for joints
+## Lesson 2: Set spring and damping properties for joints
 
 DART allows Joints to have implicit spring and damping properties. By default,
 these properties are zeroed out, so a joint will only exhibit the forces that
@@ -336,7 +338,7 @@ Again, we want to make sure that the damping coefficient is never negative. In
 fact, a negative damping coefficient would be far more harmful than a negative
 stiffness coefficient.
 
-# Lesson 3: Add and remove dynamic constraints
+## Lesson 3: Add and remove dynamic constraints
 
 Dynamic constraints in DART allow you to attach two BodyNodes together according
 to a selection of a few different Joint-style constraints. This allows you to
@@ -356,15 +358,15 @@ Now we'll want to compute the location that the constraint should have. We want
 to connect the very end of the tip to the world, so the location would be:
 
 ```cpp
-Eigen::Vector3d location =
-    tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
+math::Vector3d location =
+    tip->getTransform() * math::Vector3d(0.0, 0.0, default_height);
 ```
 
 Now we can create the BallJointConstraint:
 
 ```cpp
 mBallConstraint =
-    std::make_shared<dart::constraint::BallJointConstraint>(tip, location);
+    std::make_shared<dart::dynamics::BallJointConstraint>(tip, location);
 ```
 
 And then add it to the world:
@@ -384,28 +386,3 @@ mBallConstraint = nullptr;
 Setting mBallConstraint to a nullptr will allow its smart pointer to delete it.
 
 **Now you are ready to run the demo!**
-
-<div id="fb-root"></div>
-<script>(function(d, s, id) {
-  var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) return;
-  js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
-  fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));</script>
-
-<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/multi-pendulum/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
-
-<div id="disqus_thread"></div>
-<script type="text/javascript">
-    /* * * CONFIGURATION VARIABLES * * */
-    var disqus_shortname = 'dartsim';
-    
-    /* * * DON'T EDIT BELOW THIS LINE * * */
-    (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>

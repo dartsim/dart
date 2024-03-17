@@ -1,0 +1,187 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../developer_guide/code_style_guide.rst:2
+#: ba70b575711343ada58a990ac83a8b83
+msgid "Code Style Guide"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:4
+#: 2d3c3489c11743f6938bb8a3394daa09
+msgid "This section describes the code style used in DART project."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:7
+#: ce4165e8c1cf43a2bb34824b70130748
+msgid "C++ Style Guide"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:10
+#: 8f00cb5b4dfa4b03b0d1d54f9eaab507
+msgid "Macro Definitions"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:12
+#: a83b4db981604427a2732193d94c9a72
+msgid ""
+"In DART, we use macros to define compile-time constants and control code "
+"flow. All macros in our codebase are prefixed with ``DART_`` to "
+"distinguish them from other identifiers. Macros that control optional "
+"dependencies and features follow a consistent naming convention:"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:17
+#: 87f47ab6d173432e90c37a674269b4fd
+msgid ""
+"``DART_HAS_<optional_dep>``: A boolean value that is set to true when an "
+"optional dependency is detected in the system."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:19
+#: 55460728a14045b091fd3d8811d388a5
+msgid ""
+"``DART_ENABLE_<optional_feature>``: A boolean value that is set to true "
+"if the optional feature should be enabled when the requirements are met."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:21
+#: b2e2de5f040c4df38ec3f0d596c8fa3c
+msgid ""
+"``DART_ENABLED_<optional_feature>``: A boolean value that is set to true "
+"if the optional feature is enabled."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:24
+#: ef95079701cd492db9ebb6d9132467c7
+msgid ""
+"We use all-caps for all macro names to ensure consistency and to visually"
+" distinguish macros from other types of variables."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:28
+#: 787725e9643847b79d363ee87f06a6b4
+msgid "Python Style Guide"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:31
+#: 5046a99eaf2049e093fdaf74b497516d
+msgid "Naming Conventions"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:33
+#: 52f1fadd2eab4132af16f38c747813e0
+msgid ""
+"This project uses different naming conventions for the C++ code and the "
+"Python bindings. In the C++ code, function names are in camelCase and "
+"variables and member variables use snake_case, whereas in the Python "
+"bindings, both function names and variables use snake_case."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:38
+#: 8b6f33987aba49b4a7e025b551fa2112
+msgid "Here are the naming conventions used in the Python bindings:"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:40
+#: 7a6a75f95dfd4f728c7c90e5e69e9b16
+msgid ""
+"Function names are in snake_case, with words separated by underscores "
+"(e.g. `calculate_average`)."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:42
+#: 4a03afd06140460e87872bd2e779bd0f
+msgid ""
+"Class names are in CamelCase, with the first letter of each word in "
+"uppercase (e.g. `MyClass`)."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:44
+#: 69b2e13c48af4956af50b66ea88da97a
+msgid ""
+"Variables and member variables are in snake_case, with words separated by"
+" underscores (e.g. `my_variable`)."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:46
+#: 4f0805136656441f9e1dfae673391733
+msgid ""
+"Constants are in ALL_CAPS, with words separated by underscores (e.g. "
+"`MY_CONSTANT`)."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:48
+#: 6a4d2dec618142f5ab2aa4b9f04e1df0
+msgid ""
+"Namespaces are represented by modules, and are in lowercase, with words "
+"separated by underscores (e.g. `my_module.my_namespace`)."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:51
+#: 0675040824004761b0485ddcefcd8fa7
+msgid "For example, the identity member function is called isIdentity in C++:"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:58
+#: b0ce99e2b60c4316b35fee38c229762b
+msgid "while it is called is_identity in Python:"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:66
+#: 7f5c5911f1cd41688a782997c7bf6cc0
+msgid "Motivations for Different Naming Conventions"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:68
+#: fc895976d525421ca4915f23369eaad1
+msgid ""
+"The reason for using different naming conventions in the C++ code and the"
+" Python bindings is to follow the conventions that are most commonly used"
+" in each language. The camelCase convention is more common for function "
+"names in the C++ community, while the snake_case convention is more "
+"common for function names in the Python community."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:74
+#: c68636c6245d4c7a841d111e2646ee9b
+msgid ""
+"By using the standard naming conventions in each language, we can make "
+"the code more readable and easier to understand for developers who are "
+"familiar with each language. Consistency within each language is "
+"important, but it's also crucial to document the conventions clearly so "
+"that other developers can understand how to use the code and what the "
+"naming conventions mean in each context. Additionally, following the "
+"naming conventions of each language can help with integration with other "
+"Python modules or projects."
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:83
+#: 68e97a6dde60446c8cffcec6fe04cf3a
+msgid "CMake Style Guide"
+msgstr ""
+
+#: ../../developer_guide/code_style_guide.rst:85
+#: 6c062e857e59461594ebfe1473b9de14
+msgid "TODO"
+msgstr ""
+

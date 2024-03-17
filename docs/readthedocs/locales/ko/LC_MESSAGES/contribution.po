@@ -1,0 +1,255 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-25 19:23-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../contribution.rst:2 3f15d94949c54da3b3c64b50c9c39b6f
+msgid "Contributing to DART"
+msgstr ""
+
+#: ../../contribution.rst:4 d0658e2f9b014b02bf348abda527b9d8
+msgid ""
+"DART is a collaborative project, and we welcome contributions from anyone"
+" who is interested in helping make the project better. Whether you're "
+"interested in fixing bugs, adding new features, improving documentation, "
+"or something else entirely, we appreciate your contributions."
+msgstr ""
+
+#: ../../contribution.rst:10 6f15c4a11a7540afb1b58d53a0fa8ff1
+msgid "Getting Help"
+msgstr ""
+
+#: ../../contribution.rst:12 341305a4ab9f4e81a466ff0858d21f08
+msgid ""
+"If you're looking to contribute to DART but need help getting started, "
+"there are many resources available to you. Here are some places you can "
+"turn to for help:"
+msgstr ""
+
+#: ../../contribution.rst:16 c68f98efd2c94cd18ef1f883ec14978b
+msgid "DART documentation"
+msgstr ""
+
+#: ../../contribution.rst:17 e1f645e3fabb46909ff2c8cfebe0b5b9
+msgid "Issue tracker on GitHub"
+msgstr ""
+
+#: ../../contribution.rst:18 20e42f60d4194d35aa8cf77ee0e9fb5f
+msgid "Feature requests on GitHub"
+msgstr ""
+
+#: ../../contribution.rst:19 44cbdbd4e66f43d7bf71301504e5b297
+msgid "Community showcases on GitHub"
+msgstr ""
+
+#: ../../contribution.rst:21 0362e9c11abb49569a836f1bce119191
+msgid ""
+"Of course, you are welcome to reach out to us directly if you need "
+"further assistance. We are always happy to help!"
+msgstr ""
+
+#: ../../contribution.rst:25 205b4f3a599141769f3bdf0d221e8c24
+msgid "Credits"
+msgstr ""
+
+#: ../../contribution.rst:27 53617656800848fe8842d196ed07d51b
+msgid ""
+"DART was initially created by `C. Karen Liu`_ and `Mike Stilman`_ in 2011"
+" at Georgia Tech, and has since evolved with the contributions of various"
+" institutions and individuals. We would like to extend our thanks and "
+"appreciation to the following institutions and individuals who have "
+"contributed to DART:"
+msgstr ""
+
+#: ../../contribution.rst:33 36154a4e5f964348a8a38c3de9b362bf
+msgid "Humanoid Lab, Georgia Tech Research Corporation"
+msgstr ""
+
+#: ../../contribution.rst:34 c30bace6721840849cfca42d7a6d33fc
+msgid "Personal Robotics Lab, Carnegie Mellon University"
+msgstr ""
+
+#: ../../contribution.rst:35 03faf4944bd444328e698222a451a798
+msgid "Graphics Lab, Georgia Tech Research Corporation"
+msgstr ""
+
+#: ../../contribution.rst:36 b23546ae610348989de672bf3e196703
+msgid "Personal Robotics Lab, University of Washington"
+msgstr ""
+
+#: ../../contribution.rst:37 8d828cc4eec04c6ea194846c14ab0302
+msgid "Open Source Robotics Foundation"
+msgstr ""
+
+#: ../../contribution.rst:38 b27f2d9811b940b68b77a73c177cd2f9
+msgid "The Movement Lab, Stanford University"
+msgstr ""
+
+#: ../../contribution.rst:40 46706f5dc97145c1878d7eb88b7e86c4
+msgid "and:"
+msgstr ""
+
+#: ../../contribution.rst:42 9b018b31aaa940b4bcf661b10ce2aaf8
+msgid ""
+"`C. Karen Liu`_: project creator, multibody dynamics, constraint "
+"resolution, tutorials"
+msgstr ""
+
+#: ../../contribution.rst:44 59cce61772a4429fb648919522a19db9
+msgid "`Mike Stilman`_: project creator"
+msgstr ""
+
+#: ../../contribution.rst:45 3695659d135847eeb4a27cf6a8291220
+msgid "`Siddhartha S. Srinivasa <https://goodrobot.ai/>`_: project advisor"
+msgstr ""
+
+#: ../../contribution.rst:46 82b98347e4c645c1b75ce222e918b07e
+msgid ""
+"`Jeongseok Lee <https://github.com/jslee02>`_: project director, "
+"multibody dynamics, constraint resolution, collision detection, tutorials"
+msgstr ""
+
+#: ../../contribution.rst:47 5fcec811970546e1a8276d233a03a2c9
+msgid ""
+"`Michael X. Grey <https://github.com/mxgrey>`_: project director, "
+"extensive API improvements, inverse kinematics, gui::osg, tutorials"
+msgstr ""
+
+#: ../../contribution.rst:48 d4215b1eee42433fb5c5e02a4041caca
+msgid ""
+"`Tobias Kunz <https://github.com/tobiaskunz>`_: former project director, "
+"motion planner"
+msgstr ""
+
+#: ../../contribution.rst:49 e6c74fbbc9e34ef98477102b1bfeab9a
+msgid ""
+"`Sumit Jain "
+"<http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/>`_: multibody"
+" dynamics"
+msgstr ""
+
+#: ../../contribution.rst:50 a220e6eb0efc410fb20bbe1a28d9a040
+msgid "`Yuting Ye <https://github.com/yutingye>`_: multibody dynamics, GUI"
+msgstr ""
+
+#: ../../contribution.rst:51 b49f11007183405fabf9219cc5e86b56
+msgid ""
+"`Michael Koval <https://github.com/mkoval>`_: uri, resource retriever, "
+"bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:52 9b685614d98e43e181cad11f2d6a6419
+msgid "`Ana C. Huamán Quispe <https://github.com/ana-GT>`_: urdf parser"
+msgstr ""
+
+#: ../../contribution.rst:53 d6994afda7bf437abeab13136ff27716
+msgid "`Chen Tang <https://github.com/chentang>`_: collision detection"
+msgstr ""
+
+#: ../../contribution.rst:54 255b0fb18f9c4a86a1690bf2b8100e6d
+msgid "`Matthew Dutton <https://github.com/mdutton3>`_: build and bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:55 01187a9b310f4dc09b2ffd13375db7b9
+msgid "`Eric Huang <https://github.com/ehuang3>`_: build and bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:56 f6e8b77909a740a3baf47401930a418f
+msgid ""
+"`Pushkar Kolhe <https://github.com/pushkar>`_: early DART build system "
+"design"
+msgstr ""
+
+#: ../../contribution.rst:57 5c42753cbfed4e1c8298776c0c036857
+msgid "`Saul Reynolds-Haertle <https://github.com/saulrh>`_: examples, bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:58 80525a7064c94b80b67ee24833cc0758
+msgid "`Arash Rouhani <https://github.com/Tarrasch>`_: build fixes"
+msgstr ""
+
+#: ../../contribution.rst:59 cf40665cab344a73bfd80880c360ea32
+msgid "`Kristin Siu <https://github.com/kasiu>`_: integrators, bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:60 b0fd04ad38394d40a002a4302b0247d0
+msgid ""
+"`Steven Peters <https://github.com/scpeters>`_: build improvements and "
+"fixes"
+msgstr ""
+
+#: ../../contribution.rst:61 151932101fde42f6ba59a22831ddad04
+msgid "`Can Erdogan <https://github.com/cerdogan>`_: planning, examples"
+msgstr ""
+
+#: ../../contribution.rst:62 21b6c3286a3d4a39a7e50ba22e78fe9c
+msgid "`Jie Tan <https://github.com/jietan>`_: lcp solver, renderer"
+msgstr ""
+
+#: ../../contribution.rst:63 b88e04fcfbd54709ad7885a6c4e98c65
+msgid "`Yunfei Bai <https://github.com/YunfeiBai>`_: build and bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:64 dfd1b92660984981b31065cec74b5cb5
+msgid ""
+"`Konstantinos Chatzilygeroudis <https://github.com/costashatz>`_: mimic "
+"joint, OSG shadows, shape deep copy, build and bug fixes"
+msgstr ""
+
+#: ../../contribution.rst:65 bdfcb639a7874887bf5c1469b1a5435b
+msgid ""
+"`Sehoon Ha <https://github.com/sehoonha>`_: early DART data structure "
+"design, pydart"
+msgstr ""
+
+#: ../../contribution.rst:66 0e224c1124c24f79a50ed4f349092204
+msgid "`Donny Ward <https://github.com/donnyward>`_: build fix"
+msgstr ""
+
+#: ../../contribution.rst:67 e58c3df8d38049e5b2574aa22522300c
+msgid "`Andrew Price <https://github.com/a-price>`_: build fix"
+msgstr ""
+
+#: ../../contribution.rst:68 91fe0b61832f456b84632a0b95f781ec
+msgid "`Eric Tobis <https://github.com/tobis>`_: build fix"
+msgstr ""
+
+#: ../../contribution.rst:69 a660997735494e9093dda5ef2507c68c
+msgid "`Jonathan Martin <https://github.com/nybblr>`_: build fix"
+msgstr ""
+
+#: ../../contribution.rst:71 ef745c55951045719a6fff3d99efc862
+msgid ""
+"and many others have contributed bug fixes, documentation, and other "
+"improvements to DART, which can be found in the `DART GitHub repository "
+"<https://github.com/dartsim/dart/graphs/contributors>`_."
+msgstr ""
+
+#: ../../contribution.rst:77 460d80000e8845e69130e8719baf2d78
+msgid ""
+"If you have contributed to DART and your name is missing from the list "
+"above, or if your contributions are not accurately reflected, or any "
+"issue is found, please let us know by opening an issue on GitHub or "
+"contacting us directly. We apologize for any oversights and will make "
+"every effort to update the list in a timely manner. Thank you for your "
+"contributions to DART!"
+msgstr ""
+

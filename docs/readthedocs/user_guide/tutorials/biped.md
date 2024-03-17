@@ -1,4 +1,6 @@
-# Overview
+# Biped
+
+## Overview
 This tutorial demonstrates the dynamic features in DART useful for
 developing controllers for bipedal or wheel-based robots. The tutorial
 consists of seven Lessons covering the following topics:
@@ -11,7 +13,7 @@ consists of seven Lessons covering the following topics:
 
 Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp).
 
-# Lesson 1: Joint limits and self-collision
+## Lesson 1: Joint limits and self-collision
 Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
 and call ``loadBiped`` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
@@ -23,7 +25,7 @@ load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/relea
 SkeletonPtr loadBiped()
 {
 ...
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/biped.skel");
+    WorldPtr world = SkelParser::readWorld(DART_DATA_LOCAL_PATH"skel/biped.skel");
     SkeletonPtr biped = world->getSkeleton("biped");
 ...
 }
@@ -89,7 +91,7 @@ Running the program again, you should see that the character is still
 floppy like a ragdoll, but now the joints do not bend backward and the
 body nodes do not penetrate each other anymore.
 
-# Lesson 2: Proportional-derivative control
+## Lesson 2: Proportional-derivative control
 
 To actively control its own motion, the biped must exert internal
 forces using actuators. In this Lesson, we will design one of the
@@ -173,11 +175,11 @@ controller and add them to the internal forces of biped using ``setForces``:
 ```cpp
 void addPDForces()
 {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    math::VectorXd q = mBiped->getPositions();
+    math::VectorXd dq = mBiped->getVelocities();
     
-    Eigen::VectorXd p = -mKp * (q - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
+    math::VectorXd p = -mKp * (q - mTargetPositions);
+    math::VectorXd d = -mKd * dq;
     
     mForces += p + d;
     mBiped->setForces(mForces);
@@ -203,7 +205,7 @@ skeletons. In the next Lesson, we will introduce a much more efficient
 way to stabilize the PD controllers without endless tuning and
 trial-and-errors.
 
-# Lesson 3: Stable PD control
+## Lesson 3: Stable PD control
 
 SPD is a variation of PD control proposed by
 [Jie Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The
@@ -220,13 +222,13 @@ implementation of SPD simple and concise:
 ```cpp
 void addSPDForces()
 {
-    Eigen::VectorXd q = mBiped->getPositions();
-    Eigen::VectorXd dq = mBiped->getVelocities();
+    math::VectorXd q = mBiped->getPositions();
+    math::VectorXd dq = mBiped->getVelocities();
 
-    Eigen::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
-    Eigen::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
-    Eigen::VectorXd d = -mKd * dq;
-    Eigen::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
+    math::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
+    math::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
+    math::VectorXd d = -mKd * dq;
+    math::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
 
     mForces += p + d - mKd * qddot * mBiped->getTimeStep();
     mBiped->setForces(mForces);
@@ -253,7 +255,7 @@ backward or forward push), the biped loses its balance quickly. We
 will demonstrate a more robust feedback controller in the next Lesson.
 
 
-# Lesson 4: Ankle strategy
+## Lesson 4: Ankle strategy
 
 Ankle (or hip) strategy is an effective way to maintain standing
 balance. The idea is to adjust the target position of ankles according
@@ -272,9 +274,9 @@ anterior-posterior axis:
 ```cpp
 void addAnkleStrategyForces()
 {
-    Eigen::Vector3d COM = mBiped->getCOM();
-    Eigen::Vector3d offset(0.05, 0, 0);
-    Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
+    math::Vector3d COM = mBiped->getCOM();
+    math::Vector3d offset(0.05, 0, 0);
+    math::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
     double diff = COM[0] - COP[0];
 ...
 }
@@ -291,8 +293,8 @@ computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 void addAnkleStrategyForces()
 {
 ...
-    Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
-    Eigen::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
+    math::Vector3d dCOM = mBiped->getCOMLinearVelocity();
+    math::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
     double dDiff = dCOM[0] - dCOP[0];
 ...
 }
@@ -316,7 +318,7 @@ The remaining of the ankle strategy implementation is just the matter
 of parameters tuning. We found that using different feedback rules for
 falling forward and backward result in more stable controller.
 
-# Lesson 5: Skeleton editing
+## Lesson 5: Skeleton editing
 
 DART provides various functions to copy, delete, split, and merge
 parts of skeletons to alleviate the pain of building simulation models from
@@ -329,7 +331,7 @@ We first load a skateboard from **skateboard.skel**:
 ```cpp
 void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/skateboard.skel");
+    WorldPtr world = SkelParser::readWorld(DART_DATA_LOCAL_PATH"skel/skateboard.skel");
     SkeletonPtr skateboard = world->getSkeleton(0);
 ...
 }
@@ -345,7 +347,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
 ...
     EulerJoint::Properties properties = EulerJoint::Properties();
-    properties.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0, 0.1, 0);
+    properties.mT_ChildBodyToJoint.translation() = math::Vector3d(0, 0.1, 0);
 ...
 }
 ```
@@ -376,7 +378,7 @@ a table of some relevant functions for quick references.
 | copyAs                | auto newSkel = bd1->copyAs("new skeleton")    | Create clones of the BodyNode bd1 and its subtree and create a new Skeleton with "new skeleton" name to attach them to. |
 
 
-# Lesson 6: Actuator types
+## Lesson 6: Actuator types
 
 DART provides five types of actuator. Each joint can select its own
 actuator type.
@@ -445,7 +447,7 @@ biped falls on the floor immediately because the current target pose is not
 balanced for one-foot stance. We need to find a better target
 pose.
 
-# Lesson 7: Inverse kinematics
+## Lesson 7: Inverse kinematics
 
 Instead of manually designing a target pose, this time we will solve for
 a balanced pose by formulating an inverse kinematics (IK) problem and
@@ -473,10 +475,10 @@ center of mass of the Skeleton, as well as the Jacobian of the center
 of mass of a BodyNode:
 
 ```cpp
-Eigen::VectorXd solveIK(SkeletonPtr biped)
+math::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
+    math::Vector3d localCOM = leftHeel->getCOM(leftHeel);
     LinearJacobian jacobian = biped->getCOMLinearJacobian() - biped->getLinearJacobian(leftHeel, localCOM);
 ...
 }
@@ -493,10 +495,10 @@ reference. We use ``getLinearJacobian`` again to compute the
 gradient of the second term of the objective function:
 
 ```cpp
-Eigen::VectorXd solveIK(SkeletonPtr biped)
+math::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    Eigen::Vector3d offset(0.0, -0.04, -0.03);
+    math::Vector3d offset(0.0, -0.04, -0.03);
     gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
 ...
 }
@@ -519,28 +521,3 @@ This Lesson concludes the entire Biped tutorial. You should see a biped
 standing stably on the skateboard. With moderate
 acceleration/deceleration on the skateboard, the biped is able to
 maintain balance and hold the one-foot stance pose.
-
-<div id="fb-root"></div>
-<script>(function(d, s, id) {
-  var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) return;
-  js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
-  fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));</script>
-
-<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/biped/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
-
-<div id="disqus_thread"></div>
-<script type="text/javascript">
-    /* * * CONFIGURATION VARIABLES * * */
-    var disqus_shortname = 'dartsim';
-    
-    /* * * DON'T EDIT BELOW THIS LINE * * */
-    (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>

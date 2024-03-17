@@ -1,0 +1,744 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../user_guide/tutorials/biped.md:1 4ec500e436d0469d86a990112a2fb8ca
+msgid "Biped"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:3 12fe002cdb414022abf964a6fd02e825
+msgid "Overview"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:4 8cb359c6ca7a4d77b6e17e33e921982a
+msgid ""
+"This tutorial demonstrates the dynamic features in DART useful for "
+"developing controllers for bipedal or wheel-based robots. The tutorial "
+"consists of seven Lessons covering the following topics:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:8 dc12b3eb596c4d258feddb180137e686
+msgid "Joint limits and self-collision."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:9 ec157b17035b4db3b4ed6060cf39c2be
+msgid "Actuators types and management."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:10 e4215911e08d4279bedd097f03a94c59
+msgid "APIs for Jacobian matrices and other kinematic quantities."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:11 332e876650cc4380bf1ff58cebb4fb5e
+msgid "APIs for dynamic quantities."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:12 4fdd222099954778b56b77d3f8e8712f
+msgid "Skeleton editing."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:14 3e0e7f7442bd4cd1ad9f7eb474725051
+msgid ""
+"Please reference the source code in "
+"[**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp)"
+" and [**tutorialBiped-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
+"/tutorialBiped-Finished.cpp)."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:16 4a8dac4bffd7478ea5295dd055102aff
+msgid "Lesson 1: Joint limits and self-collision"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:17 47aee9e5a371448a8743dcfc8472ed11
+msgid ""
+"Let's start by locating the ``main`` function in tutorialBiped.cpp. We "
+"first create a floor and call ``loadBiped`` to load a bipedal figure "
+"described in SKEL format, which is an XML format representing a robot "
+"model. A SKEL file describes a ``World`` with one or more ``Skeleton``s "
+"in it. Here we load in a World from "
+"[**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel)"
+" and assign the bipedal figure to a ``Skeleton`` pointer called *biped*."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:34 6458c52c2d924428a774d04af9e3809f
+msgid ""
+"Running the skeleton code (hit the spacebar) without any modification, "
+"you should see a human-like character collapse on the ground and fold in "
+"on itself. Before we attempt to control the biped, let's first make the "
+"biped a bit more realistic by enforcing more human-like joint limits."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:39 34575ba842034abeab288f9b031981d2
+msgid ""
+"DART allows the user to set upper and lower bounds on each degree of "
+"freedom in the SKEL file or using provided APIs. For example, you should "
+"see the description of the right knee joint in **biped.skel**:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:56 8d14fffd39b14ff7b4137a8655385994
+msgid ""
+"The &lt;upper> and &lt;lower> tags make sure that the knee can only flex "
+"but not extend. Alternatively, you can directly specify the joint limits "
+"in the code using ``setPositionUpperLimit`` and "
+"``setPositionLowerLimit``."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:61 85bc15dcd96d4f07af7fbf1c9c63ca6c
+msgid ""
+"In either case, the joint limits on the biped will not be activated until"
+" you call ``setPositionLimited``:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:73 0e0ccf7a38ec43209f555790a707fac0
+msgid ""
+"Once the joint limits are set, the next task is to enforce self-"
+"collision. By default, DART does not check self-collision within a "
+"skeleton. You can enable self-collision checking on the biped by"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:84 c9c28fc624b2491eaf54166108a998e9
+msgid ""
+"This function will enable self-collision on every pair of body nodes. If "
+"you wish to disable self-collisions on adjacent body nodes, call the "
+"following function"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:90 47d387838e2d46438f4c984b9e41f786
+msgid ""
+"Running the program again, you should see that the character is still "
+"floppy like a ragdoll, but now the joints do not bend backward and the "
+"body nodes do not penetrate each other anymore."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:94 b8f2e410f34e4800ada9db440ded944c
+msgid "Lesson 2: Proportional-derivative control"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:96 520efe8f60234c459ae48dee2dbf7995
+msgid ""
+"To actively control its own motion, the biped must exert internal forces "
+"using actuators. In this Lesson, we will design one of the simplest "
+"controllers to produce internal forces that make the biped hold a target "
+"pose. The proportional-derivative (PD) control computes control force by "
+"&Tau; = -k<sub>p</sub> (&theta; - &theta;<sub>target</sub>) - "
+"k<sub>d</sub> &theta;&#775;, where &theta; and &theta;&#775; are the "
+"current position and velocity of a degree of freedom, "
+"&theta;<sub>target</sub> is the target position set by the controller, "
+"and k<sub>p</sub> and k<sub>d</sub> are the stiffness and damping "
+"coefficients. The detailed description of a PD controller can be found "
+"[here](https://en.wikipedia.org/wiki/PID_controller)."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:108 276d7d63399c441b88f6d5d14c56d1b3
+msgid ""
+"The first task is to set the biped to a particular configuration. You can"
+" use ``setPosition`` to set each degree of freedom individually:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:119 b6d0c304cee8466baebad56820b288c1
+msgid ""
+"Here the degree of freedom named \"j_thigh_left_z\" is set to 0.15 "
+"radian. Note that each degree of freedom in a skeleton has a numerical "
+"index which can be accessed by ``getIndexInSkeleton``. You can also set "
+"the entire configuration using a vector that holds the positions of all "
+"the degreed of freedoms using ``setPositions``."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:127 9dbbe41b5b66475da5c90018d049722d
+msgid ""
+"We continue to set more degrees of freedoms in the lower body to create a"
+" roughly stable standing pose."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:139 2abd15e51e744b04a690ccc4d34e2d1c
+msgid ""
+"Now the biped will start in this configuration, but will not maintain "
+"this configuration as soon as the simulation starts. We need a controller"
+" to make this happen. Let's take a look at the constructor of our "
+"``Controller`` in the skeleton code:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:164 b2cdf1acc7b0449cacdab3598fa6985c
+msgid ""
+"Here we arbitrarily define the stiffness and damping coefficients to 1000"
+" and 50, except for the first six degrees of freedom. Because the global "
+"translation and rotation of the biped are not actuated, the first six "
+"degrees of freedom at the root do not exert any internal force. "
+"Therefore, we set the stiffness and damping coefficients to zero. At the "
+"end of the constructor, we set the target position of the PD controller "
+"to the current configuration of the biped."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:172 020e718e09c24d5f929f7082a0de9a74
+msgid ""
+"With these settings, we can compute the forces generated by the PD "
+"controller and add them to the internal forces of biped using "
+"``setForces``:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:188 5d89a1d7a47d4657b9e4bbb64578b728
+msgid ""
+"Note that the PD control force is *added* to the current internal force "
+"stored in mForces instead of overriding it."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:191 0601de2704c548cfaf037785b13fd92e
+msgid ""
+"Now try to run the program and see what happens. The skeleton disappears "
+"almost immediately as soon as you hit the space bar! This is because our "
+"stiffness and damping coefficients are set way too high. As soon as the "
+"biped deviates from the target position, huge internal forces are "
+"generated to cause the numerical simulation to blow up."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:198 62e277ead53840bda4055be8fcad0ee9
+msgid ""
+"So let's lower those coefficients a bit. It turns out that each of the "
+"degrees of freedom needs to be individually tuned depending on many "
+"factors, such as the inertial properties of the body nodes, the type and "
+"properties of joints, and the current configuration of the system. "
+"Figuring out an appropriate set of coefficients can be a tedious process "
+"difficult to generalize across new tasks or different skeletons. In the "
+"next Lesson, we will introduce a much more efficient way to stabilize the"
+" PD controllers without endless tuning and trial-and-errors."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:208 a11243332ef9417ba125e1c489ebbcc4
+msgid "Lesson 3: Stable PD control"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:210 dd79ab661d4f42f2a5bdf98fb1f56374
+msgid ""
+"SPD is a variation of PD control proposed by [Jie "
+"Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The basic idea "
+"of SPD is to compute control force using the predicted state at the next "
+"time step, instead of the current state. This Lesson will only "
+"demonstrate the implementation of SPD using DART without going into "
+"details of SPD derivation."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:217 f746f28846ae4cf8a5c4974c3f93067e
+msgid ""
+"The implementation of SPD involves accessing the current dynamic "
+"quantities in Lagrange's equations of motion. Fortunately, these "
+"quantities are readily available via DART API, which makes the full "
+"implementation of SPD simple and concise:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:238 76688ec1b40d4a2daf7d0738dfda58b5
+msgid ""
+"You can get mass matrix, Coriolis force, gravitational force, and "
+"constraint force projected onto generalized coordinates using function "
+"calls ``getMassMatrix``, ``getCoriolisForces``, ``getGravityForces``, and"
+" ``getConstraintForces``, respectively. Constraint forces include forces "
+"due to contacts, joint limits, and other joint constraints set by the "
+"user (e.g. the weld joint constraint in the multi-pendulum tutorial)."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:249 7d550887536646b1af47236b93e77cd2
+msgid ""
+"With SPD, a wide range of stiffness and damping coefficients will all "
+"result in stable motion. In fact, you can just leave them to our original"
+" values: 1000 and 50. By holding the target pose, now the biped can stand"
+" on the ground in balance indefinitely. However, if you apply an external"
+" push force on the biped (hit ',' or '.' key to apply a backward or "
+"forward push), the biped loses its balance quickly. We will demonstrate a"
+" more robust feedback controller in the next Lesson."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:258 a41fa1146945415a8c99bd92791ca83d
+msgid "Lesson 4: Ankle strategy"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:260 89351e88924f4704927228a4ee2e4448
+msgid ""
+"Ankle (or hip) strategy is an effective way to maintain standing balance."
+" The idea is to adjust the target position of ankles according to the "
+"deviation between the center of mass and the center of pressure projected"
+" on the ground. A simple linear feedback rule is used to update the "
+"target ankle position: &theta;<sub>a</sub> = -k<sub>p</sub> (x - p) - "
+"k<sub>d</sub> (x&#775; - p&#775;), where x and p indicate the center of "
+"mass and center of pressure in the anterior-posterior axis. k<sub>p</sub>"
+" and k<sub>d</sub> are the feedback gains defined by the user."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:270 8007c8f8457b4cedacc70897b890a3ab
+msgid ""
+"To implement ankle strategy, let's first compute the deviation between "
+"the center of mass and an approximated center of pressure in the "
+"anterior-posterior axis:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:285 3cc161aac6d7493b9f033a27dc5fb735
+msgid ""
+"DART provides various APIs to access useful kinematic information. For "
+"example, ``getCOM`` returns the center of mass of the skeleton and "
+"``getTransform`` returns transformation of the body node with respect to "
+"any coordinate frame specified by the parameter (world coordinate frame "
+"as default). DART APIs also come in handy when computing the derivative "
+"term,  -k<sub>d</sub> (x&#775; - p&#775;):"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:303 ee6d5bfb9a7d44799d83de050db18834
+msgid ""
+"The linear/angular velocity/acceleration of any point in any coordinate "
+"frame can be easily accessed in DART. The full list of the APIs for "
+"accessing various velocities/accelerations can be found in the [API "
+"Documentation](http://dartsim.github.io/dart/). The  following table "
+"summarizes the essential APIs."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 3e3983e5bbeb4b43b207616d95812390
+#: ae7ca5bc83f44c4b89dab2b17c0d3437 f028a3f545a9458085dbb86f80b11c78
+msgid "Function Name"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 1d08af4e0dde4bfaa949b6d08c993aa8
+#: 68fb9d26e7e346129687884411b17fe7 c0621f44976548debbe685a12fd4fbf5
+#: fd0af9d5270d43129f4341d3cdeaf6a9
+msgid "Description"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e1a47a686dc94491922132b69bda5dc0
+msgid "getSpatialVelocity"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 03accbe9f9004a6cb2c317afa00d7eaa
+msgid ""
+"Return the spatial velocity of this BodyNode in the coordinates of the "
+"BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 54fa6c9a519041d8b9ea241d11975174
+msgid "getLinearVelocity"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md eaecf67907ea4968b02e0b491aee46a1
+msgid ""
+"Return the linear portion of classical velocity of the BodyNode relative "
+"to some other BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e9583f17248e4e78a6c3d1df5e63920c
+msgid "getAngularVelocity"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 3361374bb31e434a82f3273244b2457a
+msgid ""
+"Return the angular portion of classical velocity of this BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md c58adde2337f4a8f98a40f15850e8ac3
+msgid "getSpatialAcceleration"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e4ebbb1b803545caa0bf605f81ab1266
+msgid ""
+"Return the spatial acceleration of this BodyNode in the coordinates of "
+"the BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md bce8147a78fb422fa596d8d762970080
+msgid "getLinearAcceleration"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md a4d3e07cb74540b08ed0702a2b29b9c7
+msgid ""
+"Return the linear portion of classical acceleration of the BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 9d63a1864d48496e8ed5d6f86855a7c5
+msgid "getAngularAcceleration"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md ab0024ff6e2a48d4b7e74ff9bd84002f
+msgid ""
+"Return the angular portion of classical acceleration of this BodyNode "
+"relative to some other BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:317 15b23bd8e63c4667b41cf96c960a60af
+msgid ""
+"The remaining of the ankle strategy implementation is just the matter of "
+"parameters tuning. We found that using different feedback rules for "
+"falling forward and backward result in more stable controller."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:321 090c14d6c66a4d22bd40cd9901db5eba
+msgid "Lesson 5: Skeleton editing"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:323 a00888ca08fb41c6b938eb0d1e06948c
+msgid ""
+"DART provides various functions to copy, delete, split, and merge parts "
+"of skeletons to alleviate the pain of building simulation models from "
+"scratch. In this Lesson, we will load a skateboard model from a SKEL file"
+" and merge our biped with the skateboard to create a wheel-based robot."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:329 7bcf4a91190d42099fbd50d9b3ab70e1
+msgid "We first load a skateboard from **skateboard.skel**:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:340 8b856da8f6ea43fc9ec880b557930202
+msgid ""
+"Our goal is to make the skateboard Skeleton a subtree of the biped "
+"Skeleton connected to the left heel BodyNode via a newly created Euler "
+"joint. To do so, you need to first create an instance of "
+"``EulerJoint::Properties`` for this new joint."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:355 b187ada4a4424fe983fe1190eac42945
+msgid ""
+"Here we increase the vertical distance between the child BodyNode and the"
+" joint by 0.1m to give some space between the skateboard and the left "
+"foot. Now you can merge the skateboard and the biped using this new Euler"
+" joint by"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:368 d7469183c7014a0e9e4e87d338d0b68c
+msgid ""
+"There are many other functions you can use to edit skeletons. Here is a "
+"table of some relevant functions for quick references."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 47780ab839bb4f5eb2f0df74752750c3
+msgid "Example"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md c92038180fb242d6ae3fea0036b6b95a
+msgid "remove"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 1e4c05a1400445afbfb5fb9121235f7e
+msgid "bd1->remove()"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 8e0ee24307bf4943ab805b2165a3842d
+msgid "Remove the BodyNode bd1 and its subtree from their Skeleton."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e6e4a112cce049988ce93c1ea6eb6dc9
+msgid "moveTo"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 60f520eb4b6343ba9e126706ad66ca0b
+msgid "bd1->moveTo(bd2)"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 22d66d9e5e3748d989b150ac28f8926c
+msgid "Move the BodyNode bd1 and its subtree under the BodyNode bd2."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md bf7f001e0ca3406dbb463b3c9b959853
+msgid "split"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 516cf8c8805c4dad9eff8381c85293b5
+msgid "auto newSkel = bd1->split(\"new skeleton\")`"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 62689536f4bf4bea85080e6157e2b1ca
+msgid ""
+"Remove the BodyNode bd1 and its subtree from their current Skeleton and "
+"move them into a newly created Skeleton with \"new skeleton\" name."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md f0ddf98a3265461caa03dc4de2a3a9a7
+msgid "changeParentJointType"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 971b37a7acc14fd9874db358e0730717
+msgid "bd1->changeParentJointType&lt;BallJoint&gt;()"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 4194a1d0b82a480987d98b5757e3db00
+msgid "Change the Joint type of the BodyNode bd1's parent joint to BallJoint"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 0a4304be091245e08429ddb0028bb5b7
+msgid "copyTo"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md c8c5917f08df40f897fcc71493948eb5
+msgid "bd1->copyTo(bd2)"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 94d3f310fe144ecc86af65c6f066dcf7
+msgid ""
+"Create clones of the BodyNode bd1 and its subtree and attach the clones "
+"to the specified the BodyNode bd2."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md a6f997a2db2c4885a9ec5fb61c994f5e
+msgid "copyAs"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 249127dd88ae40a9b7443bea91526b90
+msgid "auto newSkel = bd1->copyAs(\"new skeleton\")"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 2143392fcd0244ecb80cba2556156bf3
+msgid ""
+"Create clones of the BodyNode bd1 and its subtree and create a new "
+"Skeleton with \"new skeleton\" name to attach them to."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:381 99c15fb9db16477182df276ba4804425
+msgid "Lesson 6: Actuator types"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:383 90cbf9dd65514a3387e111aeec2ea7a4
+msgid ""
+"DART provides five types of actuator. Each joint can select its own "
+"actuator type."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md fe020ad5d4c041a68f4ea30d3ffa66ff
+msgid "Type"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 59dca4ee21b24ce8acf8eea804ab073a
+msgid "FORCE"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 7344a8ff0dfd4b6dbbb930ae5ec702ac
+msgid "Take joint force and return the resulting joint acceleration."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 33dda7a4f26a46d4af301034c6b83c03
+msgid "PASSIVE"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 40fc2a356b864c21bf9d572b04784477
+msgid ""
+"Take nothing (joint force = 0) and return the resulting joint "
+"acceleration."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 897594d5122c4a7fafbf7c42e32496ee
+msgid "ACCELERATION"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 6ebee88aff9d45379d4ff0910da5b8be
+msgid ""
+"Take desired joint acceleration and return the joint force to achieve the"
+" acceleration."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 6d0f1db1b7984d288dcb333d7dbf1023
+msgid "VELOCITY"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 8054ef776b86487bb87007ad3f69183b
+msgid ""
+"Take desired joint velocity and return the joint force to achieve the "
+"velocity."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e8cd3942a8aa496ea666263e7c8f9dec
+msgid "LOCKED"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 5d2a63ead2f04fab9b5b4f80ac6473ae
+msgid ""
+"Lock the joint by setting the joint velocity and acceleration to zero and"
+" return the joint force to lock the joint."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:394 f4c8a4712c8a457292a33016ed9ca623
+msgid ""
+"In this Lesson, we will switch the actuator type of the wheels from the "
+"default FORCE type to VELOCITY type."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:406 172e9ae8024d4c57863692f81ed1556e
+msgid ""
+"Once all four wheels are set to VELOCITY actuator type, you can command "
+"them by directly setting the desired velocity:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:419 03cfe0a0308740cca6e22ae817f96ce1
+msgid ""
+"Note that ``setCommand`` only exerts commanding force in the current time"
+" step. If you wish the wheel to continue spinning at a particular speed, "
+"``setCommand`` needs to be called at every time step."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:423 f99854c79017458099ad767615234721
+msgid "We also set the stiffness and damping coefficients for the wheels to zero."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:438 81b7d44b879b46cbbfddb2522bf27b4b
+msgid ""
+"This is because we do not want the velocity-based actuators to "
+"incorrectly affect the computation of SPD. If we use simple PD control "
+"scheme, the values of these spring and damping coefficients do not affect"
+" the dynamics of the system."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:443 9e2e83038ab44c3f8f92f7c7abcc930b
+msgid ""
+"Let's simulate what we've got so far. The biped now is connecting to the "
+"skateboard through a Euler joint. Once the simulation starts, you can use"
+" 'a' and 's' to increase or decrease the wheel speed. However, the biped "
+"falls on the floor immediately because the current target pose is not "
+"balanced for one-foot stance. We need to find a better target pose."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:450 bb67124b2efe4cfe9dcbabb979617f79
+msgid "Lesson 7: Inverse kinematics"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:452 87e223f82965452582374b5f6aca8144
+msgid ""
+"Instead of manually designing a target pose, this time we will solve for "
+"a balanced pose by formulating an inverse kinematics (IK) problem and "
+"solving it using gradient descent method. In this example, a balanced "
+"pose is defined as a pose where the center of mass is well supported by "
+"the ground contact and the left foot lies flat on the ground. As such, we"
+" cast IK as an optimization problem that minimizes the horizontal "
+"deviation between the center of mass and the center of the left foot, as "
+"well as the vertical distance of the four corners of the left foot from "
+"the ground:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:464 6a758fdf935e4978b20f7103520fbf52
+msgid ""
+"where <b>c</b> and <b>p</b> indicate the projected center of mass and "
+"center of pressure on the ground, and *p<sub>i</sub>* indicates the "
+"vertical height of one corner of the left foot."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:468 e1b8e3c550ba42ebba1feaf71a1fdda3
+msgid ""
+"To compute the gradient of the above objective function, we need to "
+"evaluate the partial derivatives of each objective term with respect to "
+"the degrees of freedom, i.e., the computation of Jacobian matrix. DART "
+"provides a comprensive set of APIs for accessing various types of "
+"Jacobian. In this example, computing the gradient of the first term of "
+"the objective function requires the Jacobian of the center of mass of the"
+" Skeleton, as well as the Jacobian of the center of mass of a BodyNode:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:487 e28cb22bbe554a28aa063d1957a324f3
+msgid ""
+"``getCOMLinearJacobian`` returns the linear Jacobian of the center of "
+"mass of the Skeleton, while ``getLinearJacobian`` returns the Jacobian of"
+" a point on a BodyNode. The BodyNode and the local coordinate of the "
+"point are specified as parameters to this function. Here the point of "
+"interest is the center of mass of the left foot, which local coordinates "
+"can be accessed by ``getCOM`` with a parameter indicating the left foot "
+"being the frame of reference. We use ``getLinearJacobian`` again to "
+"compute the gradient of the second term of the objective function:"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:507 2ff8ce81abe848e8bd5aa46cfc24e33d
+msgid ""
+"The full list of Jacobian APIs can be found in the [API "
+"Documentation](http://dartsim.github.io/dart/). The  following table "
+"summarizes the essential APIs."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 65ce20ea9daa4546a69647e58bc02440
+msgid "getJacobian"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 4067bfd18a3e4b8ab94640a03c35aad9
+msgid ""
+"Return the generalized Jacobian targeting the origin of the BodyNode. The"
+" Jacobian is expressed in the Frame of this BodyNode."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md e08dc707aa134b5a968dd09134b23ddc
+msgid "getLinearJacobian"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md a1ce8e18bc2b4da791da64fab9e236c1
+msgid ""
+"Return the linear Jacobian targeting the origin of the BodyNode. You can "
+"specify a coordinate Frame to express the Jacobian in."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 2c5c1776f9dd4be3ab96c3b7cb1a4489
+msgid "getAngularJacobian"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md d8e417c602264e7eae6cced81b09d09c
+msgid ""
+"Return the angular Jacobian targeting the origin of the BodyNode. You can"
+" specify a coordinate Frame to express the Jacobian in."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 321b88e8431844b09a345274d6e81a1c
+msgid "getJacobianSpatialDeriv"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 4ef7836d31fa41669210fae66846afcd
+msgid ""
+"Return the spatial time derivative of the generalized Jacobian targeting "
+"the origin of the BodyNode. The Jacobian is expressed in the BodyNode's "
+"coordinate Frame."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md bd7132947ff84bdca404667129676889
+msgid "getJacobianClassicDeriv"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 087ee37c377f4bf8b10f9aae841b2991
+msgid ""
+"Return the classical time derivative of the generalized Jacobian "
+"targeting the origin of the BodyNode. The Jacobian is expressed in the "
+"World coordinate Frame."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 19ad88a73e6e41b59cd41583ca548aab
+msgid "getLinearJacobianDeriv"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md ce8ce5a136bc4b34b81c5df6c5393d68
+msgid ""
+"Return the linear Jacobian (classical) time derivative, in terms of any "
+"coordinate Frame."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 83d0aa6d06444d9699067cfc4eaf25e8
+msgid "getAngularJacobianDeriv"
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md 2729445aba154dffaa0d647b88188108
+msgid ""
+"Return the angular Jacobian (classical) time derivative, in terms of any "
+"coordinate Frame."
+msgstr ""
+
+#: ../../user_guide/tutorials/biped.md:520 0538477053cf480ea66ffc847c781ea0
+msgid ""
+"This Lesson concludes the entire Biped tutorial. You should see a biped "
+"standing stably on the skateboard. With moderate "
+"acceleration/deceleration on the skateboard, the biped is able to "
+"maintain balance and hold the one-foot stance pose."
+msgstr ""
+

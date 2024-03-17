@@ -1,4 +1,6 @@
-# Overview
+# Dominoes
+
+## Overview
 
 This tutorial will demonstrate some of the more advanced features of DART's
 dynamics API which allow you to write robust controllers that work for real
@@ -11,7 +13,7 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 
 Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-Finished.cpp).
 
-# Lesson 1: Cloning Skeletons
+## Lesson 1: Cloning Skeletons
 
 There are often times where you might want to create an exact replica of an
 existing Skeleton. DART offers cloning functionality that allows you to do this
@@ -50,7 +52,7 @@ has turned so far. We'll use that to figure out what translational offset the
 new domino should have from the last domino:
 
 ```cpp
-Eigen::Vector3d dx = default_distance * Eigen::Vector3d(
+math::Vector3d dx = default_distance * math::Vector3d(
       cos(mTotalAngle), sin(mTotalAngle), 0.0);
 ```
 
@@ -58,7 +60,7 @@ And now we can compute the total position of the new domino. First, we'll copy
 the positions of the last domino:
 
 ```cpp
-Eigen::Vector6d x = lastDomino->getPositions();
+math::Vector6d x = lastDomino->getPositions();
 ```
 
 And then we'll add the translational offset to it:
@@ -201,13 +203,13 @@ is a label for **Lesson 1d**. This spot will get visited whenever the user
 presses 'f', so we'll apply an external force to the first domino here:
 
 ```cpp
-Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
-Eigen::Vector3d location =
-    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+math::Vector3d force = default_push_force * math::Vector3d::UnitX();
+math::Vector3d location =
+    default_domino_height / 2.0 * math::Vector3d::UnitZ();
 mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 ```
 
-# Lesson 2: Loading and controlling a robotic manipulator
+## Lesson 2: Loading and controlling a robotic manipulator
 
 Striking something with a magical force is convenient, but not very believable.
 Instead, let's load a robotic manipulator and have it push over the first domino.
@@ -215,11 +217,11 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::utils::DartLoader`` class (pending upcoming changes to DART's
+by the ``dart::io::DartLoader`` class (pending upcoming changes to DART's
 loading system). First, create a loader:
 
 ```cpp
-dart::utils::DartLoader loader;
+dart::io::DartLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations
@@ -232,7 +234,7 @@ Now we'll have ``loader`` parse the file into a Skeleton:
 
 ```cpp
 SkeletonPtr manipulator =
-    loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+    loader.parseSkeleton(DART_DATA_LOCAL_PATH"urdf/KR5/KR5 sixx R650.urdf");
 ```
 
 And we should give the Skeleton a convenient name:
@@ -246,8 +248,8 @@ Experimentation has demonstrated that the following setup is good for our purpos
 
 ```cpp
 // Position its base in a reasonable way
-Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
+math::Isometry3d tf = math::Isometry3d::Identity();
+tf.translation() = math::Vector3d(-0.65, 0.0, 0.0);
 manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
 // Get it into a useful configuration
@@ -290,8 +292,8 @@ in the ``Controller`` class.
 First, we'll grab the current positions and velocities:
 
 ```cpp
-Eigen::VectorXd q = mManipulator->getPositions();
-Eigen::VectorXd dq = mManipulator->getVelocities();
+math::VectorXd q = mManipulator->getPositions();
+math::VectorXd dq = mManipulator->getVelocities();
 ```
 
 Additionally, we'll integrate the position forward by one timestep:
@@ -308,19 +310,19 @@ without this line to see what effect it has on the stability.
 Now we'll compute our joint position error:
 
 ```cpp
-Eigen::VectorXd q_err = mQDesired - q;
+math::VectorXd q_err = mQDesired - q;
 ```
 
 And our joint velocity error, assuming our desired joint velocity is zero:
 
 ```cpp
-Eigen::VectorXd dq_err = -dq;
+math::VectorXd dq_err = -dq;
 ```
 
 Now we can grab our mass matrix, which we will use to scale our force terms:
 
 ```cpp
-const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+const math::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 And then combine all this into a PD controller that computes forces to minimize
@@ -345,7 +347,7 @@ Coriolis forces, allowing you to write much higher quality controllers than you
 would be able to otherwise. This is easily done like so:
 
 ```cpp
-const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 And now we can update our control law by just slapping this term onto the end
@@ -358,7 +360,7 @@ mForces = M * (mKpPD * q_err + mKdPD * dq_err) + Cg;
 **Give this new PD controller a try to see how its performance compares to the
 one without compensation**
 
-# Lesson 3: Writing an operational space controller
+## Lesson 3: Writing an operational space controller
 
 While PD controllers are simply and handy, operational space controllers can be
 much more elegant and useful for performing tasks. Operational space controllers
@@ -383,7 +385,7 @@ Operational Space controller; instead we want to use a slight offset, to get to
 the tool area of the last BodyNode:
 
 ```cpp
-mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
+mOffset = default_endeffector_offset * math::Vector3d::UnitX();
 ```
 
 Also, our target will be the spot on top of the first domino, so we'll create a
@@ -397,9 +399,9 @@ Then compute the transform needed to get from the center of the domino to the
 top of the domino:
 
 ```cpp
-Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
+math::Isometry3d target_offset(math::Isometry3d::Identity());
 target_offset.translation() =
-    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+    default_domino_height / 2.0 * math::Vector3d::UnitZ();
 ```
 
 And then we should rotate the target's coordinate frame to make sure that lines
@@ -430,7 +432,7 @@ One of the key ingredients in an operational space controller is the mass matrix
 We can get this easily, just like we did for the PD controller:
 
 ```cpp
-const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+const math::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 Next we'll want the Jacobian of the tool offset in the end effector. We can get
@@ -445,8 +447,8 @@ of the Jacobian rather than the Jacobian itself. There are many ways to compute
 the pseudoinverse of the Jacobian, but a simple way is like this:
 
 ```cpp
-Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                       + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+math::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
+                       + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
 Note that this pseudoinverse is also damped so that it behaves better around
@@ -462,8 +464,8 @@ Next we'll want the time derivative of the Jacobian, as well as its pseudoinvers
 Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
 
 // Comptue the pseudo-inverse of the Jacobian time derivative
-Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
-                        + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+math::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
+                        + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
 
 Notice that here we're compute the **classic** derivative, which means the
@@ -474,7 +476,7 @@ to use ``BodyNode::getJacobianSpatialDeriv`` instead.
 Now we can compute the linear components of error:
 
 ```cpp
-Eigen::Vector6d e;
+math::Vector6d e;
 e.tail<3>() = mTarget->getWorldTransform().translation()
             - mEndEffector->getWorldTransform() * mOffset;
 ```
@@ -482,14 +484,14 @@ e.tail<3>() = mTarget->getWorldTransform().translation()
 And then the angular components of error:
 
 ```cpp
-Eigen::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
+math::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
 e.head<3>() = aa.angle() * aa.axis();
 ```
 
 Then the time derivative of error, assuming our desired velocity is zero:
 
 ```cpp
-Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
+math::Vector6d de = -mEndEffector->getSpatialVelocity(
       mOffset, mTarget.get(), Frame::World());
 ```
 
@@ -497,32 +499,32 @@ Like with the PD controller, we can mix in terms to compensate for gravity and
 Coriolis forces:
 
 ```cpp
-const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 The gains for the operational space controller need to be in matrix form, but
 we're storing the gains as scalars, so we'll need to conver them:
 
 ```cpp
-Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
+math::Matrix6d Kp = mKpOS * math::Matrix6d::Identity();
 
 size_t dofs = mManipulator->getNumDofs();
-Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
+math::MatrixXd Kd = mKdOS * math::MatrixXd::Identity(dofs, dofs);
 ```
 
 And we'll need to compute the joint forces needed to achieve our desired end
 effector force. This is easily done using the Jacobian transpose:
 
 ```cpp
-Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+math::Vector6d fDesired = math::Vector6d::Zero();
 fDesired[3] = default_push_force;
-Eigen::VectorXd f = J.transpose() * fDesired;
+math::VectorXd f = J.transpose() * fDesired;
 ```
 
 And now we can mix everything together into the single control law:
 
 ```cpp
-Eigen::VectorXd dq = mManipulator->getVelocities();
+math::VectorXd dq = mManipulator->getVelocities();
 mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e)
           - Kd * dq + Kd * pinv_J * Kp * e + Cg + f;
 ```
@@ -534,28 +536,3 @@ mManipulator->setForces(mForces);
 ```
 
 **Now you're ready to try out the full dominoes app!**
-
-<div id="fb-root"></div>
-<script>(function(d, s, id) {
-  var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) return;
-  js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
-  fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));</script>
-
-<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/dominoes/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
-
-<div id="disqus_thread"></div>
-<script type="text/javascript">
-    /* * * CONFIGURATION VARIABLES * * */
-    var disqus_shortname = 'dartsim';
-    
-    /* * * DON'T EDIT BELOW THIS LINE * * */
-    (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>

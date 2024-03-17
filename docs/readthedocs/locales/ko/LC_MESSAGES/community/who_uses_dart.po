@@ -1,0 +1,179 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2023, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../community/who_uses_dart.rst:2 0a02ef7dde28469d99135834845b8013
+msgid "Who Uses DART?"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:5 027263d57e1444b4b43005d1421b3858
+msgid "Software"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:7 0cb3ebc4918f44018d196c459b33a99c
+msgid ""
+"DART serves as the backend physics engine for several software projects, "
+"including:"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:10 3914c376a8ef4abb9112aee391677e0d
+msgid ""
+"`Gazebo <https://gazebosim.org/>`_: Gazebo simulates multiple robots in a"
+" 3D environment, with extensive dynamic integration between objects. "
+"Gazebo supports multiple physics engines: ODE, Bullet, DART, and Simbody."
+" website, source on bitbucket"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:14 8720840925af4553a92d05f106dc0593
+msgid ""
+"`Aikido <https://github.com/personalrobotics/aikido>`_: a C++ library, "
+"complete with Python bindings, for solving robotic motion planning and "
+"decision making problems. This library is tightly integrated with DART "
+"for kinematic/dynamics calculations and OMPL for motion planning."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:19 c4def8979fd24516a8244b77a57a8a50
+msgid ""
+"`robot_dart <https://github.com/resibots/robot_dart>`_: A generic and "
+"lightweight wrapper over DART simulator for fast and flexible robot "
+"simulations."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:24 e05b1effc06b47a6a7d2632b01a60c1c
+msgid "Research"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:26 7bc82b0e25804427ae43a83730365e83
+msgid ""
+"DART has been used in various research domains, including robotics, "
+"biomechanics, computer graphics, animation, and physics-based simulation."
+" Notable institutions, universities, or companies that have used DART in "
+"their research include Georgia Tech, Oxford University, MIT, Disney "
+"Research, and Toyota Research Institute."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:32 1d1a11b6c6584dbaa09a292651884192
+msgid "DART has been utilized in research areas such as:"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:34 abeb1320a32e4477aecd9f35a1ece152
+msgid "Development of black-box priors for model-based policy search for robotics"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:35 37163a8737754f629228f703855e60a9
+msgid "Bayesian optimization with automatic prior selection"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:36 18040cb15c1a4b9687f708309d1a6b37
+msgid "Alternating optimization and quadrature for robust control"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:37 27d4a863d7af4c0c91f61a4b7741aead
+msgid "Reset-free trial-and-error learning for robot damage recovery"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:38 d0838709a7d544af9ca29eca74545983
+msgid "Data-driven approach to simulating realistic human joint constraints"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:39 beaf2b2b1a604d98bde514cdaf277a91
+msgid "Multi-task learning with gradient-guided policy specialization"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:40 703621383c9d4f6da05d5371f9ebcc48
+msgid "Learning human behaviors for robot-assisted dressing"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:41 556247c208b34029b45f9c5e8e9c5f19
+msgid "Expanding motor skills through relay neural networks"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:42 a8b29e9214d84cea8a0a3aae2a5aedc7
+msgid "Learning to navigate cloth using haptics"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:43 5c726842c334493395f88d95903bf528
+msgid "Simulation-based design of dynamic controllers for humanoid balancing"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:44 84989dd7fb974935bda616f9d7646ce1
+msgid "Humanoid manipulation planning using backward-forward search"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:45 652e1f3599754011b5cac50163082cce
+msgid ""
+"Evolutionary optimization for parameterized whole-body dynamic motor "
+"skills"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:46 3dcf411c73134d78a224b8c495a96fba
+msgid "Dexterous manipulation of cloth"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:47 8bc3ac4a3e7d461b87178f585ac22109
+msgid "Multiple contact planning for minimizing damage of humanoid falls"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:48 4cab3aec191445f3ab1e5b40a2db588a
+msgid "Animating human dressing"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:49 6f71edb3a8cb40d9bcf2e582cbc12168
+msgid "Coupling cloth and rigid bodies for dexterous manipulation"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:50 7a8ea02e26f94b20915448ebbe547a17
+msgid ""
+"Orienting in mid-air through configuration changes to achieve a rolling "
+"landing for reducing impact after a fall"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:52 6d8d59d7562541838e97cecaf8e848fe
+msgid "Dexterous manipulation using both palm and fingers"
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:53 3bde3acaba6f4166bf400043b09bfe3e
+msgid ""
+"Several conferences and journals where DART has been prominently featured"
+" include the International Conference on Robotics and Automation (ICRA), "
+"the AAAI Conference on Artificial Intelligence, IEEE Transactions on "
+"Evolutionary Computation, Computer Graphics Forum (Eurographics), and ACM"
+" Transactions on Graphics (presented at SIGGRAPH Asia)."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:59 3216725273e04bd0b1500243b69951fc
+msgid ""
+"As of February 2023, DART had over 777 stars on GitHub, and DART has been"
+" cited over 236 times, indicating its widespread adoption and use in the "
+"research community."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:63 824e7b2808684bd4ae5933c9dff487f8
+msgid "More research papers cited DART can be found at `Google Scholar`_."
+msgstr ""
+
+#: ../../community/who_uses_dart.rst:67 4379c0c9188c4f928dd6af7209da78a8
+msgid ""
+"If you are using DART in your project and would like to be listed here, "
+"please send a pull request to the GitHub repository."
+msgstr ""
+
