@@ -14,7 +14,7 @@
 
 * Build
 
-  * Fixed build with GCC >= 13
+  * Fixed build with GCC >= 13: [#1793](https://github.com/dartsim/dart/pull/1793)
 
 ### [DART 6.13.1 (2024-01-04)](https://github.com/dartsim/dart/milestone/74?closed=1)
 
