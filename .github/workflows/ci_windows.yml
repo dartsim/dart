@@ -71,7 +71,6 @@ jobs:
             || exit /b
           ctest ^
             --test-dir build ^
-            --rerun-failed ^
             --output-on-failure ^
             --build-config ${{ matrix.build_type }} ^
             || exit /b
@@ -93,4 +92,4 @@ jobs:
 
       - name: Test DART and dartpy
         run: |
-          pixi run build
+          pixi run test

@@ -17,10 +17,6 @@ dart_check_required_package(fmt "libfmt")
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
-# CCD
-dart_find_package(ccd)
-dart_check_required_package(ccd "libccd")
-
 # FCL
 dart_find_package(fcl)
 dart_check_required_package(fcl "fcl")
