@@ -17,6 +17,7 @@ on:
     # Run at 02:00 UTC every Friday
     # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
     - cron: "0 2 * * FRI"
+  workflow_dispatch:
 
 env:
   DOCKER_REPO: jslee02/dart-dev # https://hub.docker.com/repository/docker/jslee02/dart-dev
