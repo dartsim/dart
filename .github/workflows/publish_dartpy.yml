@@ -9,6 +9,7 @@ on:
       - "docker/dev/**"
   schedule:
     - cron: "0 10 * * 0,3"
+  workflow_dispatch:
 
 # This workflow will install Python dependencies, run tests and lint with a
 # variety of Python versions. For more information see:
