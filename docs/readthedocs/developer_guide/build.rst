@@ -95,14 +95,14 @@ manager. The following command will install the required dependencies:
 
 .. code-block:: bash
 
-   $ vcpkg install --triplet x64-windows assimp eigen3 fcl fmt spdlog
+   $ vcpkg install --triplet x64-windows assimp eigen3 entt fcl fmt spdlog
 
 The following command will install the optional dependencies:
 
 .. code-block:: bash
 
    $ vcpkg install --triplet x64-windows \
-      assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
+      assimp eigen3 entt fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
       opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
 
 Arch Linux (experimental)

@@ -41,6 +41,7 @@ jobs:
           pkgs: >
             assimp
             eigen3
+            entt
             fcl
             fmt
             spdlog
@@ -78,6 +79,7 @@ jobs:
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
+            -DDART_USE_SYSTEM_ENTT=ON ^
             -DDART_USE_SYSTEM_IMGUI=OFF ^
             || exit /b
           cmake ^

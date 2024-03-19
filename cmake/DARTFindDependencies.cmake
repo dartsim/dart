@@ -17,6 +17,12 @@ dart_check_required_package(fmt "libfmt")
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
+# Entt
+if(DART_USE_SYSTEM_ENTT)
+  dart_find_package(EnTT)
+  dart_check_required_package(EnTT "EnTT")
+endif()
+
 # FCL
 dart_find_package(fcl)
 dart_check_required_package(fcl "fcl")

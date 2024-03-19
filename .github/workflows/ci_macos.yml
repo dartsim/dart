@@ -33,7 +33,8 @@ jobs:
     env:
       COMPILER: clang
       BUILD_TYPE: ${{ matrix.build_type }}
-      BUILD_DARTPY: OFF
+      BUILD_DARTPY: ON
+      DART_USE_SYSTEM_ENTT: ON
       DART_USE_SYSTEM_IMGUI: OFF
       IN_CI: ON
       ENABLE_SIMD: ${{ matrix.enable_simd }}
