@@ -162,6 +162,8 @@ class CMakeBuild(build_ext):
                 # CMake 3.12+ only.
                 build_args += [f"-j{self.parallel}"]
 
+        cmake_args += ["-DDART_USE_SYSTEM_IMGUI=OFF"]
+
         cmake_args += [
             f"-DDART_IN_CI={os.environ.get('DART_IN_CI', 'OFF')}",
         ]

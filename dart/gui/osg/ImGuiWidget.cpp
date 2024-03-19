@@ -38,7 +38,7 @@
 
 #include "dart/gui/osg/ImGuiWidget.hpp"
 
-#include "dart/external/imgui/imgui.h"
+#include "dart/gui/osg/IncludeImGui.hpp"
 
 namespace dart {
 namespace gui {

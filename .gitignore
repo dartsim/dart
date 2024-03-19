@@ -70,3 +70,6 @@ dist/
 
 # pixi environments
 .pixi
+
+# ImGui configuration
+imgui.ini

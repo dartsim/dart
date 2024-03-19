@@ -83,4 +83,6 @@
 // BULLET_DEFINITIONS or generate a #cmakedefine header.
 #cmakedefine BT_USE_DOUBLE_PRECISION
 
+#cmakedefine01 DART_USE_SYSTEM_IMGUI
+
 #endif // #ifndef DART_CONFIG_HPP_

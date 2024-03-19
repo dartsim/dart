@@ -49,7 +49,6 @@ target_link_libraries(${target_name}
     OpenGL::GLU
     GLUT::GLUT
     ${PROJECT_NAME}-external-lodepng
-    ${PROJECT_NAME}-external-imgui
 )
 if(APPLE)
   # Suppress "deprecated-declarations" until we abandon glut.
@@ -67,7 +66,6 @@ add_component_dependencies(
   ${component_name}
   utils
   external-lodepng
-  external-imgui
 )
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
 if(NOT WIN32 OR CYGWIN)

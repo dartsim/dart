@@ -33,7 +33,6 @@
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/external/imgui/imgui.h>
 
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::WorldNode

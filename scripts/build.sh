@@ -168,13 +168,19 @@ cd $source_dir
 build_dir=$source_dir/build
 mkdir -p $build_dir
 
-# Run CMake
+# Initialize cmake_args as empty
 cmake_args=""
+
+# OS specific options
 if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_INSTALL_RPATH=/usr/local/lib/"
-  cmake_args="-DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders -DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
+  cmake_args+=" -DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders -DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
+fi
+
+if [ -n "$DART_USE_SYSTEM_IMGUI" ]; then
+  cmake_args+=" -DDART_USE_SYSTEM_IMGUI=$DART_USE_SYSTEM_IMGUI"
 fi
 
 cmake .. \

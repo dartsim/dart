@@ -37,7 +37,6 @@
 #include <dart/collision/bullet/bullet.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/external/imgui/imgui.h>
 
 using namespace dart;
 

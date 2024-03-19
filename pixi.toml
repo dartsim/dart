@@ -13,6 +13,8 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
     "configure_local",
     "build",
 ] }
+example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = ["configure"] }
+example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = ["configure"] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
@@ -46,9 +48,10 @@ pipx = ">=1.4.3,<1.5"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
+imgui = ">=1.90.4,<1.91"
 
 [target.linux-64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -78,7 +81,7 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
 clang-format-14 = ">=14.0.6,<14.1"
 
 [target.osx-64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -107,8 +110,11 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
 [target.osx-64.build-dependencies]
 clang-format-14 = ">=14.0.6,<14.1"
 
+[target.osx-64.dependencies]
+imgui = ">=1.90.4,<1.91"
+
 [target.osx-arm64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON"
+configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -135,11 +141,14 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
 [target.osx-arm64.build-dependencies]
 clang-format-14 = ">=14.0.6,<14.1"
 
+[target.osx-arm64.dependencies]
+imgui = ">=1.90.4,<1.91"
+
 [target.win-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
-configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON"
+configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=OFF"
 lint = { cmd = "black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd = "black . --check && isort . --check", depends_on = [
     "configure",

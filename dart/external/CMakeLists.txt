@@ -1,5 +1,7 @@
 add_subdirectory(convhull_3d)
-add_subdirectory(imgui)
+if(NOT DART_USE_SYSTEM_IMGUI)
+  add_subdirectory(imgui)
+endif()
 add_subdirectory(ikfast)
 add_subdirectory(lodepng)
 add_subdirectory(odelcpsolver)

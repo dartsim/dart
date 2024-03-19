@@ -55,6 +55,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       CHECK_FORMAT: ${{ matrix.check_format }}
       ENABLE_SIMD: ${{ matrix.enable_simd }}
+      DART_USE_SYSTEM_IMGUI: OFF
       IN_CI: ON
       IN_DOCKER: ON
     steps:

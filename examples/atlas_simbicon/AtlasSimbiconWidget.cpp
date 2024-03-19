@@ -39,7 +39,6 @@
 #include "AtlasSimbiconWidget.hpp"
 
 #include "AtlasSimbiconWorldNode.hpp"
-#include "dart/external/imgui/imgui.h"
 
 //==============================================================================
 AtlasSimbiconWidget::AtlasSimbiconWidget(

@@ -36,7 +36,6 @@
 #include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
-#include <dart/external/imgui/imgui.h>
 
 #include <cmath>
 

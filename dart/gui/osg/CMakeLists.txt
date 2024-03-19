@@ -20,7 +20,15 @@ endif()
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
   dart_find_package(OpenSceneGraph)
-  dart_check_optional_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph" "3.0")
+  dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph" "3.0")
+
+  # ImGui
+  if(DART_USE_SYSTEM_IMGUI)
+    dart_find_package(imgui)
+    dart_check_required_package(imgui "imgui")
+  else()
+    #
+  endif()
 else()
   message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
   return()
@@ -38,13 +46,21 @@ set(dart_gui_osg_srcs ${srcs} ${detail_srcs})
 add_subdirectory(render)
 
 # Add target
+if(DART_USE_SYSTEM_IMGUI)
+  set(link_libraries imgui::imgui)
+else()
+  set(link_libraries ${PROJECT_NAME}-external-imgui)
+endif()
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-gui osg::osg)
+target_link_libraries(${target_name} dart-gui osg::osg ${link_libraries})
 
 # Component
+if(NOT DART_USE_SYSTEM_IMGUI)
+  set(component_dependencies external-imgui)
+endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
+add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenSceneGraph)
 
 # Generate header for this namespace
