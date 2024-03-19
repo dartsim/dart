@@ -43,7 +43,6 @@ target_include_directories(${pybind_module}
 )
 
 set(dartpy_libraries
-  v7
   dart
   dart-utils
   dart-utils-urdf
