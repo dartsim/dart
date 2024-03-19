@@ -97,6 +97,7 @@
 // BULLET_DEFINITIONS or generate a #cmakedefine header.
 #cmakedefine BT_USE_DOUBLE_PRECISION
 
+#cmakedefine01 DART_USE_SYSTEM_ENTT
 #cmakedefine01 DART_USE_SYSTEM_IMGUI
 
 #cmakedefine01 DART_BUILD_PROFILE

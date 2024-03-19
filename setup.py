@@ -104,6 +104,8 @@ class CMakeBuild(build_ext):
                 except ImportError:
                     pass
 
+            cmake_args += ["-DDART_USE_SYSTEM_ENTT=OFF"]
+
         else:
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
@@ -126,6 +128,8 @@ class CMakeBuild(build_ext):
                     f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"
                 ]
                 build_args += ["--config", cfg]
+
+            cmake_args += ["-DDART_USE_SYSTEM_ENTT=ON"]
 
         if sys.platform.startswith("darwin"):
             # Enable cross-compilation support for macOS and respect ARCHFLAGS if set

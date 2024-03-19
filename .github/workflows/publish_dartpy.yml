@@ -103,6 +103,7 @@ jobs:
             assimp
             ccd
             eigen3
+            entt
             fcl
             fmt
             spdlog
