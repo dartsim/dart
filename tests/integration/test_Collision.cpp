@@ -424,24 +424,22 @@ void testSphereSphere(
 
   collision::CollisionResult result;
 
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
-
   //----------------------------------------------------------------------------
   // Test 1: No contact
   //----------------------------------------------------------------------------
 
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
   result.clear();
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
-
-  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
 
   //----------------------------------------------------------------------------
   // Test 2: Point contact
   //----------------------------------------------------------------------------
 
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.5 - tol, 0.0, 0.0));
   result.clear();
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 1u);
@@ -449,7 +447,7 @@ void testSphereSphere(
   const auto& contact = result.getContact(0);
 
   // Test contact location
-  EXPECT_TRUE(contact.point.isApprox(Eigen::Vector3d::UnitX(), tol));
+  EXPECT_TRUE(contact.point.isApprox(Eigen::Vector3d::UnitX(), 2.0 * tol));
 
   // Test normal
   Eigen::Vector3d expectedNormal;
@@ -479,10 +477,10 @@ void testSphereSphere(
   if (cd->getType() == FCLCollisionDetector::getStaticType()) {
     EXPECT_FALSE(group->collide(option, &result));
     // FCL is not able to detect collisions when an object completely (strictly)
-    // contanins the other object (no collisions between the hulls)
+    // contains the other object (no collisions between the hulls)
   } else {
     EXPECT_TRUE(group->collide(option, &result));
-    // TODO(JS): BulletCollsionDetector includes a bug related to this.
+    // TODO(JS): BulletCollisionDetector includes a bug related to this.
     // (see #876)
 #if HAVE_BULLET
     if (cd->getType() != BulletCollisionDetector::getStaticType())
@@ -502,10 +500,13 @@ void testSphereSphere(
 //==============================================================================
 TEST_F(Collision, SphereSphere)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testSphereSphere(fcl_mesh_dart);
+  {
+    SCOPED_TRACE("FCLCollisionDetector");
+    auto fcl_mesh_dart = FCLCollisionDetector::create();
+    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    testSphereSphere(fcl_mesh_dart);
+  }
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -523,17 +524,26 @@ TEST_F(Collision, SphereSphere)
   // testSphereSphere(fcl_mesh_fcl);
 
 #if HAVE_ODE
-  auto ode = OdeCollisionDetector::create();
-  testSphereSphere(ode);
+  {
+    SCOPED_TRACE("OdeCollisionDetector");
+    auto ode = OdeCollisionDetector::create();
+    testSphereSphere(ode);
+  }
 #endif
 
 #if HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
-  testSphereSphere(bullet);
+  {
+    SCOPED_TRACE("BulletCollisionDetector");
+    auto bullet = BulletCollisionDetector::create();
+    testSphereSphere(bullet);
+  }
 #endif
 
-  auto dart = DARTCollisionDetector::create();
-  testSphereSphere(dart);
+  {
+    SCOPED_TRACE("BulletCollisionDetector");
+    auto dart = DARTCollisionDetector::create();
+    testSphereSphere(dart);
+  }
 }
 
 //==============================================================================

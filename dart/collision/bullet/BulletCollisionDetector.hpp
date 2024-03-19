@@ -127,7 +127,7 @@ private:
   std::unique_ptr<BulletCollisionShape> createBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
-  /// This deleter is responsible for deleting BulletCollsionShape objects and
+  /// This deleter is responsible for deleting BulletCollisionShape objects and
   /// removing them from mShapeMap when they are not shared by any
   /// CollisionObjects.
   class BulletCollisionShapeDeleter final
