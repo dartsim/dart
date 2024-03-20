@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DART 7's documentation!
-==================================
+Welcome to DART documentation!
+==============================
 
 Introduction
 ------------
@@ -24,12 +24,6 @@ stability, which are achieved through the use of generalized coordinates to
 represent articulated rigid body systems and the application of Featherstone's
 Articulated Body Algorithm to compute motion dynamics.
 
-.. note::
-   This document pertains to the new major version, DART 7, which is currently
-   under heavy development. Please note that this early stage version may
-   contain bugs or other issues. If you prefer to use a more stable version,
-   please use DART 6.13 instead.
-
 Updates
 -------
 
@@ -42,8 +36,8 @@ Stay updated with the latest news and developments about DART by following us
 on `Twitter <https://twitter.com/dartsim_org>`_ and subscribing to our
 `YouTube channel <https://www.youtube.com/@dartyoutube3531>`_.
 
-Vision for DART 7
------------------
+Vision for the next version of DART
+-----------------------------------
 
 * Elevate the Python binding to a first-class component, ensuring full support
   and equivalent functionality to the C++ APIs, rather than remaining in an
