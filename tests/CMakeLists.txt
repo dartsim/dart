@@ -149,3 +149,5 @@ else()
 endif()
 
 dart_format_add(GTestUtils.hpp)
+
+add_subdirectory(benchmark)

@@ -361,3 +361,113 @@ function(dart_coverage)
     install(DIRECTORY ${gcovr_html_dir}/ DESTINATION ${_ARG_INSTALL_DIR})
   endif()
 endfunction()
+
+function(dart_benchmarks)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    TYPE
+    TARGET_PREFIX
+    TEST_LIST
+  )
+  set(multiValueArgs
+    SOURCES
+    INCLUDE_DIRS
+    LINK_LIBRARIES
+    LINK_DART_LIBRARIES
+    COMPILE_DEFINITIONS
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_TYPE)
+    message(
+      FATAL_ERROR "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!"
+    )
+  endif()
+
+  if(NOT DEFINED _ARG_SOURCES)
+    message(STATUS "No benchmarks have been specified for ${_ARG_TYPE}")
+  else()
+    list(LENGTH _ARG_SOURCES num_benchmarks)
+    message(STATUS "Adding ${num_benchmarks} ${_ARG_TYPE} benchmarks")
+  endif()
+
+  if(_ARG_TEST_LIST)
+    set(${_ARG_TEST_LIST} "")
+  endif()
+
+  foreach(source ${_ARG_SOURCES})
+
+    # Set target name: <TYPE>[_<TARGET_PREFIX>]_<source>
+    set(target_name ${_ARG_TYPE})
+    if(_ARG_TARGET_PREFIX)
+      set(target_name "${target_name}_${_ARG_TARGET_PREFIX}")
+    endif()
+    get_filename_component(source_name ${source} NAME_WE)
+    string(REPLACE "bm_" "" source_name ${source_name})
+    get_filename_component(source_dir ${source} DIRECTORY)
+    if(source_dir)
+      string(REPLACE "/" "_" source_prefix ${source_dir})
+      set(target_name "${target_name}_${source_prefix}_${source_name}")
+    else()
+      set(target_name "${target_name}_${source_name}")
+    endif()
+
+    add_executable(${target_name} ${source})
+    target_include_directories(
+      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(${target_name} PRIVATE benchmark benchmark_main)
+
+    if(UNIX)
+      # gbenchmark requies pthread when compiled on a Unix machine
+      target_link_libraries(${target_name} PRIVATE pthread)
+    endif()
+
+    target_link_libraries(
+      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
+    )
+
+    target_compile_definitions(
+      ${target_name} PRIVATE ${_ARG_COMPILE_DEFINITIONS}
+    )
+
+    foreach(dart_lib ${_ARG_LINK_DART_LIBRARIES})
+      if(NOT TARGET ${dart_lib})
+        message(FATAL_ERROR "Invalid target: ${dart_lib}")
+      endif()
+      target_link_libraries(${target_name} PRIVATE ${dart_lib})
+    endforeach()
+
+    set_target_properties(${target_name}
+      PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+    )
+
+    if(_ARG_TEST_LIST)
+      list(APPEND ${_ARG_TEST_LIST} ${target_name})
+    endif()
+
+    # Add executable target
+    add_custom_target(
+      RUN_${target_name}
+      COMMAND ${target_name}
+      COMMENT "Running benchmark ${target_name}..."
+      VERBATIM
+    )
+
+    dart_property_add(DART_${_ARG_TYPE}_BENCHMARKS ${target_name})
+  endforeach()
+
+  if(_ARG_TEST_LIST)
+    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}"
+        PARENT_SCOPE
+    )
+  endif()
+
+  dart_format_add(${_ARG_SOURCES})
+
+endfunction()
