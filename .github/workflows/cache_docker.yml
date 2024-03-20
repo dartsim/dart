@@ -70,37 +70,6 @@ jobs:
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
-  # Bionic image for API documentation builds
-  bionic-docs:
-    name: bionic-docs
-    runs-on: ubuntu-latest
-    env:
-      UBUNTU_VERSION: bionic
-      DART_VERSION: docs
-    steps:
-      # https://github.com/marketplace/actions/docker-setup-qemu
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      # https://github.com/marketplace/actions/docker-setup-buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      # https://github.com/marketplace/actions/docker-login
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      # https://github.com/marketplace/actions/build-and-push-docker-images
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v5
-        with:
-          file: ./docker/dev/${{ env.DART_VERSION }}/Dockerfile
-          push: true
-          tags: ${{ env.DOCKER_REPO }}:${{ env.UBUNTU_VERSION }}-${{ env.DART_VERSION }}
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
-
   # Archlinux on amd64
   archlinux:
     name: archlinux
