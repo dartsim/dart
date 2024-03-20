@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,12 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include <dart/v7/uri.hpp>
-
-namespace dart::common {
-
-using Uri = v7::Uri;
-
-} // namespace dart::common
+TEST(EmptyTest, Empty)
+{
+  EXPECT_TRUE(true);
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include <dart/v7/uri.hpp>
+#include <dart/config.hpp>
 
-namespace dart::common {
+namespace dart::v7 {
 
-using Uri = v7::Uri;
+// Placeholder for the v7 API
 
-} // namespace dart::common
+} // namespace dart::v7

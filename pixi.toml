@@ -43,7 +43,7 @@ clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
 configure-local = { cmd = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
 install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_on = [
-    "configure_local",
+    "configure-local",
     "build",
 ] }
 
@@ -73,6 +73,10 @@ test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
     "configure",
 ] }
 test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
+    "configure",
+] }
+
+build-v7 = { cmd = "cmake --build build --target v7 --parallel", depends_on = [
     "configure",
 ] }
 
