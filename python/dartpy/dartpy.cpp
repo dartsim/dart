@@ -41,6 +41,7 @@ namespace python {
 
 void eigen_geometry(py::module& m);
 
+void dart_v7(py::module& m);
 void dart_common(py::module& m);
 void dart_math(py::module& m);
 void dart_optimizer(py::module& m);
@@ -63,6 +64,7 @@ PYBIND11_MODULE(dartpy, m)
 
   eigen_geometry(m);
 
+  dart_v7(m);
   dart_common(m);
   dart_math(m);
   dart_optimizer(m);

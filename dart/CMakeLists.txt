@@ -13,6 +13,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Source directories
 #===============================================================================
+# v7
 # common
 # math
 # integration
@@ -60,6 +61,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # gui - (utils), {dart-gui}
 # gui-osg - (gui), {dart-gui-osg}
 
+add_subdirectory(v7)
+
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
 
@@ -83,14 +86,6 @@ add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(utils) # tinyxml2, bullet
 add_subdirectory(gui) # opengl, glut, bullet
-
-set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
-if(DART_VERBOSE)
-  message(STATUS ${DART_CONFIG_HPP_OUT})
-endif()
-configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -124,33 +119,22 @@ target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
     ${PROJECT_NAME}-external-odelcpsolver
+    v7
     Eigen3::Eigen
     fcl
     assimp
 )
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PUBLIC fmt::fmt-header-only)
-elseif(TARGET fmt::fmt)
+if(TARGET fmt::fmt)
   target_link_libraries(dart PUBLIC fmt::fmt)
 else()
   message(FATAL_ERROR "Failed to find fmt targets")
 endif()
 
 # spdlog settings
-if(spdlog_FOUND)
-  # Prefer header only target
-  if(TARGET spdlog::spdlog_header_only)
-    target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  elseif(TARGET spdlog::spdlog)
-    target_link_libraries(dart PUBLIC spdlog::spdlog)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
-  endif()
-else()
-  target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
+if(TARGET spdlog::spdlog_header_only)
+  target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
+elseif(TARGET spdlog::spdlog)
+  target_link_libraries(dart PUBLIC spdlog::spdlog)
 endif()
 
 # octomap settings
@@ -241,3 +225,11 @@ endif()
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})
+
+set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_HPP_OUT})
+endif()
+configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)

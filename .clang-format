@@ -58,6 +58,8 @@ IncludeCategories:
   # DART headers
   - Regex: '^<dart\/config.hpp>$'
     Priority: 10
+  - Regex: '^<dart\/v7\/fwd.hpp>$'
+    Priority: 11
   - Regex: '^<dart\/test\/.*\.h(pp)?>$'
     Priority: 20
   - Regex: '^<dart\/python\/.*\.h(pp)?>$'
@@ -84,7 +86,7 @@ IncludeCategories:
     Priority: 31
   - Regex: '^<dart\/common\/.*\.h(pp)?>$'
     Priority: 32
-  - Regex: '^<dart\/common\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/v7\/.*\.h(pp)?>$'
     Priority: 33
   - Regex: '^<dart\/.*\.h(pp)?>$'
     Priority: 40

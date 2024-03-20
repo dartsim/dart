@@ -131,6 +131,11 @@ find_package(Python3 COMPONENTS Interpreter Development)
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
+if(spdlog_FOUND)
+  set(DART_HAVE_SPDLOG 1)
+else()
+  set(DART_HAVE_SPDLOG 0)
+endif()
 
 #--------------------
 # Misc. dependencies
