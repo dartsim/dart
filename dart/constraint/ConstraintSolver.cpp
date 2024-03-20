@@ -40,6 +40,7 @@
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -361,6 +362,8 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
+  DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
+
   for (auto& skeleton : mSkeletons) {
     skeleton->clearConstraintImpulses();
     DART_SUPPRESS_DEPRECATED_BEGIN
@@ -454,6 +457,8 @@ bool ConstraintSolver::checkAndAddConstraint(
 //==============================================================================
 void ConstraintSolver::updateConstraints()
 {
+  DART_PROFILE_SCOPED;
+
   // Clear previous active constraint list
   mActiveConstraints.clear();
 
@@ -635,6 +640,8 @@ void ConstraintSolver::updateConstraints()
 //==============================================================================
 void ConstraintSolver::buildConstrainedGroups()
 {
+  DART_PROFILE_SCOPED;
+
   // Clear constrained groups
   mConstrainedGroups.clear();
 
@@ -687,8 +694,11 @@ void ConstraintSolver::buildConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
-  for (auto& constraintGroup : mConstrainedGroups)
+  DART_PROFILE_SCOPED;
+
+  for (auto& constraintGroup : mConstrainedGroups) {
     solveConstrainedGroup(constraintGroup);
+  }
 }
 
 //==============================================================================

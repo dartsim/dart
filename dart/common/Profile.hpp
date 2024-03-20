@@ -30,52 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#pragma once
 
-#include "dart/common/Profile.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include <dart/config.hpp>
 
-namespace dart {
-namespace constraint {
-
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
-{
-  return getStaticType();
-}
-
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
-{
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
-}
-
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int /*nub*/,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
-  return external::ode::dSolveLCP(
-      n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
-}
-
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
+#if DART_BUILD_PROFILE
+  #include <tracy/Tracy.hpp>
 #endif
 
-} // namespace constraint
-} // namespace dart
+#if DART_BUILD_PROFILE
+
+  #define DART_PROFILE_FRAME FrameMark
+  #define DART_PROFILE_SCOPED ZoneScoped
+  #define DART_PROFILE_SCOPED_N(name) ZoneScopedN(name)
+
+#else // no-op
+
+  #define DART_PROFILE_FRAME
+  #define DART_PROFILE_SCOPED
+  #define DART_PROFILE_SCOPED_N(name)
+
+#endif
+
+namespace dart::common {
+
+//
+
+} // namespace dart::common

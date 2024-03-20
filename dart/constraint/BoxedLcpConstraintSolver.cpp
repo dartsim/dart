@@ -39,6 +39,7 @@
 #endif
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
@@ -140,6 +141,8 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
 //==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
+  DART_PROFILE_SCOPED;
+
   // Build LCP terms by aggregating them from constraints
   const std::size_t numConstraints = group.getNumConstraints();
   const std::size_t n = group.getTotalDimension();
@@ -171,54 +174,80 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
 
   // For each constraint
-  ConstraintInfo constInfo;
-  constInfo.invTimeStep = 1.0 / mTimeStep;
-  for (std::size_t i = 0; i < numConstraints; ++i) {
-    const ConstraintBasePtr& constraint = group.getConstraint(i);
+  {
+    DART_PROFILE_SCOPED_N("Construct LCP");
+    ConstraintInfo constInfo;
+    constInfo.invTimeStep = 1.0 / mTimeStep;
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const ConstraintBasePtr& constraint = group.getConstraint(i);
 
-    constInfo.x = mX.data() + mOffset[i];
-    constInfo.lo = mLo.data() + mOffset[i];
-    constInfo.hi = mHi.data() + mOffset[i];
-    constInfo.b = mB.data() + mOffset[i];
-    constInfo.findex = mFIndex.data() + mOffset[i];
-    constInfo.w = mW.data() + mOffset[i];
+      constInfo.x = mX.data() + mOffset[i];
+      constInfo.lo = mLo.data() + mOffset[i];
+      constInfo.hi = mHi.data() + mOffset[i];
+      constInfo.b = mB.data() + mOffset[i];
+      constInfo.findex = mFIndex.data() + mOffset[i];
+      constInfo.w = mW.data() + mOffset[i];
 
-    // Fill vectors: lo, hi, b, w
-    constraint->getInformation(&constInfo);
-
-    // Fill a matrix by impulse tests: A
-    constraint->excite();
-    for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
-      // Adjust findex for global index
-      if (mFIndex[mOffset[i] + j] >= 0)
-        mFIndex[mOffset[i] + j] += mOffset[i];
-
-      // Apply impulse for mipulse test
-      constraint->applyUnitImpulse(j);
-
-      // Fill upper triangle blocks of A matrix
-      int index = nSkip * (mOffset[i] + j) + mOffset[i];
-      constraint->getVelocityChange(mA.data() + index, true);
-      for (std::size_t k = i + 1; k < numConstraints; ++k) {
-        index = nSkip * (mOffset[i] + j) + mOffset[k];
-        group.getConstraint(k)->getVelocityChange(mA.data() + index, false);
+      // Fill vectors: lo, hi, b, w
+      {
+        DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
+        constraint->getInformation(&constInfo);
       }
 
-      // Filling symmetric part of A matrix
-      for (std::size_t k = 0; k < i; ++k) {
-        const int indexI = mOffset[i] + j;
-        for (std::size_t l = 0; l < group.getConstraint(k)->getDimension();
-             ++l) {
-          const int indexJ = mOffset[k] + l;
-          mA(indexI, indexJ) = mA(indexJ, indexI);
+      // Fill a matrix by impulse tests: A
+      {
+        DART_PROFILE_SCOPED_N("Fill A");
+        constraint->excite();
+        for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
+          // Adjust findex for global index
+          if (mFIndex[mOffset[i] + j] >= 0)
+            mFIndex[mOffset[i] + j] += mOffset[i];
+
+          // Apply impulse for mipulse test
+          {
+            DART_PROFILE_SCOPED_N("Unit impulse test");
+            constraint->applyUnitImpulse(j);
+          }
+
+          // Fill upper triangle blocks of A matrix
+          {
+            DART_PROFILE_SCOPED_N("Fill upper triangle of A");
+            int index = nSkip * (mOffset[i] + j) + mOffset[i];
+            constraint->getVelocityChange(mA.data() + index, true);
+            for (std::size_t k = i + 1; k < numConstraints; ++k) {
+              index = nSkip * (mOffset[i] + j) + mOffset[k];
+              group.getConstraint(k)->getVelocityChange(
+                  mA.data() + index, false);
+            }
+          }
+
+          // Filling symmetric part of A matrix
+          {
+            DART_PROFILE_SCOPED_N("Fill lower triangle of A");
+            for (std::size_t k = 0; k < i; ++k) {
+              const int indexI = mOffset[i] + j;
+              for (std::size_t l = 0;
+                   l < group.getConstraint(k)->getDimension();
+                   ++l) {
+                const int indexJ = mOffset[k] + l;
+                mA(indexI, indexJ) = mA(indexJ, indexI);
+              }
+            }
+          }
         }
       }
+
+      assert(isSymmetric(
+          n,
+          mA.data(),
+          mOffset[i],
+          mOffset[i] + constraint->getDimension() - 1));
+
+      {
+        DART_PROFILE_SCOPED_N("Unexcite");
+        constraint->unexcite();
+      }
     }
-
-    assert(isSymmetric(
-        n, mA.data(), mOffset[i], mOffset[i] + constraint->getDimension() - 1));
-
-    constraint->unexcite();
   }
 
   assert(isSymmetric(n, mA.data()));
@@ -259,6 +288,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     success = false;
 
   if (!success && mSecondaryBoxedLcpSolver) {
+    DART_PROFILE_SCOPED_N("Secondary LCP");
     mSecondaryBoxedLcpSolver->solve(
         n,
         mABackup.data(),
@@ -287,10 +317,13 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  for (std::size_t i = 0; i < numConstraints; ++i) {
-    const ConstraintBasePtr& constraint = group.getConstraint(i);
-    constraint->applyImpulse(mX.data() + mOffset[i]);
-    constraint->excite();
+  {
+    DART_PROFILE_SCOPED_N("Apply constraint impulses");
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      constraint->applyImpulse(mX.data() + mOffset[i]);
+      constraint->excite();
+    }
   }
 }
 

@@ -1,0 +1,33 @@
+# Use an Arch Linux base image
+FROM archlinux:latest
+
+# Initialize the keyring, populate the Arch Linux keyring, and update the system
+RUN pacman-key --init \
+    && pacman-key --populate archlinux \
+    && pacman -Sy archlinux-keyring --noconfirm \
+    && pacman -Su --noconfirm
+
+# Install build dependencies
+RUN pacman -S --noconfirm base-devel \
+    cmake \
+    git \
+    freetype2 \
+    tbb \
+    debuginfod \
+    wayland \
+    dbus \
+    libxkbcommon \
+    libglvnd \
+    meson \
+    wayland-protocols \
+    --needed \
+    && pacman -Scc --noconfirm
+
+# Clone the Tracy Profiler repository
+RUN git clone --depth 1 https://github.com/wolfpld/tracy.git -b master
+
+# Build Tracy Profiler GUI
+WORKDIR /tracy/profiler/build
+RUN cmake -S ../ -B . && cmake --build . --config Release --parallel
+
+ENTRYPOINT [ "/tracy/profiler/build/tracy-profiler" ]

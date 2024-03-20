@@ -234,6 +234,10 @@ if(DART_CODECOV)
   target_link_libraries(dart PUBLIC coverage_config)
 endif()
 
+if(DART_BUILD_PROFILE)
+  target_link_libraries(dart PUBLIC TracyClient)
+endif()
+
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

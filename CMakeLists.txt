@@ -88,6 +88,7 @@ dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_BUILD_DARTPY "Build dartpy" ON)
+dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_CODECOV "Turn on codecov support" OFF)
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a

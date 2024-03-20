@@ -40,6 +40,7 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -163,16 +164,22 @@ void World::reset()
 void World::step(bool _resetCommand)
 {
   // Integrate velocity for unconstrained skeletons
-  for (auto& skel : mSkeletons) {
-    if (!skel->isMobile())
-      continue;
+  {
+    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
+    for (auto& skel : mSkeletons) {
+      if (!skel->isMobile())
+        continue;
 
-    skel->computeForwardDynamics();
-    skel->integrateVelocities(mTimeStep);
+      skel->computeForwardDynamics();
+      skel->integrateVelocities(mTimeStep);
+    }
   }
 
   // Detect activated constraints and compute constraint impulses
-  mConstraintSolver->solve();
+  {
+    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
+    mConstraintSolver->solve();
+  }
 
   // Compute velocity changes given constraint impulses
   for (auto& skel : mSkeletons) {
@@ -195,6 +202,7 @@ void World::step(bool _resetCommand)
 
   mTime += mTimeStep;
   mFrame++;
+  DART_PROFILE_FRAME;
 }
 
 //==============================================================================

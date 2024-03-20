@@ -1,6 +1,7 @@
 # Build dependencies
 brew 'cmake'
 brew 'pkg-config'
+brew 'tracy'
 
 brew 'assimp'
 brew 'bullet'

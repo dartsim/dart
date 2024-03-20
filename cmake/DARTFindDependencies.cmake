@@ -110,6 +110,22 @@ endif()
 # Optional dependencies
 #=======================
 
+if(DART_BUILD_PROFILE)
+  include(FetchContent)
+  FetchContent_Declare(tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG v0.10
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+  FetchContent_MakeAvailable(tracy)
+  if(MSVC)
+    target_compile_options(external_lib_target PRIVATE /W0)
+  else()
+    target_compile_options(TracyClient PRIVATE -w)
+  endif()
+endif()
+
 find_package(Python3 COMPONENTS Interpreter Development)
 
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
