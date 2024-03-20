@@ -343,7 +343,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 }
 
 // Set the actuator type for four wheel joints to "VELOCITY" (Lesson 6 Answer)
-void setVelocityAccuators(SkeletonPtr biped)
+void setVelocityActuators(SkeletonPtr biped)
 {
   Joint* wheel1 = biped->getJoint("joint_front_left");
   Joint* wheel2 = biped->getJoint("joint_front_right");
@@ -455,7 +455,7 @@ int main(int argc, char* argv[])
   modifyBipedWithSkateboard(biped);
 
   // Lesson 6
-  setVelocityAccuators(biped);
+  setVelocityActuators(biped);
 
   // Lesson 7
   Eigen::VectorXd balancedPose = solveIK(biped);

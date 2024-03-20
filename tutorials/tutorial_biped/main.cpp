@@ -246,7 +246,7 @@ void modifyBipedWithSkateboard(SkeletonPtr /*biped*/)
 }
 
 // Set the actuator type for four wheel joints to "VELOCITY"
-void setVelocityAccuators(SkeletonPtr /*biped*/)
+void setVelocityActuators(SkeletonPtr /*biped*/)
 {
   // Lesson 6
 }
@@ -297,7 +297,7 @@ int main(int argc, char* argv[])
   modifyBipedWithSkateboard(biped);
 
   // Lesson 6
-  setVelocityAccuators(biped);
+  setVelocityActuators(biped);
 
   // Lesson 7
   Eigen::VectorXd balancedPose = solveIK(biped);
