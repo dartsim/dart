@@ -41,12 +41,16 @@ clean = "rm -rf build"
 
 configure-local = { cmd = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
 install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_on = [
-    "configure_local",
+    "configure-local",
     "build",
 ] }
 
 configure-unix = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
 configure-win = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
+
+build-v7 = { cmd = "cmake --build build --target v7 --parallel", depends_on = [
+    "configure",
+] }
 
 example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
     "configure",

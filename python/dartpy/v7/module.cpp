@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,12 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <pybind11/pybind11.h>
 
-#include <dart/v7/uri.hpp>
+namespace py = pybind11;
 
-namespace dart::common {
+namespace dart::python {
 
-using Uri = v7::Uri;
+void dart_v7(py::module& m)
+{
+  auto sm = m.def_submodule("v7");
+}
 
-} // namespace dart::common
+} // namespace dart::python
