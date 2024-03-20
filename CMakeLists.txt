@@ -51,11 +51,6 @@ include(dart_defs)
 include(Components)
 initialize_component_helpers(${PROJECT_NAME})
 
-# System install paths on Windows
-if(WIN32)
-  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
-endif()
-
 #===============================================================================
 # Project settings
 #===============================================================================
