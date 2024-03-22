@@ -99,6 +99,7 @@ dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
+dart_option(DART_BUILD_RERUN "Build with Rerun SDK" OFF)
 dart_option(DART_IN_CI "Indicate building DART as part of CI" OFF)
 
 #===============================================================================
@@ -199,14 +200,12 @@ endif()
 set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
 
 if(DART_BUILD_MODE_DEBUG)
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+  dart_option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 else()
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
+  dart_option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
 endif()
 
-option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
-
-option(DART_BUILD_RERUN "Build with Rerun SDK" OFF)
+dart_option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
 #===============================================================================
 # Find dependencies

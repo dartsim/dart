@@ -30,3 +30,5 @@ add_subdirectory(fetch)
 
 # Deprecated examples
 add_subdirectory(deprecated_examples)
+
+add_subdirectory(rerun)
