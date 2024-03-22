@@ -101,4 +101,25 @@ std::vector<std::string> split(
   return tokens;
 }
 
+std::string removeWhitespace(std::string str)
+{
+  str.erase(
+      std::remove_if(
+          str.begin(),
+          str.end(),
+          [](unsigned char ch) { return std::isspace(ch); }),
+      str.end());
+  return str;
+}
+
+void removeWhitespaceInPlace(std::string& str)
+{
+  str.erase(
+      std::remove_if(
+          str.begin(),
+          str.end(),
+          [](unsigned char ch) { return std::isspace(ch); }),
+      str.end());
+}
+
 } // namespace dart::common

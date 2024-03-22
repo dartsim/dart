@@ -176,6 +176,7 @@ dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
 dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
+dart_option(DART_BUILD_RERUN "Build experimental Rerun SDK integration" OFF CATEGORY build)
 
 if(DART_BUILD_DARTPY8)
   set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
@@ -285,12 +286,12 @@ endif()
 set_property(CACHE DART_ACTIVE_LOG_LEVEL PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF)
 
 if(DART_BUILD_MODE_DEBUG)
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+  dart_option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 else()
-  option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
+  dart_option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
 endif()
 
-option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
+dart_option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
 #===============================================================================
 # Find dependencies

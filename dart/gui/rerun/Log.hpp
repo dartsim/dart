@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2025, The DART development contributors
+ * Copyright (c) 2011-2024, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,48 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STRING_HPP_
-#define DART_COMMON_STRING_HPP_
+#pragma once
 
-#include <string>
-#include <vector>
+#include <dart/config.hpp>
 
-namespace dart::common {
+#include <dart/simulation/simulation.hpp>
 
-/// Converts string to upper cases
-std::string toUpper(std::string str);
+#include <rerun.hpp>
+#include <rerun/demo_utils.hpp>
 
-/// Converts string to upper cases in place
-void toUpperInPlace(std::string& str);
+namespace dart::gui::rerun {
 
-/// Converts string to lower cases
-std::string toLower(std::string str);
+void logBodyNode(
+    const ::rerun::RecordingStream& rec,
+    std::string_view name,
+    const dynamics::BodyNode& bodyNode);
 
-/// Converts string to lower cases in place
-void toLowerInPlace(std::string& str);
+void logSkeleton(
+    const ::rerun::RecordingStream& rec,
+    std::string_view name,
+    const dynamics::Skeleton& skeleton);
 
-/// Trims both sides of string
-std::string trim(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+void logWorld(
+    const ::rerun::RecordingStream& rec,
+    std::string_view name,
+    const simulation::World& world);
 
-/// Trims left side of string
-std::string trimLeft(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Trims right side of string
-std::string trimRight(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Splits string given delimiters
-std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters = " \n\r\t");
-
-/// Removes whitespaces
-[[nodiscard]] std::string removeWhitespace(std::string str);
-
-/// Removes whitespaces in place
-void removeWhitespaceInPlace(std::string& str);
-
-} // namespace dart::common
-
-#endif // DART_COMMON_STRING_HPP_
+} // namespace dart::gui::rerun

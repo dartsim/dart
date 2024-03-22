@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2025, The DART development contributors
+ * Copyright (c) 2011-2024, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,48 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STRING_HPP_
-#define DART_COMMON_STRING_HPP_
+#include <dart/gui/rerun/rerun.hpp>
 
-#include <string>
-#include <vector>
+#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/utils.hpp>
 
-namespace dart::common {
+#include <dart/simulation/World.hpp>
 
-/// Converts string to upper cases
-std::string toUpper(std::string str);
+#include <dart/dart.hpp>
 
-/// Converts string to upper cases in place
-void toUpperInPlace(std::string& str);
+#include <rerun.hpp>
+#include <rerun/demo_utils.hpp>
 
-/// Converts string to lower cases
-std::string toLower(std::string str);
+using namespace dart;
+using namespace dart::common;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::utils;
+using namespace dart::math;
+using namespace rerun::demo;
 
-/// Converts string to lower cases in place
-void toLowerInPlace(std::string& str);
+int main()
+{
+  dart::utils::DartLoader urdfLoader;
+  auto ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas = dart::utils::SdfParser::readSkeleton(
+      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
 
-/// Trims both sides of string
-std::string trim(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+  // Create a world and add the rigid body
+  auto world = simulation::World::create();
+  // world->addSkeleton(ground);
+  world->addSkeleton(atlas);
 
-/// Trims left side of string
-std::string trimLeft(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
+  // Spawn Rerun viewer
+  const auto rec = ::rerun::RecordingStream("rerun_example_cpp");
+  rec.spawn().exit_on_failure();
 
-/// Trims right side of string
-std::string trimRight(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Splits string given delimiters
-std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters = " \n\r\t");
-
-/// Removes whitespaces
-[[nodiscard]] std::string removeWhitespace(std::string str);
-
-/// Removes whitespaces in place
-void removeWhitespaceInPlace(std::string& str);
-
-} // namespace dart::common
-
-#endif // DART_COMMON_STRING_HPP_
+  for (auto i = 0; i < 1; ++i) {
+    world->step();
+    gui::rerun::logWorld(rec, "world", *world);
+  }
+}
