@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(spdlog 1.3.0 QUIET CONFIG)
+find_package(spdlog 1.9.2 QUIET CONFIG)
