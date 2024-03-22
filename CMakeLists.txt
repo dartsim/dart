@@ -206,6 +206,8 @@ endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
+option(DART_BUILD_RERUN "Build with Rerun SDK" OFF)
+
 #===============================================================================
 # Find dependencies
 #===============================================================================
