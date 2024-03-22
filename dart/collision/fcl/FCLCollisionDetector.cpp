@@ -503,19 +503,11 @@ template <typename BV>
   const double front = -d / 2;
   const double back = d / 2;
 
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
   points[0] << 0, 0, hTop;
   points[1] << right, back, hBottom;
   points[2] << left, back, hBottom;
   points[3] << left, front, hBottom;
   points[4] << right, front, hBottom;
-#else
-  points[0].setValue(0, 0, hTop);
-  points[1].setValue(right, back, hBottom);
-  points[2].setValue(left, back, hBottom);
-  points[3].setValue(left, front, hBottom);
-  points[4].setValue(right, front, hBottom);
-#endif
 
   faces[0].set(0, 1, 2);
   faces[1].set(0, 2, 3);
@@ -525,11 +517,7 @@ template <typename BV>
   faces[5].set(1, 4, 3);
 
   for (unsigned int i = 0; i < points.size(); ++i) {
-#if FCL_VERSION_AT_LEAST(0, 6, 0)
     points[i] = pose * points[i];
-#else
-    points[i] = pose.transform(points[i]);
-#endif
   }
 
   model->beginModel();

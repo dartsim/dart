@@ -6,9 +6,9 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(fcl 0.5.0 CONFIG)
+find_package(fcl 0.7.0 CONFIG)
 if(NOT FCL_FOUND AND NOT fcl_FOUND)
-  find_package(fcl 0.5.0 REQUIRED MODULE)
+  find_package(fcl 0.7.0 REQUIRED MODULE)
 endif()
 
 # Set target fcl if not set

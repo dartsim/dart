@@ -43,11 +43,6 @@ namespace collision {
 class FCLTypes
 {
 public:
-#if !FCL_VERSION_AT_LEAST(0, 6, 0)
-  /// Convert Eigen vector3 type to FCL vector3 type
-  static dart::collision::fcl::Vector3 convertVector3(
-      const Eigen::Vector3d& _vec);
-#endif
   /// Convert FCL vector3 type to Eigen vector3 type
   static Eigen::Vector3d convertVector3(
       const dart::collision::fcl::Vector3& _vec);
