@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.0 QUIET
+find_package(OpenSceneGraph 3.6.5 QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
