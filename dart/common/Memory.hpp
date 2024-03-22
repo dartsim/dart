@@ -36,7 +36,8 @@
 #include <dart/config.hpp>
 
 #include <dart/common/Deprecated.hpp>
-#include <dart/common/detail/AlignedAllocator.hpp>
+
+#include <Eigen/Core>
 
 #include <map>
 #include <memory>
@@ -53,21 +54,6 @@ template <typename T, typename... Args>
 DART_DEPRECATED(6.9)
 std::unique_ptr<T> make_unique(Args&&... args);
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 1) && EIGEN_VERSION_AT_MOST(3, 2, 8)
-
-template <typename _Tp>
-using aligned_vector
-    = std::vector<_Tp, dart::common::detail::aligned_allocator_cpp11<_Tp>>;
-
-template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
-using aligned_map = std::map<
-    _Key,
-    _Tp,
-    _Compare,
-    dart::common::detail::aligned_allocator_cpp11<std::pair<const _Key, _Tp>>>;
-
-#else
-
 template <typename _Tp>
 using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
 
@@ -77,8 +63,6 @@ using aligned_map = std::map<
     _Tp,
     _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
-
-#endif
 
 } // namespace common
 } // namespace dart

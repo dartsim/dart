@@ -38,7 +38,7 @@ jobs:
       - uses: johnwason/vcpkg-action@v6
         with:
           # TODO: Add ode and coin-or-ipopt
-          pkgs: assimp ccd eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt opengl osg pagmo2 tinyxml2 urdfdom
+          pkgs: assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt opengl osg pagmo2 tinyxml2 urdfdom
           triplet: x64-windows
           revision: "2024.02.14"
           github-binarycache: true

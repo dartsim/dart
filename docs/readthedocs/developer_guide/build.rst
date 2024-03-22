@@ -55,7 +55,7 @@ manager. The following command will install the required dependencies:
 .. code-block:: bash
 
    $ sudo apt install \
-      build-essential cmake pkg-config git libassimp-dev libccd-dev \
+      build-essential cmake pkg-config git libassimp-dev \
       libeigen3-dev libfcl-dev libfmt-dev
 
 The following command will install the optional dependencies:
@@ -77,7 +77,7 @@ manager. The following command will install the required dependencies:
 
 .. code-block:: bash
 
-   $ brew install assimp cmake eigen fmt fcl libccd
+   $ brew install assimp cmake eigen fmt fcl
 
 The following command will install the optional dependencies:
 
@@ -95,14 +95,14 @@ manager. The following command will install the required dependencies:
 
 .. code-block:: bash
 
-   $ vcpkg install --triplet x64-windows assimp ccd eigen3 fcl fmt spdlog
+   $ vcpkg install --triplet x64-windows assimp eigen3 fcl fmt spdlog
 
 The following command will install the optional dependencies:
 
 .. code-block:: bash
 
    $ vcpkg install --triplet x64-windows \
-      assimp ccd eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
+      assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
       opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
 
 Arch Linux (experimental)
@@ -113,7 +113,7 @@ manager. The following command will install the required dependencies:
 
 .. code-block:: bash
 
-   $ yay -S assimp cmake eigen fcl fmt libccd
+   $ yay -S assimp cmake eigen fcl fmt
 
 The following command will install the optional dependencies:
 
@@ -128,6 +128,19 @@ FreeBSD (experimental)
 ^^^^^^^^^^^^^^^^^^^^^^
 
 TODO
+
+Dependency Info
+~~~~~~~~~~~~~~~
+
+Here's a summary of the dependencies required to build DART (WIP):
+
++------------+----------+---------+--------------+-------+
+| Dependency | Required | Type    | Min. Version | Notes |
++============+==========+=========+==============+=======+
+| CMake      | Yes      | Build   | 3.22.1       |       |
++------------+----------+---------+--------------+-------+
+| Eigen      | Yes      | Runtime | 3.4.0        |       |
++------------+----------+---------+--------------+-------+
 
 Clone the DART Repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~

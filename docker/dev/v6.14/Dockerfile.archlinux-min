@@ -34,6 +34,6 @@ RUN yay -Syu --needed --noconfirm \
 # DART required dependencies
 # ==============================================================================
 RUN yay -Syu --needed --noconfirm \
-    assimp eigen fcl fmt libccd
+    assimp eigen fcl fmt
 
 USER root

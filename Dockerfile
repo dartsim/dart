@@ -18,7 +18,6 @@ RUN apt-get update \
     && apt-get -y install --no-install-recommends \
     libeigen3-dev \
     libassimp-dev \
-    libccd-dev \
     libfcl-dev \
     libfmt-dev \
     libnlopt-cxx-dev \
