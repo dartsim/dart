@@ -6,17 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(assimp REQUIRED MODULE)
-
-# Manually check version because the upstream version compatibility policy
-# doesn't allow different major number while DART is compatible any version
-# greater than or equal to 4.1.
-set(DART_ASSIMP_VERSION 4.1)
-if(ASSIMP_VERSION AND ASSIMP_VERSION VERSION_LESS ${DART_ASSIMP_VERSION})
-  message(SEND_ERROR "Found Assimp ${ASSIMP_VERSION}, but Assimp >= ${DART_ASSIMP_VERSION}
-    is required"
-  )
-endif()
+find_package(assimp 5.2.0 REQUIRED MODULE)
 
 # Set target assimp if not set
 if((ASSIMP_FOUND OR assimp_FOUND) AND NOT TARGET assimp)
