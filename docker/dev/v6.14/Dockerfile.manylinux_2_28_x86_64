@@ -22,7 +22,7 @@ RUN git clone https://github.com/fmtlib/fmt.git -b 10.2.1 \
     && rm -rf fmt
 
 # assimp
-RUN git clone https://github.com/assimp/assimp.git -b 'v5.2.5' \
+RUN git clone https://github.com/assimp/assimp.git -b 'v5.3.1' \
     && mkdir -p assimp/build \
     && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_TESTS=OFF -DASSIMP_WARNINGS_AS_ERRORS=OFF \
     && cmake --build assimp/build --target install -j${NUM_CORES} \
@@ -36,7 +36,7 @@ RUN git clone https://gitlab.com/libeigen/eigen.git -b '3.4.0' \
     && rm -rf eigen
 
 # octomap
-RUN git clone https://github.com/OctoMap/octomap.git -b 'v1.9.6' \
+RUN git clone https://github.com/OctoMap/octomap.git -b 'v1.10.0' \
     && mkdir -p octomap/build \
     && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF -DBUILD_TESTING=OFF \
     && cmake --build octomap/build --target install -j${NUM_CORES} \
@@ -71,7 +71,7 @@ RUN git clone https://github.com/jslee02/tinyxml.git \
     && rm -rf tinyxml
 
 # tinyxml2
-RUN git clone https://github.com/leethomason/tinyxml2.git -b '9.0.0' \
+RUN git clone https://github.com/leethomason/tinyxml2.git -b '10.0.0' \
     && mkdir -p tinyxml2/build \
     && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     && cmake --build tinyxml2/build --target install -j${NUM_CORES} \
