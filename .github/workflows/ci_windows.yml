@@ -47,6 +47,7 @@ jobs:
             bullet3
             freeglut
             glfw3
+            nanobind
             nlopt
             opengl
             osg
@@ -55,7 +56,7 @@ jobs:
             tracy
             urdfdom
           triplet: x64-windows
-          revision: "2024.02.14"
+          revision: "2024.03.25"
           github-binarycache: true
           token: ${{ github.token }}
 

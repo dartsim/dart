@@ -111,6 +111,7 @@ jobs:
             freeglut
             glfw3
             imgui
+            nanobind
             nlopt
             ode
             opengl
@@ -119,7 +120,7 @@ jobs:
             tinyxml2
             urdfdom
           triplet: x64-windows
-          revision: "2024.02.14"
+          revision: "2024.03.25"
           github-binarycache: true
           token: ${{ github.token }}
 
