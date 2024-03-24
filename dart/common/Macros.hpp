@@ -36,6 +36,7 @@
 #include <cassert>
 
 #include "dart/common/Logging.hpp"
+#include "dart/config.hpp"
 
 // DART_NUM_ARGS(<arg1> [, <arg2> [, ...]])
 #define DETAIL_DART_NUM_ARGS(z, a, b, c, d, e, f, cnt, ...) cnt
@@ -68,7 +69,7 @@
 #define DETAIL_DART_ASSERT_2(condition, message) assert((condition) && #message)
 #define DART_ASSERT(...)                                                       \
   DART_CONCAT(DETAIL_DART_ASSERT_, DART_NUM_ARGS(__VA_ARGS__))                 \
-  (__VA_ARGS__)
+      (__VA_ARGS__)
 
 // Macro to mark the function is not implemented
 #define DART_NOT_IMPLEMENTED                                                   \

@@ -35,7 +35,7 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 6.2. "                            \
-    "Please include MultiSphereConvexHullShape.hpp intead.")
+    "Please include MultiSphereConvexHullShape.hpp instead.")
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 

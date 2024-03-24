@@ -38,6 +38,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/config.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
