@@ -33,7 +33,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
 #include <cassert>
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>
 #endif
@@ -155,7 +155,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     return;
 
   const int nSkip = dPAD(n);
-#ifdef NDEBUG // release
+#if DART_BUILD_MODE_RELEASE
   mA.resize(n, nSkip);
 #else // debug
   mA.setZero(n, nSkip);
@@ -310,7 +310,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 }
 
 //==============================================================================
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = dPAD(n);

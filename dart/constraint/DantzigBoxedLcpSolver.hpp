@@ -59,7 +59,7 @@ public:
       int* findex,
       bool earlyTermination) override;
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
   bool canSolve(int n, const double* A) override;
 #endif

@@ -38,6 +38,7 @@
 #include <string>
 
 #include "dart/common/Castable.hpp"
+#include "dart/config.hpp"
 
 namespace dart::common {
 

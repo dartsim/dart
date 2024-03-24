@@ -32,7 +32,7 @@
 
 #include "dart/constraint/PGSLCPSolver.hpp"
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>
 #endif
@@ -72,7 +72,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   int* findex = new int[n];
 
   // Set w to 0 and findex to -1
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   std::memset(A, 0.0, n * nSkip * sizeof(double));
 #endif
   std::memset(w, 0.0, n * sizeof(double));
@@ -185,7 +185,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 }
 
 //==============================================================================
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A)
 {
   std::size_t nSkip = dPAD(_n);

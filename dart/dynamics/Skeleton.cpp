@@ -2170,7 +2170,7 @@ void Skeleton::constructNewTree()
 //==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::vector<BodyNode*>::iterator repeat = std::find(
       mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end())
@@ -2224,7 +2224,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
   {
     if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i)
@@ -3839,7 +3839,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   // This skeleton should contain _bodyNode
   assert(_bodyNode->getSkeleton().get() == this);
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
@@ -3872,7 +3872,7 @@ void Skeleton::updateBiasImpulse(
   // This skeleton should contain _bodyNode
   assert(_bodyNode->getSkeleton().get() == this);
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
@@ -3922,7 +3922,7 @@ void Skeleton::updateBiasImpulse(
   assert(_bodyNode1->getSkeleton().get() == this);
   assert(_bodyNode2->getSkeleton().get() == this);
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(
@@ -3963,7 +3963,7 @@ void Skeleton::updateBiasImpulse(
       std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
       != mSoftBodyNodes.end());
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(

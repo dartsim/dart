@@ -403,7 +403,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     if (!mActive[i])
       continue;
 
-#ifndef NDEBUG // debug
+#if DART_BUILD_MODE_DEBUG
     if (std::abs(lcp->w[index]) > 1e-6)
     {
       dterr << "Invalid " << index
@@ -418,7 +418,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     lcp->lo[index] = mImpulseLowerBound[i];
     lcp->hi[index] = mImpulseUpperBound[i];
 
-#ifndef NDEBUG // debug
+#if DART_BUILD_MODE_DEBUG
     if (lcp->findex[index] != -1)
     {
       dterr << "Invalid " << index

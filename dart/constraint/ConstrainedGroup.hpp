@@ -38,6 +38,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/config.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
@@ -100,7 +101,7 @@ public:
   friend class ConstraintSolver;
 
 private:
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   /// Return true if _constraint is contained
   bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
 #endif
