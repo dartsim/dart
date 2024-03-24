@@ -243,7 +243,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 1;
@@ -453,9 +453,9 @@ TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
 
   //  for (int i = 0; i < getList().size(); ++i)
   //  {
-  //#ifndef NDEBUG
+  // #if DART_BUILD_MODE_DEBUG
   //    dtdbg << getList()[i] << std::endl;
-  //#endif
+  // #endif
   //    compareEquationsOfMotion(getList()[i]);
   //  }
 }

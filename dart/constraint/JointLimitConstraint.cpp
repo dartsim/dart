@@ -312,7 +312,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
       lcp->lo[index] = mLowerBound[i];
       lcp->hi[index] = mUpperBound[i];
 
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
       if (lcp->lo[index] > lcp->hi[index])
       {
         std::cout << "dim: " << mDim << std::endl;

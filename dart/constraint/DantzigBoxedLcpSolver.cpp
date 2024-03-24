@@ -66,7 +66,7 @@ bool DantzigBoxedLcpSolver::solve(
       n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
 }
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
 {

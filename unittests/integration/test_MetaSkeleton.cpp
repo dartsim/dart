@@ -107,7 +107,7 @@ TEST(MetaSkeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t numIterations = 1;
 #else // Release mode
   std::size_t numIterations = 20;

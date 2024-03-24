@@ -58,7 +58,7 @@ public:
   // Documentation inherited
   void solve(ConstrainedGroup* _group) override;
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 private:
   /// Return true if the matrix is symmetric
   bool isSymmetric(std::size_t _n, double* _A);

@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   #include <mutex>
 #endif
 #include <iostream>
@@ -151,7 +151,7 @@ public:
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
 #endif
@@ -164,10 +164,10 @@ public:
       std::ostream& os, const MemoryManager& memoryManager);
 
 private:
-  /// The base allocator to allocate memory chunck.
+  /// The base allocator to allocate memory chunk.
   MemoryAllocator& mBaseAllocator;
 
-#ifdef NDEBUG
+#if DART_BUILD_MODE_RELEASE
   /// The free list allocator.
   FreeListAllocator mFreeListAllocator;
 
