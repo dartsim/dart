@@ -43,7 +43,7 @@ namespace dart {
 namespace constraint {
 
 /// \deprecated This header has been deprecated in DART 6.7. Please include
-/// DantzigBoxedLcpSolver.hpp intead.
+/// DantzigBoxedLcpSolver.hpp instead.
 ///
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
 /// algorithm
@@ -64,7 +64,7 @@ private:
   /// Return true if the matrix is symmetric
   bool isSymmetric(std::size_t _n, double* _A);
 
-  /// Return true if the diagonla block of matrix is symmetric
+  /// Return true if the diagonal block of matrix is symmetric
   bool isSymmetric(
       std::size_t _n, double* _A, std::size_t _begin, std::size_t _end);
 

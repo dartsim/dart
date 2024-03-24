@@ -63,7 +63,7 @@ private:
   /// Return true if the matrix is symmetric
   bool isSymmetric(std::size_t _n, double* _A);
 
-  /// Return true if the diagonla block of matrix is symmetric
+  /// Return true if the diagonal block of matrix is symmetric
   bool isSymmetric(
       std::size_t _n, double* _A, std::size_t _begin, std::size_t _end);
 

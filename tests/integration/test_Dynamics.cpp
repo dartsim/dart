@@ -2020,8 +2020,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
     auto dof = skel->getNumDofs();
 
-    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
-    {
+    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof) {
 #if DART_BUILD_MODE_DEBUG
       dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
             << "] since the Skeleton doesn't have FreeJoint at the root body "
@@ -2260,8 +2259,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 //==============================================================================
 TEST_F(DynamicsTest, testJacobians)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2272,8 +2270,7 @@ TEST_F(DynamicsTest, testJacobians)
 //==============================================================================
 TEST_F(DynamicsTest, testFiniteDifference)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2286,8 +2283,7 @@ TEST_F(DynamicsTest, testFiniteDifference)
 //==============================================================================
 TEST_F(DynamicsTest, testForwardKinematics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2298,8 +2294,7 @@ TEST_F(DynamicsTest, testForwardKinematics)
 //==============================================================================
 TEST_F(DynamicsTest, testInverseDynamics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2336,8 +2331,7 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMass)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2348,8 +2342,7 @@ TEST_F(DynamicsTest, testCenterOfMass)
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2360,8 +2353,7 @@ TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 //==============================================================================
 TEST_F(DynamicsTest, testConstraintImpulse)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2372,8 +2364,7 @@ TEST_F(DynamicsTest, testConstraintImpulse)
 //==============================================================================
 TEST_F(DynamicsTest, testImpulseBasedDynamics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i)
-  {
+  for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
@@ -2386,7 +2377,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 {
   const double tol = 1e-8;
   const double timeStep = 1e-3;
-#if DART_BUILD_MODE_DEBUG 
+#if DART_BUILD_MODE_DEBUG
   const std::size_t numFrames = 50; // 0.05 secs
 #else
   const std::size_t numFrames = 5e+3; // 5 secs

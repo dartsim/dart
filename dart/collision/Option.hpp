@@ -35,7 +35,7 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 6.1. "                            \
-    "Please include CollisionOption.hpp intead.")
+    "Please include CollisionOption.hpp instead.")
 
 #include <dart/collision/CollisionOption.hpp>
 

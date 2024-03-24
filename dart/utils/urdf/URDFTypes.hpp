@@ -35,7 +35,7 @@
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 6.2. "                            \
-    "Please include dart/utils/urdf/BackwardCompatibility.hpp intead.")
+    "Please include dart/utils/urdf/BackwardCompatibility.hpp instead.")
 
 #include <dart/utils/urdf/BackwardCompatibility.hpp>
 

@@ -374,8 +374,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
       continue;
 
 #if DART_BUILD_MODE_DEBUG
-    if (std::abs(lcp->w[index]) > 1e-6)
-    {
+    if (std::abs(lcp->w[index]) > 1e-6) {
       dterr << "Invalid " << index
             << "-th slack variable. Expected: 0.0. Actual: " << lcp->w[index]
             << ".\n";
@@ -389,8 +388,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
     lcp->hi[index] = mImpulseUpperBound[i];
 
 #if DART_BUILD_MODE_DEBUG
-    if (lcp->findex[index] != -1)
-    {
+    if (lcp->findex[index] != -1) {
       dterr << "Invalid " << index
             << "-th friction index. Expected: -1. Actual: "
             << lcp->findex[index] << ".\n";

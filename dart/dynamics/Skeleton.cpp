@@ -2156,10 +2156,8 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
 #if DART_BUILD_MODE_DEBUG
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-  {
-    if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i)
-    {
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
+    if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i) {
       dterr << "[Skeleton::registerBodyNode] BodyNode named ["
             << mSkelCache.mBodyNodes[i]->getName() << "] in Skeleton ["
             << getName() << "] is mistaken about its index in the Skeleton ( "
