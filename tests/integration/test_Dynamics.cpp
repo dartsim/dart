@@ -862,7 +862,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   int nTestItr = 2;
 #else
   int nTestItr = 5;
@@ -958,7 +958,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
         compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
 
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
         if (skeleton->getNumBodyNodes() == 0u)
           continue;
 
@@ -1034,7 +1034,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   using namespace utils;
 
   //----------------------------- Settings -------------------------------------
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   int nRandomItr = 2;
 #else
   int nRandomItr = 10;
@@ -1121,7 +1121,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   using namespace utils;
 
   //----------------------------- Settings -------------------------------------
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   int nRandomItr = 2;
   std::size_t numSteps = 1e+1;
 #else
@@ -1211,7 +1211,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   int nRandomItr = 2;
 #else
   int nRandomItr = 10;
@@ -1342,7 +1342,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 //==============================================================================
 void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 {
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 1e+1;
   std::size_t numSteps = 1e+1;
 #else
@@ -1471,7 +1471,7 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
 {
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeleton
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   const std::size_t nRandomItr = 2;
 #else
   const std::size_t nRandomItr = 100;
@@ -1554,7 +1554,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 100;
@@ -1831,7 +1831,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 100;
@@ -1984,7 +1984,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 10;
@@ -2020,8 +2020,9 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
     auto dof = skel->getNumDofs();
 
-    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof) {
-#if BUILD_TYPE_DEBUG
+    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
+    {
+#if DART_BUILD_MODE_DEBUG
       dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
             << "] since the Skeleton doesn't have FreeJoint at the root body "
             << " or immobile." << endl;
@@ -2090,7 +2091,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 1;
@@ -2177,7 +2178,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 100;
@@ -2259,8 +2260,9 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 //==============================================================================
 TEST_F(DynamicsTest, testJacobians)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testJacobians(getList()[i]);
@@ -2270,8 +2272,9 @@ TEST_F(DynamicsTest, testJacobians)
 //==============================================================================
 TEST_F(DynamicsTest, testFiniteDifference)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#if BUILD_TYPE_DEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
@@ -2283,8 +2286,9 @@ TEST_F(DynamicsTest, testFiniteDifference)
 //==============================================================================
 TEST_F(DynamicsTest, testForwardKinematics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testForwardKinematics(getList()[i]);
@@ -2294,8 +2298,9 @@ TEST_F(DynamicsTest, testForwardKinematics)
 //==============================================================================
 TEST_F(DynamicsTest, testInverseDynamics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testInverseDynamics(getList()[i]);
@@ -2321,7 +2326,7 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     }
     ////////////////////////////////////////////////////////////////////////////
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     compareEquationsOfMotion(getList()[i]);
@@ -2331,8 +2336,9 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMass)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testCenterOfMass(getList()[i]);
@@ -2342,8 +2348,9 @@ TEST_F(DynamicsTest, testCenterOfMass)
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testCenterOfMassFreeFall(getList()[i]);
@@ -2353,8 +2360,9 @@ TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 //==============================================================================
 TEST_F(DynamicsTest, testConstraintImpulse)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testConstraintImpulse(getList()[i]);
@@ -2364,8 +2372,9 @@ TEST_F(DynamicsTest, testConstraintImpulse)
 //==============================================================================
 TEST_F(DynamicsTest, testImpulseBasedDynamics)
 {
-  for (std::size_t i = 0; i < getList().size(); ++i) {
-#ifndef NDEBUG
+  for (std::size_t i = 0; i < getList().size(); ++i)
+  {
+#if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
 #endif
     testImpulseBasedDynamics(getList()[i]);
@@ -2377,7 +2386,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 {
   const double tol = 1e-8;
   const double timeStep = 1e-3;
-#ifndef NDEBUG                      // Debug mode
+#if DART_BUILD_MODE_DEBUG 
   const std::size_t numFrames = 50; // 0.05 secs
 #else
   const std::size_t numFrames = 5e+3; // 5 secs

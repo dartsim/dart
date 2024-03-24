@@ -228,7 +228,7 @@ bool PgsBoxedLcpSolver::solve(
   return possibleToTerminate;
 }
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {

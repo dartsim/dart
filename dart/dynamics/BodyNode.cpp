@@ -1383,7 +1383,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     mConstDependentDofs.push_back(_skeleton->getDof(index));
   }
 
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
   // Check whether there is duplicated indices.
   std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
   for (std::size_t i = 0; i < nDepGenCoordIndices; ++i) {
@@ -1393,7 +1393,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
           && "Duplicated index is found in mDependentGenCoordIndices.");
     }
   }
-#endif // NDEBUG
+#endif
 
   //--------------------------------------------------------------------------
   // Set dimensions of dynamics matrices and vectors.

@@ -112,7 +112,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // Settings
   //----------------------------------------------------------------------------
   // Number of random state tests for each skeletons
-#ifndef NDEBUG // Debug mode
+#if DART_BUILD_MODE_DEBUG
   // std::size_t testCount = 1;
 #else
   // std::size_t testCount = 1;
@@ -222,9 +222,9 @@ TEST_F(ConstraintTest, SingleContactTest)
 {
   //  for (int i = 0; i < getList().size(); ++i)
   //  {
-  //#ifndef NDEBUG
+  // #if DART_BUILD_MODE_DEBUG
   //    dtdbg << getList()[i] << std::endl;
-  //#endif
+  // #endif
   //    SingleContactTest(getList()[i]);
   //  }
 

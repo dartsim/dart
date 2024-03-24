@@ -372,7 +372,7 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 }
 
 //==============================================================================
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 bool FreeListAllocator::MemoryBlockHeader::isValid() const
 {
   if (mPrev != nullptr && mPrev->mNext != this) {

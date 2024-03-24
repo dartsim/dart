@@ -62,10 +62,9 @@
   #define DART_COMPILER_MSVC
 #endif
 
-#cmakedefine01 BUILD_TYPE_DEBUG
-#cmakedefine01 BUILD_TYPE_RELEASE
-#cmakedefine01 BUILD_TYPE_RELWITHDEBINFO
-#cmakedefine01 BUILD_TYPE_MINSIZEREL
+// Indicates the build mode used for compiling
+#cmakedefine01 DART_BUILD_MODE_DEBUG
+#cmakedefine01 DART_BUILD_MODE_RELEASE
 
 #cmakedefine01 HAVE_NLOPT
 #cmakedefine01 HAVE_IPOPT

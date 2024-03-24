@@ -101,7 +101,7 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-#ifndef NDEBUG
+#if DART_BUILD_MODE_DEBUG
 bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
