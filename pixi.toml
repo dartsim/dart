@@ -13,9 +13,18 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
     "configure_local",
     "build",
 ] }
-example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = ["configure"] }
-example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = ["configure"] }
-bm-empty = { cmd = "cmake --build build --target BM_INTEGRATION_empty --parallel && ./build/bin/BM_INTEGRATION_empty", depends_on = ["configure"] }
+example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
+    "configure",
+] }
+example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = [
+    "configure",
+] }
+bm-empty = { cmd = "cmake --build build --target BM_INTEGRATION_empty --parallel && ./build/bin/BM_INTEGRATION_empty", depends_on = [
+    "configure",
+] }
+bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics --parallel && ./build/bin/BM_INTEGRATION_kinematics", depends_on = [
+    "configure",
+] }
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"

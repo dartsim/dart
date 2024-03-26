@@ -30,5 +30,18 @@
 
 dart_benchmarks(
   TYPE BM_INTEGRATION
-  SOURCES bm_empty.cpp
+  SOURCES
+    bm_empty.cpp
 )
+
+if(TARGET dart-utils)
+
+dart_benchmarks(
+  TYPE BM_INTEGRATION
+  SOURCES
+    bm_kinematics.cpp
+  LINK_LIBRARIES
+    dart-utils
+)
+
+endif()
