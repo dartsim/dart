@@ -13,6 +13,9 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
     "configure_local",
     "build",
 ] }
+example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
+    "configure",
+] }
 example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
     "configure",
 ] }
