@@ -57,6 +57,8 @@ int main()
   body->setInertia(dynamics::Inertia(
       1, Eigen::Vector3d::Zero(), shapeNode->getShape()->computeInertia(1.0)));
   shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
+  auto body2 = dynamics::RigidBody::create();
+  (void)body2;
 
   // Create ground
   auto ground = dynamics::Skeleton::create("ground");
