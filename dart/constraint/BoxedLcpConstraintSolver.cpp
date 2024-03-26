@@ -203,7 +203,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
           if (mFIndex[mOffset[i] + j] >= 0)
             mFIndex[mOffset[i] + j] += mOffset[i];
 
-          // Apply impulse for mipulse test
+          // Apply impulse for impulse test
           {
             DART_PROFILE_SCOPED_N("Unit impulse test");
             constraint->applyUnitImpulse(j);
@@ -220,33 +220,20 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
                   mA.data() + index, false);
             }
           }
-
-          // Filling symmetric part of A matrix
-          {
-            DART_PROFILE_SCOPED_N("Fill lower triangle of A");
-            for (std::size_t k = 0; k < i; ++k) {
-              const int indexI = mOffset[i] + j;
-              for (std::size_t l = 0;
-                   l < group.getConstraint(k)->getDimension();
-                   ++l) {
-                const int indexJ = mOffset[k] + l;
-                mA(indexI, indexJ) = mA(indexJ, indexI);
-              }
-            }
-          }
         }
       }
-
-      assert(isSymmetric(
-          n,
-          mA.data(),
-          mOffset[i],
-          mOffset[i] + constraint->getDimension() - 1));
 
       {
         DART_PROFILE_SCOPED_N("Unexcite");
         constraint->unexcite();
       }
+    }
+
+    {
+      // Fill lower triangle blocks of A matrix
+      DART_PROFILE_SCOPED_N("Fill lower triangle of A");
+      mA.leftCols(n).triangularView<Eigen::Lower>()
+          = mA.leftCols(n).triangularView<Eigen::Upper>().transpose();
     }
   }
 
@@ -258,7 +245,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  std::cout << std::endl;
 
   // Solve LCP using the primary solver and fallback to secondary solver when
-  // the parimary solver failed.
+  // the primary solver failed.
   if (mSecondaryBoxedLcpSolver) {
     // Make backups for the secondary LCP solver because the primary solver
     // modifies the original terms.
@@ -283,7 +270,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       earlyTermination);
 
   // Sanity check. LCP solvers should not report success with nan values, but
-  // it could happen. So we set the sucees to false for nan values.
+  // it could happen. So we set the success to false for nan values.
   if (success && mX.hasNaN())
     success = false;
 

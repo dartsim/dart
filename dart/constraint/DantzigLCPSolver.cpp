@@ -119,7 +119,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
       if (findex[offset[i] + j] >= 0)
         findex[offset[i] + j] += offset[i];
 
-      // Apply impulse for mipulse test
+      // Apply impulse for impulse test
       constraint->applyUnitImpulse(j);
 
       // Fill upper triangle blocks of A matrix

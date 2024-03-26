@@ -371,7 +371,7 @@ function(dart_build_tests)
     )
 
     # Link libraries
-    target_link_libraries(${target_name} PRIVATE gtest gtest_main)
+    target_link_libraries(${target_name} PRIVATE GTest::gtest GTest::gtest_main)
     target_link_libraries(
       ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
     )
