@@ -34,6 +34,14 @@ dart_benchmarks(
     bm_empty.cpp
 )
 
+dart_benchmarks(
+  TYPE BM_INTEGRATION
+  SOURCES
+    bm_boxes.cpp
+  LINK_LIBRARIES
+    dart
+)
+
 if(TARGET dart-utils)
 
 dart_benchmarks(

@@ -6,33 +6,17 @@ authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-[tasks]
-clean = "rm -rf build"
-configure-local = { cmd = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
-install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_on = [
-    "configure_local",
-    "build",
-] }
-example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
-    "configure",
-] }
-example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
-    "configure",
-] }
-example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = [
-    "configure",
-] }
-bm-empty = { cmd = "cmake --build build --target BM_INTEGRATION_empty --parallel && ./build/bin/BM_INTEGRATION_empty", depends_on = [
-    "configure",
-] }
-bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics --parallel && ./build/bin/BM_INTEGRATION_kinematics", depends_on = [
-    "configure",
-] }
-
-create-deps-dir = { cmd = "mkdir -p .deps" }
-remove-deps-dir = { cmd = "rm -rf .deps" }
-
-tracy-linux = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
+[build-dependencies]
+cmake = "3.22.*"
+ninja = ">=1.11.1,<1.12"
+pkg-config = ">=0.29.2,<0.30"
+pytest = ">=8.1.1,<8.2"
+doxygen = ">=1.10.0,<1.11"
+setuptools = ">=69.1.1,<69.2"
+black = ">=24.2.0,<24.3"
+isort = ">=5.13.2,<5.14"
+pip = ">=24.0,<25"
+pipx = ">=1.4.3,<1.5"
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
@@ -52,24 +36,56 @@ nlopt = ">=2.7.1,<2.8"
 pagmo = ">=2.19.0,<2.20"
 numpy = ">=1.26.4,<1.27"
 
-[build-dependencies]
-cmake = "3.22.*"
-ninja = ">=1.11.1,<1.12"
-pkg-config = ">=0.29.2,<0.30"
-pytest = ">=8.1.1,<8.2"
-doxygen = ">=1.10.0,<1.11"
-setuptools = ">=69.1.1,<69.2"
-black = ">=24.2.0,<24.3"
-isort = ">=5.13.2,<5.14"
-pip = ">=24.0,<25"
-pipx = ">=1.4.3,<1.5"
+[tasks]
+clean = "rm -rf build"
+
+configure-local = { cmd = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
+install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_on = [
+    "configure_local",
+    "build",
+] }
+
+configure-unix = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
+configure-win = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
+
+example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
+    "configure",
+] }
+example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
+    "configure",
+] }
+example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = [
+    "configure",
+] }
+
+bm-boxes = { cmd = "cmake --build build --target BM_INTEGRATION_boxes --parallel && ./build/bin/BM_INTEGRATION_boxes", depends_on = [
+    "configure",
+] }
+bm-empty = { cmd = "cmake --build build --target BM_INTEGRATION_empty --parallel && ./build/bin/BM_INTEGRATION_empty", depends_on = [
+    "configure",
+] }
+bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics --parallel && ./build/bin/BM_INTEGRATION_kinematics", depends_on = [
+    "configure",
+] }
+
+create-deps-dir = { cmd = "mkdir -p .deps" }
+remove-deps-dir = { cmd = "rm -rf .deps" }
+
+tracy-linux = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
+
+################################################################################
+# linux-64
+################################################################################
+
+[target.linux-64.build-dependencies]
+clang-format-14 = ">=14.0.6,<14.1"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
 imgui = ">=1.90.4,<1.91"
 
 [target.linux-64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
+configure = { depends_on = ["configure-unix"] }
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -97,11 +113,18 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
 
 tracy = { depends_on = ["tracy-linux"] }
 
-[target.linux-64.build-dependencies]
+################################################################################
+# osx-64
+################################################################################
+
+[target.osx-64.build-dependencies]
 clang-format-14 = ">=14.0.6,<14.1"
 
+[target.osx-64.dependencies]
+imgui = ">=1.90.4,<1.91"
+
 [target.osx-64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
+configure = { depends_on = ["configure-unix"] }
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -127,14 +150,18 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
-[target.osx-64.build-dependencies]
+################################################################################
+# osx-arm64
+################################################################################
+
+[target.osx-arm64.build-dependencies]
 clang-format-14 = ">=14.0.6,<14.1"
 
-[target.osx-64.dependencies]
+[target.osx-arm64.dependencies]
 imgui = ">=1.90.4,<1.91"
 
 [target.osx-arm64.tasks]
-configure = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON"
+configure = { depends_on = ["configure-unix"] }
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
 ] }
@@ -158,17 +185,15 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
-[target.osx-arm64.build-dependencies]
-clang-format-14 = ">=14.0.6,<14.1"
-
-[target.osx-arm64.dependencies]
-imgui = ">=1.90.4,<1.91"
+################################################################################
+# win-64
+################################################################################
 
 [target.win-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
-configure = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_BUILD_TYPE=Release -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=OFF"
+configure = { depends_on = ["configure-win"] }
 lint = { cmd = "black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd = "black . --check && isort . --check", depends_on = [
     "configure",
@@ -191,6 +216,3 @@ test-dartpy = { cmd = "cmake --build build --config Release -j --target pytest",
 test-all = { cmd = "cmake --build build --config Release -j --target ALL", depends_on = [
     "configure",
 ] }
-
-[target.win-64.build-dependencies]
-freeglut = ">=3.2.2,<3.3"
