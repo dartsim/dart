@@ -8,6 +8,11 @@ project(${example_name})
 set(required_components utils-urdf)
 set(required_libraries dart dart-utils-urdf rerun_sdk)
 
+# TODO: Fix dart_build_example_in_source() to handle this case
+if(NOT TARGET rerun_sdk)
+  return()
+endif()
+
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
   return()
