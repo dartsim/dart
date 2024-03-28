@@ -823,38 +823,59 @@ void testConeCone(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST_F(Collision, testConeCone)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testCylinderCylinder(fcl_mesh_dart);
+  {
+    SCOPED_TRACE("FCLCollisionDetector (MESH, DART)");
+    auto fcl_mesh_dart = FCLCollisionDetector::create();
+    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    testConeCone(fcl_mesh_dart);
+  }
 
-  auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  testCylinderCylinder(fcl_mesh_fcl);
+  {
+    SCOPED_TRACE("FCLCollisionDetector (MESH, FCL)");
+    auto fcl_mesh_fcl = FCLCollisionDetector::create();
+    fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+    fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+    testConeCone(fcl_mesh_fcl);
+  }
 
-  auto fcl_prim_dart = FCLCollisionDetector::create();
-  fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  fcl_prim_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testCylinderCylinder(fcl_prim_dart);
+  {
+    SCOPED_TRACE("FCLCollisionDetector (PRIMITIVE, DART)");
+    auto fcl_prim_dart = FCLCollisionDetector::create();
+    fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+    fcl_prim_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    testConeCone(fcl_prim_dart);
+  }
 
-  auto fcl_prim_fcl = FCLCollisionDetector::create();
-  fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  testCylinderCylinder(fcl_prim_fcl);
+  {
+    SCOPED_TRACE("FCLCollisionDetector (PRIMITIVE, FCL)");
+    auto fcl_prim_fcl = FCLCollisionDetector::create();
+    fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+    fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+    testConeCone(fcl_prim_fcl);
+  }
 
 #if HAVE_ODE
-  auto ode = OdeCollisionDetector::create();
-  testCylinderCylinder(ode);
+  {
+    // SCOPED_TRACE("OdeCollisionDetector");
+    // auto ode = OdeCollisionDetector::create();
+    // testConeCone(ode);
+  }
 #endif
 
 #if HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
-  testCylinderCylinder(bullet);
+  {
+    SCOPED_TRACE("BulletCollisionDetector");
+    auto bullet = BulletCollisionDetector::create();
+    testConeCone(bullet);
+  }
 #endif
 
-  // auto dart = DARTCollisionDetector::create();
-  // testCylinderCylinder(dart);
+  {
+    // SCOPED_TRACE("DARTCollisionDetector");
+    // auto dart = DARTCollisionDetector::create();
+    // testConeCone(dart);
+  }
 }
 
 //==============================================================================
