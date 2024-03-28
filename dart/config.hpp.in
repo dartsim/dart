@@ -98,3 +98,5 @@
 #cmakedefine01 DART_USE_SYSTEM_IMGUI
 
 #cmakedefine01 DART_BUILD_PROFILE
+
+#cmakedefine ODE_WITH_LIBCCD_BOX_CYL

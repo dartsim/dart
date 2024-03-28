@@ -772,7 +772,7 @@ TEST_F(Collision, testCylinderCylinder)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCylinderCylinder(fcl_mesh_fcl);
 
-#if HAVE_ODE
+#if HAVE_ODE && !defined(ODE_WITH_LIBCCD_BOX_CYL)
   auto ode = OdeCollisionDetector::create();
   testCylinderCylinder(ode);
 #endif
