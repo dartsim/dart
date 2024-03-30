@@ -114,7 +114,7 @@ if(DART_BUILD_PROFILE)
   include(FetchContent)
   FetchContent_Declare(tracy
     GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-    GIT_TAG v0.10
+    GIT_TAG master  # TODO: Change to a fixed version once > 0.10 is released
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
   )

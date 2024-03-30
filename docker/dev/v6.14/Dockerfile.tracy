@@ -12,23 +12,21 @@ RUN apt-get update && apt-get install -y \
     libx11-dev \
     libgl1-mesa-dev \
     libgtk-3-dev \
+    libglfw3-dev \
     xorg-dev \
     ca-certificates \
-    wayland-protocols \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone the Tracy Profiler repository
-RUN git clone --depth 1 https://github.com/wolfpld/tracy.git
-
 # Build Tracy Profiler
-WORKDIR /tracy/profiler/build/unix
-RUN cmake ../.. && make
-
-# Use the `entrypoint.sh` to start the profiler
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# TODO: Change to a fixed version once > 0.10 is released
+RUN git clone --depth 1 https://github.com/wolfpld/tracy.git -b master \
+    && cmake -S tracy/profiler -B tracy/profiler/build -DCMAKE_BUILD_TYPE=Release -DLEGACY=ON \
+    && cmake --build tracy/profiler/build --target install -j
 
 # Reset the frontend to its default value
 ENV DEBIAN_FRONTEND=
+
+USER 1000
+
+ENTRYPOINT ["tracy/profiler/build/tracy-profiler"]

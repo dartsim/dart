@@ -29,6 +29,11 @@ bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics 
     "configure",
 ] }
 
+create-deps-dir = { cmd = "mkdir -p .deps" }
+remove-deps-dir = { cmd = "rm -rf .deps" }
+
+tracy-linux = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
+
 [dependencies]
 assimp = ">=5.3.1,<5.4"
 bullet-cpp = ">=3.25,<4"
@@ -89,6 +94,8 @@ test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
 test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
+
+tracy = { depends_on = ["tracy-linux"] }
 
 [target.linux-64.build-dependencies]
 clang-format-14 = ">=14.0.6,<14.1"

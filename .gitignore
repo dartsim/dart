@@ -73,3 +73,6 @@ dist/
 
 # ImGui configuration
 imgui.ini
+
+# Temporary directory for dependencies
+.deps
