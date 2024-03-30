@@ -55,7 +55,7 @@ jobs:
             tracy
             urdfdom
           triplet: x64-windows
-          revision: "2024.03.25"
+          revision: "2024.03.19"
           github-binarycache: true
           token: ${{ github.token }}
 
