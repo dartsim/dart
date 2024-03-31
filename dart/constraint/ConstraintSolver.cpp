@@ -697,7 +697,9 @@ void ConstraintSolver::solveConstrainedGroups()
   DART_PROFILE_SCOPED;
 
   for (auto& constraintGroup : mConstrainedGroups) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
     solveConstrainedGroup(constraintGroup);
+    DART_SUPPRESS_DEPRECATED_END
   }
 }
 

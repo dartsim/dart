@@ -106,6 +106,9 @@ else()
   )
 endif()
 
+# Taskflow
+dart_find_package(Taskflow)
+
 #=======================
 # Optional dependencies
 #=======================

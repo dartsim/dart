@@ -32,13 +32,7 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
-#include <cassert>
-#if DART_BUILD_MODE_DEBUG
-  #include <iomanip>
-  #include <iostream>
-#endif
-
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -46,277 +40,44 @@
 #include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
 
+#if DART_HAVE_Taskflow
+  #include <taskflow/algorithm/for_each.hpp>
+#endif
+
+#if DART_BUILD_MODE_DEBUG
+  #include <iomanip>
+  #include <iostream>
+#endif
+#include <atomic>
+#include <future>
+#include <thread>
+
+#include <cassert>
+
 namespace dart {
 namespace constraint {
 
-//==============================================================================
-BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
-    double timeStep,
-    BoxedLcpSolverPtr boxedLcpSolver,
-    BoxedLcpSolverPtr secondaryBoxedLcpSolver)
-  : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
+namespace {
+
+[[nodiscard]] BoxedLcpSolverPtr createBoxedLcpSolver(
+    const BoxedLcpSolverType type)
 {
-  setTimeStep(timeStep);
-}
-
-//==============================================================================
-BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
-  : BoxedLcpConstraintSolver(std::make_shared<DantzigBoxedLcpSolver>())
-{
-  // Do nothing
-}
-
-//==============================================================================
-BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
-    BoxedLcpSolverPtr boxedLcpSolver)
-  : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
-{
-  // Do nothing
-}
-
-//==============================================================================
-BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
-    BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver)
-  : ConstraintSolver()
-{
-  if (boxedLcpSolver) {
-    setBoxedLcpSolver(std::move(boxedLcpSolver));
-  } else {
-    dtwarn << "[BoxedLcpConstraintSolver] Attempting to construct with nullptr "
-           << "LCP solver, which is not allowed. Using Dantzig solver "
-           << "instead.\n";
-    setBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>());
-  }
-
-  setSecondaryBoxedLcpSolver(std::move(secondaryBoxedLcpSolver));
-}
-
-//==============================================================================
-void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
-{
-  if (!lcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
-           << "nullptr for boxed LCP solver is not allowed.\n";
-    return;
-  }
-
-  if (lcpSolver == mSecondaryBoxedLcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
-           << "a primary LCP solver that is the same with the secondary LCP "
-           << "solver, which is discouraged. Ignoring this request.\n";
-  }
-
-  mBoxedLcpSolver = std::move(lcpSolver);
-}
-
-//==============================================================================
-ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
-{
-  return mBoxedLcpSolver;
-}
-
-//==============================================================================
-void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
-    BoxedLcpSolverPtr lcpSolver)
-{
-  if (lcpSolver == mBoxedLcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
-           << "the secondary LCP solver that is identical to the primary LCP "
-           << "solver, which is redundant. Please use different solvers or set "
-           << "the secondary LCP solver to nullptr.\n";
-  }
-
-  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
-}
-
-//==============================================================================
-ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
-    const
-{
-  return mSecondaryBoxedLcpSolver;
-}
-
-//==============================================================================
-void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
-{
-  DART_PROFILE_SCOPED;
-
-  // Build LCP terms by aggregating them from constraints
-  const std::size_t numConstraints = group.getNumConstraints();
-  const std::size_t n = group.getTotalDimension();
-
-  // If there is no constraint, then just return.
-  if (0u == n)
-    return;
-
-  const int nSkip = dPAD(n);
-#if DART_BUILD_MODE_RELEASE
-  mA.resize(n, nSkip);
-#else // debug
-  mA.setZero(n, nSkip);
-#endif
-  mX.resize(n);
-  mB.resize(n);
-  mW.setZero(n); // set w to 0
-  mLo.resize(n);
-  mHi.resize(n);
-  mFIndex.setConstant(n, -1); // set findex to -1
-
-  // Compute offset indices
-  mOffset.resize(numConstraints);
-  mOffset[0] = 0;
-  for (std::size_t i = 1; i < numConstraints; ++i) {
-    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
-    assert(constraint->getDimension() > 0);
-    mOffset[i] = mOffset[i - 1] + constraint->getDimension();
-  }
-
-  // For each constraint
-  {
-    DART_PROFILE_SCOPED_N("Construct LCP");
-    ConstraintInfo constInfo;
-    constInfo.invTimeStep = 1.0 / mTimeStep;
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
-
-      constInfo.x = mX.data() + mOffset[i];
-      constInfo.lo = mLo.data() + mOffset[i];
-      constInfo.hi = mHi.data() + mOffset[i];
-      constInfo.b = mB.data() + mOffset[i];
-      constInfo.findex = mFIndex.data() + mOffset[i];
-      constInfo.w = mW.data() + mOffset[i];
-
-      // Fill vectors: lo, hi, b, w
-      {
-        DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
-        constraint->getInformation(&constInfo);
-      }
-
-      // Fill a matrix by impulse tests: A
-      {
-        DART_PROFILE_SCOPED_N("Fill A");
-        constraint->excite();
-        for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
-          // Adjust findex for global index
-          if (mFIndex[mOffset[i] + j] >= 0)
-            mFIndex[mOffset[i] + j] += mOffset[i];
-
-          // Apply impulse for impulse test
-          {
-            DART_PROFILE_SCOPED_N("Unit impulse test");
-            constraint->applyUnitImpulse(j);
-          }
-
-          // Fill upper triangle blocks of A matrix
-          {
-            DART_PROFILE_SCOPED_N("Fill upper triangle of A");
-            int index = nSkip * (mOffset[i] + j) + mOffset[i];
-            constraint->getVelocityChange(mA.data() + index, true);
-            for (std::size_t k = i + 1; k < numConstraints; ++k) {
-              index = nSkip * (mOffset[i] + j) + mOffset[k];
-              group.getConstraint(k)->getVelocityChange(
-                  mA.data() + index, false);
-            }
-          }
-        }
-      }
-
-      {
-        DART_PROFILE_SCOPED_N("Unexcite");
-        constraint->unexcite();
-      }
+  switch (type) {
+    case BoxedLcpSolverType::Dantzig: {
+      return std::make_shared<DantzigBoxedLcpSolver>();
     }
-
-    {
-      // Fill lower triangle blocks of A matrix
-      DART_PROFILE_SCOPED_N("Fill lower triangle of A");
-      mA.leftCols(n).triangularView<Eigen::Lower>()
-          = mA.leftCols(n).triangularView<Eigen::Upper>().transpose();
+    case BoxedLcpSolverType::Pgs: {
+      return std::make_shared<PgsBoxedLcpSolver>();
     }
-  }
-
-  assert(isSymmetric(n, mA.data()));
-
-  // Print LCP formulation
-  //  dtdbg << "Before solve:" << std::endl;
-  //  print(n, A, x, lo, hi, b, w, findex);
-  //  std::cout << std::endl;
-
-  // Solve LCP using the primary solver and fallback to secondary solver when
-  // the primary solver failed.
-  if (mSecondaryBoxedLcpSolver) {
-    // Make backups for the secondary LCP solver because the primary solver
-    // modifies the original terms.
-    mABackup = mA;
-    mXBackup = mX;
-    mBBackup = mB;
-    mLoBackup = mLo;
-    mHiBackup = mHi;
-    mFIndexBackup = mFIndex;
-  }
-  const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
-  assert(mBoxedLcpSolver);
-  bool success = mBoxedLcpSolver->solve(
-      n,
-      mA.data(),
-      mX.data(),
-      mB.data(),
-      0,
-      mLo.data(),
-      mHi.data(),
-      mFIndex.data(),
-      earlyTermination);
-
-  // Sanity check. LCP solvers should not report success with nan values, but
-  // it could happen. So we set the success to false for nan values.
-  if (success && mX.hasNaN())
-    success = false;
-
-  if (!success && mSecondaryBoxedLcpSolver) {
-    DART_PROFILE_SCOPED_N("Secondary LCP");
-    mSecondaryBoxedLcpSolver->solve(
-        n,
-        mABackup.data(),
-        mXBackup.data(),
-        mBBackup.data(),
-        0,
-        mLoBackup.data(),
-        mHiBackup.data(),
-        mFIndexBackup.data(),
-        false);
-    mX = mXBackup;
-  }
-
-  if (mX.hasNaN()) {
-    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
-          << "values: " << mX.transpose() << ". We're setting it zero for "
-          << "safety. Consider using more robust solver such as PGS as a "
-          << "secondary solver. If this happens even with PGS solver, please "
-          << "report this as a bug.\n";
-    mX.setZero();
-  }
-
-  // Print LCP formulation
-  //  dtdbg << "After solve:" << std::endl;
-  //  print(n, A, x, lo, hi, b, w, findex);
-  //  std::cout << std::endl;
-
-  // Apply constraint impulses
-  {
-    DART_PROFILE_SCOPED_N("Apply constraint impulses");
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
-      constraint->applyImpulse(mX.data() + mOffset[i]);
-      constraint->excite();
+    default: {
+      DART_WARN("Unknown BoxedLcpSolverType. Using Dantzig solver instead.");
+      return std::make_shared<DantzigBoxedLcpSolver>();
     }
   }
 }
 
-//==============================================================================
 #if DART_BUILD_MODE_DEBUG
-bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
+bool isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = dPAD(n);
   for (std::size_t i = 0; i < n; ++i) {
@@ -343,7 +104,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 }
 
 //==============================================================================
-bool BoxedLcpConstraintSolver::isSymmetric(
+[[maybe_unused]] bool isSymmetric(
     std::size_t n, double* A, std::size_t begin, std::size_t end)
 {
   std::size_t nSkip = dPAD(n);
@@ -371,7 +132,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(
 }
 
 //==============================================================================
-void BoxedLcpConstraintSolver::print(
+[[maybe_unused]] void print(
     std::size_t n,
     double* A,
     double* x,
@@ -455,6 +216,381 @@ void BoxedLcpConstraintSolver::print(
   delete[] Ax;
 }
 #endif
+
+} // namespace
+
+//==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    double timeStep,
+    BoxedLcpSolverPtr boxedLcpSolver,
+    BoxedLcpSolverPtr secondaryBoxedLcpSolver)
+  : BoxedLcpConstraintSolver(
+      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
+{
+  setTimeStep(timeStep);
+}
+DART_SUPPRESS_DEPRECATED_END
+
+//==============================================================================
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(const Config& config)
+#if DART_HAVE_Taskflow
+  : ConstraintSolver(), mConfig(config), mExecutor(4)
+#else
+  : ConstraintSolver(), mConfig(config)
+#endif
+{
+  // Empty
+}
+
+//==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    BoxedLcpSolverPtr boxedLcpSolver)
+  : BoxedLcpConstraintSolver(
+      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+{
+  // Do nothing
+}
+DART_SUPPRESS_DEPRECATED_END
+
+//==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver)
+#if DART_HAVE_Taskflow
+  : ConstraintSolver(), mExecutor(4)
+#else
+  : ConstraintSolver()
+#endif
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  if (boxedLcpSolver) {
+    setBoxedLcpSolver(std::move(boxedLcpSolver));
+  } else {
+    DART_WARN(
+        "[BoxedLcpConstraintSolver] Attempting to construct with nullptr LCP "
+        "solver, which is not allowed. Using Dantzig solver instead.");
+    setBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>());
+  }
+  DART_SUPPRESS_DEPRECATED_END
+
+  setSecondaryBoxedLcpSolver(std::move(secondaryBoxedLcpSolver));
+}
+DART_SUPPRESS_DEPRECATED_END
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setPrimaryBoxedLcpSolverType(
+    BoxedLcpSolverType type)
+{
+  mConfig.primaryBoxedLcpSolver = type;
+}
+
+//==============================================================================
+BoxedLcpSolverType BoxedLcpConstraintSolver::getPrimaryBoxedLcpSolverType()
+    const
+{
+  return mConfig.primaryBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolverType(
+    BoxedLcpSolverType type)
+{
+  mConfig.secondaryBoxedLcpSolver = type;
+}
+
+//==============================================================================
+BoxedLcpSolverType BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolverType()
+    const
+{
+  return mConfig.secondaryBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
+{
+  if (!lcpSolver) {
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] nullptr for boxed LCP "
+        "solver is not allowed.");
+    return;
+  }
+
+  if (lcpSolver == mSecondaryBoxedLcpSolver) {
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set a "
+        "primary LCP solver that is the same with the secondary LCP solver, "
+        "which is discouraged. Ignoring this request.");
+  }
+
+  mBoxedLcpSolver = std::move(lcpSolver);
+}
+
+//==============================================================================
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
+{
+  return mBoxedLcpSolver;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
+    BoxedLcpSolverPtr lcpSolver)
+{
+  if (lcpSolver == mBoxedLcpSolver) {
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver] Attempting "
+        "to set the secondary LCP solver that is identical to the primary "
+        "LCP solver, which is redundant. Please use different solvers or "
+        "set the secondary LCP solver to nullptr.");
+  }
+
+  mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+}
+
+//==============================================================================
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
+    const
+{
+  return mSecondaryBoxedLcpSolver;
+}
+
+//==============================================================================
+void solveBoxedLcp(BoxedLcp& lcp, ConstrainedGroup& group)
+{
+  DART_PROFILE_SCOPED;
+  (void)lcp;
+  (void)group;
+
+  // Build LCP terms by aggregating them from constraints
+  const std::size_t numConstraints = group.getNumConstraints();
+  const std::size_t n = group.getTotalDimension();
+
+  // If there is no constraint, then just return.
+  if (0u == n) {
+    return;
+  }
+
+  auto& mA = lcp.A;
+  auto& mABackup = lcp.ABackup;
+  auto& mX = lcp.x;
+  auto& mXBackup = lcp.xBackup;
+  auto& mB = lcp.b;
+  auto& mBBackup = lcp.bBackup;
+  // auto& mW = lcp.w;
+  auto& mLo = lcp.lo;
+  auto& mLoBackup = lcp.loBackup;
+  auto& mHi = lcp.hi;
+  auto& mHiBackup = lcp.hiBackup;
+  auto& mFIndex = lcp.fIndex;
+  auto& mFIndexBackup = lcp.fIndexBackup;
+  auto& mOffset = lcp.offset;
+  auto& mBoxedLcpSolver = lcp.boxedLcpSolver;
+  auto& mSecondaryBoxedLcpSolver = lcp.secondaryBoxedLcpSolver;
+
+  const int nSkip = dPAD(n);
+  lcp.A.resize(n, nSkip);
+  lcp.x.resize(n);
+  lcp.b.resize(n);
+  lcp.w.setZero(n);
+  lcp.lo.resize(n);
+  lcp.hi.resize(n);
+  lcp.fIndex.setConstant(n, -1);
+
+  // Compute offset indices
+  lcp.offset.resize(numConstraints);
+  lcp.offset[0] = 0;
+  for (std::size_t i = 1; i < numConstraints; ++i) {
+    const auto constraint = group.getConstraint(i - 1);
+    assert(constraint->getDimension() > 0);
+    lcp.offset[i] = lcp.offset[i - 1] + constraint->getDimension();
+  }
+
+  // For each constraint
+  {
+    DART_PROFILE_SCOPED_N("Construct LCP");
+    ConstraintInfo constInfo;
+    constInfo.invTimeStep = 1.0 / lcp.timeStep;
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const auto constraint = group.getConstraint(i);
+
+      constInfo.x = lcp.x.data() + lcp.offset[i];
+      constInfo.lo = lcp.lo.data() + lcp.offset[i];
+      constInfo.hi = lcp.hi.data() + lcp.offset[i];
+      constInfo.b = lcp.b.data() + lcp.offset[i];
+      constInfo.findex = lcp.fIndex.data() + lcp.offset[i];
+      constInfo.w = lcp.w.data() + lcp.offset[i];
+
+      // Fill vectors: lo, hi, b, w
+      {
+        DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
+        constraint->getInformation(&constInfo);
+      }
+
+      // Fill a matrix by impulse tests: A
+      {
+        DART_PROFILE_SCOPED_N("Fill A");
+        constraint->excite();
+        for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
+          // Adjust findex for global index
+          if (lcp.fIndex[lcp.offset[i] + j] >= 0) {
+            lcp.fIndex[lcp.offset[i] + j] += lcp.offset[i];
+          }
+
+          // Apply impulse for impulse test
+          {
+            DART_PROFILE_SCOPED_N("Unit impulse test");
+            constraint->applyUnitImpulse(j);
+          }
+
+          // Fill upper triangle blocks of A matrix
+          {
+            DART_PROFILE_SCOPED_N("Fill upper triangle of A");
+            int index = nSkip * (lcp.offset[i] + j) + lcp.offset[i];
+            constraint->getVelocityChange(mA.data() + index, true);
+            for (std::size_t k = i + 1; k < numConstraints; ++k) {
+              index = nSkip * (lcp.offset[i] + j) + lcp.offset[k];
+              group.getConstraint(k)->getVelocityChange(
+                  mA.data() + index, false);
+            }
+          }
+        }
+      }
+
+      {
+        DART_PROFILE_SCOPED_N("Unexcite");
+        constraint->unexcite();
+      }
+    }
+
+    {
+      // Fill lower triangle blocks of A matrix
+      DART_PROFILE_SCOPED_N("Fill lower triangle of A");
+      mA.leftCols(n).triangularView<Eigen::Lower>()
+          = mA.leftCols(n).triangularView<Eigen::Upper>().transpose();
+    }
+  }
+
+  assert(isSymmetric(n, mA.data()));
+
+  // Print LCP formulation
+  //  dtdbg << "Before solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
+
+  // Solve LCP using the primary solver and fallback to secondary solver when
+  // the primary solver failed.
+  if (mSecondaryBoxedLcpSolver) {
+    // Make backups for the secondary LCP solver because the primary solver
+    // modifies the original terms.
+    mABackup = mA;
+    mXBackup = mX;
+    mBBackup = mB;
+    mLoBackup = mLo;
+    mHiBackup = mHi;
+    mFIndexBackup = mFIndex;
+  }
+  const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
+  assert(mBoxedLcpSolver);
+  bool success = mBoxedLcpSolver->solve(
+      n,
+      mA.data(),
+      mX.data(),
+      mB.data(),
+      0,
+      mLo.data(),
+      mHi.data(),
+      mFIndex.data(),
+      earlyTermination);
+
+  // Sanity check. LCP solvers should not report success with nan values, but
+  // it could happen. So we set the success to false for nan values.
+  if (success && mX.hasNaN()) {
+    success = false;
+  }
+
+  if (!success && mSecondaryBoxedLcpSolver) {
+    DART_PROFILE_SCOPED_N("Secondary LCP");
+    mSecondaryBoxedLcpSolver->solve(
+        n,
+        mABackup.data(),
+        mXBackup.data(),
+        mBBackup.data(),
+        0,
+        mLoBackup.data(),
+        mHiBackup.data(),
+        mFIndexBackup.data(),
+        false);
+    mX = mXBackup;
+  }
+
+  if (mX.hasNaN()) {
+    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
+          << "values: " << mX.transpose() << ". We're setting it zero for "
+          << "safety. Consider using more robust solver such as PGS as a "
+          << "secondary solver. If this happens even with PGS solver, please "
+          << "report this as a bug.\n";
+    mX.setZero();
+  }
+
+  // Print LCP formulation
+  //  dtdbg << "After solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
+
+  // Apply constraint impulses
+  {
+    DART_PROFILE_SCOPED_N("Apply constraint impulses");
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      constraint->applyImpulse(mX.data() + mOffset[i]);
+      constraint->excite();
+    }
+  }
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::solveConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  const int numGroups = mConstrainedGroups.size();
+
+  // Prepare problems
+  {
+    DART_PROFILE_SCOPED_N("Prepare problems");
+    mProblems.resize(numGroups);
+    for (auto& prob : mProblems) {
+      if (!prob.boxedLcpSolver) {
+        prob.boxedLcpSolver
+            = createBoxedLcpSolver(mConfig.primaryBoxedLcpSolver);
+      }
+
+      if (!prob.secondaryBoxedLcpSolver) {
+        prob.secondaryBoxedLcpSolver
+            = createBoxedLcpSolver(mConfig.secondaryBoxedLcpSolver);
+      }
+
+      prob.timeStep = mTimeStep;
+    }
+  }
+
+  // Solve problems
+  {
+    DART_PROFILE_SCOPED_N("Solve problems");
+#if DART_HAVE_Taskflow
+    tf::Taskflow mTaskflow;
+    mTaskflow.for_each_index(0, numGroups, 1, [&](int i) {
+      solveBoxedLcp(mProblems[i], mConstrainedGroups[i]);
+    });
+    mExecutor.run(mTaskflow).wait();
+#else
+    for (auto i = 0u; i < mProblems.size(); ++i) {
+      solveBoxedLcp(mProblems[i], mConstrainedGroups[i]);
+    };
+#endif
+  }
+}
 
 } // namespace constraint
 } // namespace dart

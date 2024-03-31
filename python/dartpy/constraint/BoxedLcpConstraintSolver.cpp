@@ -41,34 +41,51 @@ namespace python {
 
 void BoxedLcpConstraintSolver(py::module& m)
 {
+  py::enum_<constraint::BoxedLcpSolverType>(m, "BoxedLcpSolverType")
+      .value(
+          "Dantzig",
+          constraint::BoxedLcpSolverType::Dantzig,
+          "The Dantzig solver")
+      .value(
+          "Pgs",
+          constraint::BoxedLcpSolverType::Pgs,
+          "The projected Gauss-Seidel solver")
+      .export_values();
+
+  // Bind the struct BoxedLcpConstraintSolverConfig
+  py::class_<constraint::BoxedLcpConstraintSolverConfig>(
+      m, "BoxedLcpConstraintSolverConfig")
+      .def(py::init<>())
+      .def_readwrite(
+          "primaryBoxedLcpSolver",
+          &constraint::BoxedLcpConstraintSolverConfig::primaryBoxedLcpSolver)
+      .def_readwrite(
+          "secondaryBoxedLcpSolver",
+          &constraint::BoxedLcpConstraintSolverConfig::secondaryBoxedLcpSolver);
+
   ::py::class_<
       constraint::BoxedLcpConstraintSolver,
       constraint::ConstraintSolver,
       std::shared_ptr<constraint::BoxedLcpConstraintSolver>>(
       m, "BoxedLcpConstraintSolver")
-      .def(::py::init<>())
       .def(
-          ::py::init<constraint::BoxedLcpSolverPtr>(),
-          ::py::arg("boxedLcpSolver"))
+          py::init<const constraint::BoxedLcpConstraintSolverConfig&>(),
+          py::arg("config") = constraint::BoxedLcpConstraintSolverConfig())
       .def(
-          ::py::init<
-              constraint::BoxedLcpSolverPtr,
-              constraint::BoxedLcpSolverPtr>(),
-          ::py::arg("boxedLcpSolver"),
-          ::py::arg("secondaryBoxedLcpSolver"))
+          "setPrimaryBoxedLcpSolverType",
+          &constraint::BoxedLcpConstraintSolver::setPrimaryBoxedLcpSolverType,
+          ::py::arg("type"))
       .def(
-          "setBoxedLcpSolver",
-          +[](constraint::BoxedLcpConstraintSolver* self,
-              constraint::BoxedLcpSolverPtr lcpSolver) {
-            self->setBoxedLcpSolver(lcpSolver);
-          },
-          ::py::arg("lcpSolver"))
+          "getPrimaryBoxedLcpSolverType",
+          &constraint::BoxedLcpConstraintSolver::getPrimaryBoxedLcpSolverType)
       .def(
-          "getBoxedLcpSolver",
-          +[](const constraint::BoxedLcpConstraintSolver* self)
-              -> constraint::ConstBoxedLcpSolverPtr {
-            return self->getBoxedLcpSolver();
-          });
+          "setSecondaryBoxedLcpSolverType",
+          &constraint::BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolverType,
+          ::py::arg("type"))
+      .def(
+          "getSecondaryBoxedLcpSolverType",
+          &constraint::BoxedLcpConstraintSolver::
+              getSecondaryBoxedLcpSolverType);
 }
 
 } // namespace python

@@ -36,12 +36,86 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/SmartPointer.hpp>
 
+#if DART_HAVE_Taskflow
+  #include <taskflow/taskflow.hpp>
+#endif
+
 namespace dart {
 namespace constraint {
+
+struct BoxedLcp
+{
+  using RowMajorMatrixXd
+      = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+  /// Cache data for boxed LCP formulation
+  RowMajorMatrixXd A;
+
+  /// Cache data for boxed LCP formulation
+  RowMajorMatrixXd ABackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd x;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd xBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd b;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd bBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd w;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd lo;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd loBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd hi;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd hiBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi fIndex;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi fIndexBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi offset;
+
+  /// Boxed LCP solver
+  BoxedLcpSolverPtr boxedLcpSolver;
+
+  /// Boxed LCP solver to be used when the primary solver failed
+  BoxedLcpSolverPtr secondaryBoxedLcpSolver;
+
+  double timeStep{-1};
+};
+
+enum class BoxedLcpSolverType
+{
+  Dantzig, ///< The Dantzig solver
+  Pgs,     ///< The projected Gauss-Seidel solver
+};
+
+struct BoxedLcpConstraintSolverConfig
+{
+  BoxedLcpSolverType primaryBoxedLcpSolver = BoxedLcpSolverType::Dantzig;
+  BoxedLcpSolverType secondaryBoxedLcpSolver = BoxedLcpSolverType::Pgs;
+};
 
 class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
+  using Config = BoxedLcpConstraintSolverConfig;
+
   /// Constructor
   ///
   /// \param[in] timeStep Simulation time step
@@ -51,25 +125,22 @@ public:
   /// nullptr is passed, PGS solver will be used. This is to make the default
   /// solver setting to be Dantzig + PGS. In order to disable use of secondary
   /// solver, call setSecondaryBoxedLcpSolver(nullptr) explicitly.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use other constructors that
-  /// doesn't take timespte. Timestep should be set by the owner of this solver
-  /// such as dart::simulation::World when the solver added.
-  DART_DEPRECATED(6.8)
-  BoxedLcpConstraintSolver(
-      double timeStep,
-      BoxedLcpSolverPtr boxedLcpSolver = nullptr,
-      BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
+  [[deprecated(
+      "Since DART 6.14. Please use other constructor that takes config "
+      "struct instead.")]] BoxedLcpConstraintSolver(double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr, BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
 
-  /// Constructs with default primary and secondary LCP solvers, which are
-  /// Dantzig and PGS, respectively.
-  BoxedLcpConstraintSolver();
+  /// Constructs with specific primary and secondary LCP solvers, which are
+  /// specified by the config struct.
+  explicit BoxedLcpConstraintSolver(const Config& config = Config());
 
   /// Constructors with specific primary LCP solver.
   ///
   /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, which is discouraged, Dantzig solver will be used.
-  BoxedLcpConstraintSolver(BoxedLcpSolverPtr boxedLcpSolver);
+  [[deprecated(
+      "Since DART 6.14. Please use other constructor that takes config "
+      "struct instead.")]] BoxedLcpConstraintSolver(BoxedLcpSolverPtr
+                                                        boxedLcpSolver);
 
   /// Constructs with specific primary and secondary LCP solvers.
   ///
@@ -77,29 +148,54 @@ public:
   /// passed, which is discouraged, Dantzig solver will be used.
   /// \param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. Pass
   /// nullptr to disable using secondary LCP solver.
-  BoxedLcpConstraintSolver(
-      BoxedLcpSolverPtr boxedLcpSolver,
-      BoxedLcpSolverPtr secondaryBoxedLcpSolver);
+  [[deprecated(
+      "Since DART 6.14. Please use other constructor that takes config "
+      "struct instead.")]] BoxedLcpConstraintSolver(BoxedLcpSolverPtr boxedLcpSolver, BoxedLcpSolverPtr secondaryBoxedLcpSolver);
+
+  /// Sets the primary boxed LCP solver type
+  void setPrimaryBoxedLcpSolverType(BoxedLcpSolverType type);
+
+  /// Returns the primary boxed LCP solver type
+  [[nodiscard]] BoxedLcpSolverType getPrimaryBoxedLcpSolverType() const;
+
+  /// Sets the secondary boxed LCP solver type
+  void setSecondaryBoxedLcpSolverType(BoxedLcpSolverType type);
+
+  /// Returns the secondary boxed LCP solver type
+  [[nodiscard]] BoxedLcpSolverType getSecondaryBoxedLcpSolverType() const;
 
   /// Sets boxed LCP (BLCP) solver
   ///
   /// \param[in] lcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, Dantzig solver will be used.
-  void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+  [[deprecated(
+      "Since DART 6.14. Please use setPrimaryBoxedLcpSolverType() "
+      "instead.")]] void
+  setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 
   /// Returns boxed LCP (BLCP) solver
-  ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
+  [[deprecated(
+      "Since DART 6.14. Please use getPrimaryBoxedLcpSolverType() "
+      "instead.")]] ConstBoxedLcpSolverPtr
+  getBoxedLcpSolver() const;
 
   /// Sets boxed LCP (BLCP) solver that is used when the primary solver failed
-  void setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+  [[deprecated(
+      "Since DART 6.14. Please use setSecondaryBoxedLcpSolverType() "
+      "instead.")]] void
+  setSecondaryBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 
   /// Returns boxed LCP (BLCP) solver that is used when the primary solver
   /// failed
-  ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;
+  [[deprecated(
+      "Since DART 6.14. Please use getSecondaryBoxedLcpSolverType() "
+      "instead.")]] ConstBoxedLcpSolverPtr
+  getSecondaryBoxedLcpSolver() const;
 
 protected:
-  // Documentation inherited.
-  void solveConstrainedGroup(ConstrainedGroup& group) override;
+  void solveConstrainedGroups() override;
+
+  Config mConfig;
 
   /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
@@ -154,25 +250,10 @@ protected:
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;
 
-#if DART_BUILD_MODE_DEBUG
-private:
-  /// Return true if the matrix is symmetric
-  bool isSymmetric(std::size_t n, double* A);
+  std::vector<BoxedLcp> mProblems;
 
-  /// Return true if the diagonal block of matrix is symmetric
-  bool isSymmetric(
-      std::size_t n, double* A, std::size_t begin, std::size_t end);
-
-  /// Print debug information
-  void print(
-      std::size_t n,
-      double* A,
-      double* x,
-      double* lo,
-      double* hi,
-      double* b,
-      double* w,
-      int* findex);
+#if DART_HAVE_Taskflow
+  tf::Executor mExecutor;
 #endif
 };
 
