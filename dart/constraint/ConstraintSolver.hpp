@@ -235,8 +235,12 @@ public:
   bool removeContactSurfaceHandler(const ContactSurfaceHandlerPtr& handler);
 
 protected:
-  // TODO(JS): Docstring
-  virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
+  [[deprecated(
+      "Since DART 6.14. Use solveConstrainedGroups() instead.")]] virtual void
+  solveConstrainedGroup(ConstrainedGroup& group)
+  {
+    (void)group;
+  }
 
   /// Checks if the skeleton is contained in this solver
   ///
@@ -263,7 +267,7 @@ protected:
   void buildConstrainedGroups();
 
   /// Solve constrained groups
-  void solveConstrainedGroups();
+  virtual void solveConstrainedGroups();
 
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;

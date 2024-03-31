@@ -222,6 +222,20 @@ if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 
+# Taskflow settings
+if(Taskflow_FOUND)
+  if(TARGET spdlog::spdlog_header_only)
+    add_component_dependency_packages(${PROJECT_NAME} dart Taskflow)
+    target_link_libraries(dart PUBLIC Taskflow::Taskflow)
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_Taskflow=1)
+  else()
+    message(WARNING "Taskflow found, but no target is found. Expected Taskflow::Taskflow")
+    target_compile_definitions(dart PUBLIC -DDART_HAVE_Taskflow=0)
+  endif()
+else()
+  target_compile_definitions(dart PUBLIC -DDART_HAVE_Taskflow=0)
+endif()
+
 if(MSVC)
   set_target_properties(
     dart PROPERTIES

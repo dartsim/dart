@@ -114,6 +114,7 @@ jobs:
             opengl
             osg
             pagmo2
+            taskflow
             tinyxml2
             tracy
             urdfdom
