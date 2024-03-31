@@ -34,6 +34,8 @@
 
 #include <dart/utils/utils.hpp>
 
+#include <dart/collision/bullet/bullet.hpp>
+
 #include <dart/dart.hpp>
 
 #include <iostream>
@@ -46,6 +48,10 @@ int main(int argc, char* argv[])
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
+
+  // Set collision detector type
+  myWorld->getConstraintSolver()->setCollisionDetector(
+      dart::collision::BulletCollisionDetector::create());
 
   // create a window and link it to the world
   MyWindow window;
