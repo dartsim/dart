@@ -80,6 +80,7 @@ dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_CODECOV "Turn on codecov support" OFF)
+dart_option(DART_ENABLE_MT "Enable multi-threading support" ON)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
 # option `-march=native` is added to the target `dart` that enables all

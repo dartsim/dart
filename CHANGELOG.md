@@ -2,6 +2,18 @@
 
 ## DART 6
 
+### [DART 6.16.0 (TBD)](https://github.com/dartsim/dart/milestone/83?closed=1)
+
+* Tested Platforms
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
+* Dependencies
+  * Added optional dependency [Taskflow](https://github.com/taskflow/taskflow) for parallel programming
+
 ### [DART 6.15.0 (2024-11-15)](https://github.com/dartsim/dart/milestone/77?closed=1)
 
 * Tested Platforms
