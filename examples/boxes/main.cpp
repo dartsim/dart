@@ -32,6 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
+#include <dart/collision/bullet/bullet.hpp>
+
 #include <dart/dart.hpp>
 
 #include <osgShadow/ShadowMap>
@@ -60,6 +62,7 @@ using namespace dart;
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
 
   // Put the body into position
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -74,6 +77,10 @@ int main()
   // Create an empty world
   auto world = simulation::World::create();
 
+  // Set collision detector type
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::BulletCollisionDetector::create());
+
   // Create dim x dim x dim boxes
   auto dim = 5;
   for (auto i = 0; i < dim; ++i) {
@@ -81,7 +88,7 @@ int main()
       for (auto k = 0; k < dim; ++k) {
         auto x = i - dim / 2;
         auto y = j - dim / 2;
-        auto z = k + 1;
+        auto z = k + 5;
         auto position = Eigen::Vector3d(x, y, z);
         auto size = Eigen::Vector3d(0.9, 0.9, 0.9);
         auto color = Eigen::Vector3d(
@@ -104,6 +111,7 @@ int main()
       dynamics::DynamicsAspect>(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(25.0, 25.0, 0.1)));
   groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
   world->addSkeleton(ground);
 
   // Wrap a WorldNode around it
@@ -134,8 +142,8 @@ int main()
 
   // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(15.0f, 15.0f, 10.0f),
-      ::osg::Vec3(0.00f, 0.00f, 2.50f),
+      ::osg::Vec3(20.0f, 20.0f, 15.0f),
+      ::osg::Vec3(0.00f, 0.00f, 3.00f),
       ::osg::Vec3(0, 0, 1.0f));
 
   // We need to re-dirty the CameraManipulator by passing it into the viewer

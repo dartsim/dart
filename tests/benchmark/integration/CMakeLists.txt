@@ -34,22 +34,27 @@ dart_benchmarks(
     bm_empty.cpp
 )
 
-dart_benchmarks(
-  TYPE BM_INTEGRATION
-  SOURCES
-    bm_boxes.cpp
-  LINK_LIBRARIES
-    dart
-)
+if(TARGET dart-collision-bullet)
+
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_boxes.cpp
+    LINK_LIBRARIES
+      dart
+      dart-collision-bullet
+  )
+
+endif()
 
 if(TARGET dart-utils)
 
-dart_benchmarks(
-  TYPE BM_INTEGRATION
-  SOURCES
-    bm_kinematics.cpp
-  LINK_LIBRARIES
-    dart-utils
-)
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_kinematics.cpp
+    LINK_LIBRARIES
+      dart-utils
+  )
 
 endif()

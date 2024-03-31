@@ -32,6 +32,10 @@
 
 #include <dart/simulation/simulation.hpp>
 
+#include <dart/constraint/constraint.hpp>
+
+#include <dart/collision/bullet/bullet.hpp>
+
 #include <dart/dynamics/dynamics.hpp>
 
 #include <dart/math/math.hpp>
@@ -63,6 +67,7 @@ namespace {
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
 
   // Put the body into position
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -77,13 +82,17 @@ namespace {
   // Create an empty world
   auto world = simulation::World::create();
 
+  // Set collision detector type
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::BulletCollisionDetector::create());
+
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {
     for (auto j = 0u; j < dim; ++j) {
       for (auto k = 0u; k < dim; ++k) {
         auto x = i - dim / 2;
         auto y = j - dim / 2;
-        auto z = k + 1;
+        auto z = k + 5;
         auto position = Eigen::Vector3d(x, y, z);
         auto size = Eigen::Vector3d(0.9, 0.9, 0.9);
         auto color = Eigen::Vector3d(
@@ -106,6 +115,7 @@ namespace {
       dynamics::DynamicsAspect>(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
   groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
   world->addSkeleton(ground);
 
   return world;
@@ -115,7 +125,7 @@ namespace {
 
 static void BM_RunBoxes(benchmark::State& state)
 {
-  const auto steps = 1000u;
+  const auto steps = 2000u;
   auto world = createWorld(state.range(0));
 
   for (auto _ : state) {
