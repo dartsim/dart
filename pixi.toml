@@ -37,7 +37,7 @@ pagmo = ">=2.19.0,<2.20"
 numpy = ">=1.26.4,<1.27"
 
 [tasks]
-clean = "rm -rf build"
+clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
 configure-local = { cmd = "cmake -G Ninja -S . -B build -DDART_VERBOSE=ON -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" }
 install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_on = [
@@ -45,8 +45,34 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
     "build",
 ] }
 
-configure-unix = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
-configure-win = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
+configure = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
+
+lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
+    "configure",
+] }
+check-lint = { cmd = "cmake --build build --target check-format && black . --check && isort . --check", depends_on = [
+    "configure",
+] }
+
+build = { cmd = "cmake --build build -j --target all", depends_on = [
+    "configure",
+] }
+build-tests = { cmd = "cmake --build build -j --target tests", depends_on = [
+    "configure",
+] }
+build-dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
+    "configure",
+] }
+
+test = { cmd = "ctest --test-dir build --output-on-failure", depends_on = [
+    "build-tests",
+] }
+test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
+    "configure",
+] }
+test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
+    "configure",
+] }
 
 example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
     "configure",
@@ -71,8 +97,6 @@ bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics 
 create-deps-dir = { cmd = "mkdir -p .deps" }
 remove-deps-dir = { cmd = "rm -rf .deps" }
 
-tracy-linux = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
-
 ################################################################################
 # linux-64
 ################################################################################
@@ -85,33 +109,7 @@ freeglut = ">=3.2.2,<3.3"
 imgui = ">=1.90.4,<1.91"
 
 [target.linux-64.tasks]
-configure = { depends_on = ["configure-unix"] }
-lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
-    "configure",
-] }
-check-lint = { cmd = "cmake --build build --target check-format && black . --check && isort . --check", depends_on = [
-    "configure",
-] }
-build = { cmd = "cmake --build build -j --target all", depends_on = [
-    "configure",
-] }
-build-tests = { cmd = "cmake --build build -j --target tests", depends_on = [
-    "configure",
-] }
-build-dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
-    "configure",
-] }
-test = { cmd = "ctest --test-dir build --output-on-failure", depends_on = [
-    "build-tests",
-] }
-test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
-    "configure",
-] }
-test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
-    "configure",
-] }
-
-tracy = { depends_on = ["tracy-linux"] }
+tracy = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
 
 ################################################################################
 # osx-64
@@ -124,31 +122,6 @@ clang-format-14 = ">=14.0.6,<14.1"
 imgui = ">=1.90.4,<1.91"
 
 [target.osx-64.tasks]
-configure = { depends_on = ["configure-unix"] }
-lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
-    "configure",
-] }
-check-lint = { cmd = "cmake --build build --target check-format && black . --check && isort . --check", depends_on = [
-    "configure",
-] }
-build = { cmd = "cmake --build build -j --target all", depends_on = [
-    "configure",
-] }
-build-tests = { cmd = "cmake --build build -j --target tests", depends_on = [
-    "configure",
-] }
-build-dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
-    "configure",
-] }
-test = { cmd = "ctest --test-dir build --output-on-failure", depends_on = [
-    "build-tests",
-] }
-test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
-    "configure",
-] }
-test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
-    "configure",
-] }
 
 ################################################################################
 # osx-arm64
@@ -161,29 +134,6 @@ clang-format-14 = ">=14.0.6,<14.1"
 imgui = ">=1.90.4,<1.91"
 
 [target.osx-arm64.tasks]
-configure = { depends_on = ["configure-unix"] }
-lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
-    "configure",
-] }
-check-lint = { cmd = "cmake --build build --target check-format && black . --check && isort . --check", depends_on = [
-    "configure",
-] }
-build = { cmd = "cmake --build build -j", depends_on = ["configure"] }
-build-tests = { cmd = "cmake --build build -j --target tests", depends_on = [
-    "configure",
-] }
-build-dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
-    "configure",
-] }
-test = { cmd = "ctest --test-dir build --output-on-failure", depends_on = [
-    "build-tests",
-] }
-test-dartpy = { cmd = "cmake --build build -j --target pytest", depends_on = [
-    "configure",
-] }
-test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
-    "configure",
-] }
 
 ################################################################################
 # win-64
@@ -193,7 +143,7 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
 freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
-configure = { depends_on = ["configure-win"] }
+configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
 lint = { cmd = "black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd = "black . --check && isort . --check", depends_on = [
     "configure",
