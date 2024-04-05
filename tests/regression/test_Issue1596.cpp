@@ -40,7 +40,7 @@
 //========================================================================================
 TEST(Issue1596, ServoJointWithPositionLimits)
 {
-#if DART_BUILD_MODE_RELEASE
+#ifdef NDEBUG
   const auto num_steps = 50000;
 #else
   const auto num_steps = 1000;

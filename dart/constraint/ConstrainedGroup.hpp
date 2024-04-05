@@ -102,10 +102,8 @@ public:
   friend class ConstraintSolver;
 
 private:
-#if DART_BUILD_MODE_DEBUG
   /// Return true if _constraint is contained
   bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
-#endif
 
   /// List of constraints
   std::vector<ConstraintBasePtr> mConstraints;

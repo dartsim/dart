@@ -101,12 +101,12 @@ public:
 //==============================================================================
 void testZDT1(MultiObjectiveSolver& solver)
 {
-#if DART_BUILD_MODE_RELEASE
+#ifdef NDEBUG
   std::size_t numSolutions = 50;
 #else
   std::size_t numSolutions = 10;
 #endif
-#if DART_BUILD_MODE_RELEASE
+#ifdef NDEBUG
   std::size_t iterationNum = 1000;
 #else
   std::size_t iterationNum = 200;
@@ -137,12 +137,12 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
   pFuncs.push_back(pFunc1);
   pFuncs.push_back(pFunc2);
 
-#if DART_BUILD_MODE_RELEASE
+#ifdef NDEBUG
   std::size_t numSolutions = 50;
 #else
   std::size_t numSolutions = 10;
 #endif
-#if DART_BUILD_MODE_RELEASE
+#ifdef NDEBUG
   std::size_t iterationNum = 1000;
 #else
   std::size_t iterationNum = 200;

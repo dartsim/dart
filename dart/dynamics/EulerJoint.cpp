@@ -209,7 +209,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J1 << s2, c2, 0.0, 0.0, 0.0, 0.0;
       J2 << 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
       if (std::abs(getPositionsStatic()[1]) == math::constantsd::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
@@ -232,7 +232,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       J1 << 0.0, c2, -s2, 0.0, 0.0, 0.0;
       J2 << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
       if (std::abs(_positions[1]) == math::constantsd::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << Joint::mAspectProperties.mName << "]. (" << _positions[0]
@@ -254,7 +254,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
   assert(!math::isNan(J));
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   Eigen::MatrixXd JTJ = J.transpose() * J;
   Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
   //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);

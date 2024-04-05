@@ -109,7 +109,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
   std::stringstream ss;
   ss << DART_SHARED_LIB_PREFIX << "wamIk";
-#if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
+#if (DART_OS_LINUX || DART_OS_MACOS) && !defined(NDEBUG)
   ss << "d";
 #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;

@@ -79,7 +79,7 @@ TEST(Issue1184, Accuracy)
     return std::make_shared<dart::dynamics::SphereShape>(s);
   };
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   const auto groundInfoFunctions = {makePlaneGround};
   const auto objectShapeFunctions = {makeSphereObject};
   const auto halfsizes = {10.0};

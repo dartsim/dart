@@ -32,7 +32,7 @@
 
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   #include <iomanip>
   #include <iostream>
 #endif
@@ -45,6 +45,152 @@
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+//==============================================================================
+#ifndef NDEBUG
+bool isSymmetric(std::size_t _n, double* _A)
+{
+  std::size_t nSkip = dPAD(_n);
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < _n; ++j) {
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
+        std::cout << "A: " << std::endl;
+        for (std::size_t k = 0; k < _n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
+            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i]
+                  << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool isSymmetric(
+    std::size_t _n, double* _A, std::size_t _begin, std::size_t _end)
+{
+  std::size_t nSkip = dPAD(_n);
+  for (std::size_t i = _begin; i <= _end; ++i) {
+    for (std::size_t j = _begin; j <= _end; ++j) {
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
+        std::cout << "A: " << std::endl;
+        for (std::size_t k = 0; k < _n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
+            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i]
+                  << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+[[maybe_unused]] void print(
+    std::size_t _n,
+    double* _A,
+    double* _x,
+    double* /*lo*/,
+    double* /*hi*/,
+    double* b,
+    double* w,
+    int* findex)
+{
+  std::size_t nSkip = dPAD(_n);
+  std::cout << "A: " << std::endl;
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < nSkip; ++j) {
+      std::cout << std::setprecision(4) << _A[i * nSkip + j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  std::cout << "b: ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << std::setprecision(4) << b[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "w: ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "x: ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << _x[i] << " ";
+  }
+  std::cout << std::endl;
+
+  //  std::cout << "lb: ";
+  //  for (int i = 0; i < dim; ++i)
+  //  {
+  //    std::cout << lb[i] << " ";
+  //  }
+  //  std::cout << std::endl;
+
+  //  std::cout << "ub: ";
+  //  for (int i = 0; i < dim; ++i)
+  //  {
+  //    std::cout << ub[i] << " ";
+  //  }
+  //  std::cout << std::endl;
+
+  std::cout << "frictionIndex: ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << findex[i] << " ";
+  }
+  std::cout << std::endl;
+
+  double* Ax = new double[_n];
+
+  for (std::size_t i = 0; i < _n; ++i) {
+    Ax[i] = 0.0;
+  }
+
+  for (std::size_t i = 0; i < _n; ++i) {
+    for (std::size_t j = 0; j < _n; ++j) {
+      Ax[i] += _A[i * nSkip + j] * _x[j];
+    }
+  }
+
+  std::cout << "Ax   : ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << Ax[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "b + w: ";
+  for (std::size_t i = 0; i < _n; ++i) {
+    std::cout << b[i] + w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  delete[] Ax;
+}
+#endif
+
+} // namespace
 
 //==============================================================================
 DantzigLCPSolver::DantzigLCPSolver(double _timestep) : LCPSolver(_timestep)
@@ -79,9 +225,6 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   int* findex = new int[n];
 
   // Set w to 0 and findex to -1
-#if DART_BUILD_MODE_DEBUG
-  std::memset(A, 0.0, n * nSkip * sizeof(double));
-#endif
   std::memset(w, 0.0, n * sizeof(double));
   std::memset(findex, -1, n * sizeof(int));
 
@@ -180,148 +323,6 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   delete[] hi;
   delete[] findex;
 }
-
-//==============================================================================
-#if DART_BUILD_MODE_DEBUG
-bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
-{
-  std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = 0; i < _n; ++i) {
-    for (std::size_t j = 0; j < _n; ++j) {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
-        std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k) {
-          for (std::size_t l = 0; l < nSkip; ++l) {
-            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
-          }
-          std::cout << std::endl;
-        }
-
-        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j]
-                  << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i]
-                  << std::endl;
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-//==============================================================================
-bool DantzigLCPSolver::isSymmetric(
-    std::size_t _n, double* _A, std::size_t _begin, std::size_t _end)
-{
-  std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = _begin; i <= _end; ++i) {
-    for (std::size_t j = _begin; j <= _end; ++j) {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
-        std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k) {
-          for (std::size_t l = 0; l < nSkip; ++l) {
-            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
-          }
-          std::cout << std::endl;
-        }
-
-        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j]
-                  << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i]
-                  << std::endl;
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-//==============================================================================
-void DantzigLCPSolver::print(
-    std::size_t _n,
-    double* _A,
-    double* _x,
-    double* /*lo*/,
-    double* /*hi*/,
-    double* b,
-    double* w,
-    int* findex)
-{
-  std::size_t nSkip = dPAD(_n);
-  std::cout << "A: " << std::endl;
-  for (std::size_t i = 0; i < _n; ++i) {
-    for (std::size_t j = 0; j < nSkip; ++j) {
-      std::cout << std::setprecision(4) << _A[i * nSkip + j] << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  std::cout << "b: ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << std::setprecision(4) << b[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "w: ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << w[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "x: ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << _x[i] << " ";
-  }
-  std::cout << std::endl;
-
-  //  std::cout << "lb: ";
-  //  for (int i = 0; i < dim; ++i)
-  //  {
-  //    std::cout << lb[i] << " ";
-  //  }
-  //  std::cout << std::endl;
-
-  //  std::cout << "ub: ";
-  //  for (int i = 0; i < dim; ++i)
-  //  {
-  //    std::cout << ub[i] << " ";
-  //  }
-  //  std::cout << std::endl;
-
-  std::cout << "frictionIndex: ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << findex[i] << " ";
-  }
-  std::cout << std::endl;
-
-  double* Ax = new double[_n];
-
-  for (std::size_t i = 0; i < _n; ++i) {
-    Ax[i] = 0.0;
-  }
-
-  for (std::size_t i = 0; i < _n; ++i) {
-    for (std::size_t j = 0; j < _n; ++j) {
-      Ax[i] += _A[i * nSkip + j] * _x[j];
-    }
-  }
-
-  std::cout << "Ax   : ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << Ax[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "b + w: ";
-  for (std::size_t i = 0; i < _n; ++i) {
-    std::cout << b[i] + w[i] << " ";
-  }
-  std::cout << std::endl;
-
-  delete[] Ax;
-}
-#endif
 
 } // namespace constraint
 } // namespace dart

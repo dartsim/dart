@@ -153,27 +153,6 @@ protected:
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;
-
-#if DART_BUILD_MODE_DEBUG
-private:
-  /// Return true if the matrix is symmetric
-  bool isSymmetric(std::size_t n, double* A);
-
-  /// Return true if the diagonal block of matrix is symmetric
-  bool isSymmetric(
-      std::size_t n, double* A, std::size_t begin, std::size_t end);
-
-  /// Print debug information
-  void print(
-      std::size_t n,
-      double* A,
-      double* x,
-      double* lo,
-      double* hi,
-      double* b,
-      double* w,
-      int* findex);
-#endif
 };
 
 } // namespace constraint

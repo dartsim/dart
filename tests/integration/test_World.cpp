@@ -223,7 +223,7 @@ TEST(World, Cloning)
     for (std::size_t j = 1; j < 5; ++j)
       clones.push_back(clones[j - 1]->clone());
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
     std::size_t numIterations = 3;
 #else
     std::size_t numIterations = 500;

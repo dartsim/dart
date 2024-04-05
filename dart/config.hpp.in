@@ -34,8 +34,7 @@
            || (DART_MINOR_VERSION <= y && DART_PATCH_VERSION <= z))))
 
 // Deprecated in 6.14
-#define DART_VERSION_AT_LEAST(x, y, z)                                         \
-  DART_VERSION_GE(x, y, z)
+#define DART_VERSION_AT_LEAST(x, y, z) DART_VERSION_GE(x, y, z)
 
 // Deprecated in 6.14
 #define DART_MAJOR_MINOR_VERSION_AT_LEAST(x, y)                                \
@@ -44,8 +43,7 @@
        && (DART_MINOR_VERSION > y || (DART_MINOR_VERSION >= y))))
 
 // Deprecated in 6.14
-#define DART_VERSION_AT_MOST(x, y, z)                                          \
-  DART_VERSION_LE(x, y, z)
+#define DART_VERSION_AT_MOST(x, y, z) DART_VERSION_LE(x, y, z)
 
 // Deprecated in 6.14
 #define DART_MAJOR_MINOR_VERSION_AT_MOST(x, y)                                 \
@@ -61,10 +59,6 @@
 #elif defined(_MSC_VER)
   #define DART_COMPILER_MSVC
 #endif
-
-// Indicates the build mode used for compiling
-#cmakedefine01 DART_BUILD_MODE_DEBUG
-#cmakedefine01 DART_BUILD_MODE_RELEASE
 
 #cmakedefine01 HAVE_NLOPT
 #cmakedefine01 HAVE_IPOPT
@@ -98,3 +92,5 @@
 #cmakedefine01 DART_USE_SYSTEM_IMGUI
 
 #cmakedefine01 DART_BUILD_PROFILE
+
+#define DART_ACTIVE_LOG_LEVEL @DART_ACTIVE_LOG_LEVEL_VALUE@

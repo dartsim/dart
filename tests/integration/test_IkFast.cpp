@@ -134,7 +134,7 @@ TEST(IkFast, LoadWamArmIk)
   ik->setHierarchyLevel(1);
   std::stringstream ss;
   ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
-#if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
+#if (DART_OS_LINUX || DART_OS_MACOS) && !defined(NDEBUG)
   ss << "d";
 #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;

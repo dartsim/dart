@@ -78,10 +78,8 @@ public:
       int* findex,
       bool earlyTermination) override;
 
-#if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
   bool canSolve(int n, const double* A) override;
-#endif
 
   /// Sets options
   void setOption(const Option& option);

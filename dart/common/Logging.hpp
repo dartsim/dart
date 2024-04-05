@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <dart/config.hpp>
+
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
@@ -42,11 +44,6 @@
 #define DART_LOG_LEVEL_FATAL 5
 #define DART_LOG_LEVEL_OFF   6
 // clang-format on
-
-// Default active log level
-#if !defined(DART_ACTIVE_LOG_LEVEL)
-  #define DART_ACTIVE_LOG_LEVEL DART_LOG_LEVEL_INFO
-#endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...) ::dart::common::trace(__VA_ARGS__)

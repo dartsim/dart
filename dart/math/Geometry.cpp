@@ -1478,7 +1478,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T)
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m)
 {
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   if (std::abs(_m(0, 0)) > DART_EPSILON || std::abs(_m(1, 1)) > DART_EPSILON
       || std::abs(_m(2, 2)) > DART_EPSILON) {
     dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"

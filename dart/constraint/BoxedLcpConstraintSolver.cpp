@@ -33,7 +33,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
 #include <cassert>
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   #include <iomanip>
   #include <iostream>
 #endif
@@ -48,6 +48,131 @@
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+#ifndef NDEBUG
+
+//==============================================================================
+bool isSymmetric(std::size_t n, double* A, std::size_t begin, std::size_t end)
+{
+  std::size_t nSkip = dPAD(n);
+  for (std::size_t i = begin; i <= end; ++i) {
+    for (std::size_t j = begin; j <= end; ++j) {
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
+        std::cout << "A: " << std::endl;
+        for (std::size_t k = 0; k < n; ++k) {
+          for (std::size_t l = 0; l < nSkip; ++l) {
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
+                  << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool isSymmetric(std::size_t n, double* A)
+{
+  return isSymmetric(n, A, 0, n - 1);
+}
+
+//==============================================================================
+[[maybe_unused]] void print(
+    std::size_t n,
+    double* A,
+    double* x,
+    double* /*lo*/,
+    double* /*hi*/,
+    double* b,
+    double* w,
+    int* findex)
+{
+  std::size_t nSkip = dPAD(n);
+  std::cout << "A: " << std::endl;
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < nSkip; ++j) {
+      std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  std::cout << "b: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << std::setprecision(4) << b[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "w: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "x: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << x[i] << " ";
+  }
+  std::cout << std::endl;
+
+  //  std::cout << "lb: ";
+  //  for (int i = 0; i < dim; ++i)
+  //  {
+  //    std::cout << lb[i] << " ";
+  //  }
+  //  std::cout << std::endl;
+
+  //  std::cout << "ub: ";
+  //  for (int i = 0; i < dim; ++i)
+  //  {
+  //    std::cout << ub[i] << " ";
+  //  }
+  //  std::cout << std::endl;
+
+  std::cout << "frictionIndex: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << findex[i] << " ";
+  }
+  std::cout << std::endl;
+
+  double* Ax = new double[n];
+
+  for (std::size_t i = 0; i < n; ++i) {
+    Ax[i] = 0.0;
+  }
+
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = 0; j < n; ++j) {
+      Ax[i] += A[i * nSkip + j] * x[j];
+    }
+  }
+
+  std::cout << "Ax   : ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << Ax[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "b + w: ";
+  for (std::size_t i = 0; i < n; ++i) {
+    std::cout << b[i] + w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  delete[] Ax;
+}
+#endif
+
+} // namespace
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
@@ -152,11 +277,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     return;
 
   const int nSkip = dPAD(n);
-#if DART_BUILD_MODE_RELEASE
   mA.resize(n, nSkip);
-#else // debug
-  mA.setZero(n, nSkip);
-#endif
   mX.resize(n);
   mB.resize(n);
   mW.setZero(n); // set w to 0
@@ -313,148 +434,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     }
   }
 }
-
-//==============================================================================
-#if DART_BUILD_MODE_DEBUG
-bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
-{
-  std::size_t nSkip = dPAD(n);
-  for (std::size_t i = 0; i < n; ++i) {
-    for (std::size_t j = 0; j < n; ++j) {
-      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
-        std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < n; ++k) {
-          for (std::size_t l = 0; l < nSkip; ++l) {
-            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
-          }
-          std::cout << std::endl;
-        }
-
-        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
-                  << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
-                  << std::endl;
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-//==============================================================================
-bool BoxedLcpConstraintSolver::isSymmetric(
-    std::size_t n, double* A, std::size_t begin, std::size_t end)
-{
-  std::size_t nSkip = dPAD(n);
-  for (std::size_t i = begin; i <= end; ++i) {
-    for (std::size_t j = begin; j <= end; ++j) {
-      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
-        std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < n; ++k) {
-          for (std::size_t l = 0; l < nSkip; ++l) {
-            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
-          }
-          std::cout << std::endl;
-        }
-
-        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
-                  << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
-                  << std::endl;
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-//==============================================================================
-void BoxedLcpConstraintSolver::print(
-    std::size_t n,
-    double* A,
-    double* x,
-    double* /*lo*/,
-    double* /*hi*/,
-    double* b,
-    double* w,
-    int* findex)
-{
-  std::size_t nSkip = dPAD(n);
-  std::cout << "A: " << std::endl;
-  for (std::size_t i = 0; i < n; ++i) {
-    for (std::size_t j = 0; j < nSkip; ++j) {
-      std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  std::cout << "b: ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << std::setprecision(4) << b[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "w: ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << w[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "x: ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << x[i] << " ";
-  }
-  std::cout << std::endl;
-
-  //  std::cout << "lb: ";
-  //  for (int i = 0; i < dim; ++i)
-  //  {
-  //    std::cout << lb[i] << " ";
-  //  }
-  //  std::cout << std::endl;
-
-  //  std::cout << "ub: ";
-  //  for (int i = 0; i < dim; ++i)
-  //  {
-  //    std::cout << ub[i] << " ";
-  //  }
-  //  std::cout << std::endl;
-
-  std::cout << "frictionIndex: ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << findex[i] << " ";
-  }
-  std::cout << std::endl;
-
-  double* Ax = new double[n];
-
-  for (std::size_t i = 0; i < n; ++i) {
-    Ax[i] = 0.0;
-  }
-
-  for (std::size_t i = 0; i < n; ++i) {
-    for (std::size_t j = 0; j < n; ++j) {
-      Ax[i] += A[i * nSkip + j] * x[j];
-    }
-  }
-
-  std::cout << "Ax   : ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << Ax[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "b + w: ";
-  for (std::size_t i = 0; i < n; ++i) {
-    std::cout << b[i] + w[i] << " ";
-  }
-  std::cout << std::endl;
-
-  delete[] Ax;
-}
-#endif
 
 } // namespace constraint
 } // namespace dart
