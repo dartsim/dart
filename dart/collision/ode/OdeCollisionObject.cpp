@@ -35,6 +35,7 @@
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/collision/ode/detail/OdeBox.hpp"
 #include "dart/collision/ode/detail/OdeCapsule.hpp"
+#include "dart/collision/ode/detail/OdeCone.hpp"
 #include "dart/collision/ode/detail/OdeCylinder.hpp"
 #include "dart/collision/ode/detail/OdeHeightmap.hpp"
 #include "dart/collision/ode/detail/OdeMesh.hpp"
@@ -171,6 +172,7 @@ detail::OdeGeom* createOdeGeom(
 {
   using dynamics::BoxShape;
   using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::CylinderShape;
   using dynamics::EllipsoidShape;
   using dynamics::HeightmapShaped;
@@ -197,6 +199,11 @@ detail::OdeGeom* createOdeGeom(
     const auto height = capsule->getHeight();
 
     geom = new detail::OdeCapsule(collObj, radius, height);
+  } else if (const auto cone = shape->as<ConeShape>()) {
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
+
+    geom = new detail::OdeCone(collObj, radius, height);
   } else if (const auto cylinder = shape->as<CylinderShape>()) {
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
