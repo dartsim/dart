@@ -182,7 +182,6 @@ else()
   # TODO: Improve this part to detect the system's architecture and apply the
   # appropriate SIMD instructions.
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=neon")
     # Remove SSE flags if set elsewhere
     string(REPLACE "-msse" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "-msse2" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

@@ -75,7 +75,7 @@ jobs:
             release_only: false
 
           - os: macos-latest
-            build: "cp312-macosx_x86_64"
+            build: "cp312-macosx_arm64"
             experimental: false
             release_only: false
 
@@ -131,7 +131,7 @@ jobs:
           DART_IN_CI: ON
 
           # macOS
-          MACOSX_DEPLOYMENT_TARGET: 10.15
+          MACOSX_DEPLOYMENT_TARGET: 14.0
 
           # Windows
           CMAKE_TOOLCHAIN_FILE: ""
@@ -144,7 +144,7 @@ jobs:
           DART_IN_CI: ON
 
           # macOS
-          MACOSX_DEPLOYMENT_TARGET: 10.15
+          MACOSX_DEPLOYMENT_TARGET: 14.0
 
           # Windows
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake

@@ -76,7 +76,7 @@ archs = ["auto64"] # TODO: Add universal2 and arm64
 before-all = [
     "brew update > /dev/null",
     "brew bundle || brew bundle",
-    "brew install open-scene-graph --HEAD",
+    "brew install open-scene-graph", # TODO: --HEAD is needed to build the latest version, but it's currently broken
     "sw_vers",
 ]
 
