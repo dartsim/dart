@@ -125,7 +125,7 @@ jobs:
 
       - name: Build wheels
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.0
+        uses: pypa/cibuildwheel@v2.19.1
         env:
           # Common
           DART_IN_CI: ON
@@ -138,7 +138,7 @@ jobs:
 
       - name: Build wheels (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.0
+        uses: pypa/cibuildwheel@v2.19.1
         env:
           # Common
           DART_IN_CI: ON
@@ -190,7 +190,7 @@ jobs:
       - name: List files in dist
         run: ls -lR dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.8.14
+      - uses: pypa/gh-action-pypi-publish@v1.9.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
