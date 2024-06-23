@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         # Supported LTS versions
-        os: [ubuntu-jammy, ubuntu-noble, archlinux]
+        os: [ubuntu-jammy, ubuntu-noble]
         build_type: [Release]
         codecov: [OFF]
         check_format: [OFF]

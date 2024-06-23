@@ -1,5 +1,5 @@
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:noble
+FROM --platform=$TARGETPLATFORM ubuntu:oracular
 
 ARG DEBIAN_FRONTEND=noninteractive
 
