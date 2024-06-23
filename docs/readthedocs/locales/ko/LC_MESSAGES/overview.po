@@ -100,9 +100,9 @@ msgstr "BSD 라이센스로 배포되는 오픈 소스 C++ 라이브러리 입�
 
 #: ../../overview.rst:24 d2ed9cf688bd4dc6b2e1e9f41f61d4bd
 msgid ""
-"Supports multiple platforms including Ubuntu, Archlinux, FreeBSD, macOS, "
+"Supports multiple platforms including Ubuntu, FreeBSD, macOS, "
 "and Windows."
-msgstr "Ubuntu, Archlinux, FreeBSD, macOS 및 Windows를 비롯한 여러 플랫폼을 지원합니다."
+msgstr "Ubuntu, FreeBSD, macOS 및 Windows를 비롯한 여러 플랫폼을 지원합니다."
 
 #: ../../overview.rst:25 ce0dc185f12a49cfb162dffa42518c2c
 msgid "Fully integrated with Gazebo."
