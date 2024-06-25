@@ -2,19 +2,35 @@
 
 ## DART 6
 
-### [DART 6.14.0 (TBD)](https://github.com/dartsim/dart/milestone/73?closed=1)
+### [DART 6.14.0 (2024-06-24)](https://github.com/dartsim/dart/milestone/73?closed=1)
+
+This release is mostly a maintenance update, including various CI updates and build fixes for recent development environment toolsets and dependencies.
 
 * Tested Platforms
 
   * Linux
-    * Ubuntu 22.04 LTS on amd64 / GCC 11.2 / amd64
-    * (experimental) Arch Linux
-  * macOS 12 (Monterey) / Clang 13 / amd64
-  * Windows / Microsoft Visual Studio 2022 / amd64
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
 
 * Breaking Changes
 
   * Removed planning component
+
+* Build
+  
+  * Added Pixi support
+
+* General
+
+  * Added profile interface with Tracy backend support
+  * Added benchmark setup, including boxes and kinematics benchmarks
+
+* Dynamics
+
+  * Allowed specifying mimic joint properties per DoF: [#1752](https://github.com/dartsim/dart/pull/1752)
+  * [Improved performance in constructing LCP problem](https://github.com/dartsim/dart/commit/76d8fe1a72f6925c06f64eea3d2cd135234b59de)
 
 ### [DART 6.13.2 (2024-03-17)](https://github.com/dartsim/dart/milestone/75?closed=1)
 
