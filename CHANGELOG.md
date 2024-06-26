@@ -2,6 +2,18 @@
 
 ## DART 6
 
+### [DART 6.14.1 (2024-06-26)](https://github.com/dartsim/dart/milestone/78?closed=1)
+
+* Tested Platforms
+
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
+* Included CTest for BUILD_TESTING option: [#1819](https://github.com/dartsim/dart/pull/1819)
+
 ### [DART 6.14.0 (2024-06-24)](https://github.com/dartsim/dart/milestone/73?closed=1)
 
 This release is mostly a maintenance update, including various CI updates and build fixes for recent development environment toolsets and dependencies.
