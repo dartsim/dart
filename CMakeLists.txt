@@ -435,7 +435,7 @@ add_subdirectory(python)
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
 if (BUILD_TESTING)
-  set(all_target_candidates tests_and_run pytest)
+  list(APPEND all_target_candidates tests_and_run pytest)
 endif()
 foreach(target_candidate ${all_target_candidates})
   if(TARGET ${target_candidate})
