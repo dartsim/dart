@@ -660,10 +660,9 @@ if(DOXYGEN_FOUND)
     COMMAND find "${DOXYGEN_OUTPUT_ROOT}" -type f -name "*.html"
         -exec sed -i 's: doxygen=\"[^\"]*\"::g' {} \\$<SEMICOLON>
     COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/doxygen
     DEPENDS ${DOXYGEN_DOXYFILE}
   )
-  # add_custom_target(docs ALL DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(
     docs_forced
@@ -671,7 +670,7 @@ if(DOXYGEN_FOUND)
     COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
     COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/doxygen
   )
 
   # Add the "view_docs" target that opens the generated API documentation.
