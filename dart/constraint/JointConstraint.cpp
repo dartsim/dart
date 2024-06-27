@@ -213,7 +213,7 @@ void JointConstraint::update()
       const double B1 = A1 + mErrorAllowance;
       const double A2 = positions[i] - positionUpperLimits[i];
       const double B2 = A2 - mErrorAllowance;
-      if (B1 <= 0) {
+      if (B1 < 0) {
         // The current position is lower than the lower bound.
         //
         //    pos            LB                               UB
@@ -234,7 +234,7 @@ void JointConstraint::update()
         assert(bouncing_vel >= 0);
         bouncing_vel = std::min(bouncing_vel, mMaxErrorReductionVelocity);
 
-        mDesiredVelocityChange[i] = bouncing_vel + velocities[i];
+        mDesiredVelocityChange[i] = bouncing_vel - velocities[i];
 
         // Set the impulse bounds to not to be negative so that the impulse only
         // exerted to push the joint toward the positive direction.
@@ -250,7 +250,7 @@ void JointConstraint::update()
 
         ++mDim;
         continue;
-      } else if (0 <= B2) {
+      } else if (0 < B2) {
         // The current position is greater than the upper bound.
         //
         //    LB                               UB            pos
@@ -271,7 +271,7 @@ void JointConstraint::update()
         assert(bouncing_vel <= 0);
         bouncing_vel = std::max(bouncing_vel, -mMaxErrorReductionVelocity);
 
-        mDesiredVelocityChange[i] = bouncing_vel + velocities[i];
+        mDesiredVelocityChange[i] = bouncing_vel - velocities[i];
 
         // Set the impulse bounds to not to be positive so that the impulse only
         // exerted to push the joint toward the negative direction.
