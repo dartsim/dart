@@ -61,7 +61,7 @@ public:
       BoxedLcpSolverPtr boxedLcpSolver = nullptr,
       BoxedLcpSolverPtr secondaryBoxedLcpSolver = nullptr);
 
-  /// Constructos with default primary and secondary LCP solvers, which are
+  /// Constructs with default primary and secondary LCP solvers, which are
   /// Dantzig and PGS, respectively.
   BoxedLcpConstraintSolver();
 
