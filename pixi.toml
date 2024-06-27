@@ -6,6 +6,10 @@ authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
+[environments]
+default = { features = ["full"] }
+min = { features = ["min"], no-default-feature = true }
+
 [build-dependencies]
 black = ">=24.2.0,<24.3"
 cmake = "3.22.*"
@@ -18,7 +22,7 @@ pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.1.1,<8.2"
 setuptools = ">=69.1.1,<69.2"
 
-[dependencies]
+[feature.full.dependencies]
 assimp = ">=5.3.1,<5.4"
 boost = ">=1.84.0,<1.85"
 bullet-cpp = ">=3.25,<4"
@@ -38,6 +42,15 @@ pagmo-devel = ">=2.19.0,<2.20"
 spdlog = ">=1.12.0,<1.13"
 tinyxml2 = ">=10.0.0,<10.1"
 urdfdom = ">=4.0.0,<4.1"
+
+[feature.min.dependencies]
+assimp = ">=5.3.1,<5.4"
+boost = ">=1.84.0,<1.85"
+eigen = ">=3.4.0,<3.5"
+fcl = ">=0.7.0,<0.8"
+fmt = ">=10.2.1,<10.3"
+numpy = ">=1.26.4,<1.27"
+spdlog = ">=1.12.0,<1.13"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -132,6 +145,10 @@ tu-multi-pendulum-fi = { cmd = "cmake --build build --target tutorial_multi_pend
 
 create-deps-dir = { cmd = "mkdir -p .deps" }
 remove-deps-dir = { cmd = "rm -rf .deps" }
+
+[feature.min.tasks]
+
+configure = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_BUILD_DARTPY=OFF -DDART_USE_SYSTEM_IMGUI=ON" }
 
 ################################################################################
 # linux-64
