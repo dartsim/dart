@@ -34,7 +34,7 @@ find_path(IPOPT_INCLUDE_DIRS
 
 # Libraries
 find_library(IPOPT_LIBRARIES
-    NAMES ipopt
+    NAMES ipopt ipopt-3
     HINTS ${PC_IPOPT_LIBDIR})
 
 # Version
