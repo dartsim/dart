@@ -42,26 +42,31 @@ namespace python {
 void BoxedLcpConstraintSolver(py::module& m)
 {
   ::py::class_<
-      dart::constraint::BoxedLcpConstraintSolver,
-      dart::constraint::ConstraintSolver,
-      std::shared_ptr<dart::constraint::BoxedLcpConstraintSolver>>(
+      constraint::BoxedLcpConstraintSolver,
+      constraint::ConstraintSolver,
+      std::shared_ptr<constraint::BoxedLcpConstraintSolver>>(
       m, "BoxedLcpConstraintSolver")
-      .def(::py::init<double>(), ::py::arg("timeStep"))
+      .def(::py::init<>())
       .def(
-          ::py::init<double, dart::constraint::BoxedLcpSolverPtr>(),
-          ::py::arg("timeStep"),
+          ::py::init<constraint::BoxedLcpSolverPtr>(),
           ::py::arg("boxedLcpSolver"))
       .def(
+          ::py::init<
+              constraint::BoxedLcpSolverPtr,
+              constraint::BoxedLcpSolverPtr>(),
+          ::py::arg("boxedLcpSolver"),
+          ::py::arg("secondaryBoxedLcpSolver"))
+      .def(
           "setBoxedLcpSolver",
-          +[](dart::constraint::BoxedLcpConstraintSolver* self,
-              dart::constraint::BoxedLcpSolverPtr lcpSolver) {
+          +[](constraint::BoxedLcpConstraintSolver* self,
+              constraint::BoxedLcpSolverPtr lcpSolver) {
             self->setBoxedLcpSolver(lcpSolver);
           },
           ::py::arg("lcpSolver"))
       .def(
           "getBoxedLcpSolver",
-          +[](const dart::constraint::BoxedLcpConstraintSolver* self)
-              -> dart::constraint::ConstBoxedLcpSolverPtr {
+          +[](const constraint::BoxedLcpConstraintSolver* self)
+              -> constraint::ConstBoxedLcpSolverPtr {
             return self->getBoxedLcpSolver();
           });
 }
