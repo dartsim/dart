@@ -1074,7 +1074,7 @@ protected:
 
   std::vector<std::size_t> mEndEffectorIndex;
 
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d>> mDefaultBounds;
 
   dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 

@@ -66,8 +66,8 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 template <class ReqAspect1, class... OtherReqAspects>
 class RequiresAspect<ReqAspect1, OtherReqAspects...>
   : public CompositeJoiner<
-        Virtual<RequiresAspect<ReqAspect1> >,
-        Virtual<RequiresAspect<OtherReqAspects...> > >
+        Virtual<RequiresAspect<ReqAspect1>>,
+        Virtual<RequiresAspect<OtherReqAspects...>>>
 {
 };
 

@@ -42,7 +42,7 @@ namespace dynamics {
 namespace detail {
 
 using ShapeNodeCompositeBase
-    = CompositeNode<common::CompositeJoiner<FixedJacobianNode, ShapeFrame> >;
+    = CompositeNode<common::CompositeJoiner<FixedJacobianNode, ShapeFrame>>;
 
 } // namespace detail
 } // namespace dynamics

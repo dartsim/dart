@@ -205,13 +205,13 @@ Eigen::Vector4d PointCloudShape::getOverallColor() const
 void PointCloudShape::setColors(
     const std::vector<
         Eigen::Vector4d,
-        Eigen::aligned_allocator<Eigen::Vector4d> >& colors)
+        Eigen::aligned_allocator<Eigen::Vector4d>>& colors)
 {
   mColors = colors;
 }
 
 //==============================================================================
-const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> >&
+const std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>&
 PointCloudShape::getColors() const
 {
   return mColors;

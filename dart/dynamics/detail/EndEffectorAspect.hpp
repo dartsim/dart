@@ -97,7 +97,7 @@ void SupportUpdate(Support* support);
 
 using EndEffectorCompositeBase = CompositeNode<common::CompositeJoiner<
     FixedJacobianNode,
-    common::SpecializedForAspect<Support> > >;
+    common::SpecializedForAspect<Support>>>;
 
 } // namespace detail
 } // namespace dynamics

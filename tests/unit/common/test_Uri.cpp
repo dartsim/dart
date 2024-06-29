@@ -247,7 +247,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 
 TEST(UriHelpers, getRelativeUri)
 {
-  std::vector<std::pair<std::string, std::string> > testPairs = {
+  std::vector<std::pair<std::string, std::string>> testPairs = {
       // RFC 3986, Section 5.4.1.: Normal Examples
       {"g:h", "g:h"},
       {"g", "http://a/b/c/g"},

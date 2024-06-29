@@ -130,7 +130,7 @@ public:
 /// you to include arbitrarily many base classes in the joining.
 template <class Base1, class Base2, class... OtherBases>
 class CompositeJoiner<Base1, Base2, OtherBases...>
-  : public CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...> >
+  : public CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...>>
 {
 public:
   /// Default constructor

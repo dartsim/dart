@@ -272,8 +272,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   mNullSpaceCache.resize(hierarchy.size());
   bool zeroedNullSpace = false;
   for (std::size_t i = 0; i < hierarchy.size(); ++i) {
-    const std::vector<std::shared_ptr<InverseKinematics> >& level
-        = hierarchy[i];
+    const std::vector<std::shared_ptr<InverseKinematics>>& level = hierarchy[i];
 
     Eigen::MatrixXd& NS = mNullSpaceCache[i];
     if (i == 0) {
@@ -472,8 +471,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
 
   double cost = 0.0;
   for (std::size_t i = 0; i < hierarchy.size(); ++i) {
-    const std::vector<std::shared_ptr<InverseKinematics> >& level
-        = hierarchy[i];
+    const std::vector<std::shared_ptr<InverseKinematics>>& level = hierarchy[i];
 
     for (std::size_t j = 0; j < level.size(); ++j) {
       const std::shared_ptr<InverseKinematics>& ik = level[j];
@@ -509,8 +507,7 @@ void HierarchicalIK::Constraint::evalGradient(
 
   _grad.setZero();
   for (std::size_t i = 0; i < hierarchy.size(); ++i) {
-    const std::vector<std::shared_ptr<InverseKinematics> >& level
-        = hierarchy[i];
+    const std::vector<std::shared_ptr<InverseKinematics>>& level = hierarchy[i];
 
     mLevelGradCache.setZero(nDofs);
     for (std::size_t j = 0; j < level.size(); ++j) {

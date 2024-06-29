@@ -47,7 +47,7 @@ void Frame(py::module& m)
   ::py::class_<
       dart::dynamics::Frame,
       dart::dynamics::Entity,
-      std::shared_ptr<dart::dynamics::Frame> >(m, "Frame")
+      std::shared_ptr<dart::dynamics::Frame>>(m, "Frame")
       .def(
           "getRelativeTransform",
           +[](const dart::dynamics::Frame* self) -> Eigen::Isometry3d {

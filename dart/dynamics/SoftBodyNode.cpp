@@ -1431,26 +1431,26 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 
   std::vector<PointPair> corners(nCorners);
 
-  std::vector<std::vector<PointPair> > edgeX(
+  std::vector<std::vector<PointPair>> edgeX(
       4, std::vector<PointPair>(nVerticesAtEdgeX));
-  std::vector<std::vector<PointPair> > edgeY(
+  std::vector<std::vector<PointPair>> edgeY(
       4, std::vector<PointPair>(nVerticesAtEdgeY));
-  std::vector<std::vector<PointPair> > edgeZ(
+  std::vector<std::vector<PointPair>> edgeZ(
       4, std::vector<PointPair>(nVerticesAtEdgeZ));
 
-  std::vector<std::vector<PointPair> > sideXNeg(
+  std::vector<std::vector<PointPair>> sideXNeg(
       nVerticesAtEdgeY, std::vector<PointPair>(nVerticesAtEdgeZ));
-  std::vector<std::vector<PointPair> > sideXPos(
+  std::vector<std::vector<PointPair>> sideXPos(
       nVerticesAtEdgeY, std::vector<PointPair>(nVerticesAtEdgeZ));
 
-  std::vector<std::vector<PointPair> > sideYNeg(
+  std::vector<std::vector<PointPair>> sideYNeg(
       nVerticesAtEdgeZ, std::vector<PointPair>(nVerticesAtEdgeX));
-  std::vector<std::vector<PointPair> > sideYPos(
+  std::vector<std::vector<PointPair>> sideYPos(
       nVerticesAtEdgeZ, std::vector<PointPair>(nVerticesAtEdgeX));
 
-  std::vector<std::vector<PointPair> > sideZNeg(
+  std::vector<std::vector<PointPair>> sideZNeg(
       nVerticesAtEdgeX, std::vector<PointPair>(nVerticesAtEdgeY));
-  std::vector<std::vector<PointPair> > sideZPos(
+  std::vector<std::vector<PointPair>> sideZPos(
       nVerticesAtEdgeX, std::vector<PointPair>(nVerticesAtEdgeY));
 
   Eigen::Vector3d x0y0z0

@@ -30916,7 +30916,7 @@ public:
                                 }
 
                                 {
-                                  std::vector<IkSingleDOFSolutionBase<IkReal> >
+                                  std::vector<IkSingleDOFSolutionBase<IkReal>>
                                       vinfos(7);
                                   vinfos[0].jointtype = 1;
                                   vinfos[0].foffset = j4;
@@ -31161,8 +31161,7 @@ public:
                                   }
 
                                   {
-                                    std::vector<
-                                        IkSingleDOFSolutionBase<IkReal> >
+                                    std::vector<IkSingleDOFSolutionBase<IkReal>>
                                         vinfos(7);
                                     vinfos[0].jointtype = 1;
                                     vinfos[0].foffset = j4;
@@ -31664,7 +31663,7 @@ public:
                                             {
                                               std::vector<
                                                   IkSingleDOFSolutionBase<
-                                                      IkReal> >
+                                                      IkReal>>
                                                   vinfos(7);
                                               vinfos[0].jointtype = 1;
                                               vinfos[0].foffset = j4;
@@ -31875,7 +31874,7 @@ public:
                                               {
                                                 std::vector<
                                                     IkSingleDOFSolutionBase<
-                                                        IkReal> >
+                                                        IkReal>>
                                                     vinfos(7);
                                                 vinfos[0].jointtype = 1;
                                                 vinfos[0].foffset = j4;
@@ -32107,7 +32106,7 @@ public:
                                                 {
                                                   std::vector<
                                                       IkSingleDOFSolutionBase<
-                                                          IkReal> >
+                                                          IkReal>>
                                                       vinfos(7);
                                                   vinfos[0].jointtype = 1;
                                                   vinfos[0].foffset = j4;
@@ -32355,7 +32354,7 @@ public:
                                                   {
                                                     std::vector<
                                                         IkSingleDOFSolutionBase<
-                                                            IkReal> >
+                                                            IkReal>>
                                                         vinfos(7);
                                                     vinfos[0].jointtype = 1;
                                                     vinfos[0].foffset = j4;
@@ -32624,7 +32623,7 @@ public:
                                                     {
                                                       std::vector<
                                                           IkSingleDOFSolutionBase<
-                                                              IkReal> >
+                                                              IkReal>>
                                                           vinfos(7);
                                                       vinfos[0].jointtype = 1;
                                                       vinfos[0].foffset = j4;
@@ -32918,7 +32917,7 @@ public:
                                                       {
                                                         std::vector<
                                                             IkSingleDOFSolutionBase<
-                                                                IkReal> >
+                                                                IkReal>>
                                                             vinfos(7);
                                                         vinfos[0].jointtype = 1;
                                                         vinfos[0].foffset = j4;
@@ -33194,7 +33193,7 @@ public:
                                                         {
                                                           std::vector<
                                                               IkSingleDOFSolutionBase<
-                                                                  IkReal> >
+                                                                  IkReal>>
                                                               vinfos(7);
                                                           vinfos[0].jointtype
                                                               = 1;
@@ -33524,7 +33523,7 @@ public:
                                                           {
                                                             std::vector<
                                                                 IkSingleDOFSolutionBase<
-                                                                    IkReal> >
+                                                                    IkReal>>
                                                                 vinfos(7);
                                                             vinfos[0].jointtype
                                                                 = 1;
@@ -33799,7 +33798,7 @@ public:
 
                                       {
                                         std::vector<
-                                            IkSingleDOFSolutionBase<IkReal> >
+                                            IkSingleDOFSolutionBase<IkReal>>
                                             vinfos(7);
                                         vinfos[0].jointtype = 1;
                                         vinfos[0].foffset = j4;
@@ -33995,8 +33994,7 @@ public:
                                   }
 
                                   {
-                                    std::vector<
-                                        IkSingleDOFSolutionBase<IkReal> >
+                                    std::vector<IkSingleDOFSolutionBase<IkReal>>
                                         vinfos(7);
                                     vinfos[0].jointtype = 1;
                                     vinfos[0].foffset = j4;
@@ -34165,7 +34163,7 @@ public:
                               }
 
                               {
-                                std::vector<IkSingleDOFSolutionBase<IkReal> >
+                                std::vector<IkSingleDOFSolutionBase<IkReal>>
                                     vinfos(7);
                                 vinfos[0].jointtype = 1;
                                 vinfos[0].foffset = j4;
@@ -34604,7 +34602,7 @@ public:
 
                                         {
                                           std::vector<
-                                              IkSingleDOFSolutionBase<IkReal> >
+                                              IkSingleDOFSolutionBase<IkReal>>
                                               vinfos(7);
                                           vinfos[0].jointtype = 1;
                                           vinfos[0].foffset = j4;
@@ -34800,8 +34798,8 @@ public:
                                           }
 
                                           {
-                                            std::vector<IkSingleDOFSolutionBase<
-                                                IkReal> >
+                                            std::vector<
+                                                IkSingleDOFSolutionBase<IkReal>>
                                                 vinfos(7);
                                             vinfos[0].jointtype = 1;
                                             vinfos[0].foffset = j4;
@@ -35021,7 +35019,7 @@ public:
                                             {
                                               std::vector<
                                                   IkSingleDOFSolutionBase<
-                                                      IkReal> >
+                                                      IkReal>>
                                                   vinfos(7);
                                               vinfos[0].jointtype = 1;
                                               vinfos[0].foffset = j4;
@@ -35240,7 +35238,7 @@ public:
                                               {
                                                 std::vector<
                                                     IkSingleDOFSolutionBase<
-                                                        IkReal> >
+                                                        IkReal>>
                                                     vinfos(7);
                                                 vinfos[0].jointtype = 1;
                                                 vinfos[0].foffset = j4;
@@ -35467,7 +35465,7 @@ public:
                                                 {
                                                   std::vector<
                                                       IkSingleDOFSolutionBase<
-                                                          IkReal> >
+                                                          IkReal>>
                                                       vinfos(7);
                                                   vinfos[0].jointtype = 1;
                                                   vinfos[0].foffset = j4;
@@ -35728,7 +35726,7 @@ public:
                                                   {
                                                     std::vector<
                                                         IkSingleDOFSolutionBase<
-                                                            IkReal> >
+                                                            IkReal>>
                                                         vinfos(7);
                                                     vinfos[0].jointtype = 1;
                                                     vinfos[0].foffset = j4;
@@ -35977,7 +35975,7 @@ public:
                                                     {
                                                       std::vector<
                                                           IkSingleDOFSolutionBase<
-                                                              IkReal> >
+                                                              IkReal>>
                                                           vinfos(7);
                                                       vinfos[0].jointtype = 1;
                                                       vinfos[0].foffset = j4;
@@ -36264,7 +36262,7 @@ public:
                                                       {
                                                         std::vector<
                                                             IkSingleDOFSolutionBase<
-                                                                IkReal> >
+                                                                IkReal>>
                                                             vinfos(7);
                                                         vinfos[0].jointtype = 1;
                                                         vinfos[0].foffset = j4;
@@ -36508,8 +36506,7 @@ public:
                                   }
 
                                   {
-                                    std::vector<
-                                        IkSingleDOFSolutionBase<IkReal> >
+                                    std::vector<IkSingleDOFSolutionBase<IkReal>>
                                         vinfos(7);
                                     vinfos[0].jointtype = 1;
                                     vinfos[0].foffset = j4;
@@ -36695,7 +36692,7 @@ public:
                               }
 
                               {
-                                std::vector<IkSingleDOFSolutionBase<IkReal> >
+                                std::vector<IkSingleDOFSolutionBase<IkReal>>
                                     vinfos(7);
                                 vinfos[0].jointtype = 1;
                                 vinfos[0].foffset = j4;
@@ -36850,8 +36847,8 @@ public:
                           }
 
                           {
-                            std::vector<IkSingleDOFSolutionBase<IkReal> >
-                                vinfos(7);
+                            std::vector<IkSingleDOFSolutionBase<IkReal>> vinfos(
+                                7);
                             vinfos[0].jointtype = 1;
                             vinfos[0].foffset = j4;
                             vinfos[0].indices[0] = _ij4[0];

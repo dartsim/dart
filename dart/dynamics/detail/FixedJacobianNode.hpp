@@ -45,8 +45,8 @@ class FixedJacobianNode;
 namespace detail {
 
 using FixedJacobianNodeCompositeBase = common::CompositeJoiner<
-    EntityNode<TemplatedJacobianNode<FixedJacobianNode> >,
-    common::Virtual<FixedFrame> >;
+    EntityNode<TemplatedJacobianNode<FixedJacobianNode>>,
+    common::Virtual<FixedFrame>>;
 
 } // namespace detail
 } // namespace dynamics

@@ -303,7 +303,7 @@ public:
   CloneableVector& operator=(const CloneableVector& other);
 
   /// Create a copy of this CloneableVector's contents
-  std::unique_ptr<CloneableVector<T> > clone() const;
+  std::unique_ptr<CloneableVector<T>> clone() const;
 
   /// Copy the contents of another cloneable vector into this one.
   void copy(const CloneableVector<T>& anotherVector);

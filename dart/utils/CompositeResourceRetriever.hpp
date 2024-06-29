@@ -82,7 +82,7 @@ private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
       const common::Uri& _uri) const;
 
-  std::unordered_map<std::string, std::vector<common::ResourceRetrieverPtr> >
+  std::unordered_map<std::string, std::vector<common::ResourceRetrieverPtr>>
       mResourceRetrievers;
   std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };

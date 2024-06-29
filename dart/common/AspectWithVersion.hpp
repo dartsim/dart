@@ -43,7 +43,7 @@ template <
     class DerivedT,
     typename StateDataT,
     class CompositeT = Composite,
-    void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
+    void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>>
 using AspectWithState = detail::AspectWithState<
     CompositeTrackingAspect<CompositeT>,
     DerivedT,
@@ -56,7 +56,7 @@ template <
     class DerivedT,
     typename PropertiesDataT,
     class CompositeT = Composite,
-    void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
+    void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*>>
 using AspectWithVersionedProperties = detail::AspectWithVersionedProperties<
     CompositeTrackingAspect<CompositeT>,
     DerivedT,

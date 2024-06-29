@@ -113,8 +113,8 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 template <class SpecNode1, class... OtherSpecNodes>
 class BodyNodeSpecializedFor<SpecNode1, OtherSpecNodes...>
   : public NodeManagerJoinerForBodyNode<
-        common::Virtual<BodyNodeSpecializedFor<SpecNode1> >,
-        common::Virtual<BodyNodeSpecializedFor<OtherSpecNodes...> > >
+        common::Virtual<BodyNodeSpecializedFor<SpecNode1>>,
+        common::Virtual<BodyNodeSpecializedFor<OtherSpecNodes...>>>
 {
 };
 
@@ -217,8 +217,8 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 template <class SpecNode1, class... OtherSpecNodes>
 class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...>
   : public NodeManagerJoinerForSkeleton<
-        common::Virtual<SkeletonSpecializedFor<SpecNode1> >,
-        common::Virtual<SkeletonSpecializedFor<OtherSpecNodes...> > >
+        common::Virtual<SkeletonSpecializedFor<SpecNode1>>,
+        common::Virtual<SkeletonSpecializedFor<OtherSpecNodes...>>>
 {
 };
 

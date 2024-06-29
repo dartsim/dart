@@ -74,8 +74,8 @@ void TranslationalJoint2D(py::module& m)
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::TranslationalJoint2D,
           dart::dynamics::detail::TranslationalJoint2DUniqueProperties,
-          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >,
-      std::shared_ptr<dart::dynamics::TranslationalJoint2D> >(
+          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2>>>,
+      std::shared_ptr<dart::dynamics::TranslationalJoint2D>>(
       m, "TranslationalJoint2D")
       .def(
           "hasTranslationalJoint2DAspect",
@@ -89,7 +89,7 @@ void TranslationalJoint2D(py::module& m)
                   dart::dynamics::TranslationalJoint2D,
                   dart::dynamics::detail::TranslationalJoint2DUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::Aspect* aspect) {
+                      dart::math::RealVectorSpace<2>>>::Aspect* aspect) {
             self->setTranslationalJoint2DAspect(aspect);
           },
           ::py::arg("aspect"))
@@ -105,7 +105,7 @@ void TranslationalJoint2D(py::module& m)
                   dart::dynamics::TranslationalJoint2D,
                   dart::dynamics::detail::TranslationalJoint2DUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::Aspect> {
+                      dart::math::RealVectorSpace<2>>>::Aspect> {
             return self->releaseTranslationalJoint2DAspect();
           })
       .def(
@@ -127,7 +127,7 @@ void TranslationalJoint2D(py::module& m)
                   dart::dynamics::TranslationalJoint2D,
                   dart::dynamics::detail::TranslationalJoint2DUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::AspectProperties&
+                      dart::math::RealVectorSpace<2>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
           ::py::arg("properties"))
       .def(

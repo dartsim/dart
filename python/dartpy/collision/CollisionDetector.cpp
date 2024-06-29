@@ -43,7 +43,7 @@ void CollisionDetector(py::module& m)
 {
   ::py::class_<
       dart::collision::CollisionDetector,
-      std::shared_ptr<dart::collision::CollisionDetector> >(
+      std::shared_ptr<dart::collision::CollisionDetector>>(
       m, "CollisionDetector")
       .def(
           "cloneWithoutCollisionObjects",
