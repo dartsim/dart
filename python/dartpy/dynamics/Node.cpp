@@ -49,7 +49,7 @@ void Node(py::module& m)
   ::py::class_<
       dart::dynamics::Node,
       /*dart::common::VersionCounter,*/ dart::common::Subject,
-      std::shared_ptr<dart::dynamics::Node> >(m, "Node")
+      std::shared_ptr<dart::dynamics::Node>>(m, "Node")
       .def(
           "setName",
           +[](dart::dynamics::Node* self, const std::string& newName)

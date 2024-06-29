@@ -44,7 +44,7 @@ void FCLCollisionGroup(py::module& m)
   ::py::class_<
       dart::collision::FCLCollisionGroup,
       dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::FCLCollisionGroup> >(
+      std::shared_ptr<dart::collision::FCLCollisionGroup>>(
       m, "FCLCollisionGroup")
       .def(
           ::py::init<const dart::collision::CollisionDetectorPtr&>(),

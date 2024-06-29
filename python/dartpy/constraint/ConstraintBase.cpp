@@ -43,7 +43,7 @@ void ConstraintBase(py::module& m)
 {
   ::py::class_<
       dart::constraint::ConstraintBase,
-      std::shared_ptr<dart::constraint::ConstraintBase> >(m, "ConstraintBase")
+      std::shared_ptr<dart::constraint::ConstraintBase>>(m, "ConstraintBase")
       .def(
           "getType",
           +[](const dart::constraint::ConstraintBase* self) -> std::string {

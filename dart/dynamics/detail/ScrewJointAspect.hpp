@@ -81,7 +81,7 @@ struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
 using ScrewJointBase = common::EmbedPropertiesOnTopOf<
     ScrewJoint,
     ScrewJointUniqueProperties,
-    GenericJoint<math::R1Space> >;
+    GenericJoint<math::R1Space>>;
 
 } // namespace detail
 } // namespace dynamics

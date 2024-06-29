@@ -89,7 +89,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 
 template <class DerivedT, typename StateDataT>
 class EmbedState : public virtual common::RequiresAspect<
-                       common::EmbeddedStateAspect<DerivedT, StateDataT> >
+                       common::EmbeddedStateAspect<DerivedT, StateDataT>>
 {
 public:
   using Derived = DerivedT;
@@ -200,7 +200,7 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class DerivedT, typename PropertiesDataT>
 class EmbedProperties
   : public virtual common::RequiresAspect<
-        common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >
+        common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT>>
 {
 public:
   using Derived = DerivedT;
@@ -377,7 +377,7 @@ class EmbedStateAndProperties : public virtual common::RequiresAspect<
                                     common::EmbeddedStateAndPropertiesAspect<
                                         DerivedT,
                                         StateDataT,
-                                        PropertiesDataT> >
+                                        PropertiesDataT>>
 {
 public:
   using Derived = DerivedT;

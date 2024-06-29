@@ -192,8 +192,8 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 template <class SpecAspect1, class... OtherSpecAspects>
 class SpecializedForAspect<SpecAspect1, OtherSpecAspects...>
   : public CompositeJoiner<
-        Virtual<SpecializedForAspect<SpecAspect1> >,
-        Virtual<SpecializedForAspect<OtherSpecAspects...> > >
+        Virtual<SpecializedForAspect<SpecAspect1>>,
+        Virtual<SpecializedForAspect<OtherSpecAspects...>>>
 {
 public:
   virtual ~SpecializedForAspect() = default;

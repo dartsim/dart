@@ -44,7 +44,7 @@ void CollisionGroup(py::module& m)
 {
   ::py::class_<
       dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::CollisionGroup> >(m, "CollisionGroup")
+      std::shared_ptr<dart::collision::CollisionGroup>>(m, "CollisionGroup")
       .def(
           "getCollisionDetector",
           +[](dart::collision::CollisionGroup* self)

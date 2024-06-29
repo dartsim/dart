@@ -99,7 +99,7 @@ public:
 
 private:
   common::ResourceRetrieverPtr mLocalRetriever;
-  std::unordered_map<std::string, std::vector<std::string> > mPackageMap;
+  std::unordered_map<std::string, std::vector<std::string>> mPackageMap;
 
   const std::vector<std::string>& getPackagePaths(
       const std::string& _packageName) const;

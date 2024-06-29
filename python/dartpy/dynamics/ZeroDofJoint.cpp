@@ -55,7 +55,7 @@ void ZeroDofJoint(py::module& m)
   ::py::class_<
       dart::dynamics::ZeroDofJoint,
       dart::dynamics::Joint,
-      std::shared_ptr<dart::dynamics::ZeroDofJoint> >(m, "ZeroDofJoint")
+      std::shared_ptr<dart::dynamics::ZeroDofJoint>>(m, "ZeroDofJoint")
       .def(
           "getZeroDofJointProperties",
           +[](const dart::dynamics::ZeroDofJoint* self)

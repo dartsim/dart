@@ -116,16 +116,16 @@ struct BodyNodeAspectProperties
 
 //==============================================================================
 using NodeTypeStateVector
-    = common::CloneableVector<std::unique_ptr<Node::State> >;
+    = common::CloneableVector<std::unique_ptr<Node::State>>;
 using NodeStateMap
-    = std::map<std::type_index, std::unique_ptr<NodeTypeStateVector> >;
+    = std::map<std::type_index, std::unique_ptr<NodeTypeStateVector>>;
 using AllNodeStates = common::CloneableMap<NodeStateMap>;
 
 //==============================================================================
 using NodeTypePropertiesVector
-    = common::CloneableVector<std::unique_ptr<Node::Properties> >;
+    = common::CloneableVector<std::unique_ptr<Node::Properties>>;
 using NodePropertiesMap
-    = std::map<std::type_index, std::unique_ptr<NodeTypePropertiesVector> >;
+    = std::map<std::type_index, std::unique_ptr<NodeTypePropertiesVector>>;
 using AllNodeProperties = common::CloneableMap<NodePropertiesMap>;
 
 //==============================================================================
@@ -168,7 +168,7 @@ using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
     BodyNode,
     BodyNodeState,
     BodyNodeAspectProperties,
-    common::RequiresAspect<NodeVectorProxyAspect> >;
+    common::RequiresAspect<NodeVectorProxyAspect>>;
 
 } // namespace detail
 } // namespace dynamics
