@@ -49,12 +49,20 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
 
 configure = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
 
-lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
+lint-cpp = { cmd = "cmake --build build --target format", depends_on = [
     "configure",
 ] }
-check-lint = { cmd = "cmake --build build --target check-format && black . --check && isort . --check", depends_on = [
+lint-py = { cmd = "black . --exclude '\\..*' && isort . --skip-glob '.*'", depends_on = [
     "configure",
 ] }
+lint = { depends_on = ["lint-cpp", "lint-py"] }
+check-lint-cpp = { cmd = "cmake --build build --target check-format", depends_on = [
+    "configure",
+] }
+check-lint-py = { cmd = "black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'", depends_on = [
+    "configure",
+] }
+check-lint = { depends_on = ["check-lint-cpp", "check-lint-py"] }
 
 build = { cmd = "cmake --build build -j --target all", depends_on = [
     "configure",
@@ -146,10 +154,14 @@ freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
 configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
-lint = { cmd = "black . && isort .", depends_on = ["configure"] }
-check-lint = { cmd = "black . --check && isort . --check", depends_on = [
+lint-py = { cmd = "black . --exclude '\\..*' && isort . --skip-glob '.*'", depends_on = [
     "configure",
 ] }
+lint = { depends_on = ["lint-py"] }
+check-lint-py = { cmd = "black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'", depends_on = [
+    "configure",
+] }
+check-lint = { depends_on = ["check-lint-py"] }
 build = { cmd = "cmake --build build --config Release -j", depends_on = [
     "configure",
 ] }
