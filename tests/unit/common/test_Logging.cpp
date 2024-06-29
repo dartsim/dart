@@ -33,6 +33,8 @@
 #include "TestHelpers.hpp"
 
 #include <dart/common/Logging.hpp>
+// For version macros
+#include <dart/config.hpp>
 
 #include <gtest/gtest.h>
 
@@ -54,4 +56,14 @@ TEST(LoggingTest, Arguments)
 {
   [[maybe_unused]] int val = 10;
   DART_INFO("Log with param '{}' and '{}'", 1, val);
+}
+
+//==============================================================================
+TEST(LoggingTest, VersionMacros)
+{
+  DART_INFO("DART_VERSION: {}", DART_VERSION);
+  DART_INFO("DART_DESCRIPTION: {}", DART_DESCRIPTION);
+  EXPECT_TRUE(DART_VERSION_AT_LEAST(5, 999, 999));
+  EXPECT_TRUE(DART_VERSION_AT_LEAST(6, 13, 999));
+  EXPECT_TRUE(DART_VERSION_AT_LEAST(6, 14, 1));
 }
