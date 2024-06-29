@@ -55,7 +55,7 @@ public:
   using State = detail::CompositeState;
   using Properties = detail::CompositeProperties;
 
-  using AspectMap = std::map<std::type_index, std::unique_ptr<Aspect> >;
+  using AspectMap = std::map<std::type_index, std::unique_ptr<Aspect>>;
   using RequiredAspectSet = std::unordered_set<std::type_index>;
 
   template <typename... Aspects>

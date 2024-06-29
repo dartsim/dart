@@ -76,7 +76,7 @@ struct RevoluteJointProperties : GenericJoint<math::R1Space>::Properties,
 using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
     RevoluteJoint,
     RevoluteJointUniqueProperties,
-    GenericJoint<math::R1Space> >;
+    GenericJoint<math::R1Space>>;
 
 } // namespace detail
 

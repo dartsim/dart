@@ -78,7 +78,7 @@ template <
     void (*setEmbeddedState)(DerivedT*, const StateT&)
     = &DefaultSetEmbeddedState<DerivedT, StateT>,
     const StateT& (*getEmbeddedState)(const DerivedT*)
-    = &DefaultGetEmbeddedState<DerivedT, StateT> >
+    = &DefaultGetEmbeddedState<DerivedT, StateT>>
 class EmbeddedStateAspect : public BaseT
 {
 public:
@@ -245,7 +245,7 @@ template <
     void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&)
     = &DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
     const PropertiesT& (*getEmbeddedProperties)(const DerivedT*)
-    = &DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
+    = &DefaultGetEmbeddedProperties<DerivedT, PropertiesT>>
 class EmbeddedPropertiesAspect : public BaseT
 {
 protected:

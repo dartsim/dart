@@ -101,7 +101,7 @@ template <class Base1, class Base2, class... OtherBases>
 class NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>
   : public NodeManagerJoinerForBodyNode<
         Base1,
-        NodeManagerJoinerForBodyNode<Base2, OtherBases...> >
+        NodeManagerJoinerForBodyNode<Base2, OtherBases...>>
 {
 public:
   NodeManagerJoinerForBodyNode() = default;
@@ -173,7 +173,7 @@ template <class Base1, class Base2, class... OtherBases>
 class NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>
   : public NodeManagerJoinerForSkeleton<
         Base1,
-        NodeManagerJoinerForSkeleton<Base2, OtherBases...> >
+        NodeManagerJoinerForSkeleton<Base2, OtherBases...>>
 {
 public:
   NodeManagerJoinerForSkeleton() = default;

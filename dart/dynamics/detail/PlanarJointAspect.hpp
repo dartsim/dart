@@ -127,7 +127,7 @@ struct PlanarJointProperties : GenericJoint<math::R3Space>::Properties,
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
     PlanarJoint,
     PlanarJointUniqueProperties,
-    GenericJoint<math::R3Space> >;
+    GenericJoint<math::R3Space>>;
 
 } // namespace detail
 } // namespace dynamics

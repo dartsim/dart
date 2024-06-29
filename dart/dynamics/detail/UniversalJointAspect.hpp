@@ -77,7 +77,7 @@ struct UniversalJointProperties : GenericJoint<math::R2Space>::Properties,
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
     UniversalJoint,
     UniversalJointUniqueProperties,
-    GenericJoint<math::R2Space> >;
+    GenericJoint<math::R2Space>>;
 
 } // namespace detail
 } // namespace dynamics

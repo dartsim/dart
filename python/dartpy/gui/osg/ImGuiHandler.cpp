@@ -48,7 +48,7 @@ void ImGuiHandler(py::module& m)
 {
   ::pybind11::class_<
       dart::gui::osg::ImGuiHandler,
-      osg::ref_ptr<dart::gui::osg::ImGuiHandler> >(m, "ImGuiHandler")
+      osg::ref_ptr<dart::gui::osg::ImGuiHandler>>(m, "ImGuiHandler")
       .def(::pybind11::init<>())
       .def(
           "newFrame",

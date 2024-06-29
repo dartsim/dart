@@ -193,7 +193,7 @@ TEST(NameManagement, Skeleton)
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager<std::shared_ptr<Entity> > test_mgr("test", "name");
+  dart::common::NameManager<std::shared_ptr<Entity>> test_mgr("test", "name");
 
   std::shared_ptr<Entity> entity0(new SimpleFrame(Frame::World(), "name"));
   std::shared_ptr<Entity> entity1(new SimpleFrame(Frame::World(), "name"));
@@ -228,7 +228,7 @@ TEST(NameManagement, SetPattern)
 //==============================================================================
 TEST(NameManagement, Regression554)
 {
-  dart::common::NameManager<std::shared_ptr<int> > test_mgr("test", "name");
+  dart::common::NameManager<std::shared_ptr<int>> test_mgr("test", "name");
 
   std::shared_ptr<int> int0(new int(0));
   std::shared_ptr<int> int1(new int(1));

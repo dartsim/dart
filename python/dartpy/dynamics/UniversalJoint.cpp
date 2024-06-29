@@ -77,8 +77,8 @@ void UniversalJoint(py::module& m)
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::UniversalJoint,
           dart::dynamics::detail::UniversalJointUniqueProperties,
-          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2> > >,
-      std::shared_ptr<dart::dynamics::UniversalJoint> >(m, "UniversalJoint")
+          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<2>>>,
+      std::shared_ptr<dart::dynamics::UniversalJoint>>(m, "UniversalJoint")
       .def(
           "hasUniversalJointAspect",
           +[](const dart::dynamics::UniversalJoint* self) -> bool {
@@ -91,7 +91,7 @@ void UniversalJoint(py::module& m)
                   dart::dynamics::UniversalJoint,
                   dart::dynamics::detail::UniversalJointUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::Aspect* aspect) {
+                      dart::math::RealVectorSpace<2>>>::Aspect* aspect) {
             self->setUniversalJointAspect(aspect);
           },
           ::py::arg("aspect"))
@@ -107,7 +107,7 @@ void UniversalJoint(py::module& m)
                   dart::dynamics::UniversalJoint,
                   dart::dynamics::detail::UniversalJointUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::Aspect> {
+                      dart::math::RealVectorSpace<2>>>::Aspect> {
             return self->releaseUniversalJointAspect();
           })
       .def(
@@ -130,7 +130,7 @@ void UniversalJoint(py::module& m)
                   dart::dynamics::UniversalJoint,
                   dart::dynamics::detail::UniversalJointUniqueProperties,
                   dart::dynamics::GenericJoint<
-                      dart::math::RealVectorSpace<2> > >::AspectProperties&
+                      dart::math::RealVectorSpace<2>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
           ::py::arg("properties"))
       .def(

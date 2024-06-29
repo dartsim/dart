@@ -54,8 +54,8 @@ namespace dynamics {
 template <
     class DataType,
     std::unique_ptr<DataType> (Node::*getData)() const,
-    typename VectorType = common::CloneableVector<std::unique_ptr<DataType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType> > >
+    typename VectorType = common::CloneableVector<std::unique_ptr<DataType>>,
+    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType>>>
 static void extractDataFromNodeTypeMap(
     DataMap& dataMap, const BodyNode::NodeMap& nodeMap)
 {
@@ -84,8 +84,8 @@ static void extractDataFromNodeTypeMap(
 template <
     class DataType,
     void (Node::*setData)(const DataType&),
-    typename VectorType = common::CloneableVector<std::unique_ptr<DataType> >,
-    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType> > >
+    typename VectorType = common::CloneableVector<std::unique_ptr<DataType>>,
+    typename DataMap = std::map<std::type_index, std::unique_ptr<VectorType>>>
 static void setNodesFromDataTypeMap(
     BodyNode::NodeMap& nodeMap, const DataMap& dataMap)
 {
@@ -95,7 +95,7 @@ static void setNodesFromDataTypeMap(
   while (nodeMap.end() != node_it && dataMap.end() != data_it) {
     if (node_it->first == data_it->first) {
       const std::vector<Node*>& node_vec = node_it->second;
-      const std::vector<std::unique_ptr<DataType> >& data_vec
+      const std::vector<std::unique_ptr<DataType>>& data_vec
           = data_it->second->getVector();
 
       // TODO(MXG): Should we report if the dimensions are mismatched?

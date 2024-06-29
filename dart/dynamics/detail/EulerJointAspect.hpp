@@ -84,7 +84,7 @@ struct EulerJointProperties : GenericJoint<math::R3Space>::Properties,
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
     EulerJoint,
     EulerJointUniqueProperties,
-    GenericJoint<math::R3Space> >;
+    GenericJoint<math::R3Space>>;
 
 } // namespace detail
 } // namespace dynamics

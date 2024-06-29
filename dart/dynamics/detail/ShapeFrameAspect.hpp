@@ -160,7 +160,7 @@ using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
     ShapeFrame,
     ShapeFrameProperties,
     common::
-        SpecializedForAspect<VisualAspect, CollisionAspect, DynamicsAspect> >;
+        SpecializedForAspect<VisualAspect, CollisionAspect, DynamicsAspect>>;
 
 } // namespace detail
 } // namespace dynamics
