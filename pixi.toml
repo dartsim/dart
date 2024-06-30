@@ -7,16 +7,16 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [build-dependencies]
-cmake = "3.22.*"
-ninja = ">=1.11.1,<1.12"
-pkg-config = ">=0.29.2,<0.30"
-pytest = ">=8.1.1,<8.2"
-doxygen = ">=1.10.0,<1.11"
-setuptools = ">=69.1.1,<69.2"
 black = ">=24.2.0,<24.3"
+cmake = "3.22.*"
+doxygen = ">=1.10.0,<1.11"
 isort = ">=5.13.2,<5.14"
+ninja = ">=1.11.1,<1.12"
 pip = ">=24.0,<25"
 pipx = ">=1.4.3,<1.5"
+pkg-config = ">=0.29.2,<0.30"
+pytest = ">=8.1.1,<8.2"
+setuptools = ">=69.1.1,<69.2"
 
 [dependencies]
 assimp = ">=5.3.1,<5.4"
@@ -105,6 +105,31 @@ bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics 
     "configure",
 ] }
 
+tu-biped = { cmd = "cmake --build build --target tutorial_biped --parallel && ./build/bin/tutorial_biped", depends_on = [
+    "configure",
+] }
+tu-biped-fi = { cmd = "cmake --build build --target tutorial_biped_finished --parallel && ./build/bin/tutorial_biped_finished", depends_on = [
+    "configure",
+] }
+tu-collisions = { cmd = "cmake --build build --target tutorial_collisions --parallel && ./build/bin/tutorial_collisions", depends_on = [
+    "configure",
+] }
+tu-collisions-fi = { cmd = "cmake --build build --target tutorial_collisions_finished --parallel && ./build/bin/tutorial_collisions_finished", depends_on = [
+    "configure",
+] }
+tu-dominoes = { cmd = "cmake --build build --target tutorial_dominoes --parallel && ./build/bin/tutorial_dominoes", depends_on = [
+    "configure",
+] }
+tu-dominoes-fi = { cmd = "cmake --build build --target tutorial_dominoes_finished --parallel && ./build/bin/tutorial_dominoes_finished", depends_on = [
+    "configure",
+] }
+tu-multi-pendulum = { cmd = "cmake --build build --target tutorial_multi_pendulum --parallel && ./build/bin/tutorial_multi_pendulum", depends_on = [
+    "configure",
+] }
+tu-multi-pendulum-fi = { cmd = "cmake --build build --target tutorial_multi_pendulum_finished --parallel && ./build/bin/tutorial_multi_pendulum_finished", depends_on = [
+    "configure",
+] }
+
 create-deps-dir = { cmd = "mkdir -p .deps" }
 remove-deps-dir = { cmd = "rm -rf .deps" }
 
@@ -160,6 +185,7 @@ check-lint-py = { cmd = "black . --check --exclude '\\..*' && isort . --check --
     "configure",
 ] }
 check-lint = { depends_on = ["check-lint-py"] }
+
 build = { cmd = "cmake --build build --config Release -j", depends_on = [
     "configure",
 ] }
@@ -169,6 +195,7 @@ build-tests = { cmd = "cmake --build build --config Release -j --target tests", 
 build-dartpy = { cmd = "cmake --build build -j --target dartpy", depends_on = [
     "configure",
 ] }
+
 test = { cmd = "ctest --test-dir build --build-config Release --output-on-failure", depends_on = [
     "build-tests",
 ] }
@@ -176,5 +203,30 @@ test-dartpy = { cmd = "cmake --build build --config Release -j --target pytest",
     "configure",
 ] }
 test-all = { cmd = "cmake --build build --config Release -j --target ALL", depends_on = [
+    "configure",
+] }
+
+tu-biped = { cmd = "cmake --build build --config Release --target tutorial_biped --parallel && build/Release/tutorial_biped.exe", depends_on = [
+    "configure",
+] }
+tu-biped-fi = { cmd = "cmake --build build --config Release --target tutorial_biped_finished --parallel && build/Release/tutorial_biped_finished.exe", depends_on = [
+    "configure",
+] }
+tu-collisions = { cmd = "cmake --build build --config Release --target tutorial_collisions --parallel && build/Release/tutorial_collisions.exe", depends_on = [
+    "configure",
+] }
+tu-collisions-fi = { cmd = "cmake --build build --config Release --target tutorial_collisions_finished --parallel && build/Release/tutorial_collisions_finished.exe", depends_on = [
+    "configure",
+] }
+tu-dominoes = { cmd = "cmake --build build --config Release --target tutorial_dominoes --parallel && build/Release/tutorial_dominoes.exe", depends_on = [
+    "configure",
+] }
+tu-dominoes-fi = { cmd = "cmake --build build --config Release --target tutorial_dominoes_finished --parallel && build/Release/tutorial_dominoes_finished.exe", depends_on = [
+    "configure",
+] }
+tu-multi-pendulum = { cmd = "cmake --build build --config Release --target tutorial_multi_pendulum --parallel && build/Release/tutorial_multi_pendulum.exe", depends_on = [
+    "configure",
+] }
+tu-multi-pendulum-fi = { cmd = "cmake --build build --config Release --target tutorial_multi_pendulum_finished --parallel && build/Release/tutorial_multi_pendulum_finished.exe", depends_on = [
     "configure",
 ] }
