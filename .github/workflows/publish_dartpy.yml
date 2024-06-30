@@ -127,9 +127,6 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
         uses: pypa/cibuildwheel@v2.19.1
         env:
-          # Common
-          DART_IN_CI: ON
-
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
 
@@ -140,9 +137,6 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
         uses: pypa/cibuildwheel@v2.19.1
         env:
-          # Common
-          DART_IN_CI: ON
-
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
 

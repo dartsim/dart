@@ -190,7 +190,6 @@ cmake .. \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_CODECOV=$CODECOV \
-  -DDART_IN_CI=$IN_CI \
   -DDART_ENABLE_SIMD=$ENABLE_SIMD \
   ${install_prefix_option} \
   ${cmake_args}

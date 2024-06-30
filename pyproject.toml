@@ -69,7 +69,6 @@ skip = [
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
-environment-pass = ["DART_IN_CI"]
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"] # TODO: Add universal2 and arm64
