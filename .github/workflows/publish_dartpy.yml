@@ -99,24 +99,23 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
         uses: johnwason/vcpkg-action@v6
         with:
+          # TODO: Add ode and coin-or-ipopt
           pkgs: >
             assimp
-            ccd
             eigen3
             fcl
             fmt
             spdlog
             bullet3
-            coin-or-ipopt
             freeglut
             glfw3
             imgui
             nlopt
-            ode
             opengl
             osg
             pagmo2
             tinyxml2
+            tracy
             urdfdom
           triplet: x64-windows
           revision: "2024.06.15"
