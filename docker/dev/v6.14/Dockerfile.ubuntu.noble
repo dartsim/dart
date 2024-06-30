@@ -22,6 +22,7 @@ RUN apt-get install -y --no-install-recommends \
     git \
     lcov \
     lsb-release \
+    ninja-build \
     pkg-config \
     software-properties-common \
     valgrind
