@@ -162,7 +162,10 @@ class CMakeBuild(build_ext):
                 # CMake 3.12+ only.
                 build_args += [f"-j{self.parallel}"]
 
-        cmake_args += ["-DDART_USE_SYSTEM_IMGUI=OFF"]
+        if sys.platform.startswith("msvc"):
+            cmake_args += ["-DDART_USE_SYSTEM_IMGUI=ON"]
+        else:
+            cmake_args += ["-DDART_USE_SYSTEM_IMGUI=OFF"]
 
         build_temp = Path(self.build_temp) / ext.name
         if not build_temp.exists():
