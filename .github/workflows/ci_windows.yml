@@ -47,7 +47,7 @@ jobs:
             bullet3
             freeglut
             glfw3
-            imgui
+            imgui[opengl2-binding]
             nlopt
             opengl
             osg
@@ -79,7 +79,7 @@ jobs:
             -DDART_MSVC_DEFAULT_OPTIONS=ON ^
             -DDART_VERBOSE=ON ^
             -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
-            -DDART_USE_SYSTEM_IMGUI=OFF ^
+            -DDART_USE_SYSTEM_IMGUI=ON ^
             || exit /b
           cmake ^
             --build build ^

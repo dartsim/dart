@@ -109,7 +109,7 @@ jobs:
             bullet3
             freeglut
             glfw3
-            imgui
+            imgui[opengl2-binding]
             nlopt
             opengl
             osg
