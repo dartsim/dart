@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 5 1 * *  # Runs at 05:00, on day 1 of the month
+    - cron: 0 5 * * SAT # Runs at 05:00, on every Staturday
 
 jobs:
   pixi-update:
