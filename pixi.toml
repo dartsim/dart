@@ -26,6 +26,7 @@ console_bridge = ">=1.0.2,<1.1"
 eigen = ">=3.4.0,<3.5"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=10.2.1,<10.3"
+imgui = ">=1.90.8,<1.91"
 ipopt = ">=3.14.14,<3.15"
 libode = ">=0.16.2,<0.17"
 nlopt = ">=2.7.1,<2.8"
@@ -116,7 +117,6 @@ clang-format-14 = ">=14.0.6,<14.1"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
-imgui = ">=1.90.4,<1.91"
 
 [target.linux-64.tasks]
 tracy = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --net=host tracy-profiler" }
@@ -129,7 +129,6 @@ tracy = { cmd = "docker run --rm -d -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.
 clang-format-14 = ">=14.0.6,<14.1"
 
 [target.osx-64.dependencies]
-imgui = ">=1.90.4,<1.91"
 
 [target.osx-64.tasks]
 
@@ -141,7 +140,6 @@ imgui = ">=1.90.4,<1.91"
 clang-format-14 = ">=14.0.6,<14.1"
 
 [target.osx-arm64.dependencies]
-imgui = ">=1.90.4,<1.91"
 
 [target.osx-arm64.tasks]
 
@@ -153,7 +151,7 @@ imgui = ">=1.90.4,<1.91"
 freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
-configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
+configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" }
 lint-py = { cmd = "black . --exclude '\\..*' && isort . --skip-glob '.*'", depends_on = [
     "configure",
 ] }
