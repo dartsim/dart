@@ -539,7 +539,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/fonts-conda-forge-1-0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/win-64/freeglut-3.2.2-he0c23c2_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/freetype-2.12.1-hdaf720e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/glfw-3.4-hcfcfb64_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/hdf5-1.14.3-nompi_h2b43c12_105.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/imgui-1.90.8-hecf2515_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.0.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/intel-openmp-2024.1.0-h57928b3_966.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ipopt-3.14.16-ha3daec3_4.conda
@@ -602,6 +604,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.1.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.12.4-h889d299_0_cpython.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python_abi-3.12-4_cp312.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/sdl2-2.30.2-h63175ca_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-69.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/spdlog-1.12.0-h64d2f7d_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/svt-av1-1.4.1-h63175ca_0.conda
@@ -2504,6 +2507,21 @@ packages:
 - kind: conda
   name: glfw
   version: '3.4'
+  build: hcfcfb64_0
+  subdir: win-64
+  url: https://conda.anaconda.org/conda-forge/win-64/glfw-3.4-hcfcfb64_0.conda
+  sha256: f7759a2d1e473d36b39a65096c1b0660fe3574b7aa8fa330ef13626926292d13
+  md5: 5d41478e933d70273686b267827d2ae6
+  depends:
+  - ucrt >=10.0.20348.0
+  - vc >=14.2,<15
+  - vc14_runtime >=14.29.30139
+  license: Zlib
+  size: 118348
+  timestamp: 1708789270458
+- kind: conda
+  name: glfw
+  version: '3.4'
   build: hd590300_0
   subdir: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/glfw-3.4-hd590300_0.conda
@@ -2801,6 +2819,24 @@ packages:
   license_family: MIT
   size: 626709
   timestamp: 1717724405363
+- kind: conda
+  name: imgui
+  version: 1.90.8
+  build: hecf2515_0
+  subdir: win-64
+  url: https://conda.anaconda.org/conda-forge/win-64/imgui-1.90.8-hecf2515_0.conda
+  sha256: b1f6b1886a966f02e456b14d949d118738509ba343c31a5f6d1f1addf963738b
+  md5: 3cfddbbb10ae792a183e73699b03cddc
+  depends:
+  - glfw >=3.4,<4.0a0
+  - sdl2 >=2.30.2,<3.0a0
+  - ucrt >=10.0.20348.0
+  - vc >=14.2,<15
+  - vc14_runtime >=14.29.30139
+  license: MIT
+  license_family: MIT
+  size: 657726
+  timestamp: 1717724662603
 - kind: conda
   name: iniconfig
   version: 2.0.0
@@ -8014,6 +8050,21 @@ packages:
   license_family: MIT
   size: 184509
   timestamp: 1693427593121
+- kind: conda
+  name: sdl2
+  version: 2.30.2
+  build: h63175ca_0
+  subdir: win-64
+  url: https://conda.anaconda.org/conda-forge/win-64/sdl2-2.30.2-h63175ca_0.conda
+  sha256: 2f8020bffb8fcaca01638c44fb845f223140baf04f8766ecca2eb8bc2f7443f0
+  md5: 18017f8551ce74d2281f5684f16eb71f
+  depends:
+  - ucrt >=10.0.20348.0
+  - vc >=14.2,<15
+  - vc14_runtime >=14.29.30139
+  license: Zlib
+  size: 2155390
+  timestamp: 1712091452523
 - kind: conda
   name: sdl2
   version: 2.30.2
