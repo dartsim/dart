@@ -85,13 +85,13 @@ test-all = { cmd = "cmake --build build -j --target ALL", depends_on = [
     "configure",
 ] }
 
-example-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
+ex-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
     "configure",
 ] }
-example-atlas-puppet = { cmd = "cmake --build build --target atlas_puppet --parallel && ./build/bin/atlas_puppet", depends_on = [
+ex-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = [
     "configure",
 ] }
-example-atlas-simbicon = { cmd = "cmake --build build --target atlas_simbicon --parallel && ./build/bin/atlas_simbicon", depends_on = [
+ex-hello-world = { cmd = "cmake --build build --target hello_world --parallel && ./build/bin/hello_world", depends_on = [
     "configure",
 ] }
 
