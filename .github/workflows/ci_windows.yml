@@ -47,6 +47,7 @@ jobs:
             bullet3
             freeglut
             glfw3
+            imgui
             nlopt
             opengl
             osg
