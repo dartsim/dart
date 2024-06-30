@@ -164,10 +164,6 @@ class CMakeBuild(build_ext):
 
         cmake_args += ["-DDART_USE_SYSTEM_IMGUI=OFF"]
 
-        cmake_args += [
-            f"-DDART_IN_CI={os.environ.get('DART_IN_CI', 'OFF')}",
-        ]
-
         build_temp = Path(self.build_temp) / ext.name
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
