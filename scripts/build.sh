@@ -183,9 +183,10 @@ if [ -n "$DART_USE_SYSTEM_IMGUI" ]; then
   cmake_args+=" -DDART_USE_SYSTEM_IMGUI=$DART_USE_SYSTEM_IMGUI"
 fi
 
-cmake .. \
+cmake \
   -S $source_dir \
   -B $build_dir \
+  -G Ninja \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DDART_VERBOSE=ON \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
