@@ -15,7 +15,7 @@ RUN yum install -y \
     python3-devel
 
 # fmt
-RUN git clone https://github.com/fmtlib/fmt.git -b 10.2.1 \
+RUN git clone https://github.com/fmtlib/fmt.git -b '11.0.0' \
     && mkdir -p fmt/build \
     && cmake fmt -B fmt/build \
     -DCMAKE_BUILD_TYPE=Release \
@@ -26,7 +26,7 @@ RUN git clone https://github.com/fmtlib/fmt.git -b 10.2.1 \
     && rm -rf fmt
 
 # assimp
-RUN git clone https://github.com/assimp/assimp.git -b 'v5.3.1' \
+RUN git clone https://github.com/assimp/assimp.git -b 'v5.4.1' \
     && mkdir -p assimp/build \
     && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_TESTS=OFF -DASSIMP_WARNINGS_AS_ERRORS=OFF \
     && cmake --build assimp/build --target install -j${NUM_CORES} \
@@ -68,28 +68,28 @@ RUN git clone https://github.com/leethomason/tinyxml2.git -b '10.0.0' \
     && rm -rf tinyxml2
 
 # console_bridge
-RUN git clone https://github.com/ros/console_bridge.git -b 1.0.2 \
+RUN git clone https://github.com/ros/console_bridge.git -b '1.0.2' \
     && mkdir -p console_bridge/build \
     && cmake console_bridge -B console_bridge/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     && cmake --build console_bridge/build --target install -j${NUM_CORES} \
     && rm -rf console_bridge
 
 # urdfdom_headers
-RUN git clone https://github.com/ros/urdfdom_headers.git -b 1.1.1\
+RUN git clone https://github.com/ros/urdfdom_headers.git -b '1.1.1' \
     && mkdir -p urdfdom_headers/build \
     && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     && cmake --build urdfdom_headers/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom_headers
 
 # urdfdom
-RUN git clone https://github.com/ros/urdfdom.git -b 4.0.0 \
+RUN git clone https://github.com/ros/urdfdom.git -b '4.0.0' \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom
 
 # Bullet
-RUN git clone https://github.com/bulletphysics/bullet3.git -b 3.25 \
+RUN git clone https://github.com/bulletphysics/bullet3.git -b '3.25' \
     && mkdir -p bullet3/build \
     && cmake bullet3 \
     -B bullet3/build \
