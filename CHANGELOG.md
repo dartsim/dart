@@ -2,6 +2,18 @@
 
 ## DART 6
 
+### [DART 6.14.3 (2024-07-05)](https://github.com/dartsim/dart/milestone/80?closed=1)
+
+* Tested Platforms
+
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
+* Changed the default CMake option to DART_ENABLE_SIMD=OFF: [#1825](https://github.com/dartsim/dart/pull/1825)
+
 ### [DART 6.14.2 (2024-06-28)](https://github.com/dartsim/dart/milestone/79?closed=1)
 
 * Tested Platforms
