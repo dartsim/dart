@@ -14,11 +14,6 @@ if(WIN32 AND NOT CYGWIN)
 else()
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
 endif()
-if(GLUT_FOUND)
-  set(HAVE_GLUT TRUE)
-else()
-  set(HAVE_GLUT FALSE)
-endif()
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
@@ -68,9 +63,7 @@ add_component_dependencies(
   external-lodepng
 )
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
-if(NOT WIN32 OR CYGWIN)
-  add_component_dependency_packages(${PROJECT_NAME} ${component_name} GLUT)
-endif()
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} GLUT)
 
 # Add subdirectories
 add_subdirectory(osg)
