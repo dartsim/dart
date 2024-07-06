@@ -33,10 +33,10 @@ testpaths = ["tests"]
 
 # https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
 [tool.cibuildwheel]
-manylinux-x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.14"
-manylinux-aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.14"
-manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.14"
-manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.14"
+manylinux-x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
+manylinux-aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
+manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
+manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
 test-requires = "pytest"
 test-command = "pytest {project}/python/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
