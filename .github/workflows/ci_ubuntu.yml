@@ -46,7 +46,7 @@ jobs:
     env:
       # Hosted on: https://hub.docker.com/repository/docker/jslee02/dart-dev
       DART_DEV_IMAGE: jslee02/dart-dev
-      DOCKER_TAG: ${{ matrix.os }}-v6.14
+      DOCKER_TAG: ${{ matrix.os }}-v6.15
       PLATFORM: linux/amd64
       COMPILER: gcc
       BUILD_TYPE: ${{ matrix.build_type }}

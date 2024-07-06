@@ -7,7 +7,7 @@ script_path="$(
 )"
 
 os=ubuntu-focal
-dart_version=v6.14
+dart_version=v6.15
 build_dir_prefix=.build/
 project_dir=/opt/dart/
 cleanup_command=""
@@ -34,7 +34,7 @@ help() {
 
   Options:
     -o <name>       OS version. Available <name>: {ubuntu-bionic, ubuntu-focal (default), ubuntu-impish}
-    -v <version>    DART version. Available <version>: {v6.14 (default)}
+    -v <version>    DART version. Available <version>: {v6.15 (default)}
     -c              Clean build. Empty the build directory before building.
     -j <num_cores>  Number of cores to use for build. Use -j 1 to disable parallel build. Single core will be used if this option is not specified.
     --dev           Use Docker image for development rather than release image.

@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: [jammy, noble, oracular]
-        dart_version: [v6.14]
+        dart_version: [v6.15]
         platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
         build_min: [OFF]
     env:
@@ -82,28 +82,28 @@ jobs:
         base_image: [quay.io/pypa/manylinux_2_28_x86_64]
         image: [manylinux_2_28_x86_64]
         platforms: ["linux/amd64"]
-        dart_version: [v6.14]
+        dart_version: [v6.15]
         experimental: [false]
         include:
           - dockerfile: Dockerfile.manylinux_2_28_aarch64-min
             base_image: quay.io/pypa/manylinux_2_28_aarch64
             image: manylinux_2_28_aarch64-min
             platforms: "linux/arm64"
-            dart_version: v6.14
+            dart_version: v6.15
             experimental: false
 
           - dockerfile: Dockerfile.manylinux_2_28_ppc64le-min
             base_image: quay.io/pypa/manylinux_2_28_ppc64le
             image: manylinux_2_28_ppc64le-min
             platforms: "linux/ppc64le"
-            dart_version: v6.14
+            dart_version: v6.15
             experimental: false
 
           - dockerfile: Dockerfile.manylinux_2_28_s390x-min
             base_image: quay.io/pypa/manylinux_2_28_s390x
             image: manylinux_2_28_s390x-min
             platforms: "linux/s390x"
-            dart_version: v6.14
+            dart_version: v6.15
             experimental: false
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
@@ -141,24 +141,24 @@ jobs:
       fail-fast: false
       matrix:
         dockerfile: [Dockerfile.manylinux_2_28_aarch64]
-        base_image: ["jslee02/dart-dev:manylinux_2_28_aarch64-min-v6.14"]
+        base_image: ["jslee02/dart-dev:manylinux_2_28_aarch64-min-v6.15"]
         image: [manylinux_2_28_aarch64]
         platforms: ["linux/arm64"]
-        dart_version: [v6.14]
+        dart_version: [v6.15]
         experimental: [false]
         include:
           - dockerfile: Dockerfile.manylinux_2_28_ppc64le
-            base_image: jslee02/dart-dev:manylinux_2_28_ppc64le-min-v6.14
+            base_image: jslee02/dart-dev:manylinux_2_28_ppc64le-min-v6.15
             image: manylinux_2_28_ppc64le
             platforms: "linux/ppc64le"
-            dart_version: v6.14
+            dart_version: v6.15
             experimental: false
 
           - dockerfile: Dockerfile.manylinux_2_28_s390x
-            base_image: jslee02/dart-dev:manylinux_2_28_s390x-min-v6.14
+            base_image: jslee02/dart-dev:manylinux_2_28_s390x-min-v6.15
             image: manylinux_2_28_s390x
             platforms: "linux/s390x"
-            dart_version: v6.14
+            dart_version: v6.15
             experimental: false
     steps:
       # https://github.com/marketplace/actions/docker-setup-qemu
@@ -193,7 +193,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dart_version: [v6.14]
+        dart_version: [v6.15]
         build_min: [ON]
     env:
       OS_VERSION: tracy
