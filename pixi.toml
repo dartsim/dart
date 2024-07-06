@@ -1,6 +1,6 @@
 [project]
 name = "DART"
-version = "6.14.3"
+version = "6.14.4"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
