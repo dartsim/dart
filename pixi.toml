@@ -96,6 +96,10 @@ bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics 
     "configure",
 ] }
 
+install = { cmd = "cmake --build build --target install --parallel", depends_on = [
+    "build",
+] }
+
 create-deps-dir = { cmd = "mkdir -p .deps" }
 remove-deps-dir = { cmd = "rm -rf .deps" }
 
@@ -167,4 +171,7 @@ test-dartpy = { cmd = "cmake --build build --config Release -j --target pytest",
 ] }
 test-all = { cmd = "cmake --build build --config Release -j --target ALL", depends_on = [
     "configure",
+] }
+install = { cmd = "cmake --build build --config Release -j --target install", depends_on = [
+    "build",
 ] }
