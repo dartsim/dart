@@ -12,6 +12,18 @@
   * macOS 14 / Clang 15 / arm64
   * Windows / MSVC 19.40 / x86_64
 
+### [DART 6.14.4 (TBD)](https://github.com/dartsim/dart/milestone/81?closed=1)
+
+* Tested Platforms
+
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
+* Fixed GLUT dependency handling on Windows: [#1827](https://github.com/dartsim/dart/pull/1827)
+
 ### [DART 6.14.3 (2024-07-05)](https://github.com/dartsim/dart/milestone/80?closed=1)
 
 * Tested Platforms
