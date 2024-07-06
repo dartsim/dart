@@ -47,7 +47,7 @@ install-local = { cmd = "cmake --install build --prefix $CONDA_PREFIX", depends_
     "build",
 ] }
 
-configure = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
+configure = { cmd = "cmake -G Ninja -S . -B build -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DDART_VERBOSE=ON -DDART_USE_SYSTEM_IMGUI=ON" }
 
 lint = { cmd = "cmake --build build --target format && black . && isort .", depends_on = [
     "configure",
@@ -94,6 +94,10 @@ bm-empty = { cmd = "cmake --build build --target BM_INTEGRATION_empty --parallel
 ] }
 bm-kinematics = { cmd = "cmake --build build --target BM_INTEGRATION_kinematics --parallel && ./build/bin/BM_INTEGRATION_kinematics", depends_on = [
     "configure",
+] }
+
+install = { cmd = "cmake --build build --target install --parallel", depends_on = [
+    "build",
 ] }
 
 create-deps-dir = { cmd = "mkdir -p .deps" }
@@ -145,7 +149,7 @@ imgui = ">=1.90.4,<1.91"
 freeglut = ">=3.2.2,<3.3"
 
 [target.win-64.tasks]
-configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
+configure = { cmd = "cmake -S . -B build -G 'Visual Studio 17 2022' -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DDART_VERBOSE=ON -DDART_MSVC_DEFAULT_OPTIONS=ON -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" }
 lint = { cmd = "black . && isort .", depends_on = ["configure"] }
 check-lint = { cmd = "black . --check && isort . --check", depends_on = [
     "configure",
@@ -167,4 +171,7 @@ test-dartpy = { cmd = "cmake --build build --config Release -j --target pytest",
 ] }
 test-all = { cmd = "cmake --build build --config Release -j --target ALL", depends_on = [
     "configure",
+] }
+install = { cmd = "cmake --build build --config Release -j --target install", depends_on = [
+    "build",
 ] }

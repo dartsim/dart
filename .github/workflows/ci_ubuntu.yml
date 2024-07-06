@@ -102,3 +102,7 @@ jobs:
       - name: Test DART and dartpy
         run: |
           pixi run test-all
+  
+      - name: Install
+        run: |
+          pixi run install
