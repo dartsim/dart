@@ -48,6 +48,14 @@ if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
     dart-utils)
 endif()
 
+
+  dart_add_test("regression" test_Issue1654)
+  target_link_libraries(test_Issue1654
+    dart-collision-bullet
+    dart-collision-ode
+    dart-gui-osg
+    dart-utils)
+
 if(TARGET dart-utils)
   dart_add_test("regression" test_Issue1193)
   target_link_libraries(test_Issue1193 dart-utils)
