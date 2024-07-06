@@ -85,7 +85,7 @@ endif()
 # compile options, which may cause runtime errors especially memory alignment
 # errors.
 dart_option(DART_ENABLE_SIMD
-  "Build DART with all SIMD instructions on the current local machine" ON)
+  "Build DART with all SIMD instructions on the current local machine" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_BUILD_DARTPY "Build dartpy" ON)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
