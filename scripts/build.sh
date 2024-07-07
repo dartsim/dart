@@ -192,6 +192,7 @@ cmake \
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON \
   -DDART_CODECOV=$CODECOV \
   -DDART_ENABLE_SIMD=$ENABLE_SIMD \
+  -DDART_BUILD_DARTPY=$BUILD_DARTPY \
   ${install_prefix_option} \
   ${cmake_args}
 

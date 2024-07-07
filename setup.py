@@ -71,6 +71,7 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             f"-DBUILD_SHARED_LIBS=OFF",
+            f"-DDART_BUILD_DARTPY=ON",
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
