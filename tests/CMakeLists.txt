@@ -31,17 +31,21 @@
 #
 
 # Set up GoogleTest
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest
-  GIT_TAG v1.14.0
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
-set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
-set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+if(DART_USE_SYSTEM_GOOGLETEST)
+  find_package(GTest MODULE REQUIRED)
+else()
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG v1.14.0
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+  set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 #===============================================================================
 # This function uses following global properties:
@@ -65,7 +69,7 @@ function(dart_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
-  target_link_libraries(${target_name} dart gtest gtest_main)
+  target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
   dart_format_add(${sources})
 

@@ -14,6 +14,7 @@
 
 * Build
   * Enabled building dartpy with multi-core support in setup.py
+  * Added DART_USE_SYSTEM_GOOGLETEST option
 
 ### [DART 6.14.4 (2024-07-06)](https://github.com/dartsim/dart/milestone/81?closed=1)
 
