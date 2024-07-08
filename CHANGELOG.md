@@ -13,6 +13,7 @@
   * Windows / MSVC 19.40 / x86_64
 
 * Build
+  * Set DART_BUILD_DARTPY=OFF by default
   * Enabled building dartpy with multi-core support in setup.py
   * Added DART_USE_SYSTEM_GOOGLETEST option
 
