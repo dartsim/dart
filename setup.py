@@ -136,22 +136,6 @@ class CMakeBuild(build_ext):
                     "-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))
                 )
 
-            # Get the location of Homebrew prefix and specify the location of OpenCL headers for macOS
-            homebrew_prefix = (
-                subprocess.check_output(["brew", "--prefix"]).decode().strip()
-            )
-            opencl_headers_dir = (
-                f"{homebrew_prefix}/opt/opencl-headers/share/cmake/OpenCLHeaders"
-            )
-            opencl_headerscpp_dir = f"{homebrew_prefix}/opt/opencl-clhpp-headers/share/cmake/OpenCLHeadersCpp"
-            cmake_args.extend(
-                [
-                    f"-DOpenCLHeaders_DIR={opencl_headers_dir}",
-                    f"-DOpenCLHeadersCpp_DIR={opencl_headerscpp_dir}",
-                    f"-DCMAKE_PREFIX_PATH={homebrew_prefix}",
-                ]
-            )
-
             print(f"[DEBUG] cmake_args: {cmake_args}")
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
