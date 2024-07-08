@@ -12,6 +12,9 @@
   * macOS 14 / Clang 15 / arm64
   * Windows / MSVC 19.40 / x86_64
 
+* Build
+  * Enabled building dartpy with multi-core support in setup.py
+
 ### [DART 6.14.4 (2024-07-06)](https://github.com/dartsim/dart/milestone/81?closed=1)
 
 * Tested Platforms

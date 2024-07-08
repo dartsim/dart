@@ -156,12 +156,17 @@ class CMakeBuild(build_ext):
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
-        elif "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
+        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
             # self.parallel is a Python 3 only way to set parallel jobs by hand
             # using -j in the build_ext call, not supported by pip or PyPA-build.
             if hasattr(self, "parallel") and self.parallel:
                 # CMake 3.12+ only.
                 build_args += [f"-j{self.parallel}"]
+            else:
+                # Default to -j2 if self.parallel is not set or not available
+                build_args += ["-j2"]
+        else:
+            build_args += [f"-j{os.environ['CMAKE_BUILD_PARALLEL_LEVEL']}"]
 
         if sys.platform.startswith("msvc"):
             cmake_args += ["-DDART_USE_SYSTEM_IMGUI=ON"]
