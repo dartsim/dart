@@ -124,7 +124,7 @@ jobs:
 
       - name: Build wheels
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.1
+        uses: pypa/cibuildwheel@v2.19.2
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -134,7 +134,7 @@ jobs:
 
       - name: Build wheels (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.1
+        uses: pypa/cibuildwheel@v2.19.2
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
