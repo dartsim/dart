@@ -551,8 +551,9 @@ void testSphereSphere(
     EXPECT_TRUE(group->collide(option, &result));
     // TODO(JS): BulletCollisionDetector includes a bug related to this.
     // (see #876)
-#if HAVE_BULLET
-    if (cd->getType() != BulletCollisionDetector::getStaticType())
+#if HAVE_BULLET || HAVE_ODE
+    if (cd->getType() != BulletCollisionDetector::getStaticType() &&
+            cd->getType() != OdeCollisionDetector::getStaticType())
 #endif
     {
       EXPECT_EQ(result.getNumContacts(), 1u);
