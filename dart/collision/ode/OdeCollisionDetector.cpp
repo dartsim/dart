@@ -340,7 +340,7 @@ void reportContacts(
     result.addContact(convertContact(contactGeoms[0], b1, b2, option));
     return;
   }
-  std::cout << "numContacts: " << numContacts << "\n";
+
   for (auto i = 0; i < numContacts; ++i) {
       result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
@@ -376,9 +376,7 @@ void reportContacts(
 
   const auto size = pastContacsVec.size();
   if(size > 5) {
-    // std::cout << "srhinking from size: " << size << "\n";
     pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
-    // std::cout << "New size: " << pastContacsVec.size() << "\n";
   }
 }
 
