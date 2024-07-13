@@ -49,7 +49,7 @@
 
 #include <ode/ode.h>
 #include <unordered_map>
-#include <unordered_set>
+#include <deque>
 
 namespace dart {
 namespace collision {
@@ -82,7 +82,7 @@ struct obj_pair_hash {
     }
 };
 
-using ContactManifold = std::unordered_map<CollObjPair, std::vector<Contact>,obj_pair_hash>;
+using ContactManifold = std::unordered_map<CollObjPair, std::deque<Contact>,obj_pair_hash>;
 ContactManifold pastContacts;
 
 struct OdeCollisionCallbackData
@@ -103,11 +103,9 @@ struct OdeCollisionCallbackData
   /// result.
   std::size_t numContacts;
 
-  std::unordered_set<CollObjPair, obj_pair_hash> hits;
-
   OdeCollisionCallbackData(
       const CollisionOption& option, CollisionResult* result)
-    : option(option), result(result), done(false), numContacts(0u), hits{{}}
+    : option(option), result(result), done(false), numContacts(0u)
   {
     // Do nothing
   }
@@ -179,9 +177,19 @@ bool OdeCollisionDetector::collide(
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
   for (auto& pair : pastContacts) {
-    if (data.hits.find(pair.first) == data.hits.end()) {
+      auto obj1 = pair.first.first;
+      auto obj2 = pair.first.second;
+      bool clear = true;
+      for (const auto& cont : result->getContacts()) {
+        if ((obj1 == cont.collisionObject1 && obj2 == cont.collisionObject2) ||
+(obj1 == cont.collisionObject1 && obj2 == cont.collisionObject2) ) {
+          clear = false;
+          break;
+        }
+      }
+      if (clear) {
         pair.second.clear();
-    }
+      }
   }
 
   return data.numContacts > 0;
@@ -310,7 +318,6 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   if (result) {
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
-    cdData->hits.insert(std::make_pair(collObj1, collObj2));
   }
 
 }
@@ -333,25 +340,21 @@ void reportContacts(
     result.addContact(convertContact(contactGeoms[0], b1, b2, option));
     return;
   }
-  
+  std::cout << "numContacts: " << numContacts << "\n";
   for (auto i = 0; i < numContacts; ++i) {
       result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
 
-  const auto pair = std::make_pair(std::move(b1), std::move(b2));
-  auto it = pastContacts.find(pair);
-  if(it == pastContacts.end()) {
-      pastContacts[pair] = std::vector<Contact>{};
-      it = pastContacts.find(pair);
-  }
-
+  const auto pair = std::make_pair(b1, b2);
 
   auto& pastContacsVec = pastContacts[pair];
   auto missing = 3 - numContacts;
   auto results_vec_copy = result.getContacts();
 
-  for (const auto& past_cont : pastContacsVec) {
+  // for (const auto& past_cont : pastContacsVec) {
+  for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
       if (missing <= 0) break;
+      auto past_cont = *it;
       for (const auto& curr_cont : results_vec_copy) {
           auto dist_v = past_cont.point - curr_cont.point;
           const auto dist_m = (dist_v.transpose() * dist_v).coeff(0,0);
@@ -365,11 +368,17 @@ void reportContacts(
       }
   }
   for(const auto& item : results_vec_copy) {
-      pastContacsVec.push_back(item);
+      if ((pair.first == item.collisionObject1 && pair.second == item.collisionObject2) ||
+              (pair.first == item.collisionObject2 && pair.second == item.collisionObject1)) {
+          pastContacsVec.push_back(item);
+      }
   }
 
-  if(pastContacsVec.size() > 10) {
-    pastContacsVec = std::vector<Contact>(pastContacsVec.begin() + pastContacsVec.size() - 10, pastContacsVec.end());
+  const auto size = pastContacsVec.size();
+  if(size > 5) {
+    // std::cout << "srhinking from size: " << size << "\n";
+    pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
+    // std::cout << "New size: " << pastContacsVec.size() << "\n";
   }
 }
 
