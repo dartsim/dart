@@ -12,7 +12,12 @@
   * macOS 14 / Clang 15 / arm64
   * Windows / MSVC 19.40 / x86_64
 
-### [DART 6.14.4 (TBD)](https://github.com/dartsim/dart/milestone/81?closed=1)
+* Build
+  * Set DART_BUILD_DARTPY=OFF by default
+  * Enabled building dartpy with multi-core support in setup.py
+  * Added DART_USE_SYSTEM_GOOGLETEST option
+
+### [DART 6.14.4 (2024-07-06)](https://github.com/dartsim/dart/milestone/81?closed=1)
 
 * Tested Platforms
 
