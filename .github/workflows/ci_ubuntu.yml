@@ -37,7 +37,7 @@ jobs:
         enable_simd: [ON]
         include:
           # For code coverage report to Codecov
-          - os: ubuntu-jammy
+          - os: ubuntu-noble
             build_type: Debug
             codecov: ON
             check_format: ON
@@ -102,3 +102,7 @@ jobs:
       - name: Test DART and dartpy
         run: |
           pixi run test-all
+  
+      - name: Install
+        run: |
+          pixi run install
