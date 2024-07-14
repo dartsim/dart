@@ -194,19 +194,21 @@ bool OdeCollisionDetector::collide(
     
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
-  for (auto& pair : pastContacts) {
-      auto obj1 = pair.pair.first;
-      auto obj2 = pair.pair.second;
+  for (auto& past_contact : pastContacts) {
       bool clear = true;
-      for (const auto& cont : result->getContacts()) {
-        if ((obj1 == cont.collisionObject1 && obj2 == cont.collisionObject2) ||
-(obj1 == cont.collisionObject1 && obj2 == cont.collisionObject2) ) {
-          clear = false;
-          break;
-        }
+      for (const auto& curr_result : result->getContacts()) {
+          auto current_pair = MakeNewPair(curr_result.collisionObject1, curr_result.collisionObject2);
+          if (past_contact.pair == current_pair) {
+            clear = false;
+            break;
+          }
       }
       if (clear) {
-        pair.history.clear();
+          // std::cout << "Cleaning history of pair " 
+          //     << past_contact.pair.first
+          //     << past_contact.pair.second
+          //     << "\n";
+          past_contact.history.clear();
       }
   }
 
@@ -363,13 +365,19 @@ void reportContacts(
       result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
 
-  const auto pair = MakeNewPair(b1, b2);
-
-  auto& pastContacsVec = FindPairInHist(pair);
   auto missing = 3 - numContacts;
+  if (missing <= 0) {
+      // std::cout << "----------------------------------------\n";
+      return;
+  }
+
+  const auto pair = MakeNewPair(b1, b2);
+  auto& pastContacsVec = FindPairInHist(pair);
   auto results_vec_copy = result.getContacts();
 
-  // for (const auto& past_cont : pastContacsVec) {
+  // std::cout << "Num contacts found for" 
+  //     "(" << pair.first << "," << pair.second << ") : " << numContacts << "\n";
+  // std::cout << "History size: " << pastContacsVec.size() << "\n";
   for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
       if (missing <= 0) break;
       auto past_cont = *it;
@@ -380,7 +388,7 @@ void reportContacts(
           }
           auto dist_v = past_cont.point - curr_cont.point;
           const auto dist_m = (dist_v.transpose() * dist_v).coeff(0,0);
-          if (dist_m < 0.001) {
+          if (dist_m < 0.01) {
               continue;
           }
           else {
@@ -393,13 +401,16 @@ void reportContacts(
       const auto res_pair = MakeNewPair(item.collisionObject1, item.collisionObject2);
       if (res_pair == pair) {
           pastContacsVec.push_back(item);
+          // std::cout << "Adding New pair to history - now of size: " << 
+          //     FindPairInHist(res_pair).size() << "\n";
       }
   }
 
   const auto size = pastContacsVec.size();
-  if(size > 5) {
-    pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
+  if(size > 11) {
+      pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
   }
+  // std::cout << "----------------------------------------\n";
 }
 
 
