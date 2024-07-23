@@ -30,28 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstring>
-#include <TestHelpers.hpp>
+#include <dart/gui/osg/osg.hpp>
+
+#include <dart/utils/DartResourceRetriever.hpp>
+
+#include <dart/simulation/World.hpp>
+
+#include <dart/constraint/ConstraintSolver.hpp>
+
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
-#include <dart/constraint/ConstraintSolver.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-#include <dart/simulation/World.hpp>
-#include <dart/utils/DartResourceRetriever.hpp>
 
+#include <TestHelpers.hpp>
 #include <gtest/gtest.h>
 
-#include <dart/gui/osg/osg.hpp>
+#include <cstring>
 
 using namespace dart;
 
-class CapsuleTest: public testing::Test,
-                            public testing::WithParamInterface<const char*>
+class CapsuleTest : public testing::Test,
+                    public testing::WithParamInterface<const char*>
 {
 };
 TEST_P(CapsuleTest, CapsuleCollision)
@@ -61,17 +66,13 @@ TEST_P(CapsuleTest, CapsuleCollision)
 
   auto world = dart::simulation::World::create();
 
-  if (strcmp(GetParam(), "bullet") == 0)
-  {
+  if (strcmp(GetParam(), "bullet") == 0) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::BulletCollisionDetector::create());
-  }
-  else if (strcmp(GetParam(), "ode") == 0)
-  {
+  } else if (strcmp(GetParam(), "ode") == 0) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::OdeCollisionDetector::create());
-  }
-  else {
+  } else {
     ASSERT_TRUE(false);
   }
 
@@ -79,7 +80,7 @@ TEST_P(CapsuleTest, CapsuleCollision)
   ground->setMobile(false);
   world->addSkeleton(ground);
 
-    ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node
+  ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node
       = new gui::osg::RealTimeWorldNode(world);
 
   auto skeleton = dart::dynamics::Skeleton::create("test");
@@ -103,22 +104,18 @@ TEST_P(CapsuleTest, CapsuleCollision)
   inertia.setMass(1.0);
   inertia.setMoment(capsuleNode->getShape()->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
-  // std::cout << "Inertia: " << bn->getBodyNodeProperties().mInertia.getMoment()
+  // std::cout << "Inertia: " <<
+  // bn->getBodyNodeProperties().mInertia.getMoment()
   //           << std::endl;
 
   world->addSkeleton(skeleton);
   const double tolerance = 0.05;
-  for (int i = 1; i < 50000; ++i)
-  {
+  for (int i = 1; i < 50000; ++i) {
     world->step();
     auto capsulePos = bn->getWorldTransform().translation();
-    // std::cout << i << ": " << capsulePos.transpose() << std::endl;
     ASSERT_GT(capsulePos.z(), capsuleRadius - tolerance);
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
-    CollisionEngine,
-    CapsuleTest,
-    testing::Values("ode"));
-    // testing::Values("bullet", "ode"));
+INSTANTIATE_TEST_CASE_P(CollisionEngine, CapsuleTest, testing::Values("ode"));
+// testing::Values("bullet", "ode"));

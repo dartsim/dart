@@ -49,8 +49,9 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <ode/ode.h>
-#include <unordered_map>
+
 #include <deque>
+#include <unordered_map>
 #include <utility>
 
 namespace dart {
@@ -74,33 +75,35 @@ Contact convertContact(
     OdeCollisionObject* b2,
     const CollisionOption& option);
 
-using CollObjPair = std::pair<CollisionObject*,CollisionObject*>;
+using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
 
-struct ContactHistoryItem {
-    CollObjPair pair;
-    std::deque<Contact> history;
-    ContactHistoryItem() = delete;
+struct ContactHistoryItem
+{
+  CollObjPair pair;
+  std::deque<Contact> history;
+  ContactHistoryItem() = delete;
 };
 
-// using ContactManifold = std::unordered_map<CollObjPair, std::deque<Contact>,obj_pair_hash>;
+// using ContactManifold = std::unordered_map<CollObjPair,
+// std::deque<Contact>,obj_pair_hash>;
 std::vector<ContactHistoryItem> pastContacts;
 
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
 {
-    return std::make_pair(std::min(o1,o2),  std::max(o1, o2));
+  return std::make_pair(std::min(o1, o2), std::max(o1, o2));
 }
 
-std::deque<Contact>& FindPairInHist(const CollObjPair& pair) 
+std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
 {
-    for(auto& item : pastContacts) {
-      if(pair.first == item.pair.first && pair.second == item.pair.second) {
-        return item.history;
-      }
+  for (auto& item : pastContacts) {
+    if (pair.first == item.pair.first && pair.second == item.pair.second) {
+      return item.history;
     }
-    auto newItem = ContactHistoryItem{pair, std::deque<Contact>()};
-    pastContacts.push_back(newItem);
+  }
+  auto newItem = ContactHistoryItem{pair, std::deque<Contact>()};
+  pastContacts.push_back(newItem);
 
-    return pastContacts.back().history;
+  return pastContacts.back().history;
 }
 
 struct OdeCollisionCallbackData
@@ -191,25 +194,22 @@ bool OdeCollisionDetector::collide(
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
-    
+
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
   for (auto& past_contact : pastContacts) {
-      bool clear = true;
-      for (const auto& curr_result : result->getContacts()) {
-          auto current_pair = MakeNewPair(curr_result.collisionObject1, curr_result.collisionObject2);
-          if (past_contact.pair == current_pair) {
-            clear = false;
-            break;
-          }
+    bool clear = true;
+    for (const auto& curr_result : result->getContacts()) {
+      auto current_pair = MakeNewPair(
+          curr_result.collisionObject1, curr_result.collisionObject2);
+      if (past_contact.pair == current_pair) {
+        clear = false;
+        break;
       }
-      if (clear) {
-          // std::cout << "Cleaning history of pair " 
-          //     << past_contact.pair.first
-          //     << past_contact.pair.second
-          //     << "\n";
-          past_contact.history.clear();
-      }
+    }
+    if (clear) {
+      past_contact.history.clear();
+    }
   }
 
   return data.numContacts > 0;
@@ -339,7 +339,6 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   if (result) {
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
   }
-
 }
 
 //==============================================================================
@@ -353,7 +352,7 @@ void reportContacts(
 {
   if (0u == numContacts)
     return;
-  
+
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts) {
@@ -362,57 +361,51 @@ void reportContacts(
   }
 
   for (auto i = 0; i < numContacts; ++i) {
-      result.addContact(convertContact(contactGeoms[i], b1, b2, option));
+    result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
 
   auto missing = 3 - numContacts;
   if (missing <= 0) {
-      // std::cout << "----------------------------------------\n";
-      return;
+    return;
   }
 
   const auto pair = MakeNewPair(b1, b2);
   auto& pastContacsVec = FindPairInHist(pair);
   auto results_vec_copy = result.getContacts();
 
-  // std::cout << "Num contacts found for" 
-  //     "(" << pair.first << "," << pair.second << ") : " << numContacts << "\n";
-  // std::cout << "History size: " << pastContacsVec.size() << "\n";
   for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
-      if (missing <= 0) break;
-      auto past_cont = *it;
-      for (const auto& curr_cont : results_vec_copy) {
-          const auto res_pair = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-          if(res_pair != pair) {
-            continue;
-          }
-          auto dist_v = past_cont.point - curr_cont.point;
-          const auto dist_m = (dist_v.transpose() * dist_v).coeff(0,0);
-          if (dist_m < 0.01) {
-              continue;
-          }
-          else {
-              --missing;
-              result.addContact(past_cont);
-          }
+    if (missing <= 0)
+      break;
+    auto past_cont = *it;
+    for (const auto& curr_cont : results_vec_copy) {
+      const auto res_pair
+          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
+      if (res_pair != pair) {
+        continue;
       }
+      auto dist_v = past_cont.point - curr_cont.point;
+      const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
+      if (dist_m < 0.01) {
+        continue;
+      } else {
+        --missing;
+        result.addContact(past_cont);
+      }
+    }
   }
-  for(const auto& item : results_vec_copy) {
-      const auto res_pair = MakeNewPair(item.collisionObject1, item.collisionObject2);
-      if (res_pair == pair) {
-          pastContacsVec.push_back(item);
-          // std::cout << "Adding New pair to history - now of size: " << 
-          //     FindPairInHist(res_pair).size() << "\n";
-      }
+  for (const auto& item : results_vec_copy) {
+    const auto res_pair
+        = MakeNewPair(item.collisionObject1, item.collisionObject2);
+    if (res_pair == pair) {
+      pastContacsVec.push_back(item);
+    }
   }
 
   const auto size = pastContacsVec.size();
-  if(size > 11) {
-      pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
+  if (size > 11) {
+    pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
   }
-  // std::cout << "----------------------------------------\n";
 }
-
 
 //==============================================================================
 Contact convertContact(
