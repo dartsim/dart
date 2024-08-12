@@ -65,6 +65,8 @@ MimicMotorConstraint::MimicMotorConstraint(
   assert(mimicJoint);
   assert(mBodyNode);
   assert(joint->getNumDofs() == mimicJoint->getNumDofs());
+  // verify that joint and mimicJoint are in the same skeleton
+  // throw an exception if not?
 
   mLifeTime[0] = 0;
   mLifeTime[1] = 0;
@@ -134,10 +136,12 @@ void MimicMotorConstraint::update()
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double qError = mMimicJoint->getPosition(i) * mMultiplier + mOffset
                     - mJoint->getPosition(i);
+    // Jacobian: [mMultiplier, -1] * [mMimicJoint->vel, mJoint->vel]^T
     double desiredVelocity = math::clip(
         qError / timeStep,
         mJoint->getVelocityLowerLimit(i),
         mJoint->getVelocityUpperLimit(i));
+    // clamp to mMimicJoint velocity limits as well?
 
     mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
@@ -146,6 +150,7 @@ void MimicMotorConstraint::update()
       // Note that we are computing impulse not force
       mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
       mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+      // should these be super high to model gear coupling?
 
       if (mActive[i])
       {
@@ -211,6 +216,8 @@ void MimicMotorConstraint::applyUnitImpulse(std::size_t index)
     {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
+      mMimicJoint->setConstraintImpulse(i, -1.0 / mMultiplier);
+      // which body node should we update?
       skeleton->updateBiasImpulse(mBodyNode);
       skeleton->updateVelocityChange();
       mJoint->setConstraintImpulse(i, 0.0);
@@ -235,7 +242,8 @@ void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
       continue;
 
     if (mJoint->getSkeleton()->isImpulseApplied())
-      delVel[localIndex] = mJoint->getVelocityChange(i);
+      delVel[localIndex] = mJoint->getVelocityChange(i)
+        - mMimicJoint->getVelocityChange(i) * mMultiplier;
     else
       delVel[localIndex] = 0.0;
 
@@ -277,6 +285,8 @@ void MimicMotorConstraint::applyImpulse(double* lambda)
 
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
+    mMimicJoint->setConstraintImpulse(
+        i, mMimicJoint->getConstraintImpulse(i) - mMultiplier * lambda[localIndex]);
     // TODO(JS): consider to add Joint::addConstraintImpulse()
 
     mOldX[i] = lambda[localIndex];
@@ -289,6 +299,7 @@ void MimicMotorConstraint::applyImpulse(double* lambda)
 dynamics::SkeletonPtr MimicMotorConstraint::getRootSkeleton() const
 {
   return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
+  // can we apply impulses across skeletons? I don't think so
 }
 
 //==============================================================================
