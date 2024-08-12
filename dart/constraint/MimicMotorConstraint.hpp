@@ -51,7 +51,7 @@ public:
   /// Constructor
   explicit MimicMotorConstraint(
       dynamics::Joint* joint,
-      const dynamics::Joint* mimicJoint,
+      dynamics::Joint* mimicJoint,
       double multiplier = 1.0,
       double offset = 0.0);
 
@@ -118,7 +118,7 @@ private:
   dynamics::Joint* mJoint;
 
   ///
-  const dynamics::Joint* mMimicJoint;
+  dynamics::Joint* mMimicJoint;
 
   ///
   double mMultiplier, mOffset;

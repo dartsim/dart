@@ -426,7 +426,7 @@ bool DartLoader::addMimicJointsRecursive(
     const std::string& mimicJointName = jt->mimic->joint_name;
 
     dynamics::Joint* joint = _skel->getJoint(jointName);
-    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
+    dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
 
     if (!joint)
     {

@@ -521,7 +521,7 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
     Joint* joint = skelClone->getJoint(i);
     if (joint->getActuatorType() == Joint::MIMIC)
     {
-      const Joint* mimicJoint
+      Joint* mimicJoint
           = skelClone->getJoint(joint->getMimicJoint()->getName());
       if (mimicJoint)
       {

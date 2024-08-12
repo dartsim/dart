@@ -64,7 +64,7 @@ JointProperties::JointProperties(
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
     ActuatorType _actuatorType,
-    const Joint* _mimicJoint,
+    Joint* _mimicJoint,
     double _mimicMultiplier,
     double _mimicOffset)
   : mName(_name),
@@ -206,7 +206,7 @@ Joint::ActuatorType Joint::getActuatorType() const
 
 //==============================================================================
 void Joint::setMimicJoint(
-    const Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
+    Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
 {
   mAspectProperties.mMimicJoint = _mimicJoint;
   mAspectProperties.mMimicMultiplier = _mimicMultiplier;
@@ -214,7 +214,7 @@ void Joint::setMimicJoint(
 }
 
 //==============================================================================
-const Joint* Joint::getMimicJoint() const
+Joint* Joint::getMimicJoint() const
 {
   return mAspectProperties.mMimicJoint;
 }

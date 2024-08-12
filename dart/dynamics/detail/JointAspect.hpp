@@ -128,7 +128,7 @@ struct JointProperties
   ActuatorType mActuatorType;
 
   /// Mimic joint
-  const Joint* mMimicJoint;
+  Joint* mMimicJoint;
 
   /// Mimic joint properties
   double mMimicMultiplier, mMimicOffset;
@@ -142,7 +142,7 @@ struct JointProperties
       = Eigen::Isometry3d::Identity(),
       bool _isPositionLimitEnforced = false,
       ActuatorType _actuatorType = DefaultActuatorType,
-      const Joint* _mimicJoint = nullptr,
+      Joint* _mimicJoint = nullptr,
       double _mimicMultiplier = 1.0,
       double _mimicOffset = 0.0);
 

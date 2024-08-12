@@ -139,12 +139,12 @@ public:
 
   /// Set mimic joint
   void setMimicJoint(
-      const Joint* _mimicJoint,
+      Joint* _mimicJoint,
       double _mimicMultiplier = 1.0,
       double _mimicOffset = 0.0);
 
   /// Get mimic joint
-  const Joint* getMimicJoint() const;
+  Joint* getMimicJoint() const;
 
   /// Get mimic joint multiplier
   double getMimicMultiplier() const;
