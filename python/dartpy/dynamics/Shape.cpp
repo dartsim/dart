@@ -397,8 +397,14 @@ void Shape(py::module& m)
               -> dart::common::ResourceRetrieverPtr {
             return self->getResourceRetriever();
           })
-      .def("setScale", py::overload_cast<const Eigen::Vector3d&>(&dart::dynamics::MeshShape), py::arg("scale"))
-      .def("setScale", py::overload_cast<double>(&dart::dynamics::MeshShape), py::arg("scale"))
+      .def(
+          "setScale",
+          py::overload_cast<const Eigen::Vector3d&>(&dart::dynamics::MeshShape),
+          py::arg("scale"))
+      .def(
+          "setScale",
+          py::overload_cast<double>(&dart::dynamics::MeshShape),
+          py::arg("scale"))
       .def(
           "getScale",
           +[](const dart::dynamics::MeshShape* self) -> const Eigen::Vector3d& {
