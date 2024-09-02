@@ -183,7 +183,7 @@ jobs:
       - name: List files in dist
         run: ls -lR dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.9.0
+      - uses: pypa/gh-action-pypi-publish@v1.10.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
