@@ -236,13 +236,17 @@ void MeshShape::setMesh(
 //==============================================================================
 void MeshShape::setScale(const Eigen::Vector3d& scale)
 {
-  assert((scale.array() > 0.0).all());
-
   mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 
   incrementVersion();
+}
+
+//==============================================================================
+void MeshShape::setScale(const double scale)
+{
+  setScale(Eigen::Vector3d::Constant(scale));
 }
 
 //==============================================================================
@@ -332,33 +336,21 @@ void MeshShape::updateBoundingBox() const
     return;
   }
 
-  double max_X = -std::numeric_limits<double>::infinity();
-  double max_Y = -std::numeric_limits<double>::infinity();
-  double max_Z = -std::numeric_limits<double>::infinity();
-  double min_X = std::numeric_limits<double>::infinity();
-  double min_Y = std::numeric_limits<double>::infinity();
-  double min_Z = std::numeric_limits<double>::infinity();
+  Eigen::Vector3d minPoint
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d maxPoint = -minPoint;
 
-  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
-    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
-      if (mMesh->mMeshes[i]->mVertices[j].x > max_X)
-        max_X = mMesh->mMeshes[i]->mVertices[j].x;
-      if (mMesh->mMeshes[i]->mVertices[j].x < min_X)
-        min_X = mMesh->mMeshes[i]->mVertices[j].x;
-      if (mMesh->mMeshes[i]->mVertices[j].y > max_Y)
-        max_Y = mMesh->mMeshes[i]->mVertices[j].y;
-      if (mMesh->mMeshes[i]->mVertices[j].y < min_Y)
-        min_Y = mMesh->mMeshes[i]->mVertices[j].y;
-      if (mMesh->mMeshes[i]->mVertices[j].z > max_Z)
-        max_Z = mMesh->mMeshes[i]->mVertices[j].z;
-      if (mMesh->mMeshes[i]->mVertices[j].z < min_Z)
-        min_Z = mMesh->mMeshes[i]->mVertices[j].z;
+  for (unsigned i = 0u; i < mMesh->mNumMeshes; i++) {
+    for (unsigned j = 0u; j < mMesh->mMeshes[i]->mNumVertices; j++) {
+      const auto& vertex = mMesh->mMeshes[i]->mVertices[j];
+      const Eigen::Vector3d eigenVertex(vertex.x, vertex.y, vertex.z);
+      minPoint = minPoint.cwiseMin(eigenVertex.cwiseProduct(mScale));
+      maxPoint = maxPoint.cwiseMax(eigenVertex.cwiseProduct(mScale));
     }
   }
-  mBoundingBox.setMin(
-      Eigen::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
-  mBoundingBox.setMax(
-      Eigen::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
+
+  mBoundingBox.setMin(minPoint);
+  mBoundingBox.setMax(maxPoint);
 
   mIsBoundingBoxDirty = false;
 }
