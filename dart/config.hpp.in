@@ -25,13 +25,13 @@
   (DART_MAJOR_VERSION > x                                                      \
    || (DART_MAJOR_VERSION >= x                                                 \
        && (DART_MINOR_VERSION > y                                              \
-           || (DART_MINOR_VERSION >= y && DART_PATCH_VERSION > z)))
+           || (DART_MINOR_VERSION >= y && DART_PATCH_VERSION > z))))
 
 #define DART_VERSION_LE(x, y, z)                                               \
   (DART_MAJOR_VERSION < x                                                      \
    || (DART_MAJOR_VERSION <= x                                                 \
        && (DART_MINOR_VERSION < y                                              \
-           || (DART_MINOR_VERSION <= y && DART_PATCH_VERSION <= z)))
+           || (DART_MINOR_VERSION <= y && DART_PATCH_VERSION <= z))))
 
 // Deprecated in 6.14
 #define DART_VERSION_AT_LEAST(x, y, z)                                         \
