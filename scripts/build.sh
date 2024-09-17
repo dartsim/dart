@@ -270,5 +270,5 @@ if [ "$BUILD_DARTPY" = "ON" ]; then
   echo "Info: Running a Python example..."
   echo $PYTHONPATH
   cd $source_dir/python/examples/hello_world
-  # python3 main.py
+  python3 main.py
 fi
