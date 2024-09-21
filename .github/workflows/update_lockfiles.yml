@@ -12,6 +12,9 @@ on:
 jobs:
   pixi-update:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: [main, release-6.14]
     steps:
       - uses: actions/checkout@v4
       - name: Set up pixi
@@ -29,8 +32,8 @@ jobs:
           commit-message: Update pixi lockfile
           title: Update pixi lockfile
           body-path: diff.md
-          branch: update-pixi
-          base: main
+          branch: update-pixi-${{ matrix.base }}
+          base: ${{ matrix.base }}
           labels: pixi
           delete-branch: true
           add-paths: pixi.lock
