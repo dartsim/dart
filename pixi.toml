@@ -469,3 +469,58 @@ install = { cmd = """
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 tracy = { cmd = "tracy-profiler.exe" }
+
+#=================
+# Feature: Gazebo
+#=================
+
+[feature.gazebo]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.gazebo.build-dependencies]
+git = ">=1"
+
+[feature.gazebo.dependencies]
+libgz-cmake4 = ">=4.0.0"
+libgz-plugin3 = ">=3.0.0"
+libgz-math8 = ">=8.0.0"
+libgz-common6 = ">=6.0.0"
+libgz-utils2 = ">=2.0.0"
+libsdformat15 = ">=15.0.0"
+eigen = ">=3.4.0"
+assimp = ">=5.4.3"
+libode = ">=0.16.2"
+bullet-cpp = ">=3.25"
+
+[feature.gazebo.tasks]
+download-gz = { cmd = """
+    rm -rf .deps/gz-physics/ \
+    && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
+    """, outputs = [
+    ".deps/gz-physics/README.md",
+] }
+
+config-gz = { cmd = """
+    cmake \
+        -G Ninja \
+        -S .deps/gz-physics \
+        -B .deps/gz-physics/build \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=Release
+""", depends-on = ["download-gz", "install"] }
+
+build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
+    "config-gz",
+] }
+
+test-gz = { cmd = "ctest --test-dir .deps/gz-physics/build --output-on-failure", depends-on = [
+    "build-gz",
+] }
+
+#==============
+# Environments
+#==============
+
+[environments]
+gazebo = ["gazebo"]
