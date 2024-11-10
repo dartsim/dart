@@ -22,38 +22,13 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }}-${{ matrix.build_type }}
+    name: ${{ matrix.os == 'macos-latest-large' && 'x86_64' || 'arm64' }}-${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        build_type: [Release]
-        enable_simd: [ON]
-    env:
-      COMPILER: clang
-      BUILD_TYPE: ${{ matrix.build_type }}
-      BUILD_DARTPY: OFF
-      DART_USE_SYSTEM_IMGUI: OFF
-      IN_CI: ON
-      ENABLE_SIMD: ${{ matrix.enable_simd }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Dependencies
-        env:
-          INSTALL_OSG_HEAD: OFF # To avoid building OSG, until 3.7 is released.
-        run: scripts/install_osx.sh
-      - name: Build
-        run: sudo -E scripts/build.sh
-
-  build_on_pixi:
-    name: ${{ matrix.os }}-pixi
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest]
+        build_type: ["Release", "Debug"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,12 +39,19 @@ jobs:
           cache: true
 
       - name: Check Lint
-        run: pixi run check-lint
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
+          pixi run check-lint
 
       - name: Test DART and dartpy
         run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
       - name: Install
         run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install
