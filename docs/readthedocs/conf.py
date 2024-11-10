@@ -46,7 +46,6 @@ html_logo = "_static/img/dart_logo_long_200.png"
 html_favicon = "_static/img/dart_logo_32.png"
 html_theme_options = {
     "logo_only": True,
-    "display_version": True,
 }
 
 # Setting for multi language
