@@ -52,8 +52,9 @@ config = { cmd = """
         -G Ninja \
         -S . \
         -B build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_VERBOSE=ON \
         -DDART_USE_SYSTEM_IMGUI=ON
 """ }
@@ -192,6 +193,7 @@ config = { cmd = """
         -B build \
         -G 'Visual Studio 17 2022' \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_VERBOSE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DBUILD_SHARED_LIBS=OFF \
