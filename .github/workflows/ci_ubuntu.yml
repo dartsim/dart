@@ -21,20 +21,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_on_docker:
+  coverage:
     if: github.event_name != 'workflow_dispatch'
-    name: linux-docker-${{ matrix.os }}-${{ matrix.build_type }}
+    name: coverage
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # Supported LTS versions
-        os: [ubuntu-jammy, ubuntu-noble, ubuntu-oracular]
-        build_type: [Release]
-        codecov: [OFF]
-        check_format: [OFF]
-        build_dartpy: [ON]
-        enable_simd: [ON]
         include:
           # For code coverage report to Codecov
           - os: ubuntu-jammy
@@ -79,9 +72,13 @@ jobs:
             $DART_DEV_IMAGE:$DOCKER_TAG \
             /bin/sh -c "cd $GITHUB_WORKSPACE && ./scripts/build.sh"
 
-  build_on_pixi:
-    name: ubuntu-pixi
+  build:
+    name: ${{ matrix.build_type }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: ["Release", "Debug"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,12 +94,19 @@ jobs:
           version: 1.0
 
       - name: Check Lint
-        run: pixi run check-lint
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
+          pixi run check-lint
 
       - name: Test DART and dartpy
         run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
-  
+
       - name: Install
         run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install

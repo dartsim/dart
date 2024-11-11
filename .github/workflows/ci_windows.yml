@@ -22,80 +22,12 @@ on:
 
 jobs:
   build:
-    name: win-${{ matrix.build_type }}
+    name: ${{ matrix.build_type }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        toolset: [""]
-        build_type: [Release]
-        build_shared_libs: [OFF] # TODO(JS): Add ON once shared lib build is resolved
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - uses: johnwason/vcpkg-action@v6
-        with:
-          # TODO: Add ode and coin-or-ipopt
-          pkgs: >
-            assimp
-            eigen3
-            fcl
-            fmt
-            spdlog
-            bullet3
-            freeglut
-            glfw3
-            imgui[opengl2-binding]
-            nlopt
-            opengl
-            osg
-            pagmo2
-            tinyxml2
-            tracy
-            urdfdom
-          triplet: x64-windows
-          revision: "2024.06.15"
-          github-binarycache: true
-          token: ${{ github.token }}
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -U pytest
-
-      - name: Build
-        shell: cmd
-        run: |
-          cmake ^
-            -S . ^
-            -B build ^
-            -G "Visual Studio 17 2022" ^
-            -A x64 ^
-            -Wno-dev ${{ matrix.toolset }} ^
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
-            -DDART_MSVC_DEFAULT_OPTIONS=ON ^
-            -DDART_VERBOSE=ON ^
-            -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} ^
-            -DDART_USE_SYSTEM_IMGUI=ON ^
-            || exit /b
-          cmake ^
-            --build build ^
-            --config ${{ matrix.build_type }} ^
-            --target ALL_BUILD ^
-            --parallel ^
-            || exit /b
-          ctest ^
-            --test-dir build ^
-            --output-on-failure ^
-            --build-config ${{ matrix.build_type }} ^
-            || exit /b
-
-  build_on_pixi:
-    name: win-pixi
-    runs-on: windows-latest
+        build_type: ["Release"] # TODO: Add Debug
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,12 +38,17 @@ jobs:
           cache: true
 
       - name: Check Lint
-        run: pixi run check-lint
+        run: |
+          pixi run check-lint
 
       - name: Test DART and dartpy
         run: |
-          pixi run test # TODO: Change to test-all
-  
+          $env:DART_VERBOSE = "ON"; `
+          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
+          pixi run test-all
+
       - name: Install
         run: |
+          $env:DART_VERBOSE = "ON"; `
+          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
           pixi run install
