@@ -6,7 +6,18 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.6.5 QUIET
+set(min_osg_version 3.0.0)
+# OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
+# See:
+#   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
+#   - https://github.com/dartsim/dart/issues/1439
+if(APPLE)
+  if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 19)
+    set(min_osg_version 3.7.0)
+  endif()
+endif()
+
+find_package(OpenSceneGraph ${min_osg_version} QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
