@@ -5,6 +5,90 @@
   <img src="https://raw.githubusercontent.com/dartsim/dart/master/docs/dart_logo_377x107.jpg" alt="DART: Dynamic Animation and Robotics Toolkit">
 </p>
 
+DART (Dynamic Animation and Robotics Toolkit) is an open-source library that
+provides data structures and algorithms for kinematic and dynamic applications
+in robotics and computer animation. Renowned for its accuracy and stability,
+DART utilizes generalized coordinates to represent articulated rigid body
+systems and employs Featherstone's Articulated Body Algorithm to compute motion
+dynamics.
+
+## Getting Started
+
+DART provides both C++ and Python interfaces, which can be installed using
+various package managers. For cross-platform compatibility, we recommend using
+Conda or Pixi.
+
+### C++
+
+#### Cross-Platform (Recommended)
+
+Conda:
+
+```shell
+conda install -c conda-forge dartsim-cpp
+```
+
+Pixi:
+
+```shell
+pixi add dartsim-cpp
+```
+
+#### Linux
+
+Ubuntu:
+
+```shell
+sudo apt install libdart-all-dev
+```
+
+Arch Linux:
+
+```shell
+yay -S libdart
+```
+
+FreeBSD:
+
+```shell
+pkg install dartsim
+```
+
+#### macOS (Homebrew)
+
+```shell
+brew install dartsim
+```
+
+#### Windows (Vcpkg)
+
+```shell
+vcpkg install dartsim:x64-windows
+```
+
+### Python
+
+For the Python interface, we recommend using Conda or Pixi. Note that the PyPI
+package is being deprecated to reduce maintenance—contributions are welcome!
+
+Conda:
+
+```shell
+conda install -c conda-forge dartpy
+```
+
+Pixi:
+
+```shell
+pixi add dartpy
+```
+
+PyPI (deprecated):
+
+```shell
+pip install dartpy
+```
+
 ## Documentation
 
 For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
