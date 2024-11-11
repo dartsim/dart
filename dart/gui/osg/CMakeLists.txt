@@ -17,17 +17,19 @@ if(APPLE)
   endif()
 endif()
 
+set(component_dependency_packages )
+
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
   dart_find_package(OpenSceneGraph)
   dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph" "3.0")
+  list(APPEND component_dependency_packages OpenSceneGraph)
 
   # ImGui
   if(DART_USE_SYSTEM_IMGUI)
     dart_find_package(imgui)
     dart_check_required_package(imgui "imgui")
-  else()
-    #
+    list(APPEND component_dependency_packages imgui)
   endif()
 else()
   message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
@@ -61,7 +63,7 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenSceneGraph)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
