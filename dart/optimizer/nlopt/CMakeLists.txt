@@ -2,6 +2,26 @@
 dart_find_package(NLOPT)
 dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
 
+if(NOT NLOPT_VERSION)
+  # If version is not found, we just assume 2.9.0
+  set(NLOPT_VERSION "2.9.0")
+endif()
+
+# Attempt to parse version components
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\1" NLOPT_MAJOR_VERSION "${NLOPT_VERSION}")
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\2" NLOPT_MINOR_VERSION "${NLOPT_VERSION}")
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\3" NLOPT_PATCH_VERSION "${NLOPT_VERSION}")
+
+# Check if parsing succeeded
+if(NOT (NLOPT_MAJOR_VERSION MATCHES "^[0-9]+$" AND 
+        NLOPT_MINOR_VERSION MATCHES "^[0-9]+$" AND 
+        NLOPT_PATCH_VERSION MATCHES "^[0-9]+$"))
+  message(WARNING "Failed to parse NLOPT_VERSION '${NLOPT_VERSION}'. Using default values (2, 9, 0) for version components.")
+  set(NLOPT_MAJOR_VERSION "2")
+  set(NLOPT_MINOR_VERSION "9")
+  set(NLOPT_PATCH_VERSION "0")
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -13,6 +33,12 @@ set(component_name optimizer-nlopt)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
 target_link_libraries(${target_name} PUBLIC dart NLOPT::nlopt)
+target_compile_definitions(${target_name}
+  PUBLIC
+    -DNLOPT_MAJOR_VERSION=${NLOPT_MAJOR_VERSION}
+    -DNLOPT_MINOR_VERSION=${NLOPT_MINOR_VERSION}
+    -DNLOPT_PATCH_VERSION=${NLOPT_PATCH_VERSION}
+)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

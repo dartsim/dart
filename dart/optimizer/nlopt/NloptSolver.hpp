@@ -39,12 +39,18 @@
 
 #include <nlopt.hpp>
 
+#define NLOPT_VERSION_GE(x, y, z)                                              \
+  ((NLOPT_MAJOR_VERSION > (x))                                                 \
+   || (NLOPT_MAJOR_VERSION == (x) && NLOPT_MINOR_VERSION > (y))                \
+   || (NLOPT_MAJOR_VERSION == (x) && NLOPT_MINOR_VERSION == (y)                \
+       && NLOPT_PATCH_VERSION >= (z)))
+
 namespace dart {
 namespace optimizer {
 
 class Problem;
 
-/// NloptSolver is a nonlinear programming solver that provides many unlerlying
+/// NloptSolver is a nonlinear programming solver that provides many underlying
 /// algorithms through nlopt (an third-party library:
 /// https://nlopt.readthedocs.io/).
 ///
@@ -73,7 +79,9 @@ public:
     GN_ORIG_DIRECT_L,
     GD_STOGO,
     GD_STOGO_RAND,
+#if !NLOPT_VERSION_GE(2, 9, 0)
     LD_LBFGS_NOCEDAL,
+#endif
     LD_LBFGS,
     LN_PRAXIS,
     LD_VAR1,
