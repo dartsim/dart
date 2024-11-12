@@ -62,8 +62,7 @@ add_component_dependencies(
   utils
   external-lodepng
 )
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} GLUT)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL GLUT)
 
 # Add subdirectories
 add_subdirectory(osg)

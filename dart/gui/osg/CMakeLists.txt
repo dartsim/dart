@@ -1,37 +1,32 @@
+if(NOT DART_BUILD_GUI_OSG)
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+  return()
+endif()
+
 # Set local target name
 set(target_name ${PROJECT_NAME}-gui-osg)
 set(component_name gui-osg)
+set(component_dependencies )
+set(component_dependency_packages )
+set(link_libraries )
 
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-gui)
 
-# Minimum required OSG version
-set(min_osg_version 3.0.0)
-# OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
-# See:
-#   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
-#   - https://github.com/dartsim/dart/issues/1439
-if(APPLE)
-  if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 19)
-    set(min_osg_version 3.7.0)
-  endif()
-endif()
-
 # OpenSceneGraph
-if(DART_BUILD_GUI_OSG)
-  dart_find_package(OpenSceneGraph)
-  dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph" "3.0")
+dart_find_package(OpenSceneGraph)
+dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph")
+list(APPEND component_dependency_packages OpenSceneGraph)
 
-  # ImGui
-  if(DART_USE_SYSTEM_IMGUI)
-    dart_find_package(imgui)
-    dart_check_required_package(imgui "imgui")
-  else()
-    #
-  endif()
+# ImGui
+if(DART_USE_SYSTEM_IMGUI)
+  dart_find_package(imgui)
+  dart_check_required_package(imgui "imgui")
+  list(APPEND component_dependency_packages imgui)
+  list(APPEND link_libraries imgui::imgui)
 else()
-  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
-  return()
+  list(APPEND component_dependencies external-imgui)
+  list(APPEND link_libraries ${PROJECT_NAME}-external-imgui)
 endif()
 
 # Search all header and source files
@@ -46,22 +41,14 @@ set(dart_gui_osg_srcs ${srcs} ${detail_srcs})
 add_subdirectory(render)
 
 # Add target
-if(DART_USE_SYSTEM_IMGUI)
-  set(link_libraries imgui::imgui)
-else()
-  set(link_libraries ${PROJECT_NAME}-external-imgui)
-endif()
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-gui osg::osg ${link_libraries})
 
 # Component
-if(NOT DART_USE_SYSTEM_IMGUI)
-  set(component_dependencies external-imgui)
-endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenSceneGraph)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
