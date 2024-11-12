@@ -6,20 +6,19 @@
 #
 # This file is provided under the "BSD-style" License
 
-set(min_osg_version 3.0.0)
+find_package(OpenSceneGraph 3.0.0 QUIET
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
+)
+
 # OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
 # See:
 #   - https://github.com/openscenegraph/OpenSceneGraph/issues/926
 #   - https://github.com/dartsim/dart/issues/1439
 if(APPLE)
-  if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 19)
-    set(min_osg_version 3.7.0)
+  if(OPENSCENEGRAPH_VERSION VERSION_LESS 3.7.0)
+    message(WARNING "OSG (${OPENSCENEGRAPH_VERSION} < 3.7.0) doesn't work on macOS 10.15 or greater. See: https://github.com/openscenegraph/OpenSceneGraph/issues/926")
   endif()
 endif()
-
-find_package(OpenSceneGraph ${min_osg_version} QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
-)
 
 # It seems that OPENSCENEGRAPH_FOUND will inadvertently get set to true when
 # OpenThreads is found, even if OpenSceneGraph is not installed. This is quite
