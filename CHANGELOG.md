@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.15.0 (TBD)](https://github.com/dartsim/dart/milestone/77?closed=1)
+### [DART 6.15.0 (2024-11-15)](https://github.com/dartsim/dart/milestone/77?closed=1)
 
 * Tested Platforms
 
@@ -13,9 +13,9 @@
   * Windows / MSVC 19.40 / x86_64
 
 * Build
-  * Set DART_BUILD_DARTPY=OFF by default
-  * Enabled building dartpy with multi-core support in setup.py
-  * Added DART_USE_SYSTEM_GOOGLETEST option
+  * Added ImGui 1.91.5 support: [#1872](https://github.com/dartsim/dart/pull/1872)
+  * Added nlopt 2.9.0 support: [#1875](https://github.com/dartsim/dart/pull/1875)
+  * Fixed imgui is not added as transitive dependency: [#1877](https://github.com/dartsim/dart/pull/1877)
 
 ### [DART 6.14.5 (2024-09-08)](https://github.com/dartsim/dart/milestone/82?closed=1)
 
