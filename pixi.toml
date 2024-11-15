@@ -84,38 +84,38 @@ build = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target all
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-tests = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target tests
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-dartpy = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target dartpy
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
-""", depends_on = ["build-tests"] }
+""", depends_on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target pytest
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 ex = { cmd = """
     cmake \
