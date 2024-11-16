@@ -1,9 +1,12 @@
 # Dependency checks
 dart_find_package(NLOPT)
-dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
+dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "NLOPT" "2.7.1")
 
-if(NOT NLOPT_VERSION)
+if(NLOPT_VERSION)
+  message(STATUS "Found NLOPT: ${NLOPT_VERSION}")
+else()
   # If version is not found, we just assume 2.9.0
+  message(WARNING "NLOPT version is not found. Assuming 2.9.0.")
   set(NLOPT_VERSION "2.9.0")
 endif()
 
