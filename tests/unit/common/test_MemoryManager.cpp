@@ -54,7 +54,11 @@ TEST(MemoryManagerTest, BaseAllocator)
 //==============================================================================
 TEST(MemoryManagerTest, Allocate)
 {
+#ifdef NDEBUG // Release
   auto mm = MemoryManager();
+#else
+  auto mm = MemoryAllocatorDebugger<MemoryManager>();
+#endif
 
   // Cannot allocate 0 bytes
   EXPECT_EQ(mm.allocateUsingFree(0), nullptr);

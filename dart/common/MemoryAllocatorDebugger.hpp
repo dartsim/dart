@@ -41,8 +41,8 @@
 
 namespace dart::common {
 
-template <typename T>
-class MemoryAllocatorDebugger : public MemoryAllocator
+template <typename Derived>
+class MemoryAllocatorDebugger : public Derived
 {
 public:
   /// Constructor
@@ -56,13 +56,13 @@ public:
   [[nodiscard]] static const std::string& getStaticType();
 
   // Documentation inherited
-  [[nodiscard]] const std::string& getType() const override;
+  [[nodiscard]] const std::string& getType() const;
 
   // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
+  [[nodiscard]] void* allocate(size_t bytes) noexcept;
 
   // Documentation inherited
-  void deallocate(void* pointer, size_t bytes) override;
+  void deallocate(void* pointer, size_t bytes);
 
   /// Returns true if there is no memory allocated by the internal allocator.
   [[nodiscard]] bool isEmpty() const;
@@ -71,17 +71,15 @@ public:
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const;
 
   /// Returns the internal allocator
-  [[nodiscard]] const T& getInternalAllocator() const;
+  [[nodiscard]] const Derived& derived() const;
 
   /// Returns the internal allocator
-  [[nodiscard]] T& getInternalAllocator();
+  [[nodiscard]] Derived& derived();
 
   // Documentation inherited
-  void print(std::ostream& os = std::cout, int indent = 0) const override;
+  void print(std::ostream& os = std::cout, int indent = 0) const;
 
 private:
-  T mInternalAllocator;
-
   size_t mSize = 0;
 
   size_t mPeak = 0;

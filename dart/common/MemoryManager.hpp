@@ -42,7 +42,7 @@ namespace dart::common {
 
 /// A composite memory allocator that contains various memory allocators that
 /// are optimized for different use cases.
-class MemoryManager final
+class MemoryManager final : public MemoryAllocator
 {
 public:
   /// Type of the memory allocators
@@ -66,6 +66,8 @@ public:
   /// Destructor
   ~MemoryManager();
 
+  DART_STRING_TYPE(MemoryManager);
+
   /// Returns the base allocator
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
 
@@ -83,6 +85,9 @@ public:
   /// memory.
   /// \return On failure, a null pointer
   [[nodiscard]] void* allocate(Type type, size_t bytes);
+
+  /// Allocates using base allocator
+  [[nodiscard]] void* allocate(size_t bytes) noexcept final;
 
   /// Allocates \c size bytes of uninitialized storage using FreeListAllocator.
   ///
@@ -108,6 +113,9 @@ public:
   /// \param[in] bytes: The bytes of the allocated memory.
   void deallocate(Type type, void* pointer, size_t bytes);
   // TODO(JS): Make this constexpr once migrated to C++20
+
+  /// Deallocates using base allocator
+  void deallocate(void* pointer, size_t bytes) final;
 
   void deallocateUsingFree(void* pointer, size_t bytes);
 

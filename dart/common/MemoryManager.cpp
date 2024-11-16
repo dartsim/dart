@@ -93,6 +93,12 @@ void* MemoryManager::allocate(Type type, size_t bytes)
 }
 
 //==============================================================================
+void* MemoryManager::allocate(size_t bytes) noexcept
+{
+  return allocate(Type::Base, bytes);
+}
+
+//==============================================================================
 void* MemoryManager::allocateUsingFree(size_t bytes)
 {
   return allocate(Type::Free, bytes);
@@ -118,6 +124,12 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       mPoolAllocator.deallocate(pointer, bytes);
       break;
   }
+}
+
+//==============================================================================
+void MemoryManager::deallocate(void* pointer, size_t bytes)
+{
+  deallocate(Type::Base, pointer, bytes);
 }
 
 //==============================================================================

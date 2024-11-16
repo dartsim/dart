@@ -40,17 +40,17 @@
 namespace dart::common {
 
 //==============================================================================
-template <typename T>
+template <typename Derived>
 template <typename... Args>
-MemoryAllocatorDebugger<T>::MemoryAllocatorDebugger(Args&&... args)
-  : mInternalAllocator(std::forward<Args>(args)...)
+MemoryAllocatorDebugger<Derived>::MemoryAllocatorDebugger(Args&&... args)
+  : Derived(std::forward<Args>(args)...)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename T>
-MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
+template <typename Derived>
+MemoryAllocatorDebugger<Derived>::~MemoryAllocatorDebugger()
 {
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
@@ -76,26 +76,26 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
 }
 
 //==============================================================================
-template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getStaticType()
+template <typename Derived>
+const std::string& MemoryAllocatorDebugger<Derived>::getStaticType()
 {
   static const std::string type
-      = "MemoryAllocatorDebugger<" + T::getStaticType() + ">";
+      = "MemoryAllocatorDebugger<" + Derived::getStaticType() + ">";
   return type;
 }
 
 //==============================================================================
-template <typename T>
-const std::string& MemoryAllocatorDebugger<T>::getType() const
+template <typename Derived>
+const std::string& MemoryAllocatorDebugger<Derived>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-template <typename T>
-void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
+template <typename Derived>
+void* MemoryAllocatorDebugger<Derived>::allocate(size_t bytes) noexcept
 {
-  void* newPtr = mInternalAllocator.allocate(bytes);
+  void* newPtr = derived().allocate(bytes);
 
   if (newPtr) {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -108,8 +108,8 @@ void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
-template <typename T>
-void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
+template <typename Derived>
+void MemoryAllocatorDebugger<Derived>::deallocate(void* pointer, size_t bytes)
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
@@ -132,22 +132,23 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
     return;
   }
 
-  mInternalAllocator.deallocate(pointer, bytes);
+  derived().deallocate(pointer, bytes);
   mMapPointerToSize.erase(it);
   mSize -= bytes;
 }
 
 //==============================================================================
-template <typename T>
-bool MemoryAllocatorDebugger<T>::isEmpty() const
+template <typename Derived>
+bool MemoryAllocatorDebugger<Derived>::isEmpty() const
 {
   std::lock_guard<std::mutex> lock(mMutex);
   return mMapPointerToSize.empty();
 }
 
 //==============================================================================
-template <typename T>
-bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
+template <typename Derived>
+bool MemoryAllocatorDebugger<Derived>::hasAllocated(
+    void* pointer, size_t size) const
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
@@ -165,22 +166,22 @@ bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
 }
 
 //==============================================================================
-template <typename T>
-const T& MemoryAllocatorDebugger<T>::getInternalAllocator() const
+template <typename Derived>
+const Derived& MemoryAllocatorDebugger<Derived>::derived() const
 {
-  return mInternalAllocator;
+  return *static_cast<const Derived*>(this);
 }
 
 //==============================================================================
-template <typename T>
-T& MemoryAllocatorDebugger<T>::getInternalAllocator()
+template <typename Derived>
+Derived& MemoryAllocatorDebugger<Derived>::derived()
 {
-  return mInternalAllocator;
+  return *static_cast<Derived*>(this);
 }
 
 //==============================================================================
-template <typename T>
-void MemoryAllocatorDebugger<T>::print(std::ostream& os, int indent) const
+template <typename Derived>
+void MemoryAllocatorDebugger<Derived>::print(std::ostream& os, int indent) const
 {
   if (indent == 0) {
     os << "[" << getType() << "]\n";
@@ -193,7 +194,7 @@ void MemoryAllocatorDebugger<T>::print(std::ostream& os, int indent) const
   os << spaces << "size_in_bytes: " << mSize << "\n";
   os << spaces << "peak: " << mPeak << "\n";
   os << spaces << "internal_allocator:\n";
-  mInternalAllocator.print(os, indent + 2);
+  derived().print(os, indent + 2);
 }
 
 } // namespace dart::common

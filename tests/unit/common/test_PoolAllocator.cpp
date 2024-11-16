@@ -43,16 +43,12 @@ using namespace common;
 TEST(PoolAllocatorTest, Constructors)
 {
   auto a = PoolAllocator::Debug();
-  EXPECT_EQ(
-      &a.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+  EXPECT_EQ(&a.derived().getBaseAllocator(), &MemoryAllocator::GetDefault());
 
   auto b = PoolAllocator::Debug(MemoryAllocator::GetDefault());
-  EXPECT_EQ(
-      &b.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+  EXPECT_EQ(&b.derived().getBaseAllocator(), &MemoryAllocator::GetDefault());
 
-  EXPECT_EQ(b.getInternalAllocator().getNumAllocatedMemoryBlocks(), 0);
+  EXPECT_EQ(b.derived().getNumAllocatedMemoryBlocks(), 0);
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
@@ -73,17 +69,17 @@ TEST(PoolAllocatorTest, Allocate)
   EXPECT_TRUE(a.hasAllocated(ptr1, 1));
   EXPECT_FALSE(a.hasAllocated(0, 1));        // incorrect address
   EXPECT_FALSE(a.hasAllocated(ptr1, 1 * 2)); // incorrect size
-  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 1);
+  EXPECT_EQ(a.derived().getNumAllocatedMemoryBlocks(), 1);
 
   // Allocate the same size, which doesn't increase the number of memory block
   auto ptr2 = a.allocate(1);
   EXPECT_NE(ptr2, nullptr);
-  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 1);
+  EXPECT_EQ(a.derived().getNumAllocatedMemoryBlocks(), 1);
 
   // Allocate different size
   auto ptr3 = a.allocate(64);
   EXPECT_NE(ptr3, nullptr);
-  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 2);
+  EXPECT_EQ(a.derived().getNumAllocatedMemoryBlocks(), 2);
 
   // Allocate memory of the max size (= 1024)
   auto ptr4 = a.allocate(1024);
@@ -91,7 +87,7 @@ TEST(PoolAllocatorTest, Allocate)
   EXPECT_TRUE(a.hasAllocated(ptr4, 1024));
   EXPECT_FALSE(a.hasAllocated(0, 1024));
   EXPECT_FALSE(a.hasAllocated(ptr4, 1024 * 2));
-  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 3);
+  EXPECT_EQ(a.derived().getNumAllocatedMemoryBlocks(), 3);
 
   // Allocate oversized memory (> 1024)
   auto ptr5 = a.allocate(2048);
@@ -99,7 +95,7 @@ TEST(PoolAllocatorTest, Allocate)
   EXPECT_TRUE(a.hasAllocated(ptr5, 2048));
   EXPECT_FALSE(a.hasAllocated(0, 2048));
   EXPECT_FALSE(a.hasAllocated(ptr5, 2048 * 2));
-  EXPECT_EQ(a.getInternalAllocator().getNumAllocatedMemoryBlocks(), 3);
+  EXPECT_EQ(a.derived().getNumAllocatedMemoryBlocks(), 3);
 
   EXPECT_FALSE(a.isEmpty());
 

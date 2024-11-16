@@ -57,14 +57,17 @@ lint-cpp = { cmd = """
     cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
     --target format
-""", depends_on = ["config"] }
+""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-py = { cmd = """
     black . --exclude '\\..*' \
     && isort . --skip-glob '.*'
 """, depends_on = ["config"] }
 
-lint = { depends_on = ["lint-cpp", "lint-py"] }
+lint = { cmd = "echo linting with $BUILD_TYPE", depends_on = [
+    "lint-cpp",
+    "lint-py",
+], env = { BUILD_TYPE = "Release" } }
 
 check-lint-cpp = { cmd = """
     cmake \

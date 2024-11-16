@@ -43,14 +43,10 @@ using namespace common;
 TEST(FreeListAllocatorTest, Constructors)
 {
   auto a = FreeListAllocator::Debug();
-  EXPECT_EQ(
-      &a.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+  EXPECT_EQ(&a.derived().getBaseAllocator(), &MemoryAllocator::GetDefault());
 
   auto b = FreeListAllocator::Debug(MemoryAllocator::GetDefault());
-  EXPECT_EQ(
-      &b.getInternalAllocator().getBaseAllocator(),
-      &MemoryAllocator::GetDefault());
+  EXPECT_EQ(&b.derived().getBaseAllocator(), &MemoryAllocator::GetDefault());
 
   EXPECT_TRUE(a.isEmpty());
   EXPECT_TRUE(b.isEmpty());
