@@ -42,7 +42,7 @@ namespace dart::common {
 
 /// A composite memory allocator that contains various memory allocators that
 /// are optimized for different use cases.
-class MemoryManager final : public MemoryAllocator
+class MemoryManager : public MemoryAllocator
 {
 public:
   /// Type of the memory allocators
@@ -80,18 +80,18 @@ public:
   /// Allocates \c size bytes of uninitialized storage.
   ///
   /// \param[in] type: The memory allocator type.
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
   [[nodiscard]] void* allocate(Type type, size_t bytes);
 
   /// Allocates using base allocator
-  [[nodiscard]] void* allocate(size_t bytes) noexcept final;
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
 
   /// Allocates \c size bytes of uninitialized storage using FreeListAllocator.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
@@ -99,7 +99,7 @@ public:
 
   /// Allocates \c size bytes of uninitialized storage using PoolAllocator.
   ///
-  /// \param[in] bytes: The byte size to allocate sotrage for.
+  /// \param[in] bytes: The byte size to allocate storage for.
   /// \return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// \return On failure, a null pointer
@@ -115,7 +115,7 @@ public:
   // TODO(JS): Make this constexpr once migrated to C++20
 
   /// Deallocates using base allocator
-  void deallocate(void* pointer, size_t bytes) final;
+  void deallocate(void* pointer, size_t bytes) override;
 
   void deallocateUsingFree(void* pointer, size_t bytes);
 
