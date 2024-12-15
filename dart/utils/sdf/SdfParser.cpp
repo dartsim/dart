@@ -39,6 +39,7 @@
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -895,6 +896,14 @@ dynamics::ShapePtr readShape(
     Eigen::Vector3d size = getValueVector3d(boxElement, "size");
 
     newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
+  } else if (hasElement(geometryElement, "cone")) {
+    tinyxml2::XMLElement* coneElement
+        = getElement(geometryElement, "cone");
+
+    double radius = getValueDouble(coneElement, "radius");
+    double height = getValueDouble(coneElement, "length");
+
+    newShape = dynamics::ShapePtr(new dynamics::ConeShape(radius, height));
   } else if (hasElement(geometryElement, "cylinder")) {
     tinyxml2::XMLElement* cylinderElement
         = getElement(geometryElement, "cylinder");
