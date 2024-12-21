@@ -124,7 +124,7 @@ jobs:
 
       - name: Build wheels
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.2
+        uses: pypa/cibuildwheel@v2.22.0
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -134,7 +134,7 @@ jobs:
 
       - name: Build wheels (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.19.2
+        uses: pypa/cibuildwheel@v2.22.0
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -183,7 +183,7 @@ jobs:
       - name: List files in dist
         run: ls -lR dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.9.0
+      - uses: pypa/gh-action-pypi-publish@v1.12.3
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}

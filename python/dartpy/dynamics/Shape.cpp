@@ -399,10 +399,13 @@ void Shape(py::module& m)
           })
       .def(
           "setScale",
-          +[](dart::dynamics::MeshShape* self, const Eigen::Vector3d& scale) {
-            self->setScale(scale);
-          },
-          ::py::arg("scale"))
+          py::overload_cast<const Eigen::Vector3d&>(
+              &dart::dynamics::MeshShape::setScale),
+          py::arg("scale"))
+      .def(
+          "setScale",
+          py::overload_cast<double>(&dart::dynamics::MeshShape::setScale),
+          py::arg("scale"))
       .def(
           "getScale",
           +[](const dart::dynamics::MeshShape* self) -> const Eigen::Vector3d& {

@@ -12,8 +12,13 @@ on:
 jobs:
   pixi-update:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: [main, release-6.14]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.base }}
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.8.1
         with:
@@ -23,14 +28,14 @@ jobs:
           pixi global install pixi-diff-to-markdown
           pixi update --json --no-install | pixi-diff-to-markdown >> diff.md
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update pixi lockfile
           title: Update pixi lockfile
           body-path: diff.md
-          branch: update-pixi
-          base: main
+          branch: update-pixi-${{ matrix.base }}
+          base: ${{ matrix.base }}
           labels: pixi
           delete-branch: true
           add-paths: pixi.lock

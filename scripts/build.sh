@@ -176,7 +176,6 @@ if [ "$OSTYPE" = "linux-gnu" ]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/"
 elif [[ $OSTYPE = darwin* ]]; then
   install_prefix_option="-DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_INSTALL_RPATH=/usr/local/lib/"
-  cmake_args+=" -DOpenCLHeaders_DIR=$(brew --prefix opencl-headers)/share/cmake/OpenCLHeaders -DOpenCLHeadersCpp_DIR=$(brew --prefix opencl-clhpp-headers)/share/cmake/OpenCLHeadersCpp"
 fi
 
 if [ -n "$DART_USE_SYSTEM_IMGUI" ]; then
