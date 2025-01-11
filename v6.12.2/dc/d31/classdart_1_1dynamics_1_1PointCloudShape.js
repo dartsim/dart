@@ -76,7 +76,7 @@ var classdart_1_1dynamics_1_1PointCloudShape =
     [ "reserve", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#aab60659c2af58161d32a64323eb057d2", null ],
     [ "sendDestructionNotification", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#a6ccea1e3a9fe763d4178c4503e2aae55", null ],
     [ "setColorMode", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#a5234c05b3e7c53ffe9f962e4d71106f3", null ],
-    [ "setColors", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#a6aa99249f348efbdefe80855a92b60cc", null ],
+    [ "setColors", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#a9967cfb919f3eaae39aabd340166b074", null ],
     [ "setDataVariance", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#ad6981d7ba48914e48416e11abf903262", null ],
     [ "setOverallColor", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#ac30113f8ad141a65454a361c2867eacf", null ],
     [ "setPoint", "dc/d31/classdart_1_1dynamics_1_1PointCloudShape.html#ad08ab19acb02e7db50fe9d0f71856dd5", null ],

@@ -3,7 +3,7 @@ var classdart_1_1optimizer_1_1MultiObjectiveSolver =
     [ "Properties", "da/d45/structdart_1_1optimizer_1_1MultiObjectiveSolver_1_1Properties.html", "da/d45/structdart_1_1optimizer_1_1MultiObjectiveSolver_1_1Properties" ],
     [ "MultiObjectiveSolver", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#a8e65c2330a57238f83025cd350f8a208", null ],
     [ "~MultiObjectiveSolver", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#a9c5c3931bc701afe6b3b1a28a1731214", null ],
-    [ "clone", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#a4f85514b0228e35b037710a1126b663f", null ],
+    [ "clone", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#add4eef8af19370d7878ef79b0992c1b8", null ],
     [ "getNumIterationsPerEvolution", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#a453c1b613edf5857f36455b6114ad95d", null ],
     [ "getNumPopulations", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#ade7b63aa8797fdaf34fde2e29a5bd0f0", null ],
     [ "getPopulation", "d9/d22/classdart_1_1optimizer_1_1MultiObjectiveSolver.html#ae68fe8355c4afeda832eb6b4a0e75060", null ],

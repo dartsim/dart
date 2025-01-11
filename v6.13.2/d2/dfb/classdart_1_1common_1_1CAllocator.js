@@ -17,8 +17,8 @@ var classdart_1_1common_1_1CAllocator =
     [ "deallocate", "d2/dfb/classdart_1_1common_1_1CAllocator.html#a7e2771a1b4c389aa2675379ec35bf1b2", null ],
     [ "destroy", "d2/dfb/classdart_1_1common_1_1CAllocator.html#a729caadcd7a1a32f1ba9ac84457f4c91", null ],
     [ "GetDefault", "d2/dfb/classdart_1_1common_1_1CAllocator.html#acbda1b02de6f3c2acb5fa330d96c5b21", null ],
-    [ "getStaticType", "d2/dfb/classdart_1_1common_1_1CAllocator.html#adc1c64a2fed8d372229172ae80c28e3a", null ],
-    [ "getType", "d2/dfb/classdart_1_1common_1_1CAllocator.html#ae0344fb97afd143101db39b8f59c115e", null ],
+    [ "getStaticType", "d2/dfb/classdart_1_1common_1_1CAllocator.html#a8d4fbf831dc1ca92ae3fe41709203de9", null ],
+    [ "getType", "d2/dfb/classdart_1_1common_1_1CAllocator.html#afe87dccca49565dbd7ad0f5162c91c93", null ],
     [ "is", "d2/dfb/classdart_1_1common_1_1CAllocator.html#a4d171ea0afccad1214c01eedd14a5616", null ],
     [ "print", "d2/dfb/classdart_1_1common_1_1CAllocator.html#a081f8f44e75950054f580bef5b07e491", null ]
 ];

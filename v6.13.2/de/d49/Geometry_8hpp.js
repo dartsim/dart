@@ -1,6 +1,6 @@
 var Geometry_8hpp =
 [
-    [ "BoundingBox", "da/d06/classdart_1_1math_1_1BoundingBox.html", "da/d06/classdart_1_1math_1_1BoundingBox" ],
+    [ "dart::math::BoundingBox", "da/d06/classdart_1_1math_1_1BoundingBox.html", "da/d06/classdart_1_1math_1_1BoundingBox" ],
     [ "SupportGeometry", "de/d49/Geometry_8hpp.html#ae600b44172da50dfaf79a6bb02493e9a", null ],
     [ "SupportPolygon", "de/d49/Geometry_8hpp.html#afe00691d18a940ea75ac1d1693b57ad0", null ],
     [ "AxisType", "de/d49/Geometry_8hpp.html#a263c1ce494ba2a8cf1e1c738e3bb2204", [
@@ -33,7 +33,7 @@ var Geometry_8hpp =
     [ "computeClosestPointOnSupportPolygon", "de/d49/Geometry_8hpp.html#a4a2a8bb71cecea244a69dc3f823bdf79", null ],
     [ "computeConvexHull", "de/d49/Geometry_8hpp.html#aa51acb5d0b72768b14d41d537f7491ce", null ],
     [ "computeConvexHull", "de/d49/Geometry_8hpp.html#aa2833b1c9065038e031d234d7cd5ecfc", null ],
-    [ "computeConvexHull3D", "de/d49/Geometry_8hpp.html#a4361f0c235ccda48467a7bdc873fad28", null ],
+    [ "computeConvexHull3D", "de/d49/Geometry_8hpp.html#aca061ee35539061751566750d0b6baf9", null ],
     [ "computeIntersection", "de/d49/Geometry_8hpp.html#a077c96b2a7fd326681e31d5d947d4108", null ],
     [ "computeNullSpace", "de/d49/Geometry_8hpp.html#abdcb569c37a9d5877249411ec09b8975", null ],
     [ "computeRotation", "de/d49/Geometry_8hpp.html#a41a8812fdab8b93d6f56ed9aa71f232a", null ],

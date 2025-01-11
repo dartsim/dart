@@ -1,6 +1,6 @@
 var Geometry_8cpp =
 [
-    [ "HullAngle", "d7/dc6/structdart_1_1math_1_1HullAngle.html", "d7/dc6/structdart_1_1math_1_1HullAngle" ],
+    [ "dart::math::HullAngle", "d7/dc6/structdart_1_1math_1_1HullAngle.html", "d7/dc6/structdart_1_1math_1_1HullAngle" ],
     [ "DART_EPSILON", "d7/def/Geometry_8cpp.html#a965dd71b99bacf40a89e0acf48b2e6e5", null ],
     [ "EPSILON_EXPMAP_THETA", "d7/def/Geometry_8cpp.html#a7d9d043fb287129f0d6c5087b93a3228", null ],
     [ "ad", "d7/def/Geometry_8cpp.html#adff5879e39b18ee5960c5a08d5df2e4d", null ],

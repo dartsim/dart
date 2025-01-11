@@ -1,6 +1,6 @@
 var SkeletonAspect_8hpp =
 [
-    [ "SkeletonAspectProperties", "dc/d8c/structdart_1_1dynamics_1_1detail_1_1SkeletonAspectProperties.html", "dc/d8c/structdart_1_1dynamics_1_1detail_1_1SkeletonAspectProperties" ],
+    [ "dart::dynamics::detail::SkeletonAspectProperties", "dc/d8c/structdart_1_1dynamics_1_1detail_1_1SkeletonAspectProperties.html", "dc/d8c/structdart_1_1dynamics_1_1detail_1_1SkeletonAspectProperties" ],
     [ "BodyNodePropertiesVector", "d9/de0/SkeletonAspect_8hpp.html#a9400e827a63ecb181e980fcae3426728", null ],
     [ "BodyNodeStateVector", "d9/de0/SkeletonAspect_8hpp.html#a24624b2cd98e5dca494939284e2b7c5a", null ],
     [ "BodyNodeVectorProxyAspect", "d9/de0/SkeletonAspect_8hpp.html#ac7c2d2e6a6d53950a6e6ddcd816bb1ad", null ],

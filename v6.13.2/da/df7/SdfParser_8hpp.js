@@ -1,6 +1,6 @@
 var SdfParser_8hpp =
 [
-    [ "Options", "d2/d3d/structdart_1_1utils_1_1SdfParser_1_1Options.html", "d2/d3d/structdart_1_1utils_1_1SdfParser_1_1Options" ],
+    [ "dart::utils::SdfParser::Options", "d2/d3d/structdart_1_1utils_1_1SdfParser_1_1Options.html", "d2/d3d/structdart_1_1utils_1_1SdfParser_1_1Options" ],
     [ "RootJointType", "da/df7/SdfParser_8hpp.html#a3bcfc7f02bfeb7c003ae2407588fdfff", [
       [ "FLOATING", "da/df7/SdfParser_8hpp.html#a3bcfc7f02bfeb7c003ae2407588fdfffa8bc27034f643005ec2eb9133de22220e", null ],
       [ "FIXED", "da/df7/SdfParser_8hpp.html#a3bcfc7f02bfeb7c003ae2407588fdfffac6e6dc18b53b4c2681394b9d8aefcec7", null ]

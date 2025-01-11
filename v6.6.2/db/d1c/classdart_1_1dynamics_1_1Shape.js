@@ -37,7 +37,7 @@ var classdart_1_1dynamics_1_1Shape =
     [ "getDataVariance", "db/d1c/classdart_1_1dynamics_1_1Shape.html#ad889e963710845c95f4a17efde880076", null ],
     [ "getID", "db/d1c/classdart_1_1dynamics_1_1Shape.html#a3d9050d603cde0eda0b1fae5e982d741", null ],
     [ "getShapeType", "db/d1c/classdart_1_1dynamics_1_1Shape.html#a1d2356b12d2d76814e3ddd8d55c98746", null ],
-    [ "getType", "db/d1c/classdart_1_1dynamics_1_1Shape.html#a7abd5aaf01b44ca0515527e4f42ab715", null ],
+    [ "getType", "db/d1c/classdart_1_1dynamics_1_1Shape.html#a162e0cc4e2f48867c11559c0bd5a1222", null ],
     [ "getVolume", "db/d1c/classdart_1_1dynamics_1_1Shape.html#ad3c063dab7b4246c28829cc91e843d6e", null ],
     [ "is", "db/d1c/classdart_1_1dynamics_1_1Shape.html#ab90bddef38cfef8a4dcd93d770ef3a2e", null ],
     [ "notifyAlphaUpdate", "db/d1c/classdart_1_1dynamics_1_1Shape.html#a675ea9bc41741a4a62c8288c75f09fdd", null ],

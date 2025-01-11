@@ -1,6 +1,6 @@
 var Stopwatch_8hpp =
 [
-    [ "Stopwatch", "d9/daf/classdart_1_1common_1_1Stopwatch.html", "d9/daf/classdart_1_1common_1_1Stopwatch" ],
+    [ "dart::common::Stopwatch< UnitType, ClockType >", "d9/daf/classdart_1_1common_1_1Stopwatch.html", "d9/daf/classdart_1_1common_1_1Stopwatch" ],
     [ "StopwatchMS", "d7/dfd/Stopwatch_8hpp.html#aea52b14263c56939b8e776e5264deb2f", null ],
     [ "StopwatchNS", "d7/dfd/Stopwatch_8hpp.html#a788840aa18dce6e7f269b3f9b69f8081", null ],
     [ "StopwatchS", "d7/dfd/Stopwatch_8hpp.html#a797e73c22abb6626f7acad63cf078603", null ],

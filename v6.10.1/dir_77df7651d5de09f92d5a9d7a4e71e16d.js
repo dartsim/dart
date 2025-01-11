@@ -10,17 +10,13 @@ var dir_77df7651d5de09f92d5a9d7a4e71e16d =
     [ "LoadOpengl.hpp", "dc/da2/LoadOpengl_8hpp.html", null ],
     [ "MotionBlurSimWindow.hpp", "d1/d96/MotionBlurSimWindow_8hpp.html", "d1/d96/MotionBlurSimWindow_8hpp" ],
     [ "OpenGLRenderInterface.cpp", "d1/d1c/OpenGLRenderInterface_8cpp.html", "d1/d1c/OpenGLRenderInterface_8cpp" ],
-    [ "OpenGLRenderInterface.hpp", "de/db8/OpenGLRenderInterface_8hpp.html", [
-      [ "OpenGLRenderInterface", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface" ]
-    ] ],
+    [ "OpenGLRenderInterface.hpp", "de/db8/OpenGLRenderInterface_8hpp.html", "de/db8/OpenGLRenderInterface_8hpp" ],
     [ "RenderInterface.cpp", "d9/d2d/RenderInterface_8cpp.html", null ],
     [ "RenderInterface.hpp", "d0/dc8/RenderInterface_8hpp.html", "d0/dc8/RenderInterface_8hpp" ],
     [ "SimWindow.hpp", "de/d15/SimWindow_8hpp.html", "de/d15/SimWindow_8hpp" ],
     [ "SoftSimWindow.hpp", "dd/dd8/SoftSimWindow_8hpp.html", "dd/dd8/SoftSimWindow_8hpp" ],
     [ "Trackball.cpp", "dd/d7f/Trackball_8cpp.html", null ],
-    [ "Trackball.hpp", "d8/d92/Trackball_8hpp.html", [
-      [ "Trackball", "de/d9b/classdart_1_1gui_1_1Trackball.html", "de/d9b/classdart_1_1gui_1_1Trackball" ]
-    ] ],
+    [ "Trackball.hpp", "d8/d92/Trackball_8hpp.html", "d8/d92/Trackball_8hpp" ],
     [ "Win2D.hpp", "de/ddb/Win2D_8hpp.html", "de/ddb/Win2D_8hpp" ],
     [ "Win3D.hpp", "dc/de0/Win3D_8hpp.html", "dc/de0/Win3D_8hpp" ]
 ];

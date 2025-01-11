@@ -9,7 +9,5 @@ var dir_89aa97c1afb8f2f06c6371ad36082490 =
     [ "Helpers.hpp", "d7/dd7/Helpers_8hpp.html", "d7/dd7/Helpers_8hpp" ],
     [ "MathTypes.hpp", "d7/d37/MathTypes_8hpp.html", "d7/d37/MathTypes_8hpp" ],
     [ "Random.cpp", "d4/dde/Random_8cpp.html", null ],
-    [ "Random.hpp", "dd/d6e/Random_8hpp.html", [
-      [ "Random", "dd/dfb/classdart_1_1math_1_1Random.html", "dd/dfb/classdart_1_1math_1_1Random" ]
-    ] ]
+    [ "Random.hpp", "dd/d6e/Random_8hpp.html", "dd/d6e/Random_8hpp" ]
 ];

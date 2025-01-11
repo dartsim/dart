@@ -1,8 +1,8 @@
 var BasicNodeManager_8hpp =
 [
-    [ "BasicNodeManagerForBodyNode", "d8/d2d/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode.html", "d8/d2d/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode" ],
-    [ "type", "da/dc8/structdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode_1_1type.html", null ],
-    [ "BasicNodeManagerForSkeleton", "d0/de8/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForSkeleton.html", "d0/de8/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForSkeleton" ],
+    [ "dart::dynamics::detail::BasicNodeManagerForBodyNode", "d8/d2d/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode.html", "d8/d2d/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode" ],
+    [ "dart::dynamics::detail::BasicNodeManagerForBodyNode::type< T >", "da/dc8/structdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode_1_1type.html", null ],
+    [ "dart::dynamics::detail::BasicNodeManagerForSkeleton", "d0/de8/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForSkeleton.html", "d0/de8/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForSkeleton" ],
     [ "DART_BAKE_SPECIALIZED_NODE", "d2/d9a/BasicNodeManager_8hpp.html#a819c54fe5226806f171e7fd0293e813e", null ],
     [ "DART_BAKE_SPECIALIZED_NODE_DECLARATIONS", "d2/d9a/BasicNodeManager_8hpp.html#a75edb8ffb44f1228c2cc570f37313baf", null ],
     [ "DART_BAKE_SPECIALIZED_NODE_DEFINITIONS", "d2/d9a/BasicNodeManager_8hpp.html#ae0fccaf01ec25a8a6adf649e93caa7f8", null ],

@@ -1,6 +1,6 @@
 var XmlHelpers_8hpp =
 [
-    [ "TemplatedElementEnumerator", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator.html", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator" ],
+    [ "dart::utils::TemplatedElementEnumerator< ElementType >", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator.html", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator" ],
     [ "ConstElementEnumerator", "db/d95/XmlHelpers_8hpp.html#ab10c84093cc5dcbba72069f85ce02172", null ],
     [ "ElementEnumerator", "db/d95/XmlHelpers_8hpp.html#aca9b6628dbe888926901fa25ac1379c5", null ],
     [ "getAttribute", "db/d95/XmlHelpers_8hpp.html#a58942c589535c4d34afdc5458dbb105b", null ],

@@ -12,11 +12,11 @@ var classdart_1_1dynamics_1_1VisualAspect =
     [ "getAlpha", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a73d79925ab54d94209e764c199b6e1e9", null ],
     [ "getAspectProperties", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a58aab97852fbb567058b0e255fd43357", null ],
     [ "getColor", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#aaed5945eca79b20fd0e1ef9e3a753baa", null ],
-    [ "getHidden", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#afc8a9a536c62d21601723957dd996752", null ],
+    [ "getHidden", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#afc139aaa3e7db4ca21d80a5836c69e09", null ],
     [ "getProperties", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#af083d3d70c641bda1b4ce71bcfcc1207", null ],
     [ "getRGB", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a93435cf8a5c9f9f5f820338fc1d8fb2d", null ],
-    [ "getRGBA", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a1f175e66ccc2b0cbfdfe914eeb0b96e6", null ],
-    [ "getShadowed", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a3f5bd59de5d6bb06b65f97fec48e0dda", null ],
+    [ "getRGBA", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#afa13458de78444ecbc27d8360d5ee9b7", null ],
+    [ "getShadowed", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a60c05f0efc41e7a59c40aedce3575e6b", null ],
     [ "hide", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a5814f14bf6282a81c75c72be63059572", null ],
     [ "incrementVersion", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a11b1ab21ed0067629afb973c72998107", null ],
     [ "isHidden", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#aec01727c7ff6204f1e017e43230639a9", null ],
@@ -33,5 +33,5 @@ var classdart_1_1dynamics_1_1VisualAspect =
     [ "setShadowed", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a469cf700cb3e8caff5d0095c06a50c20", null ],
     [ "show", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#ac4741d29df073a76f72d1f1eaa8e9f5a", null ],
     [ "mProperties", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a7fde45d2751984165544c3dc8454f86b", null ],
-    [ "UpdateProperties", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#aa4f3462870531d11af29646397b2a4d2", null ]
+    [ "UpdateProperties", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html#a1a09856402be768ba020d745b378c30d", null ]
 ];

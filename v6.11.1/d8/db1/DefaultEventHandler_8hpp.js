@@ -1,7 +1,7 @@
 var DefaultEventHandler_8hpp =
 [
-    [ "PickInfo", "d1/d33/structdart_1_1gui_1_1osg_1_1PickInfo.html", "d1/d33/structdart_1_1gui_1_1osg_1_1PickInfo" ],
-    [ "DefaultEventHandler", "da/db3/classdart_1_1gui_1_1osg_1_1DefaultEventHandler.html", "da/db3/classdart_1_1gui_1_1osg_1_1DefaultEventHandler" ],
+    [ "dart::gui::osg::PickInfo", "d1/d33/structdart_1_1gui_1_1osg_1_1PickInfo.html", "d1/d33/structdart_1_1gui_1_1osg_1_1PickInfo" ],
+    [ "dart::gui::osg::DefaultEventHandler", "da/db3/classdart_1_1gui_1_1osg_1_1DefaultEventHandler.html", "da/db3/classdart_1_1gui_1_1osg_1_1DefaultEventHandler" ],
     [ "ConstraintType", "d8/db1/DefaultEventHandler_8hpp.html#a5f5d8f77f2710b1e019a429540dadd17", [
       [ "UNCONSTRAINED", "d8/db1/DefaultEventHandler_8hpp.html#a5f5d8f77f2710b1e019a429540dadd17a8a11232bac51e07d22936d3af03516a6", null ],
       [ "LINE_CONSTRAINT", "d8/db1/DefaultEventHandler_8hpp.html#a5f5d8f77f2710b1e019a429540dadd17aab1d8a24cec7f4772ca7d6d068c00f27", null ],

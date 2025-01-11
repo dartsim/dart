@@ -1,6 +1,6 @@
 var Error_8hpp =
 [
-    [ "Error", "da/d43/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Error.html", "da/d43/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Error" ],
+    [ "dart::utils::MjcfParser::detail::Error", "da/d43/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Error.html", "da/d43/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Error" ],
     [ "Errors", "d1/d93/Error_8hpp.html#ac2ec8a8469cef814cc8809e07a75bbd4", null ],
     [ "ErrorCode", "d1/d93/Error_8hpp.html#a898bc29de74fe95f614ce67c777008e4", [
       [ "NONE", "d1/d93/Error_8hpp.html#a898bc29de74fe95f614ce67c777008e4ab50339a10e1de285ac99d4c3990b8693", null ],

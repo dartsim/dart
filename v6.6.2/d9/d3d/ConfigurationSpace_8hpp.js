@@ -1,9 +1,9 @@
 var ConfigurationSpace_8hpp =
 [
-    [ "RealVectorSpace", "d7/d50/structdart_1_1math_1_1RealVectorSpace.html", "d7/d50/structdart_1_1math_1_1RealVectorSpace" ],
-    [ "SO3Space", "d3/df4/structdart_1_1math_1_1SO3Space.html", "d3/df4/structdart_1_1math_1_1SO3Space" ],
-    [ "SE3Space", "d8/db9/structdart_1_1math_1_1SE3Space.html", "d8/db9/structdart_1_1math_1_1SE3Space" ],
-    [ "MapsToManifoldPoint", "d6/d67/structdart_1_1math_1_1MapsToManifoldPoint.html", null ],
+    [ "dart::math::RealVectorSpace< Dimension >", "d7/d50/structdart_1_1math_1_1RealVectorSpace.html", "d7/d50/structdart_1_1math_1_1RealVectorSpace" ],
+    [ "dart::math::SO3Space", "d3/df4/structdart_1_1math_1_1SO3Space.html", "d3/df4/structdart_1_1math_1_1SO3Space" ],
+    [ "dart::math::SE3Space", "d8/db9/structdart_1_1math_1_1SE3Space.html", "d8/db9/structdart_1_1math_1_1SE3Space" ],
+    [ "dart::math::MapsToManifoldPoint", "d6/d67/structdart_1_1math_1_1MapsToManifoldPoint.html", null ],
     [ "NullSpace", "d9/d3d/ConfigurationSpace_8hpp.html#a2e6eb0a4590dec732af1b119739d5189", null ],
     [ "R1Space", "d9/d3d/ConfigurationSpace_8hpp.html#a98800600df3afbffb81dc27146c76acd", null ],
     [ "R2Space", "d9/d3d/ConfigurationSpace_8hpp.html#a3ffd01ccc936845571cb1c61bb20c67e", null ],

@@ -10,15 +10,15 @@ var classdart_1_1dynamics_1_1DynamicsAspect =
     [ "DynamicsAspect", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a6669ef448e15b438dd5b1c2a64e1d165", null ],
     [ "cloneAspect", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#acbfe6897f0f283198f4b656892415b8e", null ],
     [ "getAspectProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a58aab97852fbb567058b0e255fd43357", null ],
-    [ "getFirstFrictionDirection", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a3cafeecfc63ba8827c1e7790e829cb75", null ],
+    [ "getFirstFrictionDirection", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a63add7014b8c7f2c35860c54c14a0c4a", null ],
     [ "getFirstFrictionDirectionFrame", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a6cf9c1d51312ebf4192f81dfad2ab79f", null ],
     [ "getFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a3c376825803d08c584f517cb4e5771e1", null ],
     [ "getPrimaryFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a1aa9175d851a78c74bf8fdf14c13d639", null ],
-    [ "getPrimarySlipCompliance", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#ad078f67e906e4d0839165fe377f375e5", null ],
+    [ "getPrimarySlipCompliance", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a210f42b533b9951cd9f7b2b65e391197", null ],
     [ "getProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#af083d3d70c641bda1b4ce71bcfcc1207", null ],
-    [ "getRestitutionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a7d5cf4c9bc5cd0d1277685074e639a66", null ],
-    [ "getSecondaryFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#ac87aaf096fc58f32f33cfafff0590bc3", null ],
-    [ "getSecondarySlipCompliance", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#ab47e8224035e9433311ecf53c742c552", null ],
+    [ "getRestitutionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a805b8aaba9c7fa205ad5f7871ae265a3", null ],
+    [ "getSecondaryFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a33c973e0fc7bd5a84e6dd86711cd3854", null ],
+    [ "getSecondarySlipCompliance", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#aa429fbd4e080c2ef82424f8412df396a", null ],
     [ "incrementVersion", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a11b1ab21ed0067629afb973c72998107", null ],
     [ "notifyPropertiesUpdate", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a0d756177774029eaebe7b09609701f2f", null ],
     [ "notifyPropertiesUpdated", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a050393391376ff42024d0dbb931d4c13", null ],
@@ -33,5 +33,5 @@ var classdart_1_1dynamics_1_1DynamicsAspect =
     [ "setSecondaryFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a022fb307e2e16dcf98292f49c64f90f4", null ],
     [ "setSecondarySlipCompliance", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a39505bfd96fd88dbee62a8eb3fde87db", null ],
     [ "mProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a7fde45d2751984165544c3dc8454f86b", null ],
-    [ "UpdateProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#aa4f3462870531d11af29646397b2a4d2", null ]
+    [ "UpdateProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a1a09856402be768ba020d745b378c30d", null ]
 ];

@@ -10,9 +10,9 @@ var classdart_1_1dynamics_1_1DynamicsAspect =
     [ "DynamicsAspect", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a6669ef448e15b438dd5b1c2a64e1d165", null ],
     [ "cloneAspect", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#acbfe6897f0f283198f4b656892415b8e", null ],
     [ "getAspectProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a58aab97852fbb567058b0e255fd43357", null ],
-    [ "getFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a919b5fcb7728b7b1a9e2426d5b567764", null ],
+    [ "getFrictionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a0de402486dd8f9244bed3892829a38dc", null ],
     [ "getProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#af083d3d70c641bda1b4ce71bcfcc1207", null ],
-    [ "getRestitutionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a7d5cf4c9bc5cd0d1277685074e639a66", null ],
+    [ "getRestitutionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a805b8aaba9c7fa205ad5f7871ae265a3", null ],
     [ "incrementVersion", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a11b1ab21ed0067629afb973c72998107", null ],
     [ "notifyPropertiesUpdate", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a0d756177774029eaebe7b09609701f2f", null ],
     [ "notifyPropertiesUpdated", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a050393391376ff42024d0dbb931d4c13", null ],
@@ -21,5 +21,5 @@ var classdart_1_1dynamics_1_1DynamicsAspect =
     [ "setProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#acbf5ef8933f8335ab5aa9c60da06a9b9", null ],
     [ "setRestitutionCoeff", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a161e4b2eb7feacbe3df2eb8d413c2031", null ],
     [ "mProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a7fde45d2751984165544c3dc8454f86b", null ],
-    [ "UpdateProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#aa4f3462870531d11af29646397b2a4d2", null ]
+    [ "UpdateProperties", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html#a1a09856402be768ba020d745b378c30d", null ]
 ];

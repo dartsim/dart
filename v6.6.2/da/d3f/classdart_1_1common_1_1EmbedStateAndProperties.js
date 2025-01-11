@@ -9,8 +9,8 @@ var classdart_1_1common_1_1EmbedStateAndProperties =
     [ "Derived", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a539538beb609af370e095d37b506732a", null ],
     [ "EmbedStateAndProperties", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#ae41f8669f043aea14f436ece04bdbc41", null ],
     [ "~EmbedStateAndProperties", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a45f1d0d2adc46a8619c8f9554e6da3f0", null ],
-    [ "getAspectProperties", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a3ab70e22481ea4a65ea442c5cf143788", null ],
-    [ "getAspectState", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a5a2a0b8f89c8326ab80200a0f0129b22", null ],
+    [ "getAspectProperties", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#ab6e8752cc2beb033194e5f0e4db6499a", null ],
+    [ "getAspectState", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a7867c65961c081dfff2b893c770ba48b", null ],
     [ "mAspectProperties", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#adc32d6d51e7c90c6e54aa2bd737f62d1", null ],
     [ "mAspectState", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html#a405ce6bb8f6fb68672230932ac980c8c", null ]
 ];

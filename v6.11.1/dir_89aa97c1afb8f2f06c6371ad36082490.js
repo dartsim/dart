@@ -11,9 +11,7 @@ var dir_89aa97c1afb8f2f06c6371ad36082490 =
     [ "MathTypes.hpp", "d7/d37/MathTypes_8hpp.html", "d7/d37/MathTypes_8hpp" ],
     [ "Mesh.hpp", "d7/d5d/math_2Mesh_8hpp.html", "d7/d5d/math_2Mesh_8hpp" ],
     [ "Random.cpp", "d4/dde/Random_8cpp.html", null ],
-    [ "Random.hpp", "dd/d6e/Random_8hpp.html", [
-      [ "Random", "dd/dfb/classdart_1_1math_1_1Random.html", "dd/dfb/classdart_1_1math_1_1Random" ]
-    ] ],
+    [ "Random.hpp", "dd/d6e/Random_8hpp.html", "dd/d6e/Random_8hpp" ],
     [ "TriMesh.cpp", "d5/d3d/TriMesh_8cpp.html", null ],
     [ "TriMesh.hpp", "d8/d4d/TriMesh_8hpp.html", "d8/d4d/TriMesh_8hpp" ]
 ];

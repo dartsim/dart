@@ -1,6 +1,6 @@
 var XmlHelpers_8hpp =
 [
-    [ "TemplatedElementEnumerator", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator.html", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator" ],
+    [ "dart::utils::TemplatedElementEnumerator< ElementType >", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator.html", "d3/dd6/classdart_1_1utils_1_1TemplatedElementEnumerator" ],
     [ "ConstElementEnumerator", "db/d95/XmlHelpers_8hpp.html#ab10c84093cc5dcbba72069f85ce02172", null ],
     [ "ElementEnumerator", "db/d95/XmlHelpers_8hpp.html#aca9b6628dbe888926901fa25ac1379c5", null ],
     [ "copyChildNodes", "db/d95/XmlHelpers_8hpp.html#a2976d9ff32e554b1da69da5a0fac0b36", null ],
@@ -19,7 +19,7 @@ var XmlHelpers_8hpp =
     [ "getAttributeVector3d", "db/d95/XmlHelpers_8hpp.html#a339caae505e6c4465ae6c18cf60a76c8", null ],
     [ "getAttributeVector4d", "db/d95/XmlHelpers_8hpp.html#a62fdebc998e50101b2b9ef476f3c8b03", null ],
     [ "getAttributeVector6d", "db/d95/XmlHelpers_8hpp.html#a4796ef15ee434643c06a95137133a569", null ],
-    [ "getAttributeVectorNd", "db/d95/XmlHelpers_8hpp.html#aae20c9db7f50a11ed63f04341286fc0d", null ],
+    [ "getAttributeVectorNd", "db/d95/XmlHelpers_8hpp.html#a55bf864ec8ee99c7f6f98d97ca0c80a3", null ],
     [ "getAttributeVectorXd", "db/d95/XmlHelpers_8hpp.html#a799ecd67b92a6f1688f1e67d6b24a560", null ],
     [ "getElement", "db/d95/XmlHelpers_8hpp.html#a3d265def48b699cecc9b07c66ad8a8b8", null ],
     [ "getElement", "db/d95/XmlHelpers_8hpp.html#aa7cac679e0978d89779f9cc15b9502a1", null ],
@@ -67,6 +67,6 @@ var XmlHelpers_8hpp =
     [ "toVector3i", "db/d95/XmlHelpers_8hpp.html#a8ff1b108a74593f1c21e680667c7d017", null ],
     [ "toVector4d", "db/d95/XmlHelpers_8hpp.html#a11acdaf07d85d67daa2ba2c9aa3a0a89", null ],
     [ "toVector6d", "db/d95/XmlHelpers_8hpp.html#ae386eb2654833eeedbe5ef63fa285fc8", null ],
-    [ "toVectorNd", "db/d95/XmlHelpers_8hpp.html#a85342741a4373efeac19789c322d1aa2", null ],
+    [ "toVectorNd", "db/d95/XmlHelpers_8hpp.html#a0d27259ddfde675fa1360772c8674661", null ],
     [ "toVectorXd", "db/d95/XmlHelpers_8hpp.html#a9908fa2e4c843612d86db4f9130d5746", null ]
 ];

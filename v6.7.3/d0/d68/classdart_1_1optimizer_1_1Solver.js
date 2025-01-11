@@ -4,7 +4,7 @@ var classdart_1_1optimizer_1_1Solver =
     [ "Solver", "d0/d68/classdart_1_1optimizer_1_1Solver.html#af480f5200ed42551a9f1392545aa772a", null ],
     [ "Solver", "d0/d68/classdart_1_1optimizer_1_1Solver.html#aee36c5d2b25195ef86a08759274e1a27", null ],
     [ "~Solver", "d0/d68/classdart_1_1optimizer_1_1Solver.html#a69bd13c0d9ad96746697909fb4ae1d7b", null ],
-    [ "clone", "d0/d68/classdart_1_1optimizer_1_1Solver.html#af81a4a4f69a787883fa2c13c46a85237", null ],
+    [ "clone", "d0/d68/classdart_1_1optimizer_1_1Solver.html#a85f7cae39ae131bb92ed648355292f43", null ],
     [ "copy", "d0/d68/classdart_1_1optimizer_1_1Solver.html#a34042a8350719ae993014080da507b84", null ],
     [ "getIterationsPerPrint", "d0/d68/classdart_1_1optimizer_1_1Solver.html#a2b4c1c9612667ffe0f84fcf155b47813", null ],
     [ "getNumMaxIterations", "d0/d68/classdart_1_1optimizer_1_1Solver.html#a33a1cf2a8efbba599ca1072a52a8bf2b", null ],

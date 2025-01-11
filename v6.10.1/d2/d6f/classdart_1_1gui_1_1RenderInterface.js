@@ -13,7 +13,7 @@ var classdart_1_1gui_1_1RenderInterface =
     [ "drawLineSegments", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#af66efe791eb8ea67d5251aa0b669036c", null ],
     [ "drawList", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a47bda874dd1ba1e01697540947f80cc8", null ],
     [ "drawMesh", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a8fb3c2b1db3e9600b7a0f788c1052b8d", null ],
-    [ "drawMultiSphere", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a7a494c475a0b0b44936f3631ebcf7c02", null ],
+    [ "drawMultiSphere", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a6e82e028046a7f14a19549f2b1382851", null ],
     [ "drawOpenCylinder", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a3146a3ff71b16ef7cd27e057bd3d50d6", null ],
     [ "drawPyramid", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a5d72494660f20fe5317694a8df3fb19c", null ],
     [ "drawSoftMesh", "d2/d6f/classdart_1_1gui_1_1RenderInterface.html#a68341839f831c2c5e8a56611c93c18c9", null ],

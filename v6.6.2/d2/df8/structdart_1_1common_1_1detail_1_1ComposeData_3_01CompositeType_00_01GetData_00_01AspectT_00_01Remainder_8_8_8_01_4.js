@@ -27,6 +27,6 @@ var structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData
     [ "copy", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a645249ee34d0beabf2a6a62d6eefff02", null ],
     [ "createShared", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a0c369813da0dba1eb20549a9ef8c8201", null ],
     [ "operator CompositeType", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a4ead6fea5d8053c0c60cb63c7c8cbdb7", null ],
-    [ "operator=", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a81a2cae8142b368cc002382d2e3af923", null ],
+    [ "operator=", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a0517c0690f7d991a2516da7182160d86", null ],
     [ "setFrom", "d2/df8/structdart_1_1common_1_1detail_1_1ComposeData_3_01CompositeType_00_01GetData_00_01AspectT_00_01Remainder_8_8_8_01_4.html#a7e35d7de91415ab6a6fd821907166578", null ]
 ];

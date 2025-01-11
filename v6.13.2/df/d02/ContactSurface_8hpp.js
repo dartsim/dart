@@ -1,8 +1,8 @@
 var ContactSurface_8hpp =
 [
-    [ "ContactSurfaceParams", "de/db0/structdart_1_1constraint_1_1ContactSurfaceParams.html", "de/db0/structdart_1_1constraint_1_1ContactSurfaceParams" ],
-    [ "ContactSurfaceHandler", "d4/d48/classdart_1_1constraint_1_1ContactSurfaceHandler.html", "d4/d48/classdart_1_1constraint_1_1ContactSurfaceHandler" ],
-    [ "DefaultContactSurfaceHandler", "de/d42/classdart_1_1constraint_1_1DefaultContactSurfaceHandler.html", "de/d42/classdart_1_1constraint_1_1DefaultContactSurfaceHandler" ],
+    [ "dart::constraint::ContactSurfaceParams", "de/db0/structdart_1_1constraint_1_1ContactSurfaceParams.html", "de/db0/structdart_1_1constraint_1_1ContactSurfaceParams" ],
+    [ "dart::constraint::ContactSurfaceHandler", "d4/d48/classdart_1_1constraint_1_1ContactSurfaceHandler.html", "d4/d48/classdart_1_1constraint_1_1ContactSurfaceHandler" ],
+    [ "dart::constraint::DefaultContactSurfaceHandler", "de/d42/classdart_1_1constraint_1_1DefaultContactSurfaceHandler.html", "de/d42/classdart_1_1constraint_1_1DefaultContactSurfaceHandler" ],
     [ "DART_BOUNCING_VELOCITY_THRESHOLD", "df/d02/ContactSurface_8hpp.html#aa9d7023df6b58e42d8db01389e573f2f", null ],
     [ "DART_CONTACT_CONSTRAINT_EPSILON_SQUARED", "df/d02/ContactSurface_8hpp.html#a17817975ccbb0022d1df8b76f8aca558", null ],
     [ "DART_FRICTION_COEFF_THRESHOLD", "df/d02/ContactSurface_8hpp.html#a2b0dcfb1536ff83c9edc47cedca73be6", null ],

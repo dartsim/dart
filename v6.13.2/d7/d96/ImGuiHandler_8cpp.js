@@ -1,7 +1,7 @@
 var ImGuiHandler_8cpp =
 [
-    [ "ImGuiNewFrameCallback", "d4/db2/structdart_1_1gui_1_1osg_1_1ImGuiNewFrameCallback.html", "d4/db2/structdart_1_1gui_1_1osg_1_1ImGuiNewFrameCallback" ],
-    [ "ImGuiDrawCallback", "d5/d80/structdart_1_1gui_1_1osg_1_1ImGuiDrawCallback.html", "d5/d80/structdart_1_1gui_1_1osg_1_1ImGuiDrawCallback" ],
+    [ "dart::gui::osg::ImGuiNewFrameCallback", "d4/db2/structdart_1_1gui_1_1osg_1_1ImGuiNewFrameCallback.html", "d4/db2/structdart_1_1gui_1_1osg_1_1ImGuiNewFrameCallback" ],
+    [ "dart::gui::osg::ImGuiDrawCallback", "d5/d80/structdart_1_1gui_1_1osg_1_1ImGuiDrawCallback.html", "d5/d80/structdart_1_1gui_1_1osg_1_1ImGuiDrawCallback" ],
     [ "ConvertedKey", "d7/d96/ImGuiHandler_8cpp.html#a8ede84cb75bcc4fc89c06dbf73e43336", [
       [ "ConvertedKey_Tab", "d7/d96/ImGuiHandler_8cpp.html#a8ede84cb75bcc4fc89c06dbf73e43336a40a33cb632bf0d7950d5ca11be056d57", null ],
       [ "ConvertedKey_Left", "d7/d96/ImGuiHandler_8cpp.html#a8ede84cb75bcc4fc89c06dbf73e43336aa2bd8d530b94e6bfe8003dc42f069b85", null ],

@@ -5,7 +5,7 @@ var classdart_1_1common_1_1Aspect =
     [ "MakeProperties", "da/da6/classdart_1_1common_1_1Aspect.html#acae8a0c9409acc0066cf0c7000d80b58", null ],
     [ "MakeState", "da/da6/classdart_1_1common_1_1Aspect.html#aa3969ed77fdfacf60c2f121dede92869", null ],
     [ "~Aspect", "da/da6/classdart_1_1common_1_1Aspect.html#ab4164941ad6d4c29827417e9ae14e1db", null ],
-    [ "cloneAspect", "da/da6/classdart_1_1common_1_1Aspect.html#a04951a8708393344d8b7abfb5784e5f2", null ],
+    [ "cloneAspect", "da/da6/classdart_1_1common_1_1Aspect.html#a807a5be538aa9bdaa9343d77bc8d5782", null ],
     [ "getAspectProperties", "da/da6/classdart_1_1common_1_1Aspect.html#ab056accbf0e0c9228f4fc1256c844f8e", null ],
     [ "getAspectState", "da/da6/classdart_1_1common_1_1Aspect.html#a3eb20dd7c9086edc7f751ca5a59b9919", null ],
     [ "loseComposite", "da/da6/classdart_1_1common_1_1Aspect.html#ad9a4530031fe01cb993f3a4bab0e65bb", null ],

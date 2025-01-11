@@ -20,7 +20,7 @@ var classdart_1_1gui_1_1OpenGLRenderInterface =
     [ "drawList", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#a26a7ec99f035480d49bb3d9c4e6a2e6a", null ],
     [ "drawList", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#a47bda874dd1ba1e01697540947f80cc8", null ],
     [ "drawMesh", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#ad41c0836c7812f37aaf0ddfe7e80d6f8", null ],
-    [ "drawMultiSphere", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#ab8fd4f7ca7d7add9ffa676c7e95fd01d", null ],
+    [ "drawMultiSphere", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#a1d749ca138f0f7dc964365cacc09ba8c", null ],
     [ "drawOpenCylinder", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#aa383cd50129c33fb4265a3776511399a", null ],
     [ "drawSoftMesh", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#a66a3e95b106d6c188d0aaad246be5156", null ],
     [ "drawSphere", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html#ac39c6eab45a0ed18d99540ae61ba2ee4", null ],

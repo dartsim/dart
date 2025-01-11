@@ -1,6 +1,6 @@
 var Geometry_8hpp =
 [
-    [ "BoundingBox", "da/d06/classdart_1_1math_1_1BoundingBox.html", "da/d06/classdart_1_1math_1_1BoundingBox" ],
+    [ "dart::math::BoundingBox", "da/d06/classdart_1_1math_1_1BoundingBox.html", "da/d06/classdart_1_1math_1_1BoundingBox" ],
     [ "SupportGeometry", "de/d49/Geometry_8hpp.html#ae600b44172da50dfaf79a6bb02493e9a", null ],
     [ "SupportPolygon", "de/d49/Geometry_8hpp.html#afe00691d18a940ea75ac1d1693b57ad0", null ],
     [ "AxisType", "de/d49/Geometry_8hpp.html#a263c1ce494ba2a8cf1e1c738e3bb2204", [

@@ -1,6 +1,6 @@
 var DARTCollide_8cpp =
 [
-    [ "dContactGeom", "d9/dea/structdart_1_1collision_1_1dContactGeom.html", "d9/dea/structdart_1_1collision_1_1dContactGeom" ],
+    [ "dart::collision::dContactGeom", "d9/dea/structdart_1_1collision_1_1dContactGeom.html", "d9/dea/structdart_1_1collision_1_1dContactGeom" ],
     [ "DART_COLLISION_EPS", "d2/db2/DARTCollide_8cpp.html#a654af0a082cd2c354076e585e9b9af7a", null ],
     [ "dMULTIPLYOP0_331", "d2/db2/DARTCollide_8cpp.html#acd7c95f0b919f96b818a3793644058f9", null ],
     [ "dMULTIPLYOP1_331", "d2/db2/DARTCollide_8cpp.html#aadc8a10a7a740934f6be6e88a8d61032", null ],

@@ -25,7 +25,7 @@ var classdart_1_1common_1_1MemoryManager =
     [ "getPoolAllocator", "dc/d81/classdart_1_1common_1_1MemoryManager.html#a6b8e1d964ca9c42c29c9589ec187d401", null ],
     [ "hasAllocated", "dc/d81/classdart_1_1common_1_1MemoryManager.html#a0983c36b48aaf96b49cad71bd1dd21c7", null ],
     [ "print", "dc/d81/classdart_1_1common_1_1MemoryManager.html#a842f5a811e57a0cab9b54fb1eb9b9811", null ],
-    [ "operator<<", "dc/d81/classdart_1_1common_1_1MemoryManager.html#acb394ab1e4403609f48e42658a0277cc", null ],
+    [ "operator<<", "dc/d81/classdart_1_1common_1_1MemoryManager.html#abc3db9637eaa5368ab80798ddaf3012c", null ],
     [ "mBaseAllocator", "dc/d81/classdart_1_1common_1_1MemoryManager.html#a80b664874df2a3bcc0fe31fa5ac93c06", null ],
     [ "mFreeListAllocator", "dc/d81/classdart_1_1common_1_1MemoryManager.html#a85eec2fbe20a4e333fca7e31a5d3f4f0", null ],
     [ "mPoolAllocator", "dc/d81/classdart_1_1common_1_1MemoryManager.html#aa75d25056eb01e36177fd2bf8045d236", null ]

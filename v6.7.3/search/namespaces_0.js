@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['assimp_5896',['Assimp',['../d3/da2/namespaceAssimp.html',1,'']]]
+  ['assimp_0',['Assimp',['../d3/da2/namespaceAssimp.html',1,'']]]
 ];

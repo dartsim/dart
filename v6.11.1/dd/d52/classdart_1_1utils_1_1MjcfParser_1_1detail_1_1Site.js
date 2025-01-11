@@ -15,7 +15,7 @@ var classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site =
     [ "getCylinderRadius", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#ac9ae4f1cfcc695ba166abba4c43b1f19", null ],
     [ "getEllipsoidDiameters", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#a5af5c783e416abec9a8284d29576805d", null ],
     [ "getEllipsoidRadii", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#a65248b4197ad7e1a2daf73029f2d1dc4", null ],
-    [ "getFriction", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#aeb278bc5f6e3d0dd08446c8218b19ccc", null ],
+    [ "getFriction", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#a9bd966c25cd5b0b0b12fb059e8750a90", null ],
     [ "getGroup", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#ac03f099d4d1cdef36f3d1c0cd3a19e34", null ],
     [ "getName", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#ad84d94b04e99ac03a6f5836ceb5a4e97", null ],
     [ "getRelativeTransform", "dd/d52/classdart_1_1utils_1_1MjcfParser_1_1detail_1_1Site.html#ad4137349da59b1a48178ce9c76b836de", null ],

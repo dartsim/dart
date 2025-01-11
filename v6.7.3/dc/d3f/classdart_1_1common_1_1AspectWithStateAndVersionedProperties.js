@@ -14,20 +14,15 @@ var classdart_1_1common_1_1AspectWithStateAndVersionedProperties =
     [ "AspectWithStateAndVersionedProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a2531ebef60b8682370aab06c6f54e202", null ],
     [ "AspectWithStateAndVersionedProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a14847b706425f828f960389d185d28fd", null ],
     [ "AspectWithStateAndVersionedProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#ade89712a2d88440fb82f3ddf2665d609", null ],
-    [ "cloneAspect", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a2f6ded1adf7bf94b5ea2219b35a1e79f", null ],
+    [ "cloneAspect", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#afa6dc87ec8ed48f4bd29961858015cb3", null ],
     [ "getAspectProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a58aab97852fbb567058b0e255fd43357", null ],
-    [ "getAspectState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#ae59efaec207b668e9b0a5cd6e8cfa0e5", null ],
     [ "getProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#af083d3d70c641bda1b4ce71bcfcc1207", null ],
-    [ "getState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a4bd920c99c500a4b58d81074623e7963", null ],
     [ "incrementVersion", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a11b1ab21ed0067629afb973c72998107", null ],
     [ "notifyPropertiesUpdate", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a0d756177774029eaebe7b09609701f2f", null ],
     [ "notifyPropertiesUpdated", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a050393391376ff42024d0dbb931d4c13", null ],
     [ "setAspectProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a6f868baf0cf3194688ddbb19d8d62686", null ],
-    [ "setAspectState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a79b6ab72b8726165db368f9223cacb52", null ],
     [ "setProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#acbf5ef8933f8335ab5aa9c60da06a9b9", null ],
-    [ "setState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#aaf4114caf39a4b22ff780fcded7aaf7b", null ],
     [ "mProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a7fde45d2751984165544c3dc8454f86b", null ],
-    [ "mState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a96646506e02438db8dd93e671f0ae1b8", null ],
-    [ "UpdateProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a031109c5d785f55da924c85f1673dbe2", null ],
-    [ "UpdateState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a6fb7a00a8075d54e4c085cced11db33e", null ]
+    [ "UpdateProperties", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#a804002003121437cd7e3b2fa572682f9", null ],
+    [ "UpdateState", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html#aced7a3de2104004d0bfa8498b77abb27", null ]
 ];

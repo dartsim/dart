@@ -6,7 +6,7 @@ var classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode =
     [ "clearUnusedNodes", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#adc58cc34e105103d4e980764a2f124ca", null ],
     [ "clearUtilization", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#aec1312d507a8cb4f78a1b977644bd297", null ],
     [ "extractData", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#adbab6d1a8193fd12d34c934ccb5fe317", null ],
-    [ "getAiNodePtr", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#af43ad98f9ebfab9c3bde6bf9cc1919f7", null ],
+    [ "getAiNodePtr", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#a896e9902b56bc81b7c716f7748b2cfcc", null ],
     [ "getNode", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#ad84d151d8c368ff3e8011334b3024293", null ],
     [ "getNode", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#aa10b700416998680e33f261226000310", null ],
     [ "getParentShapeFrameNode", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html#a5df9d4b50556afca1b234fbc78d6d1a6", null ],

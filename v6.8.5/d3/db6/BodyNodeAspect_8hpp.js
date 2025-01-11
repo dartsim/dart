@@ -1,7 +1,7 @@
 var BodyNodeAspect_8hpp =
 [
-    [ "BodyNodeState", "d9/dfa/structdart_1_1dynamics_1_1detail_1_1BodyNodeState.html", "d9/dfa/structdart_1_1dynamics_1_1detail_1_1BodyNodeState" ],
-    [ "BodyNodeAspectProperties", "dc/d15/structdart_1_1dynamics_1_1detail_1_1BodyNodeAspectProperties.html", "dc/d15/structdart_1_1dynamics_1_1detail_1_1BodyNodeAspectProperties" ],
+    [ "dart::dynamics::detail::BodyNodeState", "d9/dfa/structdart_1_1dynamics_1_1detail_1_1BodyNodeState.html", "d9/dfa/structdart_1_1dynamics_1_1detail_1_1BodyNodeState" ],
+    [ "dart::dynamics::detail::BodyNodeAspectProperties", "dc/d15/structdart_1_1dynamics_1_1detail_1_1BodyNodeAspectProperties.html", "dc/d15/structdart_1_1dynamics_1_1detail_1_1BodyNodeAspectProperties" ],
     [ "AllNodeProperties", "d3/db6/BodyNodeAspect_8hpp.html#abd946c9ce9009c72a8dd719ba3bd624b", null ],
     [ "AllNodeStates", "d3/db6/BodyNodeAspect_8hpp.html#ac68d5abb54c13d76c09882beda0851e9", null ],
     [ "BodyNodeCompositeBase", "d3/db6/BodyNodeAspect_8hpp.html#a3d48b185c21758d3ba6df083f4ce78ca", null ],

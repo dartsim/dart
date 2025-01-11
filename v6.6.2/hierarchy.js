@@ -50,15 +50,12 @@ var hierarchy =
       [ "dart::dynamics::NodeManagerJoinerForBodyNode< Base1, Base2 >", "db/db9/classdart_1_1dynamics_1_1NodeManagerJoinerForBodyNode_3_01Base1_00_01Base2_01_4.html", null ]
     ] ],
     [ "BaseT", null, [
-      [ "dart::common::detail::AspectWithState< BaseT, DerivedT, StateDataT, CompositeT, updateState >", "d9/d04/classdart_1_1common_1_1detail_1_1AspectWithState.html", [
-        [ "dart::common::detail::AspectWithVersionedProperties< AspectWithState< DerivedT, StateDataT, Composite, &detail::NoOp< DerivedT * > >, DerivedT, PropertiesDataT, Composite, &detail::NoOp< DerivedT * > >", "da/db5/classdart_1_1common_1_1detail_1_1AspectWithVersionedProperties.html", [
-          [ "dart::common::AspectWithStateAndVersionedProperties< DerivedT, StateDataT, PropertiesDataT, CompositeT, updateState, updateProperties >", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html", null ]
-        ] ]
-      ] ],
+      [ "dart::common::detail::AspectWithState< BaseT, DerivedT, StateDataT, CompositeT, updateState >", "d9/d04/classdart_1_1common_1_1detail_1_1AspectWithState.html", null ],
       [ "dart::common::detail::AspectWithVersionedProperties< BaseT, DerivedT, PropertiesDataT, CompositeT, updateProperties >", "da/db5/classdart_1_1common_1_1detail_1_1AspectWithVersionedProperties.html", [
         [ "dart::common::AspectWithStateAndVersionedProperties< Support, detail::SupportStateData, detail::SupportPropertiesData, EndEffector, &detail::SupportUpdate >", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html", [
           [ "dart::dynamics::Support", "d9/d4f/classdart_1_1dynamics_1_1Support.html", null ]
         ] ],
+        [ "dart::common::AspectWithStateAndVersionedProperties< DerivedT, StateDataT, PropertiesDataT, CompositeT, updateState, updateProperties >", "dc/d3f/classdart_1_1common_1_1AspectWithStateAndVersionedProperties.html", null ],
         [ "dart::dynamics::CollisionAspect", "d3/d7c/classdart_1_1dynamics_1_1CollisionAspect.html", null ],
         [ "dart::dynamics::DynamicsAspect", "d9/d67/classdart_1_1dynamics_1_1DynamicsAspect.html", null ],
         [ "dart::dynamics::VisualAspect", "d1/d66/classdart_1_1dynamics_1_1VisualAspect.html", null ]
@@ -66,11 +63,7 @@ var hierarchy =
       [ "dart::common::detail::EmbeddedPropertiesAspect< BaseT, DerivedT, PropertiesDataT, PropertiesT, setEmbeddedProperties, getEmbeddedProperties >", "d7/d0e/classdart_1_1common_1_1detail_1_1EmbeddedPropertiesAspect.html", null ],
       [ "dart::common::detail::EmbeddedStateAspect< BaseT, DerivedT, StateDataT, StateT, setEmbeddedState, getEmbeddedState >", "d5/da0/classdart_1_1common_1_1detail_1_1EmbeddedStateAspect.html", null ],
       [ "dart::common::detail::ProxyPropertiesAspect< BaseT, CompositeT, PropertiesT >", "da/dcb/classdart_1_1common_1_1detail_1_1ProxyPropertiesAspect.html", null ],
-      [ "dart::common::detail::ProxyStateAspect< BaseT, CompositeT, StateT >", "d9/d18/classdart_1_1common_1_1detail_1_1ProxyStateAspect.html", [
-        [ "dart::common::detail::ProxyPropertiesAspect< ProxyStateAspect< CompositeT, StateT >, CompositeT, PropertiesT >", "da/dcb/classdart_1_1common_1_1detail_1_1ProxyPropertiesAspect.html", [
-          [ "dart::common::ProxyStateAndPropertiesAspect< CompositeT, StateT, PropertiesT >", "d3/da9/classdart_1_1common_1_1ProxyStateAndPropertiesAspect.html", null ]
-        ] ]
-      ] ]
+      [ "dart::common::detail::ProxyStateAspect< BaseT, CompositeT, StateT >", "d9/d18/classdart_1_1common_1_1detail_1_1ProxyStateAspect.html", null ]
     ] ],
     [ "dart::dynamics::detail::BasicNodeManagerForBodyNode", "d8/d2d/classdart_1_1dynamics_1_1detail_1_1BasicNodeManagerForBodyNode.html", [
       [ "dart::dynamics::BodyNodeSpecializedFor< SpecNode >", "d2/d09/classdart_1_1dynamics_1_1BodyNodeSpecializedFor_3_01SpecNode_01_4.html", [
@@ -176,19 +169,21 @@ var hierarchy =
         [ "dart::dynamics::UniversalJoint", "d1/d0e/classdart_1_1dynamics_1_1UniversalJoint.html", null ]
       ] ]
     ] ],
+    [ "dart::common::CompositeJoiner< EmbedProperties< EndEffector, detail::EndEffectorProperties >, CompositeBases... >", "db/d5d/classdart_1_1common_1_1CompositeJoiner.html", null ],
+    [ "dart::common::CompositeJoiner< EmbedProperties< Marker, detail::MarkerProperties >, CompositeBases... >", "db/d5d/classdart_1_1common_1_1CompositeJoiner.html", null ],
     [ "dart::common::CompositeJoiner< EmbedState< DerivedT, StateDataT >, BaseComposites... >", "db/d5d/classdart_1_1common_1_1CompositeJoiner.html", [
       [ "dart::common::EmbedStateOnTopOf< DerivedT, StateDataT, BaseComposites >", "d2/db6/classdart_1_1common_1_1EmbedStateOnTopOf.html", null ]
     ] ],
     [ "dart::common::CompositeJoiner< EmbedStateAndProperties< DerivedT, StateDataT, PropertiesDataT >, CompositeBases... >", "db/d5d/classdart_1_1common_1_1CompositeJoiner.html", [
       [ "dart::common::EmbedStateAndPropertiesOnTopOf< DerivedT, StateDataT, PropertiesDataT, CompositeBases >", "d8/de9/classdart_1_1common_1_1EmbedStateAndPropertiesOnTopOf.html", [
-        [ "dart::dynamics::GenericJoint< math::R3Space >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", [
-          [ "dart::dynamics::TranslationalJoint", "dc/d8d/classdart_1_1dynamics_1_1TranslationalJoint.html", null ]
+        [ "dart::dynamics::GenericJoint< math::SO3Space >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", [
+          [ "dart::dynamics::BallJoint", "d7/de3/classdart_1_1dynamics_1_1BallJoint.html", null ]
         ] ],
         [ "dart::dynamics::GenericJoint< math::SE3Space >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", [
           [ "dart::dynamics::FreeJoint", "d3/df1/classdart_1_1dynamics_1_1FreeJoint.html", null ]
         ] ],
-        [ "dart::dynamics::GenericJoint< math::SO3Space >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", [
-          [ "dart::dynamics::BallJoint", "d7/de3/classdart_1_1dynamics_1_1BallJoint.html", null ]
+        [ "dart::dynamics::GenericJoint< math::R3Space >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", [
+          [ "dart::dynamics::TranslationalJoint", "dc/d8d/classdart_1_1dynamics_1_1TranslationalJoint.html", null ]
         ] ],
         [ "dart::dynamics::BodyNode", "d5/d2e/classdart_1_1dynamics_1_1BodyNode.html", null ],
         [ "dart::dynamics::GenericJoint< ConfigSpaceT >", "da/d53/classdart_1_1dynamics_1_1GenericJoint.html", null ],
@@ -203,6 +198,13 @@ var hierarchy =
     ] ],
     [ "dart::common::CompositeJoiner< Virtual< SpecializedForAspect< SpecAspect1 > >, Virtual< SpecializedForAspect< OtherSpecAspects... > > >", "db/d5d/classdart_1_1common_1_1CompositeJoiner.html", [
       [ "dart::common::SpecializedForAspect< SpecAspect1, OtherSpecAspects... >", "d2/d3a/classdart_1_1common_1_1SpecializedForAspect_3_01SpecAspect1_00_01OtherSpecAspects_8_8_8_01_4.html", null ]
+    ] ],
+    [ "CompositeT", null, [
+      [ "dart::common::detail::ProxyStateAspect< CompositeT, StateT >", "d9/d18/classdart_1_1common_1_1detail_1_1ProxyStateAspect.html", [
+        [ "dart::common::detail::ProxyPropertiesAspect< ProxyStateAspect< CompositeT, StateT >, CompositeT, PropertiesT >", "da/dcb/classdart_1_1common_1_1detail_1_1ProxyPropertiesAspect.html", [
+          [ "dart::common::ProxyStateAndPropertiesAspect< CompositeT, StateT, PropertiesT >", "d3/da9/classdart_1_1common_1_1ProxyStateAndPropertiesAspect.html", null ]
+        ] ]
+      ] ]
     ] ],
     [ "dart::dynamics::Skeleton::Configuration", "d3/d03/structdart_1_1dynamics_1_1Skeleton_1_1Configuration.html", null ],
     [ "dart::common::Connection", "d1/d23/classdart_1_1common_1_1Connection.html", [
@@ -241,6 +243,11 @@ var hierarchy =
     [ "dart::common::detail::DefaultCreator< T, HeldT, Args >", "da/d83/structdart_1_1common_1_1detail_1_1DefaultCreator.html", null ],
     [ "dart::common::detail::DefaultCreator< T, std::shared_ptr< T >, Args... >", "dd/d83/structdart_1_1common_1_1detail_1_1DefaultCreator_3_01T_00_01std_1_1shared__ptr_3_01T_01_4_00_01Args_8_8_8_01_4.html", null ],
     [ "dart::common::detail::DefaultCreator< T, std::unique_ptr< T >, Args... >", "de/d35/structdart_1_1common_1_1detail_1_1DefaultCreator_3_01T_00_01std_1_1unique__ptr_3_01T_01_4_00_01Args_8_8_8_01_4.html", null ],
+    [ "DerivedT", null, [
+      [ "dart::common::detail::AspectWithState< DerivedT, StateDataT, Composite, &detail::NoOp< DerivedT * > >", "d9/d04/classdart_1_1common_1_1detail_1_1AspectWithState.html", [
+        [ "dart::common::detail::AspectWithVersionedProperties< AspectWithState< DerivedT, StateDataT, Composite, &detail::NoOp< DerivedT * > >, DerivedT, PropertiesDataT, Composite, &detail::NoOp< DerivedT * > >", "da/db5/classdart_1_1common_1_1detail_1_1AspectWithVersionedProperties.html", null ]
+      ] ]
+    ] ],
     [ "dart::dynamics::Skeleton::DirtyFlags", "d4/d93/structdart_1_1dynamics_1_1Skeleton_1_1DirtyFlags.html", null ],
     [ "dart::collision::DistanceFilter", "d2/d0a/structdart_1_1collision_1_1DistanceFilter.html", [
       [ "dart::collision::BodyNodeDistanceFilter", "d6/da7/structdart_1_1collision_1_1BodyNodeDistanceFilter.html", null ]
@@ -411,8 +418,8 @@ var hierarchy =
       [ "dart::gui::osg::render::osgAiNode", "d2/d09/classdart_1_1gui_1_1osg_1_1render_1_1osgAiNode.html", null ]
     ] ],
     [ "Mixin", null, [
-      [ "dart::common::MakeCloneable< PropertiesData >", "d7/da1/classdart_1_1common_1_1MakeCloneable.html", null ],
       [ "dart::common::MakeCloneable< StateData >", "d7/da1/classdart_1_1common_1_1MakeCloneable.html", null ],
+      [ "dart::common::MakeCloneable< PropertiesData >", "d7/da1/classdart_1_1common_1_1MakeCloneable.html", null ],
       [ "dart::common::MakeCloneable< Base, Mixin >", "d7/da1/classdart_1_1common_1_1MakeCloneable.html", null ]
     ] ],
     [ "dart::optimizer::MultiFunction", "d5/d58/classdart_1_1optimizer_1_1MultiFunction.html", null ],
@@ -447,8 +454,8 @@ var hierarchy =
       [ "dart::dynamics::SkeletonSpecializedFor< SpecNode1, OtherSpecNodes... >", "df/d8d/classdart_1_1dynamics_1_1SkeletonSpecializedFor_3_01SpecNode1_00_01OtherSpecNodes_8_8_8_01_4.html", null ]
     ] ],
     [ "dart::common::Observer", "d8/dc0/classdart_1_1common_1_1Observer.html", [
-      [ "dart::common::sub_ptr< dart::dynamics::InverseKinematics >", "d5/dfd/classdart_1_1common_1_1sub__ptr.html", null ],
       [ "dart::common::sub_ptr< dart::dynamics::JacobianNode >", "d5/dfd/classdart_1_1common_1_1sub__ptr.html", null ],
+      [ "dart::common::sub_ptr< dart::dynamics::InverseKinematics >", "d5/dfd/classdart_1_1common_1_1sub__ptr.html", null ],
       [ "dart::common::sub_ptr< dart::gui::osg::InteractiveTool >", "d5/dfd/classdart_1_1common_1_1sub__ptr.html", null ],
       [ "dart::common::sub_ptr< T >", "d5/dfd/classdart_1_1common_1_1sub__ptr.html", null ],
       [ "dart::gui::osg::DefaultEventHandler", "da/db3/classdart_1_1gui_1_1osg_1_1DefaultEventHandler.html", null ],
@@ -523,15 +530,15 @@ var hierarchy =
       [ "dart::gui::OpenGLRenderInterface", "dc/dc5/classdart_1_1gui_1_1OpenGLRenderInterface.html", null ]
     ] ],
     [ "dart::common::RequiresAspect< OtherRequiredAspects >", "d4/dc5/classdart_1_1common_1_1RequiresAspect.html", [
+      [ "dart::common::EmbedProperties< FixedFrame, detail::FixedFrameProperties >", "d4/dc0/classdart_1_1common_1_1EmbedProperties.html", [
+        [ "dart::dynamics::FixedFrame", "d8/d17/classdart_1_1dynamics_1_1FixedFrame.html", null ]
+      ] ],
       [ "dart::common::EmbedProperties< Joint, detail::JointProperties >", "d4/dc0/classdart_1_1common_1_1EmbedProperties.html", [
         [ "dart::dynamics::Joint", "d6/d5b/classdart_1_1dynamics_1_1Joint.html", [
           [ "dart::dynamics::ZeroDofJoint", "db/d77/classdart_1_1dynamics_1_1ZeroDofJoint.html", [
             [ "dart::dynamics::WeldJoint", "d8/da2/classdart_1_1dynamics_1_1WeldJoint.html", null ]
           ] ]
         ] ]
-      ] ],
-      [ "dart::common::EmbedProperties< FixedFrame, detail::FixedFrameProperties >", "d4/dc0/classdart_1_1common_1_1EmbedProperties.html", [
-        [ "dart::dynamics::FixedFrame", "d8/d17/classdart_1_1dynamics_1_1FixedFrame.html", null ]
       ] ]
     ] ],
     [ "dart::common::RequiresAspect< common::EmbeddedPropertiesAspect< DerivedT, PropertiesDataT > >", "d4/dc5/classdart_1_1common_1_1RequiresAspect.html", [
@@ -540,6 +547,8 @@ var hierarchy =
         [ "dart::dynamics::detail::EntityNodeBase< Base, isCompositeBase >", "d4/d93/classdart_1_1dynamics_1_1detail_1_1EntityNodeBase.html", null ]
       ] ]
     ] ],
+    [ "dart::common::RequiresAspect< common::EmbeddedPropertiesAspect< FixedFrame, detail::FixedFrameProperties > >", "d4/dc5/classdart_1_1common_1_1RequiresAspect.html", null ],
+    [ "dart::common::RequiresAspect< common::EmbeddedPropertiesAspect< Joint, detail::JointProperties > >", "d4/dc5/classdart_1_1common_1_1RequiresAspect.html", null ],
     [ "dart::common::RequiresAspect< common::EmbeddedStateAndPropertiesAspect< DerivedT, StateDataT, PropertiesDataT > >", "d4/dc5/classdart_1_1common_1_1RequiresAspect.html", [
       [ "dart::common::EmbedStateAndProperties< DerivedT, StateDataT, PropertiesDataT >", "da/d3f/classdart_1_1common_1_1EmbedStateAndProperties.html", null ]
     ] ],
@@ -733,6 +742,11 @@ var hierarchy =
         [ "dart::gui::osg::ImGuiViewer", "da/d5f/classdart_1_1gui_1_1osg_1_1ImGuiViewer.html", null ]
       ] ],
       [ "dart::simulation::World", "d7/d41/classdart_1_1simulation_1_1World.html", null ]
+    ] ],
+    [ "Support", null, [
+      [ "dart::common::detail::AspectWithState< Support, detail::SupportStateData, EndEffector, updateState >", "d9/d04/classdart_1_1common_1_1detail_1_1AspectWithState.html", [
+        [ "dart::common::detail::AspectWithVersionedProperties< AspectWithState< Support, detail::SupportStateData, EndEffector, updateState >, Support, detail::SupportPropertiesData, EndEffector, updateState >", "da/db5/classdart_1_1common_1_1detail_1_1AspectWithVersionedProperties.html", null ]
+      ] ]
     ] ],
     [ "dart::dynamics::detail::SupportPropertiesData", "d3/d91/structdart_1_1dynamics_1_1detail_1_1SupportPropertiesData.html", null ],
     [ "dart::dynamics::detail::SupportStateData", "dd/dba/structdart_1_1dynamics_1_1detail_1_1SupportStateData.html", null ],

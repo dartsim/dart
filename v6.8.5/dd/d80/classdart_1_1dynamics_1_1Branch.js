@@ -12,7 +12,6 @@ var classdart_1_1dynamics_1_1Branch =
     [ "cloneLinkage", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a1f7e6089cd27defd6c3ee203213c1759", null ],
     [ "cloneLinkage", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a64f1c74b19c6aa7cf4d9f4f86f3f4c3e", null ],
     [ "cloneMetaSkeleton", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a9b1e65daef5b2323766e6dea702ed217", null ],
-    [ "cloneMetaSkeleton", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a9b1e65daef5b2323766e6dea702ed217", null ],
     [ "cloneMetaSkeleton", "dd/d80/classdart_1_1dynamics_1_1Branch.html#ad1a300421b7574e2d7fa38c2b06f31c4", null ],
     [ "cloneMetaSkeleton", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a7a77d266db3f804107cfbc1ed8e8eb6e", null ],
     [ "computeKineticEnergy", "dd/d80/classdart_1_1dynamics_1_1Branch.html#a683d365974f5765cc378fefd4fb7feae", null ],

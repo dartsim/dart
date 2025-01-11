@@ -1,6 +1,6 @@
 var JointAspect_8hpp =
 [
-    [ "JointProperties", "da/d99/structdart_1_1dynamics_1_1detail_1_1JointProperties.html", "da/d99/structdart_1_1dynamics_1_1detail_1_1JointProperties" ],
+    [ "dart::dynamics::detail::JointProperties", "da/d99/structdart_1_1dynamics_1_1detail_1_1JointProperties.html", "da/d99/structdart_1_1dynamics_1_1detail_1_1JointProperties" ],
     [ "ActuatorType", "d9/dbd/JointAspect_8hpp.html#a5ea81df326ac05ff5ab74eeb59c3259a", [
       [ "FORCE", "d9/dbd/JointAspect_8hpp.html#a5ea81df326ac05ff5ab74eeb59c3259aa608bb1a5dae8ccdb1d4129e8fc0d45ab", null ],
       [ "PASSIVE", "d9/dbd/JointAspect_8hpp.html#a5ea81df326ac05ff5ab74eeb59c3259aa0b6d66b2a41077512e0d881e0fec534d", null ],
