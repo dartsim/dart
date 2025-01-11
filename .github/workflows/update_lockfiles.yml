@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base: [main, release-6.14]
+        base: [main, release-6.15]
     steps:
       - uses: actions/checkout@v4
         with:
