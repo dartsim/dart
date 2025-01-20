@@ -7,6 +7,7 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [build-dependencies]
+benchmark = ">=1.9.1,<2"
 black = ">=24.2.0"
 cmake = ">=3.22"
 doxygen = ">=1.10.0"
@@ -20,7 +21,6 @@ setuptools = ">=69.1.1"
 
 [dependencies]
 assimp = ">=5.4.3,<6"
-libboost = ">=1.86.0,<2"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
@@ -28,6 +28,7 @@ fcl = ">=0.7.0,<0.8"
 fmt = ">=11.0.2,<12"
 imgui = ">=1.91.5,<2"
 ipopt = ">=3.14.16,<4"
+libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
 nlopt = ">=2.9.0,<3"
 numpy = ">=2.1.3,<3"
@@ -48,9 +49,11 @@ config = { cmd = """
         -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DDART_VERBOSE=$DART_VERBOSE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+        -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 lint-cpp = { cmd = """
@@ -326,6 +329,8 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
