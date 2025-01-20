@@ -99,6 +99,7 @@ dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
+dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 
 #===============================================================================
@@ -259,7 +260,7 @@ if(MSVC)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
-  # There is a known bug in GCC 12.1 and above that leads to spurious 
+  # There is a known bug in GCC 12.1 and above that leads to spurious
   # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
   # -Warray-bounds warnings from gcc/x86_64-linux-gnu/12/include/avx512fintrin.h.
   # The bug is tracked here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
