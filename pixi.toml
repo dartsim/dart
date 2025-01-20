@@ -60,65 +60,65 @@ lint-cpp = { cmd = """
     cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
     --target format
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
 lint-py = { cmd = """
     black . --exclude '\\..*' \
     && isort . --skip-glob '.*'
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
-lint = { depends_on = ["lint-cpp", "lint-py"] }
+lint = { depends-on = ["lint-cpp", "lint-py"] }
 
 check-lint-cpp = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target check-format
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-py = { cmd = """
     black . --check --exclude '\\..*' \
     && isort . --check --skip-glob '.*'
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
-check-lint = { depends_on = ["check-lint-cpp", "check-lint-py"] }
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
 
 build = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target all
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-tests = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target tests
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-dartpy = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target dartpy
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
-""", depends_on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target pytest
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 ex = { cmd = """
     cmake \
@@ -126,7 +126,7 @@ ex = { cmd = """
         --target $EXE \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/$EXE
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { EXE = "hello_world", BUILD_TYPE = "Release" } }
 
@@ -136,7 +136,7 @@ ex-atlas-puppet = { cmd = """
         --target atlas_puppet \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/atlas_puppet
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 ex-atlas-simbicon = { cmd = """
     cmake \
@@ -144,7 +144,7 @@ ex-atlas-simbicon = { cmd = """
         --target atlas_simbicon \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/atlas_simbicon
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 ex-hello-world = { cmd = """
     cmake \
@@ -152,7 +152,7 @@ ex-hello-world = { cmd = """
         --target hello_world \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
@@ -160,7 +160,7 @@ bm = { cmd = """
         --target BM_INTEGRATION_$EXE \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_$EXE
-""", depends_on = ["config"], env = { EXE = "empty", BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { EXE = "empty", BUILD_TYPE = "Release" } }
 
 bm-boxes = { cmd = """
     cmake \
@@ -168,7 +168,7 @@ bm-boxes = { cmd = """
         --target BM_INTEGRATION_boxes \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_boxes
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 bm-empty = { cmd = """
     cmake \
@@ -176,7 +176,7 @@ bm-empty = { cmd = """
         --target BM_INTEGRATION_empty \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_empty
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 bm-kinematics = { cmd = """
     cmake \
@@ -184,7 +184,7 @@ bm-kinematics = { cmd = """
         --target BM_INTEGRATION_kinematics \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_kinematics
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -194,7 +194,7 @@ tu-biped = { cmd = """
         --target tutorial_biped \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_biped
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped-fi = { cmd = """
     cmake \
@@ -202,7 +202,7 @@ tu-biped-fi = { cmd = """
         --target tutorial_biped_finished \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_biped_finished
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -212,7 +212,7 @@ tu-collisions = { cmd = """
         --target tutorial_collisions \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_collisions
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-collisions-fi = { cmd = """
     cmake \
@@ -220,7 +220,7 @@ tu-collisions-fi = { cmd = """
         --target tutorial_collisions_finished \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_collisions_finished
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -230,7 +230,7 @@ tu-dominoes = { cmd = """
         --target tutorial_dominoes \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_dominoes
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-dominoes-fi = { cmd = """
     cmake \
@@ -238,7 +238,7 @@ tu-dominoes-fi = { cmd = """
         --target tutorial_dominoes_finished \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_dominoes_finished
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -248,7 +248,7 @@ tu-multi-pendulum = { cmd = """
         --target tutorial_multi_pendulum \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -258,7 +258,7 @@ tu-multi-pendulum-fi = { cmd = """
         --target tutorial_multi_pendulum_finished \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum_finished
-""", depends_on = [
+""", depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
@@ -267,7 +267,7 @@ install = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target install \
         --parallel \
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 ################################################################################
 # linux-64
@@ -337,22 +337,22 @@ config = { cmd = """
 
 lint-py = { cmd = """
     black . --exclude '\\..*' && isort . --skip-glob '.*'
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
-lint = { depends_on = ["lint-py"] }
+lint = { depends-on = ["lint-py"] }
 
 check-lint-py = { cmd = """
     black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
-check-lint = { depends_on = ["check-lint-py"] }
+check-lint = { depends-on = ["check-lint-py"] }
 
 build = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         -j
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-tests = { cmd = """
     cmake \
@@ -360,21 +360,21 @@ build-tests = { cmd = """
         --config $BUILD_TYPE \
         -j \
         --target tests
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-dartpy = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         -j \
         --target dartpy
-""", depends_on = ["config"] }
+""", depends-on = ["config"] }
 
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --build-config $BUILD_TYPE \
         --output-on-failure
-""", depends_on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy = { cmd = """
     cmake \
@@ -382,7 +382,7 @@ test-dartpy = { cmd = """
         --config $BUILD_TYPE \
         -j \
         --target pytest
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
     cmake \
@@ -390,7 +390,7 @@ test-all = { cmd = """
         --config $BUILD_TYPE \
         -j \
         --target ALL
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped = { cmd = """
     cmake \
@@ -399,7 +399,7 @@ tu-biped = { cmd = """
         --target tutorial_biped \
         --parallel \
     && build/$BUILD_TYPE/tutorial_biped.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped-fi = { cmd = """
     cmake \
@@ -408,7 +408,7 @@ tu-biped-fi = { cmd = """
         --target tutorial_biped_finished \
         --parallel \
     && build/$BUILD_TYPE/tutorial_biped.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-collisions = { cmd = """
     cmake \
@@ -417,7 +417,7 @@ tu-collisions = { cmd = """
         --target tutorial_collisions \
         --parallel \
     && build/$BUILD_TYPE/tutorial_collisions.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-collisions-fi = { cmd = """
     cmake \
@@ -426,7 +426,7 @@ tu-collisions-fi = { cmd = """
         --target tutorial_collisions_finished \
         --parallel \
     && build/$BUILD_TYPE/tutorial_collisions.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-dominoes = { cmd = """
     cmake \
@@ -435,7 +435,7 @@ tu-dominoes = { cmd = """
         --target tutorial_dominoes \
         --parallel \
     && build/$BUILD_TYPE/tutorial_dominoes.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-dominoes-fi = { cmd = """
     cmake \
@@ -444,7 +444,7 @@ tu-dominoes-fi = { cmd = """
         --target tutorial_dominoes_finished \
         --parallel \
     && build/$BUILD_TYPE/tutorial_dominoes.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-multi-pendulum = { cmd = """
     cmake \
@@ -453,7 +453,7 @@ tu-multi-pendulum = { cmd = """
         --target tutorial_multi_pendulum \
         --parallel \
     && build/$BUILD_TYPE/tutorial_multi_pendulum.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-multi-pendulum-fi = { cmd = """
     cmake \
@@ -462,7 +462,7 @@ tu-multi-pendulum-fi = { cmd = """
         --target tutorial_multi_pendulum_finished \
         --parallel \
     && build/$BUILD_TYPE/tutorial_multi_pendulum.exe
-""", depends_on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 install = { cmd = """
     cmake \
@@ -470,4 +470,4 @@ install = { cmd = """
         --config $BUILD_TYPE \
         -j \
         --target install
-""", depends_on = ["build"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
