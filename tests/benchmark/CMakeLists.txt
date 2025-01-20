@@ -29,7 +29,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 
 if(DART_USE_SYSTEM_GOOGLEBENCHMARK)
-  find_package(benchmark REQUIRED)
+  find_package(benchmark CONFIG REQUIRED)
 else()
   include(FetchContent)
   FetchContent_Declare(

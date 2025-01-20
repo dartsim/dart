@@ -420,7 +420,7 @@ function(dart_benchmarks)
       ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
     )
 
-    target_link_libraries(${target_name} PRIVATE benchmark benchmark_main)
+    target_link_libraries(${target_name} PRIVATE benchmark::benchmark benchmark::benchmark_main)
 
     if(UNIX)
       # gbenchmark requies pthread when compiled on a Unix machine
