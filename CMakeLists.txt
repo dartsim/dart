@@ -101,6 +101,7 @@ dart_option(DART_FORCE_COLORED_OUTPUT
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
+dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 
 #===============================================================================
 # Print intro

@@ -6,13 +6,17 @@ if(NOT DART_BUILD_DARTPY)
 endif()
 
 # Set up pybind11
-include(FetchContent)
-FetchContent_Declare(
-  pybind11
-  GIT_REPOSITORY https://github.com/pybind/pybind11
-  GIT_TAG v2.12.0
-)
-FetchContent_MakeAvailable(pybind11)
+if(DART_USE_SYSTEM_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+else()
+  include(FetchContent)
+  FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11
+    GIT_TAG v2.12.0
+  )
+  FetchContent_MakeAvailable(pybind11)
+endif()
 
 if(NOT pybind11_FOUND)
   message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
