@@ -67,15 +67,16 @@ class CMakeBuild(build_ext):
         # DARTPY_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
         cmake_args = [
-            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
-            f"-DPYTHON_EXECUTABLE={sys.executable}",
-            f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             f"-DBUILD_SHARED_LIBS=OFF",
+            f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
+            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DDART_BUILD_DARTPY=ON",
-            f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
+            f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
+            f"-DDART_USE_SYSTEM_PYBIND11=ON",
             f"-DDART_VERBOSE=ON",
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable

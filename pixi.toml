@@ -17,6 +17,7 @@ ninja = ">=1.11.1"
 pip = ">=24.0"
 pipx = ">=1.4.3"
 pkg-config = ">=0.29.2"
+pybind11 = ">=2.13.6,<3"
 pytest = ">=8.1.1"
 setuptools = ">=69.1.1"
 
@@ -51,11 +52,12 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=$DART_BUILD_DARTPY \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_BUILD_DARTPY = "OFF", DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 lint-cpp = { cmd = """
     cmake \
@@ -98,11 +100,8 @@ build-tests = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-dartpy = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -j \
-        --target dartpy
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+    pip install . -vv
+""", env = { BUILD_TYPE = "Release", DART_BUILD_DARTPY = "ON" } }
 
 test = { cmd = """
     ctest \
@@ -111,10 +110,7 @@ test = { cmd = """
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -j \
-        --target pytest
+    pytest python/tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
@@ -329,12 +325,13 @@ config = { cmd = """
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=$DART_BUILD_DARTPY \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" } }
+""", env = { DART_BUILD_DARTPY = "OFF", DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
     black . --exclude '\\..*' && isort . --skip-glob '.*'
@@ -364,11 +361,8 @@ build-tests = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-dartpy = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -j \
-        --target dartpy
-""", depends-on = ["config"] }
+    pip install . -vv
+""", depends-on = ["config"], env = { DART_BUILD_DARTPY = "ON" } }
 
 test = { cmd = """
     ctest \
@@ -378,11 +372,7 @@ test = { cmd = """
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        -j \
-        --target pytest
+    pytest python/tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
