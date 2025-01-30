@@ -234,7 +234,7 @@ if(DART_CODECOV)
 endif()
 
 if(DART_BUILD_PROFILE)
-  target_link_libraries(dart PUBLIC TracyClient)
+  target_link_libraries(dart PUBLIC Tracy::TracyClient)
 endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)

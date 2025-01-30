@@ -69,7 +69,6 @@ set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 #===============================================================================
 # Build options
 #===============================================================================
-dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
@@ -77,6 +76,10 @@ if(MSVC)
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
+dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
+dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
+dart_option(DART_CODECOV "Turn on codecov support" OFF)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
 # option `-march=native` is added to the target `dart` that enables all
@@ -86,10 +89,6 @@ endif()
 # errors.
 dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
-dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
-dart_option(DART_CODECOV "Turn on codecov support" OFF)
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
@@ -102,6 +101,8 @@ dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
+dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
+dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 
 #===============================================================================
 # Print intro

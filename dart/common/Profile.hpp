@@ -36,9 +36,6 @@
 
 #if DART_BUILD_PROFILE
   #include <tracy/Tracy.hpp>
-#endif
-
-#if DART_BUILD_PROFILE
 
   #define DART_PROFILE_FRAME FrameMark
   #define DART_PROFILE_SCOPED ZoneScoped
