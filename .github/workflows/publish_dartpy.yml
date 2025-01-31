@@ -51,7 +51,7 @@ jobs:
         os: [ubuntu-latest]
         build: ["cp313-manylinux_x86_64"]
         experimental: [false]
-        release_only: [true]
+        release_only: [false]
 
         include:
           - os: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
           - os: ubuntu-latest
             build: "cp310-manylinux_x86_64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: macos-latest
             build: "cp313-macosx_arm64"
@@ -77,7 +77,7 @@ jobs:
           - os: macos-latest
             build: "cp312-macosx_arm64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: windows-latest
             build: "cp313-win_amd64"
@@ -87,7 +87,7 @@ jobs:
           - os: windows-latest
             build: "cp312-win_amd64"
             experimental: false
-            release_only: false
+            release_only: true
 
     env:
       CIBW_BUILD: ${{ matrix.build }}
