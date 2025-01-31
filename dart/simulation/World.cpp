@@ -163,6 +163,8 @@ void World::reset()
 //==============================================================================
 void World::step(bool _resetCommand)
 {
+  DART_PROFILE_FRAME;
+
   // Integrate velocity for unconstrained skeletons
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
@@ -202,7 +204,6 @@ void World::step(bool _resetCommand)
 
   mTime += mTimeStep;
   mFrame++;
-  DART_PROFILE_FRAME;
 }
 
 //==============================================================================

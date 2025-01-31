@@ -77,15 +77,9 @@ enum class Integrator
 
 enum class InertiaFromGeom
 {
-#if DART_OS_WINDOWS
   IFG_FALSE,
   IFG_TRUE,
   IFG_AUTO,
-#else
-  FALSE,
-  TRUE,
-  AUTO,
-#endif
 };
 
 enum class CollisionType
