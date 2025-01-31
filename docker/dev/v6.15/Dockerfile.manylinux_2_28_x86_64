@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=quay.io/pypa/manylinux_2_28_x86_64
 FROM $BASE_IMAGE
 
-ARG NUM_CORES=14
+ARG NUM_CORES=8
 
 # Missing optional dependencies:
 #   ipopt

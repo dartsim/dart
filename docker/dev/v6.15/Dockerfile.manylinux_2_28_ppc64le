@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=jslee02/dart-dev:manylinux_2_28_ppc64le-min-v6.15
 FROM $BASE_IMAGE
 
-ARG NUM_CORES=14
+ARG NUM_CORES=8
 
 # Missing optional dependencies:
 #   ipopt
