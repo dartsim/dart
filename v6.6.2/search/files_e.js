@@ -28,5 +28,5 @@ var searchData=
   ['prismaticjointaspect_2ehpp_25',['PrismaticJointAspect.hpp',['../d2/dad/PrismaticJointAspect_8hpp.html',1,'']]],
   ['problem_2ecpp_26',['Problem.cpp',['../d9/dfd/Problem_8cpp.html',1,'']]],
   ['problem_2ehpp_27',['Problem.hpp',['../d8/da6/Problem_8hpp.html',1,'']]],
-  ['proxyaspect_2ehpp_28',['proxyaspect.hpp',['../d9/dde/ProxyAspect_8hpp.html',1,'(Global Namespace)'],['../da/d6c/detail_2ProxyAspect_8hpp.html',1,'(Global Namespace)']]]
+  ['proxyaspect_2ehpp_28',['proxyaspect.hpp',['../da/d6c/detail_2ProxyAspect_8hpp.html',1,'(Global Namespace)'],['../d9/dde/ProxyAspect_8hpp.html',1,'(Global Namespace)']]]
 ];
