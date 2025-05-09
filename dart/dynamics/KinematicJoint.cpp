@@ -340,15 +340,6 @@
        = getChildBodyNode()->getWorldTransform().linear().transpose()
          * inCoordinatesOf->getWorldTransform().linear()
          * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
-   // Above code is equivalent to:
-   // targetSpatialAcceleration.tail<3>()
-   //     = getChildBodyNode()->getTransform(
-   //         inCoordinatesOf).linear().transpose()
-   //       * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
-   // but faster.
- 
-   //setSpatialAcceleration(
-   //    targetSpatialAcceleration, relativeTo, getChildBodyNode());
  }
 
  //==============================================================================
@@ -415,7 +406,6 @@
    const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
  
    setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
-   //setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
    setPositionsStatic(convertToPositions(Qnext));
  }
  
@@ -432,7 +422,6 @@
          << "using dt for integration which value is "<< _dt <<".\n";
    Eigen::Vector6d accel = getAccelerationsStatic();
    setVelocitiesStatic(getVelocitiesStatic());  
-   setAccelerationsStatic(accel);
  }
  
  //==============================================================================
