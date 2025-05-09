@@ -420,7 +420,6 @@
    // TODO To be removed
    dtdbg << "[KinematicJoint::integrateVelocities] This function is not "
          << "using dt for integration which value is "<< _dt <<".\n";
-   Eigen::Vector6d accel = getAccelerationsStatic();
    setVelocitiesStatic(getVelocitiesStatic());  
  }
  
