@@ -162,10 +162,7 @@
      const Frame* withRespectTo,
      const Eigen::Vector6d* newSpatialVelocity,
      const Frame* velRelativeTo,
-     const Frame* velInCoordinatesOf,
-     const Eigen::Vector6d* newSpatialAcceleration,
-     const Frame* accRelativeTo,
-     const Frame* accInCoordinatesOf)
+     const Frame* velInCoordinatesOf)
  {
    if (newTransform)
      setTransform(*newTransform, withRespectTo);
@@ -173,10 +170,6 @@
    if (newSpatialVelocity)
      setSpatialVelocity(*newSpatialVelocity, velRelativeTo, velInCoordinatesOf);
  
-   if (newSpatialAcceleration) {
-     setSpatialAcceleration(
-         *newSpatialAcceleration, accRelativeTo, accInCoordinatesOf);
-   }
  }
  
  //==============================================================================
@@ -202,8 +195,6 @@
  void KinematicJoint::setRelativeSpatialVelocity(
      const Eigen::Vector6d& newSpatialVelocity)
  {
-  dterr << "[KinematicJoint::setRelativeSpatialVelocity] This function is "
-            << "deprecated. Use setRelativeSpatialVelocity() instead.\n";
    setVelocitiesStatic(newSpatialVelocity);
  }
  
@@ -271,10 +262,8 @@
  //==============================================================================
  void KinematicJoint::setLinearVelocity(
      const Eigen::Vector3d& newLinearVelocity,
-     const Frame* relativeTo,
-     const Frame* inCoordinatesOf)
+     const Frame* relativeTo)
  {
-    dterr << "[KinematicJoint::setLinearVelocity] " << newLinearVelocity << "\n";
    assert(nullptr != relativeTo);
    assert(nullptr != inCoordinatesOf);
  
@@ -289,19 +278,8 @@
                ->getSpatialVelocity(relativeTo, getChildBodyNode())
                .head<3>();
    }
-
-   dterr <<inCoordinatesOf->getWorldTransform().linear() << "\n";
  
-   targetSpatialVelocity.tail<3>() = newLinearVelocity;
-       //= getChildBodyNode()->getWorldTransform().linear().transpose()
-       //  * inCoordinatesOf->getWorldTransform().linear() * newLinearVelocity;
-   // Above code is equivalent to:
-   // targetSpatialVelocity.tail<3>()
-   //     = getChildBodyNode()->getTransform(
-   //         inCoordinatesOf).linear().transpose()
-   //       * newLinearVelocity;
-   // but faster.
- 
+   targetSpatialVelocity.tail<3>() = newLinearVelocity; 
    setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
  }
  
@@ -315,17 +293,13 @@
    assert(nullptr != inCoordinatesOf);
  
    Eigen::Vector6d targetSpatialVelocity;
- 
+
+   // Hean Angular Velocities
    targetSpatialVelocity.head<3>()
        = getChildBodyNode()->getWorldTransform().linear().transpose()
          * inCoordinatesOf->getWorldTransform().linear() * newAngularVelocity;
-   // Above code is equivalent to:
-   // targetSpatialVelocity.head<3>()
-   //     = getChildBodyNode()->getTransform(
-   //         inCoordinatesOf).linear().transpose()
-   //       * newAngularVelocity;
-   // but faster.
- 
+
+   // Translate Velocities if a non world coordiinate frame is used
    if (Frame::World() == relativeTo) {
      targetSpatialVelocity.tail<3>()
          = getChildBodyNode()->getSpatialVelocity().tail<3>();
@@ -338,96 +312,7 @@
  
    setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
  }
- 
- //==============================================================================
- void KinematicJoint::setRelativeSpatialAcceleration(
-     const Eigen::Vector6d& newSpatialAcceleration)
- {
-   const Eigen::Matrix6d& J = getRelativeJacobianStatic();
-   const Eigen::Matrix6d& dJ = getRelativeJacobianTimeDerivStatic();
- 
-   setAccelerationsStatic(
-       J.inverse() * (newSpatialAcceleration - dJ * getVelocitiesStatic()));
- }
- 
- //==============================================================================
- void KinematicJoint::setRelativeSpatialAcceleration(
-     const Eigen::Vector6d& newSpatialAcceleration, const Frame* inCoordinatesOf)
- {
-   assert(nullptr != inCoordinatesOf);
- 
-   if (getChildBodyNode() == inCoordinatesOf) {
-     setRelativeSpatialAcceleration(newSpatialAcceleration);
-   } else {
-     setRelativeSpatialAcceleration(math::AdR(
-         inCoordinatesOf->getTransform(getChildBodyNode()),
-         newSpatialAcceleration));
-   }
- }
- 
- //==============================================================================
- void KinematicJoint::setSpatialAcceleration(
-     const Eigen::Vector6d& newSpatialAcceleration,
-     const Frame* relativeTo,
-     const Frame* inCoordinatesOf)
- {
-   assert(nullptr != relativeTo);
-   assert(nullptr != inCoordinatesOf);
- 
-   if (getChildBodyNode() == relativeTo) {
-     dtwarn << "[KinematicJoint::setSpatialAcceleration] Invalid reference "
-            << "frame for newSpatialAcceleration. It shouldn't be the child "
-            << "BodyNode.\n";
-     return;
-   }
- 
-   // Change the reference frame of "newSpatialAcceleration" to the child body
-   // node frame.
-   Eigen::Vector6d targetRelSpatialAcc = newSpatialAcceleration;
-   if (getChildBodyNode() != inCoordinatesOf) {
-     targetRelSpatialAcc = math::AdR(
-         inCoordinatesOf->getTransform(getChildBodyNode()),
-         newSpatialAcceleration);
-   }
- 
-   // Compute the target relative spatial acceleration from the parent body node
-   // to the child body node.
-   if (getChildBodyNode()->getParentFrame() != relativeTo) {
-     if (relativeTo->isWorld()) {
-       const Eigen::Vector6d parentAcceleration
-           = math::AdInvT(
-                 getRelativeTransform(),
-                 getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
-             + math::ad(
-                 getChildBodyNode()->getSpatialVelocity(),
-                 getRelativeJacobianStatic() * getVelocitiesStatic());
- 
-       targetRelSpatialAcc -= parentAcceleration;
-     } else {
-       const Eigen::Vector6d parentAcceleration
-           = math::AdInvT(
-                 getRelativeTransform(),
-                 getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
-             + math::ad(
-                 getChildBodyNode()->getSpatialVelocity(),
-                 getRelativeJacobianStatic() * getVelocitiesStatic());
-       const Eigen::Vector6d arbitraryAcceleration
-           = math::AdT(
-                 relativeTo->getTransform(getChildBodyNode()),
-                 relativeTo->getSpatialAcceleration())
-             - math::ad(
-                 getChildBodyNode()->getSpatialVelocity(),
-                 math::AdT(
-                     relativeTo->getTransform(getChildBodyNode()),
-                     relativeTo->getSpatialVelocity()));
- 
-       targetRelSpatialAcc += -parentAcceleration + arbitraryAcceleration;
-     }
-   }
- 
-   setRelativeSpatialAcceleration(targetRelSpatialAcc);
- }
- 
+  
  //==============================================================================
  void KinematicJoint::setLinearAcceleration(
      const Eigen::Vector3d& newLinearAcceleration,
@@ -462,46 +347,10 @@
    //       * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
    // but faster.
  
-   setSpatialAcceleration(
-       targetSpatialAcceleration, relativeTo, getChildBodyNode());
+   //setSpatialAcceleration(
+   //    targetSpatialAcceleration, relativeTo, getChildBodyNode());
  }
- 
- //==============================================================================
- void KinematicJoint::setAngularAcceleration(
-     const Eigen::Vector3d& newAngularAcceleration,
-     const Frame* relativeTo,
-     const Frame* inCoordinatesOf)
- {
-   assert(nullptr != relativeTo);
-   assert(nullptr != inCoordinatesOf);
- 
-   Eigen::Vector6d targetSpatialAcceleration;
- 
-   targetSpatialAcceleration.head<3>()
-       = getChildBodyNode()->getWorldTransform().linear().transpose()
-         * inCoordinatesOf->getWorldTransform().linear()
-         * newAngularAcceleration;
-   // Above code is equivalent to:
-   // targetSpatialAcceleration.head<3>()
-   //     = getChildBodyNode()->getTransform(
-   //         inCoordinatesOf).linear().transpose()
-   //       * newAngularAcceleration;
-   // but faster.
- 
-   if (Frame::World() == relativeTo) {
-     targetSpatialAcceleration.tail<3>()
-         = getChildBodyNode()->getSpatialAcceleration().tail<3>();
-   } else {
-     targetSpatialAcceleration.tail<3>()
-         = getChildBodyNode()
-               ->getSpatialAcceleration(relativeTo, getChildBodyNode())
-               .tail<3>();
-   }
- 
-   setSpatialAcceleration(
-       targetSpatialAcceleration, relativeTo, getChildBodyNode());
- }
- 
+
  //==============================================================================
  Eigen::Matrix6d KinematicJoint::getRelativeJacobianStatic(
      const Eigen::Vector6d& /*positions*/) const
@@ -566,57 +415,24 @@
    const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
  
    setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
-   setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
+   //setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
    setPositionsStatic(convertToPositions(Qnext));
  }
  
+
  //==============================================================================
  void KinematicJoint::integrateVelocities(double _dt)
  {
-  dterr << "[KinematicJoint::integrateVelocities] My function.\n";
-   // Integrating the acceleration gives us the new velocity of child body frame.
-   // But if there is any linear acceleration, the frame will be displaced. If we
-   // apply euler integration direcly on the spatial acceleration, it will
-   // produce the velocity of a point that is instantaneously coincident with the
-   // previous location of the child body frame. However, we want to compute the
-   // spatial velocity at the current location of the child body frame. To
-   // accomplish this, we first convert the linear portion of the spatial
-   // acceleration into classical linear acceleration and apply the integration.
+   // For KinematicJoint, we don't need to integrate the velocity. We just
+   // need to set the velocity to the current velocity, ignoring the acceleration.
+   
+   // SKIP Velocity should be set directly
+   // TODO To be removed
+   dtdbg << "[KinematicJoint::integrateVelocities] This function is not "
+         << "using dt for integration which value is "<< _dt <<".\n";
    Eigen::Vector6d accel = getAccelerationsStatic();
-   //const Eigen::Vector6d& velBefore = getVelocitiesStatic();
-   //accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
-   dtwarn << "accel: " << accel.transpose() <<  " dt " << _dt << "\n";
-   setVelocitiesStatic(getVelocitiesStatic());
- 
-   // Since the velocity has been updated, we use the new velocity to recompute
-   // the spatial acceleration. This is needed to ensure that functions like
-   // BodyNode::getLinearAcceleration work properly.
-   //const Eigen::Vector6d& velAfter = getVelocitiesStatic();
-   accel.tail<3>() = Eigen::Vector3d::Zero();// velAfter.head<3>().cross(velAfter.tail<3>());
+   setVelocitiesStatic(getVelocitiesStatic());  
    setAccelerationsStatic(accel);
- }
- 
- //==============================================================================
- void KinematicJoint::updateConstrainedTerms(double timeStep)
- {
-    dtwarn << "[KinematicJoint::updateConstrainedTerms] My other function.\n";
-   //const double invTimeStep = 1.0 / timeStep;
- 
-   //const Eigen::Vector6d& velBefore = getVelocitiesStatic();
-   Eigen::Vector6d accel = getAccelerationsStatic();
-   dtwarn << "accel: " << accel.transpose() << timeStep << "\n";
-   dtwarn << "vel: " << getVelocitiesStatic().transpose() << "\n";
-   dtwarn << "vel: " << mVelocityChanges << "\n";
-
-   //accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
- 
-   setVelocitiesStatic(getVelocitiesStatic());
- 
-   //const Eigen::Vector6d& velAfter = getVelocitiesStatic();
-   //accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
-   setAccelerationsStatic(accel);
-   //this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
-   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
  }
  
  //==============================================================================

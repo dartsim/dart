@@ -182,10 +182,7 @@
        const Frame* withRespectTo,
        const Eigen::Vector6d* newSpatialVelocity,
        const Frame* velRelativeTo,
-       const Frame* velInCoordinatesOf,
-       const Eigen::Vector6d* newSpatialAcceleration,
-       const Frame* accRelativeTo,
-       const Frame* accInCoordinatesOf);
+       const Frame* velInCoordinatesOf);
  
    /// Set the transform of the child BodyNode relative to the parent BodyNode
    /// \param[in] newTransform Desired transform of the child BodyNode.
@@ -205,7 +202,7 @@
    /// BodyNode.
    void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
  
-   /// Set the spatial velocity of the child BodyNode relative to the parent
+   /// Set the spatial velocity of tfinhe child BodyNode relative to the parent
    /// BodyNode.
    /// \param[in] newSpatialVelocity Desired spatial velocity of the child
    /// BodyNode.
@@ -235,8 +232,7 @@
    /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
    void setLinearVelocity(
        const Eigen::Vector3d& newLinearVelocity,
-       const Frame* relativeTo = Frame::World(),
-       const Frame* inCoordinatesOf = Frame::World());
+       const Frame* relativeTo = Frame::World());
  
    /// Set the angular portion of classical velocity of the child BodyNode
    /// relative to an arbitrary Frame.
@@ -251,37 +247,7 @@
        const Eigen::Vector3d& newAngularVelocity,
        const Frame* relativeTo = Frame::World(),
        const Frame* inCoordinatesOf = Frame::World());
- 
-   /// Set the spatial acceleration of the child BodyNode relative to the parent
-   /// BodyNode.
-   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
-   /// child BodyNode. The reference frame of "newSpatialAcceleration" is the
-   /// child BodyNode.
-   void setRelativeSpatialAcceleration(
-       const Eigen::Vector6d& newSpatialAcceleration);
- 
-   /// Set the spatial acceleration of the child BodyNode relative to the parent
-   /// BodyNode.
-   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
-   /// child BodyNode.
-   /// \param[in] inCoordinatesOf The reference frame of
-   /// "newSpatialAcceleration".
-   void setRelativeSpatialAcceleration(
-       const Eigen::Vector6d& newSpatialAcceleration,
-       const Frame* inCoordinatesOf);
- 
-   /// Set the spatial acceleration of the child BodyNode relative to an
-   /// arbitrary Frame.
-   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
-   /// child BodyNode.
-   /// \param[in] relativeTo The relative frame of "newSpatialAcceleration".
-   /// \param[in] inCoordinatesOf The reference frame of
-   /// "newSpatialAcceleration".
-   void setSpatialAcceleration(
-       const Eigen::Vector6d& newSpatialAcceleration,
-       const Frame* relativeTo,
-       const Frame* inCoordinatesOf);
- 
+
    /// Set the linear portion of classical acceleration of the child BodyNode
    /// relative to an arbitrary Frame.
    ///
@@ -293,21 +259,6 @@
    /// \param[in] inCoordinatesOf The reference frame of "newLinearAcceleration".
    void setLinearAcceleration(
        const Eigen::Vector3d& newLinearAcceleration,
-       const Frame* relativeTo = Frame::World(),
-       const Frame* inCoordinatesOf = Frame::World());
- 
-   /// Set the angular portion of classical acceleration of the child BodyNode
-   /// relative to an arbitrary Frame.
-   ///
-   /// Note that the linear portion of claasical acceleration of the child
-   /// BodyNode will not be changed after this function called.
-   ///
-   /// \param[in] newAngularAcceleration
-   /// \param[in] relativeTo The relative frame of "newAngularAcceleration".
-   /// \param[in] inCoordinatesOf The reference frame of
-   /// "newAngularAcceleration".
-   void setAngularAcceleration(
-       const Eigen::Vector3d& newAngularAcceleration,
        const Frame* relativeTo = Frame::World(),
        const Frame* inCoordinatesOf = Frame::World());
  
@@ -333,9 +284,6 @@
  
    // Documentation inherited
    void integrateVelocities(double _dt) override;
- 
-   // Documentation inherited
-   void updateConstrainedTerms(double timeStep) override;
  
    // Documentation inherited
    void updateDegreeOfFreedomNames() override;
