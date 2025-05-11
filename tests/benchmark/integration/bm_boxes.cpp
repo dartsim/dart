@@ -135,4 +135,4 @@ static void BM_RunBoxes(benchmark::State& state)
   }
 }
 
-BENCHMARK(BM_RunBoxes)->Arg(2)->Arg(5)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RunBoxes)->Arg(2)->Arg(4)->Arg(8)->Unit(benchmark::kMillisecond);

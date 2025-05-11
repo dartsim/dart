@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base: [main, release-6.14]
+        base: [main, release-6.15]
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ matrix.base }}
       - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
+        uses: prefix-dev/setup-pixi@v0.8.8
         with:
           run-install: false
       - name: Update lockfiles

@@ -111,18 +111,22 @@ endif()
 #=======================
 
 if(DART_BUILD_PROFILE)
-  include(FetchContent)
-  FetchContent_Declare(tracy
-    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-    GIT_TAG master  # TODO: Change to a fixed version once > 0.10 is released
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
-  FetchContent_MakeAvailable(tracy)
-  if(MSVC)
-    target_compile_options(TracyClient PRIVATE /W0)
+  if(DART_USE_SYSTEM_TRACY)
+    find_package(Tracy CONFIG REQUIRED)
   else()
-    target_compile_options(TracyClient PRIVATE -w)
+    include(FetchContent)
+    FetchContent_Declare(tracy
+      GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+      GIT_TAG v0.11.1
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
+    FetchContent_MakeAvailable(tracy)
+    if(MSVC)
+      target_compile_options(TracyClient PRIVATE /W0)
+    else()
+      target_compile_options(TracyClient PRIVATE -w)
+    endif()
   endif()
 endif()
 

@@ -49,18 +49,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        build: ["cp38-manylinux_x86_64"]
+        build: ["cp313-manylinux_x86_64"]
         experimental: [false]
-        release_only: [true]
+        release_only: [false]
 
         include:
           - os: ubuntu-latest
-            build: "cp39-manylinux_x86_64"
-            experimental: false
-            release_only: true
-
-          - os: ubuntu-latest
-            build: "cp310-manylinux_x86_64"
+            build: "cp312-manylinux_x86_64"
             experimental: false
             release_only: true
 
@@ -70,23 +65,28 @@ jobs:
             release_only: true
 
           - os: ubuntu-latest
-            build: "cp312-manylinux_x86_64"
+            build: "cp310-manylinux_x86_64"
             experimental: false
-            release_only: false
+            release_only: true
 
           - os: macos-latest
+            build: "cp313-macosx_arm64"
+            experimental: false
+            release_only: false
+        
+          - os: macos-latest
             build: "cp312-macosx_arm64"
+            experimental: false
+            release_only: true
+
+          - os: windows-latest
+            build: "cp313-win_amd64"
             experimental: false
             release_only: false
 
           - os: windows-latest
             build: "cp312-win_amd64"
             experimental: false
-            release_only: false
-
-          - os: windows-latest
-            build: "cp312-win_arm64"
-            experimental: true
             release_only: true
 
     env:
@@ -124,7 +124,7 @@ jobs:
 
       - name: Build wheels
         if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.22.0
+        uses: pypa/cibuildwheel@v2.23.3
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -134,7 +134,7 @@ jobs:
 
       - name: Build wheels (Windows)
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v2.22.0
+        uses: pypa/cibuildwheel@v2.23.3
         env:
           # macOS
           MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -183,7 +183,7 @@ jobs:
       - name: List files in dist
         run: ls -lR dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.12.3
+      - uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
