@@ -413,17 +413,18 @@
  //==============================================================================
  void KinematicJoint::integrateVelocities(double _dt)
  {
-   // For KinematicJoint, we don't need to integrate the velocity. We just
+  (void)_dt; // To avoid unused variable warning
+  // For KinematicJoint, we don't need to integrate the velocity. We just
    // need to set the velocity to the current velocity, ignoring the acceleration.
    
    // SKIP Velocity should be set directly
    // TODO To be removed
-   dtdbg << "[KinematicJoint::integrateVelocities] This function is not "
-         << "using dt for integration which value is "<< _dt <<".\n";
-   setVelocitiesStatic(getVelocitiesStatic());  
+   // dtmsg << "[KinematicJoint::integrateVelocities] This function is not "
+   //      << "using dt for integration which value is "<< _dt <<".\n";
+   setVelocitiesStatic(getVelocitiesStatic());
  }
  
- //==============================================================================
+ //==============================================ss================================
  void KinematicJoint::updateDegreeOfFreedomNames()
  {
    if (!mDofs[0]->isNamePreserved())
