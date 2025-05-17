@@ -554,7 +554,7 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   const std::size_t currentBodyNodeVersion = bn->getVersion();
 
-  // If the version hasn't changed, then tehre will be nothing to update.
+  // If the version hasn't changed, then there will be nothing to update.
   if (currentBodyNodeVersion == source.mLastKnownVersion)
     return false;
 
