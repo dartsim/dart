@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -123,7 +123,8 @@ public:
 
   /// Clone this HierarchicalIK module
   virtual std::shared_ptr<HierarchicalIK> clone(
-      const SkeletonPtr& _newSkel) const = 0;
+      const SkeletonPtr& _newSkel) const
+      = 0;
 
   /// This class should be inherited by optimizer::Function classes that have a
   /// dependency on the HierarchicalIK module that they belong to. If you
@@ -137,7 +138,8 @@ public:
   public:
     /// Enable this function to be cloned to a new IK module.
     virtual optimizer::FunctionPtr clone(
-        const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
+        const std::shared_ptr<HierarchicalIK>& _newIK) const
+        = 0;
 
     /// Virtual destructor
     virtual ~Function() = default;

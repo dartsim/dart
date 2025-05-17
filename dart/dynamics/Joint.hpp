@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -604,7 +604,8 @@ public:
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
   virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+      = 0;
 
   /// \}
 
@@ -712,7 +713,8 @@ public:
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
   /// expressed in the child BodyNode frame
   virtual math::Jacobian getRelativeJacobian(
-      const Eigen::VectorXd& positions) const = 0;
+      const Eigen::VectorXd& positions) const
+      = 0;
 
   /// Get time derivative of spatial Jacobian of the child BodyNode relative to
   /// the parent BodyNode expressed in the child BodyNode frame

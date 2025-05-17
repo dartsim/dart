@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -85,7 +85,8 @@ public:
   /// \brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
   virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
-      const = 0;
+      const
+      = 0;
 
   /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;

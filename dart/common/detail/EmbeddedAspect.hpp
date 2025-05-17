@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -132,9 +132,9 @@ public:
   template <typename T, typename... RemainingArgs>
   EmbeddedStateAspect(const T& arg1, RemainingArgs&&... remainingArgs)
     : EmbeddedStateAspect(
-        Delegate,
-        static_cast<const typename ConvertIfState<T>::type&>(arg1),
-        std::forward<RemainingArgs>(remainingArgs)...)
+          Delegate,
+          static_cast<const typename ConvertIfState<T>::type&>(arg1),
+          std::forward<RemainingArgs>(remainingArgs)...)
   {
     // Do nothing
   }
@@ -302,9 +302,9 @@ public:
   template <typename T, typename... RemainingArgs>
   EmbeddedPropertiesAspect(const T& arg1, RemainingArgs&&... remainingArgs)
     : EmbeddedPropertiesAspect(
-        Delegate,
-        static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
-        std::forward<RemainingArgs>(remainingArgs)...)
+          Delegate,
+          static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
+          std::forward<RemainingArgs>(remainingArgs)...)
   {
     // Do nothing
   }

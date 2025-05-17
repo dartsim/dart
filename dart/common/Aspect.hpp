@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -163,11 +163,11 @@ protected:
   ClassName(const ClassName&) = delete;                                        \
   inline ClassName(const PropertiesData& properties = PropertiesData())        \
     : AspectWithVersionedProperties<                                           \
-        Base,                                                                  \
-        Derived,                                                               \
-        PropertiesData,                                                        \
-        CompositeType,                                                         \
-        UpdatePropertiesMacro>(properties)                                     \
+          Base,                                                                \
+          Derived,                                                             \
+          PropertiesData,                                                      \
+          CompositeType,                                                       \
+          UpdatePropertiesMacro>(properties)                                   \
   {                                                                            \
   }
 

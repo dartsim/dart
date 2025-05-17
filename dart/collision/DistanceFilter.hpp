@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -46,7 +46,8 @@ class CollisionObject;
 struct DistanceFilter
 {
   virtual bool needDistance(
-      const CollisionObject* object1, const CollisionObject* object2) const = 0;
+      const CollisionObject* object1, const CollisionObject* object2) const
+      = 0;
 };
 
 struct BodyNodeDistanceFilter : DistanceFilter

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -100,7 +100,7 @@ public:
   template <typename... Args>
   CompositeNode(Args&&... args)
     : CompositePropertiesNode<CompositeStateNode<Base>>(
-        std::forward<Args>(args)...)
+          std::forward<Args>(args)...)
   {
     // Do nothing
   }

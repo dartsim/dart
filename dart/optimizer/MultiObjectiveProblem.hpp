@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -125,8 +125,8 @@ public:
   /// \{ \name Evaluations
 
   /// Evaluates objectives
-  virtual Eigen::VectorXd evaluateObjectives(
-      const Eigen::VectorXd& x) const = 0;
+  virtual Eigen::VectorXd evaluateObjectives(const Eigen::VectorXd& x) const
+      = 0;
 
   /// Evaluates equality constraints
   virtual Eigen::VectorXd evaluateEqConstraints(const Eigen::VectorXd& x) const;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -506,7 +506,8 @@ public:
 
   /// Fixed-size version of getRelativeJacobian(positions)
   virtual JacobianMatrix getRelativeJacobianStatic(
-      const Vector& positions) const = 0;
+      const Vector& positions) const
+      = 0;
 
   // Documentation inherited
   const math::Jacobian getRelativeJacobianTimeDeriv() const override;
