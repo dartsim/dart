@@ -30,7 +30,7 @@ def test_seed():
 
     for i in range(N):
         Random.setSeed(i)
-        assert Random.getSeed() is i
+        assert Random.getSeed() == i
         assert Random.uniform(min, max) == pytest.approx(first[i], tol)
         assert Random.uniform(min, max) == pytest.approx(second[i], tol)
         assert Random.uniform(min, max) == pytest.approx(third[i], tol)

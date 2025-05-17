@@ -26,8 +26,8 @@ def test_solve_for_free_joint():
     error_method = ik.getErrorMethod()
     assert error_method.getMethodName() == "TaskSpaceRegion"
     [lb, ub] = error_method.getBounds()
-    assert len(lb) is 6
-    assert len(ub) is 6
+    assert len(lb) == 6
+    assert len(ub) == 6
     error_method.setBounds(np.ones(6) * -1e-8, np.ones(6) * 1e-8)
     [lb, ub] = error_method.getBounds()
     assert lb == pytest.approx(-1e-8)
