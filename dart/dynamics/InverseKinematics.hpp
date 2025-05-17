@@ -1079,7 +1079,7 @@ public:
   /// not needed in this case.
   ///
   /// If you want the extra DOFs to use a different method than Jacobian
-  /// transpose, you can create two seperate IK modules (one which is
+  /// transpose, you can create two separate IK modules (one which is
   /// analytical and one with the iterative method of your choice) and combine
   /// them in a HierarchicalIK.
   enum ExtraDofUtilization
