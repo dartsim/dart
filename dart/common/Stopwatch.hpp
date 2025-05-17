@@ -65,7 +65,7 @@ public:
 
   /// Resets the stopwatch.
   ///
-  /// Sets the start time to current time and the accumulated elasped time to
+  /// Sets the start time to current time and the accumulated elapsed time to
   /// zero.
   void reset();
 
