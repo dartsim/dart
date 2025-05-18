@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -607,8 +607,8 @@ public:
   virtual ~ErrorMethod() = default;
 
   /// Enable this ErrorMethod to be cloned to a new IK module.
-  virtual std::unique_ptr<ErrorMethod> clone(
-      InverseKinematics* _newIK) const = 0;
+  virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const
+      = 0;
 
   /// Override this function with your implementation of the error vector
   /// computation. The expectation is that the first three components of the
@@ -848,8 +848,8 @@ public:
   virtual ~GradientMethod() = default;
 
   /// Enable this GradientMethod to be cloned to a new IK module
-  virtual std::unique_ptr<GradientMethod> clone(
-      InverseKinematics* _newIK) const = 0;
+  virtual std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const
+      = 0;
 
   /// Override this function with your implementation of the gradient
   /// computation. The direction that this gradient points in should make the

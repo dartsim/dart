@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -185,7 +185,7 @@ bool Window::screenshot()
   Stat buff;
 
 #ifdef _WIN32
-  #define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
+  #define __S_ISTYPE(mode, mask) (((mode) & _S_IFMT) == (mask))
   #define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
   if (stat(directory, &buff) != 0)
     _mkdir(directory);

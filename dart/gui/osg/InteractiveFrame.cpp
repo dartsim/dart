@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -322,7 +322,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     aiColor4D color2;
     for (std::size_t j = 0; j < 2; ++j) {
       for (std::size_t i = 0; i < resolution; ++i) {
-        double theta = (double)(i) / (double)(resolution)*2 * pi;
+        double theta = (double)(i) / (double)(resolution) * 2 * pi;
 
         double x = 0;
         double y = ring_inner_scale * cos(theta);

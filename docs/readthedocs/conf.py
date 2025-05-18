@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "DART: Dynamic Animation and Robotics Toolkit"
-copyright = "Copyright (c) 2011-2023, The DART development contributors"
+copyright = "Copyright (c) 2011-2025, The DART development contributors"
 author = "The DART development contributors"
 version = "7.0.0-alpha0"
 release = "7.0.0-alpha20230101"

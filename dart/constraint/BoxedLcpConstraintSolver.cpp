@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -55,7 +55,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver,
     BoxedLcpSolverPtr secondaryBoxedLcpSolver)
   : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
+        std::move(boxedLcpSolver), std::move(secondaryBoxedLcpSolver))
 {
   setTimeStep(timeStep);
 }
@@ -71,7 +71,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver()
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     BoxedLcpSolverPtr boxedLcpSolver)
   : BoxedLcpConstraintSolver(
-      std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
+        std::move(boxedLcpSolver), std::make_shared<PgsBoxedLcpSolver>())
 {
   // Do nothing
 }
