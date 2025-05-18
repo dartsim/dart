@@ -117,7 +117,7 @@ template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
 CompositeJoiner<Base1, Base2, OtherBases...>::CompositeJoiner(Args&&... args)
   : CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...>>(
-        std::forward<Args>(args)...)
+      std::forward<Args>(args)...)
 {
   // Do nothing
 }

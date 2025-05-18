@@ -65,8 +65,7 @@ public:
   /// Returns true if the given two CollisionObjects should be checked by the
   /// collision detector, false otherwise.
   virtual bool ignoresCollision(
-      const CollisionObject* object1, const CollisionObject* object2) const
-      = 0;
+      const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
 class CompositeCollisionFilter : public CollisionFilter

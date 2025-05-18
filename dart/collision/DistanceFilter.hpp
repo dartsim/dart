@@ -46,8 +46,7 @@ class CollisionObject;
 struct DistanceFilter
 {
   virtual bool needDistance(
-      const CollisionObject* object1, const CollisionObject* object2) const
-      = 0;
+      const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
 struct BodyNodeDistanceFilter : DistanceFilter

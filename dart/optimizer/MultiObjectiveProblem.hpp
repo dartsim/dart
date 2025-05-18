@@ -125,8 +125,8 @@ public:
   /// \{ \name Evaluations
 
   /// Evaluates objectives
-  virtual Eigen::VectorXd evaluateObjectives(const Eigen::VectorXd& x) const
-      = 0;
+  virtual Eigen::VectorXd evaluateObjectives(
+      const Eigen::VectorXd& x) const = 0;
 
   /// Evaluates equality constraints
   virtual Eigen::VectorXd evaluateEqConstraints(const Eigen::VectorXd& x) const;
