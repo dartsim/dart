@@ -7,19 +7,19 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [build-dependencies]
-benchmark = ">=1.9.1,<2"
-black = ">=24.10.0,<25"
+benchmark = ">=1.9.3,<2"
+black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
-cmake = ">=3.31.5,<4"
+cmake = ">=4.0.2,<5"
 doxygen = ">=1.13.2,<2"
-gtest = ">=1.15.2,<2"
-isort = ">=6.0.0,<7"
+gtest = ">=1.17.0,<2"
+isort = ">=6.0.1,<7"
 ninja = ">=1.12.1,<2"
-pip = ">=25.0,<26"
+pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
-pytest = ">=8.3.4,<9"
-setuptools = ">=75.8.0,<76"
+pytest = ">=8.3.5,<9"
+setuptools = ">=80.1.0,<81"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [dependencies]
