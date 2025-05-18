@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -554,7 +554,7 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   const std::size_t currentBodyNodeVersion = bn->getVersion();
 
-  // If the version hasn't changed, then tehre will be nothing to update.
+  // If the version hasn't changed, then there will be nothing to update.
   if (currentBodyNodeVersion == source.mLastKnownVersion)
     return false;
 

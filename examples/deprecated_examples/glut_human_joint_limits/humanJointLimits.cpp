@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,14 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
-#include <dart/collision/bullet/bullet.hpp>
-#include <dart/collision/ode/ode.hpp>
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
-#include <dart/utils/utils.hpp>
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
+
+#include <dart/gui/gui.hpp>
+
+#include <dart/utils/utils.hpp>
+
+#include <dart/collision/bullet/bullet.hpp>
+#include <dart/collision/ode/ode.hpp>
+
+#include <dart/dart.hpp>
+
+#include <cmath>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -54,8 +59,7 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    switch (key)
-    {
+    switch (key) {
       default:
         SimWindow::keyboard(key, x, y);
     }
@@ -71,8 +75,7 @@ public:
 
   void timeStepping() override
   {
-    if (ts == 0)
-    {
+    if (ts == 0) {
       auto skel = mWorld->getSkeleton("human");
 
       auto shldJointl = skel->getJoint("j_bicep_left");
@@ -119,13 +122,12 @@ public:
 
 int main(int argc, char* argv[])
 {
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH
-                                         "/skel/kima/kima_human_edited.skel");
+  WorldPtr world = SkelParser::readWorld(
+      DART_DATA_PATH "/skel/kima/kima_human_edited.skel");
   assert(world != nullptr);
 
   auto skel = world->getSkeleton("human");
-  for (auto joint : skel->getJoints())
-  {
+  for (auto joint : skel->getJoints()) {
     joint->setLimitEnforcement(true);
   }
 

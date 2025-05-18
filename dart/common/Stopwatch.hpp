@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -65,7 +65,7 @@ public:
 
   /// Resets the stopwatch.
   ///
-  /// Sets the start time to current time and the accumulated elasped time to
+  /// Sets the start time to current time and the accumulated elapsed time to
   /// zero.
   void reset();
 
