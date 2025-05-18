@@ -110,3 +110,10 @@ jobs:
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install
+      - name: Build gz-physics
+        run: |
+          git clone --depth 1 https://github.com/gazebosim/gz-physics.git
+          mkdir -p gz-physics/build
+          cd gz-physics/build
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+          cmake --build . --parallel
