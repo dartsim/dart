@@ -92,7 +92,7 @@ jobs:
             python3-numpy
             python3-pip
             python3-setuptools
-          version: 1.1
+          version: 1.2
 
       - name: Install Python dependencies
         run: |
