@@ -180,7 +180,8 @@ using CompositeProperties
 //==============================================================================
 template <
     class CompositeType,
-    template <class> class GetData,
+    template <class>
+    class GetData,
     typename... Aspects>
 class ComposeData
 {
@@ -209,7 +210,8 @@ protected:
 //==============================================================================
 template <
     class CompositeType,
-    template <class> class GetData,
+    template <class>
+    class GetData,
     class AspectT,
     typename... Remainder>
 struct ComposeData<CompositeType, GetData, AspectT, Remainder...>
@@ -257,9 +259,9 @@ public:
   template <typename Arg1, typename... Args>
   ComposeData(const Arg1& arg1, const Args&... args)
     : ComposeData(
-          Delegate,
-          static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
-          args...)
+        Delegate,
+        static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
+        args...)
   {
     // This constructor delegates
   }

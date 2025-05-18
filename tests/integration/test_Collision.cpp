@@ -857,9 +857,9 @@ TEST_F(Collision, testConeCone)
 
 #if HAVE_ODE
   {
-    // SCOPED_TRACE("OdeCollisionDetector");
-    // auto ode = OdeCollisionDetector::create();
-    // testConeCone(ode);
+      // SCOPED_TRACE("OdeCollisionDetector");
+      // auto ode = OdeCollisionDetector::create();
+      // testConeCone(ode);
   }
 #endif
 

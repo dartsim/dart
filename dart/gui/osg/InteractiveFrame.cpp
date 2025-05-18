@@ -322,7 +322,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     aiColor4D color2;
     for (std::size_t j = 0; j < 2; ++j) {
       for (std::size_t i = 0; i < resolution; ++i) {
-        double theta = (double)(i) / (double)(resolution) * 2 * pi;
+        double theta = (double)(i) / (double)(resolution)*2 * pi;
 
         double x = 0;
         double y = ring_inner_scale * cos(theta);

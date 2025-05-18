@@ -506,8 +506,7 @@ public:
 
   /// Fixed-size version of getRelativeJacobian(positions)
   virtual JacobianMatrix getRelativeJacobianStatic(
-      const Vector& positions) const
-      = 0;
+      const Vector& positions) const = 0;
 
   // Documentation inherited
   const math::Jacobian getRelativeJacobianTimeDeriv() const override;
