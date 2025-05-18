@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -55,7 +55,7 @@ DartResourceRetriever::DartResourceRetriever()
   // and install DART from source.
   addDataDirectory(DART_DATA_GLOBAL_PATH);
 
-  // 3. Search the directoy set by the environment variable, DART_DATA_PATH.
+  // 3. Search the directory set by the environment variable, DART_DATA_PATH.
   // Method 2 can fail because some package manager use temporary install
   // directory (e.g., Launchpad PPA).
   const char* dartDataPathEnv = std::getenv("DART_DATA_PATH");
