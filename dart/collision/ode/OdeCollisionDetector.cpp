@@ -87,7 +87,9 @@ struct ContactHistoryItem
 
 // using ContactManifold = std::unordered_map<CollObjPair,
 // std::deque<Contact>,obj_pair_hash>;
+namespace {
 std::vector<ContactHistoryItem> pastContacts;
+
 
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
 {
@@ -105,6 +107,7 @@ std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
   pastContacts.push_back(newItem);
 
   return pastContacts.back().history;
+}
 }
 
 struct OdeCollisionCallbackData
