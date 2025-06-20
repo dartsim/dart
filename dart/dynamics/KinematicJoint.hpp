@@ -89,18 +89,7 @@
    /// Convert a KinematicJoint-style 6D vector into a transform
    static Eigen::Isometry3d convertToTransform(
        const Eigen::Vector6d& _positions);
- 
-   /// If the given joint is a KinematicJoint, then set the transform of the given
-   /// Joint's child BodyNode so that its transform with respect to
-   /// "withRespecTo" is equal to "tf".
-   ///
-   /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-   DART_DEPRECATED(6.9)
-   static void setTransform(
-       Joint* joint,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World());
- 
+  
    /// If the given joint is a KinematicJoint, then set the transform of the given
    /// Joint's child BodyNode so that its transform with respect to
    /// "withRespecTo" is equal to "tf".
@@ -109,16 +98,6 @@
        const Eigen::Isometry3d& tf,
        const Frame* withRespectTo = Frame::World());
  
-   /// If the parent Joint of the given BodyNode is a KinematicJoint, then set the
-   /// transform of the given BodyNode so that its transform with respect to
-   /// "withRespecTo" is equal to "tf".
-   ///
-   /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-   DART_DEPRECATED(6.9)
-   static void setTransform(
-       BodyNode* bodyNode,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World());
  
    /// If the parent Joint of the given BodyNode is a KinematicJoint, then set the
    /// transform of the given BodyNode so that its transform with respect to
@@ -128,18 +107,6 @@
        const Eigen::Isometry3d& tf,
        const Frame* withRespectTo = Frame::World());
  
-   /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
-   /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
-   /// it will be applied to only the default root BodyNode that will be obtained
-   /// by Skeleton::getRootBodyNode().
-   ///
-   /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
-   DART_DEPRECATED(6.9)
-   static void setTransform(
-       Skeleton* skeleton,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World(),
-       bool applyToAllRootBodies = true);
  
    /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
    /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then

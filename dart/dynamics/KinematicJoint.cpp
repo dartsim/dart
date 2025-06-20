@@ -80,13 +80,6 @@
  }
  
  //==============================================================================
- void KinematicJoint::setTransform(
-     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
- {
-   return setTransformOf(joint, tf, withRespectTo);
- }
- 
- //==============================================================================
  void KinematicJoint::setTransformOf(
      Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
  {
@@ -104,14 +97,7 @@
  
    kinematicJoint->setTransform(tf, withRespectTo);
  }
- 
- //==============================================================================
- void KinematicJoint::setTransform(
-     BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
- {
-   setTransformOf(bodyNode, tf, withRespectTo);
- }
- 
+  
  //==============================================================================
  void KinematicJoint::setTransformOf(
      BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
@@ -120,16 +106,6 @@
      return;
  
    setTransformOf(bodyNode->getParentJoint(), tf, withRespectTo);
- }
- 
- //==============================================================================
- void KinematicJoint::setTransform(
-     Skeleton* skeleton,
-     const Eigen::Isometry3d& tf,
-     const Frame* withRespectTo,
-     bool applyToAllRootBodies)
- {
-   setTransformOf(skeleton, tf, withRespectTo, applyToAllRootBodies);
  }
  
  //==============================================================================
