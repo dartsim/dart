@@ -362,8 +362,7 @@
  //==============================================================================
  const std::string& KinematicJoint::getStaticType()
  {
-   static const std::string name = "KinematicJoint";
-   return name;
+   return "KinematicJoint";
  }
  
  //==============================================================================
@@ -384,22 +383,7 @@
    setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
    setPositionsStatic(convertToPositions(Qnext));
  }
- 
-
- //==============================================================================
- void KinematicJoint::integrateVelocities(double _dt)
- {
-  (void)_dt; // To avoid unused variable warning
-  // For KinematicJoint, we don't need to integrate the velocity. We just
-   // need to set the velocity to the current velocity, ignoring the acceleration.
-   
-   // SKIP Velocity should be set directly
-   // TODO To be removed
-   // dtmsg << "[KinematicJoint::integrateVelocities] This function is not "
-   //      << "using dt for integration which value is "<< _dt <<".\n";
-   setVelocitiesStatic(getVelocitiesStatic());
- }
- 
+  
  //==============================================ss================================
  void KinematicJoint::updateDegreeOfFreedomNames()
  {
