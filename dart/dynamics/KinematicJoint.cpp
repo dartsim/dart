@@ -206,31 +206,23 @@ void KinematicJoint::setSpatialVelocity(
     return;
   }
 
-  // Change the reference frame of "newSpatialVelocity" to the child body node
-  // frame.
-  Eigen::Vector6d targetRelSpatialVel = newSpatialVelocity;
-  if (getChildBodyNode() != inCoordinatesOf) {
-    targetRelSpatialVel = math::AdR(
-        inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity);
-  }
+  // Transform newSpatialVelocity into the child body node frame if needed
+  Eigen::Vector6d targetRelSpatialVel = (getChildBodyNode() == inCoordinatesOf)
+      ? newSpatialVelocity
+      : math::AdR(inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity);
 
-  // Compute the target relative spatial velocity from the parent body node to
-  // the child body node.
+  // Adjust for parent frame if necessary
   if (getChildBodyNode()->getParentFrame() != relativeTo) {
-    if (relativeTo->isWorld()) {
-      const Eigen::Vector6d parentVelocity = math::AdInvT(
-          getRelativeTransform(),
-          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
+    const Eigen::Vector6d parentVelocity = math::AdInvT(
+        getRelativeTransform(),
+        getChildBodyNode()->getParentFrame()->getSpatialVelocity());
 
+    if (relativeTo->isWorld()) {
       targetRelSpatialVel -= parentVelocity;
     } else {
-      const Eigen::Vector6d parentVelocity = math::AdInvT(
-          getRelativeTransform(),
-          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
       const Eigen::Vector6d arbitraryVelocity = math::AdT(
           relativeTo->getTransform(getChildBodyNode()),
           relativeTo->getSpatialVelocity());
-
       targetRelSpatialVel += -parentVelocity + arbitraryVelocity;
     }
   }
@@ -242,7 +234,7 @@ void KinematicJoint::setSpatialVelocity(
 void KinematicJoint::setLinearVelocity(
     const Eigen::Vector3d& newLinearVelocity, const Frame* relativeTo)
 {
-  assert(nullptr != relativeTo);
+  assert(nullptr != relativeTo);  
   assert(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialVelocity;
