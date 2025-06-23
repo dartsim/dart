@@ -42,7 +42,13 @@
  namespace dart {
  namespace dynamics {
  
- /// class KinematicJoint
+/// This class represents a joint that allows for kinematic control of the
+/// child BodyNode's transform and spatial velocity. It does not enforce any
+/// dynamics, meaning it does not compute forces or torques based on the 
+/// kinematic state. Instead, it provides methods to set the transform and
+/// spatial velocity of the child BodyNode directly, allowing for precise  
+/// control over its position and orientation in space.
+
  class KinematicJoint : public GenericJoint<math::SE3Space>
  {
  public:
@@ -77,11 +83,7 @@
    bool isCyclic(std::size_t _index) const override;
  
    /// Convert a transform into a 6D vector that can be used to set the positions
-   /// of a KinematicJoint. The positions returned by this function will result in a
-   /// relative transform of
-   /// getTransformFromParentBodyNode() * _tf *
-   /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
-   /// the child BodyNode frames when applied to a KinematicJoint.
+   /// of a KinematicJoint.
    static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
  
    /// Convert a KinematicJoint-style 6D vector into a transform
@@ -89,7 +91,7 @@
        const Eigen::Vector6d& _positions);
   
    /// If the given joint is a KinematicJoint, then set the transform of the given
-   /// Joint's child BodyNode so that its transform with respect to
+   /// Joint's child BodyNode so it transforms with respect to
    /// "withRespecTo" is equal to "tf".
    static void setTransformOf(
        Joint* joint,
@@ -119,17 +121,6 @@
    /// Set the transform, spatial velocity, and spatial acceleration of the child
    /// BodyNode relative to an arbitrary Frame. The reference frame can be
    /// arbitrarily specified.
-   ///
-   /// If you want to set more than one kind of Cartetian coordinates (e.g.,
-   /// transform and spatial velocity) at the same time, you should call
-   /// corresponding setters in a certain order (transform -> velocity ->
-   /// acceleration), If you don't velocity or acceleration can be corrupted by
-   /// transform or velocity. This function calls the corresponding setters in
-   /// the right order so that all the desired Cartetian coordinates are properly
-   /// set.
-   ///
-   /// Pass nullptr for "newTransform", "newSpatialVelocity", or
-   /// "newSpatialAcceleration" if you don't want to set them.
    ///
    /// \param[in] newTransform Desired transform of the child BodyNode.
    /// \param[in] withRespectTo The relative Frame of "newTransform".
