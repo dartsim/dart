@@ -117,21 +117,19 @@ void KinematicJoint::setTransformOf(
     const Frame* withRespectTo,
     bool applyToAllRootBodies)
 {
-  if (nullptr == skeleton)
+  if (!skeleton)
     return;
 
-  const std::size_t numTrees = skeleton->getNumTrees();
-
-  if (0 == numTrees)
+  if (skeleton->getNumTrees() == 0)
     return;
 
-  if (!applyToAllRootBodies) {
+  if (applyToAllRootBodies) {
+    for (std::size_t i = 0; i < skeleton->getNumTrees(); ++i) {
+      setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
+    }
+  } else {
     setTransformOf(skeleton->getRootBodyNode(), tf, withRespectTo);
-    return;
   }
-
-  for (std::size_t i = 0; i < numTrees; ++i)
-    setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
 }
 
 //==============================================================================
