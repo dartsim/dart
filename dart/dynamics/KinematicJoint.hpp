@@ -30,224 +30,221 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
- #ifndef DART_DYNAMICS_KINEMATICJOINT_HPP_
- #define DART_DYNAMICS_KINEMATICJOINT_HPP_
- 
- #include <dart/dynamics/GenericJoint.hpp>
- 
- #include <Eigen/Dense>
- 
- #include <string>
- 
- namespace dart {
- namespace dynamics {
- 
+#ifndef DART_DYNAMICS_KINEMATICJOINT_HPP_
+#define DART_DYNAMICS_KINEMATICJOINT_HPP_
+
+#include <dart/dynamics/FreeJoint.hpp>
+
+#include <Eigen/Dense>
+
+#include <string>
+
+namespace dart {
+namespace dynamics {
+
 /// This class represents a joint that allows for kinematic control of the
 /// child BodyNode's transform and spatial velocity. It does not enforce any
-/// dynamics, meaning it does not compute forces or torques based on the 
+/// dynamics, meaning it does not compute forces or torques based on the
 /// kinematic state. Instead, it provides methods to set the transform and
-/// spatial velocity of the child BodyNode directly, allowing for precise  
+/// spatial velocity of the child BodyNode directly, allowing for precise
 /// control over its position and orientation in space.
 
- class KinematicJoint : public GenericJoint<math::SE3Space>
- {
- public:
-   friend class Skeleton;
- 
-   using Base = GenericJoint<math::SE3Space>;
- 
-   struct Properties : Base::Properties
-   {
-     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
- 
-     Properties(const Base::Properties& properties = Base::Properties());
- 
-     virtual ~Properties() = default;
-   };
- 
-   KinematicJoint(const KinematicJoint&) = delete;
- 
-   /// Destructor
-   virtual ~KinematicJoint();
- 
-   /// Get the Properties of this KinematicJoint
-   Properties getKinematicJointProperties() const;
- 
-   // Documentation inherited
-   const std::string& getType() const override;
- 
-   /// Get joint type for this class
-   static const std::string& getStaticType();
- 
-   // Documentation inherited
-   bool isCyclic(std::size_t _index) const override;
- 
-   /// Convert a transform into a 6D vector that can be used to set the positions
-   /// of a KinematicJoint.
-   static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
- 
-   /// Convert a KinematicJoint-style 6D vector into a transform
-   static Eigen::Isometry3d convertToTransform(
-       const Eigen::Vector6d& _positions);
-  
-   /// If the given joint is a KinematicJoint, then set the transform of the given
-   /// Joint's child BodyNode so it transforms with respect to
-   /// "withRespecTo" is equal to "tf".
-   static void setTransformOf(
-       Joint* joint,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World());
- 
- 
-   /// If the parent Joint of the given BodyNode is a KinematicJoint, then set the
-   /// transform of the given BodyNode so that its transform with respect to
-   /// "withRespecTo" is equal to "tf".
-   static void setTransformOf(
-       BodyNode* bodyNode,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World());
- 
- 
-   /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
-   /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
-   /// it will be applied to only the default root BodyNode that will be obtained
-   /// by Skeleton::getRootBodyNode().
-   static void setTransformOf(
-       Skeleton* skeleton,
-       const Eigen::Isometry3d& tf,
-       const Frame* withRespectTo = Frame::World(),
-       bool applyToAllRootBodies = true);
- 
-   /// Set the transform, spatial velocity, and spatial acceleration of the child
-   /// BodyNode relative to an arbitrary Frame. The reference frame can be
-   /// arbitrarily specified.
-   ///
-   /// \param[in] newTransform Desired transform of the child BodyNode.
-   /// \param[in] withRespectTo The relative Frame of "newTransform".
-   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
-   /// BodyNode.
-   /// \param[in] velRelativeTo The relative frame of "newSpatialVelocity".
-   /// \param[in] velInCoordinatesOf The reference frame of "newSpatialVelocity".
-   /// child BodyNode.
-   void setSpatialMotion(
-       const Eigen::Isometry3d* newTransform,
-       const Frame* withRespectTo,
-       const Eigen::Vector6d* newSpatialVelocity,
-       const Frame* velRelativeTo,
-       const Frame* velInCoordinatesOf);
- 
-   /// Set the transform of the child BodyNode relative to the parent BodyNode
-   /// \param[in] newTransform Desired transform of the child BodyNode.
-   void setRelativeTransform(const Eigen::Isometry3d& newTransform);
- 
-   /// Set the transform of the child BodyNode relative to an arbitrary Frame.
-   /// \param[in] newTransform Desired transform of the child BodyNode.
-   /// \param[in] withRespectTo The relative Frame of "newTransform".
-   void setTransform(
-       const Eigen::Isometry3d& newTransform,
-       const Frame* withRespectTo = Frame::World());
- 
-   /// Set the spatial velocity of the child BodyNode relative to the parent
-   /// BodyNode.
-   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
-   /// BodyNode. The reference frame of "newSpatialVelocity" is the child
-   /// BodyNode.
-   void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
- 
-   /// Set the spatial velocity of tfinhe child BodyNode relative to the parent
-   /// BodyNode.
-   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
-   /// BodyNode.
-   /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
-   void setRelativeSpatialVelocity(
-       const Eigen::Vector6d& newSpatialVelocity, const Frame* inCoordinatesOf);
- 
-   /// Set the spatial velocity of the child BodyNode relative to an arbitrary
-   /// Frame.
-   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
-   /// BodyNode.
-   /// \param[in] relativeTo The relative frame of "newSpatialVelocity".
-   /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
-   void setSpatialVelocity(
-       const Eigen::Vector6d& newSpatialVelocity,
-       const Frame* relativeTo,
-       const Frame* inCoordinatesOf);
- 
-   /// Set the linear portion of classical velocity of the child BodyNode
-   /// relative to an arbitrary Frame.
-   ///
-   /// Note that the angular portion of claasical velocity of the child
-   /// BodyNode will not be changed after this function called.
-   ///
-   /// \param[in] newLinearVelocity
-   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
-   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
-   void setLinearVelocity(
-       const Eigen::Vector3d& newLinearVelocity,
-       const Frame* relativeTo = Frame::World());
- 
-   /// Set the angular portion of classical velocity of the child BodyNode
-   /// relative to an arbitrary Frame.
-   ///
-   /// Note that the linear portion of claasical velocity of the child
-   /// BodyNode will not be changed after this function called.
-   ///
-   /// \param[in] newAngularVelocity
-   /// \param[in] relativeTo The relative frame of "newAngularVelocity".
-   /// \param[in] inCoordinatesOf The reference frame of "newAngularVelocity".
-   void setAngularVelocity(
-       const Eigen::Vector3d& newAngularVelocity,
-       const Frame* relativeTo = Frame::World(),
-       const Frame* inCoordinatesOf = Frame::World());
- 
-   // Documentation inherited
-   Eigen::Matrix6d getRelativeJacobianStatic(
-       const Eigen::Vector6d& _positions) const override;
- 
-   // Documentation inherited
-   Eigen::Vector6d getPositionDifferencesStatic(
-       const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const override;
- 
- protected:
-   /// Constructor called by Skeleton class
-   KinematicJoint(const Properties& properties);
- 
-   // Documentation inherited
-   Joint* clone() const override;
- 
-   using Base::getRelativeJacobianStatic;
- 
-   // Documentation inherited
-   void integratePositions(double _dt) override;
- 
-   // Documentation inherited
-   void updateDegreeOfFreedomNames() override;
- 
-   // Documentation inherited
-   void updateRelativeTransform() const override;
- 
-   // Documentation inherited
-   void updateRelativeJacobian(bool _mandatory = true) const override;
- 
-   // Documentation inherited
-   void updateRelativeJacobianTimeDeriv() const override;
- 
- protected:
-   /// Access mQ, which is an auto-updating variable
-   const Eigen::Isometry3d& getQ() const;
- 
-   /// Transformation matrix dependent on generalized coordinates
-   ///
-   /// Do not use directly! Use getQ() to access this
-   mutable Eigen::Isometry3d mQ;
- 
- public:
-   // To get byte-aligned Eigen vectors
-   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
- };
- 
- } // namespace dynamics
- } // namespace dart
- 
- #endif // DART_DYNAMICS_KinematicJoint_HPP_
- 
+class KinematicJoint : public GenericJoint<math::SE3Space>
+{
+public:
+  friend class Skeleton;
+
+  using Base = GenericJoint<math::SE3Space>;
+
+  struct Properties : Base::Properties
+  {
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
+
+    Properties(const Base::Properties& properties = Base::Properties());
+
+    virtual ~Properties() = default;
+  };
+
+  KinematicJoint(const KinematicJoint&) = delete;
+
+  /// Destructor
+  virtual ~KinematicJoint();
+
+  /// Get the Properties of this KinematicJoint
+  Properties getKinematicJointProperties() const;
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
+  // Documentation inherited
+  bool isCyclic(std::size_t _index) const override;
+
+  /// Convert a transform into a 6D vector that can be used to set the positions
+  /// of a KinematicJoint.
+  static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
+
+  /// Convert a KinematicJoint-style 6D vector into a transform
+  static Eigen::Isometry3d convertToTransform(
+      const Eigen::Vector6d& _positions);
+
+  /// If the given joint is a KinematicJoint, then set the transform of the
+  /// given Joint's child BodyNode so it transforms with respect to
+  /// "withRespecTo" is equal to "tf".
+  static void setTransformOf(
+      Joint* joint,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World());
+
+  /// If the parent Joint of the given BodyNode is a KinematicJoint, then set
+  /// the transform of the given BodyNode so that its transform with respect to
+  /// "withRespecTo" is equal to "tf".
+  static void setTransformOf(
+      BodyNode* bodyNode,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World());
+
+  /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
+  /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
+  /// it will be applied to only the default root BodyNode that will be obtained
+  /// by Skeleton::getRootBodyNode().
+  static void setTransformOf(
+      Skeleton* skeleton,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World(),
+      bool applyToAllRootBodies = true);
+
+  /// Set the transform, spatial velocity, and spatial acceleration of the child
+  /// BodyNode relative to an arbitrary Frame. The reference frame can be
+  /// arbitrarily specified.
+  ///
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  /// \param[in] withRespectTo The relative Frame of "newTransform".
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] velRelativeTo The relative frame of "newSpatialVelocity".
+  /// \param[in] velInCoordinatesOf The reference frame of "newSpatialVelocity".
+  /// child BodyNode.
+  void setSpatialMotion(
+      const Eigen::Isometry3d* newTransform,
+      const Frame* withRespectTo,
+      const Eigen::Vector6d* newSpatialVelocity,
+      const Frame* velRelativeTo,
+      const Frame* velInCoordinatesOf);
+
+  /// Set the transform of the child BodyNode relative to the parent BodyNode
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  void setRelativeTransform(const Eigen::Isometry3d& newTransform);
+
+  /// Set the transform of the child BodyNode relative to an arbitrary Frame.
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  /// \param[in] withRespectTo The relative Frame of "newTransform".
+  void setTransform(
+      const Eigen::Isometry3d& newTransform,
+      const Frame* withRespectTo = Frame::World());
+
+  /// Set the spatial velocity of the child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode. The reference frame of "newSpatialVelocity" is the child
+  /// BodyNode.
+  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
+
+  /// Set the spatial velocity of tfinhe child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
+  void setRelativeSpatialVelocity(
+      const Eigen::Vector6d& newSpatialVelocity, const Frame* inCoordinatesOf);
+
+  /// Set the spatial velocity of the child BodyNode relative to an arbitrary
+  /// Frame.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] relativeTo The relative frame of "newSpatialVelocity".
+  /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
+  void setSpatialVelocity(
+      const Eigen::Vector6d& newSpatialVelocity,
+      const Frame* relativeTo,
+      const Frame* inCoordinatesOf);
+
+  /// Set the linear portion of classical velocity of the child BodyNode
+  /// relative to an arbitrary Frame.
+  ///
+  /// Note that the angular portion of claasical velocity of the child
+  /// BodyNode will not be changed after this function called.
+  ///
+  /// \param[in] newLinearVelocity
+  /// \param[in] relativeTo The relative frame of "newLinearVelocity".
+  /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
+  void setLinearVelocity(
+      const Eigen::Vector3d& newLinearVelocity,
+      const Frame* relativeTo = Frame::World());
+
+  /// Set the angular portion of classical velocity of the child BodyNode
+  /// relative to an arbitrary Frame.
+  ///
+  /// Note that the linear portion of claasical velocity of the child
+  /// BodyNode will not be changed after this function called.
+  ///
+  /// \param[in] newAngularVelocity
+  /// \param[in] relativeTo The relative frame of "newAngularVelocity".
+  /// \param[in] inCoordinatesOf The reference frame of "newAngularVelocity".
+  void setAngularVelocity(
+      const Eigen::Vector3d& newAngularVelocity,
+      const Frame* relativeTo = Frame::World(),
+      const Frame* inCoordinatesOf = Frame::World());
+
+  // Documentation inherited
+  Eigen::Matrix6d getRelativeJacobianStatic(
+      const Eigen::Vector6d& _positions) const override;
+
+  // Documentation inherited
+  Eigen::Vector6d getPositionDifferencesStatic(
+      const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const override;
+
+protected:
+  /// Constructor called by Skeleton class
+  KinematicJoint(const Properties& properties);
+
+  // Documentation inherited
+  Joint* clone() const override;
+
+  using Base::getRelativeJacobianStatic;
+
+  // Documentation inherited
+  void integratePositions(double _dt) override;
+
+  // Documentation inherited
+  void updateDegreeOfFreedomNames() override;
+
+  // Documentation inherited
+  void updateRelativeTransform() const override;
+
+  // Documentation inherited
+  void updateRelativeJacobian(bool _mandatory = true) const override;
+
+  // Documentation inherited
+  void updateRelativeJacobianTimeDeriv() const override;
+
+protected:
+  /// Access mQ, which is an auto-updating variable
+  const Eigen::Isometry3d& getQ() const;
+
+  /// Transformation matrix dependent on generalized coordinates
+  ///
+  /// Do not use directly! Use getQ() to access this
+  mutable Eigen::Isometry3d mQ;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_KinematicJoint_HPP_
