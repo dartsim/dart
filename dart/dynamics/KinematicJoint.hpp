@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_KINEMATICJOINT_HPP_
 #define DART_DYNAMICS_KINEMATICJOINT_HPP_
 
-#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
 
 #include <Eigen/Dense>
 
