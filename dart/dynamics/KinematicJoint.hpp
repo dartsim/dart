@@ -35,8 +35,6 @@
  
  #include <dart/dynamics/GenericJoint.hpp>
  
- #include <dart/common/Deprecated.hpp>
- 
  #include <Eigen/Dense>
  
  #include <string>
@@ -139,11 +137,7 @@
    /// BodyNode.
    /// \param[in] velRelativeTo The relative frame of "newSpatialVelocity".
    /// \param[in] velInCoordinatesOf The reference frame of "newSpatialVelocity".
-   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
    /// child BodyNode.
-   /// \param[in] accRelativeTo The relative frame of "newSpatialAcceleration".
-   /// \param[in] accInCoordinatesOf The reference frame of
-   /// "newSpatialAcceleration".
    void setSpatialMotion(
        const Eigen::Isometry3d* newTransform,
        const Frame* withRespectTo,
@@ -212,20 +206,6 @@
    /// \param[in] inCoordinatesOf The reference frame of "newAngularVelocity".
    void setAngularVelocity(
        const Eigen::Vector3d& newAngularVelocity,
-       const Frame* relativeTo = Frame::World(),
-       const Frame* inCoordinatesOf = Frame::World());
-
-   /// Set the linear portion of classical acceleration of the child BodyNode
-   /// relative to an arbitrary Frame.
-   ///
-   /// Note that the angular portion of claasical acceleration of the child
-   /// BodyNode will not be changed after this function called.
-   ///
-   /// \param[in] newLinearAcceleration
-   /// \param[in] relativeTo The relative frame of "newLinearAcceleration".
-   /// \param[in] inCoordinatesOf The reference frame of "newLinearAcceleration".
-   void setLinearAcceleration(
-       const Eigen::Vector3d& newLinearAcceleration,
        const Frame* relativeTo = Frame::World(),
        const Frame* inCoordinatesOf = Frame::World());
  

@@ -288,35 +288,6 @@
  
    setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
  }
-  
- //==============================================================================
- void KinematicJoint::setLinearAcceleration(
-     const Eigen::Vector3d& newLinearAcceleration,
-     const Frame* relativeTo,
-     const Frame* inCoordinatesOf)
- {
-   assert(nullptr != relativeTo);
-   assert(nullptr != inCoordinatesOf);
- 
-   Eigen::Vector6d targetSpatialAcceleration;
- 
-   if (Frame::World() == relativeTo) {
-     targetSpatialAcceleration.head<3>()
-         = getChildBodyNode()->getSpatialAcceleration().head<3>();
-   } else {
-     targetSpatialAcceleration.head<3>()
-         = getChildBodyNode()
-               ->getSpatialAcceleration(relativeTo, getChildBodyNode())
-               .head<3>();
-   }
- 
-   const Eigen::Vector6d& V
-       = getChildBodyNode()->getSpatialVelocity(relativeTo, inCoordinatesOf);
-   targetSpatialAcceleration.tail<3>()
-       = getChildBodyNode()->getWorldTransform().linear().transpose()
-         * inCoordinatesOf->getWorldTransform().linear()
-         * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
- }
 
  //==============================================================================
  Eigen::Matrix6d KinematicJoint::getRelativeJacobianStatic(
@@ -329,10 +300,7 @@
  Eigen::Vector6d KinematicJoint::getPositionDifferencesStatic(
      const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const
  {
-   const Eigen::Isometry3d T1 = convertToTransform(_q1);
-   const Eigen::Isometry3d T2 = convertToTransform(_q2);
- 
-   return convertToPositions(T1.inverse() * T2);
+   return convertToPositions(convertToTransform(_q1).inverse() * convertToTransform(_q2));
  }
  
  //==============================================================================
@@ -340,9 +308,6 @@
    : Base(properties), mQ(Eigen::Isometry3d::Identity())
  {
    mJacobianDeriv = Eigen::Matrix6d::Zero();
- 
-   // Inherited Aspects must be created in the final joint class in reverse order
-   // or else we get pure virtual function calls
    createGenericJointAspect(properties);
    createJointAspect(properties);
  }
@@ -362,7 +327,8 @@
  //==============================================================================
  const std::string& KinematicJoint::getStaticType()
  {
-   return "KinematicJoint";
+   static const std::string name = "KinematicJoint";
+   return name;
  }
  
  //==============================================================================
