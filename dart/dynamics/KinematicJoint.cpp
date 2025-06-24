@@ -117,21 +117,19 @@ void KinematicJoint::setTransformOf(
     const Frame* withRespectTo,
     bool applyToAllRootBodies)
 {
-  if (nullptr == skeleton)
+  if (!skeleton)
     return;
 
-  const std::size_t numTrees = skeleton->getNumTrees();
-
-  if (0 == numTrees)
+  const auto numTrees = skeleton->getNumTrees();
+  if (numTrees == 0)
     return;
 
-  if (!applyToAllRootBodies) {
+  if (applyToAllRootBodies) {
+    for (std::size_t i = 0; i < numTrees; ++i)
+      setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
+  } else {
     setTransformOf(skeleton->getRootBodyNode(), tf, withRespectTo);
-    return;
   }
-
-  for (std::size_t i = 0; i < numTrees; ++i)
-    setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
 }
 
 //==============================================================================
@@ -206,32 +204,26 @@ void KinematicJoint::setSpatialVelocity(
     return;
   }
 
-  // Change the reference frame of "newSpatialVelocity" to the child body node
-  // frame.
+  // Transform newSpatialVelocity into the child body node frame if needed
   Eigen::Vector6d targetRelSpatialVel = newSpatialVelocity;
   if (getChildBodyNode() != inCoordinatesOf) {
     targetRelSpatialVel = math::AdR(
         inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity);
   }
 
-  // Compute the target relative spatial velocity from the parent body node to
-  // the child body node.
+  // Adjust for parent frame velocity if relativeTo is not the parent frame
   if (getChildBodyNode()->getParentFrame() != relativeTo) {
-    if (relativeTo->isWorld()) {
-      const Eigen::Vector6d parentVelocity = math::AdInvT(
-          getRelativeTransform(),
-          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
+    const Eigen::Vector6d parentVelocity = math::AdInvT(
+        getRelativeTransform(),
+        getChildBodyNode()->getParentFrame()->getSpatialVelocity());
 
+    if (relativeTo->isWorld()) {
       targetRelSpatialVel -= parentVelocity;
     } else {
-      const Eigen::Vector6d parentVelocity = math::AdInvT(
-          getRelativeTransform(),
-          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
-      const Eigen::Vector6d arbitraryVelocity = math::AdT(
+      const Eigen::Vector6d relVelocity = math::AdT(
           relativeTo->getTransform(getChildBodyNode()),
           relativeTo->getSpatialVelocity());
-
-      targetRelSpatialVel += -parentVelocity + arbitraryVelocity;
+      targetRelSpatialVel += relVelocity - parentVelocity;
     }
   }
 
