@@ -80,13 +80,6 @@ Eigen::Isometry3d KinematicJoint::convertToTransform(
 }
 
 //==============================================================================
-void KinematicJoint::setTransform(
-    Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
-{
-  return setTransformOf(joint, tf, withRespectTo);
-}
-
-//==============================================================================
 void KinematicJoint::setTransformOf(
     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -108,13 +101,6 @@ void KinematicJoint::setTransformOf(
 }
 
 //==============================================================================
-void KinematicJoint::setTransform(
-    BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
-{
-  setTransformOf(bodyNode, tf, withRespectTo);
-}
-
-//==============================================================================
 void KinematicJoint::setTransformOf(
     BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -122,16 +108,6 @@ void KinematicJoint::setTransformOf(
     return;
 
   setTransformOf(bodyNode->getParentJoint(), tf, withRespectTo);
-}
-
-//==============================================================================
-void KinematicJoint::setTransform(
-    Skeleton* skeleton,
-    const Eigen::Isometry3d& tf,
-    const Frame* withRespectTo,
-    bool applyToAllRootBodies)
-{
-  setTransformOf(skeleton, tf, withRespectTo, applyToAllRootBodies);
 }
 
 //==============================================================================
@@ -313,35 +289,6 @@ void KinematicJoint::setAngularVelocity(
   }
 
   setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
-}
-
-//==============================================================================
-void KinematicJoint::setLinearAcceleration(
-    const Eigen::Vector3d& newLinearAcceleration,
-    const Frame* relativeTo,
-    const Frame* inCoordinatesOf)
-{
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
-
-  Eigen::Vector6d targetSpatialAcceleration;
-
-  if (Frame::World() == relativeTo) {
-    targetSpatialAcceleration.head<3>()
-        = getChildBodyNode()->getSpatialAcceleration().head<3>();
-  } else {
-    targetSpatialAcceleration.head<3>()
-        = getChildBodyNode()
-              ->getSpatialAcceleration(relativeTo, getChildBodyNode())
-              .head<3>();
-  }
-
-  const Eigen::Vector6d& V
-      = getChildBodyNode()->getSpatialVelocity(relativeTo, inCoordinatesOf);
-  targetSpatialAcceleration.tail<3>()
-      = getChildBodyNode()->getWorldTransform().linear().transpose()
-        * inCoordinatesOf->getWorldTransform().linear()
-        * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
 }
 
 //==============================================================================
