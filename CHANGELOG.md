@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.15.0 (2025-06-23)](https://github.com/dartsim/dart/milestone/77?closed=1)
+### [DART 6.16.1 (2025-06-23)](https://github.com/dartsim/dart/milestone/77?closed=1)
 
 * Build
   * Add a Kinematic Joint: [#1953] (https://github.com/dartsim/dart/pull/1953)
