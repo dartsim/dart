@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/common/Deprecated.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -83,7 +85,10 @@ public:
   bool isCyclic(std::size_t _index) const override;
 
   /// Convert a transform into a 6D vector that can be used to set the positions
-  /// of a KinematicJoint.
+  /// of a KinematicJoint. The positions returned by this function will result
+  /// in a relative transform of getTransformFromParentBodyNode() * _tf *
+  /// getTransformFromChildBodyNode().inverse() between the parent BodyNode and
+  /// the child BodyNode frames when applied to a KinematicJoint.
   static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
 
   /// Convert a KinematicJoint-style 6D vector into a transform
@@ -91,10 +96,32 @@ public:
       const Eigen::Vector6d& _positions);
 
   /// If the given joint is a KinematicJoint, then set the transform of the
-  /// given Joint's child BodyNode so it transforms with respect to
+  /// given Joint's child BodyNode so that its transform with respect to
+  /// "withRespecTo" is equal to "tf".
+  ///
+  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
+  DART_DEPRECATED(6.9)
+  static void setTransform(
+      Joint* joint,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World());
+
+  /// If the given joint is a KinematicJoint, then set the transform of the
+  /// given Joint's child BodyNode so that its transform with respect to
   /// "withRespecTo" is equal to "tf".
   static void setTransformOf(
       Joint* joint,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World());
+
+  /// If the parent Joint of the given BodyNode is a KinematicJoint, then set
+  /// the transform of the given BodyNode so that its transform with respect to
+  /// "withRespecTo" is equal to "tf".
+  ///
+  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
+  DART_DEPRECATED(6.9)
+  static void setTransform(
+      BodyNode* bodyNode,
       const Eigen::Isometry3d& tf,
       const Frame* withRespectTo = Frame::World());
 
@@ -110,6 +137,19 @@ public:
   /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
   /// it will be applied to only the default root BodyNode that will be obtained
   /// by Skeleton::getRootBodyNode().
+  ///
+  /// \deprecated Deprecated in DART 6.9. Use setTransformOf() instead
+  DART_DEPRECATED(6.9)
+  static void setTransform(
+      Skeleton* skeleton,
+      const Eigen::Isometry3d& tf,
+      const Frame* withRespectTo = Frame::World(),
+      bool applyToAllRootBodies = true);
+
+  /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
+  /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
+  /// it will be applied to only the default root BodyNode that will be obtained
+  /// by Skeleton::getRootBodyNode().
   static void setTransformOf(
       Skeleton* skeleton,
       const Eigen::Isometry3d& tf,
@@ -120,13 +160,28 @@ public:
   /// BodyNode relative to an arbitrary Frame. The reference frame can be
   /// arbitrarily specified.
   ///
+  /// If you want to set more than one kind of Cartetian coordinates (e.g.,
+  /// transform and spatial velocity) at the same time, you should call
+  /// corresponding setters in a certain order (transform -> velocity ->
+  /// acceleration), If you don't velocity or acceleration can be corrupted by
+  /// transform or velocity. This function calls the corresponding setters in
+  /// the right order so that all the desired Cartetian coordinates are properly
+  /// set.
+  ///
+  /// Pass nullptr for "newTransform", "newSpatialVelocity", or
+  /// "newSpatialAcceleration" if you don't want to set them.
+  ///
   /// \param[in] newTransform Desired transform of the child BodyNode.
   /// \param[in] withRespectTo The relative Frame of "newTransform".
   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
   /// BodyNode.
   /// \param[in] velRelativeTo The relative frame of "newSpatialVelocity".
   /// \param[in] velInCoordinatesOf The reference frame of "newSpatialVelocity".
+  /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
   /// child BodyNode.
+  /// \param[in] accRelativeTo The relative frame of "newSpatialAcceleration".
+  /// \param[in] accInCoordinatesOf The reference frame of
+  /// "newSpatialAcceleration".
   void setSpatialMotion(
       const Eigen::Isometry3d* newTransform,
       const Frame* withRespectTo,
@@ -198,6 +253,20 @@ public:
       const Frame* relativeTo = Frame::World(),
       const Frame* inCoordinatesOf = Frame::World());
 
+  /// Set the linear portion of classical acceleration of the child BodyNode
+  /// relative to an arbitrary Frame.
+  ///
+  /// Note that the angular portion of claasical acceleration of the child
+  /// BodyNode will not be changed after this function called.
+  ///
+  /// \param[in] newLinearAcceleration
+  /// \param[in] relativeTo The relative frame of "newLinearAcceleration".
+  /// \param[in] inCoordinatesOf The reference frame of "newLinearAcceleration".
+  void setLinearAcceleration(
+      const Eigen::Vector3d& newLinearAcceleration,
+      const Frame* relativeTo = Frame::World(),
+      const Frame* inCoordinatesOf = Frame::World());
+
   // Documentation inherited
   Eigen::Matrix6d getRelativeJacobianStatic(
       const Eigen::Vector6d& _positions) const override;
@@ -217,6 +286,9 @@ protected:
 
   // Documentation inherited
   void integratePositions(double _dt) override;
+
+  // Documentation inherited
+  void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   void updateDegreeOfFreedomNames() override;

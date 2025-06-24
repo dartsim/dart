@@ -80,6 +80,13 @@ Eigen::Isometry3d KinematicJoint::convertToTransform(
 }
 
 //==============================================================================
+void KinematicJoint::setTransform(
+    Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
+{
+  return setTransformOf(joint, tf, withRespectTo);
+}
+
+//==============================================================================
 void KinematicJoint::setTransformOf(
     Joint* joint, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -101,6 +108,13 @@ void KinematicJoint::setTransformOf(
 }
 
 //==============================================================================
+void KinematicJoint::setTransform(
+    BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
+{
+  setTransformOf(bodyNode, tf, withRespectTo);
+}
+
+//==============================================================================
 void KinematicJoint::setTransformOf(
     BodyNode* bodyNode, const Eigen::Isometry3d& tf, const Frame* withRespectTo)
 {
@@ -111,25 +125,37 @@ void KinematicJoint::setTransformOf(
 }
 
 //==============================================================================
+void KinematicJoint::setTransform(
+    Skeleton* skeleton,
+    const Eigen::Isometry3d& tf,
+    const Frame* withRespectTo,
+    bool applyToAllRootBodies)
+{
+  setTransformOf(skeleton, tf, withRespectTo, applyToAllRootBodies);
+}
+
+//==============================================================================
 void KinematicJoint::setTransformOf(
     Skeleton* skeleton,
     const Eigen::Isometry3d& tf,
     const Frame* withRespectTo,
     bool applyToAllRootBodies)
 {
-  if (!skeleton)
+  if (nullptr == skeleton)
     return;
 
-  if (skeleton->getNumTrees() == 0)
+  const std::size_t numTrees = skeleton->getNumTrees();
+
+  if (0 == numTrees)
     return;
 
-  if (applyToAllRootBodies) {
-    for (std::size_t i = 0; i < skeleton->getNumTrees(); ++i) {
-      setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
-    }
-  } else {
+  if (!applyToAllRootBodies) {
     setTransformOf(skeleton->getRootBodyNode(), tf, withRespectTo);
+    return;
   }
+
+  for (std::size_t i = 0; i < numTrees; ++i)
+    setTransformOf(skeleton->getRootBodyNode(i), tf, withRespectTo);
 }
 
 //==============================================================================
@@ -204,23 +230,31 @@ void KinematicJoint::setSpatialVelocity(
     return;
   }
 
-  // Transform newSpatialVelocity into the child body node frame if needed
-  Eigen::Vector6d targetRelSpatialVel = (getChildBodyNode() == inCoordinatesOf)
-      ? newSpatialVelocity
-      : math::AdR(inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity);
+  // Change the reference frame of "newSpatialVelocity" to the child body node
+  // frame.
+  Eigen::Vector6d targetRelSpatialVel = newSpatialVelocity;
+  if (getChildBodyNode() != inCoordinatesOf) {
+    targetRelSpatialVel = math::AdR(
+        inCoordinatesOf->getTransform(getChildBodyNode()), newSpatialVelocity);
+  }
 
-  // Adjust for parent frame if necessary
+  // Compute the target relative spatial velocity from the parent body node to
+  // the child body node.
   if (getChildBodyNode()->getParentFrame() != relativeTo) {
-    const Eigen::Vector6d parentVelocity = math::AdInvT(
-        getRelativeTransform(),
-        getChildBodyNode()->getParentFrame()->getSpatialVelocity());
-
     if (relativeTo->isWorld()) {
+      const Eigen::Vector6d parentVelocity = math::AdInvT(
+          getRelativeTransform(),
+          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
+
       targetRelSpatialVel -= parentVelocity;
     } else {
+      const Eigen::Vector6d parentVelocity = math::AdInvT(
+          getRelativeTransform(),
+          getChildBodyNode()->getParentFrame()->getSpatialVelocity());
       const Eigen::Vector6d arbitraryVelocity = math::AdT(
           relativeTo->getTransform(getChildBodyNode()),
           relativeTo->getSpatialVelocity());
+
       targetRelSpatialVel += -parentVelocity + arbitraryVelocity;
     }
   }
@@ -232,7 +266,7 @@ void KinematicJoint::setSpatialVelocity(
 void KinematicJoint::setLinearVelocity(
     const Eigen::Vector3d& newLinearVelocity, const Frame* relativeTo)
 {
-  assert(nullptr != relativeTo);  
+  assert(nullptr != relativeTo);
   assert(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialVelocity;
@@ -262,6 +296,11 @@ void KinematicJoint::setAngularVelocity(
 
   Eigen::Vector6d targetSpatialVelocity;
 
+  // Hean Angular Velocities
+  targetSpatialVelocity.head<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear() * newAngularVelocity;
+
   // Translate Velocities if a non world coordiinate frame is used
   if (Frame::World() == relativeTo) {
     targetSpatialVelocity.tail<3>()
@@ -273,12 +312,36 @@ void KinematicJoint::setAngularVelocity(
               .tail<3>();
   }
 
-  // Hean Angular Velocities
-  targetSpatialVelocity.head<3>()
-      = getChildBodyNode()->getWorldTransform().linear().transpose()
-        * inCoordinatesOf->getWorldTransform().linear() * newAngularVelocity;
-
   setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
+}
+
+//==============================================================================
+void KinematicJoint::setLinearAcceleration(
+    const Eigen::Vector3d& newLinearAcceleration,
+    const Frame* relativeTo,
+    const Frame* inCoordinatesOf)
+{
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
+  Eigen::Vector6d targetSpatialAcceleration;
+
+  if (Frame::World() == relativeTo) {
+    targetSpatialAcceleration.head<3>()
+        = getChildBodyNode()->getSpatialAcceleration().head<3>();
+  } else {
+    targetSpatialAcceleration.head<3>()
+        = getChildBodyNode()
+              ->getSpatialAcceleration(relativeTo, getChildBodyNode())
+              .head<3>();
+  }
+
+  const Eigen::Vector6d& V
+      = getChildBodyNode()->getSpatialVelocity(relativeTo, inCoordinatesOf);
+  targetSpatialAcceleration.tail<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear()
+        * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
 }
 
 //==============================================================================
@@ -292,8 +355,10 @@ Eigen::Matrix6d KinematicJoint::getRelativeJacobianStatic(
 Eigen::Vector6d KinematicJoint::getPositionDifferencesStatic(
     const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const
 {
-  return convertToPositions(
-      convertToTransform(_q1).inverse() * convertToTransform(_q2));
+  const Eigen::Isometry3d T1 = convertToTransform(_q1);
+  const Eigen::Isometry3d T2 = convertToTransform(_q2);
+
+  return convertToPositions(T1.inverse() * T2);
 }
 
 //==============================================================================
@@ -301,6 +366,9 @@ KinematicJoint::KinematicJoint(const Properties& properties)
   : Base(properties), mQ(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix6d::Zero();
+
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
   createGenericJointAspect(properties);
   createJointAspect(properties);
 }
@@ -343,24 +411,44 @@ void KinematicJoint::integratePositions(double _dt)
   setPositionsStatic(convertToPositions(Qnext));
 }
 
+//==============================================================================
+void KinematicJoint::integrateVelocities(double _dt)
+{
+  (void)_dt; // To avoid unused variable warning
+  // For KinematicJoint, we don't need to integrate the velocity. We just
+  // need to set the velocity to the current velocity, ignoring the
+  // acceleration.
+
+  // SKIP Velocity should be set directly
+  // TODO To be removed
+  // dtmsg << "[KinematicJoint::integrateVelocities] This function is not "
+  //      << "using dt for integration which value is "<< _dt <<".\n";
+  setVelocitiesStatic(getVelocitiesStatic());
+}
+
 //==============================================ss================================
 void KinematicJoint::updateDegreeOfFreedomNames()
 {
-  static const char* dofNames[6]
-      = {"_rot_x", "_rot_y", "_rot_z", "_pos_x", "_pos_y", "_pos_z"};
-
-  for (std::size_t i = 0; i < 6; ++i) {
-    if (!mDofs[i]->isNamePreserved()) {
-      mDofs[i]->setName(Joint::mAspectProperties.mName + dofNames[i], false);
-    }
-  }
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_rot_x", false);
+  if (!mDofs[1]->isNamePreserved())
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_rot_y", false);
+  if (!mDofs[2]->isNamePreserved())
+    mDofs[2]->setName(Joint::mAspectProperties.mName + "_rot_z", false);
+  if (!mDofs[3]->isNamePreserved())
+    mDofs[3]->setName(Joint::mAspectProperties.mName + "_pos_x", false);
+  if (!mDofs[4]->isNamePreserved())
+    mDofs[4]->setName(Joint::mAspectProperties.mName + "_pos_y", false);
+  if (!mDofs[5]->isNamePreserved())
+    mDofs[5]->setName(Joint::mAspectProperties.mName + "_pos_z", false);
 }
 
 //==============================================================================
 void KinematicJoint::updateRelativeTransform() const
 {
-  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * convertToTransform(getPositionsStatic())
+  mQ = convertToTransform(getPositionsStatic());
+
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
