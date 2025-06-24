@@ -368,18 +368,14 @@ void KinematicJoint::integrateVelocities(double _dt)
 //==============================================ss================================
 void KinematicJoint::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(Joint::mAspectProperties.mName + "_rot_x", false);
-  if (!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(Joint::mAspectProperties.mName + "_rot_y", false);
-  if (!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(Joint::mAspectProperties.mName + "_rot_z", false);
-  if (!mDofs[3]->isNamePreserved())
-    mDofs[3]->setName(Joint::mAspectProperties.mName + "_pos_x", false);
-  if (!mDofs[4]->isNamePreserved())
-    mDofs[4]->setName(Joint::mAspectProperties.mName + "_pos_y", false);
-  if (!mDofs[5]->isNamePreserved())
-    mDofs[5]->setName(Joint::mAspectProperties.mName + "_pos_z", false);
+  static const char* suffixes[6] = {
+    "_rot_x", "_rot_y", "_rot_z", "_pos_x", "_pos_y", "_pos_z"
+  };
+
+  for (std::size_t i = 0; i < 6; ++i) {
+    if (!mDofs[i]->isNamePreserved())
+      mDofs[i]->setName(Joint::mAspectProperties.mName + suffixes[i], false);
+  }
 }
 
 //==============================================================================
