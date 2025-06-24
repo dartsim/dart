@@ -262,14 +262,14 @@ void KinematicJoint::setAngularVelocity(
   assert(nullptr != relativeTo);
   assert(nullptr != inCoordinatesOf);
 
-  Eigen::Vector6d targetSpatialVelocity;
+  Eigen::Vector6d targetSpatialVelocity = Eigen::Vector6d::Zero();
 
-  // Hean Angular Velocities
+  // Gather the angular velocity in the child body node frame
   targetSpatialVelocity.head<3>()
       = getChildBodyNode()->getWorldTransform().linear().transpose()
         * inCoordinatesOf->getWorldTransform().linear() * newAngularVelocity;
 
-  // Translate Velocities if a non world coordiinate frame is used
+  // Translate Velocities if a non world coordinate frame is used
   if (Frame::World() == relativeTo) {
     targetSpatialVelocity.tail<3>()
         = getChildBodyNode()->getSpatialVelocity().tail<3>();
@@ -280,6 +280,7 @@ void KinematicJoint::setAngularVelocity(
               .tail<3>();
   }
 
+  // Set the spatial velocity of the child body node
   setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
 }
 
