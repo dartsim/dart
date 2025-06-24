@@ -234,6 +234,9 @@ protected:
   void integratePositions(double _dt) override;
 
   // Documentation inherited
+  void integrateVelocities(double _dt) override;
+
+  // Documentation inherited
   void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited

@@ -350,12 +350,17 @@ void KinematicJoint::integratePositions(double _dt)
   setPositionsStatic(convertToPositions(Qnext));
 }
 
+//==============================================================================
+void KinematicJoint::integrateVelocities(double /*_dt*/)
+{
+  setVelocitiesStatic(getVelocitiesStatic());
+}
+
 //==============================================ss================================
 void KinematicJoint::updateDegreeOfFreedomNames()
 {
-  static const char* suffixes[6] = {
-    "_rot_x", "_rot_y", "_rot_z", "_pos_x", "_pos_y", "_pos_z"
-  };
+  static const char* suffixes[6]
+      = {"_rot_x", "_rot_y", "_rot_z", "_pos_x", "_pos_y", "_pos_z"};
 
   for (std::size_t i = 0; i < 6; ++i) {
     if (!mDofs[i]->isNamePreserved())
