@@ -150,7 +150,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> BV&gt;</div>
 <div class="foldopen" id="foldopen00046" data-start="{" data-end="}">
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#a02599cd4198366c74a26378afa70ab75">   46</a></span><a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#a02599cd4198366c74a26378afa70ab75">createMesh</a>(</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#a02599cd4198366c74a26378afa70ab75">   46</a></span>::fcl::BVHModel&lt;BV&gt;* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#a02599cd4198366c74a26378afa70ab75">createMesh</a>(</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordtype">float</span> _scaleX,</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordtype">float</span> _scaleY,</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="keywordtype">float</span> _scaleZ,</div>
@@ -158,7 +158,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="keyword">const</span> <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#aa4c0a9939fa73b3ac8ab4a5f4695f5dc">dart::collision::fcl::Transform3</a>&amp; _transform)</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>{</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  assert(_mesh);</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  ::fcl::BVHModel&lt;BV&gt;* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  model-&gt;beginModel();</div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>  <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; _mesh-&gt;mNumMeshes; i++)</div>
@@ -186,7 +186,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> BV&gt;</div>
 <div class="foldopen" id="foldopen00080" data-start="{" data-end="}">
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#aaf74e3529188567b5fdf8dbc0ef98b69">   80</a></span><a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#aaf74e3529188567b5fdf8dbc0ef98b69">createEllipsoid</a>(</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#aaf74e3529188567b5fdf8dbc0ef98b69">   80</a></span>::fcl::BVHModel&lt;BV&gt;* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#aaf74e3529188567b5fdf8dbc0ef98b69">createEllipsoid</a>(</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordtype">float</span> _sizeX,</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">float</span> _sizeY,</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keywordtype">float</span> _sizeZ,</div>
@@ -276,7 +276,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>         {50, 51, 58}, {51, 52, 58}, {52, 53, 58}, {53, 54, 58}, {54, 55, 58},</div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>         {55, 56, 58}, {56, 49, 58}};</div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  ::fcl::BVHModel&lt;BV&gt;* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">dart::collision::fcl::Vector3</a> p1, p2, p3;</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  model-&gt;beginModel();</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span> </div>
@@ -301,7 +301,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span><span class="comment">// Create a cube mesh for collision detection</span></div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> BV&gt;</div>
 <div class="foldopen" id="foldopen00193" data-start="{" data-end="}">
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#a796268e9150004ec0494b7e651cf5ffb">  193</a></span><a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#a796268e9150004ec0494b7e651cf5ffb">createCube</a>(</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#a796268e9150004ec0494b7e651cf5ffb">  193</a></span>::fcl::BVHModel&lt;BV&gt;* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#a796268e9150004ec0494b7e651cf5ffb">createCube</a>(</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    <span class="keywordtype">float</span> _sizeX,</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    <span class="keywordtype">float</span> _sizeY,</div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    <span class="keywordtype">float</span> _sizeZ,</div>
@@ -330,7 +330,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  v[0][2] = v[3][2] = v[4][2] = v[7][2] = -_sizeZ / 2;</div>
 <div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  v[1][2] = v[2][2] = v[5][2] = v[6][2] = _sizeZ / 2;</div>
 <div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  ::fcl::BVHModel&lt;BV&gt;* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
 <div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">dart::collision::fcl::Vector3</a> p1, p2, p3;</div>
 <div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  model-&gt;beginModel();</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
@@ -364,7 +364,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span> </div>
 <div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> BV&gt;</div>
 <div class="foldopen" id="foldopen00254" data-start="{" data-end="}">
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#acd49e0dc6d42ce9dfab6e74ea435c9bf">  254</a></span><a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#acd49e0dc6d42ce9dfab6e74ea435c9bf">createCylinder</a>(</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno"><a class="line" href="../../da/dcd/namespacedart_1_1collision.html#acd49e0dc6d42ce9dfab6e74ea435c9bf">  254</a></span>::fcl::BVHModel&lt;BV&gt;* <a class="code hl_function" href="../../da/dcd/namespacedart_1_1collision.html#acd49e0dc6d42ce9dfab6e74ea435c9bf">createCylinder</a>(</div>
 <div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    <span class="keywordtype">double</span> _baseRadius,</div>
 <div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    <span class="keywordtype">double</span> _topRadius,</div>
 <div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    <span class="keywordtype">double</span> _height,</div>
@@ -410,7 +410,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  sinCache[_slices] = sinCache[0];</div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  cosCache[_slices] = cosCache[0];</div>
 <div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span> </div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">::fcl::BVHModel&lt;BV&gt;</a>* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  ::fcl::BVHModel&lt;BV&gt;* model = new ::fcl::BVHModel&lt;BV&gt;;</div>
 <div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  <a class="code hl_typedef" href="../../dc/df9/namespacedart_1_1collision_1_1fcl.html#a96f4ac9c1b4b6f6d7931ddf495424618">dart::collision::fcl::Vector3</a> p1, p2, p3, p4;</div>
 <div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span> </div>
 <div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  model-&gt;beginModel();</div>
@@ -510,7 +510,7 @@ $(document).ready(function(){initNavTree('d5/d51/CollisionShapes_8hpp_source.htm
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="../../dir_bdca9e024c7189a7f761273aaa65cff0.html">dart</a></li><li class="navelem"><a class="el" href="../../dir_7aaf2eefc9c12d3855f042d5a221f589.html">collision</a></li><li class="navelem"><a class="el" href="../../dir_d9bc0d3f4e4fe81f6b2799c71d86043d.html">fcl</a></li><li class="navelem"><a class="el" href="../../d5/d51/CollisionShapes_8hpp.html">CollisionShapes.hpp</a></li>
-    <li class="footer">Generated on Wed Jun 25 2025 03:23:25 for DART by <a href="https://www.doxygen.org/index.html"><img class="footer" src="../../doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
+    <li class="footer">Generated on Sun Jun 29 2025 03:40:41 for DART by <a href="https://www.doxygen.org/index.html"><img class="footer" src="../../doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
   </ul>
 </div>
 </body>
