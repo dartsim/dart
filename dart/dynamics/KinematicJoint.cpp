@@ -357,6 +357,13 @@ void KinematicJoint::integrateVelocities(double /*_dt*/)
   setVelocitiesStatic(getVelocitiesStatic());
 }
 
+//==============================================================================
+void KinematicJoint::updateConstrainedTerms(double /*timeStep*/)
+{
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
+  setVelocitiesStatic(velBefore);
+}
+
 //==============================================ss================================
 void KinematicJoint::updateDegreeOfFreedomNames()
 {
