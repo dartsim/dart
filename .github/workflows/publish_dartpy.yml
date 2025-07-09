@@ -97,7 +97,7 @@ jobs:
 
       - name: Set up Vcpkg
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: johnwason/vcpkg-action@v6
+        uses: johnwason/vcpkg-action@v7
         with:
           # TODO: Add ode and coin-or-ipopt
           pkgs: >
