@@ -1,6 +1,7 @@
+---
 name: Publish dartpy
 
-on:
+'on':
   push:
     branches:
       - "**"
@@ -73,7 +74,7 @@ jobs:
             build: "cp313-macosx_arm64"
             experimental: false
             release_only: false
-        
+
           - os: macos-latest
             build: "cp312-macosx_arm64"
             experimental: false
@@ -101,7 +102,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         with:
           # TODO: Add ode and coin-or-ipopt
-          pkgs: >
+          pkgs: >-
             assimp
             eigen3
             fcl
