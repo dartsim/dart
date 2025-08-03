@@ -1326,9 +1326,8 @@ void GenericJoint<ConfigSpaceT>::integratePositions(double dt)
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::integrateVelocities(double dt)
 {
-  setVelocitiesStatic(
-      math::integrateVelocity<ConfigSpaceT>(
-          getVelocitiesStatic(), getAccelerationsStatic(), dt));
+  setVelocitiesStatic(math::integrateVelocity<ConfigSpaceT>(
+      getVelocitiesStatic(), getAccelerationsStatic(), dt));
 }
 
 //==============================================================================
