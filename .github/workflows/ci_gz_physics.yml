@@ -1,0 +1,44 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: CI gz-physics
+
+on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  pull_request:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
+  schedule:
+    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
+    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
+  workflow_dispatch:
+
+jobs:
+  test_gazebo:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          cache: true
+
+      - name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.2
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Test gz-physics
+        run: |
+          pixi r -e gazebo test-gz
