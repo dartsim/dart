@@ -91,6 +91,7 @@ jobs:
 
     env:
       CIBW_BUILD: ${{ matrix.build }}
+      CIBW_PRERELEASE_PYTHONS: true
 
     steps:
       - uses: actions/checkout@v4
