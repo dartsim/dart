@@ -93,6 +93,8 @@ pip install dartpy
 
 For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
 
+An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim/dart).
+
 ## Project Status
 
 | Item                  | Status |
