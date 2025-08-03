@@ -119,7 +119,6 @@ jobs:
             urdfdom
           triplet: x64-windows
           revision: "2024.06.15"
-          github-binarycache: true
           token: ${{ github.token }}
 
       - name: Build wheels
