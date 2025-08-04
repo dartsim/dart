@@ -329,7 +329,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands[index] = command;
+      this->mAspectState.mCommands[index] = 0.0;
       break;
     case Joint::SERVO:
       this->mAspectState.mCommands[index] = math::clip(
@@ -343,10 +343,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a MIMIC joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[index] = math::clip(
-          command,
-          Base::mAspectProperties.mVelocityLowerLimits[index],
-          Base::mAspectProperties.mVelocityUpperLimits[index]);
+      this->mAspectState.mCommands[index] = 0.0;
       break;
     case Joint::ACCELERATION:
       this->mAspectState.mCommands[index] = math::clip(
@@ -367,7 +364,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[index] = command;
+      this->mAspectState.mCommands[index] = 0.0;
       break;
     default:
       assert(false);
@@ -404,12 +401,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           Base::mAspectProperties.mForceUpperLimits);
       break;
     case Joint::PASSIVE:
-      if (Vector::Zero() != commands) {
+      if (!commands.isZero()) {
         dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = commands;
+      this->mAspectState.mCommands.setZero();
       break;
     case Joint::SERVO:
       this->mAspectState.mCommands = math::clip(
@@ -418,15 +415,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::MIMIC:
-      if (Vector::Zero() != commands) {
+      if (!commands.isZero()) {
         dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a MIMIC joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mVelocityLowerLimits,
-          Base::mAspectProperties.mVelocityUpperLimits);
+      this->mAspectState.mCommands.setZero();
       break;
     case Joint::ACCELERATION:
       this->mAspectState.mCommands = math::clip(
@@ -442,12 +436,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
-      if (Vector::Zero() != commands) {
+      if (!commands.isZero()) {
         dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a LOCKED joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = commands;
+      this->mAspectState.mCommands.setZero();
       break;
     default:
       assert(false);
