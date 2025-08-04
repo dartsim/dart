@@ -1,6 +1,7 @@
+---
 name: Publish dartpy
 
-on:
+'on':
   push:
     branches:
       - "**"
@@ -73,7 +74,7 @@ jobs:
             build: "cp313-macosx_arm64"
             experimental: false
             release_only: false
-        
+
           - os: macos-latest
             build: "cp312-macosx_arm64"
             experimental: false
@@ -91,6 +92,7 @@ jobs:
 
     env:
       CIBW_BUILD: ${{ matrix.build }}
+      CIBW_PRERELEASE_PYTHONS: true
 
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +102,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         with:
           # TODO: Add ode and coin-or-ipopt
-          pkgs: >
+          pkgs: >-
             assimp
             eigen3
             fcl
@@ -119,7 +121,6 @@ jobs:
             urdfdom
           triplet: x64-windows
           revision: "2024.06.15"
-          github-binarycache: true
           token: ${{ github.token }}
 
       - name: Build wheels
