@@ -61,6 +61,9 @@ docs/readthedocs/site
 # Data files
 data/screencap/*
 
+# Temporary directory for dependencies
+.deps/
+
 # Python distribution artifacts
 dist/
 *.egg-info
@@ -75,4 +78,20 @@ dist/
 imgui.ini
 
 # Temporary directory for dependencies
-.deps
+.deps/
+
+# Gazebo physics plugins
+/libgz-physics-*.so
+
+# Python distribution artifacts
+dist/
+*.egg-info
+
+# Python wheel files
+*.whl
+
+# pixi environments
+.pixi
+
+# ImGui configuration
+imgui.ini
