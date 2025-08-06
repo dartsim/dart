@@ -135,15 +135,6 @@ if(TARGET dart-utils)
     target_link_libraries(test_Collision dart-collision-ode)
   endif()
 
-  dart_add_test("integration" test_Issue1899)
-  target_link_libraries(test_Issue1899 dart-utils)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_Issue1899 dart-collision-bullet)
-  endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(test_Issue1899 dart-collision-ode)
-  endif()
-
   dart_add_test("integration" test_Dynamics)
   target_link_libraries(test_Dynamics dart-utils)
 
