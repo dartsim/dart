@@ -123,6 +123,8 @@ protected:
 //==============================================================================
 void DynamicsTest::SetUp()
 {
+  // Seed random generator for deterministic tests
+  dart::math::Random::setSeed(42);
   // Create a list of skel files to test with
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
@@ -2270,7 +2272,6 @@ TEST_F(DynamicsTest, testJacobians)
 //==============================================================================
 TEST_F(DynamicsTest, testFiniteDifference)
 {
-  dart::math::Random::setSeed(42);
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
