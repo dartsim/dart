@@ -2270,6 +2270,7 @@ TEST_F(DynamicsTest, testJacobians)
 //==============================================================================
 TEST_F(DynamicsTest, testFiniteDifference)
 {
+  dart::math::Random::setSeed(42);
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
     dtdbg << getList()[i].toString() << std::endl;
