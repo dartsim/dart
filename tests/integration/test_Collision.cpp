@@ -1586,6 +1586,9 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
     EXPECT_TRUE(joint5->isKinematic());
     EXPECT_NEAR(joint5->getVelocity(0), joint5->getCommand(0), tol);
 
+    // The PASSIVE joint's command should have been cleared (Issue 1899).
+    EXPECT_EQ(joint2->getCommand(0), 0.0);
+
     // The velocity and acceleration of locked joint always must be zero.
     EXPECT_TRUE(joint6->isKinematic());
     EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
