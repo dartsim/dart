@@ -123,6 +123,8 @@ protected:
 //==============================================================================
 void DynamicsTest::SetUp()
 {
+  // Seed random generator for deterministic tests
+  dart::math::Random::setSeed(42);
   // Create a list of skel files to test with
   fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
   fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
