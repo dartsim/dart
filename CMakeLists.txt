@@ -510,7 +510,25 @@ install(
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${DART_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart.pc)
-set(PC_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig)
+cmake_path(IS_ABSOLUTE CMAKE_INSTALL_LIBDIR ABSOLUTE_CMAKE_INSTALL_LIBDIR)
+if(ABSOLUTE_CMAKE_INSTALL_LIBDIR)
+  # Absolute "CMAKE_INSTALL_*DIR" can be provided by user
+  # eg. to install libs and headers in different prefixes
+  # to split the package between propagated runtime dependency package
+  # and buildtime-only -dev package.
+  # In that case, the package can not be relocatable,
+  # and the installed files must not contain any "CMAKE_INSTALL_PREFIX"
+  # concatenated with a "CMAKE_INSTALL_*DIR". Use "CMAKE_INSTALL_FULL_*DIR".
+  set(PC_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig)
+  set(PC_LIBDIR ${CMAKE_INSTALL_FULL_LIBDIR})
+  set(PC_INCLUDEDIR ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+else()
+  # When "CMAKE_INSTALL_*DIR" are relative, we should ensure the installed
+  # files contain relocatable references to install paths.
+  set(PC_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  set(PC_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+  set(PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+endif()
 file(RELATIVE_PATH
   RELATIVE_PATH_TO_INSTALL_PREFIX
   "${PC_CONFIG_INSTALL_DIR}"
