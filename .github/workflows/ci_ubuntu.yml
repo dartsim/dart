@@ -56,7 +56,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Pull dev container
         run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
       - name: Build
@@ -81,7 +81,7 @@ jobs:
         build_type: ["Release", "Debug"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.8.14

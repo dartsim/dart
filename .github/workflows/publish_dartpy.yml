@@ -21,7 +21,7 @@ jobs:
     name: Check format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -95,7 +95,7 @@ jobs:
       CIBW_PRERELEASE_PYTHONS: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Vcpkg
         if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
@@ -154,7 +154,7 @@ jobs:
   #   name: Build source distribution
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
 
   #     - name: Build SDist
   #       run: pipx run build --sdist
