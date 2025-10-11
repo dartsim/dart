@@ -25,20 +25,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     name: API Documentation
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
     env:
       BUILD_TYPE: Release
       COMPILER: gcc
       BUILD_DOCS: ON
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       # Extract branch name
       - name: Extract branch name
@@ -113,22 +106,32 @@ jobs:
         run: |
           ./scripts/build_docs.sh build
 
-      - name: Configure GitHub Pages
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/configure-pages@v5
-
       - name: Upload documentation artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: gh-pages
 
-      - name: Deploy
-        if: ${{ github.ref == 'refs/heads/main' }}
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       - name: Cleanup
         if: always()
         run: |
           ./scripts/build_docs.sh clean
+
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
