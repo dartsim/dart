@@ -187,11 +187,14 @@ build-coverage = { cmd = """
     && ctest --output-on-failure -j --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """, depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
 
+# Note: --ignore-errors and --rc flags are needed for lcov compatibility with gcc 13+
 coverage-report = { cmd = """
     lcov \
         --capture \
         --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-file coverage.info \
+        --ignore-errors mismatch \
+        --rc geninfo_unexecuted_blocks=1 \
     && lcov \
         --remove coverage.info \
         '/usr/*' \
