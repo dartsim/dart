@@ -12,19 +12,71 @@ from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
 
-if sys.version_info >= (3, 13):
-    import pkgutil
+import pkgutil
 
-    if not hasattr(pkgutil, "ImpImporter"):
-        class _RemovedImpImporter:
-            """Compatibility shim for setuptools<67 on Python 3.13+."""
+if not hasattr(pkgutil, "ImpImporter"):
+    import importlib.abc
+    import importlib.machinery
+    import inspect
 
-            def __init__(self, *args, **kwargs) -> None:  # pragma: no cover - legacy only
-                raise ImportError(
-                    "pkgutil.ImpImporter was removed in Python 3.13; upgrade setuptools"
-                )
+    class _CompatImpImporter(importlib.abc.PathEntryFinder):
+        """Compatibility shim for deprecated pkgutil.ImpImporter."""
 
-        pkgutil.ImpImporter = _RemovedImpImporter  # type: ignore[attr-defined]
+        def __init__(self, path=None) -> None:  # pragma: no cover - legacy only
+            self.path = path
+            self._search_path = None if path is None else [os.path.realpath(path)]
+
+        def find_spec(self, fullname: str, target=None):
+            search = None if self._search_path is None else list(self._search_path)
+            return importlib.machinery.PathFinder.find_spec(fullname, search)
+
+        def find_module(self, fullname: str, path=None):
+            spec = self.find_spec(fullname)
+            if spec is None:
+                return None
+            return spec.loader
+
+        def iter_modules(self, prefix: str = ""):
+            if self.path is None or not os.path.isdir(self.path):
+                return
+
+            yielded = set()
+            try:
+                filenames = os.listdir(self.path)
+            except OSError:
+                filenames = []
+
+            filenames.sort()
+            for fn in filenames:
+                modname = inspect.getmodulename(fn)
+                if modname == "__init__" or (modname and modname in yielded):
+                    continue
+
+                full_path = os.path.join(self.path, fn)
+                ispkg = False
+
+                if not modname and os.path.isdir(full_path) and "." not in fn:
+                    modname = fn
+                    try:
+                        dircontents = os.listdir(full_path)
+                    except OSError:
+                        dircontents = []
+                    for sub in dircontents:
+                        subname = inspect.getmodulename(sub)
+                        if subname == "__init__":
+                            ispkg = True
+                            break
+                    else:
+                        continue
+
+                if modname and "." not in modname and modname not in yielded:
+                    yielded.add(modname)
+                    yield prefix + modname, ispkg
+
+        def invalidate_caches(self) -> None:  # pragma: no cover - compatibility only
+            return
+
+    pkgutil.ImpImporter = _CompatImpImporter  # type: ignore[attr-defined]
 
 from setuptools import Extension, find_packages, setup
 
