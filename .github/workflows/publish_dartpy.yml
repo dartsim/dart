@@ -120,7 +120,7 @@ jobs:
             tracy
             urdfdom
           triplet: x64-windows
-          revision: "2024.06.15"
+          revision: "2025.09.17"
           token: ${{ github.token }}
 
       - name: Build wheels
