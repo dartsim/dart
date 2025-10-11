@@ -27,50 +27,41 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # For code coverage report to Codecov
-          - os: ubuntu-jammy
-            build_type: Debug
-            codecov: ON
-            check_format: ON
-            build_dartpy: ON
-            enable_simd: ON
-    env:
-      # Hosted on: https://hub.docker.com/repository/docker/jslee02/dart-dev
-      DART_DEV_IMAGE: jslee02/dart-dev
-      DOCKER_TAG: ${{ matrix.os }}-v6.15
-      PLATFORM: linux/amd64
-      COMPILER: gcc
-      BUILD_TYPE: ${{ matrix.build_type }}
-      BUILD_DARTPY: "${{ matrix.build_dartpy }}"
-      CODECOV: ${{ matrix.codecov }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      CHECK_FORMAT: ${{ matrix.check_format }}
-      ENABLE_SIMD: ${{ matrix.enable_simd }}
-      DART_USE_SYSTEM_IMGUI: OFF
-      IN_CI: ON
-      IN_DOCKER: ON
     steps:
-      # https://github.com/marketplace/actions/docker-setup-qemu
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       - name: Checkout
         uses: actions/checkout@v5
-      - name: Pull dev container
-        run: docker pull $DART_DEV_IMAGE:$DOCKER_TAG
-      - name: Build
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.5.3
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev lcov
+          version: 1.0
+
+      - name: Build with coverage
         run: |
-          if [ "$CODECOV" = "ON" ]; then
-            ci_env=`bash <(curl -s https://codecov.io/env)`
-          fi
-          docker run \
-            $ci_env -e CI=true \
-            --platform $PLATFORM \
-            --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
-            --env-file ./scripts/docker/env.list \
-            $DART_DEV_IMAGE:$DOCKER_TAG \
-            /bin/sh -c "cd $GITHUB_WORKSPACE && ./scripts/build.sh"
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Debug \
+          pixi run build-coverage
+
+      - name: Generate coverage report
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Debug \
+          pixi run coverage-report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
   build:
     name: ${{ matrix.build_type }}
