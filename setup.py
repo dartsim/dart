@@ -17,7 +17,12 @@ from setuptools import Extension, find_packages, setup
 try:
   from setuptools._distutils import log as distutils_log
 except ImportError:  # pragma: no cover - fallback for old setuptools
-  from distutils import log as distutils_log  # type: ignore[deprecated-module]
+  try:
+    from distutils import log as distutils_log  # type: ignore[deprecated-module]
+  except ModuleNotFoundError as exc:  # pragma: no cover - Python 3.13+
+    raise RuntimeError(
+        "setuptools>=67 is required to build DART's Python package."
+    ) from exc
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
