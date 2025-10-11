@@ -4,7 +4,6 @@
 # References:
 # - https://pybind11.readthedocs.io/en/stable/compiling.html
 
-import distutils.log
 import os
 import re
 import subprocess
@@ -14,6 +13,11 @@ from glob import glob
 from pathlib import Path
 
 from setuptools import Extension, find_packages, setup
+
+try:
+  from setuptools._distutils import log as distutils_log
+except ImportError:  # pragma: no cover - fallback for old setuptools
+  from distutils import log as distutils_log  # type: ignore[deprecated-module]
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -32,7 +36,7 @@ with open(os.path.join(dart_root, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 description = "Python API of Dynamic Animation and Robotics Toolkit."
 
-distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
+distutils_log.set_verbosity(distutils_log.DEBUG)  # Set DEBUG level
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
