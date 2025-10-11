@@ -128,55 +128,25 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
-py-ex = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/$EXAMPLE/main.py
-""", depends-on = ["build-py-dev"], env = { EXAMPLE = "hello_world", BUILD_TYPE = "Release" } }
+py-ex = { cmd = "python python/examples/$EXAMPLE/main.py", depends-on = ["build-py-dev"], env = { EXAMPLE = "hello_world", BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-hello-world = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/hello_world/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-hello-world = { cmd = "python python/examples/hello_world/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-hello-world-gui = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/hello_world_gui/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-hello-world-gui = { cmd = "python python/examples/hello_world_gui/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-rigid-cubes = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/rigid_cubes/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-rigid-cubes = { cmd = "python python/examples/rigid_cubes/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-rigid-chain = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/rigid_chain/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-rigid-chain = { cmd = "python python/examples/rigid_chain/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-rigid-loop = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/rigid_loop/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-rigid-loop = { cmd = "python python/examples/rigid_loop/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-biped-stand = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/biped_stand/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-biped-stand = { cmd = "python python/examples/biped_stand/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-contacts-pointcloud = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/contacts_pointcloud/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-contacts-pointcloud = { cmd = "python python/examples/contacts_pointcloud/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-drag-and-drop = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/drag_and_drop/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-drag-and-drop = { cmd = "python python/examples/drag_and_drop/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-operational-space-control = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
-    python python/examples/operational_space_control/main.py
-""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+py-ex-operational-space-control = { cmd = "python python/examples/operational_space_control/main.py", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
 test = { cmd = """
     ctest \
@@ -444,12 +414,33 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = """
+build-py = { cmd = "python -m pip install . -vv" }
+
+build-py-dev = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
         -j \
         --target dartpy
-""", depends-on = ["config"] }
+""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
+config-py = { cmd = """
+    cmake \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -G 'Visual Studio 17 2022' \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_MSVC_DEFAULT_OPTIONS=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF" } }
 
 test = { cmd = """
     ctest \
