@@ -64,7 +64,11 @@ build() {
   # commits. This means that the clone knows nothing about other Git branches or
   # tags. We fix this by deleting and re-cloning the full repository.
   git clone "https://github.com/dartsim/dart.git" ${DART_CLONE_DIR}
-  git -C ${DART_CLONE_DIR} checkout ${BRANCH_NAME}
+  
+  # Checkout the branch if BRANCH_NAME is set, otherwise stay on default branch
+  if [ -n "${BRANCH_NAME}" ]; then
+    git -C ${DART_CLONE_DIR} checkout ${BRANCH_NAME} || echo "Branch ${BRANCH_NAME} not found in upstream, using default branch"
+  fi
 
   # Organize into "docs" directory
   mkdir -p ${DART_DOCS_OUTPUT_DIR}
