@@ -12,17 +12,61 @@ from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
 
+if sys.version_info >= (3, 13):
+    import pkgutil
+
+    if not hasattr(pkgutil, "ImpImporter"):
+        class _RemovedImpImporter:
+            """Compatibility shim for setuptools<67 on Python 3.13+."""
+
+            def __init__(self, *args, **kwargs) -> None:  # pragma: no cover - legacy only
+                raise ImportError(
+                    "pkgutil.ImpImporter was removed in Python 3.13; upgrade setuptools"
+                )
+
+        pkgutil.ImpImporter = _RemovedImpImporter  # type: ignore[attr-defined]
+
 from setuptools import Extension, find_packages, setup
 
 try:
-  from setuptools._distutils import log as distutils_log
+    from setuptools._distutils import log as distutils_log
 except ImportError:  # pragma: no cover - fallback for old setuptools
-  try:
-    from distutils import log as distutils_log  # type: ignore[deprecated-module]
-  except ModuleNotFoundError as exc:  # pragma: no cover - Python 3.13+
-    raise RuntimeError(
-        "setuptools>=67 is required to build DART's Python package."
-    ) from exc
+    try:
+        from distutils import log as distutils_log  # type: ignore[deprecated-module]
+    except ModuleNotFoundError:  # pragma: no cover - Python 3.13+
+        import logging
+
+        class _DistutilsLogShim:
+            DEBUG = logging.DEBUG
+            INFO = logging.INFO
+            WARN = logging.WARN
+
+            def __init__(self) -> None:
+                self._logger = logging.getLogger("distutils")
+                if not self._logger.handlers:
+                    handler = logging.StreamHandler()
+                    formatter = logging.Formatter(
+                        "distutils: %(levelname)s: %(message)s"
+                    )
+                    handler.setFormatter(formatter)
+                    self._logger.addHandler(handler)
+
+            def set_verbosity(self, level: int) -> None:
+                self._logger.setLevel(level)
+
+            def debug(self, msg: str, *args, **kwargs) -> None:
+                self._logger.debug(msg, *args, **kwargs)
+
+            def info(self, msg: str, *args, **kwargs) -> None:
+                self._logger.info(msg, *args, **kwargs)
+
+            def warn(self, msg: str, *args, **kwargs) -> None:
+                self._logger.warning(msg, *args, **kwargs)
+
+            def error(self, msg: str, *args, **kwargs) -> None:
+                self._logger.error(msg, *args, **kwargs)
+
+        distutils_log = _DistutilsLogShim()
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
