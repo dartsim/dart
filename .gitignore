@@ -68,6 +68,7 @@ data/screencap/*
 # Python distribution artifacts
 dist/
 *.egg-info
+build/
 
 # Python wheel files
 *.whl

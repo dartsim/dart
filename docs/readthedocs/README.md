@@ -1,77 +1,149 @@
 # DART Documentation
 
-## Build Documentation Locally
+This directory contains the source for DART's documentation, including both C++ and Python API documentation.
 
-### Using pixi (recommended)
+## Building Documentation Locally
 
-From the project root, you can use pixi to build and serve the documentation:
+### Prerequisites
 
-```console
-# Build the documentation
+1. Install pixi (if not already installed):
+   ```bash
+   curl -fsSL https://pixi.sh/install.sh | bash
+   ```
+
+2. Build dartpy (Python bindings):
+   ```bash
+   pixi run build-py-dev
+   ```
+
+### Build and Serve Documentation
+
+```bash
+# Build documentation
 pixi run docs-build
 
-# Build and serve the documentation (accessible at http://localhost:8000)
+# Serve documentation (opens on http://localhost:8000)
 pixi run docs-serve
-
-# Clean the build directory
-pixi run docs-clean
 ```
 
-### Using pip and Sphinx directly
+The documentation will be available at: `http://localhost:8000`
 
-To install dependencies to build the documentation, navigate to `<dart_root>/docs/readthedocs` and run:
+### Korean Documentation
 
-```console
-pip install -r .\requirements.txt
+```bash
+# Build Korean documentation
+pixi run docs-build-ko
+
+# Serve Korean documentation (opens on http://localhost:8001)
+pixi run docs-serve-ko
 ```
 
-To build the documentation using Sphinx, navigate to `<dart_root>/docs/readthedocs` and run:
+## Python API Documentation
 
-```console
-./make.bat html # on Windows
-make html # on other platforms
+### How It Works
+
+The Python API documentation is generated using Sphinx autodoc, which requires the `dartpy` module to be importable.
+
+**Local builds:**
+- The `docs-build` task sets `PYTHONPATH` to the compiled dartpy module
+- Sphinx autodoc imports and introspects the module to generate full API documentation
+- All classes, methods, type hints, and docstrings are included
+
+**Read the Docs builds:**
+- dartpy is a C++ extension built with pybind11 and cannot be compiled on Read the Docs
+- API documentation pages will be empty until we implement pre-built wheels
+- The documentation structure and navigation will still work correctly
+
+### Generating Stub Files
+
+For IDE support and type checking, you can generate Python stub files (`.pyi`):
+
+```bash
+pixi run generate-stubs
 ```
 
-Note that on Windows, you need to use make.bat instead of make. Additionally, you may need to remove the _build directory before building to ensure a clean build.
+Stub files will be generated in `/python/stubs/dartpy/` and can be used by IDEs like PyCharm, VS Code, and type checkers like mypy.
 
-## Build Multi Language Documentation
+## Documentation Build Approach
 
-1. To generate .pot files, navigate to <dart_root>/docs/readthedocs and run the following command:
+### Local Builds ✅
 
-   ```console
-   sphinx-build -b gettext . _build/gettext
-   ```
+**Full Python API documentation** is generated using the compiled dartpy module:
 
-1. Create a directory with a translated file for each target language. For example, to create Korean documentation, run the following command:
+```bash
+# Build documentation (includes Python API)
+pixi run docs-build
 
-   ```console
-   sphinx-intl update -p _build/gettext -l ko
-   ```
+# Serve documentation
+pixi run docs-serve  # English at http://localhost:8000
+pixi run docs-serve-ko  # Korean at http://localhost:8001
+```
 
-   This command will create a directory structure similar to the following (with one .po file per .rst file in your documentation):
+The `docs-build` task:
+1. Builds the compiled dartpy module (`build-py-dev`)
+2. Sets PYTHONPATH to the compiled module location
+3. Runs Sphinx autodoc to introspect and document the module
+4. Generates complete API documentation with all classes, methods, and type hints
 
-   ```console
-   locales
-   └── ko
-       └── LC_MESSAGES
-           └── index.po
-   ```
+### Read the Docs ⚠️
 
-   You can now open those .po files with a text editor and translate them, taking care not to break the reStructuredText notation. For example:
+**Python API pages will be empty** on Read the Docs because:
+- dartpy is a C++ extension module that must be compiled
+- Read the Docs cannot compile C++ extensions during the build
+- The documentation structure and navigation will work, but API pages will show "Module not found"
 
-   ```rst
-   # b8f891b8443f4a45994c9c0a6bec14c3
-   #: ../../index.rst:4
-   msgid ""
-   "Read the Docs hosts documentation for the open source community."
-   "It supports :ref:`Sphinx <sphinx>` docs written with reStructuredText."
-   msgstr ""
-   "FILL HERE BY TARGET LANGUAGE FILL HERE BY TARGET LANGUAGE FILL HERE "
-   "BY TARGET LANGUAGE :ref:`Sphinx <sphinx>` FILL HERE."
-   ```
+This is a **temporary limitation** until dartpy wheels are published to PyPI.
 
-1. (Optional) You can create a pull request to incorporate the changes into dart.readthedocs.io. Alternatively, you can build the documentation locally in the target language by running the following command:
+### Future: Full Docs Everywhere 🎯
 
-   ```console
-   sphinx-build -b html -D language=ko . _build/html/ko
-   ```
+To enable full Python API documentation on Read the Docs:
+
+1. **Set up cibuildwheel** in CI to build wheels for Linux/macOS/Windows
+2. **Publish dartpy wheels to PyPI** (or GitHub Releases)
+3. **Update `.readthedocs.yml`** to install dartpy from PyPI before building docs
+
+This is the industry-standard approach used by NumPy, PyTorch, TensorFlow, and other projects with C++ extensions.
+
+Until then: **Use local builds for complete documentation with Python API reference.**
+
+## Directory Structure
+
+```
+docs/readthedocs/
+├── conf.py                          # Sphinx configuration
+├── index.rst                         # Main documentation index
+├── dart/                            # C++ documentation
+│   ├── user_guide/
+│   └── developer_guide/
+├── dartpy/                          # Python documentation
+│   ├── user_guide/
+│   ├── developer_guide/
+│   ├── python_api_reference.rst     # Main API reference page
+│   └── modules/                     # Individual module documentation
+│       ├── collision.rst
+│       ├── dynamics.rst
+│       ├── simulation.rst
+│       └── ...
+├── _static/                         # Static assets (images, CSS)
+└── locales/                         # Translations (Korean, etc.)
+```
+
+## Contributing
+
+When adding new Python API documentation:
+
+1. Update `/docs/readthedocs/dartpy/python_api_reference.rst` to add new modules to the toctree
+2. Create corresponding `.rst` files in `/docs/readthedocs/dartpy/modules/`
+3. Use the `automodule` directive to auto-generate documentation
+4. Test locally with `pixi run docs-build` and `pixi run docs-serve`
+
+Example module file:
+```rst
+dartpy.simulation Module
+========================
+
+.. automodule:: dartpy.simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```

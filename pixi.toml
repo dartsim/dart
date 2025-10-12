@@ -20,6 +20,7 @@ ninja = ">=1.12.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
+pybind11-stubgen = ">=2.5.1,<3"
 pytest = ">=8.3.5,<9"
 setuptools = ">=80.1.0,<81"
 sphinx = "*"
@@ -109,22 +110,6 @@ build-tests = { cmd = """
         -j \
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-build-examples = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -j \
-        --target examples
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-build-tutorials = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -j \
-        --target tutorials
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-build-py = { cmd = "python -m pip install . -vv" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -400,20 +385,33 @@ config-install = { cmd = """
 
 tracy = { cmd = "tracy-profiler" }
 
+# Python package build
+build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_SKIP_pagmo=ON" } }
+
+# Generate Python stub files for dartpy module (for IDE support)
+generate-stubs = { cmd = "python scripts/generate_stubs.py", depends-on = [
+    "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+
+# Build Read the Docs documentation (user guides, tutorials, developer docs)
+# No longer requires dartpy since API docs are on GitHub Pages
 docs-build = { cmd = """
     cd docs/readthedocs && sphinx-build -b html . _build/html
 """ }
 
-docs-build-ko = { cmd = """
-    cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko
-""" }
+# Build Korean documentation with Python API (using stub files via autoapi)
+docs-build-ko = { cmd = "cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko" }
 
+# Serve English documentation
 docs-serve = { cmd = """
-    cd docs/readthedocs && python -m http.server --directory _build/html 8000
+    pkill -f 'python.*http.server.*8000' || true && \
+    python -m http.server --directory docs/readthedocs/_build/html 8000
 """, depends-on = ["docs-build"] }
 
+# Serve Korean documentation
 docs-serve-ko = { cmd = """
-    cd docs/readthedocs && python -m http.server --directory _build/html/ko 8001
+    pkill -f 'python.*http.server.*8001' || true && \
+    python -m http.server --directory docs/readthedocs/_build/html/ko 8001
 """, depends-on = ["docs-build-ko"] }
 
 docs-clean = { cmd = """
@@ -549,8 +547,6 @@ build-tests = { cmd = """
         -j \
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-build-py = { cmd = "python -m pip install . -vv" }
 
 build-py-dev = { cmd = """
     cmake \
