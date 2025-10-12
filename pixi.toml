@@ -179,6 +179,8 @@ py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"]
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
+py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
+
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -265,11 +267,6 @@ ex-hello-world = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-py-atlas-puppet = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
-""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
