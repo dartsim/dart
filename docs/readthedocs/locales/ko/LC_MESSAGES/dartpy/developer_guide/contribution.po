@@ -25,12 +25,12 @@ msgid "Contributing to dartpy"
 msgstr "dartpy에 기여하기"
 
 #: ../../dartpy/developer_guide/contribution.rst:4
-msgid "We welcome contributions to dartpy! For general contribution guidelines, please see the"
-msgstr "dartpy에 대한 기여를 환영합니다! 일반적인 기여 가이드라인은"
-
-#: ../../dartpy/developer_guide/contribution.rst:5
-msgid ":doc:`main contribution guide </dart/developer_guide/contribution>`."
-msgstr ":doc:`메인 기여 가이드 </dart/developer_guide/contribution>`를 참조하세요."
+msgid ""
+"We welcome contributions to dartpy! For general contribution guidelines, please see the "
+":doc:`main contribution guide </dart/developer_guide/contribution>`."
+msgstr ""
+"dartpy에 대한 기여를 환영합니다! 일반적인 기여 가이드라인은 "
+":doc:`메인 기여 가이드 </dart/developer_guide/contribution>`\\ 를 참조하세요."
 
 #: ../../dartpy/developer_guide/contribution.rst:8
 msgid "Python-Specific Guidelines"

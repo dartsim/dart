@@ -26,17 +26,13 @@ msgstr "소스에서 dartpy 빌드하기"
 
 #: ../../dartpy/developer_guide/build.rst:4
 msgid ""
-"For information on building dartpy (the Python bindings) from source, please refer to the"
-msgstr "소스에서 dartpy(Python 바인딩)를 빌드하는 방법에 대한 정보는"
-
-#: ../../dartpy/developer_guide/build.rst:5
-msgid ""
-":doc:`main build guide </dart/developer_guide/build>` which includes instructions for"
-msgstr "Python 바인딩을 활성화하여 DART를 빌드하는 방법이 포함된"
-
-#: ../../dartpy/developer_guide/build.rst:6
-msgid "building DART with Python bindings enabled."
-msgstr ":doc:`메인 빌드 가이드 </dart/developer_guide/build>`를 참조하세요."
+"For information on building dartpy (the Python bindings) from source, please refer to the "
+":doc:`main build guide </dart/developer_guide/build>` which includes instructions for "
+"building DART with Python bindings enabled."
+msgstr ""
+"소스에서 dartpy(Python 바인딩)를 빌드하는 방법에 대한 정보는 "
+"Python 바인딩을 활성화하여 DART를 빌드하는 방법이 포함된 "
+":doc:`메인 빌드 가이드 </dart/developer_guide/build>`\\ 를 참조하세요."
 
 #: ../../dartpy/developer_guide/build.rst:9
 msgid "Prerequisites"

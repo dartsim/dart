@@ -38,18 +38,12 @@ msgstr "곧 제공 예정"
 
 #: ../../dartpy/user_guide/tutorials.rst:12
 msgid ""
-"Python-specific tutorials are under development. In the meantime, please refer to the"
-msgstr "Python 전용 튜토리얼은 현재 개발 중입니다. 그동안"
-
-#: ../../dartpy/user_guide/tutorials.rst:13
-msgid ":doc:`examples </dartpy/user_guide/examples>` page for getting started with dartpy, and"
-msgstr "dartpy 시작하기를 위해 :doc:`예제 </dartpy/user_guide/examples>` 페이지를 참조하고,"
-
-#: ../../dartpy/user_guide/tutorials.rst:14
-msgid ""
-"the C++ tutorials in the :doc:`dart (C++) section </dart/user_guide/tutorials>` for"
-msgstr "C++와 Python API 모두에 적용되는 일반적인 DART 개념에 대해서는"
-
-#: ../../dartpy/user_guide/tutorials.rst:15
-msgid "general DART concepts that apply to both C++ and Python APIs."
-msgstr ":doc:`dart (C++) 섹션 </dart/user_guide/tutorials>`의 C++ 튜토리얼을 참조하세요."
+"Python-specific tutorials are under development. In the meantime, please refer to the "
+":doc:`examples </dartpy/user_guide/examples>` page for getting started with dartpy, and "
+"the C++ tutorials in the :doc:`dart (C++) section </dart/user_guide/tutorials>` for "
+"general DART concepts that apply to both C++ and Python APIs."
+msgstr ""
+"Python 전용 튜토리얼은 현재 개발 중입니다. 그동안 dartpy 시작하기를 위해 "
+":doc:`예제 </dartpy/user_guide/examples>` 페이지를 참조하고, "
+"C++와 Python API 모두에 적용되는 일반적인 DART 개념에 대해서는 "
+":doc:`dart (C++) 섹션 </dart/user_guide/tutorials>`\\ 의 C++ 튜토리얼을 참조하세요."
