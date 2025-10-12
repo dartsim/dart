@@ -164,15 +164,8 @@ public:
 
   void customPostStep() override
   {
-    // Draw arrow for force visualization
-    if (mHandler->getImpulseDuration() > 0) {
-      Eigen::Vector3d poa
-          = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getTransform()
-            * Eigen::Vector3d(0.0, 0.0, 0.0);
-      Eigen::Vector3d force = mHandler->getForce();
-      // Note: Arrow visualization would need to be added through OSG mechanisms
-      // For now, we just apply the force
-    }
+    // Note: Arrow visualization for force could be added through OSG mechanisms
+    // For now, we just apply the force in customPreStep
   }
 
 protected:
@@ -180,7 +173,7 @@ protected:
   JointConstraintsEventHandler* mHandler;
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/fullbody1.skel");

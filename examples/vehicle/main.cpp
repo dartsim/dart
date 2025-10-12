@@ -147,7 +147,7 @@ protected:
   double mD;
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/vehicle.skel");
