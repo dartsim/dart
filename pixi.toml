@@ -173,6 +173,46 @@ test-all = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+config-coverage = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_CODECOV=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+
+build-coverage = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
+    && ctest --output-on-failure -j --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+""", depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
+
+# Note: --rc flag is needed for lcov compatibility with gcc 13+
+coverage-report = { cmd = """
+    lcov \
+        --capture \
+        --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-file coverage.info \
+        --rc geninfo_unexecuted_blocks=1 \
+    && lcov \
+        --remove coverage.info \
+        '/usr/*' \
+        '*/.deps/*' \
+        '*/tests/*' \
+        '*/examples/*' \
+        '*/tutorials/*' \
+        --output-file coverage.info \
+    && lcov --list coverage.info
+""", depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+
 ex = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -371,6 +411,7 @@ docs-clean = { cmd = """
 ################################################################################
 
 [target.linux-64.build-dependencies]
+lcov = ">=1.16,<2"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
