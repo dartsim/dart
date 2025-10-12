@@ -15,6 +15,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -34,48 +40,208 @@
 
 #include <dart/utils/utils.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-
 #include <dart/dart.hpp>
 
-using namespace dart;
+#include <fcl/config.h>
 
-int main()
+#include <iostream>
+
+using namespace dart::common;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::gui;
+using namespace dart::gui::osg;
+using namespace dart::utils;
+using namespace dart::math;
+
+class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
 {
-  // Create world by reading a skel file
-  auto world = utils::SkelParser::readWorld("dart://sample/skel/shapes.skel");
-  assert(world != NULL);
+public:
+  RigidShapesEventHandler(const WorldPtr& world) : mWorld(world)
+  {
+  }
 
-  // Use bullet collision detector for capsule and multi-sphere-convex-hull
-  // shapes
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  {
+    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      switch (ea.getKey()) {
+        case 'q':
+        case 'Q':
+          spawnBox(
+              getRandomTransform(), Random::uniform<Eigen::Vector3d>(0.05, 0.25));
+          return true;
+        case 'w':
+        case 'W':
+          spawnEllipsoid(
+              getRandomTransform(), Random::uniform<Eigen::Vector3d>(0.025, 0.125));
+          return true;
+        case 'e':
+        case 'E': {
+          const double radius = Random::uniform(0.05, 0.25);
+          const double height = Random::uniform(0.1, 0.5);
+          spawnCylinder(getRandomTransform(), radius, height);
+          return true;
+        }
+        case 'a':
+        case 'A':
+          if (mWorld->getNumSkeletons() > 1) {
+            mWorld->removeSkeleton(
+                mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
+          }
+          return true;
+        default:
+          return false;
+      }
+    }
+    return false;
+  }
 
-  // Wrap a WorldNode around it
-  ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node
-      = new gui::osg::RealTimeWorldNode(world);
+private:
+  Eigen::Isometry3d getRandomTransform()
+  {
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::osg::Viewer();
+    const Eigen::Vector3d rotation = Random::uniform<Eigen::Vector3d>(
+        -constantsd::pi(), constantsd::pi());
+    const Eigen::Vector3d position = Eigen::Vector3d(
+        Random::uniform(-1.0, 1.0),
+        Random::uniform(0.5, 1.0),
+        Random::uniform(-1.0, 1.0));
+
+    T.translation() = position;
+    T.linear() = expMapRot(rotation);
+
+    return T;
+  }
+
+  void spawnBox(
+      const Eigen::Isometry3d& _T, const Eigen::Vector3d& _size, double _mass = 10)
+  {
+    SkeletonPtr newSkeleton = Skeleton::create();
+
+    ShapePtr newShape(new BoxShape(_size));
+
+    BodyNode::Properties bodyProp;
+    bodyProp.mName = "box_link";
+    bodyProp.mInertia.setMass(_mass);
+
+    FreeJoint::Properties jointProp;
+    jointProp.mName = "box_joint";
+    jointProp.mT_ParentBodyToJoint = _T;
+
+    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
+        nullptr, jointProp, bodyProp);
+    auto shapeNode = pair.second->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(newShape);
+    shapeNode->getVisualAspect()->setColor(
+        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+
+    mWorld->addSkeleton(newSkeleton);
+  }
+
+  void spawnEllipsoid(
+      const Eigen::Isometry3d& _T, const Eigen::Vector3d& _radii, double _mass = 10)
+  {
+    SkeletonPtr newSkeleton = Skeleton::create();
+
+    ShapePtr newShape(new EllipsoidShape(_radii * 2.0));
+
+    BodyNode::Properties bodyProp;
+    bodyProp.mName = "ellipsoid_link";
+    bodyProp.mInertia.setMass(_mass);
+
+    FreeJoint::Properties jointProp;
+    jointProp.mName = "ellipsoid_joint";
+    jointProp.mT_ParentBodyToJoint = _T;
+
+    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
+        nullptr, jointProp, bodyProp);
+    auto shapeNode = pair.second->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(newShape);
+    shapeNode->getVisualAspect()->setColor(
+        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+
+    mWorld->addSkeleton(newSkeleton);
+  }
+
+  void spawnCylinder(
+      const Eigen::Isometry3d& _T, double _radius, double _height, double _mass = 10)
+  {
+    SkeletonPtr newSkeleton = Skeleton::create();
+
+    ShapePtr newShape(new CylinderShape(_radius, _height));
+
+    BodyNode::Properties bodyProp;
+    bodyProp.mName = "cylinder_link";
+    bodyProp.mInertia.setMass(_mass);
+
+    FreeJoint::Properties jointProp;
+    jointProp.mName = "cylinder_joint";
+    jointProp.mT_ParentBodyToJoint = _T;
+
+    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
+        nullptr, jointProp, bodyProp);
+    auto shapeNode = pair.second->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(newShape);
+    shapeNode->getVisualAspect()->setColor(
+        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
+
+    mWorld->addSkeleton(newSkeleton);
+  }
+
+protected:
+  WorldPtr mWorld;
+};
+
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(const WorldPtr& world) : RealTimeWorldNode(world)
+  {
+  }
+
+  void customPreStep() override
+  {
+  }
+};
+
+int main(int argc, char* argv[])
+{
+  WorldPtr myWorld
+      = SkelParser::readWorld("dart://sample/skel/shapes.skel");
+  assert(myWorld != nullptr);
+
+  auto handler = new RigidShapesEventHandler(myWorld);
+
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
+
+  auto viewer = Viewer();
   viewer.addWorldNode(node);
+  viewer.addEventHandler(handler);
 
-  viewer.addInstructionText("Press space to start free falling the box.\n");
+  viewer.addInstructionText("space bar: simulation on/off\n");
+  viewer.addInstructionText("'q': spawn a random cube\n");
+  viewer.addInstructionText("'w': spawn a random ellipsoid\n");
+  viewer.addInstructionText("'e': spawn a random cylinder\n");
+  viewer.addInstructionText("'a': delete a spawned object at last\n");
   std::cout << viewer.getInstructions() << std::endl;
 
-  // Set up the window to be 640x480
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57f, 1.64f, 3.14f),
-      ::osg::Vec3(0.00f, 0.00f, 0.00f),
-      ::osg::Vec3(0, 1, 0));
+      ::osg::Vec3(2.0f, 2.0f, 2.0f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  // Begin running the application loop
   viewer.run();
 
   return 0;

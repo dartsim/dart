@@ -857,81 +857,74 @@ void enableDragAndDrops(
   });
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  // Create and configure the physics world
   WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
+  // Create and add skeletons to the world
   SkeletonPtr atlas = createAtlas();
-  world->addSkeleton(atlas);
-
   SkeletonPtr ground = createGround();
+  world->addSkeleton(atlas);
   world->addSkeleton(ground);
 
+  // Setup robot configuration and control
   setupStartConfiguration(atlas);
-
   setupEndEffectors(atlas);
-
   setupWholeBodySolver(atlas);
 
-  ::osg::ref_ptr<TeleoperationWorld> node
+  // Create the OSG world node
+  ::osg::ref_ptr<TeleoperationWorld> worldNode
       = new TeleoperationWorld(world, atlas);
 
+  // Create the OSG viewer
   dart::gui::osg::Viewer viewer;
+  viewer.allowSimulation(false); // Kinematic control only
+  viewer.addWorldNode(worldNode);
 
-  // Prevent this World from simulating
-  viewer.allowSimulation(false);
-  viewer.addWorldNode(node);
+  // Setup input handling
+  ::osg::ref_ptr<InputHandler> inputHandler
+      = new InputHandler(&viewer, worldNode, atlas, world);
+  viewer.addEventHandler(inputHandler);
 
-  // Add our custom input handler to the Viewer
-  viewer.addEventHandler(new InputHandler(&viewer, node, atlas, world));
-
+  // Enable interactive manipulation
   enableDragAndDrops(viewer, atlas);
 
-  // Attach a support polygon visualizer
+  // Add visualizations
   viewer.addAttachment(
       new dart::gui::osg::SupportPolygonVisual(atlas, display_elevation));
 
-  // Print out instructions for the viewer
-  std::cout << viewer.getInstructions() << std::endl;
-
-  std::cout
-      << "Alt + Click:   Try to translate a body without changing its "
-         "orientation\n"
-      << "Ctrl + Click:  Try to rotate a body without changing its "
-         "translation\n"
-      << "Shift + Click: Move a body using only its parent joint\n"
-      << "1 -> 4:        Toggle the interactive target of an EndEffector\n"
-      << "W A S D:       Move the robot around the scene\n"
-      << "Q E:           Rotate the robot counter-clockwise and clockwise\n"
-      << "F Z:           Shift the robot's elevation up and down\n"
-      << "X C:           Toggle support on the left and right foot\n"
-      << "R:             Optimize the robot's posture\n"
-      << "T:             Reset the robot to its relaxed posture\n\n"
-      << "  Because this uses iterative Jacobian methods, the solver can get "
-         "finicky,\n"
-      << "  and the robot can get tangled up. Use 'R' and 'T' keys when the "
-         "robot is\n"
-      << "  in a messy configuration\n\n"
-      << "  The green polygon is the support polygon of the robot, and the "
-         "blue/red ball is\n"
-      << "  the robot's center of mass. The green ball is the centroid of the "
-         "polygon.\n\n"
-      << "Note that this is purely kinematic. Physical simulation is not "
-         "allowed in this app.\n"
-      << std::endl;
-
-  // Set up the window
+  // Configure viewer window
   viewer.setUpViewInWindow(0, 0, 1280, 960);
-
-  // Set up the default viewing position
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.34, 3.00, 2.41),
       ::osg::Vec3(0.00, 0.00, 1.00),
       ::osg::Vec3(-0.20, -0.08, 0.98));
-
-  // Reset the camera manipulator so that it starts in the new viewing position
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  // Run the Viewer
-  viewer.run();
+  // Display usage instructions
+  std::cout << viewer.getInstructions() << std::endl;
+  std::cout << "\n=== Atlas Puppet Control Instructions ===\n"
+            << "Mouse Controls:\n"
+            << "  Alt + Click:   Translate body (preserve orientation)\n"
+            << "  Ctrl + Click:  Rotate body (preserve position)\n"
+            << "  Shift + Click: Move using parent joint only\n\n"
+            << "Keyboard Controls:\n"
+            << "  1-4: Toggle EndEffector interactive targets\n"
+            << "  WASD: Move robot (forward/left/back/right)\n"
+            << "  Q/E:  Rotate robot (counter-clockwise/clockwise)\n"
+            << "  F/Z:  Adjust elevation (up/down)\n"
+            << "  X/C:  Toggle left/right foot support\n"
+            << "  R:    Optimize robot posture\n"
+            << "  T:    Reset to relaxed posture\n\n"
+            << "Notes:\n"
+            << "- Uses iterative Jacobian methods (can be sensitive)\n"
+            << "- Use R/T keys for recovery from tangled configurations\n"
+            << "- Green polygon: support area, Blue/red ball: center of mass\n"
+            << "- Kinematic control only (no physics simulation)\n"
+            << std::endl;
+
+  // Start the OSG viewer main loop
+  return viewer.run();
 }
