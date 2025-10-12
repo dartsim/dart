@@ -23,7 +23,7 @@ msgstr ""
 
 #: ../../contribution.rst:2 3f15d94949c54da3b3c64b50c9c39b6f
 msgid "Contributing to DART"
-msgstr ""
+msgstr "DART에 기여하기"
 
 #: ../../contribution.rst:4 d0658e2f9b014b02bf348abda527b9d8
 msgid ""
@@ -31,11 +31,11 @@ msgid ""
 " who is interested in helping make the project better. Whether you're "
 "interested in fixing bugs, adding new features, improving documentation, "
 "or something else entirely, we appreciate your contributions."
-msgstr ""
+msgstr "DART는 협력 프로젝트이며, 프로젝트를 더 좋게 만드는 데 관심이 있는 누구나의 기여를 환영합니다. 버그 수정, 새 기능 추가, 문서 개선 또는 그 외에 어떤 것에 관심이 있든 상관없이 귀하의 기여를 높이 평가합니다."
 
 #: ../../contribution.rst:10 6f15c4a11a7540afb1b58d53a0fa8ff1
 msgid "Getting Help"
-msgstr ""
+msgstr "도움 얻기"
 
 #: ../../contribution.rst:12 341305a4ab9f4e81a466ff0858d21f08
 msgid ""
@@ -68,7 +68,7 @@ msgstr ""
 
 #: ../../contribution.rst:25 205b4f3a599141769f3bdf0d221e8c24
 msgid "Credits"
-msgstr ""
+msgstr "공로"
 
 #: ../../contribution.rst:27 53617656800848fe8842d196ed07d51b
 msgid ""
@@ -252,4 +252,3 @@ msgid ""
 "every effort to update the list in a timely manner. Thank you for your "
 "contributions to DART!"
 msgstr ""
-

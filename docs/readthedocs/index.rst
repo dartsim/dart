@@ -91,22 +91,25 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: User Guide
+   :caption: dart (C++)
 
-   user_guide/installation
-   user_guide/examples
-   user_guide/tutorials
+   dart/user_guide/installation
+   dart/user_guide/tutorials
+   dart/developer_guide/build
+   dart/developer_guide/contribution
+   dart/developer_guide/code_style_guide
+   dart/developer_guide/migration_guide
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Developer Guide
+   :caption: dartpy (Python)
 
-   developer_guide/build
-   developer_guide/contribution
-   developer_guide/code_style_guide
-   developer_guide/migration_guide
-   license
+   dartpy/user_guide/installation
+   dartpy/user_guide/examples
+   dartpy/user_guide/tutorials
+   dartpy/developer_guide/build
+   dartpy/developer_guide/contribution
 
 .. toctree::
    :maxdepth: 1
@@ -114,3 +117,4 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   license

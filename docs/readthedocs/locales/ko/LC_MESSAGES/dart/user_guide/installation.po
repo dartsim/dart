@@ -1,0 +1,95 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-26 00:00-0800\n"
+"PO-Revision-Date: 2025-01-26 00:00-0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../dart/user_guide/installation.rst:2
+msgid "Installation"
+msgstr "설치"
+
+#: ../../dart/user_guide/installation.rst:4
+msgid "Ubuntu"
+msgstr "Ubuntu"
+
+#: ../../dart/user_guide/installation.rst:7
+msgid "To install DART on Ubuntu, you can use the following commands:"
+msgstr "Ubuntu에서 DART를 설치하려면 다음 명령어를 사용하세요:"
+
+#: ../../dart/user_guide/installation.rst:9
+msgid "Add the DART PPA to your system:"
+msgstr "시스템에 DART PPA를 추가하세요:"
+
+#: ../../dart/user_guide/installation.rst:15
+msgid "Update your package list:"
+msgstr "패키지 목록을 업데이트하세요:"
+
+#: ../../dart/user_guide/installation.rst:21
+msgid "Install the `libdart7-all-dev-nightly` package:"
+msgstr "`libdart7-all-dev-nightly` 패키지를 설치하세요:"
+
+#: ../../dart/user_guide/installation.rst:27
+msgid "macOS"
+msgstr "macOS"
+
+#: ../../dart/user_guide/installation.rst:30
+msgid "To install DART on macOS, you can use Homebrew:"
+msgstr "macOS에서 DART를 설치하려면 Homebrew를 사용하세요:"
+
+#: ../../dart/user_guide/installation.rst:32
+msgid "Install Homebrew if you haven't already:"
+msgstr "아직 설치하지 않았다면 Homebrew를 설치하세요:"
+
+#: ../../dart/user_guide/installation.rst:38
+msgid "Install the `dartsim` formula:"
+msgstr "`dartsim` 패키지를 설치하세요:"
+
+#: ../../dart/user_guide/installation.rst:44
+msgid "Windows"
+msgstr "Windows"
+
+#: ../../dart/user_guide/installation.rst:47
+msgid "To install DART on Windows, you can use vcpkg:"
+msgstr "Windows에서 DART를 설치하려면 vcpkg를 사용하세요:"
+
+#: ../../dart/user_guide/installation.rst:49
+msgid "Install vcpkg if you haven't already:"
+msgstr "아직 설치하지 않았다면 vcpkg를 설치하세요:"
+
+#: ../../dart/user_guide/installation.rst:57
+msgid "Install the `dartsim` package:"
+msgstr "`dartsim` 패키지를 설치하세요:"
+
+#: ../../dart/user_guide/installation.rst:63
+msgid "Arch Linux (experimental)"
+msgstr "Arch Linux (실험적)"
+
+#: ../../dart/user_guide/installation.rst:66
+msgid ""
+"To install DART on Arch Linux using the `yay` package manager, you can use the "
+"following commands:"
+msgstr "`yay` 패키지 관리자를 사용하여 Arch Linux에서 DART를 설치하려면 다음 명령어를 사용하세요:"
+
+#: ../../dart/user_guide/installation.rst:81
+msgid "FreeBSD (experimental)"
+msgstr "FreeBSD (실험적)"
+
+#: ../../dart/user_guide/installation.rst:84
+msgid "To install DART on FreeBSD, you can use the following commands:"
+msgstr "FreeBSD에서 DART를 설치하려면 다음 명령어를 사용하세요:"

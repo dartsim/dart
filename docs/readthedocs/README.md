@@ -2,6 +2,23 @@
 
 ## Build Documentation Locally
 
+### Using pixi (recommended)
+
+From the project root, you can use pixi to build and serve the documentation:
+
+```console
+# Build the documentation
+pixi run docs-build
+
+# Build and serve the documentation (accessible at http://localhost:8000)
+pixi run docs-serve
+
+# Clean the build directory
+pixi run docs-clean
+```
+
+### Using pip and Sphinx directly
+
 To install dependencies to build the documentation, navigate to `<dart_root>/docs/readthedocs` and run:
 
 ```console

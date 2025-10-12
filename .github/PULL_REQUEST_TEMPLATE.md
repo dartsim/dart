@@ -1,16 +1,16 @@
-> Remove this line and describe this pull request. Link to relevant GitHub issues, if any.
+> Describe this pull request. Link to relevant GitHub issues, if any.
 
 ***
 
 #### Before creating a pull request
 
+- [ ] Format code using `pixi run lint` and verify with `pixi run check-lint`
 - [ ] Document new methods and classes
-- [ ] Format new code files using ClangFormat by running `make format`
-- [ ] Build with `-DDART_TREAT_WARNINGS_AS_ERRORS=ON` and resolve all the compile warnings
+- [ ] Build with `-DDART_TREAT_WARNINGS_AS_ERRORS=ON` and resolve warnings
 
-#### Before merging a pull request
+#### Before merging
 
-- [ ] Set version target by selecting a milestone on the right side
-- [ ] Summarize this change in `CHANGELOG.md`
-- [ ] Add unit test(s) for this change
-- [ ] Add Python bindings for new methods and classes
+- [ ] Set milestone
+- [ ] Update `CHANGELOG.md`
+- [ ] Add unit tests
+- [ ] Add Python bindings (dartpy) if applicable

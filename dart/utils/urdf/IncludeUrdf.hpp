@@ -36,6 +36,8 @@
 
 #include <dart/common/IncludeWindows.hpp>
 
+#include <cstdint>
+
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>
 #include <urdf_model/twist.h>

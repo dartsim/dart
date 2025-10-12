@@ -14,12 +14,19 @@ cmake = ">=4.0.2,<5"
 doxygen = ">=1.13.2,<2"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
+jinja2 = ">=3.1.2"
+myst-parser = "*"
 ninja = ">=1.12.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.3.5,<9"
 setuptools = ">=80.1.0,<81"
+sphinx = "*"
+sphinx-copybutton = "*"
+sphinx-intl = "*"
+sphinx_rtd_theme = "*"
+sphinx-tabs = "*"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [dependencies]
@@ -54,6 +61,7 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -102,12 +110,51 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-dartpy = { cmd = """
+build-py = { cmd = "python -m pip install . -vv" }
+
+build-py-dev = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target dartpy
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
+config-py = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+
+py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+
+py-ex-hello-world = { depends-on = [{ task = "py-ex", args = ["hello_world"] }] }
+
+py-ex-hello-world-gui = { depends-on = [{ task = "py-ex", args = ["hello_world_gui"] }] }
+
+py-ex-rigid-cubes = { depends-on = [{ task = "py-ex", args = ["rigid_cubes"] }] }
+
+py-ex-rigid-chain = { depends-on = [{ task = "py-ex", args = ["rigid_chain"] }] }
+
+py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
+
+py-ex-biped-stand = { depends-on = [{ task = "py-ex", args = ["biped_stand"] }] }
+
+py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_pointcloud"] }] }
+
+py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"] }] }
+
+py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
 test = { cmd = """
     ctest \
@@ -115,7 +162,7 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy = { cmd = """
+test-py = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
@@ -125,6 +172,46 @@ test-dartpy = { cmd = """
 test-all = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+config-coverage = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_CODECOV=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+
+build-coverage = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
+    && ctest --output-on-failure -j --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+""", depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
+
+# Note: --rc flag is needed for lcov compatibility with gcc 13+
+coverage-report = { cmd = """
+    lcov \
+        --capture \
+        --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-file coverage.info \
+        --rc geninfo_unexecuted_blocks=1 \
+    && lcov \
+        --remove coverage.info \
+        '/usr/*' \
+        '*/.deps/*' \
+        '*/tests/*' \
+        '*/examples/*' \
+        '*/tutorials/*' \
+        --output-file coverage.info \
+    && lcov --list coverage.info
+""", depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
 
 ex = { cmd = """
     cmake \
@@ -159,6 +246,11 @@ ex-hello-world = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+py-atlas-puppet = { cmd = """
+    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
+    python python/examples/atlas_puppet/main.py
+""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
@@ -294,11 +386,32 @@ config-install = { cmd = """
 
 tracy = { cmd = "tracy-profiler" }
 
+docs-build = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html . _build/html
+""" }
+
+docs-build-ko = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko
+""" }
+
+docs-serve = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html 8000
+""", depends-on = ["docs-build"] }
+
+docs-serve-ko = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html/ko 8001
+""", depends-on = ["docs-build-ko"] }
+
+docs-clean = { cmd = """
+    rm -rf docs/readthedocs/_build
+""" }
+
 ################################################################################
 # linux-64
 ################################################################################
 
 [target.linux-64.build-dependencies]
+lcov = ">=1.16,<2"
 
 [target.linux-64.dependencies]
 freeglut = ">=3.2.2,<3.3"
@@ -308,20 +421,68 @@ freeglut = ">=3.2.2,<3.3"
 ################################################################################
 
 [target.osx-64.build-dependencies]
+git = ">=2.40.0"
 
 [target.osx-64.dependencies]
 
 [target.osx-64.tasks]
+download-osg = { cmd = """
+    rm -rf .deps/OpenSceneGraph/ && \
+    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
+    cd .deps/OpenSceneGraph && \
+    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
+""", outputs = [".deps/OpenSceneGraph/README.md"] }
+
+config-osg = { cmd = """
+    cmake \
+        -G Ninja \
+        -S .deps/OpenSceneGraph \
+        -B .deps/OpenSceneGraph/build \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -DBUILD_OSG_APPLICATIONS=OFF \
+        -DBUILD_OSG_EXAMPLES=OFF
+""", depends-on = ["download-osg"] }
+
+build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = ["config-osg"] }
+
+install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = ["build-osg"] }
 
 ################################################################################
 # osx-arm64
 ################################################################################
 
 [target.osx-arm64.build-dependencies]
+git = ">=2.40.0"
 
 [target.osx-arm64.dependencies]
 
 [target.osx-arm64.tasks]
+download-osg = { cmd = """
+    rm -rf .deps/OpenSceneGraph/ && \
+    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
+    cd .deps/OpenSceneGraph && \
+    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
+""", outputs = [".deps/OpenSceneGraph/README.md"] }
+
+config-osg = { cmd = """
+    cmake \
+        -G Ninja \
+        -S .deps/OpenSceneGraph \
+        -B .deps/OpenSceneGraph/build \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -DBUILD_OSG_APPLICATIONS=OFF \
+        -DBUILD_OSG_EXAMPLES=OFF
+""", depends-on = ["download-osg"] }
+
+build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = ["config-osg"] }
+
+install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = ["build-osg"] }
 
 ################################################################################
 # win-64
@@ -375,12 +536,33 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-dartpy = { cmd = """
+build-py = { cmd = "python -m pip install . -vv" }
+
+build-py-dev = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
         -j \
         --target dartpy
-""", depends-on = ["config"] }
+""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
+config-py = { cmd = """
+    cmake \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -G 'Visual Studio 17 2022' \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_MSVC_DEFAULT_OPTIONS=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF" } }
 
 test = { cmd = """
     ctest \
@@ -389,7 +571,7 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy = { cmd = """
+test-py = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \

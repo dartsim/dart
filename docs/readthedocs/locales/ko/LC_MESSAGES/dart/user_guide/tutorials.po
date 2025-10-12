@@ -1,0 +1,54 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-26 00:00-0800\n"
+"PO-Revision-Date: 2025-01-26 00:00-0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../dart/user_guide/tutorials.rst:2
+msgid "Tutorials"
+msgstr "튜토리얼"
+
+#: ../../dart/user_guide/tutorials.rst:4
+msgid ""
+"The purpose of this tutorial is to provide a quick introduction to "
+"using DART. We designed many hands-on exercises to make the learning "
+"effective and fun. To follow along with this tutorial, first locate "
+"the tutorial code in the directory: "
+"`dart/tutorials <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials>`_. "
+"For each of the four tutorials, we provide the skeleton code as the starting "
+"point (e.g. "
+"`tutorial_multi_pendulum <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum>`_) "
+"and the final code as the answer to the tutorial (e.g. "
+"`tutorial_multi_pendulum_finished <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum_finished>`_). "
+"The examples are based on the APIs of DART 7.0."
+msgstr ""
+"이 튜토리얼의 목적은 DART 사용에 대한 빠른 소개를 제공하는 것입니다. "
+"학습을 효과적이고 재미있게 만들기 위해 많은 실습 연습을 설계했습니다. "
+"이 튜토리얼을 따라하려면 먼저 "
+"`dart/tutorials <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials>`_ "
+"디렉토리에서 튜토리얼 코드를 찾으세요. "
+"네 가지 튜토리얼 각각에 대해 시작점으로 스켈레톤 코드(예: "
+"`tutorial_multi_pendulum <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum>`_)와 "
+"튜토리얼의 정답으로 최종 코드(예: "
+"`tutorial_multi_pendulum_finished <https://github.com/dartsim/dart/tree/2b59bd7b4ab7ea184026d5a19f1ad20df867012d/tutorials/tutorial_multi_pendulum_finished>`_)를 "
+"제공합니다. 예제는 DART 7.0 API를 기반으로 합니다."
+
+#: ../../dart/user_guide/tutorials.rst:18
+msgid "Contents"
+msgstr "목차"

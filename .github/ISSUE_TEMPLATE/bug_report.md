@@ -7,36 +7,30 @@ assignees: ''
 
 ---
 
-> If you're not reporting a bug, please use [Discussions](https://github.com/dartsim/dart/discussions) to ask questions.
+> For questions, use [Discussions](https://github.com/dartsim/dart/discussions) instead.
 
-### Bug Report
-> Please answer the following questions for yourself before reporting a bug.
-- [ ] I checked the [documentation](http://dartsim.github.io/) and [Discussions](https://github.com/dartsim/dart/discussions) but found no answer.
-- [ ] I checked to make sure that this issue has not already been filed.
+**Before submitting:**
+- [ ] Checked [documentation](http://dartsim.github.io/) and existing issues
 
-#### Environment
-> Select the following information.
-* DART version: [e.g., master, 6.8.3]
-* OS name and version name(or number): [e.g., Ubuntu 18.04, macOS Catalina, Windows 10]
-* Compiler name and version number: [e.g., GCC 7.4.0, Clang 3.9.1]
+**Environment:**
+* DART version: [e.g., main, 6.15.0]
+* OS: [e.g., Ubuntu 24.04, macOS Sequoia, Windows 11]
+* Installation: [e.g., pixi, conda, apt, homebrew, vcpkg, source]
+* Compiler (if source): [e.g., GCC 13.2.0, Clang 18.0.0, MSVC 2022]
 
-#### Expected Behavior
-> Please describe the behavior you are expecting.
+**Expected vs Current Behavior:**
+Describe what you expected and what actually happens.
 
-#### Current Behavior
-> What is the current behavior?
-> If you have trouble in `cmake` or `make`, it would be very helpful to build DART with verbose option:
-> `$ cmake .. -DDART_VERBOSE=On`
-> `$ make VERBOSE=1`
-> and then dump the results into a [gist](https://gist.github.com/) and share the link to gist here.
+**Steps to Reproduce:**
+1.
+2.
+3.
 
-#### Steps to Reproduce
-> Please provide detailed steps for reproducing the issue.
-1. 
-2. 
-3. 
-4. 
+**Code to Reproduce:**
+```cpp
+// Minimal reproducible example
+```
 
-#### Code to Reproduce
-> Please remember that with a working code it's easier to reproduce the bug and it's much faster to fix it.
-> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/main/tests/regression/test_Issue000Template.cpp).
+**Additional Info:**
+* For build issues, share verbose build output: `pixi run config` with `DART_VERBOSE=ON`
+* Share gist links for long outputs

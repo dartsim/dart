@@ -26,6 +26,18 @@ msgid "Home"
 msgstr "홈"
 
 #: ../../index.rst:97
+msgid "dart (C++)"
+msgstr "dart (C++)"
+
+#: ../../index.rst:105
+msgid "dartpy (Python)"
+msgstr "dartpy (Python)"
+
+#: ../../index.rst:115
+msgid "Community"
+msgstr "커뮤니티"
+
+#: ../../index.rst:97
 msgid "User Guide"
 msgstr "사용자 가이드"
 
@@ -33,13 +45,9 @@ msgstr "사용자 가이드"
 msgid "Developer Guide"
 msgstr "개발자 가이드"
 
-#: ../../index.rst:115
-msgid "Community"
-msgstr ""
-
 #: ../../index.rst:7 d584aa398b19497baff45df31a4e8423
-msgid "Welcome to DART 7's documentation!"
-msgstr "DART 7 문서에 오신걸 환영합니다!"
+msgid "Welcome to DART documentation!"
+msgstr "DART 문서에 오신걸 환영합니다!"
 
 #: ../../index.rst:10 67cdc2ca4ec749a88206c9103f9c17f8
 msgid "Introduction"
@@ -80,15 +88,15 @@ msgstr ""
 
 #: ../../index.rst:34 44a96648ad7d47bcb90ab96ebe4fe67a
 msgid "Updates"
-msgstr ""
+msgstr "업데이트"
 
 #: ../../index.rst:36 d43d6ef39d624f16a5a0d6af570fea34
 msgid "2022-12-31: DART version 6.13.0 released."
-msgstr ""
+msgstr "2022-12-31: DART 버전 6.13.0 출시."
 
 #: ../../index.rst:39 a829b063426244ffb0ce5d08e0c4f2ea
 msgid "Social Media"
-msgstr ""
+msgstr "소셜 미디어"
 
 #: ../../index.rst:41 4d323a3d0c364a5db711f97c4cabb360
 msgid ""
@@ -96,11 +104,11 @@ msgid ""
 "following us on `Twitter <https://twitter.com/dartsim_org>`_ and "
 "subscribing to our `YouTube channel "
 "<https://www.youtube.com/@dartyoutube3531>`_."
-msgstr ""
+msgstr "트위터를 팔로우하고 유튜브 채널을 구독하여 DART의 최신 소식과 개발 상황을 확인하세요."
 
 #: ../../index.rst:46 741b7f121d8040abb74db6e9f7a5934b
-msgid "Vision for DART 7"
-msgstr "DART 7의 비젼"
+msgid "Vision for the next version of DART"
+msgstr "DART의 다음 버전에 대한 비전"
 
 #: ../../index.rst:48 9ba519e8b2684eb29000628c39efa20a
 msgid ""
@@ -160,11 +168,40 @@ msgid ""
 "If you use DART in an academic publication, please consider citing this "
 "`JOSS Paper <https://doi.org/10.21105/joss.00500>`_ [`BibTeX "
 "<https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
-msgstr "만약 학술 논문에서 DART를 사용하신다면, 이 JOSS 논문을 인용해 주시기 바랍니다."
+msgstr "만약 학술 논문에서 DART를 사용하신다면, 이 `JOSS 논문 <https://doi.org/10.21105/joss.00500>`_ 을 인용해 주시기 바랍니다 [`BibTeX <https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
+
+#: ../../index.rst:70 2831606b13a24b4ab7f8a1a7ea9b10b1
+msgid ""
+"@article{Lee2018,\n"
+"  doi = {10.21105/joss.00500},\n"
+"  url = {https://doi.org/10.21105/joss.00500},\n"
+"  year  = {2018},\n"
+"  month = {Feb},\n"
+"  publisher = {The Open Journal},\n"
+"  volume = {3},\n"
+"  number = {22},\n"
+"  pages = {500},\n"
+"  author = {Jeongseok Lee and Michael X. Grey and Sehoon Ha and Tobias Kunz and Sumit Jain and Yuting Ye and Siddhartha S. Srinivasa and Mike Stilman and C. Karen Liu},\n"
+"  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
+"  journal = {The Journal of Open Source Software}\n"
+"}"
+msgstr ""
+"@article{Lee2018,\n"
+"  doi = {10.21105/joss.00500},\n"
+"  url = {https://doi.org/10.21105/joss.00500},\n"
+"  year  = {2018},\n"
+"  month = {Feb},\n"
+"  publisher = {The Open Journal},\n"
+"  volume = {3},\n"
+"  number = {22},\n"
+"  pages = {500},\n"
+"  author = {Jeongseok Lee and Michael X. Grey and Sehoon Ha and Tobias Kunz and Sumit Jain and Yuting Ye and Siddhartha S. Srinivasa and Mike Stilman and C. Karen Liu},\n"
+"  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
+"  journal = {The Journal of Open Source Software}\n"
+"}"
 
 #~ msgid "Installation"
 #~ msgstr "설치"
 
 #~ msgid "Tutorials"
 #~ msgstr "튜토리얼"
-

@@ -57,6 +57,7 @@ docs/doxygen/html/
 
 # Sphinx documentation
 docs/readthedocs/site
+docs/readthedocs/_build/
 
 # Data files
 data/screencap/*

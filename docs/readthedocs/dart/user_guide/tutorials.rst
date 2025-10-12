@@ -14,10 +14,10 @@ and the final code as the answer to the tutorial (e.g.
 The examples are based on the APIs of DART 7.0.
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Contents
+   :maxdepth: 1
+   :caption: Contents
 
-    tutorials/biped
-    tutorials/collisions
-    tutorials/dominoes
-    tutorials/multi-pendulum
+   tutorials/biped
+   tutorials/collisions
+   tutorials/dominoes
+   tutorials/multi-pendulum
