@@ -26,16 +26,24 @@ msgid "Home"
 msgstr "홈"
 
 #: ../../index.rst:97
+msgid "dart (C++)"
+msgstr "dart (C++)"
+
+#: ../../index.rst:105
+msgid "dartpy (Python)"
+msgstr "dartpy (Python)"
+
+#: ../../index.rst:115
+msgid "Community"
+msgstr "커뮤니티"
+
+#: ../../index.rst:97
 msgid "User Guide"
 msgstr "사용자 가이드"
 
 #: ../../index.rst:105
 msgid "Developer Guide"
 msgstr "개발자 가이드"
-
-#: ../../index.rst:115
-msgid "Community"
-msgstr ""
 
 #: ../../index.rst:7 d584aa398b19497baff45df31a4e8423
 msgid "Welcome to DART 7's documentation!"
@@ -167,4 +175,3 @@ msgstr "만약 학술 논문에서 DART를 사용하신다면, 이 JOSS 논문�
 
 #~ msgid "Tutorials"
 #~ msgstr "튜토리얼"
-
