@@ -97,7 +97,11 @@ public:
           mViewer->simulate(!mViewer->isSimulating());
           return true;
         case 'p': // Toggle playback mode
-          mViewer->switchDefaultEventHandler();
+          // Note: There's no way to query the current state, so we just toggle
+          // by switching to false and then back to true on next press
+          static bool eventHandlerOn = true;
+          eventHandlerOn = !eventHandlerOn;
+          mViewer->switchDefaultEventHandler(eventHandlerOn);
           return true;
         case 'v': // Toggle visualization markers
           if (mWorldNode) {

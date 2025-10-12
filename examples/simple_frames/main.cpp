@@ -97,8 +97,8 @@ int main(int /*argc*/, char* /*argv*/[])
   // TODO(MXG): Fix this issue ^
 
   // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<osg::RealTimeWorldNode> node
-      = new osg::RealTimeWorldNode(myWorld);
+  ::osg::ref_ptr<dart::gui::osg::RealTimeWorldNode> node
+      = new dart::gui::osg::RealTimeWorldNode(myWorld);
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
