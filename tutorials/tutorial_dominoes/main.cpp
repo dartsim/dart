@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -52,8 +52,11 @@ const int default_push_duration = 1000;                 // # iterations
 
 [[maybe_unused]] const double defaultmEndEffectormOffset = 0.05;
 
+using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+using namespace dart::gui;
+using namespace dart::gui::osg;
 using namespace dart::math;
 
 class Controller
@@ -129,21 +132,77 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::glut::SimWindow
+class DominoEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  MyWindow(const WorldPtr& world)
-    : mTotalAngle(0.0),
+  DominoEventHandler(const WorldPtr& world, Controller* controller)
+    : mWorld(world),
+      mController(controller),
+      mTotalAngle(0.0),
       mHasEverRun(false),
       mForceCountDown(0),
       mPushCountDown(0)
   {
-    setWorld(world);
     mFirstDomino = world->getSkeleton("domino");
     mFloor = world->getSkeleton("floor");
+  }
 
-    mController = std::make_unique<Controller>(
-        world->getSkeleton("manipulator"), mFirstDomino);
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  {
+    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      if (!mHasEverRun) {
+        switch (ea.getKey()) {
+          case 'q':
+            attemptToCreateDomino(default_angle);
+            return true;
+          case 'w':
+            attemptToCreateDomino(0.0);
+            return true;
+          case 'e':
+            attemptToCreateDomino(-default_angle);
+            return true;
+          case 'd':
+            deleteLastDomino();
+            return true;
+          case ' ':
+            mHasEverRun = true;
+            return true;
+          default:
+            return false;
+        }
+      } else {
+        switch (ea.getKey()) {
+          case 'f':
+            mForceCountDown = default_force_duration;
+            return true;
+          case 'r':
+            mPushCountDown = default_push_duration;
+            return true;
+          default:
+            return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  void update()
+  {
+    // If the user has pressed the 'f' key, apply a force to the first domino in
+    // order to push it over
+    if (mForceCountDown > 0) {
+      // Lesson 1d
+      --mForceCountDown;
+    }
+
+    // Run the controller for the manipulator
+    if (mPushCountDown > 0) {
+      mController->setOperationalSpaceForces();
+      --mPushCountDown;
+    } else {
+      mController->setPDForces();
+    }
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
@@ -165,62 +224,10 @@ public:
     // Lesson 1c
   }
 
-  void keyboard(unsigned char key, int x, int y) override
-  {
-    if (!mHasEverRun) {
-      switch (key) {
-        case 'q':
-          attemptToCreateDomino(default_angle);
-          break;
-        case 'w':
-          attemptToCreateDomino(0.0);
-          break;
-        case 'e':
-          attemptToCreateDomino(-default_angle);
-          break;
-        case 'd':
-          deleteLastDomino();
-          break;
-        case ' ':
-          mHasEverRun = true;
-          break;
-      }
-    } else {
-      switch (key) {
-        case 'f':
-          mForceCountDown = default_force_duration;
-          break;
-
-        case 'r':
-          mPushCountDown = default_push_duration;
-          break;
-      }
-    }
-
-    SimWindow::keyboard(key, x, y);
-  }
-
-  void timeStepping() override
-  {
-    // If the user has pressed the 'f' key, apply a force to the first domino in
-    // order to push it over
-    if (mForceCountDown > 0) {
-      // Lesson 1d
-      --mForceCountDown;
-    }
-
-    // Run the controller for the manipulator
-    if (mPushCountDown > 0) {
-      mController->setOperationalSpaceForces();
-      --mPushCountDown;
-    } else {
-      mController->setPDForces();
-    }
-
-    SimWindow::timeStepping();
-  }
-
 protected:
+  WorldPtr mWorld;
+  Controller* mController;
+
   /// Base domino. Used to clone new dominoes.
   SkeletonPtr mFirstDomino;
 
@@ -246,8 +253,23 @@ protected:
   /// The manipulator will attempt to push on the first domino while the value
   /// of this is greater than zero
   int mPushCountDown;
+};
 
-  std::unique_ptr<Controller> mController;
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(const WorldPtr& world, DominoEventHandler* handler)
+    : RealTimeWorldNode(world), mHandler(handler)
+  {
+  }
+
+  void customPreStep() override
+  {
+    mHandler->update();
+  }
+
+protected:
+  DominoEventHandler* mHandler;
 };
 
 SkeletonPtr createDomino()
@@ -319,28 +341,47 @@ int main(int argc, char* argv[])
   world->addSkeleton(floor);
   world->addSkeleton(manipulator);
 
-  MyWindow window(world);
+  // Create controller and event handler
+  auto controller = std::make_unique<Controller>(manipulator, domino);
+  auto handler = new DominoEventHandler(world, controller.get());
 
-  std::cout << "Before simulation has started, you can create new dominoes:"
-            << std::endl;
-  std::cout << "'w': Create new domino angled forward" << std::endl;
-  std::cout << "'q': Create new domino angled to the left" << std::endl;
-  std::cout << "'e': Create new domino angled to the right" << std::endl;
-  std::cout << "'d': Delete the last domino that was created" << std::endl;
-  std::cout << std::endl;
-  std::cout << "spacebar: Begin simulation (you can no longer create or remove "
-               "dominoes)"
-            << std::endl;
-  std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'f': Push the first domino with a disembodies force so that it "
-               "falls over"
-            << std::endl;
-  std::cout
-      << "'r': Push the first domino with the manipulator so that it falls over"
-      << std::endl;
-  std::cout << "'v': Turn contact force visualization on/off" << std::endl;
+  // Create a WorldNode and wrap it around the world
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Dominoes");
-  glutMainLoop();
+  // Create a Viewer and set it up with the WorldNode
+  auto viewer = Viewer();
+  viewer.addWorldNode(node);
+  viewer.addEventHandler(handler);
+
+  // Print instructions
+  viewer.addInstructionText("Before simulation has started, you can create new dominoes:\n");
+  viewer.addInstructionText("'w': Create new domino angled forward\n");
+  viewer.addInstructionText("'q': Create new domino angled to the left\n");
+  viewer.addInstructionText("'e': Create new domino angled to the right\n");
+  viewer.addInstructionText("'d': Delete the last domino that was created\n");
+  viewer.addInstructionText("\n");
+  viewer.addInstructionText("spacebar: Begin simulation (you can no longer create or remove dominoes)\n");
+  viewer.addInstructionText("'p': replay simulation\n");
+  viewer.addInstructionText("'f': Push the first domino with a disembodied force so that it falls over\n");
+  viewer.addInstructionText("'r': Push the first domino with the manipulator so that it falls over\n");
+  viewer.addInstructionText("'v': Turn contact force visualization on/off\n");
+  std::cout << viewer.getInstructions() << std::endl;
+
+  // Set up the window to be 640x480
+  viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  // Adjust the viewpoint of the Viewer
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(2.0f, 1.0f, 2.0f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+
+  // We need to re-dirty the CameraManipulator by passing it into the viewer
+  // again, so that the viewer knows to update its HomePosition setting
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  // Begin running the application loop
+  viewer.run();
+
+  return 0;
 }
