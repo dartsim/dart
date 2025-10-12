@@ -34,7 +34,7 @@
 #define EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 #include <osgGA/GUIEventHandler>
 
 /// \brief Comprehensive event handler for rigid body physics simulation

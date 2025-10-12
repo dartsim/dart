@@ -71,7 +71,7 @@ private:
   dart::simulation::WorldPtr mWorld;
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // load a skeleton file
   // create and initialize the world

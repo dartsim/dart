@@ -42,9 +42,11 @@
 
 #include "HardcodedEventHandler.hpp"
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
+
+#include <osg/PolygonMode>
 
 #include <iostream>
 
@@ -128,7 +130,7 @@ dart::dynamics::SkeletonPtr createSkeleton()
   return LeftLegSkel;
 }
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create skeleton
   dart::dynamics::SkeletonPtr skeleton = createSkeleton();
@@ -147,9 +149,9 @@ int main(int argc, char* argv[])
 
   // Set wireframe mode to match the original GLUT example
   worldNode->getStateSet()->setAttributeAndModes(
-      new osg::PolygonMode(
-          osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE),
-      osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+      new ::osg::PolygonMode(
+          ::osg::PolygonMode::FRONT_AND_BACK, ::osg::PolygonMode::LINE),
+      ::osg::StateAttribute::ON | ::osg::StateAttribute::OVERRIDE);
 
   // Add world node to viewer
   viewer.addWorldNode(worldNode);

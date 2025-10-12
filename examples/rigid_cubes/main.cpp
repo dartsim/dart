@@ -143,7 +143,7 @@ protected:
   WorldPtr mWorld;
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
   auto world

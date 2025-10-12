@@ -857,7 +857,7 @@ void enableDragAndDrops(
   });
 }
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and configure the physics world
   WorldPtr world = World::create();

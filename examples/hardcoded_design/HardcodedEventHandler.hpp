@@ -33,7 +33,7 @@
 #ifndef EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 #define EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 

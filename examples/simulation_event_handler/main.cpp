@@ -187,7 +187,7 @@ protected:
   SimulationEventHandler* mHandler;
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // Create the physics world
   WorldPtr world = World::create();

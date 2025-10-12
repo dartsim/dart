@@ -65,7 +65,7 @@ private:
   }
 };
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
