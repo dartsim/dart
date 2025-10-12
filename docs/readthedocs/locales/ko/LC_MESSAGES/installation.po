@@ -100,11 +100,11 @@ msgstr ""
 
 #: ../../installation.rst:24 20821757ae8c4999bb2e2b74e08f7734
 msgid "macOS x86_64"
-msgstr ""
+msgstr "macOS x86_64"
 
 #: ../../installation.rst:26 1185d2be8ecf4c80986366ac33f170b0
 msgid "macOS arm64"
-msgstr ""
+msgstr "macOS arm64"
 
 #: ../../installation.rst:28 1b210a68c5234750b900ac882544bcad
 msgid "Windows x86_64"
@@ -128,7 +128,7 @@ msgstr ""
 
 #: ../../installation.rst:42 a32b55e0a3dd4337837954d159df539b
 msgid "C++"
-msgstr ""
+msgstr "C++"
 
 #: ../../installation.rst:45 6bb4338d941e4cdfbb74315b4efe7b1a
 msgid "Ubuntu"
@@ -154,7 +154,7 @@ msgstr "libdart6-all-dev 패키지를 설치하세요:"
 
 #: ../../installation.rst:68 6dd35f2913e545cea4ac0f2239af1519
 msgid "macOS"
-msgstr ""
+msgstr "macOS"
 
 #: ../../installation.rst:70 27e0e80bda3043a69729d2bb57511310
 msgid "To install DART on macOS, you can use Homebrew:"
@@ -187,7 +187,7 @@ msgstr "dartsim 패키지를 설치하세요:"
 
 #: ../../installation.rst:104 7ecd83aab65b415abf4f37dbf8246051
 msgid "Arch Linux (experimental)"
-msgstr ""
+msgstr "Arch Linux (실험적)"
 
 #: ../../installation.rst:106 b6fb1c58e0ce469aa072951fa95b9400
 msgid ""
@@ -201,12 +201,11 @@ msgstr "`libdart` 패키지를 설치하세요:"
 
 #: ../../installation.rst:122 47c5b64c38dc420099c8950b7c392ba5
 msgid "FreeBSD (experimental)"
-msgstr ""
+msgstr "FreeBSD (실험적)"
 
 #: ../../installation.rst:124 1caac1a1c174435ba1a13a724e5b2d47
-#, fuzzy
 msgid "To install DART on FreeBSD, you can use the following commands:"
-msgstr "Ubuntu에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
+msgstr "FreeBSD에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
 
 #~ msgid "Arch Linux (Experimental)"
 #~ msgstr ""
@@ -220,4 +219,3 @@ msgstr "Ubuntu에서 DART를 설치하려면 다음 명령을 사용할 수 있�
 #~ " not work on all systems. Use "
 #~ "at your own risk."
 #~ msgstr "Arch Linux의 설치 지침은 현재 실험적이며 모든 시스템에서 작동하지 않을 수 있습니다. 사용에 주의해 주시기 바랍니다."
-

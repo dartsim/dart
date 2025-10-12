@@ -64,4 +64,4 @@ msgstr "CMake로 DART를 구성할 때 Python 바인딩을 활성화하세요:"
 
 #: ../../dartpy/developer_guide/build.rst:26
 msgid "For detailed instructions, see the :doc:`C++ build guide </dart/developer_guide/build>`."
-msgstr "자세한 지침은 :doc:`C++ 빌드 가이드 </dart/developer_guide/build>`를 참조하세요."
+msgstr "자세한 지침은 :doc:`C++ 빌드 가이드 </dart/developer_guide/build>`\\ 를 참조하세요."

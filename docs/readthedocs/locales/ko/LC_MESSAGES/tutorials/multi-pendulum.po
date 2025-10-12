@@ -23,29 +23,29 @@ msgstr ""
 
 #: ../../tutorials/multi-pendulum.md:1 b237b7e95ca94c8dac9934f776429249
 msgid "Multi Pendulum"
-msgstr ""
+msgstr "다중 진자"
 
 #: ../../tutorials/multi-pendulum.md:3 782dc3130bdf47c0a5d8c17ee4d69f63
 msgid "Overview"
-msgstr ""
+msgstr "개요"
 
 #: ../../tutorials/multi-pendulum.md:5 a18101c341704aa0856516af75fcda4a
 msgid ""
 "This tutorial will demonstrate some basic interaction with DART's "
 "dynamics API during simulation. This will show you how to:"
-msgstr ""
+msgstr "이 튜토리얼은 시뮤레이션 동안 DART의 동역학 API와의 기본적인 상호작용을 보여줍니다. 다음의 방법들을 알려드립니다:"
 
 #: ../../tutorials/multi-pendulum.md:8 c39abfaccfc54cd2963129f6d1dbee2e
 msgid "Create a basic program to simulate a dynamic system"
-msgstr ""
+msgstr "동적 시스템을 시뮤레이션하는 기본 프로그램 만들기"
 
 #: ../../tutorials/multi-pendulum.md:9 d496eb7b47f44a5eb3ee6e2cd67287ec
 msgid "Change the colors of shapes"
-msgstr ""
+msgstr "도형의 색상 변경"
 
 #: ../../tutorials/multi-pendulum.md:10 6a42b44edd1d4eb98cbb06daf39e8c75
 msgid "Add/remove shapes from visualization"
-msgstr ""
+msgstr "시각화에서 도형 추가/제거"
 
 #: ../../tutorials/multi-pendulum.md:11 6f774e3795694bc3af2cf977e8c77899
 msgid "Apply internal forces in the joints"
@@ -464,4 +464,3 @@ msgstr ""
 #: ../../tutorials/multi-pendulum.md:388 9b66d05f5e8f4b8db60ffff391a88766
 msgid "**Now you are ready to run the demo!**"
 msgstr ""
-
