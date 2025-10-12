@@ -36,6 +36,7 @@
 #include <dart/dart.hpp>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -67,8 +68,7 @@ void EndEffector(py::module& m)
           },
           ::py::arg("supporting") = true)
       .def(
-          "isActive",
-          +[](const dart::dynamics::Support* self) -> bool {
+          "isActive", +[](const dart::dynamics::Support* self) -> bool {
             return self->isActive();
           });
 
@@ -90,6 +90,30 @@ void EndEffector(py::module& m)
           "resetRelativeTransform",
           +[](dart::dynamics::EndEffector* self) {
             self->resetRelativeTransform();
+          })
+      .def(
+          "setRelativeTransform",
+          +[](dart::dynamics::EndEffector* self,
+              const Eigen::Isometry3d& transform) {
+            self->setRelativeTransform(transform);
+          },
+          ::py::arg("transform"))
+      .def(
+          "getRelativeTransform",
+          +[](const dart::dynamics::EndEffector* self)
+              -> const Eigen::Isometry3d& {
+            return self->getRelativeTransform();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "getTransform",
+          +[](const dart::dynamics::EndEffector* self) -> Eigen::Isometry3d {
+            return self->getTransform();
+          })
+      .def(
+          "getWorldTransform",
+          +[](const dart::dynamics::EndEffector* self) -> Eigen::Isometry3d {
+            return self->getWorldTransform();
           })
       .def(
           "getIK",

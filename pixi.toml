@@ -171,6 +171,8 @@ py-ex-rigid-chain = { depends-on = [{ task = "py-ex", args = ["rigid_chain"] }] 
 
 py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
 
+py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
+
 py-ex-biped-stand = { depends-on = [{ task = "py-ex", args = ["biped_stand"] }] }
 
 py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_pointcloud"] }] }
@@ -178,8 +180,6 @@ py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_
 py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"] }] }
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
-
-py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
 
 test = { cmd = """
     ctest \
