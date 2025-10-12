@@ -1,5 +1,21 @@
 # DART Changelog
 
+## DART 7
+
+### [DART 7.0.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
+
+* Breaking Changes
+  * TBD
+
+* Tested Platforms
+  * TBD
+
+* Build
+  * TBD
+
+* Core
+  * TBD
+
 ## DART 6
 
 ### [DART 6.15.0 (2024-11-15)](https://github.com/dartsim/dart/milestone/77?closed=1)
@@ -95,7 +111,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   * Removed planning component
 
 * Build
-  
+
   * Added Pixi support
 
 * General
