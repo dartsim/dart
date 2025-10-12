@@ -731,6 +731,12 @@ download-gz = { cmd = """
     ".deps/gz-physics/README.md",
 ] }
 
+# Note: DART 7.0 will have API breaking changes. This patch may need updates
+# when gz-physics officially supports DART 7.x or when breaking changes are finalized.
+patch-gz = { cmd = """
+    sed -i.bak 's/gz_find_package(DART REQUIRED_BY dartsim VERSION 6.10/gz_find_package(DART REQUIRED_BY dartsim VERSION 7.0/' .deps/gz-physics/CMakeLists.txt
+""", depends-on = ["download-gz"] }
+
 config-gz = { cmd = """
     cmake \
         -G Ninja \
@@ -740,7 +746,7 @@ config-gz = { cmd = """
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DBUILD_TESTING=OFF
-""", depends-on = ["download-gz", "install"] }
+""", depends-on = ["patch-gz", "install"] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",
