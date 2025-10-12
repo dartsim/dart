@@ -20,7 +20,9 @@ ninja = ">=1.12.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
+pybind11 = ">=2.13"
 pytest = ">=8.3.5,<9"
+scikit-build-core = ">=0.10"
 setuptools = ">=80.1.0,<81"
 sphinx = "*"
 sphinx-copybutton = "*"
@@ -110,7 +112,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python -m pip install . -vv" }
+build-py = { cmd = "python -m pip install . --no-build-isolation -vv" }
 
 build-py-dev = { cmd = """
     cmake \
