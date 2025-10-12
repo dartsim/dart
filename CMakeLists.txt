@@ -78,7 +78,6 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-dart_option(DART_USE_OSG_AS_DEFAULT_GUI "Use OSG as the default GUI backend instead of GLUT" ON)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_CODECOV "Turn on codecov support" OFF)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART

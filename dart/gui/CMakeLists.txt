@@ -8,13 +8,6 @@ dart_check_dependent_target(${target_name} dart-utils)
 dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
-dart_find_package(GLUT)
-if(WIN32 AND NOT CYGWIN)
-  dart_check_optional_package(GLUT "dart-gui" "freeglut")
-else()
-  dart_check_optional_package(GLUT "dart-gui" "freeglut3")
-endif()
-
 # Search all header and source files
 file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
 file(GLOB srcs "*.cpp" "*.c" "detail/*.cpp")
@@ -27,8 +20,6 @@ function(dart_add_gui_sources)
   dart_property_add(DART_GUI_SOURCES ${ARGN})
 endfunction()
 
-# Add required subdirectory
-add_subdirectory(glut)
 
 get_property(dart_gui_headers GLOBAL PROPERTY DART_GUI_HEADERS)
 get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
@@ -42,16 +33,8 @@ target_link_libraries(${target_name}
     dart-utils
     OpenGL::GL
     OpenGL::GLU
-    GLUT::GLUT
     ${PROJECT_NAME}-external-lodepng
 )
-if(APPLE)
-  # Suppress "deprecated-declarations" until we abandon glut.
-  target_compile_options(${target_name}
-    PUBLIC
-      -Wno-deprecated-declarations
-  )
-endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
@@ -62,7 +45,7 @@ add_component_dependencies(
   utils
   external-lodepng
 )
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL GLUT)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
 
 # Add subdirectories
 add_subdirectory(osg)
@@ -81,12 +64,6 @@ list(REMOVE_ITEM header_names
   "SoftSimWindow.hpp"
   "Win2D.hpp"
   "Win3D.hpp"
-)
-
-set(
-  header_names
-  ${header_names}
-  glut/glut.hpp
 )
 dart_generate_include_header_file(
   "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
