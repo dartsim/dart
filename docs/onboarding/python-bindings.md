@@ -7,23 +7,21 @@ The DART (Dynamic Animation and Robotics Toolkit) project provides comprehensive
 
 ### Package Metadata (`pyproject.toml`)
 - **Package Name**: `dartpy`
-- **Build System**: setuptools with CMake integration
+- **Build System**: scikit-build-core with CMake integration (modern, PEP 517 compliant)
 - **Build Requirements**:
-  - setuptools >= 42
-  - wheel
-  - ninja
-  - cmake >= 3.12
+  - scikit-build-core >= 0.10
+  - pybind11 >= 2.13
   - requests
 - **Python Version Support**: Python 3.7+
 - **Testing Framework**: pytest 6.0+
 - **Supported Platforms**:
-  - Linux (manylinux_2_28, x86_64 and aarch64)
-  - macOS (x64, future: universal2 and arm64)
+  - Linux (manylinux_2_28, x86_64)
+  - macOS (arm64)
   - Windows (AMD64, ARM64)
 - **Docker Images**: Uses custom Docker images (`jslee02/dart-dev`) for Linux builds
 
-### Setup Configuration (`setup.py`)
-- **Version**: 0.2.0.post<N> (dynamically incremented from PyPI)
+### Package Information
+- **Version**: 0.2.0
 - **Author**: Jeongseok Lee (jslee02@gmail.com)
 - **License**: BSD 2-Clause
 - **Description**: Python API of Dynamic Animation and Robotics Toolkit
@@ -33,33 +31,75 @@ The DART (Dynamic Animation and Robotics Toolkit) project provides comprehensive
 
 ## 2. Build System Architecture
 
-### CMake Extension Build (`setup.py`)
-The package uses a custom `CMakeBuild` class that:
-1. Wraps the CMake build process as a Python extension
-2. Configures CMake with specific options:
+### Modern Build System (scikit-build-core)
+The package uses **scikit-build-core**, a modern build backend that:
+1. Integrates CMake with Python's build system (PEP 517/518)
+2. Supports editable installs (`pip install -e .`)
+3. Automatically detects and uses CMake
+4. Configures CMake with wheel-specific options:
    ```cmake
    -DBUILD_SHARED_LIBS=OFF
    -DDART_BUILD_DARTPY=ON
+   -DDART_BUILD_GUI_OSG=OFF      # Minimal wheels
    -DDART_ENABLE_SIMD=OFF
    -DDART_BUILD_WHEELS=ON
    -DDART_TREAT_WARNINGS_AS_ERRORS=OFF
+   -DDART_VERBOSE=ON
+   -DDART_USE_SYSTEM_IMGUI=OFF
    ```
-3. Uses Ninja build system for non-MSVC platforms
-4. Supports parallel builds (default: `-j2`)
-5. Platform-specific configurations for Windows, macOS, and Linux
 
-### Pybind11 Integration (`python/CMakeLists.txt`)
+### Installation Methods
+
+#### For End Users
+- **PyPI**: `pip install dartpy` (pre-built wheels)
+- **conda-forge**: `conda install dartpy -c conda-forge`
+
+#### For Developers (4 methods)
+
+**1. Traditional CMake Install** (system-wide or venv)
+```bash
+mkdir build && cd build
+cmake -DDART_BUILD_DARTPY=ON ..
+cmake --build . --target dartpy
+cmake --install .  # or: cmake --install . --prefix ~/.local
+```
+
+**2. Pip Editable Install** (recommended for development)
+```bash
+pip install -e . -v --no-build-isolation
+```
+
+**3. Using pixi** (reproducible environment)
+```bash
+pixi run build-py-dev     # Build dartpy
+pixi run py-ex-hello-world # Run example
+```
+
+**4. Building Wheels Locally**
+```bash
+pip wheel . --no-deps -w dist/
+# or
+pixi run build-wheel
+pixi run verify-wheel
+```
+
+See `docs/readthedocs/dartpy/developer_guide/build.rst` for detailed instructions.
+
+### Pybind11 Integration (`python/dartpy/CMakeLists.txt`)
 - **Pybind11 Version**: v2.13.6 (fetched via FetchContent if not system-provided)
 - **Module Name**: `dartpy`
 - **Build Type**: MODULE (Python extension)
-- **Linked Libraries**:
-  - dart (core)
-  - dart-utils
-  - dart-utils-urdf
-  - dart-gui-osg
-  - dart-optimizer-nlopt (optional)
-  - dart-collision-bullet (optional)
-  - dart-collision-ode (optional)
+- **Install Behavior**:
+  - **Wheel builds**: Installs to `${SKBUILD_PLATLIB_DIR}` (scikit-build staging area)
+  - **Traditional CMake**: Installs to `${PYTHON_SITE_PACKAGES}` (system or venv)
+- **Linked Libraries** (conditional):
+  - dart (core) - **required**
+  - dart-utils - **required**
+  - dart-utils-urdf - **required**
+  - dart-gui-osg - **optional** (only if available, excluded from wheels)
+  - dart-optimizer-nlopt - **optional**
+  - dart-collision-bullet - **optional**
+  - dart-collision-ode - **optional**
 
 ## 3. Python API Structure
 
@@ -501,6 +541,29 @@ Based on the configuration:
 - Ongoing updates to match C++ API changes
 - ImGui integration improvements
 
+## 18. Additional Resources
+
+For comprehensive information about the packaging system architecture, see:
+- **[PACKAGING_STRATEGY.md](../../PACKAGING_STRATEGY.md)**: Complete packaging strategy documentation
+  - Build system architecture and design decisions
+  - Installation methods and workflows
+  - Maintenance guide and troubleshooting
+  - No-redundancy strategy across configuration files
+
+For developer build instructions, see:
+- **[dartpy Developer Build Guide](../readthedocs/dartpy/developer_guide/build.rst)**: Step-by-step build instructions for all installation methods
+
+For active development tasks, see:
+- **[Packaging Refactor Task Tracker](../dev_tasks/active/pyproject/packaging-refactor.md)**: Current packaging improvements and roadmap
+
 ## Conclusion
 
-The dartpy Python bindings provide a comprehensive, well-structured interface to the DART C++ library. The use of pybind11, custom type casters for Eigen, and extensive examples make it accessible for robotics researchers and developers who prefer Python. The build system is sophisticated, supporting multiple platforms and automated wheel building, while the API design follows Python conventions with NumPy integration and proper type hints.
+The dartpy Python bindings provide a comprehensive, well-structured interface to the DART C++ library. The use of pybind11, custom type casters for Eigen, and extensive examples make it accessible for robotics researchers and developers who prefer Python. The modern build system using scikit-build-core supports multiple platforms and automated wheel building, while the API design follows Python conventions with NumPy integration and proper type hints.
+
+**Key Highlights**:
+- **Modern Build System**: scikit-build-core (PEP 517/518 compliant)
+- **Multiple Installation Methods**: PyPI wheels, conda-forge, traditional CMake, pip editable install, pixi
+- **Comprehensive API Coverage**: Nearly complete binding of DART C++ API
+- **Developer-Friendly**: Type stubs, rich examples, excellent documentation
+- **Cross-Platform**: Linux, macOS, Windows support
+- **Automated CI/CD**: cibuildwheel for multi-platform wheel building

@@ -2,8 +2,62 @@
 # All rights reserved.
 
 [build-system]
-requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12", "requests"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13", "requests"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "dartpy"
+version = "0.2.0"
+description = "Python API of Dynamic Animation and Robotics Toolkit."
+readme = "README.md"
+requires-python = ">=3.7"
+license = "BSD-2-Clause"
+authors = [
+    {name = "Jeongseok Lee", email = "jslee02@gmail.com"}
+]
+keywords = ["dartsim", "robotics"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Framework :: Robot Framework",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/dartsim/dart.git"
+Repository = "https://github.com/dartsim/dart.git"
+
+[tool.scikit-build]
+# Build directory
+build-dir = "build/{wheel_tag}"
+# Enable verbose build output
+build.verbose = true
+
+[tool.scikit-build.cmake]
+# CMake version requirement
+version = ">=3.22.1"
+# CMake build type
+build-type = "Release"
+
+[tool.scikit-build.cmake.define]
+# Build configuration for wheels (static linking, minimal dependencies)
+BUILD_SHARED_LIBS = "OFF"
+DART_BUILD_DARTPY = "ON"
+DART_BUILD_GUI_OSG = "OFF"
+DART_ENABLE_SIMD = "OFF"
+DART_BUILD_WHEELS = "ON"
+DART_TREAT_WARNINGS_AS_ERRORS = "OFF"
+DART_VERBOSE = "ON"
+DART_USE_SYSTEM_IMGUI = "OFF"
 
 [tool.black]
 exclude = '/(build|dist|docs|examples|external|python|\.pixi)/'
@@ -13,16 +67,11 @@ profile = "black"
 skip = ['build', 'dist', 'docs', 'examples', 'external', 'python', '.pixi']
 
 [tool.mypy]
-files = "setup.py"
 python_version = "3.7"
 strict = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
-
-[[tool.mypy.overrides]]
-module = ["ninja"]
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -6,9 +6,10 @@
 #
 # This file is provided under the "BSD-style" License
 
+# Determine Python site-packages directory
+# Use sysconfig instead of distutils (removed in Python 3.12+)
 execute_process(COMMAND ${Python3_EXECUTABLE} -c
-  "from distutils.sysconfig import get_python_lib;\
-  print(get_python_lib(plat_specific=True))"
+  "import sysconfig; print(sysconfig.get_path('platlib'))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
@@ -20,6 +21,12 @@ set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
+# Exclude GUI OSG bindings if GUI is not built
+if(NOT DART_BUILD_GUI_OSG)
+  list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
+  list(FILTER dartpy_sources EXCLUDE REGEX ".*/gui/osg/.*")
+endif()
+
 # Python binding module name
 set(pybind_module dartpy)
 
@@ -27,12 +34,21 @@ set(pybind_module dartpy)
 # pybind11_add_module(<name> [MODULE | SHARED] [EXCLUDE_FROM_ALL]
 #                     [NO_EXTRAS] [SYSTEM] [THIN_LTO] source1 [source2 ...])
 #
-pybind11_add_module(${pybind_module}
-  MODULE
-  EXCLUDE_FROM_ALL
-  ${dartpy_headers}
-  ${dartpy_sources}
-)
+# When building wheels, don't use EXCLUDE_FROM_ALL so the module is built automatically
+if(DART_BUILD_WHEELS)
+  pybind11_add_module(${pybind_module}
+    MODULE
+    ${dartpy_headers}
+    ${dartpy_sources}
+  )
+else()
+  pybind11_add_module(${pybind_module}
+    MODULE
+    EXCLUDE_FROM_ALL
+    ${dartpy_headers}
+    ${dartpy_sources}
+  )
+endif()
 
 target_include_directories(${pybind_module}
   SYSTEM PUBLIC
@@ -46,7 +62,6 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-gui-osg
 )
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
@@ -65,6 +80,9 @@ if(TARGET dart-collision-bullet)
 endif()
 if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
+endif()
+if(TARGET dart-gui-osg)
+  target_link_libraries(${pybind_module} PUBLIC dart-gui-osg)
 endif()
 
 target_compile_definitions(${pybind_module}
@@ -88,11 +106,18 @@ if(BUILD_SHARED_LIBS)
   )
 endif()
 
-# TODO: Fix installing dartpy to site-packages directory
-# Install the pybind module to site-packages directory
-# install(TARGETS ${pybind_module}
-#   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
-# )
+# Install the pybind module to the wheel
+# For scikit-build-core, we use SKBUILD_PLATLIB_DIR if available,
+# otherwise fall back to PYTHON_SITE_PACKAGES for traditional builds
+if(DEFINED SKBUILD_PLATLIB_DIR)
+  install(TARGETS ${pybind_module}
+    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}"
+  )
+else()
+  install(TARGETS ${pybind_module}
+    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
+  )
+endif()
 
 list(REMOVE_ITEM dartpy_headers
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h
