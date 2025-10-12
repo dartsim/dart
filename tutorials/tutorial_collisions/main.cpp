@@ -446,7 +446,7 @@ SkeletonPtr createWall()
   return wall;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   WorldPtr world = std::make_shared<World>();
   world->addSkeleton(createGround());

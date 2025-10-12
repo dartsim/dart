@@ -373,7 +373,7 @@ BodyNode* addBody(
   return bn;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   // Create an empty Skeleton with the name "pendulum"
   SkeletonPtr pendulum = Skeleton::create("pendulum");

@@ -132,7 +132,7 @@ private:
   std::shared_ptr<MixedChainEventHandler> mEventHandler;
 };
 
-int main(int /*argc*/, char* /*argv*/[])
+int main()
 {
   // Load the skeleton file
   dart::simulation::WorldPtr myWorld = dart::utils::SkelParser::readWorld(

@@ -215,7 +215,7 @@ public:
   void customPreStep() override {}
 };
 
-int main(int /*argc*/, char* /*argv*/[])
+int main()
 {
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
   assert(myWorld != nullptr);

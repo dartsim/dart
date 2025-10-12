@@ -495,7 +495,7 @@ SkeletonPtr createManipulator()
   return manipulator;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   SkeletonPtr domino = createDomino();
   SkeletonPtr floor = createFloor();

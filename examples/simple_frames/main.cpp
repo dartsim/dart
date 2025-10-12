@@ -38,7 +38,7 @@ using namespace dart::dynamics;
 using namespace dart::gui;
 using namespace dart::gui::osg;
 
-int main(int /*argc*/, char* /*argv*/[])
+int main()
 {
   dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 

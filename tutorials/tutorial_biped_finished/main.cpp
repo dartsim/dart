@@ -461,7 +461,7 @@ SkeletonPtr createFloor()
   return floor;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   SkeletonPtr floor = createFloor();
 

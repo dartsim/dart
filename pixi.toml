@@ -117,6 +117,13 @@ build-examples = { cmd = """
         --target examples
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+build-tutorials = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target tutorials
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
 build-py = { cmd = "python -m pip install . -vv" }
 
 build-py-dev = { cmd = """
