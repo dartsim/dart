@@ -57,9 +57,7 @@ using namespace dart::math;
 class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  RigidShapesEventHandler(const WorldPtr& world) : mWorld(world)
-  {
-  }
+  RigidShapesEventHandler(const WorldPtr& world) : mWorld(world) {}
 
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
@@ -69,12 +67,14 @@ public:
         case 'q':
         case 'Q':
           spawnBox(
-              getRandomTransform(), Random::uniform<Eigen::Vector3d>(0.05, 0.25));
+              getRandomTransform(),
+              Random::uniform<Eigen::Vector3d>(0.05, 0.25));
           return true;
         case 'w':
         case 'W':
           spawnEllipsoid(
-              getRandomTransform(), Random::uniform<Eigen::Vector3d>(0.025, 0.125));
+              getRandomTransform(),
+              Random::uniform<Eigen::Vector3d>(0.025, 0.125));
           return true;
         case 'e':
         case 'E': {
@@ -102,8 +102,8 @@ private:
   {
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
-    const Eigen::Vector3d rotation = Random::uniform<Eigen::Vector3d>(
-        -constantsd::pi(), constantsd::pi());
+    const Eigen::Vector3d rotation
+        = Random::uniform<Eigen::Vector3d>(-constantsd::pi(), constantsd::pi());
     const Eigen::Vector3d position = Eigen::Vector3d(
         Random::uniform(-1.0, 1.0),
         Random::uniform(0.5, 1.0),
@@ -116,7 +116,9 @@ private:
   }
 
   void spawnBox(
-      const Eigen::Isometry3d& _T, const Eigen::Vector3d& _size, double _mass = 10)
+      const Eigen::Isometry3d& _T,
+      const Eigen::Vector3d& _size,
+      double _mass = 10)
   {
     SkeletonPtr newSkeleton = Skeleton::create();
 
@@ -143,7 +145,9 @@ private:
   }
 
   void spawnEllipsoid(
-      const Eigen::Isometry3d& _T, const Eigen::Vector3d& _radii, double _mass = 10)
+      const Eigen::Isometry3d& _T,
+      const Eigen::Vector3d& _radii,
+      double _mass = 10)
   {
     SkeletonPtr newSkeleton = Skeleton::create();
 
@@ -170,7 +174,10 @@ private:
   }
 
   void spawnCylinder(
-      const Eigen::Isometry3d& _T, double _radius, double _height, double _mass = 10)
+      const Eigen::Isometry3d& _T,
+      double _radius,
+      double _height,
+      double _mass = 10)
   {
     SkeletonPtr newSkeleton = Skeleton::create();
 
@@ -203,19 +210,14 @@ protected:
 class CustomWorldNode : public RealTimeWorldNode
 {
 public:
-  CustomWorldNode(const WorldPtr& world) : RealTimeWorldNode(world)
-  {
-  }
+  CustomWorldNode(const WorldPtr& world) : RealTimeWorldNode(world) {}
 
-  void customPreStep() override
-  {
-  }
+  void customPreStep() override {}
 };
 
 int main(int argc, char* argv[])
 {
-  WorldPtr myWorld
-      = SkelParser::readWorld("dart://sample/skel/shapes.skel");
+  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
   assert(myWorld != nullptr);
 
   auto handler = new RigidShapesEventHandler(myWorld);

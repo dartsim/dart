@@ -34,8 +34,6 @@
 
 #include <dart/utils/utils.hpp>
 
-#include <dart/collision/bullet/bullet.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>
@@ -46,27 +44,48 @@ using namespace dart::simulation;
 using namespace dart::gui;
 using namespace dart::gui::osg;
 using namespace dart::utils;
-using namespace dart::math;
+using namespace dart::math::suffixes;
 
-class AddDeleteSkelsEventHandler : public ::osgGA::GUIEventHandler
+class VehicleEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  AddDeleteSkelsEventHandler(const WorldPtr& world) : mWorld(world) {}
+  VehicleEventHandler() : mBackWheelVelocity(0.0), mSteeringWheelAngle(0.0) {}
 
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
       switch (ea.getKey()) {
-        case 'q':
-        case 'Q':
-          spawnCube();
-          return true;
         case 'w':
         case 'W':
-          if (mWorld->getNumSkeletons() > 1)
-            mWorld->removeSkeleton(
-                mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
+          mBackWheelVelocity = -420.0_deg;
+          std::cout << "Moving forward" << std::endl;
+          return true;
+        case 's':
+        case 'S':
+          mBackWheelVelocity = 0.0_deg;
+          std::cout << "Stop" << std::endl;
+          return true;
+        case 'x':
+        case 'X':
+          mBackWheelVelocity = +420.0_deg;
+          std::cout << "Moving backward" << std::endl;
+          return true;
+        case 'a':
+        case 'A':
+          mSteeringWheelAngle += +10_deg;
+          if (mSteeringWheelAngle > 30.0_deg)
+            mSteeringWheelAngle = 30.0_deg;
+          std::cout << "Steering left, angle: " << mSteeringWheelAngle
+                    << std::endl;
+          return true;
+        case 'd':
+        case 'D':
+          mSteeringWheelAngle += -10_deg;
+          if (mSteeringWheelAngle < -30.0_deg)
+            mSteeringWheelAngle = -30.0_deg;
+          std::cout << "Steering right, angle: " << mSteeringWheelAngle
+                    << std::endl;
           return true;
         default:
           return false;
@@ -75,64 +94,72 @@ public:
     return false;
   }
 
-  void spawnCube(
-      const Eigen::Vector3d& position = Eigen::Vector3d(
-          Random::uniform(-1.0, 1.0),
-          Random::uniform(0.5, 1.0),
-          Random::uniform(-1.0, 1.0)),
-      const Eigen::Vector3d& size = Eigen::Vector3d(
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5)),
-      double mass = 0.1)
+  double getBackWheelVelocity() const
   {
-    SkeletonPtr newCubeSkeleton = Skeleton::create();
+    return mBackWheelVelocity;
+  }
 
-    BodyNode::Properties body;
-    body.mName = "cube_link";
-    body.mInertia.setMass(mass);
-    body.mInertia.setMoment(BoxShape::computeInertia(size, mass));
-    ShapePtr newBoxShape(new BoxShape(size));
-
-    FreeJoint::Properties joint;
-    joint.mName = "cube_joint";
-    joint.mT_ParentBodyToJoint = Eigen::Translation3d(position);
-
-    auto pair = newCubeSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, joint, body);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newBoxShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newCubeSkeleton);
+  double getSteeringWheelAngle() const
+  {
+    return mSteeringWheelAngle;
   }
 
 protected:
-  WorldPtr mWorld;
+  double mBackWheelVelocity;
+  double mSteeringWheelAngle;
+};
+
+class VehicleWorld : public RealTimeWorldNode
+{
+public:
+  VehicleWorld(const WorldPtr& world, VehicleEventHandler* handler)
+    : RealTimeWorldNode(world), mHandler(handler), mK(0.01), mD(0.005)
+  {
+  }
+
+  void customPreStep() override
+  {
+    SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
+    assert(vehicle != nullptr);
+
+    std::size_t dof = vehicle->getNumDofs();
+
+    Eigen::VectorXd q = vehicle->getPositions();
+    Eigen::VectorXd dq = vehicle->getVelocities();
+    Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
+
+    double steeringAngle = mHandler->getSteeringWheelAngle();
+    double wheelVelocity = mHandler->getBackWheelVelocity();
+
+    tau[6] = -mK * (q[6] - steeringAngle) - mD * dq[6];
+    tau[8] = -mK * (q[8] - steeringAngle) - mD * dq[8];
+    tau[7] = -mD * (dq[7] - wheelVelocity);
+    tau[9] = -mD * (dq[9] - wheelVelocity);
+    tau[10] = -mD * (dq[10] - wheelVelocity);
+    tau[11] = -mD * (dq[11] - wheelVelocity);
+
+    vehicle->setForces(tau);
+  }
+
+protected:
+  VehicleEventHandler* mHandler;
+  double mK;
+  double mD;
 };
 
 int main(int argc, char* argv[])
 {
   // Create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/ground.skel");
+  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/vehicle.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  // Set collision detector type
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    myWorld->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
-  }
-
   // Create event handler
-  auto handler = new AddDeleteSkelsEventHandler(myWorld);
+  auto handler = new VehicleEventHandler();
 
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<RealTimeWorldNode> node = new RealTimeWorldNode(myWorld);
+  // Create a custom WorldNode with vehicle behavior
+  ::osg::ref_ptr<VehicleWorld> node = new VehicleWorld(myWorld, handler);
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
@@ -140,8 +167,11 @@ int main(int argc, char* argv[])
   viewer.addEventHandler(handler);
 
   // Print instructions
-  viewer.addInstructionText("'q': spawn a random cube\n");
-  viewer.addInstructionText("'w': delete a spawned cube\n");
+  viewer.addInstructionText("'w': move forward\n");
+  viewer.addInstructionText("'s': stop\n");
+  viewer.addInstructionText("'x': move backward\n");
+  viewer.addInstructionText("'a': rotate steering wheels to left\n");
+  viewer.addInstructionText("'d': rotate steering wheels to right\n");
   viewer.addInstructionText("space bar: simulation on/off\n");
   std::cout << viewer.getInstructions() << std::endl;
 
@@ -152,7 +182,7 @@ int main(int argc, char* argv[])
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.0f, 3.0f, 3.0f),
       ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+      ::osg::Vec3(0.0f, 1.0f, 0.0f));
 
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting

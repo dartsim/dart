@@ -39,26 +39,24 @@ HardcodedEventHandler::HardcodedEventHandler(dart::dynamics::SkeletonPtr _skel)
 {
 }
 
-bool HardcodedEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
+bool HardcodedEventHandler::handle(
+    const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 {
   if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN)
     return false;
 
-  switch (ea.getKey())
-  {
-    case '-':
-    {
+  switch (ea.getKey()) {
+    case '-': {
       mInverse = !mInverse;
-      std::cout << "Direction inverted: " << (mInverse ? "negative" : "positive") << std::endl;
+      std::cout << "Direction inverted: "
+                << (mInverse ? "negative" : "positive") << std::endl;
       return true;
     }
     case '1':
     case '2':
-    case '3':
-    {
+    case '3': {
       std::size_t dofIdx = ea.getKey() - '1';
-      if (dofIdx < mSkel->getNumDofs())
-      {
+      if (dofIdx < mSkel->getNumDofs()) {
         Eigen::VectorXd pose = mSkel->getPositions();
         pose(dofIdx) = pose(dofIdx) + (mInverse ? -mDOF : mDOF);
         mSkel->setPositions(pose);

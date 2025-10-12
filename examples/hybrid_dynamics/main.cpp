@@ -34,8 +34,6 @@
 
 #include <dart/utils/utils.hpp>
 
-#include <dart/collision/bullet/bullet.hpp>
-
 #include <dart/dart.hpp>
 
 #include <iostream>
@@ -46,27 +44,23 @@ using namespace dart::simulation;
 using namespace dart::gui;
 using namespace dart::gui::osg;
 using namespace dart::utils;
-using namespace dart::math;
 
-class AddDeleteSkelsEventHandler : public ::osgGA::GUIEventHandler
+class HybridDynamicsEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  AddDeleteSkelsEventHandler(const WorldPtr& world) : mWorld(world) {}
+  HybridDynamicsEventHandler(const WorldPtr& world)
+    : mWorld(world), mHarnessOn(false)
+  {
+  }
 
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
       switch (ea.getKey()) {
-        case 'q':
-        case 'Q':
-          spawnCube();
-          return true;
-        case 'w':
-        case 'W':
-          if (mWorld->getNumSkeletons() > 1)
-            mWorld->removeSkeleton(
-                mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
+        case 'h':
+        case 'H':
+          toggleHarness();
           return true;
         default:
           return false;
@@ -75,64 +69,93 @@ public:
     return false;
   }
 
-  void spawnCube(
-      const Eigen::Vector3d& position = Eigen::Vector3d(
-          Random::uniform(-1.0, 1.0),
-          Random::uniform(0.5, 1.0),
-          Random::uniform(-1.0, 1.0)),
-      const Eigen::Vector3d& size = Eigen::Vector3d(
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5)),
-      double mass = 0.1)
+  void toggleHarness()
   {
-    SkeletonPtr newCubeSkeleton = Skeleton::create();
-
-    BodyNode::Properties body;
-    body.mName = "cube_link";
-    body.mInertia.setMass(mass);
-    body.mInertia.setMoment(BoxShape::computeInertia(size, mass));
-    ShapePtr newBoxShape(new BoxShape(size));
-
-    FreeJoint::Properties joint;
-    joint.mName = "cube_joint";
-    joint.mT_ParentBodyToJoint = Eigen::Translation3d(position);
-
-    auto pair = newCubeSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, joint, body);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newBoxShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newCubeSkeleton);
+    mHarnessOn = !mHarnessOn;
+    if (mHarnessOn) {
+      Joint* joint
+          = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
+      joint->setActuatorType(Joint::LOCKED);
+      std::cout << "The pelvis is locked." << std::endl;
+    } else {
+      Joint* joint
+          = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
+      joint->setActuatorType(Joint::PASSIVE);
+      std::cout << "The pelvis is unlocked." << std::endl;
+    }
   }
 
 protected:
   WorldPtr mWorld;
+  bool mHarnessOn;
+};
+
+class HybridDynamicsWorld : public RealTimeWorldNode
+{
+public:
+  HybridDynamicsWorld(const WorldPtr& world) : RealTimeWorldNode(world) {}
+
+  void customPreStep() override
+  {
+    SkeletonPtr skel = mWorld->getSkeleton(1);
+
+    std::size_t index0
+        = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
+    std::size_t index1
+        = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);
+    std::size_t index2
+        = skel->getJoint("j_forearm_left")->getIndexInSkeleton(0);
+    std::size_t index3
+        = skel->getJoint("j_forearm_right")->getIndexInSkeleton(0);
+
+    std::size_t index6 = skel->getJoint("j_shin_left")->getIndexInSkeleton(0);
+    std::size_t index7 = skel->getJoint("j_shin_right")->getIndexInSkeleton(0);
+
+    skel->setCommand(index0, 1.0 * std::sin(mWorld->getTime() * 4.0));
+    skel->setCommand(index1, -1.0 * std::sin(mWorld->getTime() * 4.0));
+    skel->setCommand(index2, 0.8 * std::sin(mWorld->getTime() * 4.0));
+    skel->setCommand(index3, 0.8 * std::sin(mWorld->getTime() * 4.0));
+
+    skel->setCommand(index6, 0.1 * std::sin(mWorld->getTime() * 2.0));
+    skel->setCommand(index7, 0.1 * std::sin(mWorld->getTime() * 2.0));
+  }
 };
 
 int main(int argc, char* argv[])
 {
   // Create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/ground.skel");
+  WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  // Set collision detector type
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    myWorld->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+  SkeletonPtr skel = myWorld->getSkeleton(1);
+
+  std::vector<std::size_t> genCoordIds;
+  genCoordIds.push_back(1);
+  genCoordIds.push_back(6);  // left hip
+  genCoordIds.push_back(9);  // left knee
+  genCoordIds.push_back(10); // left ankle
+  genCoordIds.push_back(13); // right hip
+  genCoordIds.push_back(16); // right knee
+  genCoordIds.push_back(17); // right ankle
+  genCoordIds.push_back(21); // lower back
+  Eigen::VectorXd initConfig(8);
+  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
+  skel->setPositions(genCoordIds, initConfig);
+
+  Joint* joint0 = skel->getJoint(0);
+  joint0->setActuatorType(Joint::PASSIVE);
+  for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i) {
+    Joint* joint = skel->getJoint(i);
+    joint->setActuatorType(Joint::VELOCITY);
   }
 
   // Create event handler
-  auto handler = new AddDeleteSkelsEventHandler(myWorld);
+  auto handler = new HybridDynamicsEventHandler(myWorld);
 
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<RealTimeWorldNode> node = new RealTimeWorldNode(myWorld);
+  // Create a custom WorldNode with hybrid dynamics behavior
+  ::osg::ref_ptr<HybridDynamicsWorld> node = new HybridDynamicsWorld(myWorld);
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
@@ -140,8 +163,7 @@ int main(int argc, char* argv[])
   viewer.addEventHandler(handler);
 
   // Print instructions
-  viewer.addInstructionText("'q': spawn a random cube\n");
-  viewer.addInstructionText("'w': delete a spawned cube\n");
+  viewer.addInstructionText("'h': toggle harness on/off\n");
   viewer.addInstructionText("space bar: simulation on/off\n");
   std::cout << viewer.getInstructions() << std::endl;
 
@@ -152,7 +174,7 @@ int main(int argc, char* argv[])
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.0f, 3.0f, 3.0f),
       ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+      ::osg::Vec3(0.0f, 1.0f, 0.0f));
 
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting

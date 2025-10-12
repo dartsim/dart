@@ -19,8 +19,10 @@ add_subdirectory(empty)
 add_subdirectory(hardcoded_design)
 add_subdirectory(heightmap)
 add_subdirectory(human_joint_limits)
+add_subdirectory(hybrid_dynamics)
 add_subdirectory(hubo_puppet)
 add_subdirectory(imgui)
+add_subdirectory(joint_constraints)
 add_subdirectory(operational_space_control)
 if(HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
@@ -32,10 +34,8 @@ add_subdirectory(rigid_shapes)
 add_subdirectory(simple_frames)
 add_subdirectory(soft_bodies)
 add_subdirectory(tinkertoy)
+add_subdirectory(vehicle)
 add_subdirectory(wam_ikfast)
 
 # MJCF model based examples
 add_subdirectory(fetch)
-
-# Deprecated examples
-add_subdirectory(deprecated_examples)

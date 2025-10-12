@@ -60,7 +60,10 @@ class Controller
 public:
   /// Constructor
   Controller(const SkeletonPtr& pendulum)
-    : mPendulum(pendulum), mBallConstraint(nullptr), mPositiveSign(true), mBodyForce(false)
+    : mPendulum(pendulum),
+      mBallConstraint(nullptr),
+      mPositiveSign(true),
+      mBodyForce(false)
   {
     // Find the Skeleton named "pendulum"
     assert(mPendulum != nullptr);
@@ -395,7 +398,8 @@ int main(int argc, char* argv[])
   auto handler = new PendulumEventHandler(world, controller.get());
 
   // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, controller.get());
+  ::osg::ref_ptr<CustomWorldNode> node
+      = new CustomWorldNode(world, controller.get());
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
@@ -413,8 +417,10 @@ int main(int argc, char* argv[])
   viewer.addInstructionText("'s': Decrease joint spring stiffness");
   viewer.addInstructionText("'e': Increase joint damping");
   viewer.addInstructionText("'d': Decrease joint damping");
-  viewer.addInstructionText("'r': add/remove constraint on the end of the chain");
-  viewer.addInstructionText("'f': switch between applying joint torques and body forces");
+  viewer.addInstructionText(
+      "'r': add/remove constraint on the end of the chain");
+  viewer.addInstructionText(
+      "'f': switch between applying joint torques and body forces");
   std::cout << viewer.getInstructions() << std::endl;
 
   // Set up the window to be 640x480

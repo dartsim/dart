@@ -42,8 +42,9 @@
 
 #include "HardcodedEventHandler.hpp"
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
+#include <dart/dart.hpp>
 
 #include <iostream>
 
@@ -146,7 +147,8 @@ int main(int argc, char* argv[])
 
   // Set wireframe mode to match the original GLUT example
   worldNode->getStateSet()->setAttributeAndModes(
-      new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE),
+      new osg::PolygonMode(
+          osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE),
       osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
 
   // Add world node to viewer

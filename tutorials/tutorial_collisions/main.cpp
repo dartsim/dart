@@ -478,8 +478,12 @@ int main(int argc, char* argv[])
   viewer.addInstructionText("'5': toss a ring of rigid bodies\n");
   viewer.addInstructionText("'d': delete the oldest object\n");
   viewer.addInstructionText("'r': toggle randomness\n");
-  viewer.addInstructionText("\nWarning: Let objects settle before tossing a new one, or the simulation could explode.\n");
-  viewer.addInstructionText("         If the simulation freezes, you may need to force quit the application.\n");
+  viewer.addInstructionText(
+      "\nWarning: Let objects settle before tossing a new one, or the "
+      "simulation could explode.\n");
+  viewer.addInstructionText(
+      "         If the simulation freezes, you may need to force quit the "
+      "application.\n");
   std::cout << viewer.getInstructions() << std::endl;
 
   // Set up the window to be 640x480

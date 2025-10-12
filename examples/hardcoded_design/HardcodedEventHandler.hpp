@@ -33,8 +33,10 @@
 #ifndef EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 #define EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
+
+#include <dart/dart.hpp>
+
 #include <osgGA/GUIEventHandler>
 
 class HardcodedEventHandler : public osgGA::GUIEventHandler
@@ -42,7 +44,8 @@ class HardcodedEventHandler : public osgGA::GUIEventHandler
 public:
   explicit HardcodedEventHandler(dart::dynamics::SkeletonPtr _skel);
 
-  bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override;
+  bool handle(
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override;
 
 protected:
   dart::dynamics::SkeletonPtr mSkel;

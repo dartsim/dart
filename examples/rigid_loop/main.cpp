@@ -31,7 +31,9 @@
  */
 
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
 #include <dart/dart.hpp>
 
 using namespace dart;
@@ -110,7 +112,8 @@ int main(int argc, char* argv[])
 
   // Print instructions
   std::cout << "Rigid Loop Chain Simulation\n";
-  std::cout << "Red links are connected by a ball joint constraint to form a closed loop\n";
+  std::cout << "Red links are connected by a ball joint constraint to form a "
+               "closed loop\n";
   std::cout << "Space bar: Play/pause simulation\n";
   std::cout << "ESC: Exit\n" << std::endl;
 

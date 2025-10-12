@@ -31,7 +31,9 @@
  */
 
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
 #include <dart/dart.hpp>
 
 class RigidChainWorldNode : public dart::gui::osg::RealTimeWorldNode

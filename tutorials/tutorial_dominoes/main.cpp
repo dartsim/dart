@@ -354,16 +354,23 @@ int main(int argc, char* argv[])
   viewer.addEventHandler(handler);
 
   // Print instructions
-  viewer.addInstructionText("Before simulation has started, you can create new dominoes:\n");
+  viewer.addInstructionText(
+      "Before simulation has started, you can create new dominoes:\n");
   viewer.addInstructionText("'w': Create new domino angled forward\n");
   viewer.addInstructionText("'q': Create new domino angled to the left\n");
   viewer.addInstructionText("'e': Create new domino angled to the right\n");
   viewer.addInstructionText("'d': Delete the last domino that was created\n");
   viewer.addInstructionText("\n");
-  viewer.addInstructionText("spacebar: Begin simulation (you can no longer create or remove dominoes)\n");
+  viewer.addInstructionText(
+      "spacebar: Begin simulation (you can no longer create or remove "
+      "dominoes)\n");
   viewer.addInstructionText("'p': replay simulation\n");
-  viewer.addInstructionText("'f': Push the first domino with a disembodied force so that it falls over\n");
-  viewer.addInstructionText("'r': Push the first domino with the manipulator so that it falls over\n");
+  viewer.addInstructionText(
+      "'f': Push the first domino with a disembodied force so that it falls "
+      "over\n");
+  viewer.addInstructionText(
+      "'r': Push the first domino with the manipulator so that it falls "
+      "over\n");
   viewer.addInstructionText("'v': Turn contact force visualization on/off\n");
   std::cout << viewer.getInstructions() << std::endl;
 
