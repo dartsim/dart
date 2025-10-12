@@ -168,9 +168,9 @@ test-py = { cmd = """
         --target pytest
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-test-all = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+test-all-comprehensive = { cmd = """
+    python scripts/test_all.py
+""" }
 
 config-coverage = { cmd = """
     cmake \
@@ -460,6 +460,10 @@ api-docs-clean-gh = { cmd = """
 api-docs-serve-gh = { cmd = """
     echo "GitHub Pages API documentation at: http://localhost:8004" && \
     python -m http.server --directory gh-pages 8004
+""" }
+
+test-all = { cmd = """
+    python scripts/test_all.py
 """ }
 
 ################################################################################

@@ -31,9 +31,9 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/common/common.hpp"
-#include "dart/constraint/constraint.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/common/all.hpp"
+#include "dart/constraint/all.hpp"
+#include "dart/dynamics/all.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>

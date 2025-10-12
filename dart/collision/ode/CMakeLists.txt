@@ -24,15 +24,16 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} ODE)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_ode headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/ode.hpp"
-  "dart/collision/ode/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME ode
+  TARGET_DIR "dart/collision/ode/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
   DESTINATION include/dart/collision/ode
   COMPONENT headers
 )

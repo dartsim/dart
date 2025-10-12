@@ -10,15 +10,16 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 dart_get_filename_components(header_names "dynamics headers" ${hdrs})
 # TODO: remove below line once the files are completely removed.
 list(REMOVE_ITEM header_names "MultiSphereShape.hpp")
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp"
-  "dart/dynamics/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME dynamics
+  TARGET_DIR "dart/dynamics/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )

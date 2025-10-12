@@ -64,12 +64,56 @@ endmacro()
 # Generate header file.
 # Usage:
 #   dart_generate_include_header_file(file_path target_dir [headers...])
+#
+# This macro is now deprecated. Use dart_generate_component_headers instead.
 #===============================================================================
 macro(dart_generate_include_header_file file_path target_dir)
   file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
   foreach(header ${ARGN})
     file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
   endforeach()
+endmacro()
+
+#===============================================================================
+# Generate component headers with backward compatibility.
+# Usage:
+#   dart_generate_component_headers(
+#     COMPONENT_NAME component_name
+#     TARGET_DIR target_dir
+#     OUTPUT_DIR output_dir
+#     HEADERS [headers...]
+#   )
+#
+# This macro generates two files:
+#   1. all.hpp - The new meta header that includes all component headers
+#   2. <component_name>.hpp - Deprecated header that includes all.hpp with warning
+#===============================================================================
+macro(dart_generate_component_headers)
+  set(options)
+  set(oneValueArgs COMPONENT_NAME TARGET_DIR OUTPUT_DIR)
+  set(multiValueArgs HEADERS)
+  cmake_parse_arguments(DART_GCH "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  # Generate all.hpp (new header)
+  set(all_hpp_path "${DART_GCH_OUTPUT_DIR}/all.hpp")
+  file(WRITE ${all_hpp_path} "// Automatically generated file by cmake\n\n")
+  foreach(header ${DART_GCH_HEADERS})
+    file(APPEND ${all_hpp_path} "#include \"${DART_GCH_TARGET_DIR}${header}\"\n")
+  endforeach()
+
+  # Generate <component_name>.hpp (deprecated header with backward compatibility)
+  set(deprecated_hpp_path "${DART_GCH_OUTPUT_DIR}/${DART_GCH_COMPONENT_NAME}.hpp")
+  file(WRITE ${deprecated_hpp_path} "// Automatically generated file by cmake\n\n")
+  file(APPEND ${deprecated_hpp_path} "// DEPRECATED: This header is deprecated and will be removed in the next major release.\n")
+  file(APPEND ${deprecated_hpp_path} "// Please use <${DART_GCH_TARGET_DIR}all.hpp> instead of <${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp>\n\n")
+  file(APPEND ${deprecated_hpp_path} "#ifndef DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n")
+  file(APPEND ${deprecated_hpp_path} "#if defined(_MSC_VER)\n")
+  file(APPEND ${deprecated_hpp_path} "#  pragma message(\"Warning: ${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}all.hpp instead.\")\n")
+  file(APPEND ${deprecated_hpp_path} "#elif defined(__GNUC__) || defined(__clang__)\n")
+  file(APPEND ${deprecated_hpp_path} "#  warning \"${DART_GCH_TARGET_DIR}${DART_GCH_COMPONENT_NAME}.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}all.hpp instead.\"\n")
+  file(APPEND ${deprecated_hpp_path} "#endif\n")
+  file(APPEND ${deprecated_hpp_path} "#endif // DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n\n")
+  file(APPEND ${deprecated_hpp_path} "#include \"${DART_GCH_TARGET_DIR}all.hpp\"\n")
 endmacro()
 
 #===============================================================================
