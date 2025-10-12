@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-25 19:23-0800\n"
+"POT-Creation-Date: 2023-02-26 00:39-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -21,12 +21,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.11.0\n"
 
-#: ../../license.rst:2 85eebff5226040969fff826ab4337de9
-msgid "License"
-msgstr "라이센스"
+#: ../../developer_guide/migration_guide.rst:2 7a7a008334f24bf9ae92da86f46792ef
+msgid "Migration Guide"
+msgstr ""
 
-#: ../../license.rst:4 1b32fb95dcce4631905be46bdde067b5
-msgid ""
-"DART is licensed under the 2-Clause BSD License. See the `LICENSE "
-"<https://github.com/dartsim/dart/blob/main/LICENSE>`_ file for details."
-msgstr "DART는 2-Clause BSD 라이센스로 라이센스되어 있습니다. 자세한 내용은 `LICENSE <https://github.com/dartsim/dart/blob/main/LICENSE>`_ 파일을 참조하세요."
+#: ../../developer_guide/migration_guide.rst:5 72c0b8ff3eb54e58ba4d0edaf6d57217
+msgid "From DART 6 to DART 7"
+msgstr ""
+
+#: ../../developer_guide/migration_guide.rst:7 f0fe9295876346d79a6a560499a6272d
+msgid "TODO"
+msgstr ""
+

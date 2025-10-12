@@ -14,12 +14,19 @@ cmake = ">=4.0.2,<5"
 doxygen = ">=1.13.2,<2"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
+jinja2 = ">=3.1.2"
+myst-parser = "*"
 ninja = ">=1.12.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.3.5,<9"
 setuptools = ">=80.1.0,<81"
+sphinx = "*"
+sphinx-copybutton = "*"
+sphinx-intl = "*"
+sphinx_rtd_theme = "*"
+sphinx-tabs = "*"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [dependencies]
@@ -54,6 +61,7 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -199,6 +207,11 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+py-atlas-puppet = { cmd = """
+    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
+    python python/examples/atlas_puppet/main.py
+""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
+
 bm = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -332,6 +345,26 @@ config-install = { cmd = """
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 tracy = { cmd = "tracy-profiler" }
+
+docs-build = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html . _build/html
+""" }
+
+docs-build-ko = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko
+""" }
+
+docs-serve = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html 8000
+""", depends-on = ["docs-build"] }
+
+docs-serve-ko = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html/ko 8001
+""", depends-on = ["docs-build-ko"] }
+
+docs-clean = { cmd = """
+    rm -rf docs/readthedocs/_build
+""" }
 
 ################################################################################
 # linux-64

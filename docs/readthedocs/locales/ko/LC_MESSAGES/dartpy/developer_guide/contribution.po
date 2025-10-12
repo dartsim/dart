@@ -1,0 +1,93 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) Copyright (c) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART: Dynamic
+# Animation and Robotics Toolkit package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
+"7.0.0-alpha0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-26 00:00-0800\n"
+"PO-Revision-Date: 2025-01-26 00:00-0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../dartpy/developer_guide/contribution.rst:2
+msgid "Contributing to dartpy"
+msgstr "dartpy에 기여하기"
+
+#: ../../dartpy/developer_guide/contribution.rst:4
+msgid ""
+"We welcome contributions to dartpy! For general contribution guidelines, please see the "
+":doc:`main contribution guide </dart/developer_guide/contribution>`."
+msgstr ""
+"dartpy에 대한 기여를 환영합니다! 일반적인 기여 가이드라인은 "
+":doc:`메인 기여 가이드 </dart/developer_guide/contribution>`\\ 를 참조하세요."
+
+#: ../../dartpy/developer_guide/contribution.rst:8
+msgid "Python-Specific Guidelines"
+msgstr "Python 전용 가이드라인"
+
+#: ../../dartpy/developer_guide/contribution.rst:10
+msgid "When contributing to dartpy, please also consider these Python-specific guidelines:"
+msgstr "dartpy에 기여할 때 다음 Python 전용 가이드라인도 고려하세요:"
+
+#: ../../dartpy/developer_guide/contribution.rst:13
+msgid "Code Style"
+msgstr "코드 스타일"
+
+#: ../../dartpy/developer_guide/contribution.rst:15
+msgid "Follow PEP 8 style guidelines for Python code"
+msgstr "Python 코드는 PEP 8 스타일 가이드라인을 따르세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:16
+msgid "Use type hints where appropriate"
+msgstr "적절한 경우 타입 힌트를 사용하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:17
+msgid "Write clear docstrings for all public functions and classes"
+msgstr "모든 공개 함수 및 클래스에 대해 명확한 docstring을 작성하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:20
+msgid "Testing"
+msgstr "테스트"
+
+#: ../../dartpy/developer_guide/contribution.rst:22
+msgid "Add tests for new functionality in the `python/tests` directory"
+msgstr "`python/tests` 디렉토리에 새로운 기능에 대한 테스트를 추가하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:23
+msgid "Ensure all existing tests pass before submitting a pull request"
+msgstr "풀 리퀘스트를 제출하기 전에 모든 기존 테스트가 통과하는지 확인하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:24
+msgid "Run tests using: ``pixi run test-dartpy``"
+msgstr "다음을 사용하여 테스트를 실행하세요: ``pixi run test-dartpy``"
+
+#: ../../dartpy/developer_guide/contribution.rst:27
+msgid "Documentation"
+msgstr "문서화"
+
+#: ../../dartpy/developer_guide/contribution.rst:29
+msgid "Update or add documentation for any new features"
+msgstr "새로운 기능에 대한 문서를 업데이트하거나 추가하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:30
+msgid "Include usage examples in docstrings"
+msgstr "docstring에 사용 예제를 포함하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:31
+msgid "Update relevant tutorial or example files"
+msgstr "관련 튜토리얼 또는 예제 파일을 업데이트하세요"
+
+#: ../../dartpy/developer_guide/contribution.rst:33
+msgid "For more information, see the :doc:`main contribution guide </dart/developer_guide/contribution>`."
+msgstr "자세한 정보는 :doc:`메인 기여 가이드 </dart/developer_guide/contribution>`\\ 를 참조하세요."
