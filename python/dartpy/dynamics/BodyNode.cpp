@@ -924,23 +924,22 @@ void BodyNode(py::module& m)
           ::py::arg("name"))
       .def(
           "createEndEffector",
-          +[](dart::dynamics::BodyNode* self)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::BodyNode* self) -> dart::dynamics::EndEffector* {
             return self->createEndEffector();
           },
           ::py::return_value_policy::reference_internal)
       .def(
           "createEndEffector",
-          +[](dart::dynamics::BodyNode* self, const std::string& name)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::BodyNode* self,
+              const std::string& name) -> dart::dynamics::EndEffector* {
             return self->createEndEffector(name);
           },
           ::py::return_value_policy::reference_internal,
           ::py::arg("name"))
       .def(
           "getEndEffector",
-          +[](dart::dynamics::BodyNode* self, std::size_t index)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::BodyNode* self,
+              std::size_t index) -> dart::dynamics::EndEffector* {
             return self->getEndEffector(index);
           },
           ::py::return_value_policy::reference_internal,
