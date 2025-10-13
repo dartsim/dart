@@ -168,10 +168,6 @@ test-py = { cmd = """
         --target pytest
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-test-all-comprehensive = { cmd = """
-    python scripts/test_all.py
-""" }
-
 config-coverage = { cmd = """
     cmake \
         -G Ninja \
