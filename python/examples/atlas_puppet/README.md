@@ -206,6 +206,74 @@ The Python implementation achieves **100% feature parity** through:
 
 The Python version is **functionally equivalent** to the C++ version and demonstrates that dartpy can support sophisticated interactive robotics applications.
 
+## Debugging IK Issues
+
+### C++ Debug Logging
+
+The IK solver has comprehensive C++ debug logging in `/home/jeongseok/dev/dartsim/dart/dart/dynamics/HierarchicalIK.cpp`:
+
+- Logs skeleton state before/after solving
+- Logs solution from optimizer
+- Warns if positions don't change after `setPositions()`
+- Logs IK hierarchy structure
+
+### Python Runtime Log Level Control
+
+Control C++ logging from Python (no rebuild required):
+
+```python
+import dartpy as dart
+
+# Enable INFO level logging to see C++ debug output
+dart.common.set_log_level("info")
+print(f"Current log level: {dart.common.get_log_level()}")
+
+# Now all DART_INFO and DART_WARN logs will be visible
+```
+
+**Available log levels:**
+- `dart.common.LOG_LEVEL_TRACE` - Most verbose
+- `dart.common.LOG_LEVEL_DEBUG` - Debug information
+- `dart.common.LOG_LEVEL_INFO` - Informational messages (default for debugging)
+- `dart.common.LOG_LEVEL_WARN` - Warnings only
+- `dart.common.LOG_LEVEL_ERROR` - Errors only
+- `dart.common.LOG_LEVEL_CRITICAL` - Critical failures only
+- `dart.common.LOG_LEVEL_OFF` - Disable all logging
+
+### Testing the Logging
+
+Run the minimal test script:
+```bash
+cd /home/jeongseok/dev/dartsim/dart
+BUILD_TYPE=Release PIXI_ENVIRONMENT_NAME=default \
+PYTHONPATH=build/default/cpp/Release/python/dartpy \
+pixi run python python/examples/atlas_puppet/test_ik_with_logging.py
+```
+
+This will show C++ log messages like:
+```
+[warning] >>> Solution is IDENTICAL to original positions! <<<
+[warning] >>> NO POSITIONS CHANGED! <<<
+```
+
+### Debugging Your IK Code
+
+To debug IK issues in your own code, add logging at the start:
+
+```python
+import dartpy as dart
+dart.common.set_log_level("info")  # Add this line before IK operations
+
+# Your IK code here...
+atlas.getIK().solveAndApply(True)  # Will now show detailed C++ logs
+```
+
+The logs will help identify:
+- Whether the optimizer finds a solution
+- Whether `setPositions()` is called
+- Whether skeleton positions actually change
+- Potential Python binding issues
+
 ## Credits
 
 This implementation represents a major milestone in dartpy capabilities:

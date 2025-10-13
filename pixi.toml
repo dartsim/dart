@@ -159,7 +159,7 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
-py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy", OSG_GL_CONTEXT_VERSION = "3.3", MESA_GL_VERSION_OVERRIDE = "3.3", LIBGL_ALWAYS_SOFTWARE = "0" } }
 
 py-ex-hello-world = { depends-on = [{ task = "py-ex", args = ["hello_world"] }] }
 
@@ -250,7 +250,7 @@ ex-atlas-puppet = { cmd = """
         --target atlas_puppet \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/atlas_puppet
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release", OSG_GL_CONTEXT_VERSION = "3.3", MESA_GL_VERSION_OVERRIDE = "3.3" } }
 
 ex-atlas-simbicon = { cmd = """
     cmake \
