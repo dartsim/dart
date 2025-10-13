@@ -52,8 +52,7 @@ void BalanceConstraint(py::module& m)
   ::py::enum_<dart::constraint::BalanceConstraint::ErrorMethod_t>(
       bc, "ErrorMethod")
       .value(
-          "FROM_CENTROID",
-          dart::constraint::BalanceConstraint::FROM_CENTROID)
+          "FROM_CENTROID", dart::constraint::BalanceConstraint::FROM_CENTROID)
       .value("FROM_EDGE", dart::constraint::BalanceConstraint::FROM_EDGE)
       .value(
           "OPTIMIZE_BALANCE",
@@ -64,8 +63,7 @@ void BalanceConstraint(py::module& m)
   ::py::enum_<dart::constraint::BalanceConstraint::BalanceMethod_t>(
       bc, "BalanceMethod")
       .value(
-          "SHIFT_SUPPORT",
-          dart::constraint::BalanceConstraint::SHIFT_SUPPORT)
+          "SHIFT_SUPPORT", dart::constraint::BalanceConstraint::SHIFT_SUPPORT)
       .value("SHIFT_COM", dart::constraint::BalanceConstraint::SHIFT_COM)
       .export_values();
 
@@ -96,29 +94,23 @@ void BalanceConstraint(py::module& m)
           &dart::constraint::BalanceConstraint::getBalanceMethod)
       .def(
           "setOptimizationTolerance",
-          &dart::constraint::BalanceConstraint::
-              setOptimizationTolerance,
+          &dart::constraint::BalanceConstraint::setOptimizationTolerance,
           ::py::arg("tol"))
       .def(
           "getOptimizationTolerance",
-          &dart::constraint::BalanceConstraint::
-              getOptimizationTolerance)
+          &dart::constraint::BalanceConstraint::getOptimizationTolerance)
       .def(
           "setPseudoInverseDamping",
-          &dart::constraint::BalanceConstraint::
-              setPseudoInverseDamping,
+          &dart::constraint::BalanceConstraint::setPseudoInverseDamping,
           ::py::arg("damping"))
       .def(
           "getPseudoInverseDamping",
-          &dart::constraint::BalanceConstraint::
-              getPseudoInverseDamping)
+          &dart::constraint::BalanceConstraint::getPseudoInverseDamping)
       .def(
           "getLastError",
           &dart::constraint::BalanceConstraint::getLastError,
           ::py::return_value_policy::reference_internal)
-      .def(
-          "clearCaches",
-          &dart::constraint::BalanceConstraint::clearCaches);
+      .def("clearCaches", &dart::constraint::BalanceConstraint::clearCaches);
 }
 
 } // namespace python
