@@ -105,6 +105,7 @@ If you use DART in an academic publication, please consider citing this
 
    dartpy/developer_guide/build
    dartpy/developer_guide/contribution
+   dartpy/developer_guide/api_docs
 
 .. toctree::
    :maxdepth: 1
@@ -113,6 +114,7 @@ If you use DART in an academic publication, please consider citing this
 
    dart/user_guide/installation
    dart/user_guide/tutorials
+   dart/cpp_api_reference
 
 .. toctree::
    :maxdepth: 1

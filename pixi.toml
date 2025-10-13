@@ -418,6 +418,50 @@ docs-clean = { cmd = """
     rm -rf docs/readthedocs/_build
 """ }
 
+# Build C++ API documentation (Doxygen)
+api-docs-cpp = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE --target docs
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+# Build Python API documentation (Sphinx)
+api-docs-py = { cmd = """
+    export PYTHONPATH="$PWD/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PYTHONPATH" && \
+    cd docs/python_api && \
+    rm -rf _build && \
+    sphinx-build -b html . _build/html
+""", depends-on = ["build-py-dev"], env = { BUILD_TYPE = "Release" } }
+
+# Build both C++ and Python API docs locally
+api-docs-build = { depends-on = ["api-docs-cpp", "api-docs-py"] }
+
+# Serve C++ API documentation
+api-docs-serve-cpp = { cmd = """
+    echo "C++ API documentation at: http://localhost:8002" && \
+    python -m http.server --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/docs/doxygen/html 8002
+""", depends-on = ["api-docs-cpp"], env = { BUILD_TYPE = "Release" } }
+
+# Serve Python API documentation
+api-docs-serve-py = { cmd = """
+    echo "Python API documentation at: http://localhost:8003" && \
+    python -m http.server --directory docs/python_api/_build/html 8003
+""", depends-on = ["api-docs-py"] }
+
+# Test the full GitHub Pages API doc build process locally (WARNING: clones full repo)
+api-docs-test-gh = { cmd = """
+    python scripts/build_docs.py build --verbose
+""" }
+
+# Clean GitHub Pages API doc build artifacts
+api-docs-clean-gh = { cmd = """
+    python scripts/build_docs.py clean
+""" }
+
+# Serve GitHub Pages API docs locally (after api-docs-test-gh)
+api-docs-serve-gh = { cmd = """
+    echo "GitHub Pages API documentation at: http://localhost:8004" && \
+    python -m http.server --directory gh-pages 8004
+""" }
+
 ################################################################################
 # linux-64
 ################################################################################

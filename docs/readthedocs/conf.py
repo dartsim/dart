@@ -3,24 +3,66 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import os
-import sys
+from pathlib import Path
 
-# Configure Python path for dartpy autodoc
-# Use compiled dartpy module when PYTHONPATH is set (local builds with pixi)
-pythonpath_env = os.environ.get('PYTHONPATH', '')
-if pythonpath_env:
-    # Local build - use compiled dartpy module
-    for path in pythonpath_env.split(':'):
-        if path and os.path.exists(path):
-            sys.path.insert(0, path)
-    print("✓ Using compiled dartpy from PYTHONPATH")
-    print("  Full Python API documentation will be generated")
+# Note: API documentation is hosted on GitHub Pages, not Read the Docs
+# This configuration file is for user guides, tutorials, and developer documentation only
+
+# Read DART version from package.xml
+def get_dart_version():
+    """Read DART version from package.xml."""
+    import xml.etree.ElementTree as ET
+    package_xml = Path(__file__).parent.parent.parent / 'package.xml'
+    try:
+        tree = ET.parse(package_xml)
+        root = tree.getroot()
+        version_elem = root.find('version')
+        if version_elem is not None and version_elem.text:
+            # Return version with 'v' prefix to match GitHub Pages structure
+            return f"v{version_elem.text.strip()}"
+    except (FileNotFoundError, ET.ParseError):
+        pass
+    # Fallback to latest stable version
+    return 'v6.13.2'
+
+# Read available API documentation versions from docs_versions.txt
+def get_api_versions():
+    """Read available API versions from docs_versions.txt."""
+    versions_file = Path(__file__).parent.parent.parent / 'scripts' / 'docs_versions.txt'
+    versions = []
+    try:
+        with open(versions_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('DART '):
+                    versions.append(line)
+    except FileNotFoundError:
+        # Fallback if file not found
+        versions = ['v6.13.2', 'v6.12.2', 'v6.11.1']
+    return versions
+
+# Get current DART version from package.xml
+current_version = get_dart_version()
+
+# Get list of all available API versions
+api_versions = get_api_versions()
+
+# Use current version if available, otherwise use latest from docs_versions.txt
+if current_version in api_versions:
+    api_version_to_link = current_version
 else:
-    # Read the Docs build - dartpy cannot be compiled
-    print("⚠ WARNING: PYTHONPATH not set - dartpy module not available")
-    print("  Python API documentation will be empty on Read the Docs")
-    print("  This is expected until dartpy wheels are published to PyPI")
+    # For development versions, link to latest stable
+    api_version_to_link = api_versions[0] if api_versions else 'v6.13.2'
+
+# Make these available to RST files via html_context
+html_context = {
+    'current_version': current_version,
+    'api_versions': api_versions,
+    'api_version_to_link': api_version_to_link,
+    'cpp_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}/',
+    'python_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}-py/',
+    'gh_pages_url': 'https://dartsim.github.io/dart/',
+}
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
