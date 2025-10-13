@@ -109,7 +109,7 @@ build-debug = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target all
-""", depends-on = ["config"], env = { BUILD_TYPE = "Debug" } }
+""", depends-on = ["config-debug"], env = { BUILD_TYPE = "Debug" } }
 
 config-debug = { cmd = """
     cmake \
