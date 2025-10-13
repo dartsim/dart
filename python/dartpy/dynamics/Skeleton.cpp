@@ -559,6 +559,20 @@ void Skeleton(py::module& m)
             return self->getIK();
           })
       .def(
+          "getIK",
+          +[](dart::dynamics::Skeleton* self, bool createIfNull)
+              -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
+            return std::const_pointer_cast<dart::dynamics::WholeBodyIK>(
+                self->getIK(createIfNull));
+          },
+          ::py::arg("createIfNull") = false)
+      .def(
+          "getOrCreateIK",
+          +[](dart::dynamics::Skeleton* self)
+              -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
+            return self->getOrCreateIK();
+          })
+      .def(
           "clearIK",
           +[](dart::dynamics::Skeleton* self)
               -> void { return self->clearIK(); })

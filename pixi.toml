@@ -148,6 +148,8 @@ py-ex-rigid-chain = { depends-on = [{ task = "py-ex", args = ["rigid_chain"] }] 
 
 py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
 
+py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
+
 py-ex-biped-stand = { depends-on = [{ task = "py-ex", args = ["biped_stand"] }] }
 
 py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_pointcloud"] }] }
@@ -246,11 +248,6 @@ ex-hello-world = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-py-atlas-puppet = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
-""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
