@@ -13,18 +13,19 @@ list(REMOVE_ITEM header_names "Option.hpp" "Result.hpp")
 set(
   header_names
   ${header_names}
-  dart/dart.hpp
-  fcl/fcl.hpp
+  dart/all.hpp
+  fcl/all.hpp
 )
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/collision.hpp"
-  "dart/collision/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME collision
+  TARGET_DIR "dart/collision/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
   DESTINATION include/dart/collision
   COMPONENT headers
 )

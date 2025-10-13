@@ -52,16 +52,17 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/render.hpp")
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/osg.hpp"
-  "dart/gui/osg/"
-  ${header_names}
+list(APPEND header_names "render/all.hpp")
+dart_generate_component_headers(
+  COMPONENT_NAME osg
+  TARGET_DIR "dart/gui/osg/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )

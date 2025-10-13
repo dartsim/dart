@@ -104,6 +104,30 @@ build = { cmd = """
         --target all
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+build-debug = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target all
+""", depends-on = ["config-debug"], env = { BUILD_TYPE = "Debug" } }
+
+config-debug = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+
 build-tests = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -166,10 +190,6 @@ test-py = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         -j \
         --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-test-all = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 config-coverage = { cmd = """
@@ -460,6 +480,10 @@ api-docs-clean-gh = { cmd = """
 api-docs-serve-gh = { cmd = """
     echo "GitHub Pages API documentation at: http://localhost:8004" && \
     python -m http.server --directory gh-pages 8004
+""" }
+
+test-all = { cmd = """
+    python scripts/test_all.py
 """ }
 
 ################################################################################

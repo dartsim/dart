@@ -33,7 +33,7 @@
 #include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
 #include "dart/dart.hpp"
-#include "dart/utils/utils.hpp"
+#include "dart/utils/all.hpp"
 
 #include <gtest/gtest.h>
 

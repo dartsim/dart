@@ -114,6 +114,7 @@ If you use DART in an academic publication, please consider citing this
 
    dart/user_guide/installation
    dart/user_guide/tutorials
+   dart/user_guide/migration_guide
    dart/cpp_api_reference
 
 .. toctree::
@@ -124,7 +125,6 @@ If you use DART in an academic publication, please consider citing this
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
-   dart/developer_guide/migration_guide
 
 .. toctree::
    :maxdepth: 1

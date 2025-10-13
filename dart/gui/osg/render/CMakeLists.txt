@@ -6,15 +6,16 @@ set(dart_gui_osg_hdrs ${dart_gui_osg_hdrs} ${hdrs} PARENT_SCOPE)
 set(dart_gui_osg_srcs ${dart_gui_osg_srcs} ${srcs} PARENT_SCOPE)
 
 dart_get_filename_components(header_names "gui osg render headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/render.hpp"
-  "dart/gui/osg/render/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME render
+  TARGET_DIR "dart/gui/osg/render/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
   DESTINATION include/dart/gui/osg/render
   COMPONENT headers
 )
