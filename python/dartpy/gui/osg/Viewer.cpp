@@ -53,7 +53,9 @@ void Viewer(py::module& m)
           +[](osgViewer::View* self, osgGA::GUIEventHandler* eventHandler) {
             self->addEventHandler(eventHandler);
           },
-          ::py::arg("eventHandler"));
+          ::py::arg("eventHandler"),
+          ::py::keep_alive<1, 2>()); // Keep eventHandler alive as long as self
+                                     // is alive
 
   auto viewer
       = ::py::class_<
@@ -344,7 +346,8 @@ void Viewer(py::module& m)
             .def(
                 "run",
                 +[](dart::gui::osg::Viewer* self)
-                    -> int { return self->run(); })
+                    -> int { return self->run(); },
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "frame", +[](dart::gui::osg::Viewer* self) { self->frame(); })
             .def(

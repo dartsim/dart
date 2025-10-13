@@ -159,7 +159,7 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
         elif key_char == 'R':
             print("Optimizing posture...")
             for _ in range(10):
-                self.atlas.getOrCreateIK().solveAndApply(True)
+                self.atlas.getIK(True).solveAndApply(True)
             print("Posture optimized!")
             return True
 
@@ -186,73 +186,133 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
 
     def customPreRefresh(self):
         """Solve IK and handle teleoperation before rendering each frame."""
-        # Handle keyboard movement
-        any_movement = any(self.move_components.values())
+        try:
+            # Handle keyboard movement
+            any_movement = any(self.move_components.values())
 
-        if any_movement:
-            # Get current root transform
-            free_joint = self.atlas.getJoint(0)
-            old_tf = free_joint.getRelativeTransform()
-            new_tf = dart.math.Isometry3.Identity()
+            if any_movement:
+                try:
+                    # Get current root transform
+                    free_joint = self.atlas.getJoint(0)
+                    old_tf = free_joint.getRelativeTransform()
+                    new_tf = dart.math.Isometry3.Identity()
 
-            # Get forward and left directions from current orientation
-            forward = old_tf.rotation()[:, 0]  # X axis
-            left = old_tf.rotation()[:, 1]     # Y axis
-            up = np.array([0, 0, 1])           # Z axis (world up)
+                    # Get forward and left directions from current orientation
+                    forward = old_tf.rotation()[:, 0]  # X axis
+                    left = old_tf.rotation()[:, 1]     # Y axis
+                    up = np.array([0, 0, 1])           # Z axis (world up)
 
-            # Movement parameters
-            linear_step = 0.01
-            elevation_step = 0.2 * linear_step
-            rotational_step = 2.0 * np.pi / 180.0
+                    # Movement parameters
+                    linear_step = 0.01
+                    elevation_step = 0.2 * linear_step
+                    rotational_step = 2.0 * np.pi / 180.0
 
-            # Apply movements
-            translation = np.zeros(3)
-            rotation = dart.math.Isometry3.Identity()
+                    # Apply movements
+                    translation = np.zeros(3)
+                    rotation = dart.math.Isometry3.Identity()
 
-            if self.move_components['W']:
-                translation += linear_step * forward
-            if self.move_components['S']:
-                translation -= linear_step * forward
-            if self.move_components['A']:
-                translation += linear_step * left
-            if self.move_components['D']:
-                translation -= linear_step * left
-            if self.move_components['F']:
-                translation += elevation_step * up
-            if self.move_components['Z']:
-                translation -= elevation_step * up
+                    if self.move_components['W']:
+                        translation += linear_step * forward
+                    if self.move_components['S']:
+                        translation -= linear_step * forward
+                    if self.move_components['A']:
+                        translation += linear_step * left
+                    if self.move_components['D']:
+                        translation -= linear_step * left
+                    if self.move_components['F']:
+                        translation += elevation_step * up
+                    if self.move_components['Z']:
+                        translation -= elevation_step * up
 
-            if self.move_components['Q']:
-                rot_matrix = dart.math.eulerXYZToMatrix([0, 0, rotational_step])
-                rotation.set_rotation(rot_matrix)
-            if self.move_components['E']:
-                rot_matrix = dart.math.eulerXYZToMatrix([0, 0, -rotational_step])
-                rotation.set_rotation(rot_matrix)
+                    if self.move_components['Q']:
+                        rot_matrix = dart.math.eulerXYZToMatrix([0, 0, rotational_step])
+                        rotation.set_rotation(rot_matrix)
+                    if self.move_components['E']:
+                        rot_matrix = dart.math.eulerXYZToMatrix([0, 0, -rotational_step])
+                        rotation.set_rotation(rot_matrix)
 
-            # Build new transform: first translate, then rotate around origin, then add old position
-            new_tf.set_translation(translation)
-            new_tf.set_rotation(rotation.rotation() @ old_tf.rotation())
-            new_tf.set_translation(new_tf.translation() + old_tf.translation())
+                    # Build new transform: first translate, then rotate around origin, then add old position
+                    new_tf.set_translation(translation)
+                    new_tf.set_rotation(rotation.rotation() @ old_tf.rotation())
+                    new_tf.set_translation(new_tf.translation() + old_tf.translation())
 
-            # Apply to free joint
-            positions = np.zeros(6)
-            positions[0:3] = new_tf.translation()
-            # Convert rotation to axis-angle for free joint
-            rot_vec = dart.math.matrixToEulerXYZ(new_tf.rotation())
-            positions[3:6] = rot_vec
-            free_joint.setPositions(positions)
+                    # Apply to free joint
+                    positions = np.zeros(6)
+                    positions[0:3] = new_tf.translation()
+                    # Convert rotation to axis-angle for free joint
+                    rot_vec = dart.math.matrixToEulerXYZ(new_tf.rotation())
+                    positions[3:6] = rot_vec
+                    free_joint.setPositions(positions)
+                except Exception as e:
+                    print(f"ERROR in keyboard movement handling: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    return
 
-        # Solve IK
-        solved = self.atlas.getOrCreateIK().solveAndApply(True)
+            # Solve IK (getIK(True) gets or creates the skeleton IK module)
+            try:
+                # Get the skeleton IK module
+                skel_ik = self.atlas.getIK(True)
 
-        if not solved:
-            self.iter += 1
-        else:
-            self.iter = 0
+                # DEBUG: Log IK state periodically
+                if self.iter == 0 or self.iter % 50 == 0:
+                    print(f"\n=== IK Debug (iter {self.iter}) ===")
+                    print(f"Number of end effectors: {self.atlas.getNumEndEffectors()}")
 
-        if self.iter == 1000:
-            print("Warning: IK solver failing for 1000 iterations!")
-            self.iter = 0  # Reset to avoid spam
+                    # Check each end effector using stored references
+                    max_distance = 0.0
+                    end_effectors = [
+                        ("Left Hand", self.l_hand),
+                        ("Right Hand", self.r_hand),
+                        ("Left Foot", self.l_foot),
+                        ("Right Foot", self.r_foot)
+                    ]
+
+                    for name, ee in end_effectors:
+                        ee_ik = ee.getIK()
+                        target = ee_ik.getTarget()
+                        active = ee_ik.isActive()
+                        has_target = target is not None
+
+                        if target and active:
+                            target_pos = target.getWorldTransform().translation()
+                            ee_pos = ee.getWorldTransform().translation()
+                            distance = np.linalg.norm(target_pos - ee_pos)
+                            max_distance = max(max_distance, distance)
+                            print(f"  {name}: active=True, distance={distance:.4f}m")
+                        else:
+                            print(f"  {name}: active={active}, has_target={has_target}")
+
+                    if max_distance > 0.001:
+                        print(f"  >>> Max distance to target: {max_distance:.4f}m - IK SHOULD BE SOLVING! <<<")
+
+                # Solve and apply IK
+                solved = skel_ik.solveAndApply(True)
+
+                if not solved:
+                    self.iter += 1
+                    if self.iter == 1 or self.iter % 100 == 0:
+                        print(f"WARNING: IK failed to solve (iteration {self.iter})")
+                else:
+                    if self.iter > 0:
+                        print(f"✓ IK solved successfully after {self.iter} failures")
+                    self.iter = 0
+
+                if self.iter == 1000:
+                    print("Warning: IK solver failing for 1000 iterations!")
+                    self.iter = 0  # Reset to avoid spam
+
+            except Exception as e:
+                print(f"ERROR in IK solving: {e}")
+                print(f"Error type: {type(e).__name__}")
+                import traceback
+                traceback.print_exc()
+                # Don't crash, just skip this frame
+
+        except Exception as e:
+            print(f"CRITICAL ERROR in customPreRefresh: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def create_ground():
@@ -509,6 +569,11 @@ def main():
     # Set up end effectors with IK and get targets
     interactive_targets = setup_end_effectors(atlas)
 
+    # CRITICAL: Add interactive frames to the world so they're visible!
+    for target in interactive_targets:
+        world.addSimpleFrame(target)
+    print(f"✓ Added {len(interactive_targets)} interactive frames to world")
+
     # Get end effectors
     l_hand = atlas.getBodyNode("l_hand").getEndEffector(0)
     r_hand = atlas.getBodyNode("r_hand").getEndEffector(0)
@@ -599,9 +664,7 @@ def main():
     print("For full keyboard control, use the C++ version:")
     print("  build/default/cpp/Release/bin/atlas_puppet")
     print("=" * 70)
-    print()
-
-    # Run viewer
+    print("\nStarting viewer - Press Ctrl+C to exit or close the window...")
     viewer.run()
 
 

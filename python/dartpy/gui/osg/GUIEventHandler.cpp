@@ -51,7 +51,9 @@ public:
   bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override
   {
-    PYBIND11_OVERRIDE(bool, osgGA::GUIEventHandler, handle, ea, aa);
+    // Use const reference to prevent copying non-copyable OSG objects
+    PYBIND11_OVERRIDE(
+        bool, osgGA::GUIEventHandler, handle, std::cref(ea), std::ref(aa));
   }
 };
 
@@ -60,7 +62,7 @@ void GUIEventHandler(py::module& m)
   // Bind osg::Object base class first
   py::class_<osg::Object, ::osg::ref_ptr<osg::Object>>(m, "Object");
 
-  // Bind GUIEventAdapter for event info
+  // Bind GUIEventAdapter for event info with proper reference handling
   py::class_<
       osgGA::GUIEventAdapter,
       osg::Object,
@@ -91,7 +93,8 @@ void GUIEventHandler(py::module& m)
 
   // Bind GUIEventHandler with trampoline
   // Note: The trampoline class PyGUIEventHandler allows Python to override the
-  // handle() method
+  // handle() method. The handle() method is automatically available through
+  // the trampoline and doesn't need to be explicitly bound.
   py::class_<
       osgGA::GUIEventHandler,
       PyGUIEventHandler,

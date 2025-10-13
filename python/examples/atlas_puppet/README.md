@@ -72,6 +72,11 @@ balance = dart.constraint.BalanceConstraint(
 pixi run py-ex-atlas-puppet
 ```
 
+The example will open an interactive 3D viewer where you can:
+- **Drag the colored coordinate frames** (RGB axes at hands/feet) to move end effectors
+- **Use keyboard controls** W/A/S/D/Q/E/F/Z/X/C/R/T/1-4 for robot control
+- See the robot perform **whole-body IK** in real-time as you interact
+
 ### What You'll See
 1. Atlas robot in standing pose
 2. Colored coordinate axes at hands/feet (interactive frames)
