@@ -87,8 +87,12 @@ def run_command(cmd: str, description: str) -> Tuple[bool, str]:
             return True, result.stdout
         else:
             print_error(f"{description} - FAILED")
-            print(f"  Error output:\n{result.stderr}")
-            return False, result.stderr
+            print(f"  Return code: {result.returncode}")
+            if result.stderr:
+                print(f"  Error output:\n{result.stderr}")
+            if result.stdout:
+                print(f"  Standard output:\n{result.stdout}")
+            return False, result.stderr + "\n" + result.stdout
     except Exception as e:
         print_error(f"{description} - EXCEPTION: {e}")
         return False, str(e)
@@ -143,7 +147,7 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     if not skip_debug:
         # Build Debug (for better error messages)
         result, _ = run_command(
-            "BUILD_TYPE=Debug pixi run build",
+            "pixi run build-debug",
             "Build Debug"
         )
         success = success and result
