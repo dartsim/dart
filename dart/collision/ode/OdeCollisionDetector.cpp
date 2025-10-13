@@ -33,6 +33,7 @@
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
@@ -48,6 +49,10 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <ode/ode.h>
+
+#include <deque>
+#include <unordered_map>
+#include <utility>
 
 namespace dart {
 namespace collision {
@@ -69,6 +74,40 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
+
+struct ContactHistoryItem
+{
+  CollObjPair pair;
+  std::deque<Contact> history;
+  ContactHistoryItem() = delete;
+};
+
+// using ContactManifold = std::unordered_map<CollObjPair,
+// std::deque<Contact>,obj_pair_hash>;
+namespace {
+std::vector<ContactHistoryItem> pastContacts;
+
+
+CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
+{
+  return std::make_pair(std::min(o1, o2), std::max(o1, o2));
+}
+
+std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
+{
+  for (auto& item : pastContacts) {
+    if (pair.first == item.pair.first && pair.second == item.pair.second) {
+      return item.history;
+    }
+  }
+  auto newItem = ContactHistoryItem{pair, std::deque<Contact>()};
+  pastContacts.push_back(newItem);
+
+  return pastContacts.back().history;
+}
+}
 
 struct OdeCollisionCallbackData
 {
@@ -160,6 +199,21 @@ bool OdeCollisionDetector::collide(
   data.contactGeoms = contactCollisions;
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
+
+  for (auto& past_contact : pastContacts) {
+    bool clear = true;
+    for (const auto& curr_result : result->getContacts()) {
+      auto current_pair = MakeNewPair(
+          curr_result.collisionObject1, curr_result.collisionObject2);
+      if (past_contact.pair == current_pair) {
+        clear = false;
+        break;
+      }
+    }
+    if (clear) {
+      past_contact.history.clear();
+    }
+  }
 
   return data.numContacts > 0;
 }
@@ -285,8 +339,9 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   cdData->numContacts += numc;
 
-  if (result)
+  if (result) {
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
+  }
 }
 
 //==============================================================================
@@ -305,15 +360,53 @@ void reportContacts(
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts) {
     result.addContact(convertContact(contactGeoms[0], b1, b2, option));
-
     return;
   }
 
   for (auto i = 0; i < numContacts; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
+  }
 
-    if (result.getNumContacts() >= option.maxNumContacts)
-      return;
+  auto missing = 3 - numContacts;
+  if (missing <= 0) {
+    return;
+  }
+
+  const auto pair = MakeNewPair(b1, b2);
+  auto& pastContacsVec = FindPairInHist(pair);
+  auto results_vec_copy = result.getContacts();
+
+  for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
+    if (missing <= 0)
+      break;
+    auto past_cont = *it;
+    for (const auto& curr_cont : results_vec_copy) {
+      const auto res_pair
+          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
+      if (res_pair != pair) {
+        continue;
+      }
+      auto dist_v = past_cont.point - curr_cont.point;
+      const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
+      if (dist_m < 0.01) {
+        continue;
+      } else {
+        --missing;
+        result.addContact(past_cont);
+      }
+    }
+  }
+  for (const auto& item : results_vec_copy) {
+    const auto res_pair
+        = MakeNewPair(item.collisionObject1, item.collisionObject2);
+    if (res_pair == pair) {
+      pastContacsVec.push_back(item);
+    }
+  }
+
+  const auto size = pastContacsVec.size();
+  if (size > 11) {
+    pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
   }
 }
 
