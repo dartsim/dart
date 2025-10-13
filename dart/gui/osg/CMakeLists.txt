@@ -52,7 +52,7 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/render.hpp")
+list(APPEND header_names "render/all.hpp")
 dart_generate_component_headers(
   COMPONENT_NAME osg
   TARGET_DIR "dart/gui/osg/"
