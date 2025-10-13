@@ -37,7 +37,7 @@
 #include <cassert>
 #include <cmath>
 
-#include <dart/common/common.hpp>
+#include <dart/common/all.hpp>
 
 #include "pybind11/pybind11.h"
 
