@@ -731,11 +731,7 @@ download-gz = { cmd = """
     ".deps/gz-physics/README.md",
 ] }
 
-# Note: DART 7.0 will have API breaking changes. This patch may need updates
-# when gz-physics officially supports DART 7.x or when breaking changes are finalized.
-patch-gz = { cmd = """
-    sed -i.bak 's/gz_find_package(DART REQUIRED_BY dartsim VERSION 6.10/gz_find_package(DART REQUIRED_BY dartsim VERSION 7.0/' .deps/gz-physics/CMakeLists.txt
-""", depends-on = ["download-gz"] }
+patch-gz = { cmd = "python3 scripts/patch_gz_physics.py", depends-on = ["download-gz"] }
 
 config-gz = { cmd = """
     cmake \
@@ -752,11 +748,7 @@ build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depen
     "config-gz",
 ] }
 
-test-gz = { cmd = """
-    cd .deps/gz-physics/build/lib && \
-    ldd libgz-physics8-dartsim-plugin.so | grep dart && \
-    echo "✓ DART plugin built successfully with DART integration!"
-""", depends-on = [
+test-gz = { cmd = "bash -c 'cd .deps/gz-physics/build/lib && (otool -L libgz-physics8-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics8-dartsim-plugin.so 2>/dev/null) | grep dart && echo \"✓ DART plugin built successfully with DART integration!\"'", depends-on = [
     "build-gz",
 ], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 

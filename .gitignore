@@ -83,6 +83,7 @@ imgui.ini
 
 # Gazebo physics plugins
 /libgz-physics-*.so
+*.dylib
 
 # Python distribution artifacts
 dist/
