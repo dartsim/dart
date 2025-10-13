@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -78,7 +78,7 @@ const double default_wall_height = 1;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::glut;
+using namespace dart::gui::osg;
 
 void setupRing(const SkeletonPtr& /*ring*/)
 {
@@ -95,17 +95,18 @@ void setupRing(const SkeletonPtr& /*ring*/)
   // Lesson 4c
 }
 
-class MyWindow : public SimWindow
+class CollisionsEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  MyWindow(
+  CollisionsEventHandler(
       const WorldPtr& world,
       const SkeletonPtr& ball,
       const SkeletonPtr& softBody,
       const SkeletonPtr& hybridBody,
       const SkeletonPtr& rigidChain,
       const SkeletonPtr& rigidRing)
-    : mRandomize(true),
+    : mWorld(world),
+      mRandomize(true),
       mRD(),
       mMT(mRD()),
       mDistribution(-1.0, std::nextafter(1.0, 2.0)),
@@ -116,70 +117,44 @@ public:
       mOriginalRigidRing(rigidRing),
       mSkelCount(0)
   {
-    setWorld(world);
   }
 
-  void keyboard(unsigned char key, int x, int y) override
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    switch (key) {
-      case '1':
-        addObject(mOriginalBall->cloneSkeleton());
-        break;
-
-      case '2':
-        addObject(mOriginalSoftBody->cloneSkeleton());
-        break;
-
-      case '3':
-        addObject(mOriginalHybridBody->cloneSkeleton());
-        break;
-
-      case '4':
-        addObject(mOriginalRigidChain->cloneSkeleton());
-        break;
-
-      case '5':
-        addRing(mOriginalRigidRing->cloneSkeleton());
-        break;
-
-      case 'd':
-        if (mWorld->getNumSkeletons() > 2)
-          removeSkeleton(mWorld->getSkeleton(2));
-        std::cout << "Remaining objects: " << mWorld->getNumSkeletons() - 2
-                  << std::endl;
-        break;
-
-      case 'r':
-        mRandomize = !mRandomize;
-        std::cout << "Randomization: " << (mRandomize ? "on" : "off")
-                  << std::endl;
-        break;
-
-      default:
-        SimWindow::keyboard(key, x, y);
+    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      switch (ea.getKey()) {
+        case '1':
+          addObject(mOriginalBall->cloneSkeleton());
+          return true;
+        case '2':
+          addObject(mOriginalSoftBody->cloneSkeleton());
+          return true;
+        case '3':
+          addObject(mOriginalHybridBody->cloneSkeleton());
+          return true;
+        case '4':
+          addObject(mOriginalRigidChain->cloneSkeleton());
+          return true;
+        case '5':
+          addRing(mOriginalRigidRing->cloneSkeleton());
+          return true;
+        case 'd':
+          if (mWorld->getNumSkeletons() > 2)
+            removeSkeleton(mWorld->getSkeleton(2));
+          std::cout << "Remaining objects: " << mWorld->getNumSkeletons() - 2
+                    << std::endl;
+          return true;
+        case 'r':
+          mRandomize = !mRandomize;
+          std::cout << "Randomization: " << (mRandomize ? "on" : "off")
+                    << std::endl;
+          return true;
+        default:
+          return false;
+      }
     }
-  }
-
-  void drawWorld() const override
-  {
-    // Make sure lighting is turned on and that polygons get filled in
-    glEnable(GL_LIGHTING);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    SimWindow::drawWorld();
-  }
-
-  void displayTimer(int _val) override
-  {
-    // We remove playback and baking, because we want to be able to add and
-    // remove objects during runtime
-    int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
-    if (mSimulating) {
-      for (int i = 0; i < numIter; i++)
-        timeStepping();
-    }
-    glutPostRedisplay();
-    glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+    return false;
   }
 
 protected:
@@ -243,6 +218,8 @@ protected:
     mWorld->removeSkeleton(skel);
   }
 
+  WorldPtr mWorld;
+
   /// Flag to keep track of whether or not we are randomizing the tosses
   bool mRandomize;
 
@@ -273,6 +250,15 @@ protected:
   /// Keep track of how many Skeletons we spawn to ensure we can give them all
   /// unique names
   std::size_t mSkelCount;
+};
+
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(const WorldPtr& world, CollisionsEventHandler* /*handler*/)
+    : RealTimeWorldNode(world)
+  {
+  }
 };
 
 /// Add a rigid body with the specified Joint type to a chain
@@ -460,13 +446,14 @@ SkeletonPtr createWall()
   return wall;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   WorldPtr world = std::make_shared<World>();
   world->addSkeleton(createGround());
   world->addSkeleton(createWall());
 
-  MyWindow window(
+  // Create event handler
+  auto handler = new CollisionsEventHandler(
       world,
       createBall(),
       createSoftBody(),
@@ -474,24 +461,46 @@ int main(int argc, char* argv[])
       createRigidChain(),
       createRigidRing());
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'1': toss a rigid ball" << std::endl;
-  std::cout << "'2': toss a soft body" << std::endl;
-  std::cout << "'3': toss a hybrid soft/rigid body" << std::endl;
-  std::cout << "'4': toss a rigid chain" << std::endl;
-  std::cout << "'5': toss a ring of rigid bodies" << std::endl;
+  // Create a WorldNode and wrap it around the world
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
 
-  std::cout << "\n'd': delete the oldest object" << std::endl;
-  std::cout << "'r': toggle randomness" << std::endl;
+  // Create a Viewer and set it up with the WorldNode
+  auto viewer = Viewer();
+  viewer.addWorldNode(node);
+  viewer.addEventHandler(handler);
 
-  std::cout << "\nWarning: Let objects settle before tossing a new one, or the "
-               "simulation could explode."
-            << std::endl;
-  std::cout << "         If the simulation freezes, you may need to force quit "
-               "the application.\n"
-            << std::endl;
+  // Print instructions
+  viewer.addInstructionText("space bar: simulation on/off\n");
+  viewer.addInstructionText("'1': toss a rigid ball\n");
+  viewer.addInstructionText("'2': toss a soft body\n");
+  viewer.addInstructionText("'3': toss a hybrid soft/rigid body\n");
+  viewer.addInstructionText("'4': toss a rigid chain\n");
+  viewer.addInstructionText("'5': toss a ring of rigid bodies\n");
+  viewer.addInstructionText("'d': delete the oldest object\n");
+  viewer.addInstructionText("'r': toggle randomness\n");
+  viewer.addInstructionText(
+      "\nWarning: Let objects settle before tossing a new one, or the "
+      "simulation could explode.\n");
+  viewer.addInstructionText(
+      "         If the simulation freezes, you may need to force quit the "
+      "application.\n");
+  std::cout << viewer.getInstructions() << std::endl;
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Collisions");
-  glutMainLoop();
+  // Set up the window to be 640x480
+  viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  // Adjust the viewpoint of the Viewer
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(3.0f, 2.0f, 2.0f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+
+  // We need to re-dirty the CameraManipulator by passing it into the viewer
+  // again, so that the viewer knows to update its HomePosition setting
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  // Begin running the application loop
+  viewer.run();
+
+  return 0;
 }

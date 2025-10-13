@@ -11,7 +11,7 @@ set(component_dependency_packages )
 set(link_libraries )
 
 # Dependency checks
-dart_check_dependent_target(${target_name} dart-gui)
+dart_check_dependent_target(${target_name} dart-utils)
 
 # OpenSceneGraph
 dart_find_package(OpenSceneGraph)
@@ -42,12 +42,12 @@ add_subdirectory(render)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-gui osg::osg ${link_libraries})
+target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
+add_component_dependencies(${PROJECT_NAME} ${component_name} utils ${component_dependencies})
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
 
 # Generate header for this namespace

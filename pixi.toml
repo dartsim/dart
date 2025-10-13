@@ -110,6 +110,20 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+build-examples = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target examples
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+build-tutorials = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target tutorials
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
 build-py = { cmd = "python -m pip install . -vv" }
 
 build-py-dev = { cmd = """
@@ -689,6 +703,28 @@ tracy = { cmd = "tracy-profiler.exe" }
 #=================
 # Feature: Gazebo
 #=================
+#
+# Gazebo Physics Integration Testing
+#
+# This feature tests DART integration with Gazebo Physics (gz-physics) by:
+# 1. Downloading gz-physics from source (gz-physics8_8.0.0 branch)
+# 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
+# 3. Building gz-physics with the dartsim plugin
+# 4. Verifying the dartsim plugin links against DART libraries
+#
+# Usage (single command runs entire chain):
+#   pixi run -e gazebo test-gz
+#
+# The dependency chain automatically executes:
+#   test-gz → build-gz → config-gz → patch-gz → download-gz
+#
+# Individual tasks can also be run separately if needed:
+#   pixi run -e gazebo download-gz  # Download gz-physics source
+#   pixi run -e gazebo patch-gz     # Patch DART version requirement
+#   pixi run -e gazebo config-gz    # Configure CMake build
+#   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
+#   pixi run -e gazebo test-gz      # Verify DART integration
+#
 
 [feature.gazebo]
 channels = ["conda-forge"]
@@ -717,6 +753,8 @@ download-gz = { cmd = """
     ".deps/gz-physics/README.md",
 ] }
 
+patch-gz = { cmd = "python3 scripts/patch_gz_physics.py", depends-on = ["download-gz"] }
+
 config-gz = { cmd = """
     cmake \
         -G Ninja \
@@ -726,17 +764,13 @@ config-gz = { cmd = """
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DBUILD_TESTING=OFF
-""", depends-on = ["download-gz", "install"] }
+""", depends-on = ["patch-gz", "install"] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",
 ] }
 
-test-gz = { cmd = """
-    cd .deps/gz-physics/build/lib && \
-    ldd libgz-physics8-dartsim-plugin.so | grep dart && \
-    echo "✓ DART plugin built successfully with DART integration!"
-""", depends-on = [
+test-gz = { cmd = "bash -c 'cd .deps/gz-physics/build/lib && (otool -L libgz-physics8-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics8-dartsim-plugin.so 2>/dev/null) | grep dart && echo \"✓ DART plugin built successfully with DART integration!\"'", depends-on = [
     "build-gz",
 ], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 

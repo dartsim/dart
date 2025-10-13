@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -47,7 +47,7 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::glut;
+using namespace dart::gui::osg;
 using namespace dart::utils;
 using namespace dart::math;
 
@@ -143,41 +143,46 @@ protected:
   double mSpeed;
 };
 
-class MyWindow : public SimWindow
+class BipedEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  /// Constructor
-  MyWindow(const WorldPtr& world) : mForceCountDown(0), mPositiveSign(true)
+  BipedEventHandler(const WorldPtr& world, Controller* controller)
+    : mWorld(world),
+      mController(controller),
+      mForceCountDown(0),
+      mPositiveSign(true)
   {
-    setWorld(world);
-
-    mController = std::make_unique<Controller>(mWorld->getSkeleton("biped"));
   }
 
-  /// Handle keyboard input
-  void keyboard(unsigned char key, int x, int y) override
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    switch (key) {
-      case ',':
-        mForceCountDown = default_countdown;
-        mPositiveSign = false;
-        break;
-      case '.':
-        mForceCountDown = default_countdown;
-        mPositiveSign = true;
-        break;
-      case 'a':
-        mController->changeWheelSpeed(default_speed_increment);
-        break;
-      case 's':
-        mController->changeWheelSpeed(-default_speed_increment);
-        break;
-      default:
-        SimWindow::keyboard(key, x, y);
+    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      switch (ea.getKey()) {
+        case ',':
+          mForceCountDown = default_countdown;
+          mPositiveSign = false;
+          return true;
+        case '.':
+          mForceCountDown = default_countdown;
+          mPositiveSign = true;
+          return true;
+        case 'a':
+        case 'A':
+          mController->changeWheelSpeed(default_speed_increment);
+          return true;
+        case 's':
+        case 'S':
+          mController->changeWheelSpeed(-default_speed_increment);
+          return true;
+        default:
+          return false;
+      }
     }
+    return false;
   }
 
-  void timeStepping() override
+  void update()
   {
     mController->clearForces();
 
@@ -210,19 +215,34 @@ public:
 
       --mForceCountDown;
     }
-
-    // Step the simulation forward
-    SimWindow::timeStepping();
   }
 
 protected:
-  std::unique_ptr<Controller> mController;
+  WorldPtr mWorld;
+  Controller* mController;
 
   /// Number of iterations before clearing a force entry
   int mForceCountDown;
 
   /// Whether a force should be applied in the positive or negative direction
   bool mPositiveSign;
+};
+
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(const WorldPtr& world, BipedEventHandler* handler)
+    : RealTimeWorldNode(world), mHandler(handler)
+  {
+  }
+
+  void customPreStep() override
+  {
+    mHandler->update();
+  }
+
+protected:
+  BipedEventHandler* mHandler;
 };
 
 // Load a biped model and enable joint limits and self-collision
@@ -286,7 +306,7 @@ SkeletonPtr createFloor()
   return floor;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   SkeletonPtr floor = createFloor();
 
@@ -314,22 +334,41 @@ int main(int argc, char* argv[])
   world->addSkeleton(floor);
   world->addSkeleton(biped);
 
-  // Create a window for rendering the world and handling user input
-  MyWindow window(world);
+  // Create controller and event handler
+  auto controller = std::make_unique<Controller>(biped);
+  auto handler = new BipedEventHandler(world, controller.get());
+
+  // Create a WorldNode and wrap it around the world
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
+
+  // Create a Viewer and set it up with the WorldNode
+  auto viewer = Viewer();
+  viewer.addWorldNode(node);
+  viewer.addEventHandler(handler);
 
   // Print instructions
-  std::cout << "'.': forward push" << std::endl;
-  std::cout << "',': backward push" << std::endl;
-  std::cout << "'s': increase skateboard forward speed" << std::endl;
-  std::cout << "'a': increase skateboard backward speed" << std::endl;
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'v': Turn contact force visualization on/off" << std::endl;
-  std::cout << "'[' and ']': replay one frame backward and forward"
-            << std::endl;
+  viewer.addInstructionText("'.': forward push\n");
+  viewer.addInstructionText("',': backward push\n");
+  viewer.addInstructionText("'s': increase skateboard forward speed\n");
+  viewer.addInstructionText("'a': increase skateboard backward speed\n");
+  viewer.addInstructionText("space bar: simulation on/off\n");
+  std::cout << viewer.getInstructions() << std::endl;
 
-  // Initialize glut, initialize the window, and begin the glut event loop
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Multi-Pendulum Tutorial");
-  glutMainLoop();
+  // Set up the window to be 640x480
+  viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  // Adjust the viewpoint of the Viewer
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(5.0f, 3.0f, 3.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+
+  // We need to re-dirty the CameraManipulator by passing it into the viewer
+  // again, so that the viewer knows to update its HomePosition setting
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  // Begin running the application loop
+  viewer.run();
+
+  return 0;
 }
