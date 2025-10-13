@@ -64,7 +64,7 @@ build() {
   # commits. This means that the clone knows nothing about other Git branches or
   # tags. We fix this by deleting and re-cloning the full repository.
   git clone "https://github.com/dartsim/dart.git" ${DART_CLONE_DIR}
-  
+
   # Checkout the branch if BRANCH_NAME is set, otherwise stay on default branch
   if [ -n "${BRANCH_NAME}" ]; then
     git -C ${DART_CLONE_DIR} checkout ${BRANCH_NAME} || echo "Branch ${BRANCH_NAME} not found in upstream, using default branch"
@@ -90,12 +90,13 @@ EOF
     fi
 
     # Add entry to list of API versions
-    printf "* [${version}](https://dartsim.github.io/dart/${version}/)\n" >>${DART_DOCS_OUTPUT_DIR}/index.md
+    printf "* C++: [${version}](https://dartsim.github.io/dart/${version}/)\n" >>${DART_DOCS_OUTPUT_DIR}/index.md
+    printf "* Python: [${version}](https://dartsim.github.io/dart/${version}-python/)\n" >>${DART_DOCS_OUTPUT_DIR}/index.md
 
-    # Build documentation
+    # Build C++ documentation
     git -C ${DART_CLONE_DIR} checkout ${version}
     rm -rf *
-    cmake ${DART_CLONE_DIR}
+    cmake ${DART_CLONE_DIR} -DDART_BUILD_DARTPY=ON
     make docs
 
     # Check if docs/doxygen/html is not empty
@@ -109,6 +110,29 @@ EOF
     else
       echo "Both docs/doxygen/html and doxygen/html are empty. No files moved."
     fi
+
+    # Build Python API documentation
+    echo "======================================================================="
+    echo " [Build Python API] for ${version}"
+    echo "======================================================================="
+
+    # Build dartpy module
+    make -j$(nproc) dartpy
+
+    # Set PYTHONPATH to the built dartpy module
+    export PYTHONPATH="$(pwd)/python/dartpy:$PYTHONPATH"
+
+    # Build Python API documentation using Sphinx
+    cd ${DART_CLONE_DIR}/docs/python_api
+    if [ -f "conf.py" ]; then
+      echo "Building Python API documentation with Sphinx..."
+      sphinx-build -b html . "${DART_DOCS_OUTPUT_DIR}/${version}-python"
+    else
+      echo "No Python API documentation configuration found, skipping..."
+    fi
+
+    # Return to build directory
+    cd ${DART_DOCS_BUILD_DIR}
 
   done <${DART_CLONE_DIR}/scripts/docs_versions.txt
 

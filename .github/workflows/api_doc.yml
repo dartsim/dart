@@ -100,11 +100,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip3 install pytest -U
+          pip3 install -U pytest sphinx sphinx_rtd_theme pyyaml
 
-      - name: Build
+      - name: Build Documentation
         run: |
-          ./scripts/build_docs.sh build
+          python3 scripts/build_docs.py build
 
       - name: Upload documentation artifact
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -115,7 +115,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          ./scripts/build_docs.sh clean
+          python3 scripts/build_docs.py clean
 
   deploy:
     if: ${{ github.ref == 'refs/heads/main' }}

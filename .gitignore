@@ -58,6 +58,7 @@ docs/doxygen/html/
 # Sphinx documentation
 docs/readthedocs/site
 docs/readthedocs/_build/
+docs/python_api/_build/
 
 # Data files
 data/screencap/*
@@ -68,6 +69,7 @@ data/screencap/*
 # Python distribution artifacts
 dist/
 *.egg-info
+build/
 
 # Python wheel files
 *.whl
