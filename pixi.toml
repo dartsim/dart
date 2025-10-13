@@ -703,6 +703,28 @@ tracy = { cmd = "tracy-profiler.exe" }
 #=================
 # Feature: Gazebo
 #=================
+#
+# Gazebo Physics Integration Testing
+#
+# This feature tests DART integration with Gazebo Physics (gz-physics) by:
+# 1. Downloading gz-physics from source (gz-physics8_8.0.0 branch)
+# 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
+# 3. Building gz-physics with the dartsim plugin
+# 4. Verifying the dartsim plugin links against DART libraries
+#
+# Usage (single command runs entire chain):
+#   pixi run -e gazebo test-gz
+#
+# The dependency chain automatically executes:
+#   test-gz → build-gz → config-gz → patch-gz → download-gz
+#
+# Individual tasks can also be run separately if needed:
+#   pixi run -e gazebo download-gz  # Download gz-physics source
+#   pixi run -e gazebo patch-gz     # Patch DART version requirement
+#   pixi run -e gazebo config-gz    # Configure CMake build
+#   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
+#   pixi run -e gazebo test-gz      # Verify DART integration
+#
 
 [feature.gazebo]
 channels = ["conda-forge"]
