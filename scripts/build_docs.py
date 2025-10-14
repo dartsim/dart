@@ -29,8 +29,8 @@ from typing import List, Optional
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%H:%M:%S'
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -41,23 +41,28 @@ class DocsBuilder:
     def __init__(self):
         """Initialize paths and configuration."""
         # Get workspace root
-        github_workspace = os.environ.get('GITHUB_WORKSPACE', Path.cwd())
+        github_workspace = os.environ.get("GITHUB_WORKSPACE", Path.cwd())
         self.workspace = Path(github_workspace)
 
         # Working directories
-        self.work_dir = self.workspace / 'dart_docs'
-        self.clone_dir = self.work_dir / 'dart'
-        self.build_dir = self.work_dir / 'build'
-        self.output_dir = self.workspace / 'gh-pages'
+        self.work_dir = self.workspace / "dart_docs"
+        self.clone_dir = self.work_dir / "dart"
+        self.build_dir = self.work_dir / "build"
+        self.output_dir = self.workspace / "gh-pages"
 
         # Branch name (if building from a specific branch)
-        self.branch_name = os.environ.get('BRANCH_NAME')
+        self.branch_name = os.environ.get("BRANCH_NAME")
 
         # Versions file
-        self.versions_file = self.clone_dir / 'scripts' / 'docs_versions.txt'
+        self.versions_file = self.clone_dir / "scripts" / "docs_versions.txt"
 
-    def run_command(self, cmd: List[str], cwd: Optional[Path] = None,
-                   check: bool = True, env: Optional[dict] = None) -> subprocess.CompletedProcess:
+    def run_command(
+        self,
+        cmd: List[str],
+        cwd: Optional[Path] = None,
+        check: bool = True,
+        env: Optional[dict] = None,
+    ) -> subprocess.CompletedProcess:
         """
         Run a command and log output.
 
@@ -70,7 +75,7 @@ class DocsBuilder:
         Returns:
             CompletedProcess instance
         """
-        cmd_str = ' '.join(str(c) for c in cmd)
+        cmd_str = " ".join(str(c) for c in cmd)
         logger.info(f"Running: {cmd_str}")
         if cwd:
             logger.info(f"  in directory: {cwd}")
@@ -82,12 +87,7 @@ class DocsBuilder:
 
         try:
             result = subprocess.run(
-                cmd,
-                cwd=cwd,
-                check=check,
-                capture_output=True,
-                text=True,
-                env=cmd_env
+                cmd, cwd=cwd, check=check, capture_output=True, text=True, env=cmd_env
             )
             if result.stdout:
                 logger.debug(result.stdout)
@@ -126,19 +126,16 @@ class DocsBuilder:
 
         # Clone the full repository
         logger.info(f"Cloning to {self.clone_dir}")
-        self.run_command([
-            'git', 'clone',
-            'https://github.com/dartsim/dart.git',
-            str(self.clone_dir)
-        ])
+        self.run_command(
+            ["git", "clone", "https://github.com/dartsim/dart.git", str(self.clone_dir)]
+        )
 
         # Checkout specific branch if specified
         if self.branch_name:
             logger.info(f"Checking out branch: {self.branch_name}")
             try:
                 self.run_command(
-                    ['git', 'checkout', self.branch_name],
-                    cwd=self.clone_dir
+                    ["git", "checkout", self.branch_name], cwd=self.clone_dir
                 )
             except subprocess.CalledProcessError:
                 logger.warning(
@@ -159,13 +156,13 @@ class DocsBuilder:
             raise FileNotFoundError(f"Versions file not found: {self.versions_file}")
 
         versions = []
-        with open(self.versions_file, 'r') as f:
+        with open(self.versions_file, "r") as f:
             for line in f:
                 line = line.strip()
                 if not line:  # Skip empty lines
                     continue
                 # Check if this is a header line (e.g., "DART 6")
-                is_header = line.startswith('DART ')
+                is_header = line.startswith("DART ")
                 versions.append((line, is_header))
 
         logger.info(f"Found {len(versions)} version entries")
@@ -181,10 +178,7 @@ class DocsBuilder:
         logger.info(f"Building C++ documentation for {version}")
 
         # Checkout version
-        self.run_command(
-            ['git', 'checkout', version],
-            cwd=self.clone_dir
-        )
+        self.run_command(["git", "checkout", version], cwd=self.clone_dir)
 
         # Clean build directory
         if self.build_dir.exists():
@@ -198,17 +192,16 @@ class DocsBuilder:
 
         # Configure with CMake (enable dartpy for Python docs later)
         self.run_command(
-            ['cmake', str(self.clone_dir), '-DDART_BUILD_DARTPY=ON'],
-            cwd=self.build_dir
+            ["cmake", str(self.clone_dir), "-DDART_BUILD_DARTPY=ON"], cwd=self.build_dir
         )
 
         # Build C++ documentation
-        self.run_command(['make', 'docs'], cwd=self.build_dir)
+        self.run_command(["make", "docs"], cwd=self.build_dir)
 
         # Find and move documentation
         docs_sources = [
-            self.build_dir / 'docs' / 'doxygen' / 'html',
-            self.build_dir / 'doxygen' / 'html'
+            self.build_dir / "docs" / "doxygen" / "html",
+            self.build_dir / "doxygen" / "html",
         ]
 
         docs_dest = self.output_dir / version
@@ -239,15 +232,12 @@ class DocsBuilder:
         # Build dartpy module
         logger.info("Building dartpy module...")
         num_cores = os.cpu_count() or 4
-        self.run_command(
-            ['make', f'-j{num_cores}', 'dartpy'],
-            cwd=self.build_dir
-        )
+        self.run_command(["make", f"-j{num_cores}", "dartpy"], cwd=self.build_dir)
 
         # Find dartpy module location
         dartpy_locations = [
-            self.build_dir / 'python' / 'dartpy',
-            self.build_dir / 'python'
+            self.build_dir / "python" / "dartpy",
+            self.build_dir / "python",
         ]
 
         dartpy_path = None
@@ -257,15 +247,19 @@ class DocsBuilder:
                 break
 
         if not dartpy_path:
-            logger.warning(f"Could not find dartpy module for {version}, skipping Python docs")
+            logger.warning(
+                f"Could not find dartpy module for {version}, skipping Python docs"
+            )
             return
 
         logger.info(f"Found dartpy at: {dartpy_path}")
 
         # Check if Python API docs configuration exists
-        python_docs_dir = self.clone_dir / 'docs' / 'python_api'
-        if not (python_docs_dir / 'conf.py').exists():
-            logger.warning(f"No Python API documentation configuration found for {version}, skipping")
+        python_docs_dir = self.clone_dir / "docs" / "python_api"
+        if not (python_docs_dir / "conf.py").exists():
+            logger.warning(
+                f"No Python API documentation configuration found for {version}, skipping"
+            )
             return
 
         # Set PYTHONPATH and build documentation
@@ -273,13 +267,13 @@ class DocsBuilder:
         docs_dest = self.output_dir / f"{version}-py"
         docs_dest.mkdir(parents=True, exist_ok=True)
 
-        env = {'PYTHONPATH': str(dartpy_path)}
+        env = {"PYTHONPATH": str(dartpy_path)}
 
         try:
             self.run_command(
-                ['sphinx-build', '-b', 'html', '.', str(docs_dest)],
+                ["sphinx-build", "-b", "html", ".", str(docs_dest)],
                 cwd=python_docs_dir,
-                env=env
+                env=env,
             )
             logger.info(f"✓ Python documentation generated at {docs_dest}")
         except subprocess.CalledProcessError:
@@ -295,23 +289,23 @@ class DocsBuilder:
         """
         logger.info("Creating index.md")
 
-        index_file = self.output_dir / 'index.md'
+        index_file = self.output_dir / "index.md"
 
-        with open(index_file, 'w') as f:
-            f.write('# DART API Documentation\n\n')
+        with open(index_file, "w") as f:
+            f.write("# DART API Documentation\n\n")
 
             for version, is_header in versions:
                 if is_header:
-                    f.write(f'\n## {version}\n\n')
+                    f.write(f"\n## {version}\n\n")
                 else:
                     # Write links for both C++ and Python docs
-                    cpp_link = f'https://dartsim.github.io/dart/{version}/'
-                    python_link = f'https://dartsim.github.io/dart/{version}-py/'
+                    cpp_link = f"https://dartsim.github.io/dart/{version}/"
+                    python_link = f"https://dartsim.github.io/dart/{version}-py/"
 
-                    f.write(f'**{version}**\n')
-                    f.write(f'* [C++ API]({cpp_link})\n')
-                    f.write(f'* [Python API]({python_link})\n')
-                    f.write('\n')
+                    f.write(f"**{version}**\n")
+                    f.write(f"* [C++ API]({cpp_link})\n")
+                    f.write(f"* [Python API]({python_link})\n")
+                    f.write("\n")
 
         logger.info(f"Index created at {index_file}")
 
@@ -376,17 +370,13 @@ class DocsBuilder:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Build DART API Documentation (C++ and Python)'
+        description="Build DART API Documentation (C++ and Python)"
     )
     parser.add_argument(
-        'command',
-        choices=['build', 'clean'],
-        help='Command to execute'
+        "command", choices=["build", "clean"], help="Command to execute"
     )
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose logging'
+        "--verbose", "-v", action="store_true", help="Enable verbose logging"
     )
 
     args = parser.parse_args()
@@ -399,9 +389,9 @@ def main():
     builder = DocsBuilder()
 
     try:
-        if args.command == 'build':
+        if args.command == "build":
             builder.build()
-        elif args.command == 'clean':
+        elif args.command == "clean":
             builder.clean()
 
         logger.info("✓ Success!")
@@ -412,5 +402,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
