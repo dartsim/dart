@@ -37,6 +37,12 @@ This document provides a comprehensive analysis of the constraint and integratio
 - PGSLCPSolver.hpp/cpp - Projected Gauss-Seidel LCP solver
 - PgsBoxedLcpSolver.hpp/cpp - PGS boxed LCP solver
 
+**Dantzig Solver Implementation:**
+Modern C++20 template-based implementation in `dart/lcpsolver/dantzig/` with two key design decisions:
+- **PivotMatrix:** Hybrid architecture combining Eigen storage with pointer-based O(1) row swapping
+- **Hybrid SIMD:** Threshold-based strategy switching between raw pointers and Eigen SIMD based on problem size
+See code for implementation details.
+
 **Utilities:**
 - ContactSurface.hpp/cpp - Contact surface parameters
 - SmartPointer.hpp - Smart pointer definitions

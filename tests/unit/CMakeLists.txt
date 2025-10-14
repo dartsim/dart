@@ -51,9 +51,9 @@ if(TARGET dart-utils-urdf)
 endif()
 
 # ==============================================================================
-# LCP Solver Tests
+# LCP Solver Tests (organized in subdirectory)
 # ==============================================================================
-dart_add_test("unit" test_Lemke lcpsolver/test_Lemke.cpp)
+add_subdirectory(lcpsolver)
 
 # ==============================================================================
 # Math Tests
@@ -69,3 +69,9 @@ dart_build_tests(
     math/test_Random.cpp
     math/test_TriMesh.cpp
 )
+
+# Convhull test (requires special handling)
+if(TARGET dart)
+  dart_add_test("unit" test_Convhull math/test_Convhull.cpp)
+  target_link_libraries(test_Convhull dart)
+endif()

@@ -20,11 +20,11 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/error.h"
+#include "odeconfig.h"
+#include "error.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 static dMessageFunction *error_function = 0;
@@ -180,5 +180,5 @@ void dMessage (int num, const char *msg, ...)
 #endif
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart

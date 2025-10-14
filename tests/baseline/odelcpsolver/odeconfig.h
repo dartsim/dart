@@ -60,7 +60,7 @@
 #endif
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* Well-defined common data types...need to define for 64 bit systems */
@@ -82,7 +82,7 @@ namespace ode {
 #endif
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 /* Define the dInfinity macro */

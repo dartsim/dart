@@ -25,10 +25,10 @@
 #ifndef _ODE_MATRIX_H_
 #define _ODE_MATRIX_H_
 
-#include "dart/external/odelcpsolver/common.h"
+#include "common.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* set a vector/matrix of size n to all zeros, or to a specific value. */
@@ -271,7 +271,7 @@ PURE_INLINE size_t _dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 //#endif // defined(__ODE__)
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif

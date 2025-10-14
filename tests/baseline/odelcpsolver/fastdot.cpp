@@ -20,43 +20,48 @@
  *                                                                       *
  *************************************************************************/
 
-/* this comes from the `reuse' library. copy any changes back to the source */
+/* generated code, do not edit. */
 
-#ifndef _ODE_ERROR_H_
-#define _ODE_ERROR_H_
-
-#include "dart/external/odelcpsolver/odeconfig.h"
+#include "matrix.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
-/* all user defined error functions have this type. error and debug functions
- * should not return.
- */
-typedef void dMessageFunction (int errnum, const char *msg, va_list ap);
+dReal _dDot (const dReal *a, const dReal *b, int n)
+{  
+  dReal p0,q0,m0,p1,q1,m1,sum;
+  sum = 0;
+  n -= 2;
+  while (n >= 0) {
+    p0 = a[0]; q0 = b[0];
+    m0 = p0 * q0;
+    p1 = a[1]; q1 = b[1];
+    m1 = p1 * q1;
+    sum += m0;
+    sum += m1;
+    a += 2;
+    b += 2;
+    n -= 2;
+  }
+  n += 2;
+  while (n > 0) {
+    sum += (*a) * (*b);
+    a++;
+    b++;
+    n--;
+  }
+  return sum;
+}
 
-/* set a new error, debug or warning handler. if fn is 0, the default handlers
- * are used.
- */
-ODE_API void dSetErrorHandler (dMessageFunction *fn);
-ODE_API void dSetDebugHandler (dMessageFunction *fn);
-ODE_API void dSetMessageHandler (dMessageFunction *fn);
 
-/* return the current error, debug or warning handler. if the return value is
- * 0, the default handlers are in place.
- */
-ODE_API dMessageFunction *dGetErrorHandler(void);
-ODE_API dMessageFunction *dGetDebugHandler(void);
-ODE_API dMessageFunction *dGetMessageHandler(void);
+#undef dDot
 
-/* generate a fatal error, debug trap or a message. */
-ODE_API void dError (int num, const char *msg, ...);
-ODE_API void dDebug (int num, const char *msg, ...);
-ODE_API void dMessage (int num, const char *msg, ...);
+dReal dDot (const dReal *a, const dReal *b, int n)
+{
+  return _dDot (a, b, n);
+}
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
-
-#endif

@@ -20,56 +20,43 @@
  *                                                                       *
  *************************************************************************/
 
-/*
+/* this comes from the `reuse' library. copy any changes back to the source */
 
-given (A,b,lo,hi), solve the LCP problem: A*x = b+w, where each x(i),w(i)
-satisfies one of
-	(1) x = lo, w >= 0
-	(2) x = hi, w <= 0
-	(3) lo < x < hi, w = 0
-A is a matrix of dimension n*n, everything else is a vector of size n*1.
-lo and hi can be +/- dInfinity as needed. the first `nub' variables are
-unbounded, i.e. hi and lo are assumed to be +/- dInfinity.
+#ifndef _ODE_ERROR_H_
+#define _ODE_ERROR_H_
 
-we restrict lo(i) <= 0 and hi(i) >= 0.
-
-the original data (A,b) may be modified by this function.
-
-if the `findex' (friction index) parameter is nonzero, it points to an array
-of index values. in this case constraints that have findex[i] >= 0 are
-special. all non-special constraints are solved for, then the lo and hi values
-for the special constraints are set:
-  hi[i] = abs( hi[i] * x[findex[i]] )
-  lo[i] = -hi[i]
-and the solution continues. this mechanism allows a friction approximation
-to be implemented. the first `nub' variables are assumed to have findex < 0.
-
-*/
-
-
-#ifndef _ODE_LCP_H_
-#define _ODE_LCP_H_
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <cassert>
-
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/common.h"
+#include "odeconfig.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
-bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b, dReal *w,
-  int nub, dReal *lo, dReal *hi, int *findex, bool earlyTermination = false);
+/* all user defined error functions have this type. error and debug functions
+ * should not return.
+ */
+typedef void dMessageFunction (int errnum, const char *msg, va_list ap);
 
-size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail);
+/* set a new error, debug or warning handler. if fn is 0, the default handlers
+ * are used.
+ */
+ODE_API void dSetErrorHandler (dMessageFunction *fn);
+ODE_API void dSetDebugHandler (dMessageFunction *fn);
+ODE_API void dSetMessageHandler (dMessageFunction *fn);
 
-ODE_API int dTestSolveLCP();
+/* return the current error, debug or warning handler. if the return value is
+ * 0, the default handlers are in place.
+ */
+ODE_API dMessageFunction *dGetErrorHandler(void);
+ODE_API dMessageFunction *dGetDebugHandler(void);
+ODE_API dMessageFunction *dGetMessageHandler(void);
+
+/* generate a fatal error, debug trap or a message. */
+ODE_API void dError (int num, const char *msg, ...);
+ODE_API void dDebug (int num, const char *msg, ...);
+ODE_API void dMessage (int num, const char *msg, ...);
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif
