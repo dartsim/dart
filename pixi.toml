@@ -196,6 +196,13 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
+test-lcpsolver = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        -R UNIT_lcpsolver
+""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
 test-py = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
