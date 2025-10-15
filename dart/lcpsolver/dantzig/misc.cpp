@@ -25,9 +25,7 @@
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 //****************************************************************************
 // random numbers
@@ -193,6 +191,4 @@ dReal dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n)
   return max;
 }
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver

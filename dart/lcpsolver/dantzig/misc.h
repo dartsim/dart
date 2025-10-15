@@ -27,9 +27,7 @@
 
 #include "dart/lcpsolver/dantzig/common.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 /* return 1 if the random number generator is working. */
 ODE_API int dTestRand(void);
@@ -76,8 +74,6 @@ ODE_API dReal dMaxDifference(const dReal* A, const dReal* B, int n, int m);
 ODE_API dReal
 dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n);
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver
 
 #endif

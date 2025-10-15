@@ -24,9 +24,7 @@
 
 #include "dart/lcpsolver/dantzig/matrix.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 /* solve L^T * x=b, with b containing 1 right hand side.
  * L is an n*n lower triangular matrix with ones on the diagonal.
@@ -231,6 +229,4 @@ void dSolveL1T(const dReal* L, dReal* B, int n, int lskip1)
   _dSolveL1T(L, B, n, lskip1);
 }
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver

@@ -24,9 +24,7 @@
 
 #include "dart/lcpsolver/dantzig/matrix.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 dReal _dDot(const dReal* a, const dReal* b, int n)
 {
@@ -63,6 +61,4 @@ dReal dDot(const dReal* a, const dReal* b, int n)
   return _dDot(a, b, n);
 }
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver

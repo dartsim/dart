@@ -114,28 +114,6 @@ rows/columns and manipulate C.
 #include "dart/lcpsolver/dantzig/misc.h"
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
-// Import ODE helper functions into the lcpsolver namespace
-using dart::external::ode::_dDot;
-using dart::external::ode::_dEstimateLDLTRemoveTmpbufSize;
-using dart::external::ode::_dFactorLDLT;
-using dart::external::ode::_dLDLTRemove;
-using dart::external::ode::_dMultiply0;
-using dart::external::ode::_dMultiply2;
-using dart::external::ode::_dSetZero;
-using dart::external::ode::_dSolveL1;
-using dart::external::ode::_dSolveL1T;
-using dart::external::ode::_dSolveLDLT;
-using dart::external::ode::d_ERR_IASSERT;
-using dart::external::ode::d_ERR_LCP;
-using dart::external::ode::d_ERR_UASSERT;
-using dart::external::ode::dClearUpperTriangle;
-using dart::external::ode::dDebug;
-using dart::external::ode::dMakeRandomMatrix;
-using dart::external::ode::dMaxDifference;
-using dart::external::ode::dMessage;
-using dart::external::ode::dRandReal;
-using dart::external::ode::dSetZero;
-
 //***************************************************************************
 // code generation parameters
 

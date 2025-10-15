@@ -27,9 +27,7 @@
 
 #include "dart/lcpsolver/dantzig/common.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 /* set a vector/matrix of size n to all zeros, or to a specific value. */
 
@@ -281,8 +279,6 @@ PURE_INLINE size_t _dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 
 //#endif // defined(__ODE__)
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver
 
 #endif

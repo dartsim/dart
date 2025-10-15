@@ -27,9 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 static dMessageFunction* error_function = 0;
 static dMessageFunction* debug_function = 0;
@@ -182,6 +180,4 @@ void dMessage(int num, const char* msg, ...)
 
 #endif
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver

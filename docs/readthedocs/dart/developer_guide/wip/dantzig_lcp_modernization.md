@@ -45,21 +45,27 @@ performance, and maintainability while ensuring correctness through rigorous tes
 - [x] Updated tests/CMakeLists.txt to include baseline subdirectory
 - [x] Created tests/benchmark/lcpsolver/ infrastructure:
   - CMakeLists.txt for benchmark builds
-  - LCPTestProblems.hpp (shared test cases for 1D-48D problems)
+  - tests/common/lcpsolver/LCPTestProblems.hpp (shared test utilities for 1D-48D problems)
   - bm_lcpsolver.cpp (combined benchmark for Dantzig vs ODE baseline comparison)
 - [x] Created comprehensive unit test test_DantzigVsODE.cpp:
   - Tests all problem sizes (1D, 2D, 4D, 6D, 12D, 24D, 48D)
   - Verifies complementarity conditions
   - Compares solutions between Dantzig and ODE baseline
-  - Currently passing: 1D, 2D, 4D (3/7 tests)
+  - All 7 tests passing (100%)
+- [x] Created test_LCPTestProblems.cpp to validate test problem quality:
+  - Checks symmetry, positive definiteness, conditioning
+  - Includes random problem generators with fixed seeds
+  - Separates well-formed and ill-formed test problems
 - [x] Updated tests/benchmark/CMakeLists.txt to include lcpsolver subdirectory
-- [x] Fixed baseline library includes to use relative paths
+- [x] Fixed baseline library includes using forward declarations
 - [x] Added pixi task `bm-lcpsolver` for running combined benchmarks
 - [x] Baseline ODE library successfully builds and links
+- [x] Benchmark successfully compares Dantzig vs ODE baseline on identical problems
+- [x] Confirmed both implementations are functionally identical (produce same results)
+- [x] Created tests/common/ directory for shared test utilities
 
 ### In Progress 🚧
-- [ ] Refine test cases for better LCP problem conditioning
-- [ ] Investigate and fix remaining test failures (6D, 12D, 24D, 48D)
+None currently
 
 ### Pending Tasks 📋
 - [ ] Remove ODE namespace from dart/lcpsolver/dantzig/

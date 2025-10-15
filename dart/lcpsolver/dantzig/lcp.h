@@ -60,9 +60,6 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 namespace dart {
 namespace lcpsolver {
 
-// Import dReal type from the external ODE configuration
-using dart::external::ode::dReal;
-
 bool dSolveLCP(
     int n,
     dReal* A,

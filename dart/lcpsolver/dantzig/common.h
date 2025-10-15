@@ -150,9 +150,7 @@
 
 #define dDOUBLE 1
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 #if defined(dSINGLE)
 typedef float dReal;
@@ -440,8 +438,6 @@ ODE_API const char* dGetConfiguration(void);
  */
 ODE_API int dCheckConfiguration(const char* token);
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver
 
 #endif

@@ -27,9 +27,7 @@
 
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
-namespace dart {
-namespace external {
-namespace ode {
+namespace dart::lcpsolver {
 
 /* all user defined error functions have this type. error and debug functions
  * should not return.
@@ -55,8 +53,6 @@ ODE_API void dError(int num, const char* msg, ...);
 ODE_API void dDebug(int num, const char* msg, ...);
 ODE_API void dMessage(int num, const char* msg, ...);
 
-} // namespace ode
-} // namespace external
-} // namespace dart
+} // namespace dart::lcpsolver
 
 #endif
