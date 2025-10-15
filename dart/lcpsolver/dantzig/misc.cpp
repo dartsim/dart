@@ -135,8 +135,7 @@ void dPrintMatrix(const dReal* A, int n, int m, char* fmt, FILE* f)
 
 void dMakeRandomVector(dReal* A, int n, dReal range)
 {
-  int i;
-  for (i = 0; i < n; i++)
+  for (int i = 0; i < n; ++i)
     A[i] = (dRandReal() * REAL(2.0) - REAL(1.0)) * range;
 }
 

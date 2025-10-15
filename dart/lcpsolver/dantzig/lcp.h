@@ -60,6 +60,21 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 namespace dart {
 namespace lcpsolver {
 
+// Template version of LCP solver - supports float and double
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination = false);
+
+// Backward compatible function using dReal (double)
 bool dSolveLCP(
     int n,
     dReal* A,
@@ -75,6 +90,31 @@ bool dSolveLCP(
 size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail);
 
 ODE_API int dTestSolveLCP();
+
+// Explicit template instantiations
+extern template bool SolveLCP<float>(
+    int n,
+    float* A,
+    float* x,
+    float* b,
+    float* w,
+    int nub,
+    float* lo,
+    float* hi,
+    int* findex,
+    bool earlyTermination);
+
+extern template bool SolveLCP<double>(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    double* w,
+    int nub,
+    double* lo,
+    double* hi,
+    int* findex,
+    bool earlyTermination);
 
 } // namespace lcpsolver
 } // namespace dart

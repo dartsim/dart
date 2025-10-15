@@ -26,7 +26,9 @@
 #include "dart/lcpsolver/dantzig/error.h"
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
-#include <math.h>
+#include <limits>
+
+#include <cmath>
 
 #define PURE_INLINE static __inline
 
@@ -162,6 +164,130 @@ typedef double dReal;
 #else
   #error You must #define dSINGLE or dDOUBLE
 #endif
+
+//==============================================================================
+// Template Type Traits for Scalar Types
+//==============================================================================
+
+/// Type traits for scalar types used in LCP solver
+/// Provides precision-specific constants and math functions
+template <typename Scalar>
+struct ScalarTraits
+{
+  /// Machine epsilon for the scalar type
+  static constexpr Scalar epsilon();
+
+  /// Positive infinity for the scalar type
+  static constexpr Scalar infinity();
+
+  /// Square root
+  static Scalar sqrt(Scalar x);
+
+  /// Absolute value
+  static Scalar abs(Scalar x);
+
+  /// Reciprocal (1/x)
+  static Scalar recip(Scalar x);
+
+  /// Reciprocal square root (1/sqrt(x))
+  static Scalar recip_sqrt(Scalar x);
+
+  /// Sine
+  static Scalar sin(Scalar x);
+
+  /// Cosine
+  static Scalar cos(Scalar x);
+};
+
+/// Specialization for float (32-bit)
+template <>
+struct ScalarTraits<float>
+{
+  static constexpr float epsilon()
+  {
+    return 1e-7f;
+  }
+
+  static constexpr float infinity()
+  {
+    return std::numeric_limits<float>::infinity();
+  }
+
+  static float sqrt(float x)
+  {
+    return std::sqrt(x);
+  }
+
+  static float abs(float x)
+  {
+    return std::fabs(x);
+  }
+
+  static float recip(float x)
+  {
+    return 1.0f / x;
+  }
+
+  static float recip_sqrt(float x)
+  {
+    return 1.0f / std::sqrt(x);
+  }
+
+  static float sin(float x)
+  {
+    return std::sin(x);
+  }
+
+  static float cos(float x)
+  {
+    return std::cos(x);
+  }
+};
+
+/// Specialization for double (64-bit)
+template <>
+struct ScalarTraits<double>
+{
+  static constexpr double epsilon()
+  {
+    return 1e-14;
+  }
+
+  static constexpr double infinity()
+  {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  static double sqrt(double x)
+  {
+    return std::sqrt(x);
+  }
+
+  static double abs(double x)
+  {
+    return std::fabs(x);
+  }
+
+  static double recip(double x)
+  {
+    return 1.0 / x;
+  }
+
+  static double recip_sqrt(double x)
+  {
+    return 1.0 / std::sqrt(x);
+  }
+
+  static double sin(double x)
+  {
+    return std::sin(x);
+  }
+
+  static double cos(double x)
+  {
+    return std::cos(x);
+  }
+};
 
 // Detect if we've got both trimesh engines enabled.
 #if dTRIMESH_ENABLED

@@ -30,6 +30,8 @@
 #include "dart/lcpsolver/dantzig/common.h"
 #include "dart/lcpsolver/dantzig/matrix.h"
 
+#include <algorithm>
+
 #ifndef EFFICIENT_ALIGNMENT
   #define EFFICIENT_ALIGNMENT 16
 #endif
@@ -58,23 +60,13 @@ namespace dart::lcpsolver {
 void _dSetZero(dReal* a, size_t n)
 {
   dAASSERT(a);
-  dReal* acurr = a;
-  size_t ncurr = n;
-  while (ncurr > 0) {
-    *(acurr++) = 0;
-    --ncurr;
-  }
+  std::fill(a, a + n, dReal(0.0));
 }
 
 void _dSetValue(dReal* a, size_t n, dReal value)
 {
   dAASSERT(a);
-  dReal* acurr = a;
-  size_t ncurr = n;
-  while (ncurr > 0) {
-    *(acurr++) = value;
-    --ncurr;
-  }
+  std::fill(a, a + n, value);
 }
 
 void _dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)

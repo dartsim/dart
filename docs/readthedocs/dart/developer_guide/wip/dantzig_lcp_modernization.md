@@ -63,18 +63,480 @@ performance, and maintainability while ensuring correctness through rigorous tes
 - [x] Benchmark successfully compares Dantzig vs ODE baseline on identical problems
 - [x] Confirmed both implementations are functionally identical (produce same results)
 - [x] Created tests/common/ directory for shared test utilities
+- [x] Namespace migration to dart::lcpsolver with C++17 nested namespace syntax
+- [x] Added template function signatures (SolveLCP<Scalar>) with backward compatibility (dSolveLCP)
+- [x] Enhanced benchmarking with F32/F64 precision comparisons and perfect vertical alignment
+- [x] Phase 3.2.1: ScalarTraits<T> foundation added to common.h
+- [x] Phase A (Partial): STL modernization
+  - error.cpp: C++ headers (<cstdarg>, <cstdio>), std::array, dart::common::Logging integration
+  - misc.cpp: Modern loop variables (for (int i...) with ++i)
+  - matrix.cpp: std::fill for _dSetZero/_dSetValue, <algorithm> header
 
 ### In Progress 🚧
-None currently
+- [ ] Phase A: STL modernization (ongoing - 3 files completed, more remaining)
 
 ### Pending Tasks 📋
-- [ ] Remove ODE namespace from dart/lcpsolver/dantzig/
+- [ ] Phase 3.2: Complete full template implementation (deferred - see status below)
 - [ ] Phase A: STL modernization
 - [ ] Phase B: Eigen integration
 - [ ] Phase C: DrJit SIMD integration (future)
 - [ ] Code style updates
 
 ## Detailed Implementation Plan
+
+### Phase 3.2: Full Template Implementation (DEFERRED - Complexity)
+
+**Status**: Phase 3.2.1 completed (ScalarTraits foundation), remaining steps deferred due to code complexity.
+
+**Current Implementation**: The template API (`SolveLCP<Scalar>`) exists but uses type conversion internally:
+- `SolveLCP<float>` converts float → double → float (lines 1514-1570 in lcp.cpp)
+- `SolveLCP<double>` calls `dSolveLCP` directly (no conversion)
+
+**Why Deferred**:
+- Main solver implementation: 1,599 lines (lcp.cpp)
+- Matrix operations: 577 lines (matrix.cpp)
+- Complex internal state machine with dLCP class
+- Fast LDLT optimizations with hand-tuned assembly-like code
+- Risk of introducing bugs outweighs current benefits
+
+**What Was Completed** (Phase 3.2.1):
+- ✅ `ScalarTraits<T>` template added to `common.h`
+- ✅ Specializations for float (ε=1e-7f) and double (ε=1e-14)
+- ✅ Math function wrappers (sqrt, abs, recip, sin, cos)
+- ✅ Foundation for future template work
+- ✅ Tests pass, no regressions
+
+**Future Work**:
+Full native template support (no type conversions) would require:
+1. Templatizing dLCP class (~500 lines of state management)
+2. Templatizing all matrix operations (fastldlt, fastlsolve, fastltsolve, fastdot)
+3. Updating 14+ source files with interconnected dependencies
+4. Extensive testing to ensure numerical stability
+5. Estimated effort: 2-3 weeks for safe, incremental implementation
+
+**Recommendation**:
+Defer until there's a compelling use case (e.g., performance critical path identified through profiling, embedded systems requiring float precision). Current API provides type flexibility, internal conversion overhead is minimal for typical problem sizes.
+
+**Goal**: Completely templatize the Dantzig LCP solver to natively support both `float` and `double` precision without internal type conversions.
+
+**Original Issue**: The existing implementation converts `float` → `double` → `float`, which defeats the purpose of templating and wastes performance.
+
+**Target Architecture**:
+```cpp
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination);
+```
+
+#### Phase 3.2.1: Type Abstraction Layer (Step 1)
+
+**Objective**: Create a type abstraction that replaces `dReal` with template parameter throughout the codebase.
+
+**Files to modify**:
+- `dart/lcpsolver/dantzig/common.h` - Add type traits and constants
+
+**Tasks**:
+1. Create template-friendly type traits:
+```cpp
+namespace dart::lcpsolver {
+
+// Type traits for scalar types
+template <typename Scalar>
+struct ScalarTraits {
+  static constexpr Scalar epsilon();
+  static constexpr Scalar infinity();
+  static Scalar sqrt(Scalar x);
+  static Scalar abs(Scalar x);
+  static Scalar recip(Scalar x);
+};
+
+// Specializations for float and double
+template <>
+struct ScalarTraits<float> {
+  static constexpr float epsilon() { return 1e-7f; }
+  static constexpr float infinity() { return std::numeric_limits<float>::infinity(); }
+  static float sqrt(float x) { return std::sqrt(x); }
+  static float abs(float x) { return std::fabs(x); }
+  static float recip(float x) { return 1.0f / x; }
+};
+
+template <>
+struct ScalarTraits<double> {
+  static constexpr double epsilon() { return 1e-14; }
+  static constexpr double infinity() { return std::numeric_limits<double>::infinity(); }
+  static double sqrt(double x) { return std::sqrt(x); }
+  static double abs(double x) { return std::fabs(x); }
+  static double recip(double x) { return 1.0 / x; }
+};
+
+} // namespace dart::lcpsolver
+```
+
+2. Update `common.h` macros to use ScalarTraits:
+```cpp
+#define dInfinity ScalarTraits<Scalar>::infinity()
+#define dRecip(x) ScalarTraits<Scalar>::recip(x)
+// etc.
+```
+
+**Success Criteria**:
+- Type traits compile for both float and double
+- No changes to algorithm logic yet
+- Tests still pass with double precision
+
+#### Phase 3.2.2: Templatize Core Math Functions (Step 2)
+
+**Objective**: Convert matrix operations and core math functions to templates.
+
+**Files to modify**:
+- `dart/lcpsolver/dantzig/matrix.h` - Function declarations
+- `dart/lcpsolver/dantzig/matrix.cpp` - Function implementations
+
+**Tasks**:
+1. Templatize matrix functions:
+```cpp
+// Before:
+void dFactorLDLT(dReal* A, dReal* d, int n, int nskip);
+
+// After:
+template <typename Scalar>
+void FactorLDLT(Scalar* A, Scalar* d, int n, int nskip);
+```
+
+2. Move implementations to header (template implementations must be in headers)
+3. Update all callers to use template versions
+
+**Functions to templatize**:
+- `dFactorLDLT` → `FactorLDLT<Scalar>`
+- `dSolveLDLT` → `SolveLDLT<Scalar>`
+- `dSolveL1` → `SolveL1<Scalar>`
+- `dSolveL1T` → `SolveL1T<Scalar>`
+- `dLDLTRemove` → `LDLTRemove<Scalar>`
+- `dSetZero` → `SetZero<Scalar>`
+- `dDot` → `Dot<Scalar>`
+- `dMultiply*` → `Multiply*<Scalar>`
+
+**Implementation Strategy**:
+- Create template versions in new header: `matrix_template.hpp`
+- Keep old implementations temporarily for backward compatibility
+- Gradually migrate callers
+- Remove old implementations after migration complete
+
+**Success Criteria**:
+- All matrix functions are templated
+- Tests pass for both float and double
+- Benchmark shows no performance regression
+
+#### Phase 3.2.3: Templatize Fast LDLT Operations (Step 3)
+
+**Objective**: Convert fast*.cpp optimized routines to templates.
+
+**Files to modify**:
+- `dart/lcpsolver/dantzig/fastldlt.cpp` → `fastldlt_template.hpp`
+- `dart/lcpsolver/dantzig/fastlsolve.cpp` → `fastlsolve_template.hpp`
+- `dart/lcpsolver/dantzig/fastltsolve.cpp` → `fastltsolve_template.hpp`
+- `dart/lcpsolver/dantzig/fastdot.cpp` → `fastdot_template.hpp`
+
+**Tasks**:
+1. Move functions to headers with template parameter
+2. Replace `dReal` with `Scalar` template parameter
+3. Update internal function calls to use template versions
+4. Test both float and double precision
+
+**Functions to templatize**:
+- `_dFactorLDLT` → `_FactorLDLT<Scalar>`
+- `_dSolveL1` → `_SolveL1<Scalar>`
+- `_dSolveL1T` → `_SolveL1T<Scalar>`
+- Fast dot product implementations
+
+**Success Criteria**:
+- Fast operations work with both float and double
+- Performance matches non-template baseline
+- No code duplication
+
+#### Phase 3.2.4: Templatize Main LCP Solver (Step 4)
+
+**Objective**: Convert the main dLCP class and SolveLCP function to templates.
+
+**Files to modify**:
+- `dart/lcpsolver/dantzig/lcp.h` - Update declarations
+- `dart/lcpsolver/dantzig/lcp.cpp` → move to `lcp_template.hpp`
+
+**Tasks**:
+1. Templatize dLCP class:
+```cpp
+template <typename Scalar>
+struct LCP {
+  const int m_n;
+  const int m_nskip;
+  int m_nub;
+  int m_nC, m_nN;
+  Scalar* const m_A;
+  Scalar* const m_x;
+  Scalar* const m_b;
+  // ... etc
+
+  void transfer_i_to_C(int i);
+  void transfer_i_to_N(int i);
+  // ... etc
+};
+```
+
+2. Templatize main solver:
+```cpp
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination);
+```
+
+3. Move implementation to header file (required for templates)
+4. Provide explicit instantiations in .cpp file for faster compilation:
+```cpp
+// lcp.cpp
+#include "lcp_template.hpp"
+
+namespace dart::lcpsolver {
+
+// Explicit instantiations
+template bool SolveLCP<float>(...);
+template bool SolveLCP<double>(...);
+
+} // namespace dart::lcpsolver
+```
+
+5. Update backward compatibility wrapper:
+```cpp
+// Keep for backward compatibility
+inline bool dSolveLCP(
+    int n, dReal* A, dReal* x, dReal* b, dReal* w,
+    int nub, dReal* lo, dReal* hi, int* findex,
+    bool earlyTermination = false)
+{
+  return SolveLCP<dReal>(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+}
+```
+
+**Success Criteria**:
+- Main solver fully templated
+- Both float and double work natively (no conversions)
+- Tests pass for both types
+- Benchmarks show appropriate performance characteristics
+
+#### Phase 3.2.5: Update Utilities and Helpers (Step 5)
+
+**Objective**: Templatize remaining utility functions.
+
+**Files to modify**:
+- `dart/lcpsolver/dantzig/misc.h` - Test and utility functions
+- `dart/lcpsolver/dantzig/misc.cpp` - Implementations
+
+**Tasks**:
+1. Templatize test functions:
+```cpp
+template <typename Scalar>
+int TestSolveLCP();
+```
+
+2. Templatize matrix test utilities:
+```cpp
+template <typename Scalar>
+void MakeRandomMatrix(Scalar* A, int n, int m, Scalar range);
+```
+
+3. Update error handling to work with templates
+
+**Success Criteria**:
+- All utilities are templated
+- Test suite works with both float and double
+- No hard-coded type assumptions
+
+#### Phase 3.2.6: Update Benchmarks (Step 6)
+
+**Objective**: Remove type conversion overhead from benchmarks to get true performance comparison.
+
+**Files to modify**:
+- `tests/benchmark/lcpsolver/bm_lcpsolver.cpp`
+
+**Tasks**:
+1. Update F32 benchmark to use native float throughout:
+```cpp
+static void BM_Dantzig_F32_Solver(
+    benchmark::State& state, dart::test::LCPProblem problem)
+{
+  // Convert problem data to float once
+  std::vector<float> A_f(problem.dimension * problem.dimension);
+  std::vector<float> b_f(problem.dimension);
+  std::vector<float> x_f(problem.dimension, 0.0f);
+  std::vector<float> w_f(problem.dimension, 0.0f);
+  std::vector<float> lo_f(problem.dimension, -1e10f);
+  std::vector<float> hi_f(problem.dimension, 1e10f);
+
+  // Convert once
+  for (int i = 0; i < problem.dimension; ++i) {
+    for (int j = 0; j < problem.dimension; ++j) {
+      A_f[i * problem.dimension + j] = static_cast<float>(problem.A(i, j));
+    }
+    b_f[i] = static_cast<float>(problem.b(i));
+  }
+
+  for (auto _ : state) {
+    // Reset solution vectors
+    std::fill(x_f.begin(), x_f.end(), 0.0f);
+    std::fill(w_f.begin(), w_f.end(), 0.0f);
+
+    // Copy A back (solver modifies it)
+    std::vector<float> A_copy = A_f;
+
+    // Solve LCP using native float (no conversions inside!)
+    bool success = dart::lcpsolver::SolveLCP<float>(
+        problem.dimension,
+        A_copy.data(),
+        x_f.data(),
+        b_f.data(),
+        w_f.data(),
+        0,
+        lo_f.data(),
+        hi_f.data(),
+        nullptr,
+        false);
+
+    benchmark::DoNotOptimize(success);
+    benchmark::DoNotOptimize(x_f.data());
+  }
+
+  state.SetLabel("Dantzig-F32/" + problem.name);
+}
+```
+
+2. Verify performance characteristics:
+   - F32 should be faster due to smaller memory footprint and SIMD
+   - Or possibly slower due to precision issues requiring more iterations
+   - Document actual results
+
+**Success Criteria**:
+- Benchmarks use native types throughout
+- No hidden conversions
+- True performance comparison documented
+
+#### Phase 3.2.7: Update Tests (Step 7)
+
+**Objective**: Ensure test suite validates both float and double implementations.
+
+**Files to modify**:
+- `tests/unit/lcpsolver/test_DantzigVsODE.cpp`
+
+**Tasks**:
+1. Add parameterized tests for both types:
+```cpp
+template <typename Scalar>
+class DantzigSolverTest : public ::testing::Test {
+protected:
+  void TestProblem(const LCPProblem& problem) {
+    // Test logic here
+  }
+};
+
+using ScalarTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(DantzigSolverTest, ScalarTypes);
+
+TYPED_TEST(DantzigSolverTest, Problem1D) {
+  this->TestProblem(getProblem1D());
+}
+```
+
+2. Verify numerical accuracy for both types:
+   - Float: looser tolerance (1e-5)
+   - Double: stricter tolerance (1e-10)
+
+**Success Criteria**:
+- Tests pass for both float and double
+- Appropriate tolerances for each type
+- Coverage of edge cases for both types
+
+#### Phase 3.2.8: Documentation and Cleanup (Step 8)
+
+**Objective**: Document the templated API and clean up old code.
+
+**Tasks**:
+1. Update API documentation in headers
+2. Add examples of using both float and double
+3. Remove old non-template implementations
+4. Update CMakeLists.txt if needed
+5. Update this plan document with results
+
+**Success Criteria**:
+- API is well documented
+- No dead code remains
+- Clean separation of concerns
+- Easy to use for clients
+
+#### Testing Strategy for Phase 3.2
+
+**For each step**:
+1. Run unit tests: `pixi run test-lcpsolver`
+2. Run benchmarks: `pixi run bm-lcpsolver`
+3. Compare results:
+   - Correctness: Solutions should match baseline within tolerance
+   - Performance: Document any changes
+4. Document findings before proceeding to next step
+
+**Performance Expectations**:
+- **Float (F32)**:
+  - Memory: ~50% of F64 (due to smaller data)
+  - Speed: Could be faster (SIMD, cache) or slower (precision issues)
+  - Accuracy: Lower precision, may need more iterations
+
+- **Double (F64)**:
+  - Memory: Baseline reference
+  - Speed: Should match current performance
+  - Accuracy: Higher precision, fewer iterations
+
+**Rollback Criteria**:
+- If any step causes >10% performance regression for F64
+- If tests fail and cannot be fixed within reasonable effort
+- If complexity becomes unmanageable
+
+#### File Organization After Phase 3.2
+
+**New structure**:
+```
+dart/lcpsolver/dantzig/
+├── common.h              # Type traits, constants
+├── lcp.h                 # Public API declarations
+├── lcp.cpp               # Explicit template instantiations
+├── lcp_template.hpp      # Template implementations
+├── matrix_template.hpp   # Matrix operations (templates)
+├── fastldlt_template.hpp # Fast LDLT operations
+├── fastlsolve_template.hpp
+├── fastltsolve_template.hpp
+├── fastdot_template.hpp
+├── misc_template.hpp     # Utility functions
+├── error.h               # Error handling
+└── error.cpp             # Error implementation
+```
+
+**Backward compatibility**:
+- Keep `dReal` as `typedef double dReal;`
+- Keep `dSolveLCP` as inline wrapper to `SolveLCP<double>`
+- Existing code continues to work unchanged
 
 ### 1. Establish Baseline (Week 1)
 

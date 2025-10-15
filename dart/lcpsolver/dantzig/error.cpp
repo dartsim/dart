@@ -21,11 +21,15 @@
  *************************************************************************/
 #include "dart/lcpsolver/dantzig/error.h"
 
+#include "dart/common/Logging.hpp"
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <array>
+#include <sstream>
+
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 
 namespace dart::lcpsolver {
 
@@ -143,11 +147,12 @@ void dError(int num, const char* msg, ...)
   if (error_function)
     error_function(num, msg, ap);
   else {
-    char s[1000], title[100];
-    _snprintf(title, sizeof(title), "ODE Error %d", num);
-    _vsnprintf(s, sizeof(s), msg, ap);
-    s[sizeof(s) - 1] = 0;
-    MessageBox(0, s, title, MB_OK | MB_ICONWARNING);
+    std::array<char, 1000> s;
+    std::array<char, 100> title;
+    _snprintf(title.data(), title.size(), "ODE Error %d", num);
+    _vsnprintf(s.data(), s.size(), msg, ap);
+    s[s.size() - 1] = 0;
+    MessageBox(0, s.data(), title.data(), MB_OK | MB_ICONWARNING);
   }
   exit(1);
 }
@@ -159,11 +164,12 @@ void dDebug(int num, const char* msg, ...)
   if (debug_function)
     debug_function(num, msg, ap);
   else {
-    char s[1000], title[100];
-    _snprintf(title, sizeof(title), "ODE INTERNAL ERROR %d", num);
-    _vsnprintf(s, sizeof(s), msg, ap);
-    s[sizeof(s) - 1] = 0;
-    MessageBox(0, s, title, MB_OK | MB_ICONSTOP);
+    std::array<char, 1000> s;
+    std::array<char, 100> title;
+    _snprintf(title.data(), title.size(), "ODE INTERNAL ERROR %d", num);
+    _vsnprintf(s.data(), s.size(), msg, ap);
+    s[s.size() - 1] = 0;
+    MessageBox(0, s.data(), title.data(), MB_OK | MB_ICONSTOP);
   }
   abort();
 }

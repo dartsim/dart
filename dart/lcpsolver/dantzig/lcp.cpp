@@ -114,6 +114,8 @@ rows/columns and manipulate C.
 #include "dart/lcpsolver/dantzig/misc.h"
 #include "dart/lcpsolver/dantzig/odeconfig.h"
 
+#include <vector>
+
 //***************************************************************************
 // code generation parameters
 
@@ -284,14 +286,13 @@ static void swapProblem(
 static void checkFactorization(
     ATYPE A, dReal* _L, dReal* _d, int nC, int* C, int nskip)
 {
-  int i, j;
   if (nC == 0)
     return;
 
   // get A1=A, copy the lower triangle to the upper triangle, get A2=A[C,C]
   dMatrix A1(nC, nC);
-  for (i = 0; i < nC; i++) {
-    for (j = 0; j <= i; j++)
+  for (int i = 0; i < nC; ++i) {
+    for (int j = 0; j <= i; ++j)
       A1(i, j) = A1(j, i) = AROW(i)[j];
   }
   dMatrix A2 = A1.select(nC, C, nC, C);
@@ -302,10 +303,10 @@ static void checkFactorization(
   // compute A3 = L*D*L'
   dMatrix L(nC, nC, _L, nskip, 1);
   dMatrix D(nC, nC);
-  for (i = 0; i < nC; i++)
+  for (int i = 0; i < nC; ++i)
     D(i, i) = 1 / _d[i];
   L.clearUpperTriangle();
-  for (i = 0; i < nC; i++)
+  for (int i = 0; i < nC; ++i)
     L(i, i) = 1;
   dMatrix A3 = L * D * L.transpose();
 
@@ -1508,6 +1509,89 @@ ODE_API int dTestSolveLCP()
 
   return 1;
 }
+
+// Template version of SolveLCP - implementation using dReal internally
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination)
+{
+  // Convert to dReal (double) for computation
+  std::vector<dReal> A_d(n * n);
+  std::vector<dReal> x_d(n);
+  std::vector<dReal> b_d(n);
+  std::vector<dReal> w_d(n);
+  std::vector<dReal> lo_d(n);
+  std::vector<dReal> hi_d(n);
+
+  // Copy input to double
+  for (int i = 0; i < n * n; ++i)
+    A_d[i] = static_cast<dReal>(A[i]);
+  for (int i = 0; i < n; ++i) {
+    b_d[i] = static_cast<dReal>(b[i]);
+    lo_d[i] = static_cast<dReal>(lo[i]);
+    hi_d[i] = static_cast<dReal>(hi[i]);
+  }
+
+  // Solve using double precision
+  bool success = dSolveLCP(
+      n,
+      A_d.data(),
+      x_d.data(),
+      b_d.data(),
+      w_d.data(),
+      nub,
+      lo_d.data(),
+      hi_d.data(),
+      findex,
+      earlyTermination);
+
+  // Copy results back
+  for (int i = 0; i < n; ++i) {
+    x[i] = static_cast<Scalar>(x_d[i]);
+    if (w)
+      w[i] = static_cast<Scalar>(w_d[i]);
+  }
+
+  // Copy modified A back
+  for (int i = 0; i < n * n; ++i)
+    A[i] = static_cast<Scalar>(A_d[i]);
+
+  return success;
+}
+
+// Explicit template instantiations
+template bool SolveLCP<float>(
+    int n,
+    float* A,
+    float* x,
+    float* b,
+    float* w,
+    int nub,
+    float* lo,
+    float* hi,
+    int* findex,
+    bool earlyTermination);
+
+template bool SolveLCP<double>(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    double* w,
+    int nub,
+    double* lo,
+    double* hi,
+    int* findex,
+    bool earlyTermination);
 
 } // namespace lcpsolver
 } // namespace dart
