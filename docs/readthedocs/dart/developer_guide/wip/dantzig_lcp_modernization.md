@@ -43,19 +43,29 @@ performance, and maintainability while ensuring correctness through rigorous tes
 - [x] Copied dart/external/odelcpsolver/ to tests/baseline/odelcpsolver/
 - [x] Created tests/baseline/CMakeLists.txt for baseline ODE library
 - [x] Updated tests/CMakeLists.txt to include baseline subdirectory
+- [x] Created tests/benchmark/lcpsolver/ infrastructure:
+  - CMakeLists.txt for benchmark builds
+  - LCPTestProblems.hpp (shared test cases for 1D-48D problems)
+  - bm_lcpsolver.cpp (combined benchmark for Dantzig vs ODE baseline comparison)
+- [x] Created comprehensive unit test test_DantzigVsODE.cpp:
+  - Tests all problem sizes (1D, 2D, 4D, 6D, 12D, 24D, 48D)
+  - Verifies complementarity conditions
+  - Compares solutions between Dantzig and ODE baseline
+  - Currently passing: 1D, 2D, 4D (3/7 tests)
+- [x] Updated tests/benchmark/CMakeLists.txt to include lcpsolver subdirectory
+- [x] Fixed baseline library includes to use relative paths
+- [x] Added pixi task `bm-lcpsolver` for running combined benchmarks
+- [x] Baseline ODE library successfully builds and links
 
 ### In Progress 🚧
-- [ ] Create benchmark infrastructure for LCP solver comparison
+- [ ] Refine test cases for better LCP problem conditioning
+- [ ] Investigate and fix remaining test failures (6D, 12D, 24D, 48D)
 
 ### Pending Tasks 📋
-- [ ] Move dart/external/odelcpsolver/ to tests/baseline/odelcpsolver/
-- [ ] Update CMake configuration for baseline tests
-- [ ] Create benchmark infrastructure
 - [ ] Remove ODE namespace from dart/lcpsolver/dantzig/
 - [ ] Phase A: STL modernization
 - [ ] Phase B: Eigen integration
 - [ ] Phase C: DrJit SIMD integration (future)
-- [ ] Comprehensive unit tests
 - [ ] Code style updates
 
 ## Detailed Implementation Plan

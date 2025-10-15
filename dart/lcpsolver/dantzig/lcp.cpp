@@ -134,8 +134,7 @@ rows/columns and manipulate C.
 #define NUB_OPTIMIZATIONS
 
 namespace dart {
-namespace external {
-namespace ode {
+namespace lcpsolver {
 
 //***************************************************************************
 
@@ -1290,6 +1289,5 @@ ODE_API int dTestSolveLCP()
   return 1;
 }
 
-} // namespace ode
-} // namespace external
+} // namespace lcpsolver
 } // namespace dart

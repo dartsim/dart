@@ -25,10 +25,10 @@
 #ifndef _ODE_ERROR_H_
 #define _ODE_ERROR_H_
 
-#include "dart/external/odelcpsolver/odeconfig.h"
+#include "odeconfig.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* all user defined error functions have this type. error and debug functions
@@ -56,7 +56,7 @@ ODE_API void dDebug (int num, const char *msg, ...);
 ODE_API void dMessage (int num, const char *msg, ...);
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif

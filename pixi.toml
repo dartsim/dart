@@ -323,6 +323,14 @@ bm-kinematics = { cmd = """
     "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-lcpsolver = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target BM_LCPSOLVER \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_LCPSOLVER
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
 tu-biped = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \

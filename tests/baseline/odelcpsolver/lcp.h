@@ -54,11 +54,11 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 #include <stdio.h>
 #include <cassert>
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/common.h"
+#include "odeconfig.h"
+#include "common.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b, dReal *w,
@@ -69,7 +69,7 @@ size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail);
 ODE_API int dTestSolveLCP();
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif

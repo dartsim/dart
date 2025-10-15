@@ -22,10 +22,10 @@
 
 /* generated code, do not edit. */
 
-#include "dart/external/odelcpsolver/matrix.h"
+#include "matrix.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 dReal _dDot (const dReal *a, const dReal *b, int n)
@@ -63,5 +63,5 @@ dReal dDot (const dReal *a, const dReal *b, int n)
 }
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart

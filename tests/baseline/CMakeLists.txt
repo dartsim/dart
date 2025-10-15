@@ -10,10 +10,10 @@ file(GLOB baseline_ode_hdrs "odelcpsolver/*.h")
 # Create a static library for the baseline ODE LCP solver
 dart_add_library(dart-baseline-ode ${baseline_ode_srcs} ${baseline_ode_hdrs})
 
-# Set include directories
+# Set include directories - use PROJECT_SOURCE_DIR so consumers can include as "tests/baseline/odelcpsolver/..."
 target_include_directories(dart-baseline-ode
   PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
