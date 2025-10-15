@@ -40,7 +40,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/lcp.h"
 
 #include <iostream>
 

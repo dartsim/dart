@@ -19,65 +19,64 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
  *                                                                       *
  *************************************************************************/
+#include "dart/lcpsolver/dantzig/error.h"
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/error.h"
+#include "dart/lcpsolver/dantzig/odeconfig.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace dart {
 namespace external {
 namespace ode {
 
-static dMessageFunction *error_function = 0;
-static dMessageFunction *debug_function = 0;
-static dMessageFunction *message_function = 0;
+static dMessageFunction* error_function = 0;
+static dMessageFunction* debug_function = 0;
+static dMessageFunction* message_function = 0;
 
-
-void dSetErrorHandler (dMessageFunction *fn)
+void dSetErrorHandler(dMessageFunction* fn)
 {
   error_function = fn;
 }
 
-
-void dSetDebugHandler (dMessageFunction *fn)
+void dSetDebugHandler(dMessageFunction* fn)
 {
   debug_function = fn;
 }
 
-
-void dSetMessageHandler (dMessageFunction *fn)
+void dSetMessageHandler(dMessageFunction* fn)
 {
   message_function = fn;
 }
 
-
-dMessageFunction *dGetErrorHandler()
+dMessageFunction* dGetErrorHandler()
 {
   return error_function;
 }
 
-
-dMessageFunction *dGetDebugHandler()
+dMessageFunction* dGetDebugHandler()
 {
   return debug_function;
 }
 
-
-dMessageFunction *dGetMessageHandler()
+dMessageFunction* dGetMessageHandler()
 {
   return message_function;
 }
 
-
-static void printMessage (int num, const char *msg1, const char *msg2,
-			  va_list ap)
+static void printMessage(
+    int num, const char* msg1, const char* msg2, va_list ap)
 {
-  fflush (stderr);
-  fflush (stdout);
-  if (num) fprintf (stderr,"\n%s %d: ",msg1,num);
-  else fprintf (stderr,"\n%s: ",msg1);
-  vfprintf (stderr,msg2,ap);
-  fprintf (stderr,"\n");
-  fflush (stderr);
+  fflush(stderr);
+  fflush(stdout);
+  if (num)
+    fprintf(stderr, "\n%s %d: ", msg1, num);
+  else
+    fprintf(stderr, "\n%s: ", msg1);
+  vfprintf(stderr, msg2, ap);
+  fprintf(stderr, "\n");
+  fflush(stderr);
 }
 
 //****************************************************************************
@@ -85,33 +84,37 @@ static void printMessage (int num, const char *msg1, const char *msg2,
 
 #ifndef _WIN32
 
-void dError (int num, const char *msg, ...)
+void dError(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (error_function) error_function (num,msg,ap);
-  else printMessage (num,"ODE Error",msg,ap);
-  exit (1);
+  va_start(ap, msg);
+  if (error_function)
+    error_function(num, msg, ap);
+  else
+    printMessage(num, "ODE Error", msg, ap);
+  exit(1);
 }
 
-
-void dDebug (int num, const char *msg, ...)
+void dDebug(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (debug_function) debug_function (num,msg,ap);
-  else printMessage (num,"ODE INTERNAL ERROR",msg,ap);
+  va_start(ap, msg);
+  if (debug_function)
+    debug_function(num, msg, ap);
+  else
+    printMessage(num, "ODE INTERNAL ERROR", msg, ap);
   // *((char *)0) = 0;   ... commit SEGVicide
   abort();
 }
 
-
-void dMessage (int num, const char *msg, ...)
+void dMessage(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (message_function) message_function (num,msg,ap);
-  else printMessage (num,"ODE Message",msg,ap);
+  va_start(ap, msg);
+  if (message_function)
+    message_function(num, msg, ap);
+  else
+    printMessage(num, "ODE Message", msg, ap);
 }
 
 #endif
@@ -121,60 +124,60 @@ void dMessage (int num, const char *msg, ...)
 
 #ifdef _WIN32
 
-// isn't cygwin annoying!
-#ifdef CYGWIN
-#define _snprintf snprintf
-#define _vsnprintf vsnprintf
-#endif
+  // isn't cygwin annoying!
+  #ifdef CYGWIN
+    #define _snprintf snprintf
+    #define _vsnprintf vsnprintf
+  #endif
 
+  #ifdef NOMINMAX
+    #include <windows.h>
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+  #endif
 
-#ifdef NOMINMAX
-  #include <windows.h>
-#else
-  #define NOMINMAX
-  #include <windows.h>
-  #undef NOMINMAX
-#endif
-
-
-void dError (int num, const char *msg, ...)
+void dError(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (error_function) error_function (num,msg,ap);
+  va_start(ap, msg);
+  if (error_function)
+    error_function(num, msg, ap);
   else {
-    char s[1000],title[100];
-    _snprintf (title,sizeof(title),"ODE Error %d",num);
-    _vsnprintf (s,sizeof(s),msg,ap);
-    s[sizeof(s)-1] = 0;
-    MessageBox(0,s,title,MB_OK | MB_ICONWARNING);
+    char s[1000], title[100];
+    _snprintf(title, sizeof(title), "ODE Error %d", num);
+    _vsnprintf(s, sizeof(s), msg, ap);
+    s[sizeof(s) - 1] = 0;
+    MessageBox(0, s, title, MB_OK | MB_ICONWARNING);
   }
-  exit (1);
+  exit(1);
 }
 
-
-void dDebug (int num, const char *msg, ...)
+void dDebug(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (debug_function) debug_function (num,msg,ap);
+  va_start(ap, msg);
+  if (debug_function)
+    debug_function(num, msg, ap);
   else {
-    char s[1000],title[100];
-    _snprintf (title,sizeof(title),"ODE INTERNAL ERROR %d",num);
-    _vsnprintf (s,sizeof(s),msg,ap);
-    s[sizeof(s)-1] = 0;
-    MessageBox(0,s,title,MB_OK | MB_ICONSTOP);
+    char s[1000], title[100];
+    _snprintf(title, sizeof(title), "ODE INTERNAL ERROR %d", num);
+    _vsnprintf(s, sizeof(s), msg, ap);
+    s[sizeof(s) - 1] = 0;
+    MessageBox(0, s, title, MB_OK | MB_ICONSTOP);
   }
   abort();
 }
 
-
-void dMessage (int num, const char *msg, ...)
+void dMessage(int num, const char* msg, ...)
 {
   va_list ap;
-  va_start (ap,msg);
-  if (message_function) message_function (num,msg,ap);
-  else printMessage (num,"ODE Message",msg,ap);
+  va_start(ap, msg);
+  if (message_function)
+    message_function(num, msg, ap);
+  else
+    printMessage(num, "ODE Message", msg, ap);
 }
 
 #endif

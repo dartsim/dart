@@ -30,24 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "LCPTestProblems.hpp"
-
 #include "dart/lcpsolver/dantzig/lcp.h"
 #include "tests/baseline/odelcpsolver/lcp.h"
+#include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
 #include <gtest/gtest.h>
 
 #include <vector>
+
 #include <cmath>
 
 // Types from both implementations
-using dart::lcpsolver::dReal;  // From Dantzig solver (in dart/lcpsolver/dantzig/)
+using dart::lcpsolver::dReal; // From Dantzig solver (in
+                              // dart/lcpsolver/dantzig/)
 
 // Forward declare the baseline function
-namespace dart { namespace baseline { namespace ode {
-  extern bool dSolveLCP(int n, dReal *A, dReal *x, dReal *b, dReal *w,
-    int nub, dReal *lo, dReal *hi, int *findex, bool earlyTermination);
-}}}
+namespace dart {
+namespace baseline {
+namespace ode {
+extern bool dSolveLCP(
+    int n,
+    dReal* A,
+    dReal* x,
+    dReal* b,
+    dReal* w,
+    int nub,
+    dReal* lo,
+    dReal* hi,
+    int* findex,
+    bool earlyTermination);
+}
+} // namespace baseline
+} // namespace dart
 
 namespace {
 
@@ -110,7 +124,7 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
   std::vector<dReal> b_ode(n);
   std::vector<dReal> x_ode(n, 0.0);
   std::vector<dReal> w_ode(n, 0.0);
-  std::vector<dReal> lo_ode(n, 0.0);  // Standard LCP: x >= 0
+  std::vector<dReal> lo_ode(n, 0.0); // Standard LCP: x >= 0
   std::vector<dReal> hi_ode(n, 1e10);
 
   // Prepare data for Dantzig solver
@@ -118,7 +132,7 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
   std::vector<dReal> b_dantzig(n);
   std::vector<dReal> x_dantzig(n, 0.0);
   std::vector<dReal> w_dantzig(n, 0.0);
-  std::vector<dReal> lo_dantzig(n, 0.0);  // Standard LCP: x >= 0
+  std::vector<dReal> lo_dantzig(n, 0.0); // Standard LCP: x >= 0
   std::vector<dReal> hi_dantzig(n, 1e10);
 
   // Copy data

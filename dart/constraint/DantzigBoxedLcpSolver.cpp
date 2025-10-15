@@ -33,7 +33,7 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
 #include "dart/common/Profile.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/lcp.h"
 
 namespace dart {
 namespace constraint {
@@ -57,15 +57,23 @@ bool DantzigBoxedLcpSolver::solve(
     double* A,
     double* x,
     double* b,
-    int /*nub*/,
+    int nub,
     double* lo,
     double* hi,
     int* findex,
     bool earlyTermination)
 {
   DART_PROFILE_SCOPED;
-  return external::ode::dSolveLCP(
-      n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
+
+  // Allocate w vector for LCP solver
+  double* w = new double[n];
+  std::memset(w, 0, n * sizeof(double));
+
+  bool result = lcpsolver::dSolveLCP(
+      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+
+  delete[] w;
+  return result;
 }
 
 #if DART_BUILD_MODE_DEBUG

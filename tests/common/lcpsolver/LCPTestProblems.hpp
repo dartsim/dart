@@ -34,6 +34,9 @@
 #define DART_TESTS_LCPTESTPROBLEMS_HPP_
 
 #include <Eigen/Dense>
+
+#include <random>
+
 #include <cstdint>
 
 namespace dart {
@@ -42,10 +45,10 @@ namespace test {
 /// Flags indicating what makes an LCP problem ill-formed
 enum class LCPProblemIssue : uint32_t
 {
-  None = 0,                      ///< Well-formed problem
-  NotSymmetric = 1 << 0,         ///< Matrix A is not symmetric
-  NotPositiveDefinite = 1 << 1,  ///< Matrix A has negative eigenvalues
-  IllConditioned = 1 << 2,       ///< Condition number > 10000
+  None = 0,                       ///< Well-formed problem
+  NotSymmetric = 1 << 0,          ///< Matrix A is not symmetric
+  NotPositiveDefinite = 1 << 1,   ///< Matrix A has negative eigenvalues
+  IllConditioned = 1 << 2,        ///< Condition number > 10000
   SingularOrNearSingular = 1 << 3 ///< Matrix is singular or nearly singular
 };
 
@@ -83,9 +86,12 @@ struct LCPProblem
   Eigen::VectorXd b;
   int dimension;
   std::string name;
-  LCPProblemIssue issues;  ///< Flags indicating problem issues
+  LCPProblemIssue issues; ///< Flags indicating problem issues
 
-  LCPProblem(int dim, const std::string& problemName, LCPProblemIssue problemIssues = LCPProblemIssue::None)
+  LCPProblem(
+      int dim,
+      const std::string& problemName,
+      LCPProblemIssue problemIssues = LCPProblemIssue::None)
     : dimension(dim), name(problemName), issues(problemIssues)
   {
     A.resize(dim, dim);
@@ -126,10 +132,8 @@ public:
   {
     LCPProblem problem(4, "4D");
     // Diagonally dominant positive definite matrix
-    problem.A << 5.0, 0.5, 0.3, 0.2,
-                 0.5, 5.0, 0.4, 0.3,
-                 0.3, 0.4, 5.0, 0.5,
-                 0.2, 0.3, 0.5, 5.0;
+    problem.A << 5.0, 0.5, 0.3, 0.2, 0.5, 5.0, 0.4, 0.3, 0.3, 0.4, 5.0, 0.5,
+        0.2, 0.3, 0.5, 5.0;
     problem.b << -0.01, -0.02, -0.03, -0.04;
     return problem;
   }
@@ -141,8 +145,8 @@ public:
         4,
         "4D_IllFormed",
         LCPProblemIssue::NotPositiveDefinite | LCPProblemIssue::IllConditioned);
-    problem.A << 3.999, 0.9985, 1.001, -2, 0.9985, 3.998, -2, 0.9995, 1.001,
-        -2, 4.002, 1.001, -2, 0.9995, 1.001, 4.001;
+    problem.A << 3.999, 0.9985, 1.001, -2, 0.9985, 3.998, -2, 0.9995, 1.001, -2,
+        4.002, 1.001, -2, 0.9995, 1.001, 4.001;
     problem.b << -0.01008, -0.009494, -0.07234, -0.07177;
     return problem;
   }
@@ -152,12 +156,9 @@ public:
   {
     LCPProblem problem(6, "6D");
     // Diagonally dominant positive definite matrix
-    problem.A << 8.0, 0.5, 0.3, 0.2, 0.1, 0.1,
-                 0.5, 8.0, 0.4, 0.3, 0.2, 0.1,
-                 0.3, 0.4, 8.0, 0.5, 0.3, 0.2,
-                 0.2, 0.3, 0.5, 8.0, 0.4, 0.3,
-                 0.1, 0.2, 0.3, 0.4, 8.0, 0.5,
-                 0.1, 0.1, 0.2, 0.3, 0.5, 8.0;
+    problem.A << 8.0, 0.5, 0.3, 0.2, 0.1, 0.1, 0.5, 8.0, 0.4, 0.3, 0.2, 0.1,
+        0.3, 0.4, 8.0, 0.5, 0.3, 0.2, 0.2, 0.3, 0.5, 8.0, 0.4, 0.3, 0.1, 0.2,
+        0.3, 0.4, 8.0, 0.5, 0.1, 0.1, 0.2, 0.3, 0.5, 8.0;
     problem.b << -0.01, -0.02, -0.03, -0.04, -0.05, -0.06;
     return problem;
   }
@@ -182,10 +183,10 @@ public:
     // Create diagonally dominant matrix
     problem.A.setZero();
     for (int i = 0; i < 12; ++i) {
-      problem.A(i, i) = 10.0;  // Strong diagonal
+      problem.A(i, i) = 10.0; // Strong diagonal
       for (int j = 0; j < 12; ++j) {
         if (i != j) {
-          problem.A(i, j) = 0.3;  // Small off-diagonal
+          problem.A(i, j) = 0.3; // Small off-diagonal
         }
       }
     }
@@ -196,7 +197,8 @@ public:
   /// 12D ill-formed test problem (original, has negative eigenvalues)
   static LCPProblem getProblem12D_IllFormed()
   {
-    LCPProblem problem(12, "12D_IllFormed", LCPProblemIssue::NotPositiveDefinite);
+    LCPProblem problem(
+        12, "12D_IllFormed", LCPProblemIssue::NotPositiveDefinite);
     problem.A << 4.03, -1.014, -1.898, 1.03, -1.014, -1.898, 1, -1.014, -1.898,
         -2, -1.014, -1.898, -1.014, 4.885, -1.259, 1.888, 3.81, 2.345, -1.879,
         1.281, -2.334, 1.022, 0.206, 1.27, -1.898, -1.259, 3.2, -1.032, -0.6849,
@@ -212,9 +214,8 @@ public:
         -1.014, 0.206, 1.24, 1.888, 1.265, -2.309, -1.879, 3.755, 2.299, 1.022,
         4.814, -1.25, -1.898, 1.27, 1.85, -1.032, 0.6907, 3.791, 1.003, -0.6714,
         1.27, 1.869, -1.25, 3.212;
-    problem.b << -0.00981, -1.458e-10, 5.357e-10, -0.0098, -1.44e-10,
-        5.298e-10, -0.009807, -1.399e-10, 5.375e-10, -0.009807, -1.381e-10,
-        5.316e-10;
+    problem.b << -0.00981, -1.458e-10, 5.357e-10, -0.0098, -1.44e-10, 5.298e-10,
+        -0.009807, -1.399e-10, 5.375e-10, -0.009807, -1.381e-10, 5.316e-10;
     return problem;
   }
 
@@ -285,6 +286,101 @@ public:
     auto illFormed = getIllFormedProblems();
     wellFormed.insert(wellFormed.end(), illFormed.begin(), illFormed.end());
     return wellFormed;
+  }
+
+  /// Generate a random well-formed (positive definite) LCP problem
+  static LCPProblem generateRandomWellFormed(
+      int dimension, unsigned int seed = 42)
+  {
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(0.1, 1.0);
+
+    LCPProblem problem(
+        dimension, "Random" + std::to_string(dimension) + "D_WellFormed");
+
+    // Create a positive definite matrix using A = M^T * M + lambda * I
+    // where M is a random matrix and lambda ensures positive definiteness
+    Eigen::MatrixXd M(dimension, dimension);
+    for (int i = 0; i < dimension; ++i) {
+      for (int j = 0; j < dimension; ++j) {
+        M(i, j) = dist(rng);
+      }
+    }
+
+    // Make it symmetric and positive definite
+    problem.A = M.transpose() * M;
+
+    // Add diagonal dominance to ensure positive definiteness
+    double lambda = 2.0 * dimension;
+    problem.A += lambda * Eigen::MatrixXd::Identity(dimension, dimension);
+
+    // Generate random b vector
+    for (int i = 0; i < dimension; ++i) {
+      problem.b(i) = -dist(rng) * 0.1; // Negative values typical for LCP
+    }
+
+    return problem;
+  }
+
+  /// Generate a random ill-formed (non-positive definite) LCP problem
+  static LCPProblem generateRandomIllFormed(
+      int dimension, unsigned int seed = 42)
+  {
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
+
+    LCPProblem problem(
+        dimension,
+        "Random" + std::to_string(dimension) + "D_IllFormed",
+        LCPProblemIssue::NotPositiveDefinite);
+
+    // Create a symmetric but NOT positive definite matrix
+    Eigen::MatrixXd M(dimension, dimension);
+    for (int i = 0; i < dimension; ++i) {
+      for (int j = i; j < dimension; ++j) {
+        M(i, j) = M(j, i) = dist(rng);
+      }
+    }
+
+    // Subtract identity to create negative eigenvalues
+    problem.A
+        = M - 0.5 * dimension * Eigen::MatrixXd::Identity(dimension, dimension);
+
+    // Generate random b vector
+    for (int i = 0; i < dimension; ++i) {
+      problem.b(i) = dist(rng) * 0.1;
+    }
+
+    return problem;
+  }
+
+  /// Generate multiple random well-formed problems of various dimensions
+  static std::vector<LCPProblem> generateRandomWellFormedProblems(
+      const std::vector<int>& dimensions, unsigned int baseSeed = 42)
+  {
+    std::vector<LCPProblem> problems;
+    problems.reserve(dimensions.size());
+
+    for (size_t i = 0; i < dimensions.size(); ++i) {
+      problems.push_back(generateRandomWellFormed(dimensions[i], baseSeed + i));
+    }
+
+    return problems;
+  }
+
+  /// Generate multiple random ill-formed problems of various dimensions
+  static std::vector<LCPProblem> generateRandomIllFormedProblems(
+      const std::vector<int>& dimensions, unsigned int baseSeed = 42)
+  {
+    std::vector<LCPProblem> problems;
+    problems.reserve(dimensions.size());
+
+    for (size_t i = 0; i < dimensions.size(); ++i) {
+      problems.push_back(
+          generateRandomIllFormed(dimensions[i], baseSeed + i * 100));
+    }
+
+    return problems;
   }
 };
 

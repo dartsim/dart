@@ -328,7 +328,7 @@ bm-lcpsolver = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target BM_LCPSOLVER \
         --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_LCPSOLVER
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped = { cmd = """

@@ -25,7 +25,7 @@
 #ifndef _ODE_MISC_H_
 #define _ODE_MISC_H_
 
-#include "dart/external/odelcpsolver/common.h"
+#include "dart/lcpsolver/dantzig/common.h"
 
 namespace dart {
 namespace external {
@@ -40,40 +40,41 @@ ODE_API int dTestRand(void);
 ODE_API unsigned long dRand(void);
 
 /* get and set the current random number seed. */
-ODE_API unsigned long  dRandGetSeed(void);
-ODE_API void dRandSetSeed (unsigned long s);
+ODE_API unsigned long dRandGetSeed(void);
+ODE_API void dRandSetSeed(unsigned long s);
 
 /* return a random integer between 0..n-1. the distribution will get worse
  * as n approaches 2^32.
  */
-ODE_API int dRandInt (int n);
+ODE_API int dRandInt(int n);
 
 /* return a random real number between 0..1 */
 ODE_API dReal dRandReal(void);
 
 /* print out a matrix */
 #ifdef __cplusplus
-ODE_API void dPrintMatrix (const dReal *A, int n, int m, char *fmt,
-		   FILE *f=stdout);
+ODE_API void dPrintMatrix(
+    const dReal* A, int n, int m, char* fmt, FILE* f = stdout);
 #else
-ODE_API void dPrintMatrix (const dReal *A, int n, int m, char *fmt, FILE *f);
+ODE_API void dPrintMatrix(const dReal* A, int n, int m, char* fmt, FILE* f);
 #endif
 
 /* make a random vector with entries between +/- range. A has n elements. */
-ODE_API void dMakeRandomVector (dReal *A, int n, dReal range);
+ODE_API void dMakeRandomVector(dReal* A, int n, dReal range);
 
 /* make a random matrix with entries between +/- range. A has size n*m. */
-ODE_API void dMakeRandomMatrix (dReal *A, int n, int m, dReal range);
+ODE_API void dMakeRandomMatrix(dReal* A, int n, int m, dReal range);
 
 /* clear the upper triangle of a square matrix */
-ODE_API void dClearUpperTriangle (dReal *A, int n);
+ODE_API void dClearUpperTriangle(dReal* A, int n);
 
 /* return the maximum element difference between the two n*m matrices */
-ODE_API dReal dMaxDifference (const dReal *A, const dReal *B, int n, int m);
+ODE_API dReal dMaxDifference(const dReal* A, const dReal* B, int n, int m);
 
 /* return the maximum element difference between the lower triangle of two
  * n*n matrices */
-ODE_API dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n);
+ODE_API dReal
+dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n);
 
 } // namespace ode
 } // namespace external

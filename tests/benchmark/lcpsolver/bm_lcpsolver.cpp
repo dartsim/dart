@@ -8,16 +8,34 @@
  * Benchmark comparing Dantzig LCP solver vs ODE baseline
  */
 
-#include "LCPTestProblems.hpp"
-
 #include "dart/lcpsolver/dantzig/lcp.h"
 #include "tests/baseline/odelcpsolver/lcp.h"
+#include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
 #include <benchmark/benchmark.h>
 
 #include <vector>
 
 using dart::lcpsolver::dReal;
+
+// Forward declare the baseline function
+namespace dart {
+namespace baseline {
+namespace ode {
+extern bool dSolveLCP(
+    int n,
+    dReal* A,
+    dReal* x,
+    dReal* b,
+    dReal* w,
+    int nub,
+    dReal* lo,
+    dReal* hi,
+    int* findex,
+    bool earlyTermination);
+}
+} // namespace baseline
+} // namespace dart
 
 // Helper function to prepare test data
 struct LCPBenchData
@@ -90,7 +108,8 @@ static void BM_Dantzig(benchmark::State& state, dart::test::LCPProblem problem)
 }
 
 // Benchmark ODE baseline solver
-static void BM_ODE_Baseline(benchmark::State& state, dart::test::LCPProblem problem)
+static void BM_ODE_Baseline(
+    benchmark::State& state, dart::test::LCPProblem problem)
 {
   LCPBenchData data(problem);
 
@@ -117,11 +136,14 @@ static void BM_ODE_Baseline(benchmark::State& state, dart::test::LCPProblem prob
   state.SetLabel("ODE/" + problem.name);
 }
 
-// Register benchmarks for all problem sizes with both solvers
-#define REGISTER_BENCHMARK_PAIR(NAME, PROBLEM) \
-  BENCHMARK_CAPTURE(BM_Dantzig, NAME, PROBLEM); \
+// Register benchmarks for well-formed problems only
+// (ill-formed problems can cause solver errors and are not suitable for
+// performance benchmarking)
+#define REGISTER_BENCHMARK_PAIR(NAME, PROBLEM)                                 \
+  BENCHMARK_CAPTURE(BM_Dantzig, NAME, PROBLEM);                                \
   BENCHMARK_CAPTURE(BM_ODE_Baseline, NAME, PROBLEM)
 
+// Static well-formed problems
 REGISTER_BENCHMARK_PAIR(1D, dart::test::LCPTestProblems::getProblem1D());
 REGISTER_BENCHMARK_PAIR(2D, dart::test::LCPTestProblems::getProblem2D());
 REGISTER_BENCHMARK_PAIR(4D, dart::test::LCPTestProblems::getProblem4D());
@@ -129,3 +151,13 @@ REGISTER_BENCHMARK_PAIR(6D, dart::test::LCPTestProblems::getProblem6D());
 REGISTER_BENCHMARK_PAIR(12D, dart::test::LCPTestProblems::getProblem12D());
 REGISTER_BENCHMARK_PAIR(24D, dart::test::LCPTestProblems::getProblem24D());
 REGISTER_BENCHMARK_PAIR(48D, dart::test::LCPTestProblems::getProblem48D());
+
+// Random well-formed problems with fixed seeds for deterministic benchmarking
+REGISTER_BENCHMARK_PAIR(
+    Random10D, dart::test::LCPTestProblems::generateRandomWellFormed(10, 42));
+REGISTER_BENCHMARK_PAIR(
+    Random20D, dart::test::LCPTestProblems::generateRandomWellFormed(20, 43));
+REGISTER_BENCHMARK_PAIR(
+    Random50D, dart::test::LCPTestProblems::generateRandomWellFormed(50, 44));
+REGISTER_BENCHMARK_PAIR(
+    Random100D, dart::test::LCPTestProblems::generateRandomWellFormed(100, 45));

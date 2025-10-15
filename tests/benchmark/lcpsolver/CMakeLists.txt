@@ -10,5 +10,4 @@ set_target_properties(BM_LCPSOLVER PROPERTIES FOLDER "Benchmarks")
 # Add to formatting
 dart_format_add(
   bm_lcpsolver.cpp
-  LCPTestProblems.hpp
 )

@@ -43,8 +43,8 @@
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+#include "dart/lcpsolver/dantzig/lcp.h"
 
 namespace dart {
 namespace constraint {

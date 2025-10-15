@@ -8,20 +8,81 @@
  * Tests to verify LCP test problems are well-formed
  */
 
-#include "LCPTestProblems.hpp"
-
-#include <gtest/gtest.h>
+#include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 
 namespace {
 
-// Helper to check if matrix is positive definite
-bool isPositiveDefinite(const Eigen::MatrixXd& A, double tolerance = 1e-10)
+TEST(LCPTestProblems, allProblemsExist)
 {
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(A);
-  return es.eigenvalues().minCoeff() > tolerance;
+  auto problems = dart::test::LCPTestProblems::getAllProblems();
+  EXPECT_GT(problems.size(), 0);
 }
+
+TEST(LCPTestProblems, randomWellFormedGeneration)
+{
+  // Using fixed seed for deterministic tests
+  const unsigned int baseSeed = 42;
+  std::vector<int> dimensions = {3, 5, 10, 20};
+  auto problems = dart::test::LCPTestProblems::generateRandomWellFormedProblems(
+      dimensions, baseSeed);
+
+  EXPECT_EQ(problems.size(), dimensions.size());
+
+  for (size_t i = 0; i < problems.size(); ++i) {
+    EXPECT_EQ(problems[i].dimension, dimensions[i]);
+    EXPECT_TRUE(problems[i].isWellFormed());
+
+    // Check that matrix is symmetric
+    EXPECT_TRUE(problems[i].A.isApprox(problems[i].A.transpose(), 1e-10));
+
+    // Check positive definiteness by computing eigenvalues
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(problems[i].A);
+    EXPECT_GT(es.eigenvalues().minCoeff(), 0.0)
+        << "Random problem " << problems[i].name
+        << " should be positive definite";
+  }
+
+  // Verify determinism: generate again with same seed
+  auto problems2
+      = dart::test::LCPTestProblems::generateRandomWellFormedProblems(
+          dimensions, baseSeed);
+  for (size_t i = 0; i < problems.size(); ++i) {
+    EXPECT_TRUE(problems[i].A.isApprox(problems2[i].A, 1e-15))
+        << "Random generation should be deterministic with same seed";
+    EXPECT_TRUE(problems[i].b.isApprox(problems2[i].b, 1e-15))
+        << "Random generation should be deterministic with same seed";
+  }
+}
+
+TEST(LCPTestProblems, randomIllFormedGeneration)
+{
+  std::vector<int> dimensions = {3, 5, 10};
+  auto problems = dart::test::LCPTestProblems::generateRandomIllFormedProblems(
+      dimensions);
+
+  EXPECT_EQ(problems.size(), dimensions.size());
+
+  for (size_t i = 0; i < problems.size(); ++i) {
+    EXPECT_EQ(problems[i].dimension, dimensions[i]);
+    EXPECT_FALSE(problems[i].isWellFormed());
+    EXPECT_TRUE(dart::test::hasIssue(
+        problems[i].issues, dart::test::LCPProblemIssue::NotPositiveDefinite));
+
+    // Check that matrix is symmetric
+    EXPECT_TRUE(problems[i].A.isApprox(problems[i].A.transpose(), 1e-10));
+
+    // Check NOT positive definite by computing eigenvalues
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(problems[i].A);
+    EXPECT_LE(es.eigenvalues().minCoeff(), 0.0)
+        << "Random ill-formed problem " << problems[i].name
+        << " should have negative eigenvalues";
+  }
+}
+
+// Helper to check if matrix is positive definite
 
 // Helper to check if matrix is symmetric
 bool isSymmetric(const Eigen::MatrixXd& A, double tolerance = 1e-10)
@@ -29,11 +90,19 @@ bool isSymmetric(const Eigen::MatrixXd& A, double tolerance = 1e-10)
   return A.isApprox(A.transpose(), tolerance);
 }
 
+// Helper to check if matrix is positive definite
+bool isPositiveDefinite(const Eigen::MatrixXd& A)
+{
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(A);
+  return es.eigenvalues().minCoeff() > 0.0;
+}
+
 // Helper to get condition number
 double getConditionNumber(const Eigen::MatrixXd& A)
 {
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(A);
-  double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
+  double cond = svd.singularValues()(0)
+                / svd.singularValues()(svd.singularValues().size() - 1);
   return cond;
 }
 
@@ -68,7 +137,8 @@ TEST(LCPTestProblems, Problem2D_IsWellFormed)
   EXPECT_EQ(problem.b.size(), 2);
 
   EXPECT_TRUE(isSymmetric(problem.A)) << "Matrix A should be symmetric";
-  EXPECT_TRUE(isPositiveDefinite(problem.A)) << "Matrix A should be positive definite";
+  EXPECT_TRUE(isPositiveDefinite(problem.A))
+      << "Matrix A should be positive definite";
 
   double cond = getConditionNumber(problem.A);
   EXPECT_LT(cond, 100.0) << "Matrix is too ill-conditioned: " << cond;
@@ -85,7 +155,8 @@ TEST(LCPTestProblems, Problem4D_IsWellFormed)
   EXPECT_EQ(problem.b.size(), 4);
 
   EXPECT_TRUE(isSymmetric(problem.A)) << "Matrix A should be symmetric";
-  EXPECT_TRUE(isPositiveDefinite(problem.A)) << "Matrix A should be positive definite";
+  EXPECT_TRUE(isPositiveDefinite(problem.A))
+      << "Matrix A should be positive definite";
 
   double cond = getConditionNumber(problem.A);
   EXPECT_LT(cond, 1000.0) << "Matrix is too ill-conditioned: " << cond;
@@ -105,7 +176,8 @@ TEST(LCPTestProblems, Problem6D_IsWellFormed)
   if (!isSymmetric(problem.A)) {
     std::cout << "Matrix A is NOT symmetric:\n" << problem.A << std::endl;
     std::cout << "A^T:\n" << problem.A.transpose() << std::endl;
-    std::cout << "A - A^T:\n" << (problem.A - problem.A.transpose()) << std::endl;
+    std::cout << "A - A^T:\n"
+              << (problem.A - problem.A.transpose()) << std::endl;
   }
   EXPECT_TRUE(isSymmetric(problem.A)) << "Matrix A should be symmetric";
 
@@ -114,7 +186,8 @@ TEST(LCPTestProblems, Problem6D_IsWellFormed)
   std::cout << "6D Eigenvalues: " << es.eigenvalues().transpose() << std::endl;
 
   if (!isPositiveDefinite(problem.A)) {
-    GTEST_SKIP() << "Matrix A is not positive definite - may need to fix test problem";
+    GTEST_SKIP()
+        << "Matrix A is not positive definite - may need to fix test problem";
   }
 
   double cond = getConditionNumber(problem.A);
@@ -145,7 +218,8 @@ TEST(LCPTestProblems, Problem12D_IsWellFormed)
   std::cout << "12D Eigenvalues: " << es.eigenvalues().transpose() << std::endl;
 
   if (!isPositiveDefinite(problem.A)) {
-    GTEST_SKIP() << "Matrix A is not positive definite - may need to fix test problem";
+    GTEST_SKIP()
+        << "Matrix A is not positive definite - may need to fix test problem";
   }
 
   double cond = getConditionNumber(problem.A);
@@ -166,7 +240,8 @@ TEST(LCPTestProblems, Problem24D_IsWellFormed)
   EXPECT_EQ(problem.b.size(), 24);
 
   // For block diagonal, symmetry should be preserved
-  EXPECT_TRUE(isSymmetric(problem.A)) << "Block diagonal matrix should be symmetric";
+  EXPECT_TRUE(isSymmetric(problem.A))
+      << "Block diagonal matrix should be symmetric";
 
   // Check if the individual blocks are well-formed
   auto problem12 = dart::test::LCPTestProblems::getProblem12D();
@@ -191,7 +266,8 @@ TEST(LCPTestProblems, Problem48D_IsWellFormed)
   EXPECT_EQ(problem.b.size(), 48);
 
   // For block diagonal, symmetry should be preserved
-  EXPECT_TRUE(isSymmetric(problem.A)) << "Block diagonal matrix should be symmetric";
+  EXPECT_TRUE(isSymmetric(problem.A))
+      << "Block diagonal matrix should be symmetric";
 
   // Check if the individual blocks are well-formed
   auto problem12 = dart::test::LCPTestProblems::getProblem12D();

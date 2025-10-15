@@ -125,7 +125,6 @@ target_link_libraries(
   dart
   PUBLIC
     ${CMAKE_DL_LIBS}
-    ${PROJECT_NAME}-external-odelcpsolver
     Eigen3::Eigen
     fcl
     assimp
@@ -213,9 +212,7 @@ endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
-add_component_dependency_packages(
-  ${PROJECT_NAME} dart
+add_component_dependency_packages(${PROJECT_NAME} dart
   assimp Eigen3 fcl fmt
 )
 if(TARGET octomap)

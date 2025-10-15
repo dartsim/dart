@@ -32,8 +32,8 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "dart/lcpsolver/dantzig/matrix.h"
+#include "dart/lcpsolver/dantzig/misc.h"
 #include "dart/math/Constants.hpp"
 
 #include <Eigen/Dense>

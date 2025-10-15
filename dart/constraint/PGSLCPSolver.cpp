@@ -41,8 +41,8 @@
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+#include "dart/lcpsolver/dantzig/lcp.h"
 
 namespace dart {
 namespace constraint {

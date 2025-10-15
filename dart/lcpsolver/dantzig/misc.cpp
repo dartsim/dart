@@ -20,9 +20,10 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/misc.h"
-#include "dart/external/odelcpsolver/matrix.h"
+#include "dart/lcpsolver/dantzig/misc.h"
+
+#include "dart/lcpsolver/dantzig/matrix.h"
+#include "dart/lcpsolver/dantzig/odeconfig.h"
 
 namespace dart {
 namespace external {
@@ -35,46 +36,42 @@ static unsigned long seed = 0;
 
 unsigned long dRand()
 {
-  seed = (1664525UL*seed + 1013904223UL) & 0xffffffff;
+  seed = (1664525UL * seed + 1013904223UL) & 0xffffffff;
   return seed;
 }
 
-
-unsigned long  dRandGetSeed()
+unsigned long dRandGetSeed()
 {
   return seed;
 }
 
-
-void dRandSetSeed (unsigned long s)
+void dRandSetSeed(unsigned long s)
 {
   seed = s;
 }
-
 
 int dTestRand()
 {
   unsigned long oldseed = seed;
   int ret = 1;
   seed = 0;
-  if (dRand() != 0x3c6ef35f || dRand() != 0x47502932 ||
-      dRand() != 0xd1ccf6e9 || dRand() != 0xaaf95334 ||
-      dRand() != 0x6252e503) ret = 0;
+  if (dRand() != 0x3c6ef35f || dRand() != 0x47502932 || dRand() != 0xd1ccf6e9
+      || dRand() != 0xaaf95334 || dRand() != 0x6252e503)
+    ret = 0;
   seed = oldseed;
   return ret;
 }
 
-
 // adam's all-int straightforward(?) dRandInt (0..n-1)
-int dRandInt (int n)
+int dRandInt(int n)
 {
   // seems good; xor-fold and modulus
   const unsigned long un = n;
-  // Since there is no memory barrier macro in ODE assign via volatile variable 
+  // Since there is no memory barrier macro in ODE assign via volatile variable
   // to prevent compiler reusing seed as value of `r'
   volatile unsigned long raw_r = dRand();
   unsigned long r = raw_r;
-  
+
   // note: probably more aggressive than it needs to be -- might be
   //       able to get away without one or two of the innermost branches.
   // if (un <= 0x00010000UL) {
@@ -116,81 +113,81 @@ int dRandInt (int n)
     }
   }
 
-  return (int) (r % un);    
+  return (int)(r % un);
 }
-
 
 dReal dRandReal()
 {
-  return ((dReal) dRand()) / ((dReal) 0xffffffff);
+  return ((dReal)dRand()) / ((dReal)0xffffffff);
 }
 
 //****************************************************************************
 // matrix utility stuff
 
-void dPrintMatrix (const dReal *A, int n, int m, char *fmt, FILE *f)
+void dPrintMatrix(const dReal* A, int n, int m, char* fmt, FILE* f)
 {
   int skip = dPAD(m);
-  const dReal *Arow = A;
-  for (int i=0; i<n; Arow+=skip, ++i) {
-    for (int j=0; j<m; ++j) fprintf (f,fmt,Arow[j]);
-    fprintf (f,"\n");
+  const dReal* Arow = A;
+  for (int i = 0; i < n; Arow += skip, ++i) {
+    for (int j = 0; j < m; ++j)
+      fprintf(f, fmt, Arow[j]);
+    fprintf(f, "\n");
   }
 }
 
-
-void dMakeRandomVector (dReal *A, int n, dReal range)
+void dMakeRandomVector(dReal* A, int n, dReal range)
 {
   int i;
-  for (i=0; i<n; i++) A[i] = (dRandReal()*REAL(2.0)-REAL(1.0))*range;
+  for (i = 0; i < n; i++)
+    A[i] = (dRandReal() * REAL(2.0) - REAL(1.0)) * range;
 }
 
-
-void dMakeRandomMatrix (dReal *A, int n, int m, dReal range)
+void dMakeRandomMatrix(dReal* A, int n, int m, dReal range)
 {
   int skip = dPAD(m);
-//  dSetZero (A,n*skip);
-  dReal *Arow = A;
-  for (int i=0; i<n; Arow+=skip, ++i) {
-    for (int j=0; j<m; ++j) Arow[j] = (dRandReal()*REAL(2.0)-REAL(1.0))*range;
+  //  dSetZero (A,n*skip);
+  dReal* Arow = A;
+  for (int i = 0; i < n; Arow += skip, ++i) {
+    for (int j = 0; j < m; ++j)
+      Arow[j] = (dRandReal() * REAL(2.0) - REAL(1.0)) * range;
   }
 }
 
-
-void dClearUpperTriangle (dReal *A, int n)
+void dClearUpperTriangle(dReal* A, int n)
 {
   int skip = dPAD(n);
-  dReal *Arow = A;
-  for (int i=0; i<n; Arow+=skip, ++i) {
-    for (int j=i+1; j<n; ++j) Arow[j] = 0;
+  dReal* Arow = A;
+  for (int i = 0; i < n; Arow += skip, ++i) {
+    for (int j = i + 1; j < n; ++j)
+      Arow[j] = 0;
   }
 }
 
-
-dReal dMaxDifference (const dReal *A, const dReal *B, int n, int m)
+dReal dMaxDifference(const dReal* A, const dReal* B, int n, int m)
 {
   int skip = dPAD(m);
   dReal max = REAL(0.0);
   const dReal *Arow = A, *Brow = B;
-  for (int i=0; i<n; Arow+=skip, Brow +=skip, ++i) {
-    for (int j=0; j<m; ++j) {
+  for (int i = 0; i < n; Arow += skip, Brow += skip, ++i) {
+    for (int j = 0; j < m; ++j) {
       dReal diff = dFabs(Arow[j] - Brow[j]);
-      if (diff > max) max = diff;
+      if (diff > max)
+        max = diff;
     }
   }
   return max;
 }
 
-
-dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n)
+dReal dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n)
 {
   int skip = dPAD(n);
   dReal max = REAL(0.0);
   const dReal *Arow = A, *Brow = B;
-  for (int i=0; i<n; Arow+=skip, Brow+=skip, ++i) {
-    for (int j=0; j<=i; ++j) {
+  for (int i = 0; i < n; Arow += skip, Brow += skip, ++i) {
+    for (int j = 0; j <= i; ++j) {
       dReal diff = dFabs(Arow[j] - Brow[j]);
-      if (diff > max) max = diff;
+      if (diff > max)
+        max = diff;
     }
   }
   return max;

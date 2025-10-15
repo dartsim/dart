@@ -24,18 +24,17 @@
 #define _ODE_CONFIG_H_
 
 /* Pull in the standard headers */
-#include <stddef.h>
+#include <float.h>
 #include <limits.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include <math.h>
 #include <string.h>
-#include <float.h>
-
 
 #if defined(ODE_DLL) || defined(ODE_LIB)
-#define __ODE__
+  #define __ODE__
 #endif
 
 /* Define a DLL export symbol for those platforms that need it */
@@ -52,11 +51,12 @@
 #endif
 
 #if defined(_MSC_VER)
-#  define ODE_API_DEPRECATED __declspec(deprecated)
-#elif defined (__GNUC__) && ( (__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1)) )
-#  define ODE_API_DEPRECATED __attribute__((__deprecated__))
+  #define ODE_API_DEPRECATED __declspec(deprecated)
+#elif defined(__GNUC__)                                                        \
+    && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1)))
+  #define ODE_API_DEPRECATED __attribute__((__deprecated__))
 #else
-#  define ODE_API_DEPRECATED
+  #define ODE_API_DEPRECATED
 #endif
 
 namespace dart {
@@ -64,21 +64,22 @@ namespace external {
 namespace ode {
 
 /* Well-defined common data types...need to define for 64 bit systems */
-#if defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
-  #define X86_64_SYSTEM   1
-  typedef int             int32;
-  typedef unsigned int    uint32;
-  typedef short           int16;
-  typedef unsigned short  uint16;
-  typedef signed char     int8;
-  typedef unsigned char   uint8;
+#if defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64)                 \
+    || defined(__x86_64__)
+  #define X86_64_SYSTEM 1
+typedef int int32;
+typedef unsigned int uint32;
+typedef short int16;
+typedef unsigned short uint16;
+typedef signed char int8;
+typedef unsigned char uint8;
 #else
-  typedef int             int32;
-  typedef unsigned int    uint32;
-  typedef short           int16;
-  typedef unsigned short  uint16;
-  typedef signed char     int8;
-  typedef unsigned char   uint8;
+typedef int int32;
+typedef unsigned int uint32;
+typedef short int16;
+typedef unsigned short uint16;
+typedef signed char int8;
+typedef unsigned char uint8;
 #endif
 
 } // namespace ode
@@ -100,11 +101,10 @@ namespace ode {
   #endif
 #else
   #ifdef dSINGLE
-    #define dInfinity ((float)(1.0/0.0))
+    #define dInfinity ((float)(1.0 / 0.0))
   #else
-    #define dInfinity (1.0/0.0)
+    #define dInfinity (1.0 / 0.0)
   #endif
 #endif
-
 
 #endif
