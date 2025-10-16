@@ -35,7 +35,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
-#include "dart/lcpsolver/dantzig/misc.h"
 
 #include <cstdio>
 
@@ -74,7 +73,7 @@ bool ODELCPSolver::Solve(
     double *A, *b, *x, *w, *lo, *hi;
     int n = _A.rows();
 
-    int nSkip = dPAD(n);
+    int nSkip = lcpsolver::padding(n);
 
     A = new double[n * nSkip];
     b = new double[n];
@@ -107,7 +106,7 @@ bool ODELCPSolver::Solve(
       hi[_numContacts + i * 2 + 1] = _mu;
     }
     // dClearUpperTriangle (A,n);
-    lcpsolver::dSolveLCP(n, A, x, b, w, 0, lo, hi, findex, false);
+    lcpsolver::SolveLCP<double>(n, A, x, b, w, 0, lo, hi, findex, false);
 
     //    for (int i = 0; i < n; i++) {
     //      if (w[i] < 0.0 && abs(x[i] - hi[i]) > 0.000001)

@@ -69,7 +69,7 @@ bool DantzigBoxedLcpSolver::solve(
   double* w = new double[n];
   std::memset(w, 0, n * sizeof(double));
 
-  bool result = lcpsolver::dSolveLCP(
+  bool result = lcpsolver::SolveLCP<double>(
       n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 
   delete[] w;

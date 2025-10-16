@@ -89,7 +89,7 @@ static void BM_Dantzig_F64_Solver(
     data.reset(problem);
 
     // Solve LCP using Dantzig solver (from dart/lcpsolver/dantzig/)
-    bool success = dart::lcpsolver::dSolveLCP(
+    bool success = dart::lcpsolver::SolveLCP<double>(
         data.n,
         data.A.data(),
         data.x.data(),

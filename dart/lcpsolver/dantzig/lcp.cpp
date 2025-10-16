@@ -1,24 +1,34 @@
-/*************************************************************************
- *                                                                       *
- * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.       *
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
- *                                                                       *
- * This library is free software; you can redistribute it and/or         *
- * modify it under the terms of EITHER:                                  *
- *   (1) The GNU Lesser General Public License as published by the Free  *
- *       Software Foundation; either version 2.1 of the License, or (at  *
- *       your option) any later version. The text of the GNU Lesser      *
- *       General Public License is included with this library in the     *
- *       file LICENSE.TXT.                                               *
- *   (2) The BSD-style license that is included with this library in     *
- *       the file LICENSE-BSD.TXT.                                       *
- *                                                                       *
- * This library is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files    *
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
- *                                                                       *
- *************************************************************************/
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /*
 
@@ -112,7 +122,6 @@ rows/columns and manipulate C.
 
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/misc.h"
-#include "dart/lcpsolver/dantzig/odeconfig.h"
 
 #include <vector>
 
@@ -124,15 +133,13 @@ rows/columns and manipulate C.
 
 #define dLCP_FAST // use fast dLCP object
 
-// option 1 : matrix row pointers (less data copying)
-#define ROWPTRS
-#define ATYPE dReal**
-#define AROW(i) (m_A[i])
+// Modern hybrid approach: PivotMatrix combines Eigen storage with O(1) row swapping
+// See: dart/lcpsolver/dantzig/PivotMatrix.hpp
+#include "dart/lcpsolver/dantzig/PivotMatrix.hpp"
 
-// option 2 : no matrix row pointers (slightly faster inner loops)
-//#define NOROWPTRS
-//#define ATYPE dReal *
-//#define AROW(i) (m_A+(i)*m_nskip)
+#define ROWPTRS  // Keep for compatibility (but now uses PivotMatrix internally)
+#define ATYPE PivotMatrix<dReal>&
+#define AROW(i) (m_A[i])
 
 #define NUB_OPTIMIZATIONS
 
@@ -150,11 +157,12 @@ namespace lcpsolver {
 static void swapRowsAndCols(
     ATYPE A, int n, int i1, int i2, int nskip, int do_fast_row_swaps)
 {
-  dAASSERT(
+  DART_ASSERT(
       A && n > 0 && i1 >= 0 && i2 >= 0 && i1 < n && i2 < n && nskip >= n
       && i1 < i2);
 
 #ifdef ROWPTRS
+  DART_UNUSED(nskip);
   dReal* A_i1 = A[i1];
   dReal* A_i2 = A[i2];
   for (int i = i1 + 1; i < i2; ++i) {
@@ -233,7 +241,7 @@ static void swapProblem(
   dReal tmpr;
   int tmpi;
   bool tmpb;
-  dIASSERT(
+  DART_ASSERT(
       n > 0 && i1 >= 0 && i2 >= 0 && i1 < n && i2 < n && nskip >= n
       && i1 <= i2);
   if (i1 == i2)
@@ -317,7 +325,7 @@ static void checkFactorization(
   // compare A2 and A3
   dReal diff = A2.maxDifference(A3);
   if (diff > 1e-8)
-    dDebug(0, "L*D*L' check, maximum difference = %.6e\n", diff);
+    DART_DEBUG("L*D*L' check, maximum difference = {:.6e}", diff);
 }
 
 #endif
@@ -329,17 +337,17 @@ static void checkFactorization(
 static void checkPermutations(int i, int n, int nC, int nN, int* p, int* C)
 {
   int j, k;
-  dIASSERT(nC >= 0 && nN >= 0 && (nC + nN) == i && i < n);
+  DART_ASSERT(nC >= 0 && nN >= 0 && (nC + nN) == i && i < n);
   for (k = 0; k < i; k++)
-    dIASSERT(p[k] >= 0 && p[k] < i);
+    DART_ASSERT(p[k] >= 0 && p[k] < i);
   for (k = i; k < n; k++)
-    dIASSERT(p[k] == k);
+    DART_ASSERT(p[k] == k);
   for (j = 0; j < nC; j++) {
     int C_is_bad = 1;
     for (k = 0; k < nC; k++)
       if (C[k] == j)
         C_is_bad = 0;
-    dIASSERT(C_is_bad == 0);
+    DART_ASSERT(C_is_bad == 0);
   }
 }
 
@@ -398,7 +406,7 @@ struct dLCP
       int _n,
       int _nskip,
       int _nub,
-      dReal* _Adata,
+      PivotMatrix<dReal>& _A,
       dReal* _x,
       dReal* _b,
       dReal* _w,
@@ -412,8 +420,7 @@ struct dLCP
       bool* _state,
       int* _findex,
       int* _p,
-      int* _C,
-      dReal** Arows);
+      int* _C);
   int getNub() const
   {
     return m_nub;
@@ -469,7 +476,7 @@ dLCP::dLCP(
     int _n,
     int _nskip,
     int _nub,
-    dReal* _Adata,
+    PivotMatrix<dReal>& _A,
     dReal* _x,
     dReal* _b,
     dReal* _w,
@@ -483,18 +490,13 @@ dLCP::dLCP(
     bool* _state,
     int* _findex,
     int* _p,
-    int* _C,
-    dReal** Arows)
+    int* _C)
   : m_n(_n),
     m_nskip(_nskip),
     m_nub(_nub),
     m_nC(0),
     m_nN(0),
-  #ifdef ROWPTRS
-    m_A(Arows),
-  #else
-    m_A(_Adata),
-  #endif
+    m_A(_A),
     m_x(_x),
     m_b(_b),
     m_w(_w),
@@ -511,18 +513,7 @@ dLCP::dLCP(
     m_C(_C)
 {
   {
-    dSetZero(m_x, m_n);
-  }
-
-  {
-  #ifdef ROWPTRS
-    // make matrix row pointers
-    dReal* aptr = _Adata;
-    ATYPE A = m_A;
-    const int n = m_n, nskip = m_nskip;
-    for (int k = 0; k < n; aptr += nskip, ++k)
-      A[k] = aptr;
-  #endif
+    SetZero(m_x, m_n);
   }
 
   {
@@ -541,8 +532,8 @@ dLCP::dLCP(
     for (int k=0; k<100; k++) {
       int i1,i2;
       do {
-        i1 = dRandInt(n-nub)+nub;
-        i2 = dRandInt(n-nub)+nub;
+        i1 = Random::randInt(n-nub)+nub;
+        i2 = Random::randInt(n-nub)+nub;
       }
       while (i1 > i2);
       //printf ("--> %d %d\n",i1,i2);
@@ -602,7 +593,7 @@ dLCP::dLCP(
     dFactorLDLT(m_L, m_d, nub, m_nskip);
     memcpy(m_x, m_b, nub * sizeof(dReal));
     dSolveLDLT(m_L, m_d, m_x, nub, m_nskip);
-    dSetZero(m_w, nub);
+    SetZero(m_w, nub);
     {
       int* C = m_C;
       for (int k = 0; k < nub; ++k)
@@ -665,9 +656,9 @@ void dLCP::transfer_i_to_C(int i)
           Ltgt[j] = ell[j];
       }
       const int nC = m_nC;
-      m_d[nC] = dRecip(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
+      m_d[nC] = reciprocal(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
     } else {
-      m_d[0] = dRecip(AROW(i)[i]);
+      m_d[0] = reciprocal(AROW(i)[i]);
     }
 
     swapProblem(
@@ -730,9 +721,9 @@ void dLCP::transfer_i_from_N_to_C(int i)
           Ltgt[j] = ell[j] = Dell[j] * d[j];
       }
       const int nC = m_nC;
-      m_d[nC] = dRecip(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
+      m_d[nC] = reciprocal(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
     } else {
-      m_d[0] = dRecip(AROW(i)[i]);
+      m_d[0] = reciprocal(AROW(i)[i]);
     }
 
     swapProblem(
@@ -790,7 +781,7 @@ void dLCP::transfer_i_from_C_to_N(int i, void* tmpbuf)
               break;
             }
           }
-          dIASSERT(k < nC);
+          DART_ASSERT(k < nC);
         } else {
           k = last_idx;
         }
@@ -800,7 +791,7 @@ void dLCP::transfer_i_from_C_to_N(int i, void* tmpbuf)
         break;
       }
     }
-    dIASSERT(j < nC);
+    DART_ASSERT(j < nC);
 
     swapProblem(
         m_A,
@@ -975,12 +966,12 @@ bool dSolveLCP(
     int* findex,
     bool earlyTermination)
 {
-  dAASSERT(n > 0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
-#ifndef dNODEBUG
+  DART_ASSERT(n > 0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
+#ifndef NDEBUG
   {
     // check restrictions on lo and hi
     for (int k = 0; k < n; ++k)
-      dIASSERT(lo[k] <= 0 && hi[k] >= 0);
+      DART_ASSERT(lo[k] <= 0 && hi[k] >= 0);
   }
 #endif
 
@@ -988,9 +979,9 @@ bool dSolveLCP(
   // and return
   if (nub >= n) {
     dReal* d = new dReal[n];
-    dSetZero(d, n);
+    SetZero(d, n);
 
-    int nskip = dPAD(n);
+    int nskip = padding(n);
     dFactorLDLT(A, d, n, nskip);
     dSolveLDLT(A, d, b, n, nskip);
     memcpy(x, b, n * sizeof(dReal));
@@ -999,7 +990,7 @@ bool dSolveLCP(
     return true;
   }
 
-  const int nskip = dPAD(n);
+  const int nskip = padding(n);
   dReal* L = new dReal[(n * nskip)];
   dReal* d = new dReal[(n)];
   dReal* w = outer_w ? outer_w : (new dReal[n]);
@@ -1079,7 +1070,7 @@ bool dSolveLCP(
           hi[k] = 0;
           lo[k] = 0;
         } else {
-          hi[k] = dFabs(hi[k] * wfk);
+          hi[k] = std::fabs(hi[k] * wfk);
           lo[k] = -hi[k];
         }
       }
@@ -1242,13 +1233,12 @@ bool dSolveLCP(
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0.
           if (s < REAL(-1e-6)) {
-            dMessage(
-                d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)", (double)s);
+            DART_WARN("LCP internal error, s <= 0 (s={:.4e})", s);
           }
 
           if (i < n) {
-            dSetZero(x + i, n - i);
-            dSetZero(w + i, n - i);
+            SetZero(x + i, n - i);
+            SetZero(w + i, n - i);
           }
           s_error = true;
           break;
@@ -1326,191 +1316,26 @@ bool dSolveLCP(
   return true;
 }
 
-size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
+// Specialization for double - no conversion needed (must be before
+// instantiation)
+template <>
+bool SolveLCP<double>(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    double* w,
+    int nub,
+    double* lo,
+    double* hi,
+    int* findex,
+    bool earlyTermination)
 {
-  const int nskip = dPAD(n);
-
-  size_t res = 0;
-
-  res += (sizeof(dReal) * (n * nskip)); // for L
-  res += 5 * (sizeof(dReal) * n);       // for d, delta_w, delta_x, Dell, ell
-  if (!outer_w_avail) {
-    res += (sizeof(dReal) * n); // for w
-  }
-#ifdef ROWPTRS
-  res += (sizeof(dReal*) * n); // for Arows
-#endif
-  res += 2 * (sizeof(int) * n); // for p, C
-  res += (sizeof(bool) * n);    // for state
-
-  // Use n instead of nC as nC varies at runtime while n is greater or equal to
-  // nC
-  size_t lcp_transfer_req
-      = dLCP::estimate_transfer_i_from_C_to_N_mem_req(n, nskip);
-  res += (lcp_transfer_req); // for dLCP::transfer_i_from_C_to_N
-
-  return res;
+  // Call dSolveLCP directly without conversion
+  return dSolveLCP(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 }
 
-//***************************************************************************
-// accuracy and timing test
-
-// static size_t EstimateTestSolveLCPMemoryReq(int n)
-//{
-//   const int nskip = dPAD(n);
-
-//  size_t res = 0;
-
-//  res += 2 * (sizeof(dReal) * (n * nskip)); // for A, A2
-//  res += 10 * (sizeof(dReal) * n); // for x, b, w, lo, hi, b2, lo2, hi2, tmp1,
-//  tmp2
-
-//  res += dEstimateSolveLCPMemoryReq(n, true);
-
-//  return res;
-//}
-
-ODE_API int dTestSolveLCP()
-{
-  const int n = 100;
-
-  // size_t memreq = EstimateTestSolveLCPMemoryReq(n);
-  // dxWorldProcessMemArena *arena =
-  // dxAllocateTemporaryWorldProcessMemArena(memreq, nullptr, nullptr); if
-  // (arena == nullptr) {
-  //   return 0;
-  // }
-
-  // int i,nskip = dPAD(n);
-  int i;
-  int nskip = n;
-#ifdef dDOUBLE
-  const dReal tol = REAL(1e-9);
-#endif
-#ifdef dSINGLE
-  const dReal tol = REAL(1e-4);
-#endif
-  printf("dTestSolveLCP()\n");
-
-  dReal* A = new dReal[n * nskip];
-  dReal* x = new dReal[n];
-  dReal* b = new dReal[n];
-  dReal* w = new dReal[n];
-  dReal* lo = new dReal[n];
-  dReal* hi = new dReal[n];
-
-  dReal* A2 = new dReal[n * nskip];
-  dReal* b2 = new dReal[n];
-  dReal* lo2 = new dReal[n];
-  dReal* hi2 = new dReal[n];
-
-  dReal* tmp1 = new dReal[n];
-  dReal* tmp2 = new dReal[n];
-
-  // double total_time = 0;
-  for (int count = 0; count < 1000; count++) {
-    // form (A,b) = a random positive definite LCP problem
-    dMakeRandomMatrix(A2, n, n, 1.0);
-    dMultiply2(A, A2, A2, n, n, n);
-    dMakeRandomMatrix(x, n, 1, 1.0);
-    dMultiply0(b, A, x, n, n, 1);
-    for (i = 0; i < n; i++)
-      b[i] += (dRandReal() * REAL(0.2)) - REAL(0.1);
-
-    // choose `nub' in the range 0..n-1
-    int nub = 50; // dRandInt (n);
-
-    // make limits
-    for (i = 0; i < nub; i++)
-      lo[i] = -dInfinity;
-    for (i = 0; i < nub; i++)
-      hi[i] = dInfinity;
-    // for (i=nub; i<n; i++) lo[i] = 0;
-    // for (i=nub; i<n; i++) hi[i] = dInfinity;
-    // for (i=nub; i<n; i++) lo[i] = -dInfinity;
-    // for (i=nub; i<n; i++) hi[i] = 0;
-    for (i = nub; i < n; i++)
-      lo[i] = -(dRandReal() * REAL(1.0)) - REAL(0.01);
-    for (i = nub; i < n; i++)
-      hi[i] = (dRandReal() * REAL(1.0)) + REAL(0.01);
-
-    // set a few limits to lo=hi=0
-    /*
-    for (i=0; i<10; i++) {
-    int j = dRandInt (n-nub) + nub;
-    lo[j] = 0;
-    hi[j] = 0;
-    }
-    */
-
-    // solve the LCP. we must make copy of A,b,lo,hi (A2,b2,lo2,hi2) for
-    // SolveLCP() to permute. also, we'll clear the upper triangle of A2 to
-    // ensure that it doesn't get referenced (if it does, the answer will be
-    // wrong).
-
-    memcpy(A2, A, n * nskip * sizeof(dReal));
-    dClearUpperTriangle(A2, n);
-    memcpy(b2, b, n * sizeof(dReal));
-    memcpy(lo2, lo, n * sizeof(dReal));
-    memcpy(hi2, hi, n * sizeof(dReal));
-    dSetZero(x, n);
-    dSetZero(w, n);
-
-    dSolveLCP(n, A2, x, b2, w, nub, lo2, hi2, 0);
-
-    // check the solution
-
-    dMultiply0(tmp1, A, x, n, n, 1);
-    for (i = 0; i < n; i++)
-      tmp2[i] = b[i] + w[i];
-    dReal diff = dMaxDifference(tmp1, tmp2, n, 1);
-    // printf ("\tA*x = b+w, maximum difference = %.6e - %s (1)\n",diff,
-    //	    diff > tol ? "FAILED" : "passed");
-    if (diff > tol)
-      dDebug(0, "A*x = b+w, maximum difference = %.6e", diff);
-    int n1 = 0, n2 = 0, n3 = 0;
-    for (i = 0; i < n; i++) {
-      if (x[i] == lo[i] && w[i] >= 0) {
-        n1++; // ok
-      } else if (x[i] == hi[i] && w[i] <= 0) {
-        n2++; // ok
-      } else if (x[i] >= lo[i] && x[i] <= hi[i] && w[i] == 0) {
-        n3++; // ok
-      } else {
-        dDebug(
-            0,
-            "FAILED: i=%d x=%.4e w=%.4e lo=%.4e hi=%.4e",
-            i,
-            x[i],
-            w[i],
-            lo[i],
-            hi[i]);
-      }
-    }
-
-    // pacifier
-    printf("passed: NL=%3d NH=%3d C=%3d   ", n1, n2, n3);
-  }
-
-  delete[] A;
-  delete[] x;
-  delete[] b;
-  delete[] w;
-  delete[] lo;
-  delete[] hi;
-
-  delete[] A2;
-  delete[] b2;
-  delete[] lo2;
-  delete[] hi2;
-
-  delete[] tmp1;
-  delete[] tmp2;
-
-  return 1;
-}
-
-// Template version of SolveLCP - implementation using dReal internally
+// Template version of SolveLCP - generic implementation with type conversion
 template <typename Scalar>
 bool SolveLCP(
     int n,
@@ -1578,18 +1403,6 @@ template bool SolveLCP<float>(
     int nub,
     float* lo,
     float* hi,
-    int* findex,
-    bool earlyTermination);
-
-template bool SolveLCP<double>(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    double* w,
-    int nub,
-    double* lo,
-    double* hi,
     int* findex,
     bool earlyTermination);
 

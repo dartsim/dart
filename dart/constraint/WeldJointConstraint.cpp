@@ -36,6 +36,8 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
 
+using dart::lcpsolver::dInfinity;
+
 namespace dart {
 namespace constraint {
 

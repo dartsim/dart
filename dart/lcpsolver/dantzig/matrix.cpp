@@ -1,24 +1,34 @@
-/*************************************************************************
- *                                                                       *
- * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.       *
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
- *                                                                       *
- * This library is free software; you can redistribute it and/or         *
- * modify it under the terms of EITHER:                                  *
- *   (1) The GNU Lesser General Public License as published by the Free  *
- *       Software Foundation; either version 2.1 of the License, or (at  *
- *       your option) any later version. The text of the GNU Lesser      *
- *       General Public License is included with this library in the     *
- *       file LICENSE.TXT.                                               *
- *   (2) The BSD-style license that is included with this library in     *
- *       the file LICENSE-BSD.TXT.                                       *
- *                                                                       *
- * This library is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files    *
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
- *                                                                       *
- *************************************************************************/
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
 //#include "config.h"
 #ifdef __APPLE__
@@ -57,87 +67,26 @@
 
 namespace dart::lcpsolver {
 
-void _dSetZero(dReal* a, size_t n)
+void dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
 {
-  dAASSERT(a);
-  std::fill(a, a + n, dReal(0.0));
+  Multiply0(A, B, C, p, q, r);
 }
 
-void _dSetValue(dReal* a, size_t n, dReal value)
+void dMultiply1(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
 {
-  dAASSERT(a);
-  std::fill(a, a + n, value);
+  Multiply1(A, B, C, p, q, r);
 }
 
-void _dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
+void dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
 {
-  dAASSERT(A && B && C && p > 0 && q > 0 && r > 0);
-  const int qskip = dPAD(q);
-  const int rskip = dPAD(r);
-  dReal* aa = A;
-  const dReal* bb = B;
-  for (int i = p; i; aa += rskip, bb += qskip, --i) {
-    dReal* a = aa;
-    const dReal *cc = C, *ccend = C + r;
-    for (; cc != ccend; ++a, ++cc) {
-      dReal sum = REAL(0.0);
-      const dReal* c = cc;
-      const dReal *b = bb, *bend = bb + q;
-      for (; b != bend; c += rskip, ++b) {
-        sum += (*b) * (*c);
-      }
-      (*a) = sum;
-    }
-  }
+  Multiply2(A, B, C, p, q, r);
 }
 
-void _dMultiply1(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
+int dFactorCholesky(dReal* A, int n, void* tmpbuf /*[n]*/)
 {
-  dAASSERT(A && B && C && p > 0 && q > 0 && r > 0);
-  const int pskip = dPAD(p);
-  const int rskip = dPAD(r);
-  dReal* aa = A;
-  const dReal *bb = B, *bbend = B + p;
-  for (; bb != bbend; aa += rskip, ++bb) {
-    dReal* a = aa;
-    const dReal *cc = C, *ccend = C + r;
-    for (; cc != ccend; ++a, ++cc) {
-      dReal sum = REAL(0.0);
-      const dReal *b = bb, *c = cc;
-      for (int k = q; k; b += pskip, c += rskip, --k) {
-        sum += (*b) * (*c);
-      }
-      (*a) = sum;
-    }
-  }
-}
-
-void _dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
-{
-  dAASSERT(A && B && C && p > 0 && q > 0 && r > 0);
-  const int rskip = dPAD(r);
-  const int qskip = dPAD(q);
-  dReal* aa = A;
-  const dReal* bb = B;
-  for (int i = p; i; aa += rskip, bb += qskip, --i) {
-    dReal *a = aa, *aend = aa + r;
-    const dReal* cc = C;
-    for (; a != aend; cc += qskip, ++a) {
-      dReal sum = REAL(0.0);
-      const dReal *b = bb, *c = cc, *cend = cc + q;
-      for (; c != cend; ++b, ++c) {
-        sum += (*b) * (*c);
-      }
-      (*a) = sum;
-    }
-  }
-}
-
-int _dFactorCholesky(dReal* A, int n, void* tmpbuf /*[n]*/)
-{
-  dAASSERT(n > 0 && A);
+  DART_ASSERT(n > 0 && A);
   bool failure = false;
-  const int nskip = dPAD(n);
+  const int nskip = padding(n);
   dReal* recip = tmpbuf ? (dReal*)tmpbuf : (dReal*)ALLOCA(n * sizeof(dReal));
   dReal* aa = A;
   for (int i = 0; i < n; aa += nskip, ++i) {
@@ -163,18 +112,18 @@ int _dFactorCholesky(dReal* A, int n, void* tmpbuf /*[n]*/)
         failure = true;
         break;
       }
-      dReal sumsqrt = dSqrt(sum);
+      dReal sumsqrt = std::sqrt(sum);
       *cc = sumsqrt;
-      recip[i] = dRecip(sumsqrt);
+      recip[i] = reciprocal(sumsqrt);
     }
   }
   return failure ? 0 : 1;
 }
 
-void _dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf /*[n]*/)
+void dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf /*[n]*/)
 {
-  dAASSERT(n > 0 && L && b);
-  const int nskip = dPAD(n);
+  DART_ASSERT(n > 0 && L && b);
+  const int nskip = padding(n);
   dReal* y = tmpbuf ? (dReal*)tmpbuf : (dReal*)ALLOCA(n * sizeof(dReal));
   {
     const dReal* ll = L;
@@ -183,7 +132,7 @@ void _dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf /*[n]*/)
       for (int k = 0; k < i; ++k) {
         sum += ll[k] * y[k];
       }
-      dIASSERT(ll[i] != dReal(0.0));
+      DART_ASSERT(ll[i] != dReal(0.0));
       y[i] = (b[i] - sum) / ll[i];
     }
   }
@@ -195,24 +144,24 @@ void _dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf /*[n]*/)
       for (int k = i + 1; k < n; l += nskip, ++k) {
         sum += (*l) * b[k];
       }
-      dIASSERT(*ll != dReal(0.0));
+      DART_ASSERT(*ll != dReal(0.0));
       b[i] = (y[i] - sum) / (*ll);
     }
   }
 }
 
-int _dInvertPDMatrix(
+int dInvertPDMatrix(
     const dReal* A, dReal* Ainv, int n, void* tmpbuf /*[nskip*(n+2)]*/)
 {
-  dAASSERT(n > 0 && A && Ainv);
+  DART_ASSERT(n > 0 && A && Ainv);
   bool success = false;
-  size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
-  size_t SolveCholesky_size = _dEstimateSolveCholeskyTmpbufSize(n);
+  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize(n);
+  size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size
                                 ? FactorCholesky_size
                                 : SolveCholesky_size;
-  dIASSERT(MaxCholesky_size % sizeof(dReal) == 0);
-  const int nskip = dPAD(n);
+  DART_ASSERT(MaxCholesky_size % sizeof(dReal) == 0);
+  const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
   dReal* tmp
       = tmpbuf ? (dReal*)tmpbuf
@@ -222,10 +171,10 @@ int _dInvertPDMatrix(
   dReal* L = X + nskip;
   memcpy(L, A, nskip_mul_n * sizeof(dReal));
   if (dFactorCholesky(L, n, tmp)) {
-    dSetZero(Ainv, nskip_mul_n); // make sure all padding elements set to 0
+    SetZero(Ainv, nskip_mul_n); // make sure all padding elements set to 0
     dReal *aa = Ainv, *xi = X, *xiend = X + n;
     for (; xi != xiend; ++aa, ++xi) {
-      dSetZero(X, n);
+      SetZero(X, n);
       *xi = REAL(1.0);
       dSolveCholesky(L, X, n, tmp);
       dReal* a = aa;
@@ -239,12 +188,12 @@ int _dInvertPDMatrix(
   return success ? 1 : 0;
 }
 
-int _dIsPositiveDefinite(const dReal* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
+int dIsPositiveDefinite(const dReal* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
 {
-  dAASSERT(n > 0 && A);
-  size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
-  dIASSERT(FactorCholesky_size % sizeof(dReal) == 0);
-  const int nskip = dPAD(n);
+  DART_ASSERT(n > 0 && A);
+  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize(n);
+  DART_ASSERT(FactorCholesky_size % sizeof(dReal) == 0);
+  const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
   dReal* tmp
       = tmpbuf
@@ -255,23 +204,20 @@ int _dIsPositiveDefinite(const dReal* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
   return dFactorCholesky(Acopy, n, tmp);
 }
 
-void _dVectorScale(dReal* a, const dReal* d, int n)
+void dVectorScale(dReal* a, const dReal* d, int n)
 {
-  dAASSERT(a && d && n >= 0);
-  for (int i = 0; i < n; i++) {
-    a[i] *= d[i];
-  }
+  VectorScale(a, d, n);
 }
 
-void _dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip)
+void dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip)
 {
-  dAASSERT(L && d && b && n > 0 && nskip >= n);
+  DART_ASSERT(L && d && b && n > 0 && nskip >= n);
   dSolveL1(L, b, n, nskip);
   dVectorScale(b, d, n);
   dSolveL1T(L, b, n, nskip);
 }
 
-void _dLDLTAddTL(
+void dLDLTAddTL(
     dReal* L,
     dReal* d,
     const dReal* a,
@@ -279,7 +225,7 @@ void _dLDLTAddTL(
     int nskip,
     void* tmpbuf /*[2*nskip]*/)
 {
-  dAASSERT(L && d && a && n > 0 && nskip >= n);
+  DART_ASSERT(L && d && a && n > 0 && nskip >= n);
 
   if (n < 2)
     return;
@@ -301,7 +247,7 @@ void _dLDLTAddTL(
   {
     dReal dee = d[0];
     dReal alphanew = alpha1 + (W11 * W11) * dee;
-    dIASSERT(alphanew != dReal(0.0));
+    DART_ASSERT(alphanew != dReal(0.0));
     dee /= alphanew;
     dReal gamma1 = W11 * dee;
     dee *= alpha1;
@@ -328,7 +274,7 @@ void _dLDLTAddTL(
 
     dReal dee = d[j];
     dReal alphanew = alpha1 + (k1 * k1) * dee;
-    dIASSERT(alphanew != dReal(0.0));
+    DART_ASSERT(alphanew != dReal(0.0));
     dee /= alphanew;
     dReal gamma1 = k1 * dee;
     dee *= alpha1;
@@ -365,7 +311,7 @@ void _dLDLTAddTL(
 //#define _GETA(i,j) (A[(i)*nskip+(j)])
 #define GETA(i, j) ((i > j) ? _GETA(i, j) : _GETA(j, i))
 
-void _dLDLTRemove(
+void dLDLTRemove(
     dReal** A,
     const int* p,
     dReal* L,
@@ -376,19 +322,19 @@ void _dLDLTRemove(
     int nskip,
     void* tmpbuf /*n2 + 2*nskip*/)
 {
-  dAASSERT(
+  DART_ASSERT(
       A && p && L && d && n1 > 0 && n2 > 0 && r >= 0 && r < n2 && n1 >= n2
       && nskip >= n1);
-#ifndef dNODEBUG
-  for (int i = 0; i < n2; ++i)
-    dIASSERT(p[i] >= 0 && p[i] < n1);
-#endif
+  for (int i = 0; i < n2; ++i) {
+    DART_ASSERT(p[i] >= 0 && p[i] < n1);
+  }
+  DART_UNUSED(n1); // Only used in assertions above
 
   if (r == n2 - 1) {
     return; // deleting last row/col is easy
   } else {
-    size_t LDLTAddTL_size = _dEstimateLDLTAddTLTmpbufSize(nskip);
-    dIASSERT(LDLTAddTL_size % sizeof(dReal) == 0);
+    size_t LDLTAddTL_size = dEstimateLDLTAddTLTmpbufSize(nskip);
+    DART_ASSERT(LDLTAddTL_size % sizeof(dReal) == 0);
     dReal* tmp = tmpbuf ? (dReal*)tmpbuf
                         : (dReal*)ALLOCA(LDLTAddTL_size + n2 * sizeof(dReal));
     if (r == 0) {
@@ -404,7 +350,7 @@ void _dLDLTRemove(
       {
         dReal* Lcurr = L + r * nskip;
         for (int i = 0; i < r; ++Lcurr, ++i) {
-          dIASSERT(d[i] != dReal(0.0));
+          DART_ASSERT(d[i] != dReal(0.0));
           t[i] = *Lcurr / d[i];
         }
       }
@@ -428,9 +374,9 @@ void _dLDLTRemove(
     memmove(d + r, d + r + 1, (n2 - r - 1) * sizeof(dReal));
 }
 
-void _dRemoveRowCol(dReal* A, int n, int nskip, int r)
+void dRemoveRowCol(dReal* A, int n, int nskip, int r)
 {
-  dAASSERT(A && n > 0 && nskip >= n && r >= 0 && r < n);
+  DART_ASSERT(A && n > 0 && nskip >= n && r >= 0 && r < n);
   if (r >= n - 1)
     return;
   if (r > 0) {
@@ -463,107 +409,783 @@ void _dRemoveRowCol(dReal* A, int n, int nskip, int r)
   }
 }
 
-#undef dSetZero
-#undef dSetValue
-//#undef dDot
-#undef dMultiply0
-#undef dMultiply1
-#undef dMultiply2
-#undef dFactorCholesky
-#undef dSolveCholesky
-#undef dInvertPDMatrix
-#undef dIsPositiveDefinite
-//#undef dFactorLDLT
-//#undef dSolveL1
-//#undef dSolveL1T
-#undef dVectorScale
-#undef dSolveLDLT
-#undef dLDLTAddTL
-#undef dLDLTRemove
-#undef dRemoveRowCol
+//==============================================================================
+// Fast optimized implementations (originally in fast*.cpp files)
+//==============================================================================
 
-void dSetZero(dReal* a, int n)
+// From fastdot.cpp
+dReal _dDot(const dReal* a, const dReal* b, int n)
 {
-  _dSetZero(a, n);
+  dReal p0, q0, m0, p1, q1, m1, sum;
+  sum = 0;
+  n -= 2;
+  while (n >= 0) {
+    p0 = a[0];
+    q0 = b[0];
+    m0 = p0 * q0;
+    p1 = a[1];
+    q1 = b[1];
+    m1 = p1 * q1;
+    sum += m0;
+    sum += m1;
+    a += 2;
+    b += 2;
+    n -= 2;
+  }
+  n += 2;
+  while (n > 0) {
+    sum += (*a) * (*b);
+    a++;
+    b++;
+    n--;
+  }
+  return sum;
 }
 
-void dSetValue(dReal* a, int n, dReal value)
+#undef dDot
+
+dReal dDot(const dReal* a, const dReal* b, int n)
 {
-  _dSetValue(a, n, value);
+  return _dDot(a, b, n);
 }
 
-// dReal dDot (const dReal *a, const dReal *b, int n);
-
-void dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
+// From fastldlt.cpp
+static void dSolveL1_1(const dReal* L, dReal* B, int n, int lskip1)
 {
-  _dMultiply0(A, B, C, p, q, r);
+  dReal Z11, m11, Z21, m21, p1, q1, p2, *ex;
+  const dReal* ell;
+  int i, j;
+  for (i = 0; i < n; i += 2) {
+    Z11 = 0;
+    Z21 = 0;
+    ell = L + i * lskip1;
+    ex = B;
+    for (j = i - 2; j >= 0; j -= 2) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      p2 = ell[lskip1];
+      m21 = p2 * q1;
+      Z11 += m11;
+      Z21 += m21;
+      p1 = ell[1];
+      q1 = ex[1];
+      m11 = p1 * q1;
+      p2 = ell[1 + lskip1];
+      m21 = p2 * q1;
+      ell += 2;
+      ex += 2;
+      Z11 += m11;
+      Z21 += m21;
+    }
+    j += 2;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      p2 = ell[lskip1];
+      m21 = p2 * q1;
+      ell += 1;
+      ex += 1;
+      Z11 += m11;
+      Z21 += m21;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+    p1 = ell[lskip1];
+    Z21 = ex[1] - Z21 - p1 * Z11;
+    ex[1] = Z21;
+  }
 }
 
-void dMultiply1(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
+static void dSolveL1_2(const dReal* L, dReal* B, int n, int lskip1)
 {
-  _dMultiply1(A, B, C, p, q, r);
+  dReal Z11, m11, Z12, m12, Z21, m21, Z22, m22, p1, q1, p2, q2, *ex;
+  const dReal* ell;
+  int i, j;
+  for (i = 0; i < n; i += 2) {
+    Z11 = 0;
+    Z12 = 0;
+    Z21 = 0;
+    Z22 = 0;
+    ell = L + i * lskip1;
+    ex = B;
+    for (j = i - 2; j >= 0; j -= 2) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      q2 = ex[lskip1];
+      m12 = p1 * q2;
+      p2 = ell[lskip1];
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z12 += m12;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[1];
+      q1 = ex[1];
+      m11 = p1 * q1;
+      q2 = ex[1 + lskip1];
+      m12 = p1 * q2;
+      p2 = ell[1 + lskip1];
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      ell += 2;
+      ex += 2;
+      Z11 += m11;
+      Z12 += m12;
+      Z21 += m21;
+      Z22 += m22;
+    }
+    j += 2;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      q2 = ex[lskip1];
+      m12 = p1 * q2;
+      p2 = ell[lskip1];
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      ell += 1;
+      ex += 1;
+      Z11 += m11;
+      Z12 += m12;
+      Z21 += m21;
+      Z22 += m22;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+    Z12 = ex[lskip1] - Z12;
+    ex[lskip1] = Z12;
+    p1 = ell[lskip1];
+    Z21 = ex[1] - Z21 - p1 * Z11;
+    ex[1] = Z21;
+    Z22 = ex[1 + lskip1] - Z22 - p1 * Z12;
+    ex[1 + lskip1] = Z22;
+  }
 }
 
-void dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
+void _dFactorLDLT(dReal* A, dReal* d, int n, int nskip1)
 {
-  _dMultiply2(A, B, C, p, q, r);
+  int i, j;
+  dReal sum, *ell, *dee, dd, p1, p2, q1, q2, Z11, m11, Z21, m21, Z22, m22;
+  if (n < 1)
+    return;
+
+  for (i = 0; i <= n - 2; i += 2) {
+    dSolveL1_2(A, A + i * nskip1, i, nskip1);
+    Z11 = 0;
+    Z21 = 0;
+    Z22 = 0;
+    ell = A + i * nskip1;
+    dee = d;
+    for (j = i - 6; j >= 0; j -= 6) {
+      p1 = ell[0];
+      p2 = ell[nskip1];
+      dd = dee[0];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[0] = q1;
+      ell[nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[1];
+      p2 = ell[1 + nskip1];
+      dd = dee[1];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[1] = q1;
+      ell[1 + nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[2];
+      p2 = ell[2 + nskip1];
+      dd = dee[2];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[2] = q1;
+      ell[2 + nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[3];
+      p2 = ell[3 + nskip1];
+      dd = dee[3];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[3] = q1;
+      ell[3 + nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[4];
+      p2 = ell[4 + nskip1];
+      dd = dee[4];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[4] = q1;
+      ell[4 + nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      p1 = ell[5];
+      p2 = ell[5 + nskip1];
+      dd = dee[5];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[5] = q1;
+      ell[5 + nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      ell += 6;
+      dee += 6;
+    }
+    j += 6;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      p2 = ell[nskip1];
+      dd = dee[0];
+      q1 = p1 * dd;
+      q2 = p2 * dd;
+      ell[0] = q1;
+      ell[nskip1] = q2;
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m22 = p2 * q2;
+      Z11 += m11;
+      Z21 += m21;
+      Z22 += m22;
+      ell++;
+      dee++;
+    }
+    Z11 = ell[0] - Z11;
+    Z21 = ell[nskip1] - Z21;
+    Z22 = ell[1 + nskip1] - Z22;
+    dee = d + i;
+    dee[0] = reciprocal(Z11);
+    sum = 0;
+    q1 = Z21;
+    q2 = q1 * dee[0];
+    Z21 = q2;
+    sum += q1 * q2;
+    dee[1] = reciprocal(Z22 - sum);
+    ell[nskip1] = Z21;
+  }
+  switch (n - i) {
+    case 0:
+      break;
+
+    case 1:
+      dSolveL1_1(A, A + i * nskip1, i, nskip1);
+      Z11 = 0;
+      ell = A + i * nskip1;
+      dee = d;
+      for (j = i - 6; j >= 0; j -= 6) {
+        p1 = ell[0];
+        dd = dee[0];
+        q1 = p1 * dd;
+        ell[0] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        p1 = ell[1];
+        dd = dee[1];
+        q1 = p1 * dd;
+        ell[1] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        p1 = ell[2];
+        dd = dee[2];
+        q1 = p1 * dd;
+        ell[2] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        p1 = ell[3];
+        dd = dee[3];
+        q1 = p1 * dd;
+        ell[3] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        p1 = ell[4];
+        dd = dee[4];
+        q1 = p1 * dd;
+        ell[4] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        p1 = ell[5];
+        dd = dee[5];
+        q1 = p1 * dd;
+        ell[5] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        ell += 6;
+        dee += 6;
+      }
+      j += 6;
+      for (; j > 0; j--) {
+        p1 = ell[0];
+        dd = dee[0];
+        q1 = p1 * dd;
+        ell[0] = q1;
+        m11 = p1 * q1;
+        Z11 += m11;
+        ell++;
+        dee++;
+      }
+      Z11 = ell[0] - Z11;
+      dee = d + i;
+      dee[0] = reciprocal(Z11);
+      break;
+  }
 }
 
-int dFactorCholesky(dReal* A, int n)
+#undef dFactorLDLT
+
+void dFactorLDLT(dReal* A, dReal* d, int n, int nskip1)
 {
-  return _dFactorCholesky(A, n, nullptr);
+  _dFactorLDLT(A, d, n, nskip1);
 }
 
-void dSolveCholesky(const dReal* L, dReal* b, int n)
+// From fastlsolve.cpp
+void _dSolveL1(const dReal* L, dReal* B, int n, int lskip1)
 {
-  _dSolveCholesky(L, b, n, nullptr);
+  dReal Z11, Z21, Z31, Z41, p1, q1, p2, p3, p4, *ex;
+  const dReal* ell;
+  int lskip2, lskip3, i, j;
+  lskip2 = 2 * lskip1;
+  lskip3 = 3 * lskip1;
+  for (i = 0; i <= n - 4; i += 4) {
+    Z11 = 0;
+    Z21 = 0;
+    Z31 = 0;
+    Z41 = 0;
+    ell = L + i * lskip1;
+    ex = B;
+    for (j = i - 12; j >= 0; j -= 12) {
+      p1 = ell[0];
+      q1 = ex[0];
+      p2 = ell[lskip1];
+      p3 = ell[lskip2];
+      p4 = ell[lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[1];
+      q1 = ex[1];
+      p2 = ell[1 + lskip1];
+      p3 = ell[1 + lskip2];
+      p4 = ell[1 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[2];
+      q1 = ex[2];
+      p2 = ell[2 + lskip1];
+      p3 = ell[2 + lskip2];
+      p4 = ell[2 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[3];
+      q1 = ex[3];
+      p2 = ell[3 + lskip1];
+      p3 = ell[3 + lskip2];
+      p4 = ell[3 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[4];
+      q1 = ex[4];
+      p2 = ell[4 + lskip1];
+      p3 = ell[4 + lskip2];
+      p4 = ell[4 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[5];
+      q1 = ex[5];
+      p2 = ell[5 + lskip1];
+      p3 = ell[5 + lskip2];
+      p4 = ell[5 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[6];
+      q1 = ex[6];
+      p2 = ell[6 + lskip1];
+      p3 = ell[6 + lskip2];
+      p4 = ell[6 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[7];
+      q1 = ex[7];
+      p2 = ell[7 + lskip1];
+      p3 = ell[7 + lskip2];
+      p4 = ell[7 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[8];
+      q1 = ex[8];
+      p2 = ell[8 + lskip1];
+      p3 = ell[8 + lskip2];
+      p4 = ell[8 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[9];
+      q1 = ex[9];
+      p2 = ell[9 + lskip1];
+      p3 = ell[9 + lskip2];
+      p4 = ell[9 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[10];
+      q1 = ex[10];
+      p2 = ell[10 + lskip1];
+      p3 = ell[10 + lskip2];
+      p4 = ell[10 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      p1 = ell[11];
+      q1 = ex[11];
+      p2 = ell[11 + lskip1];
+      p3 = ell[11 + lskip2];
+      p4 = ell[11 + lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      ell += 12;
+      ex += 12;
+    }
+    j += 12;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      p2 = ell[lskip1];
+      p3 = ell[lskip2];
+      p4 = ell[lskip3];
+      Z11 += p1 * q1;
+      Z21 += p2 * q1;
+      Z31 += p3 * q1;
+      Z41 += p4 * q1;
+      ell += 1;
+      ex += 1;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+    p1 = ell[lskip1];
+    Z21 = ex[1] - Z21 - p1 * Z11;
+    ex[1] = Z21;
+    p1 = ell[lskip2];
+    p2 = ell[1 + lskip2];
+    Z31 = ex[2] - Z31 - p1 * Z11 - p2 * Z21;
+    ex[2] = Z31;
+    p1 = ell[lskip3];
+    p2 = ell[1 + lskip3];
+    p3 = ell[2 + lskip3];
+    Z41 = ex[3] - Z41 - p1 * Z11 - p2 * Z21 - p3 * Z31;
+    ex[3] = Z41;
+  }
+  for (; i < n; i++) {
+    Z11 = 0;
+    ell = L + i * lskip1;
+    ex = B;
+    for (j = i - 12; j >= 0; j -= 12) {
+      p1 = ell[0];
+      q1 = ex[0];
+      Z11 += p1 * q1;
+      p1 = ell[1];
+      q1 = ex[1];
+      Z11 += p1 * q1;
+      p1 = ell[2];
+      q1 = ex[2];
+      Z11 += p1 * q1;
+      p1 = ell[3];
+      q1 = ex[3];
+      Z11 += p1 * q1;
+      p1 = ell[4];
+      q1 = ex[4];
+      Z11 += p1 * q1;
+      p1 = ell[5];
+      q1 = ex[5];
+      Z11 += p1 * q1;
+      p1 = ell[6];
+      q1 = ex[6];
+      Z11 += p1 * q1;
+      p1 = ell[7];
+      q1 = ex[7];
+      Z11 += p1 * q1;
+      p1 = ell[8];
+      q1 = ex[8];
+      Z11 += p1 * q1;
+      p1 = ell[9];
+      q1 = ex[9];
+      Z11 += p1 * q1;
+      p1 = ell[10];
+      q1 = ex[10];
+      Z11 += p1 * q1;
+      p1 = ell[11];
+      q1 = ex[11];
+      Z11 += p1 * q1;
+      ell += 12;
+      ex += 12;
+    }
+    j += 12;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      Z11 += p1 * q1;
+      ell += 1;
+      ex += 1;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+  }
 }
 
-int dInvertPDMatrix(const dReal* A, dReal* Ainv, int n)
+#undef dSolveL1
+
+void dSolveL1(const dReal* L, dReal* B, int n, int lskip1)
 {
-  return _dInvertPDMatrix(A, Ainv, n, nullptr);
+  _dSolveL1(L, B, n, lskip1);
 }
 
-int dIsPositiveDefinite(const dReal* A, int n)
+// From fastltsolve.cpp
+void _dSolveL1T(const dReal* L, dReal* B, int n, int lskip1)
 {
-  return _dIsPositiveDefinite(A, n, nullptr);
+  dReal Z11, m11, Z21, m21, Z31, m31, Z41, m41, p1, q1, p2, p3, p4, *ex;
+  const dReal* ell;
+  int lskip2, i, j;
+  L = L + (n - 1) * (lskip1 + 1);
+  B = B + n - 1;
+  lskip1 = -lskip1;
+  lskip2 = 2 * lskip1;
+  for (i = 0; i <= n - 4; i += 4) {
+    Z11 = 0;
+    Z21 = 0;
+    Z31 = 0;
+    Z41 = 0;
+    ell = L - i;
+    ex = B;
+    for (j = i - 4; j >= 0; j -= 4) {
+      p1 = ell[0];
+      q1 = ex[0];
+      p2 = ell[-1];
+      p3 = ell[-2];
+      p4 = ell[-3];
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m31 = p3 * q1;
+      m41 = p4 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      Z21 += m21;
+      Z31 += m31;
+      Z41 += m41;
+      p1 = ell[0];
+      q1 = ex[-1];
+      p2 = ell[-1];
+      p3 = ell[-2];
+      p4 = ell[-3];
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m31 = p3 * q1;
+      m41 = p4 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      Z21 += m21;
+      Z31 += m31;
+      Z41 += m41;
+      p1 = ell[0];
+      q1 = ex[-2];
+      p2 = ell[-1];
+      p3 = ell[-2];
+      p4 = ell[-3];
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m31 = p3 * q1;
+      m41 = p4 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      Z21 += m21;
+      Z31 += m31;
+      Z41 += m41;
+      p1 = ell[0];
+      q1 = ex[-3];
+      p2 = ell[-1];
+      p3 = ell[-2];
+      p4 = ell[-3];
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m31 = p3 * q1;
+      m41 = p4 * q1;
+      ell += lskip1;
+      ex -= 4;
+      Z11 += m11;
+      Z21 += m21;
+      Z31 += m31;
+      Z41 += m41;
+    }
+    j += 4;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      p2 = ell[-1];
+      p3 = ell[-2];
+      p4 = ell[-3];
+      m11 = p1 * q1;
+      m21 = p2 * q1;
+      m31 = p3 * q1;
+      m41 = p4 * q1;
+      ell += lskip1;
+      ex -= 1;
+      Z11 += m11;
+      Z21 += m21;
+      Z31 += m31;
+      Z41 += m41;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+    p1 = ell[-1];
+    Z21 = ex[-1] - Z21 - p1 * Z11;
+    ex[-1] = Z21;
+    p1 = ell[-2];
+    p2 = ell[-2 + lskip1];
+    Z31 = ex[-2] - Z31 - p1 * Z11 - p2 * Z21;
+    ex[-2] = Z31;
+    p1 = ell[-3];
+    p2 = ell[-3 + lskip1];
+    p3 = ell[-3 + lskip2];
+    Z41 = ex[-3] - Z41 - p1 * Z11 - p2 * Z21 - p3 * Z31;
+    ex[-3] = Z41;
+  }
+  for (; i < n; i++) {
+    Z11 = 0;
+    ell = L - i;
+    ex = B;
+    for (j = i - 4; j >= 0; j -= 4) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      p1 = ell[0];
+      q1 = ex[-1];
+      m11 = p1 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      p1 = ell[0];
+      q1 = ex[-2];
+      m11 = p1 * q1;
+      ell += lskip1;
+      Z11 += m11;
+      p1 = ell[0];
+      q1 = ex[-3];
+      m11 = p1 * q1;
+      ell += lskip1;
+      ex -= 4;
+      Z11 += m11;
+    }
+    j += 4;
+    for (; j > 0; j--) {
+      p1 = ell[0];
+      q1 = ex[0];
+      m11 = p1 * q1;
+      ell += lskip1;
+      ex -= 1;
+      Z11 += m11;
+    }
+    Z11 = ex[0] - Z11;
+    ex[0] = Z11;
+  }
 }
 
-// void dFactorLDLT (dReal *A, dReal *d, int n, int nskip);
-// void dSolveL1 (const dReal *L, dReal *b, int n, int nskip);
-// void dSolveL1T (const dReal *L, dReal *b, int n, int nskip);
+#undef dSolveL1T
 
-void dVectorScale(dReal* a, const dReal* d, int n)
+void dSolveL1T(const dReal* L, dReal* B, int n, int lskip1)
 {
-  _dVectorScale(a, d, n);
+  _dSolveL1T(L, B, n, lskip1);
 }
 
-void dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip)
-{
-  _dSolveLDLT(L, d, b, n, nskip);
-}
+// No wrapper functions needed anymore - single API with optional tmpbuf
+// parameters
 
-void dLDLTAddTL(dReal* L, dReal* d, const dReal* a, int n, int nskip)
-{
-  _dLDLTAddTL(L, d, a, n, nskip, nullptr);
-}
+// Explicit template instantiations for float and double
+template void SetZero<float>(float* a, size_t n);
+template void SetZero<double>(double* a, size_t n);
 
-void dLDLTRemove(
-    dReal** A,
-    const int* p,
-    dReal* L,
-    dReal* d,
-    int n1,
-    int n2,
-    int r,
-    int nskip)
-{
-  _dLDLTRemove(A, p, L, d, n1, n2, r, nskip, nullptr);
-}
+template void SetValue<float>(float* a, size_t n, float value);
+template void SetValue<double>(double* a, size_t n, double value);
 
-void dRemoveRowCol(dReal* A, int n, int nskip, int r)
-{
-  _dRemoveRowCol(A, n, nskip, r);
-}
+template float Dot<float>(const float* a, const float* b, int n);
+template double Dot<double>(const double* a, const double* b, int n);
+
+template void Multiply0<float>(
+    float* A, const float* B, const float* C, int p, int q, int r);
+template void Multiply0<double>(
+    double* A, const double* B, const double* C, int p, int q, int r);
+
+template void Multiply1<float>(
+    float* A, const float* B, const float* C, int p, int q, int r);
+template void Multiply1<double>(
+    double* A, const double* B, const double* C, int p, int q, int r);
+
+template void Multiply2<float>(
+    float* A, const float* B, const float* C, int p, int q, int r);
+template void Multiply2<double>(
+    double* A, const double* B, const double* C, int p, int q, int r);
+
+template void VectorScale<float>(float* a, const float* d, int n);
+template void VectorScale<double>(double* a, const double* d, int n);
+
+template void CopyVector<float>(float* dst, const float* src, int n);
+template void CopyVector<double>(double* dst, const double* src, int n);
+
+template void VectorAdd<float>(float* a, const float* b, int n);
+template void VectorAdd<double>(double* a, const double* b, int n);
+
+template void VectorSubtract<float>(float* a, const float* b, int n);
+template void VectorSubtract<double>(double* a, const double* b, int n);
+
+template void VectorNegate<float>(float* a, int n);
+template void VectorNegate<double>(double* a, int n);
 
 } // namespace dart::lcpsolver

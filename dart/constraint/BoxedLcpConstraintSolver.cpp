@@ -151,7 +151,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (0u == n)
     return;
 
-  const int nSkip = dPAD(n);
+  const int nSkip = lcpsolver::padding(n);
 #if DART_BUILD_MODE_RELEASE
   mA.resize(n, nSkip);
 #else // debug
@@ -320,7 +320,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 #if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = lcpsolver::padding(n);
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -348,7 +348,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 bool BoxedLcpConstraintSolver::isSymmetric(
     std::size_t n, double* A, std::size_t begin, std::size_t end)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = lcpsolver::padding(n);
   for (std::size_t i = begin; i <= end; ++i) {
     for (std::size_t j = begin; j <= end; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -383,7 +383,7 @@ void BoxedLcpConstraintSolver::print(
     double* w,
     int* findex)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = lcpsolver::padding(n);
   std::cout << "A: " << std::endl;
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < nSkip; ++j) {

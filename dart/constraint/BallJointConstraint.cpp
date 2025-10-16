@@ -37,6 +37,8 @@
 
 #include <iostream>
 
+using dart::lcpsolver::dInfinity;
+
 namespace dart {
 namespace constraint {
 

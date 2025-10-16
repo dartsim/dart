@@ -1,79 +1,67 @@
-/*************************************************************************
- *                                                                       *
- * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.       *
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
- *                                                                       *
- * This library is free software; you can redistribute it and/or         *
- * modify it under the terms of EITHER:                                  *
- *   (1) The GNU Lesser General Public License as published by the Free  *
- *       Software Foundation; either version 2.1 of the License, or (at  *
- *       your option) any later version. The text of the GNU Lesser      *
- *       General Public License is included with this library in the     *
- *       file LICENSE.TXT.                                               *
- *   (2) The BSD-style license that is included with this library in     *
- *       the file LICENSE-BSD.TXT.                                       *
- *                                                                       *
- * This library is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files    *
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
- *                                                                       *
- *************************************************************************/
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /* miscellaneous math functions. these are mostly useful for testing */
 
-#ifndef _ODE_MISC_H_
-#define _ODE_MISC_H_
+#pragma once
 
 #include "dart/lcpsolver/dantzig/common.h"
 
 namespace dart::lcpsolver {
 
-/* return 1 if the random number generator is working. */
-ODE_API int dTestRand(void);
+//==============================================================================
+// Random Number Generation (Used by tests and benchmarks)
+//==============================================================================
 
-/* return next 32 bit random number. this uses a not-very-random linear
- * congruential method.
- */
-ODE_API unsigned long dRand(void);
+/// Return next 32-bit random number using linear congruential method
+unsigned long dRand();
 
-/* get and set the current random number seed. */
-ODE_API unsigned long dRandGetSeed(void);
-ODE_API void dRandSetSeed(unsigned long s);
+/// Get current random number seed
+unsigned long dRandGetSeed();
 
-/* return a random integer between 0..n-1. the distribution will get worse
- * as n approaches 2^32.
- */
-ODE_API int dRandInt(int n);
+/// Set random number seed
+void dRandSetSeed(unsigned long s);
 
-/* return a random real number between 0..1 */
-ODE_API dReal dRandReal(void);
+/// Return a random integer between 0..n-1
+int dRandInt(int n);
 
-/* print out a matrix */
-#ifdef __cplusplus
-ODE_API void dPrintMatrix(
-    const dReal* A, int n, int m, char* fmt, FILE* f = stdout);
-#else
-ODE_API void dPrintMatrix(const dReal* A, int n, int m, char* fmt, FILE* f);
-#endif
+/// Return a random real number between 0..1
+dReal dRandReal();
 
-/* make a random vector with entries between +/- range. A has n elements. */
-ODE_API void dMakeRandomVector(dReal* A, int n, dReal range);
-
-/* make a random matrix with entries between +/- range. A has size n*m. */
-ODE_API void dMakeRandomMatrix(dReal* A, int n, int m, dReal range);
-
-/* clear the upper triangle of a square matrix */
-ODE_API void dClearUpperTriangle(dReal* A, int n);
-
-/* return the maximum element difference between the two n*m matrices */
-ODE_API dReal dMaxDifference(const dReal* A, const dReal* B, int n, int m);
-
-/* return the maximum element difference between the lower triangle of two
- * n*n matrices */
-ODE_API dReal
-dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n);
+/// Template version of random real number generation
+template <typename Scalar>
+inline Scalar RandReal()
+{
+  return static_cast<Scalar>(dRandReal());
+}
 
 } // namespace dart::lcpsolver
-
-#endif

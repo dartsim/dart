@@ -87,7 +87,7 @@ bool PgsBoxedLcpSolver::solve(
     int* findex,
     bool /*earlyTermination*/)
 {
-  const int nskip = dPAD(n);
+  const int nskip = lcpsolver::padding(n);
 
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
@@ -232,7 +232,7 @@ bool PgsBoxedLcpSolver::solve(
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {
-  const int nskip = dPAD(n);
+  const int nskip = lcpsolver::padding(n);
 
   // Return false if A has zero-diagonal or A is nonsymmetric matrix
   for (auto i = 0; i < n; ++i) {

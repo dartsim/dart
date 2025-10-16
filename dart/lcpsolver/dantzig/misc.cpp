@@ -1,193 +1,70 @@
-/*************************************************************************
- *                                                                       *
- * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.       *
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
- *                                                                       *
- * This library is free software; you can redistribute it and/or         *
- * modify it under the terms of EITHER:                                  *
- *   (1) The GNU Lesser General Public License as published by the Free  *
- *       Software Foundation; either version 2.1 of the License, or (at  *
- *       your option) any later version. The text of the GNU Lesser      *
- *       General Public License is included with this library in the     *
- *       file LICENSE.TXT.                                               *
- *   (2) The BSD-style license that is included with this library in     *
- *       the file LICENSE-BSD.TXT.                                       *
- *                                                                       *
- * This library is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files    *
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
- *                                                                       *
- *************************************************************************/
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include "dart/lcpsolver/dantzig/misc.h"
 
-#include "dart/lcpsolver/dantzig/matrix.h"
-#include "dart/lcpsolver/dantzig/odeconfig.h"
-
 namespace dart::lcpsolver {
 
-//****************************************************************************
-// random numbers
+//==============================================================================
+// Random number generation
+//==============================================================================
 
-static unsigned long seed = 0;
+static unsigned long rng_seed = 0;
 
 unsigned long dRand()
 {
-  seed = (1664525UL * seed + 1013904223UL) & 0xffffffff;
-  return seed;
+  rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
+  return rng_seed;
 }
 
 unsigned long dRandGetSeed()
 {
-  return seed;
+  return rng_seed;
 }
 
 void dRandSetSeed(unsigned long s)
 {
-  seed = s;
+  rng_seed = s;
 }
 
-int dTestRand()
-{
-  unsigned long oldseed = seed;
-  int ret = 1;
-  seed = 0;
-  if (dRand() != 0x3c6ef35f || dRand() != 0x47502932 || dRand() != 0xd1ccf6e9
-      || dRand() != 0xaaf95334 || dRand() != 0x6252e503)
-    ret = 0;
-  seed = oldseed;
-  return ret;
-}
-
-// adam's all-int straightforward(?) dRandInt (0..n-1)
 int dRandInt(int n)
 {
-  // seems good; xor-fold and modulus
-  const unsigned long un = n;
-  // Since there is no memory barrier macro in ODE assign via volatile variable
-  // to prevent compiler reusing seed as value of `r'
-  volatile unsigned long raw_r = dRand();
-  unsigned long r = raw_r;
-
-  // note: probably more aggressive than it needs to be -- might be
-  //       able to get away without one or two of the innermost branches.
-  // if (un <= 0x00010000UL) {
-  //   r ^= (r >> 16);
-  //   if (un <= 0x00000100UL) {
-  //     r ^= (r >> 8);
-  //     if (un <= 0x00000010UL) {
-  //       r ^= (r >> 4);
-  //       if (un <= 0x00000004UL) {
-  //         r ^= (r >> 2);
-  //         if (un <= 0x00000002UL) {
-  //           r ^= (r >> 1);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-  // Optimized version of above
-  if (un <= 0x00000010UL) {
-    r ^= (r >> 16);
-    r ^= (r >> 8);
-    r ^= (r >> 4);
-    if (un <= 0x00000002UL) {
-      r ^= (r >> 2);
-      r ^= (r >> 1);
-    } else {
-      if (un <= 0x00000004UL) {
-        r ^= (r >> 2);
-      }
-    }
-  } else {
-    if (un <= 0x00000100UL) {
-      r ^= (r >> 16);
-      r ^= (r >> 8);
-    } else {
-      if (un <= 0x00010000UL) {
-        r ^= (r >> 16);
-      }
-    }
-  }
-
-  return (int)(r % un);
+  dReal r = dRandReal();
+  return (int)(r * n);
 }
 
 dReal dRandReal()
 {
   return ((dReal)dRand()) / ((dReal)0xffffffff);
-}
-
-//****************************************************************************
-// matrix utility stuff
-
-void dPrintMatrix(const dReal* A, int n, int m, char* fmt, FILE* f)
-{
-  int skip = dPAD(m);
-  const dReal* Arow = A;
-  for (int i = 0; i < n; Arow += skip, ++i) {
-    for (int j = 0; j < m; ++j)
-      fprintf(f, fmt, Arow[j]);
-    fprintf(f, "\n");
-  }
-}
-
-void dMakeRandomVector(dReal* A, int n, dReal range)
-{
-  for (int i = 0; i < n; ++i)
-    A[i] = (dRandReal() * REAL(2.0) - REAL(1.0)) * range;
-}
-
-void dMakeRandomMatrix(dReal* A, int n, int m, dReal range)
-{
-  int skip = dPAD(m);
-  //  dSetZero (A,n*skip);
-  dReal* Arow = A;
-  for (int i = 0; i < n; Arow += skip, ++i) {
-    for (int j = 0; j < m; ++j)
-      Arow[j] = (dRandReal() * REAL(2.0) - REAL(1.0)) * range;
-  }
-}
-
-void dClearUpperTriangle(dReal* A, int n)
-{
-  int skip = dPAD(n);
-  dReal* Arow = A;
-  for (int i = 0; i < n; Arow += skip, ++i) {
-    for (int j = i + 1; j < n; ++j)
-      Arow[j] = 0;
-  }
-}
-
-dReal dMaxDifference(const dReal* A, const dReal* B, int n, int m)
-{
-  int skip = dPAD(m);
-  dReal max = REAL(0.0);
-  const dReal *Arow = A, *Brow = B;
-  for (int i = 0; i < n; Arow += skip, Brow += skip, ++i) {
-    for (int j = 0; j < m; ++j) {
-      dReal diff = dFabs(Arow[j] - Brow[j]);
-      if (diff > max)
-        max = diff;
-    }
-  }
-  return max;
-}
-
-dReal dMaxDifferenceLowerTriangle(const dReal* A, const dReal* B, int n)
-{
-  int skip = dPAD(n);
-  dReal max = REAL(0.0);
-  const dReal *Arow = A, *Brow = B;
-  for (int i = 0; i < n; Arow += skip, Brow += skip, ++i) {
-    for (int j = 0; j <= i; ++j) {
-      dReal diff = dFabs(Arow[j] - Brow[j]);
-      if (diff > max)
-        max = diff;
-    }
-  }
-  return max;
 }
 
 } // namespace dart::lcpsolver

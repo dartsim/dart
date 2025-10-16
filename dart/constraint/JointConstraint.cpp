@@ -38,15 +38,17 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
 
+using dart::lcpsolver::dInfinity;
+
 #include <algorithm>
+
+namespace dart {
+namespace constraint {
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
 #define DART_MAX_ERV 1e+1
 #define DART_CFM 1e-9
-
-namespace dart {
-namespace constraint {
 
 double JointConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double JointConstraint::mErrorReductionParameter = DART_ERP;

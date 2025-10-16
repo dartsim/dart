@@ -31,6 +31,16 @@
  */
 
 #include "dart/lcpsolver/dantzig/lcp.h"
+
+// Undefine assertion macros from dantzig to avoid conflicts with baseline
+#undef dIASSERT
+#undef dUASSERT
+#undef dDEBUGMSG
+#undef dICHECK
+#undef dAASSERT
+#undef dIVERIFY
+#undef D_ALL_PARAM_NAMES_X
+
 #include "tests/baseline/odelcpsolver/lcp.h"
 #include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
@@ -159,7 +169,7 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
       false);
 
   // Solve with Dantzig solver (from dart/lcpsolver/dantzig/)
-  bool success_dantzig = dart::lcpsolver::dSolveLCP(
+  bool success_dantzig = dart::lcpsolver::SolveLCP<double>(
       n,
       A_dantzig.data(),
       x_dantzig.data(),
