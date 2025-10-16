@@ -24,22 +24,28 @@ pkg_check_modules(PC_SHARK Shark QUIET)
 set(SHARK_DEFINITIONS ${PC_SHARK_CFLAGS_OTHER})
 
 # Include directories
-find_path(SHARK_INCLUDE_DIRS
-    NAMES shark/Core/Shark.h
-    HINTS ${PC_SHARK_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(
+  SHARK_INCLUDE_DIRS
+  NAMES shark/Core/Shark.h
+  HINTS ${PC_SHARK_INCLUDEDIR}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+)
 
 # Libraries
-find_library(SHARK_LIBRARIES
-    NAMES shark
-    HINTS ${PC_SHARK_LIBDIR})
+find_library(
+  SHARK_LIBRARIES
+  NAMES shark
+  HINTS ${PC_SHARK_LIBDIR}
+)
 
 # Version
 set(SHARK_VERSION ${PC_SHARK_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(SHARK
-    FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS SHARK_INCLUDE_DIRS SHARK_LIBRARIES
-    VERSION_VAR   SHARK_VERSION)
+find_package_handle_standard_args(
+  SHARK
+  FAIL_MESSAGE DEFAULT_MSG
+  REQUIRED_VARS SHARK_INCLUDE_DIRS SHARK_LIBRARIES
+  VERSION_VAR SHARK_VERSION
+)

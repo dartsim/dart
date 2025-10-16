@@ -23,18 +23,22 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_TINYXML2 tinyxml2 QUIET)
 
 # Include directories
-find_path(TINYXML2_INCLUDE_DIRS
-    NAMES tinyxml2.h
-    HINTS ${PC_TINYXML2_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(
+  TINYXML2_INCLUDE_DIRS
+  NAMES tinyxml2.h
+  HINTS ${PC_TINYXML2_INCLUDEDIR}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+)
 
 # Libraries
 if(MSVC)
   set(TINYXML2_LIBRARIES "tinyxml2$<$<CONFIG:Debug>:d>")
 else()
-  find_library(TINYXML2_LIBRARIES
-      NAMES tinyxml2
-      HINTS ${PC_TINYXML2_LIBDIR})
+  find_library(
+    TINYXML2_LIBRARIES
+    NAMES tinyxml2
+    HINTS ${PC_TINYXML2_LIBDIR}
+  )
 endif()
 
 # Version
@@ -42,7 +46,9 @@ set(TINYXML2_VERSION ${PC_TINYXML2_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(tinyxml2
-    FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS TINYXML2_INCLUDE_DIRS TINYXML2_LIBRARIES
-    VERSION_VAR   TINYXML2_VERSION)
+find_package_handle_standard_args(
+  tinyxml2
+  FAIL_MESSAGE DEFAULT_MSG
+  REQUIRED_VARS TINYXML2_INCLUDE_DIRS TINYXML2_LIBRARIES
+  VERSION_VAR TINYXML2_VERSION
+)

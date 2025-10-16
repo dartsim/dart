@@ -42,13 +42,12 @@ set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
-include(DARTMacros)
 include(dart_defs)
 
-# CMake component helper. It uses the following variables:
+# Initialize CMake component helpers (now part of dart_defs.cmake)
+# Uses the following variables:
 # - LIBRARY_INSTALL_DIR
 # - CONFIG_INSTALL_DIR
-include(Components)
 initialize_component_helpers(${PROJECT_NAME})
 
 #===============================================================================
@@ -57,10 +56,26 @@ initialize_component_helpers(${PROJECT_NAME})
 
 # Extract version numbers from package.xml
 file(READ package.xml PACKAGE_XML)
-string(REGEX MATCH "<version>[0-9]+\\.[0-9]+\\.[0-9]+</version>" DIRTY_VERSION_STRING ${PACKAGE_XML})
-string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\1" DART_MAJOR_VERSION "${DIRTY_VERSION_STRING}")
-string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\2" DART_MINOR_VERSION "${DIRTY_VERSION_STRING}")
-string(REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\3" DART_PATCH_VERSION "${DIRTY_VERSION_STRING}")
+string(
+  REGEX MATCH "<version>[0-9]+\\.[0-9]+\\.[0-9]+</version>"
+  DIRTY_VERSION_STRING
+  "${PACKAGE_XML}"
+)
+string(
+  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\1"
+  DART_MAJOR_VERSION
+  "${DIRTY_VERSION_STRING}"
+)
+string(
+  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\2"
+  DART_MINOR_VERSION
+  "${DIRTY_VERSION_STRING}"
+)
+string(
+  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\3"
+  DART_PATCH_VERSION
+  "${DIRTY_VERSION_STRING}"
+)
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -73,6 +88,24 @@ if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
   dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+
+  # Option to force /MD (Release runtime) for all configurations including Debug.
+  # This is useful when linking against pre-built libraries (e.g., conda-forge packages)
+  # that are built with /MD to avoid LNK2038 runtime library mismatch errors.
+  # Default: ON (recommended for most users using package managers like conda/pixi)
+  # Set to OFF if you're building all dependencies from source with matching runtime libraries.
+  dart_option(DART_MSVC_FORCE_RELEASE_RUNTIME
+    "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON)
+
+  if(DART_MSVC_FORCE_RELEASE_RUNTIME AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.15")
+    # Use modern CMake 3.15+ approach with CMAKE_MSVC_RUNTIME_LIBRARY
+    # This sets /MD for all configurations (Debug, Release, RelWithDebInfo, MinSizeRel)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL" CACHE STRING
+        "MSVC runtime library - forced to /MD for all configs" FORCE)
+    message(STATUS "DART_MSVC_FORCE_RELEASE_RUNTIME=ON: Using /MD for all configurations")
+    message(STATUS "  This avoids LNK2038 errors when linking pre-built packages built with /MD")
+    message(STATUS "  Set -DDART_MSVC_FORCE_RELEASE_RUNTIME=OFF if building all deps from source")
+  endif()
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
@@ -167,7 +200,11 @@ endif()
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel" FORCE)
+  set(
+    CMAKE_BUILD_TYPE Release
+    CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
+    FORCE
+  )
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
@@ -242,12 +279,14 @@ if(MSVC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(/WX)
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP")
+  # /MP - Multi-processor compilation (uses all available cores)
+  # /FS - Force synchronous PDB writes (prevents PDB conflicts in parallel builds with /MP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
-  endif(NOT DART_MSVC_DEFAULT_OPTIONS)
+  endif()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
   add_compile_options(/wd4005)
   add_compile_options(/wd4099)
@@ -308,7 +347,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
   # Enforce to colorize compilation output
-  if(${DART_FORCE_COLORED_OUTPUT})
+  if(DART_FORCE_COLORED_OUTPUT)
     add_compile_options(-fdiagnostics-color=always)
   endif()
 
@@ -335,8 +374,8 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
 
   # Enforce to colorize compilation output
-  if(${DART_FORCE_COLORED_OUTPUT})
-     add_compile_options(-fcolor-diagnostics)
+  if(DART_FORCE_COLORED_OUTPUT)
+    add_compile_options(-fcolor-diagnostics)
   endif()
 
 else()
@@ -359,18 +398,18 @@ if(DART_VERBOSE)
   message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
   message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
   message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
-  if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
+  if(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "RELEASE")
     message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
-  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
+  elseif(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "DEBUG")
     message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
-  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
+  elseif(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "RELWITHDEBINFO")
     message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
+  elseif(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "PROFILE")
     message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
   endif()
   message(STATUS "DART_SOURCE_DIR : ${DART_SOURCE_DIR}")
   message(STATUS "DART_BINARY_DIR : ${DART_BINARY_DIR}")
-endif(DART_VERBOSE)
+endif()
 
 #===============================================================================
 # Add sub-directories
@@ -404,13 +443,13 @@ if(TARGET dart)
   if(DART_VERBOSE)
     message(STATUS "")
     message(STATUS "[ Examples ]")
-    foreach(example ${examples})
+    foreach(example IN LISTS examples)
       message(STATUS "Adding example: ${example}")
-    endforeach(example ${examples})
-  else(DART_VERBOSE)
+    endforeach()
+  else()
     list(LENGTH examples examples_length)
     message(STATUS "Adding ${examples_length} examples")
-  endif(DART_VERBOSE)
+  endif()
 
   # Add a "tutorials" target to build tutorials.
   if(MSVC)
@@ -424,13 +463,13 @@ if(TARGET dart)
   if(DART_VERBOSE)
     message(STATUS "")
     message(STATUS "[ Tutorials ]")
-    foreach(tutorial ${tutorials})
+    foreach(tutorial IN LISTS tutorials)
       message(STATUS "Adding tutorial: ${tutorial}")
-    endforeach(tutorial ${tutorials})
-  else(DART_VERBOSE)
+    endforeach()
+  else()
     list(LENGTH tutorials tutorials_length)
     message(STATUS "Adding ${tutorials_length} tutorials")
-  endif(DART_VERBOSE)
+  endif()
 
 endif()
 
@@ -438,20 +477,20 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
-if (BUILD_TESTING)
+if(BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)
 endif()
-foreach(target_candidate ${all_target_candidates})
+foreach(target_candidate IN LISTS all_target_candidates)
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
   endif()
 endforeach()
-foreach(target_candidate ${examples})
+foreach(target_candidate IN LISTS examples)
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
   endif()
 endforeach()
-foreach(target_candidate ${tutorials})
+foreach(target_candidate IN LISTS tutorials)
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
   endif()
@@ -607,25 +646,33 @@ if(CLANG_FORMAT_EXECUTABLE)
   message(STATUS "Formatting on ${formatting_files_length} source files.")
 
   if(formatting_files)
-    add_custom_target(format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
-                      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
-                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-                      WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart)
+    add_custom_target(
+      format
+      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
+      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
+      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+      WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart
+    )
 
-    add_custom_target(check-format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
-                      COMMAND ${DART_SOURCE_DIR}/scripts/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
-                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-                      WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart)
+    add_custom_target(
+      check-format
+      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
+      COMMAND ${DART_SOURCE_DIR}/scripts/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
+      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+      WORKING_DIRECTORY ${DART_SOURCE_DIR}/dart
+    )
   else()
-    add_custom_target(format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to format.")
+    add_custom_target(
+      format
+      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to format."
+    )
 
-    add_custom_target(check-format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to check.")
+    add_custom_target(
+      check-format
+      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to check."
+    )
   endif()
 
 else()

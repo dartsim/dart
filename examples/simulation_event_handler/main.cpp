@@ -33,7 +33,9 @@
 #include "SimulationEventHandler.hpp"
 
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
 #include <dart/dart.hpp>
 
 #include <iostream>
@@ -81,7 +83,7 @@ SkeletonPtr createBox(
   shapeNode->getVisualAspect()->setColor(color);
 
   // Set mass properties
-  Inertia inertia;
+  dart::dynamics::Inertia inertia;
   inertia.setMass(mass);
   inertia.setMoment(boxShape->computeInertia(mass));
   body->setInertia(inertia);
@@ -125,7 +127,7 @@ SkeletonPtr createSphere(
   shapeNode->getVisualAspect()->setColor(color);
 
   // Set mass properties
-  Inertia inertia;
+  dart::dynamics::Inertia inertia;
   inertia.setMass(mass);
   inertia.setMoment(sphereShape->computeInertia(mass));
   body->setInertia(inertia);
@@ -198,33 +200,44 @@ int main()
   auto ground = createGround();
   world->addSkeleton(ground);
 
-  auto box1 = createBox("box1", Eigen::Vector3d(-1.0, 0.0, 2.0),
-                        Eigen::Vector3d(0.4, 0.4, 0.4),
-                        Eigen::Vector3d(0.8, 0.2, 0.2));
+  auto box1 = createBox(
+      "box1",
+      Eigen::Vector3d(-1.0, 0.0, 2.0),
+      Eigen::Vector3d(0.4, 0.4, 0.4),
+      Eigen::Vector3d(0.8, 0.2, 0.2));
   world->addSkeleton(box1);
 
-  auto box2 = createBox("box2", Eigen::Vector3d(0.0, 0.0, 3.0),
-                        Eigen::Vector3d(0.6, 0.3, 0.3),
-                        Eigen::Vector3d(0.2, 0.8, 0.2));
+  auto box2 = createBox(
+      "box2",
+      Eigen::Vector3d(0.0, 0.0, 3.0),
+      Eigen::Vector3d(0.6, 0.3, 0.3),
+      Eigen::Vector3d(0.2, 0.8, 0.2));
   world->addSkeleton(box2);
 
-  auto sphere1 = createSphere("sphere1", Eigen::Vector3d(1.0, 0.0, 2.5), 0.3,
-                              Eigen::Vector3d(0.2, 0.2, 0.8));
+  auto sphere1 = createSphere(
+      "sphere1",
+      Eigen::Vector3d(1.0, 0.0, 2.5),
+      0.3,
+      Eigen::Vector3d(0.2, 0.2, 0.8));
   world->addSkeleton(sphere1);
 
-  auto box3 = createBox("box3", Eigen::Vector3d(0.5, 1.0, 2.2),
-                        Eigen::Vector3d(0.3, 0.5, 0.4),
-                        Eigen::Vector3d(0.9, 0.9, 0.2));
+  auto box3 = createBox(
+      "box3",
+      Eigen::Vector3d(0.5, 1.0, 2.2),
+      Eigen::Vector3d(0.3, 0.5, 0.4),
+      Eigen::Vector3d(0.9, 0.9, 0.2));
   world->addSkeleton(box3);
 
   // Create OSG viewer
   Viewer viewer;
 
   // Create the simulation event handler
-  SimulationEventHandler* eventHandler = new SimulationEventHandler(world, &viewer);
+  SimulationEventHandler* eventHandler
+      = new SimulationEventHandler(world, &viewer);
 
   // Create custom world node that will call our event handler's update
-  ::osg::ref_ptr<CustomWorldNode> worldNode = new CustomWorldNode(world, eventHandler);
+  ::osg::ref_ptr<CustomWorldNode> worldNode
+      = new CustomWorldNode(world, eventHandler);
 
   // Set up viewer
   viewer.addWorldNode(worldNode);
@@ -240,7 +253,8 @@ int main()
 
   // Add instructional text
   viewer.addInstructionText("=== Simulation Event Handler Demo ===\n");
-  viewer.addInstructionText("This example demonstrates a comprehensive event handler\n");
+  viewer.addInstructionText(
+      "This example demonstrates a comprehensive event handler\n");
   viewer.addInstructionText("that replaces MyWindow.cpp functionality.\n\n");
   viewer.addInstructionText("Press 'H' or '?' for detailed controls\n");
   viewer.addInstructionText("Press Space to start/pause simulation\n");
@@ -250,9 +264,11 @@ int main()
   viewer.addInstructionText("Press 'V' to toggle force visualization\n");
 
   std::cout << "\n=== Simulation Event Handler Demo ===" << std::endl;
-  std::cout << "World created with " << world->getNumSkeletons() << " skeletons:" << std::endl;
+  std::cout << "World created with " << world->getNumSkeletons()
+            << " skeletons:" << std::endl;
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
-    std::cout << "  " << (i + 1) << ". " << world->getSkeleton(i)->getName() << std::endl;
+    std::cout << "  " << (i + 1) << ". " << world->getSkeleton(i)->getName()
+              << std::endl;
   }
   std::cout << "\nPress 'H' for help or start interacting!" << std::endl;
 

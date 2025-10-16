@@ -553,8 +553,11 @@ For comprehensive information about the packaging system architecture, see:
 For developer build instructions, see:
 - **[dartpy Developer Build Guide](../readthedocs/dartpy/developer_guide/build.rst)**: Step-by-step build instructions for all installation methods
 
-For active development tasks, see:
-- **[Packaging Refactor Task Tracker](../dev_tasks/active/pyproject/packaging-refactor.md)**: Current packaging improvements and roadmap
+**Completed improvements (2025-01-19)**:
+- Modernized packaging with scikit-build-core
+- Fixed CMake install rules and Python 3.13 compatibility
+- Added wheel verification tools
+- Implemented conditional GUI/pagmo exclusions for minimal wheels
 
 ## Conclusion
 

@@ -25,8 +25,3 @@ Available Versions
 - `v6.8.5-py <https://dartsim.github.io/dart/v6.8.5-py/>`_
 - `v6.7.3-py <https://dartsim.github.io/dart/v6.7.3-py/>`_
 - `v6.6.2-py <https://dartsim.github.io/dart/v6.6.2-py/>`_
-
-Building Locally
-----------------
-
-See :doc:`developer_guide/api_docs` for information about documentation architecture and instructions on building API documentation locally.

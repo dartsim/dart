@@ -12,6 +12,7 @@ dart_generate_component_headers(
   TARGET_DIR "dart/utils/sdf/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs}
 )
 
 # Install

@@ -13,8 +13,8 @@ string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\2" NLOPT_MINOR_VERSIO
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" "\\3" NLOPT_PATCH_VERSION "${NLOPT_VERSION}")
 
 # Check if parsing succeeded
-if(NOT (NLOPT_MAJOR_VERSION MATCHES "^[0-9]+$" AND 
-        NLOPT_MINOR_VERSION MATCHES "^[0-9]+$" AND 
+if(NOT (NLOPT_MAJOR_VERSION MATCHES "^[0-9]+$" AND
+        NLOPT_MINOR_VERSION MATCHES "^[0-9]+$" AND
         NLOPT_PATCH_VERSION MATCHES "^[0-9]+$"))
   message(WARNING "Failed to parse NLOPT_VERSION '${NLOPT_VERSION}'. Using default values (2, 9, 0) for version components.")
   set(NLOPT_MAJOR_VERSION "2")
@@ -53,11 +53,12 @@ dart_generate_component_headers(
   TARGET_DIR "dart/optimizer/nlopt/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp ${DART_GENERATED_COMPAT_HEADERS}
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )

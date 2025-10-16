@@ -13,9 +13,10 @@ dart_generate_component_headers(
   TARGET_DIR "dart/common/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs} ${detail_hdrs}
 )
 
-# Install (now includes both all.hpp and common.hpp for backward compatibility)
+# Install headers and generated component headers
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/common.hpp
   DESTINATION include/dart/common
@@ -26,3 +27,6 @@ install(
   DESTINATION include/dart/common/detail
   COMPONENT headers
 )
+
+# Install generated PascalCase compatibility headers, preserving directory structure
+dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/common)

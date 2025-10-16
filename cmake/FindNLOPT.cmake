@@ -27,22 +27,28 @@ pkg_check_modules(PC_NLOPT nlopt QUIET)
 set(NLOPT_DEFINITIONS ${PC_NLOPT_CFLAGS_OTHER})
 
 # Include directories
-find_path(NLOPT_INCLUDE_DIRS
-    NAMES nlopt.h
-    HINTS ${PC_NLOPT_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(
+  NLOPT_INCLUDE_DIRS
+  NAMES nlopt.h
+  HINTS ${PC_NLOPT_INCLUDEDIR}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+)
 
 # Libraries
-find_library(NLOPT_LIBRARIES
-    NAMES nlopt nlopt_cxx
-    HINTS ${PC_NLOPT_LIBDIR})
+find_library(
+  NLOPT_LIBRARIES
+  NAMES nlopt nlopt_cxx
+  HINTS ${PC_NLOPT_LIBDIR}
+)
 
 # Version
 set(NLOPT_VERSION ${PC_NLOPT_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(NLOPT
-    FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS NLOPT_INCLUDE_DIRS NLOPT_LIBRARIES
-    VERSION_VAR   NLOPT_VERSION)
+find_package_handle_standard_args(
+  NLOPT
+  FAIL_MESSAGE DEFAULT_MSG
+  REQUIRED_VARS NLOPT_INCLUDE_DIRS NLOPT_LIBRARIES
+  VERSION_VAR NLOPT_VERSION
+)

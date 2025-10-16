@@ -1,21 +1,43 @@
-# Copyright (c) 2011-2025, The DART development contributors
+# Copyright (c) The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
-#   https://github.com/dartsim/dart/blob/main/LICENSE
+#   https://github.com/dartsim/dart/blob/master/LICENSE
 #
-# This file is provided under the "BSD-style" License
+# This file is provided under the following "BSD-style" License:
+#   Redistribution and use in source and binary forms, with or
+#   without modification, are permitted provided that the following
+#   conditions are met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+#   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+#   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+#   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+#   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+#   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
 
 # Determine Python site-packages directory
-# Use sysconfig instead of distutils (removed in Python 3.12+)
+# For wheel builds with scikit-build-core, SKBUILD_PLATLIB_DIR is used directly
+# For traditional CMake installs, we need to calculate the relative path
+# and prefix it with CMAKE_INSTALL_PREFIX
 execute_process(COMMAND ${Python3_EXECUTABLE} -c
-  "import sysconfig; print(sysconfig.get_path('platlib'))"
-  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+  "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
+  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-if(NOT IS_ABSOLUTE ${PYTHON_SITE_PACKAGES})
-  set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
-endif()
+set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}")
 set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")

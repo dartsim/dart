@@ -11,11 +11,13 @@ dart_generate_component_headers(
   TARGET_DIR "dart/lcpsolver/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs}
 )
 
-# Install
+# Install (includes all.hpp, lcpsolver.hpp for component compatibility,
+# and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp ${DART_GENERATED_COMPAT_HEADERS}
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )

@@ -63,11 +63,11 @@ add_component(${PROJECT_NAME} dart)
 
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
-endfunction(dart_add_core_headers)
+endfunction()
 
 function(dart_add_core_sources)
   dart_property_add(DART_CORE_SOURCES ${ARGN})
-endfunction(dart_add_core_sources)
+endfunction()
 
 # Add subdirectories
 add_subdirectory(common)
@@ -95,13 +95,15 @@ get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
 if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Components ]")
-  foreach(component ${components})
+  foreach(component IN LISTS components)
     message(STATUS "Adding component: ${component}")
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(STATUS "Adding ${components_length} components including "
-    "the default component 'dart'")
+  message(
+    STATUS
+    "Adding ${components_length} components including the default component 'dart'"
+  )
 endif()
 
 # Set header and source files
@@ -112,13 +114,15 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(dart BEFORE
+target_include_directories(
+  dart BEFORE
   PUBLIC
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dart
+target_link_libraries(
+  dart
   PUBLIC
     ${CMAKE_DL_LIBS}
     ${PROJECT_NAME}-external-odelcpsolver
@@ -173,7 +177,7 @@ if(DART_ENABLE_SIMD)
     if(GCC_VERSION VERSION_GREATER 7.0)
       target_compile_options(dart PUBLIC -faligned-new)
     endif()
-  elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
 else()
@@ -210,7 +214,8 @@ endif()
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
-add_component_dependency_packages(${PROJECT_NAME} dart
+add_component_dependency_packages(
+  ${PROJECT_NAME} dart
   assimp Eigen3 fcl fmt
 )
 if(TARGET octomap)

@@ -197,17 +197,17 @@ graph TB
 
 ### Component: Viewer (GUI Entry Point)
 
-**File**: [`Viewer.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.hpp) | [`Viewer.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp)
+**File**: [`Viewer.hpp`](dart/gui/osg/Viewer.hpp) | [`Viewer.cpp`](dart/gui/osg/Viewer.cpp)
 
 **Purpose**: Main 3D visualization window that integrates OpenSceneGraph rendering with DART simulation. Manages camera, lighting, shadows, event handling, and world node registration.
 
 **Key Elements**:
-- [`Viewer::Viewer()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
-- [`Viewer::addWorldNode()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L122) - Registers a WorldNode for rendering
-- [`Viewer::enableDragAndDrop()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
-- [`Viewer::run()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L462) - Main rendering loop
-- [`Viewer::setupDefaultLights()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L292) - Configures scene lighting
-- [`Viewer::captureScreen()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L373) - Screenshot functionality
+- [`Viewer::Viewer()`](dart/gui/osg/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
+- [`Viewer::addWorldNode()`](dart/gui/osg/Viewer.cpp#L122) - Registers a WorldNode for rendering
+- [`Viewer::enableDragAndDrop()`](dart/gui/osg/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
+- [`Viewer::run()`](dart/gui/osg/Viewer.cpp#L462) - Main rendering loop
+- [`Viewer::setupDefaultLights()`](dart/gui/osg/Viewer.cpp#L292) - Configures scene lighting
+- [`Viewer::captureScreen()`](dart/gui/osg/Viewer.cpp#L373) - Screenshot functionality
 
 **Depends On**:
 - **Internal**: OpenSceneGraph scene graph, camera manipulators, event handlers
@@ -217,15 +217,15 @@ graph TB
 
 ### Component: ImGuiViewer (Enhanced Viewer)
 
-**File**: [`ImGuiViewer.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiViewer.hpp) | [`ImGuiViewer.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiViewer.cpp)
+**File**: [`ImGuiViewer.hpp`](dart/gui/osg/ImGuiViewer.hpp) | [`ImGuiViewer.cpp`](dart/gui/osg/ImGuiViewer.cpp)
 
 **Purpose**: Extended viewer with Dear ImGui integration for modern UI widgets and controls. Provides immediate-mode GUI capabilities for debugging, controls, and custom interfaces.
 
 **Key Elements**:
-- [`ImGuiViewer::ImGuiViewer()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
-- [`ImGuiHandler`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
-- [`ImGuiWidget`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiWidget.hpp) - Base class for custom widgets
-- [`AboutWidget`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiViewer.cpp#L49) - Default about dialog
+- [`ImGuiViewer::ImGuiViewer()`](dart/gui/osg/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
+- [`ImGuiHandler`](dart/gui/osg/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
+- [`ImGuiWidget`](dart/gui/osg/ImGuiWidget.hpp) - Base class for custom widgets
+- [`AboutWidget`](dart/gui/osg/ImGuiViewer.cpp#L49) - Default about dialog
 
 **Depends On**:
 - **Internal**: Viewer base class, ImGuiHandler, ImGuiWidget system
@@ -235,15 +235,15 @@ graph TB
 
 ### Component: WorldNode (Simulation-Rendering Bridge)
 
-**File**: [`WorldNode.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.hpp) | [`WorldNode.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.cpp)
+**File**: [`WorldNode.hpp`](dart/gui/osg/WorldNode.hpp) | [`WorldNode.cpp`](dart/gui/osg/WorldNode.cpp)
 
 **Purpose**: Encapsulates a DART World for OSG rendering. Manages skeleton visualization, shape nodes, shadow groups, and synchronization between simulation and rendering state.
 
 **Key Elements**:
-- [`WorldNode::WorldNode()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
-- [`WorldNode::refresh()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.cpp#L138) - Updates visual state from simulation
-- [`WorldNode::customPreRefresh()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.hpp#L81) - Hook for custom update logic
-- [`WorldNode::setShadowTechnique()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/WorldNode.cpp#L218) - Configures shadow rendering
+- [`WorldNode::WorldNode()`](dart/gui/osg/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
+- [`WorldNode::refresh()`](dart/gui/osg/WorldNode.cpp#L138) - Updates visual state from simulation
+- [`WorldNode::customPreRefresh()`](dart/gui/osg/WorldNode.hpp#L81) - Hook for custom update logic
+- [`WorldNode::setShadowTechnique()`](dart/gui/osg/WorldNode.cpp#L218) - Configures shadow rendering
 - Dual scene graph: Normal group and shadow group for optimized shadow rendering
 
 **Depends On**:
@@ -254,14 +254,14 @@ graph TB
 
 ### Component: RealTimeWorldNode (Simulation Loop)
 
-**File**: [`RealTimeWorldNode.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.hpp) | [`RealTimeWorldNode.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.cpp)
+**File**: [`RealTimeWorldNode.hpp`](dart/gui/osg/RealTimeWorldNode.hpp) | [`RealTimeWorldNode.cpp`](dart/gui/osg/RealTimeWorldNode.cpp)
 
 **Purpose**: Real-time simulation with adaptive time stepping. Maintains target real-time factor (RTF) and provides hooks for custom logic before/after each simulation step.
 
 **Key Elements**:
-- [`RealTimeWorldNode::refresh()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
-- [`RealTimeWorldNode::customPreStep()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
-- [`RealTimeWorldNode::customPostStep()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
+- [`RealTimeWorldNode::refresh()`](dart/gui/osg/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
+- [`RealTimeWorldNode::customPreStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
+- [`RealTimeWorldNode::customPostStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
 - Adaptive stepping: Multiple sub-steps per frame to maintain RTF
 
 **Depends On**:
@@ -272,14 +272,14 @@ graph TB
 
 ### Component: ShapeFrameNode (Frame Visualization)
 
-**File**: [`ShapeFrameNode.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ShapeFrameNode.hpp) | [`ShapeFrameNode.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ShapeFrameNode.cpp)
+**File**: [`ShapeFrameNode.hpp`](dart/gui/osg/ShapeFrameNode.hpp) | [`ShapeFrameNode.cpp`](dart/gui/osg/ShapeFrameNode.cpp)
 
 **Purpose**: Bridges DART frames to OSG scene graph. Manages transformation updates, shape rendering, visual properties (color, transparency), and lifecycle.
 
 **Key Elements**:
-- [`ShapeFrameNode::ShapeFrameNode()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
-- [`ShapeFrameNode::refresh()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
-- [`ShapeFrameNode::createShapeNode()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
+- [`ShapeFrameNode::ShapeFrameNode()`](dart/gui/osg/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
+- [`ShapeFrameNode::refresh()`](dart/gui/osg/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
+- [`ShapeFrameNode::createShapeNode()`](dart/gui/osg/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
 - Utilization tracking for automatic garbage collection
 
 **Depends On**:
@@ -290,18 +290,18 @@ graph TB
 
 ### Component: Shape Render Nodes
 
-**Directory**: [`/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/)
+**Directory**: [`dart/gui/osg/render/`](dart/gui/osg/render/)
 
 **Purpose**: Specialized renderers for 16+ DART shape types. Each renderer converts DART shape geometry to OSG drawable geometry with proper materials and textures.
 
 **Key Shape Nodes**:
-- [`BoxShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/BoxShapeNode.hpp) - Box primitives
-- [`SphereShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/SphereShapeNode.hpp) - Sphere primitives
-- [`CylinderShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/CylinderShapeNode.hpp) - Cylinder primitives
-- [`CapsuleShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/CapsuleShapeNode.hpp) - Capsule primitives
-- [`MeshShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/MeshShapeNode.hpp) - Arbitrary mesh geometry
-- [`SoftMeshShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/SoftMeshShapeNode.hpp) - Deformable soft bodies
-- [`PointCloudShapeNode`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/render/PointCloudShapeNode.hpp) - Point cloud visualization
+- [`BoxShapeNode`](dart/gui/osg/render/BoxShapeNode.hpp) - Box primitives
+- [`SphereShapeNode`](dart/gui/osg/render/SphereShapeNode.hpp) - Sphere primitives
+- [`CylinderShapeNode`](dart/gui/osg/render/CylinderShapeNode.hpp) - Cylinder primitives
+- [`CapsuleShapeNode`](dart/gui/osg/render/CapsuleShapeNode.hpp) - Capsule primitives
+- [`MeshShapeNode`](dart/gui/osg/render/MeshShapeNode.hpp) - Arbitrary mesh geometry
+- [`SoftMeshShapeNode`](dart/gui/osg/render/SoftMeshShapeNode.hpp) - Deformable soft bodies
+- [`PointCloudShapeNode`](dart/gui/osg/render/PointCloudShapeNode.hpp) - Point cloud visualization
 
 **Depends On**:
 - **Internal**: DART Shape classes, VisualAspect properties
@@ -311,15 +311,15 @@ graph TB
 
 ### Component: DragAndDrop System
 
-**File**: [`DragAndDrop.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp) | [`DragAndDrop.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.cpp)
+**File**: [`DragAndDrop.hpp`](dart/gui/osg/DragAndDrop.hpp) | [`DragAndDrop.cpp`](dart/gui/osg/DragAndDrop.cpp)
 
 **Purpose**: Comprehensive drag-and-drop framework for interactive manipulation with constraint support, rotation modes, and specialized handlers for different entity types.
 
 **Key Elements**:
-- [`DragAndDrop`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp#L61) - Abstract base class
-- [`SimpleFrameDnD`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
-- [`InteractiveFrameDnD`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp#L236) - Drag interactive frame tools
-- [`BodyNodeDnD`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp#L266) - Drag robot bodies with IK
+- [`DragAndDrop`](dart/gui/osg/DragAndDrop.hpp#L61) - Abstract base class
+- [`SimpleFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
+- [`InteractiveFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L236) - Drag interactive frame tools
+- [`BodyNodeDnD`](dart/gui/osg/DragAndDrop.hpp#L266) - Drag robot bodies with IK
 - Constraint types: `UNCONSTRAINED`, `LINE_CONSTRAINT`, `PLANE_CONSTRAINT`
 - Rotation modes: `HOLD_MODKEY`, `ALWAYS_ON`, `ALWAYS_OFF`
 
@@ -331,16 +331,16 @@ graph TB
 
 ### Component: InteractiveFrame
 
-**File**: [`InteractiveFrame.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/InteractiveFrame.hpp) | [`InteractiveFrame.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/InteractiveFrame.cpp)
+**File**: [`InteractiveFrame.hpp`](dart/gui/osg/InteractiveFrame.hpp) | [`InteractiveFrame.cpp`](dart/gui/osg/InteractiveFrame.cpp)
 
 **Purpose**: 3D manipulator widget with visual handles for translation and rotation. Creates arrows, rings, and planes for intuitive 3D object manipulation.
 
 **Key Elements**:
-- [`InteractiveFrame`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
-- [`InteractiveTool`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
+- [`InteractiveFrame`](dart/gui/osg/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
+- [`InteractiveTool`](dart/gui/osg/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
 - Tool types: `LINEAR` (translation arrows), `ANGULAR` (rotation rings), `PLANAR` (2D planes)
 - Color-coded axes: X=red, Y=green, Z=blue
-- [`resizeStandardVisuals()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/InteractiveFrame.cpp#L570) - Customize tool size/thickness
+- [`resizeStandardVisuals()`](dart/gui/osg/InteractiveFrame.cpp#L570) - Customize tool size/thickness
 
 **Depends On**:
 - **Internal**: DART SimpleFrame, Shape system
@@ -350,16 +350,16 @@ graph TB
 
 ### Component: World (Simulation Core)
 
-**File**: [`World.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.hpp) | [`World.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp)
+**File**: [`World.hpp`](dart/simulation/World.hpp) | [`World.cpp`](dart/simulation/World.cpp)
 
 **Purpose**: Top-level simulation container that manages skeletons, simple frames, time-stepping, and coordinates collision detection and constraint solving.
 
 **Key Elements**:
-- [`World::step()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L356) - Main simulation loop
-- [`World::addSkeleton()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L196) - Register articulated bodies
-- [`World::addSimpleFrame()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L241) - Register non-simulated frames
-- [`World::setGravity()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L489) - Configure gravity vector
-- [`World::setTimeStep()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L505) - Set integration time step
+- [`World::step()`](dart/simulation/World.cpp#L356) - Main simulation loop
+- [`World::addSkeleton()`](dart/simulation/World.cpp#L196) - Register articulated bodies
+- [`World::addSimpleFrame()`](dart/simulation/World.cpp#L241) - Register non-simulated frames
+- [`World::setGravity()`](dart/simulation/World.cpp#L489) - Configure gravity vector
+- [`World::setTimeStep()`](dart/simulation/World.cpp#L505) - Set integration time step
 - Recording support for playback and analysis
 
 **Depends On**:
@@ -370,15 +370,15 @@ graph TB
 
 ### Component: Skeleton (Articulated Body System)
 
-**File**: [`Skeleton.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.hpp) | [`Skeleton.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp)
+**File**: [`Skeleton.hpp`](dart/dynamics/Skeleton.hpp) | [`Skeleton.cpp`](dart/dynamics/Skeleton.cpp)
 
 **Purpose**: Represents articulated rigid body systems (robots, characters) as a tree of BodyNodes connected by Joints. Manages kinematics, dynamics, and state.
 
 **Key Elements**:
-- [`Skeleton::create()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp#L148) - Factory for creating skeletons
-- [`Skeleton::createJointAndBodyNodePair<>()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp#L521) - Add body to tree
-- [`Skeleton::getMassMatrix()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp#L1567) - Compute mass matrix (O(n²))
-- [`Skeleton::getCoriolisAndGravityForces()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp#L1624) - Compute C(q,q̇) + g(q) (O(n))
+- [`Skeleton::create()`](dart/dynamics/Skeleton.cpp#L148) - Factory for creating skeletons
+- [`Skeleton::createJointAndBodyNodePair<>()`](dart/dynamics/Skeleton.cpp#L521) - Add body to tree
+- [`Skeleton::getMassMatrix()`](dart/dynamics/Skeleton.cpp#L1567) - Compute mass matrix (O(n²))
+- [`Skeleton::getCoriolisAndGravityForces()`](dart/dynamics/Skeleton.cpp#L1624) - Compute C(q,q̇) + g(q) (O(n))
 - Configuration space: generalized positions (q) and velocities (q̇)
 - Support for kinematic trees and closed-loop structures
 
@@ -390,16 +390,16 @@ graph TB
 
 ### Component: BodyNode (Rigid Body)
 
-**File**: [`BodyNode.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.hpp) | [`BodyNode.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp)
+**File**: [`BodyNode.hpp`](dart/dynamics/BodyNode.hpp) | [`BodyNode.cpp`](dart/dynamics/BodyNode.cpp)
 
 **Purpose**: Individual rigid body in an articulated system. Manages mass properties, inertia, shapes (collision/visual), and local transformations.
 
 **Key Elements**:
-- [`BodyNode::createShapeNodeWith<>()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp#L357) - Add shape with aspects
-- [`BodyNode::setMass()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp#L545) - Configure mass
-- [`BodyNode::setInertia()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp#L580) - Configure inertia tensor
-- [`BodyNode::getWorldTransform()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp#L755) - Get global pose
-- [`BodyNode::getJacobian()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.cpp#L1143) - Compute Jacobian
+- [`BodyNode::createShapeNodeWith<>()`](dart/dynamics/BodyNode.cpp#L357) - Add shape with aspects
+- [`BodyNode::setMass()`](dart/dynamics/BodyNode.cpp#L545) - Configure mass
+- [`BodyNode::setInertia()`](dart/dynamics/BodyNode.cpp#L580) - Configure inertia tensor
+- [`BodyNode::getWorldTransform()`](dart/dynamics/BodyNode.cpp#L755) - Get global pose
+- [`BodyNode::getJacobian()`](dart/dynamics/BodyNode.cpp#L1143) - Compute Jacobian
 
 **Depends On**:
 - **Internal**: Joint (parent), Shape, Inertia, Aspect system
@@ -409,18 +409,18 @@ graph TB
 
 ### Component: Joint System
 
-**File**: [`Joint.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Joint.hpp) and specialized joint files
+**File**: [`Joint.hpp`](dart/dynamics/Joint.hpp) and specialized joint files
 
 **Purpose**: Connects BodyNodes and defines their relative motion constraints. Provides 10+ joint types for various kinematic configurations.
 
 **Key Joint Types**:
-- [`RevoluteJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/RevoluteJoint.hpp) - 1-DOF rotation (1D)
-- [`PrismaticJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/PrismaticJoint.hpp) - 1-DOF translation (1D)
-- [`FreeJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/FreeJoint.hpp) - 6-DOF unconstrained (6D)
-- [`BallJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BallJoint.hpp) - 3-DOF rotation (3D)
-- [`WeldJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/WeldJoint.hpp) - 0-DOF fixed (0D)
-- [`UniversalJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/UniversalJoint.hpp) - 2-DOF rotation (2D)
-- [`EulerJoint`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/EulerJoint.hpp) - 3-DOF Euler angles (3D)
+- [`RevoluteJoint`](dart/dynamics/RevoluteJoint.hpp) - 1-DOF rotation (1D)
+- [`PrismaticJoint`](dart/dynamics/PrismaticJoint.hpp) - 1-DOF translation (1D)
+- [`FreeJoint`](dart/dynamics/FreeJoint.hpp) - 6-DOF unconstrained (6D)
+- [`BallJoint`](dart/dynamics/BallJoint.hpp) - 3-DOF rotation (3D)
+- [`WeldJoint`](dart/dynamics/WeldJoint.hpp) - 0-DOF fixed (0D)
+- [`UniversalJoint`](dart/dynamics/UniversalJoint.hpp) - 2-DOF rotation (2D)
+- [`EulerJoint`](dart/dynamics/EulerJoint.hpp) - 3-DOF Euler angles (3D)
 
 **Key Features**:
 - Position/velocity limits
@@ -436,20 +436,20 @@ graph TB
 
 ### Component: Collision Detection
 
-**File**: [`CollisionDetector.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/CollisionDetector.hpp) | [`CollisionGroup.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/CollisionGroup.hpp)
+**File**: [`CollisionDetector.hpp`](dart/collision/CollisionDetector.hpp) | [`CollisionGroup.hpp`](dart/collision/CollisionGroup.hpp)
 
 **Purpose**: Pluggable collision detection system supporting multiple backends. Detects collisions between shapes and generates contact points.
 
 **Key Backends**:
-- [`FCLCollisionDetector`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
-- [`BulletCollisionDetector`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
-- [`DARTCollisionDetector`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/dart/DARTCollisionDetector.hpp) - Native implementation
-- [`OdeCollisionDetector`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
+- [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
+- [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
+- [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Native implementation
+- [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
 
 **Key Elements**:
-- [`CollisionDetector::detectCollision()`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/CollisionDetector.cpp#L84) - Run collision detection
-- [`CollisionGroup`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/CollisionGroup.hpp) - Groups shapes for broad-phase optimization
-- [`Contact`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/Contact.hpp) - Contact point data structure
+- [`CollisionDetector::detectCollision()`](dart/collision/CollisionDetector.cpp#L84) - Run collision detection
+- [`CollisionGroup`](dart/collision/CollisionGroup.hpp) - Groups shapes for broad-phase optimization
+- [`Contact`](dart/collision/Contact.hpp) - Contact point data structure
 
 **Depends On**:
 - **Internal**: Shape, CollisionObject
@@ -459,13 +459,13 @@ graph TB
 
 ### Component: Constraint Solver
 
-**File**: [`ConstraintSolver.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintSolver.hpp) | [`ConstraintSolver.cpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintSolver.cpp)
+**File**: [`ConstraintSolver.hpp`](dart/constraint/ConstraintSolver.hpp) | [`ConstraintSolver.cpp`](dart/constraint/ConstraintSolver.cpp)
 
 **Purpose**: Resolves constraints (contacts, joint limits, motors) using LCP-based formulation. Computes constraint impulses to satisfy constraint equations.
 
 **Key Elements**:
-- [`ConstraintSolver::solve()`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
-- [`ConstraintSolver::addConstraint()`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
+- [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
+- [`ConstraintSolver::addConstraint()`](dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
 - Constraint types: Contact, JointLimit, Motor, Servo, Mimic, custom
 - LCP solvers: Dantzig (primary), PGS (fallback)
 - Skeleton grouping for independent constraint solving
@@ -478,7 +478,7 @@ graph TB
 
 ### Component: Python Bindings (dartpy)
 
-**Directory**: [`/home/jeongseok/dev/dartsim/dart_gui/python/`](/home/jeongseok/dev/dartsim/dart_gui/python/)
+**Directory**: [`python/`](python/)
 
 **Purpose**: Complete Python API for DART using pybind11. Enables rapid prototyping, machine learning integration, and scripting.
 
@@ -492,9 +492,9 @@ graph TB
 - `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
 
 **Key Files**:
-- [`pyproject.toml`](/home/jeongseok/dev/dartsim/dart_gui/pyproject.toml) - Python package configuration
-- [`setup.py`](/home/jeongseok/dev/dartsim/dart_gui/setup.py) - Build script using pybind11
-- [`python/dartpy/`](/home/jeongseok/dev/dartsim/dart_gui/python/dartpy/) - Python bindings source
+- [`pyproject.toml`](pyproject.toml) - Python package configuration
+- [`setup.py`](setup.py) - Build script using pybind11
+- [`python/dartpy/`](python/dartpy/) - Python bindings source
 - Type stubs (`.pyi` files) for IDE support
 
 **Depends On**:
@@ -543,10 +543,10 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- Example: [`/home/jeongseok/dev/dartsim/dart_gui/examples/hello_world/main.cpp`](/home/jeongseok/dev/dartsim/dart_gui/examples/hello_world/main.cpp)
-- [`World::step()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L356)
-- [`RealTimeWorldNode::refresh()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/RealTimeWorldNode.cpp#L103)
-- [`Viewer::run()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L462)
+- Example: [`examples/hello_world/main.cpp`](examples/hello_world/main.cpp)
+- [`World::step()`](dart/simulation/World.cpp#L356)
+- [`RealTimeWorldNode::refresh()`](dart/gui/osg/RealTimeWorldNode.cpp#L103)
+- [`Viewer::run()`](dart/gui/osg/Viewer.cpp#L462)
 
 ---
 
@@ -590,10 +590,10 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- Example: [`/home/jeongseok/dev/dartsim/dart_gui/examples/atlas_puppet/main.cpp`](/home/jeongseok/dev/dartsim/dart_gui/examples/atlas_puppet/main.cpp)
-- [`BodyNodeDnD`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/DragAndDrop.hpp#L266)
-- [`IK::solve()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/IK.cpp#L142)
-- [`Viewer::enableDragAndDrop()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/Viewer.cpp#L189)
+- Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
+- [`BodyNodeDnD`](dart/gui/osg/DragAndDrop.hpp#L266)
+- [`IK::solve()`](dart/dynamics/IK.cpp#L142)
+- [`Viewer::enableDragAndDrop()`](dart/gui/osg/Viewer.cpp#L189)
 
 ---
 
@@ -638,10 +638,10 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- [`World::step()`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.cpp#L356)
-- [`Skeleton::computeForwardDynamics()`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.cpp#L2154)
-- [`ConstraintSolver::solve()`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintSolver.cpp#L159)
-- [`SemiImplicitEulerIntegrator`](/home/jeongseok/dev/dartsim/dart_gui/dart/integration/SemiImplicitEulerIntegrator.cpp)
+- [`World::step()`](dart/simulation/World.cpp#L356)
+- [`Skeleton::computeForwardDynamics()`](dart/dynamics/Skeleton.cpp#L2154)
+- [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159)
+- [`SemiImplicitEulerIntegrator`](dart/integration/SemiImplicitEulerIntegrator.cpp)
 
 ---
 
@@ -685,9 +685,9 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- [`ImGuiHandler::newFrame()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiHandler.cpp#L135)
-- [`ImGuiHandler::render()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiHandler.cpp#L207)
-- [`ImGuiWidget::render()`](/home/jeongseok/dev/dartsim/dart_gui/dart/gui/osg/ImGuiWidget.hpp#L49)
+- [`ImGuiHandler::newFrame()`](dart/gui/osg/ImGuiHandler.cpp#L135)
+- [`ImGuiHandler::render()`](dart/gui/osg/ImGuiHandler.cpp#L207)
+- [`ImGuiWidget::render()`](dart/gui/osg/ImGuiWidget.hpp#L49)
 
 ---
 
@@ -723,9 +723,9 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- [`DartLoader`](/home/jeongseok/dev/dartsim/dart_gui/dart/utils/urdf/DartLoader.hpp)
-- [`DartLoader::parseSkeleton()`](/home/jeongseok/dev/dartsim/dart_gui/dart/utils/urdf/DartLoader.cpp)
-- Example: [`/home/jeongseok/dev/dartsim/dart_gui/examples/atlas_puppet/main.cpp`](/home/jeongseok/dev/dartsim/dart_gui/examples/atlas_puppet/main.cpp)
+- [`DartLoader`](dart/utils/urdf/DartLoader.hpp)
+- [`DartLoader::parseSkeleton()`](dart/utils/urdf/DartLoader.cpp)
+- Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
 
 ---
 
@@ -763,9 +763,9 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- Example: [`/home/jeongseok/dev/dartsim/dart_gui/examples/hello_world/main.py`](/home/jeongseok/dev/dartsim/dart_gui/examples/hello_world/main.py)
-- [`python/dartpy/`](/home/jeongseok/dev/dartsim/dart_gui/python/dartpy/) - Bindings implementation
-- [`setup.py`](/home/jeongseok/dev/dartsim/dart_gui/setup.py) - Build configuration
+- Example: [`examples/hello_world/main.py`](examples/hello_world/main.py)
+- [`python/dartpy/`](python/dartpy/) - Bindings implementation
+- [`setup.py`](setup.py) - Build configuration
 
 ---
 
@@ -773,7 +773,7 @@ sequenceDiagram
 
 ### Entity: Skeleton
 
-**File**: [`Skeleton.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Skeleton.hpp)
+**File**: [`Skeleton.hpp`](dart/dynamics/Skeleton.hpp)
 
 **Purpose**: Articulated body system representing a robot or character
 
@@ -798,7 +798,7 @@ sequenceDiagram
 
 ### Entity: BodyNode
 
-**File**: [`BodyNode.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/BodyNode.hpp)
+**File**: [`BodyNode.hpp`](dart/dynamics/BodyNode.hpp)
 
 **Purpose**: Individual rigid body in an articulated system
 
@@ -825,7 +825,7 @@ sequenceDiagram
 
 ### Entity: Joint
 
-**File**: [`Joint.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Joint.hpp)
+**File**: [`Joint.hpp`](dart/dynamics/Joint.hpp)
 
 **Purpose**: Kinematic constraint connecting two BodyNodes
 
@@ -852,7 +852,7 @@ sequenceDiagram
 
 ### Entity: Shape
 
-**File**: [`Shape.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Shape.hpp)
+**File**: [`Shape.hpp`](dart/dynamics/Shape.hpp)
 
 **Purpose**: Geometric representation for collision detection and visualization
 
@@ -883,7 +883,7 @@ sequenceDiagram
 
 ### Entity: World
 
-**File**: [`World.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/simulation/World.hpp)
+**File**: [`World.hpp`](dart/simulation/World.hpp)
 
 **Purpose**: Top-level simulation container
 
@@ -911,7 +911,7 @@ sequenceDiagram
 
 ### Entity: Contact
 
-**File**: [`Contact.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/collision/Contact.hpp)
+**File**: [`Contact.hpp`](dart/collision/Contact.hpp)
 
 **Purpose**: Contact point data from collision detection
 
@@ -935,7 +935,7 @@ sequenceDiagram
 
 ### Entity: Constraint
 
-**File**: [`ConstraintBase.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/constraint/ConstraintBase.hpp)
+**File**: [`ConstraintBase.hpp`](dart/constraint/ConstraintBase.hpp)
 
 **Purpose**: Abstract base for constraint types
 
@@ -962,7 +962,7 @@ sequenceDiagram
 
 ### Entity: Frame
 
-**File**: [`Frame.hpp`](/home/jeongseok/dev/dartsim/dart_gui/dart/dynamics/Frame.hpp)
+**File**: [`Frame.hpp`](dart/dynamics/Frame.hpp)
 
 **Purpose**: Coordinate frame in the simulation world
 
@@ -1008,7 +1008,7 @@ sequenceDiagram
 
 ### Quick Start with pixi
 
-[`pixi`](/home/jeongseok/dev/dartsim/dart_gui/pixi.toml) provides a reproducible development environment:
+[`pixi`](pixi.toml) provides a reproducible development environment:
 
 ```bash
 # Install pixi (if not already installed)
@@ -1055,7 +1055,7 @@ For the complete list of CMake configuration options and their defaults, refer t
 
 ### Running Examples
 
-**C++ Examples** ([`/home/jeongseok/dev/dartsim/dart_gui/examples/`](/home/jeongseok/dev/dartsim/dart_gui/examples/)):
+**C++ Examples** ([`examples/`](examples/)):
 ```bash
 # Using pixi
 pixi run hello-world
@@ -1266,8 +1266,8 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 ### Documentation
 - **Main Website**: https://dartsim.github.io/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
-- **Tutorials**: [`/home/jeongseok/dev/dartsim/dart_gui/tutorials/`](/home/jeongseok/dev/dartsim/dart_gui/tutorials/)
-- **Examples**: [`/home/jeongseok/dev/dartsim/dart_gui/examples/`](/home/jeongseok/dev/dartsim/dart_gui/examples/)
+- **Tutorials**: [`tutorials/`](tutorials/)
+- **Examples**: [`examples/`](examples/)
 
 ### Community
 - **GitHub**: https://github.com/dartsim/dart
@@ -1275,12 +1275,12 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 
 ### Related Analysis Documents
 This repository contains additional detailed analysis documents:
-- [`architecture.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/architecture.md) - Core DART architecture deep dive
-- [`gui-rendering.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/gui-rendering.md) - OpenSceneGraph integration details
-- [`python-bindings.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/python-bindings.md) - Python bindings (dartpy) reference
-- [`build-system.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/build-system.md) - Build system and dependencies
-- [`dynamics.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/dynamics.md) - Dynamics system exploration
-- [`constraints.md`](/home/jeongseok/dev/dartsim/dart_gui/docs/onboarding/constraints.md) - Constraint solver analysis
+- [`architecture.md`](docs/onboarding/architecture.md) - Core DART architecture deep dive
+- [`gui-rendering.md`](docs/onboarding/gui-rendering.md) - OpenSceneGraph integration details
+- [`python-bindings.md`](docs/onboarding/python-bindings.md) - Python bindings (dartpy) reference
+- [`build-system.md`](docs/onboarding/build-system.md) - Build system and dependencies
+- [`dynamics.md`](docs/onboarding/dynamics.md) - Dynamics system exploration
+- [`constraints.md`](docs/onboarding/constraints.md) - Constraint solver analysis
 
 ### Key Design Patterns Used in DART
 - **Factory Pattern**: Skeleton::create(), Joint factories

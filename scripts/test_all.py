@@ -19,6 +19,35 @@ import sys
 from typing import Tuple
 
 
+def supports_unicode() -> bool:
+    """Check if the terminal supports Unicode characters"""
+    try:
+        # Check if stdout encoding supports Unicode
+        encoding = sys.stdout.encoding
+        if encoding and encoding.lower() in ["utf-8", "utf8"]:
+            return True
+        # Try to encode a Unicode character
+        "\u2713".encode(encoding or "utf-8")
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
+# Detect Unicode support
+USE_UNICODE = supports_unicode()
+
+
+class Symbols:
+    """Terminal symbols with Unicode/ASCII fallback"""
+
+    ARROW = "\u25b6" if USE_UNICODE else ">"
+    CHECK = "\u2713" if USE_UNICODE else "[OK]"
+    CROSS = "\u2717" if USE_UNICODE else "[ERROR]"
+    WARNING = "\u26a0" if USE_UNICODE else "[WARN]"
+    SPARKLES = "\u2728" if USE_UNICODE else ""
+    ROCKET = "\U0001f680" if USE_UNICODE else ""
+
+
 class Colors:
     """ANSI color codes for terminal output"""
 
@@ -42,22 +71,22 @@ def print_header(message: str):
 
 def print_step(message: str):
     """Print a formatted step"""
-    print(f"{Colors.OKBLUE}▶ {message}{Colors.ENDC}")
+    print(f"{Colors.OKBLUE}{Symbols.ARROW} {message}{Colors.ENDC}")
 
 
 def print_success(message: str):
     """Print a success message"""
-    print(f"{Colors.OKGREEN}✓ {message}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}{Symbols.CHECK} {message}{Colors.ENDC}")
 
 
 def print_error(message: str):
     """Print an error message"""
-    print(f"{Colors.FAIL}✗ {message}{Colors.ENDC}")
+    print(f"{Colors.FAIL}{Symbols.CROSS} {message}{Colors.ENDC}")
 
 
 def print_warning(message: str):
     """Print a warning message"""
-    print(f"{Colors.WARNING}⚠ {message}{Colors.ENDC}")
+    print(f"{Colors.WARNING}{Symbols.WARNING} {message}{Colors.ENDC}")
 
 
 def run_command(
@@ -210,8 +239,8 @@ def generate_report(results: dict):
 
     print()
     if failed_tests == 0:
-        print_success("All tests passed! ✨")
-        print_success("Ready to submit PR! 🚀")
+        print_success(f"All tests passed! {Symbols.SPARKLES}")
+        print_success(f"Ready to submit PR! {Symbols.ROCKET}")
         return True
     else:
         print_error(f"{failed_tests} test(s) failed!")
