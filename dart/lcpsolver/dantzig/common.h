@@ -38,6 +38,33 @@
 
 #include <cmath>
 
+//==============================================================================
+// Memory Allocation Macros
+//==============================================================================
+
+#ifndef EFFICIENT_ALIGNMENT
+  #define EFFICIENT_ALIGNMENT 16
+#endif
+
+/* utility */
+
+/* round something up to be a multiple of the EFFICIENT_ALIGNMENT */
+
+#define dEFFICIENT_SIZE(x)                                                     \
+  (((x) + (EFFICIENT_ALIGNMENT - 1)) & ~((size_t)(EFFICIENT_ALIGNMENT - 1)))
+#define dEFFICIENT_PTR(p) ((void*)dEFFICIENT_SIZE((size_t)(p)))
+#define dOFFSET_EFFICIENTLY(p, b) ((void*)((size_t)(p) + dEFFICIENT_SIZE(b)))
+
+/* alloca aligned to the EFFICIENT_ALIGNMENT. note that this can waste
+ * up to 15 bytes per allocation, depending on what alloca() returns.
+ */
+
+#define dALLOCA16(n)                                                           \
+  ((char*)dEFFICIENT_PTR(alloca((n) + (EFFICIENT_ALIGNMENT - 1))))
+
+// misc defines
+#define ALLOCA dALLOCA16
+
 /* constants */
 
 /* Modern C++ constant for 1/sqrt(2) - replaces M_SQRT1_2 macro */
@@ -56,6 +83,17 @@ inline constexpr T sqrt1_2 = T(0.7071067811865475244008443621048490L);
 #define dDOUBLE 1
 
 namespace dart::lcpsolver {
+
+//==============================================================================
+// Legacy dReal Type (Deprecated)
+//==============================================================================
+// IMPORTANT: The dReal type and related macros (dSINGLE/dDOUBLE) are kept
+// ONLY for backward compatibility with existing code that still uses the old
+// dSolveLCP API. This type will be REMOVED in a future release.
+//
+// For new code, use the templated SolveLCP<Scalar> API with explicit scalar
+// types (float or double) instead of relying on dReal.
+//==============================================================================
 
 #if defined(dSINGLE)
 using dReal = float;
@@ -171,9 +209,11 @@ inline constexpr S reciprocal(S x)
 #endif
 
 // dInfinity - Positive infinity for dReal type (replaces odeconfig.h macro)
+// DEPRECATED: Use ScalarTraits<Scalar>::inf() in templated code instead
 inline constexpr dReal dInfinity = ScalarTraits<dReal>::inf();
 
 // Legacy dPAD macro - now defined as constexpr function
+// DEPRECATED: Use padding() function directly in new code
 constexpr int dPAD(int a)
 {
   return padding(a);

@@ -69,12 +69,12 @@ namespace lcpsolver {
 /// @param earlyTermination If true, solver may terminate early
 /// @return True if solution found, false otherwise
 ///
-/// @note lo and hi can be +/- dInfinity as needed
+/// @note lo and hi can be +/- infinity (ScalarTraits<Scalar>::inf()) as needed
 /// @note The first nub variables are unbounded (hi and lo assumed to be +/-
-/// dInfinity)
+///       infinity)
 /// @note The original data (A,b) may be modified by this function
 /// @note For friction approximation, the first nub variables must have findex <
-/// 0
+///       0
 template <typename Scalar>
 bool SolveLCP(
     int n,
@@ -87,35 +87,6 @@ bool SolveLCP(
     Scalar* hi,
     int* findex,
     bool earlyTermination = false);
-
-/// Backward compatible LCP solver using dReal (double precision)
-/// @see SolveLCP for detailed documentation
-// TODO: Remove in favor of template <typename Scalar> SolveLCP
-bool dSolveLCP(
-    int n,
-    dReal* A,
-    dReal* x,
-    dReal* b,
-    dReal* outer_w,
-    int nub,
-    dReal* lo,
-    dReal* hi,
-    int* findex,
-    bool earlyTermination);
-
-// Explicit template instantiation for float only
-// Note: double has a full specialization in lcp.cpp
-extern template bool SolveLCP<float>(
-    int n,
-    float* A,
-    float* x,
-    float* b,
-    float* w,
-    int nub,
-    float* lo,
-    float* hi,
-    int* findex,
-    bool earlyTermination);
 
 //==============================================================================
 // Eigen API - Modern C++ interface
@@ -197,3 +168,6 @@ inline bool SolveLCP(
 
 } // namespace lcpsolver
 } // namespace dart
+
+// Template implementations for header-only usage
+#include "dart/lcpsolver/dantzig/lcp-impl.hpp"

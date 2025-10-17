@@ -58,13 +58,12 @@ void dRandSetSeed(unsigned long s)
 
 int dRandInt(int n)
 {
-  dReal r = dRandReal();
-  return (int)(r * n);
+  return static_cast<int>(dRandReal() * n);
 }
 
 dReal dRandReal()
 {
-  return ((dReal)dRand()) / ((dReal)0xffffffff);
+  return static_cast<dReal>(dRand()) / static_cast<dReal>(0xffffffff);
 }
 
 } // namespace dart::lcpsolver

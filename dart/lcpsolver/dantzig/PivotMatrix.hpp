@@ -88,21 +88,47 @@ public:
 
   /// Construct a square matrix
   /// @param size Dimension (size × size)
-  explicit PivotMatrix(int size) : PivotMatrix(size, size, size) {}
+  explicit PivotMatrix(int size) : PivotMatrix(size, size, size)
+  {
+    // Empty
+  }
 
-  /// Construct from Eigen matrix (copies data)
+  /// Construct from Eigen matrix
+  ///
+  /// Copies data from the Eigen matrix into internal storage and initializes
+  /// row pointers for O(1) row swapping.
+  ///
   /// @param source Eigen matrix to copy from
-  /// @param nskip Leading dimension (defaults to cols)
+  /// @param nskip Leading dimension (default: number of columns)
   template <typename Derived>
-  explicit PivotMatrix(
-      const Eigen::MatrixBase<Derived>& source, int nskip = -1)
+  explicit PivotMatrix(const Eigen::MatrixBase<Derived>& source, int nskip = -1)
     : rows_(source.rows()),
       cols_(source.cols()),
       nskip_(nskip < 0 ? source.cols() : nskip),
       data_(source.rows(), source.cols())
   {
-    // Copy data from source (handles any Eigen expression)
     data_ = source;
+    initializeRowPointers();
+  }
+
+  /// Construct from raw pointer array (OPTIMIZED - single copy)
+  ///
+  /// Copies data directly from a raw pointer array into internal storage.
+  /// This avoids the double-copy overhead of going through an Eigen intermediate.
+  ///
+  /// @param rows Number of rows
+  /// @param cols Number of columns
+  /// @param data Pointer to source data (row-major with nskip leading dimension)
+  /// @param nskip Leading dimension of source data
+  PivotMatrix(int rows, int cols, const Scalar* data, int nskip)
+    : rows_(rows), cols_(cols), nskip_(nskip), data_(rows, cols)
+  {
+    // Copy data directly from raw pointer (row-major)
+    for (int i = 0; i < rows_; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        data_(i, j) = data[i * nskip + j];
+      }
+    }
     initializeRowPointers();
   }
 

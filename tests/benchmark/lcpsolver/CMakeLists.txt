@@ -12,8 +12,14 @@ add_executable(BM_ROW_SWAPPING bm_row_swapping.cpp)
 target_link_libraries(BM_ROW_SWAPPING dart benchmark::benchmark)
 set_target_properties(BM_ROW_SWAPPING PROPERTIES FOLDER "Benchmarks")
 
+# Dot product benchmark: Manual unrolling vs Eigen SIMD
+add_executable(BM_DOT_PRODUCT bm_dot_product.cpp)
+target_link_libraries(BM_DOT_PRODUCT benchmark::benchmark Eigen3::Eigen)
+set_target_properties(BM_DOT_PRODUCT PROPERTIES FOLDER "Benchmarks")
+
 # Add to formatting
 dart_format_add(
   bm_lcpsolver.cpp
   bm_row_swapping.cpp
+  bm_dot_product.cpp
 )

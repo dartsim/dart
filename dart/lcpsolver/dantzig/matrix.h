@@ -43,12 +43,20 @@
 
 namespace dart::lcpsolver {
 
-/// Get the dot product of two n×1 vectors
+/// Get the dot product of two n×1 vectors (templated version)
 /// @param a First vector
 /// @param b Second vector
 /// @param n Vector size (if n <= 0, returns zero)
 /// @return Dot product a·b
-dReal dDot(const dReal* a, const dReal* b, int n);
+template <typename Scalar>
+Scalar Dot(const Scalar* a, const Scalar* b, int n);
+
+/// Legacy dReal version for backward compatibility
+/// @deprecated Use template version Dot<Scalar>
+inline double dDot(const double* a, const double* b, int n)
+{
+  return Dot<double>(a, b, n);
+}
 
 /* get the dot products of (a0,b), (a1,b), etc and return them in outsum.
  * all vectors are n*1. if n <= 0 then zeroes will be returned (in which case
@@ -122,11 +130,19 @@ void dFactorLDLT(dReal* A, dReal* d, int n, int nskip);
  */
 void dSolveL1(const dReal* L, dReal* b, int n, int nskip);
 
+/// Template version of dSolveL1
+template <typename Scalar>
+void dSolveL1(const Scalar* L, Scalar* b, int n, int nskip);
+
 /* solve L'*x=b, where L is n*n lower triangular with ones on the diagonal,
  * and x,b are n*1. b is overwritten with x.
  * the leading dimension of L is `nskip'.
  */
 void dSolveL1T(const dReal* L, dReal* b, int n, int nskip);
+
+/// Template version of dSolveL1T
+template <typename Scalar>
+void dSolveL1T(const Scalar* L, Scalar* b, int n, int nskip);
 
 /* in matlab syntax: a(1:n) = a(1:n) .* d(1:n) */
 
@@ -139,6 +155,10 @@ void dVectorScale(dReal* a, const dReal* d, int n);
  */
 
 void dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip);
+
+/// Template version of dSolveLDLT
+template <typename Scalar>
+void dSolveLDLT(const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip);
 
 /* given an L*D*L' factorization of an n*n matrix A, return the updated
  * factorization L2*D2*L2' of A plus the following "top left" matrix:
@@ -197,6 +217,10 @@ void dLDLTRemove(
  */
 void dRemoveRowCol(dReal* A, int n, int nskip, int r);
 
+/// Templated version of dRemoveRowCol
+template <typename Scalar>
+void dRemoveRowCol(Scalar* A, int n, int nskip, int r);
+
 /// Memory size estimation functions for temporary buffer allocation
 inline constexpr size_t dEstimateFactorCholeskyTmpbufSize(int n)
 {
@@ -234,17 +258,19 @@ inline constexpr size_t dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 }
 
 //==============================================================================
-// Template implementations for type-safe matrix operations
+// Implementation
 //==============================================================================
 
 /// Set a vector/matrix of size n to all zeros (template version)
+/// Phase 12: Use Eigen for SIMD optimization when available
 /// @param a Pointer to array
 /// @param n Number of elements
 template <typename Scalar>
 inline void SetZero(Scalar* a, size_t n)
 {
   DART_ASSERT(a);
-  std::fill(a, a + n, Scalar(0));
+  // Use Eigen's optimized setZero for better performance (SIMD)
+  Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>(a, n).setZero();
 }
 
 /// Set an Eigen vector/matrix to all zeros (Eigen version)
@@ -285,19 +311,6 @@ inline typename Derived1::Scalar Dot(
     const Eigen::MatrixBase<Derived1>& a, const Eigen::MatrixBase<Derived2>& b)
 {
   return a.dot(b);
-}
-
-/// @deprecated Use Eigen version - will be removed
-/// Get the dot product of two n×1 vectors (pointer version)
-template <typename Scalar>
-inline Scalar Dot(const Scalar* a, const Scalar* b, int n)
-{
-  DART_ASSERT(a && b);
-  Scalar sum = Scalar(0);
-  for (int i = 0; i < n; ++i) {
-    sum += a[i] * b[i];
-  }
-  return sum;
 }
 
 /// Matrix multiplication: A = B * C (template version)
@@ -405,13 +418,15 @@ inline void VectorScale(
 
 /// @deprecated Use Eigen version - will be removed
 /// Element-wise vector scaling: a[i] = a[i] * d[i] (pointer version)
+/// Phase 12: Use Eigen for SIMD optimization
 template <typename Scalar>
 inline void VectorScale(Scalar* a, const Scalar* d, int n)
 {
   DART_ASSERT(a && d && n >= 0);
-  for (int i = 0; i < n; ++i) {
-    a[i] *= d[i];
-  }
+  // Use Eigen's array operations for SIMD
+  Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>(a, n).array()
+      *= Eigen::Map<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>(d, n)
+             .array();
 }
 
 /// Copy vector src to dst (Eigen version)
@@ -496,8 +511,7 @@ inline void VectorNegate(Scalar* a, int n)
   }
 }
 
-/// Factorize matrix as L*D*L' (template version - currently calls dReal
-/// version)
+/// Factorize matrix as L*D*L' (template version)
 /// @param A Matrix to factorize (n×n), modified in place
 /// @param d Output diagonal reciprocal elements
 /// @param n Matrix size
@@ -505,14 +519,10 @@ inline void VectorNegate(Scalar* a, int n)
 template <typename Scalar>
 inline void FactorLDLT(Scalar* A, Scalar* d, int n, int nskip)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "FactorLDLT currently only supports dReal type");
   dFactorLDLT(A, d, n, nskip);
 }
 
-/// Solve L*x=b where L is lower triangular (template version - currently calls
-/// dReal version)
+/// Solve L*x=b where L is lower triangular (template version)
 /// @param L Lower triangular matrix (n×n) with ones on diagonal
 /// @param b Right-hand side vector (modified in place with solution)
 /// @param n Matrix size
@@ -520,14 +530,10 @@ inline void FactorLDLT(Scalar* A, Scalar* d, int n, int nskip)
 template <typename Scalar>
 inline void SolveL1(const Scalar* L, Scalar* b, int n, int nskip)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "SolveL1 currently only supports dReal type");
-  dSolveL1(L, b, n, nskip);
+  dSolveL1<Scalar>(L, b, n, nskip);
 }
 
-/// Solve L'*x=b where L is lower triangular (template version - currently calls
-/// dReal version)
+/// Solve L'*x=b where L is lower triangular (template version)
 /// @param L Lower triangular matrix (n×n) with ones on diagonal
 /// @param b Right-hand side vector (modified in place with solution)
 /// @param n Matrix size
@@ -535,13 +541,10 @@ inline void SolveL1(const Scalar* L, Scalar* b, int n, int nskip)
 template <typename Scalar>
 inline void SolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "SolveL1T currently only supports dReal type");
-  dSolveL1T(L, b, n, nskip);
+  dSolveL1T<Scalar>(L, b, n, nskip);
 }
 
-/// Solve L*D*L'*x=b (template version - currently calls dReal version)
+/// Solve L*D*L'*x=b (template version)
 /// @param L Lower triangular matrix (n×n) with ones on diagonal
 /// @param d Diagonal reciprocal elements
 /// @param b Right-hand side vector (modified in place with solution)
@@ -551,14 +554,10 @@ template <typename Scalar>
 inline void SolveLDLT(
     const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "SolveLDLT currently only supports dReal type");
-  dSolveLDLT(L, d, b, n, nskip);
+  dSolveLDLT<Scalar>(L, d, b, n, nskip);
 }
 
-/// Add top-left matrix to L*D*L' factorization (template version - currently
-/// calls dReal version)
+/// Add top-left matrix to L*D*L' factorization (template version)
 /// @param L Lower triangular matrix factor (modified in place)
 /// @param d Diagonal reciprocal elements (modified in place)
 /// @param a Input vector for top-left addition
@@ -574,14 +573,10 @@ inline void LDLTAddTL(
     int nskip,
     void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "LDLTAddTL currently only supports dReal type");
   dLDLTAddTL(L, d, a, n, nskip, tmpbuf);
 }
 
-/// Remove row/column from L*D*L' factorization (template version - currently
-/// calls dReal version)
+/// Remove row/column from L*D*L' factorization (template version)
 /// @param A Original matrix (array of row pointers)
 /// @param p Permutation vector
 /// @param L Lower triangular factor (modified in place)
@@ -603,14 +598,10 @@ inline void LDLTRemove(
     int nskip,
     void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "LDLTRemove currently only supports dReal type");
   dLDLTRemove(A, p, L, d, n1, n2, r, nskip, tmpbuf);
 }
 
-/// Remove row/column from matrix (template version - currently calls dReal
-/// version)
+/// Remove row/column from matrix (template version)
 /// @param A Matrix to modify (n×n)
 /// @param n Matrix size
 /// @param nskip Leading dimension
@@ -618,13 +609,11 @@ inline void LDLTRemove(
 template <typename Scalar>
 inline void RemoveRowCol(Scalar* A, int n, int nskip, int r)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "RemoveRowCol currently only supports dReal type");
+  // Call the templated dRemoveRowCol implementation
   dRemoveRowCol(A, n, nskip, r);
 }
 
-/// Cholesky factorization (template version - currently calls dReal version)
+/// Cholesky factorization (template version)
 /// @param A Matrix to factorize (n×n), modified in place with L
 /// @param n Matrix size
 /// @param tmpbuf Optional temporary buffer (can be nullptr)
@@ -632,14 +621,10 @@ inline void RemoveRowCol(Scalar* A, int n, int nskip, int r)
 template <typename Scalar>
 inline int FactorCholesky(Scalar* A, int n, void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "FactorCholesky currently only supports dReal type");
   return dFactorCholesky(A, n, tmpbuf);
 }
 
-/// Solve L*L'*x=b using Cholesky factor (template version - currently calls
-/// dReal version)
+/// Solve L*L'*x=b using Cholesky factor (template version)
 /// @param L Lower triangular Cholesky factor (n×n)
 /// @param b Right-hand side vector (modified in place with solution)
 /// @param n Matrix size
@@ -648,14 +633,10 @@ template <typename Scalar>
 inline void SolveCholesky(
     const Scalar* L, Scalar* b, int n, void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "SolveCholesky currently only supports dReal type");
   dSolveCholesky(L, b, n, tmpbuf);
 }
 
-/// Invert positive definite matrix (template version - currently calls dReal
-/// version)
+/// Invert positive definite matrix (template version)
 /// @param A Input matrix (n×n)
 /// @param Ainv Output inverse matrix (n×n)
 /// @param n Matrix size
@@ -665,14 +646,10 @@ template <typename Scalar>
 inline int InvertPDMatrix(
     const Scalar* A, Scalar* Ainv, int n, void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "InvertPDMatrix currently only supports dReal type");
   return dInvertPDMatrix(A, Ainv, n, tmpbuf);
 }
 
-/// Check if matrix is positive definite (template version - currently calls
-/// dReal version)
+/// Check if matrix is positive definite (template version)
 /// @param A Input matrix (n×n), not modified
 /// @param n Matrix size
 /// @param tmpbuf Optional temporary buffer (can be nullptr)
@@ -680,10 +657,10 @@ inline int InvertPDMatrix(
 template <typename Scalar>
 inline int IsPositiveDefinite(const Scalar* A, int n, void* tmpbuf = nullptr)
 {
-  static_assert(
-      std::is_same<Scalar, dReal>::value,
-      "IsPositiveDefinite currently only supports dReal type");
   return dIsPositiveDefinite(A, n, tmpbuf);
 }
 
 } // namespace dart::lcpsolver
+
+// Include template implementations
+#include "dart/lcpsolver/dantzig/matrix-impl.hpp"
