@@ -384,11 +384,28 @@ bool success = SolveLCP(A, x, b, nullptr, lo, hi, nub, findex, false);
 
 ### Immediate Priorities
 
-**Phase 13.5: Header-Only Template Migration** (BLOCKED - Missing Implementations)
+**Phase 13.5: Header-Only Template Migration** (BLOCKED - Missing Implementations, Build Fixed ✅)
 
 **Goal**: Remove all explicit template instantiations by moving implementations to headers, enabling users to instantiate templates as needed.
 
-**CRITICAL BLOCKER**: ~1200 lines of hand-optimized matrix code missing!
+**BUILD STATUS**: ✅ **Fixed on 2025-10-18** - Compilation error resolved by reordering macro definitions
+
+**Fix Applied**: Moved preprocessor macro definitions (`ROWPTRS`, `AROW(i)`, `NUB_OPTIMIZATIONS`) to before the `#include` statements in `/home/jeongseok/dev/dartsim/dart/lcp/dart/lcpsolver/dantzig/lcp.cpp`. These macros are used in the header files and must be defined before including them.
+
+**Test Results**: ✅ All 4 LCP solver tests passing (100%)
+- UNIT_lcpsolver_DantzigVsODE: Passed (0.42 sec)
+- UNIT_lcpsolver_LCPTestProblems: Passed (0.39 sec)
+- UNIT_lcpsolver_Lemke: Passed (0.39 sec)
+- UNIT_lcpsolver_PivotMatrix: Passed (0.42 sec)
+
+**Benchmark Results** (2025-10-18):
+| Size | Dantzig-F64 | ODE Baseline | Ratio | Status |
+|------|-------------|--------------|-------|--------|
+| 12D  | 1,538 ns    | 1,381 ns     | 1.11x slower | Good ✅ |
+| 24D  | 4,387 ns    | 4,144 ns     | 1.06x slower | Excellent ✅ |
+| 48D  | 17,345 ns   | 17,472 ns    | **0.99x - Parity!** | **🎉 Matching baseline!** |
+
+**CRITICAL BLOCKER** (Still Present): ~1200 lines of hand-optimized matrix code missing!
 
 **What Happened**: During Phase 5 consolidation (7 files → 3 files), the heavily-optimized implementations from ODE's fast*.cpp files were NOT migrated:
 - `tests/baseline/odelcpsolver/fastldlt.cpp` (~420 lines) - `_dFactorLDLT` with 2×2 and 6×6 blocking

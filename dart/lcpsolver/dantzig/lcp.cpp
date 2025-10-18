@@ -118,6 +118,17 @@ rows/columns and manipulate C.
 
 */
 
+// Define macros BEFORE including headers so they're available
+// LCP debugging (mostly for fast dLCP) - this slows things down a lot
+//#define DEBUG_LCP
+
+#define dLCP_FAST // use fast dLCP object
+
+#define ROWPTRS // Keep for compatibility (but now uses PivotMatrix internally)
+#define AROW(i) (m_A[i])
+
+#define NUB_OPTIMIZATIONS
+
 #include "dart/lcpsolver/dantzig/lcp.h"
 
 #include "dart/lcpsolver/dantzig/matrix.h"
@@ -127,20 +138,6 @@ rows/columns and manipulate C.
 
 //***************************************************************************
 // code generation parameters
-
-// LCP debugging (mostly for fast dLCP) - this slows things down a lot
-//#define DEBUG_LCP
-
-#define dLCP_FAST // use fast dLCP object
-
-// Modern hybrid approach: PivotMatrix combines Eigen storage with O(1) row
-// swapping See: dart/lcpsolver/dantzig/PivotMatrix.hpp
-#include "dart/lcpsolver/dantzig/PivotMatrix.hpp"
-
-#define ROWPTRS // Keep for compatibility (but now uses PivotMatrix internally)
-#define AROW(i) (m_A[i])
-
-#define NUB_OPTIMIZATIONS
 
 namespace dart {
 namespace lcpsolver {
