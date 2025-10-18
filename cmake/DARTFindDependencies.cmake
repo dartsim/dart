@@ -137,10 +137,144 @@ mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
 #--------------------
+# GUI dependencies
+#--------------------
+
+# ImGui
+if(DART_BUILD_GUI_OSG)
+  if(DART_USE_SYSTEM_IMGUI)
+    # Use system-installed ImGui
+    dart_find_package(imgui)
+    dart_check_required_package(imgui "imgui")
+    if(DART_VERBOSE)
+      message(STATUS "Using system-installed ImGui")
+    endif()
+  else()
+    # Fetch ImGui from GitHub using FetchContent
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Fetching ImGui from GitHub ]")
+    endif()
+
+    include(FetchContent)
+
+    # ImGui version constraint
+    # Current: v1.84.2 (released 2021-08-23)
+    # Minimum required: v1.80 for stable table API
+    set(IMGUI_MIN_VERSION "1.80")
+    set(IMGUI_TARGET_VERSION "v1.84.2")
+
+    message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
+
+    FetchContent_Declare(
+      imgui
+      GIT_REPOSITORY https://github.com/ocornut/imgui.git
+      GIT_TAG        ${IMGUI_TARGET_VERSION}
+      GIT_SHALLOW    TRUE
+      SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
+    )
+
+    # Populate imgui
+    FetchContent_GetProperties(imgui)
+    if(NOT imgui_POPULATED)
+      FetchContent_Populate(imgui)
+    endif()
+
+    # Check OpenGL dependency for ImGui
+    dart_find_package(OpenGL)
+    dart_check_optional_package(OPENGL "dart-external-imgui" "OpenGL")
+
+    # Define the imgui source files
+    # Core imgui files
+    set(IMGUI_CORE_SOURCES
+      ${imgui_SOURCE_DIR}/imgui.cpp
+      ${imgui_SOURCE_DIR}/imgui_draw.cpp
+      ${imgui_SOURCE_DIR}/imgui_tables.cpp
+      ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    )
+
+    set(IMGUI_CORE_HEADERS
+      ${imgui_SOURCE_DIR}/imgui.h
+      ${imgui_SOURCE_DIR}/imgui_internal.h
+      ${imgui_SOURCE_DIR}/imconfig.h
+      ${imgui_SOURCE_DIR}/imstb_rectpack.h
+      ${imgui_SOURCE_DIR}/imstb_textedit.h
+      ${imgui_SOURCE_DIR}/imstb_truetype.h
+    )
+
+    # Backend files - OpenGL2 backend for OSG compatibility
+    set(IMGUI_BACKEND_SOURCES
+      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp
+    )
+
+    set(IMGUI_BACKEND_HEADERS
+      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.h
+    )
+
+    # Create the ImGui library target
+    set(imgui_target_name ${PROJECT_NAME}-external-imgui)
+    set(imgui_component_name external-imgui)
+
+    dart_add_library(${imgui_target_name}
+      ${IMGUI_CORE_SOURCES}
+      ${IMGUI_CORE_HEADERS}
+      ${IMGUI_BACKEND_SOURCES}
+      ${IMGUI_BACKEND_HEADERS}
+    )
+
+    # Configure include directories
+    # Build tree: use fetched source directory
+    # Install tree: use standard include paths (like system-installed imgui)
+    target_include_directories(${imgui_target_name}
+      PUBLIC
+        $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${imgui_SOURCE_DIR}/backends>
+        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/backends>
+    )
+
+    # Link against OpenGL
+    target_link_libraries(${imgui_target_name} PUBLIC OpenGL::GL)
+    if(APPLE)
+      target_link_libraries(${imgui_target_name} PUBLIC "-framework Cocoa")
+    endif()
+
+    # Compiler options - suppress warnings for third-party code
+    if(CMAKE_COMPILER_IS_GNUCXX)
+      target_compile_options(${imgui_target_name} PRIVATE -w)
+    endif()
+
+    # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
+    target_compile_definitions(${imgui_target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
+    # Component registration
+    add_component(${PROJECT_NAME} ${imgui_component_name})
+    add_component_targets(${PROJECT_NAME} ${imgui_component_name} ${imgui_target_name})
+
+    # Install fetched ImGui headers to standard system-like paths
+    # This allows downstream projects to use standard includes like <imgui.h>
+    install(
+      FILES ${IMGUI_CORE_HEADERS}
+      DESTINATION include
+      COMPONENT headers
+    )
+    install(
+      FILES ${IMGUI_BACKEND_HEADERS}
+      DESTINATION include/backends
+      COMPONENT headers
+    )
+
+    message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
+
+    # Add install-time warning about installing fetched ImGui
+    install(CODE "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+  endif()
+endif()
+
+#--------------------
 # Misc. dependencies
 #--------------------
 
 # Doxygen
 find_package(Doxygen QUIET)
 dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")
-

@@ -60,13 +60,16 @@ def print_warning(message: str):
     print(f"{Colors.WARNING}⚠ {message}{Colors.ENDC}")
 
 
-def run_command(cmd: str, description: str) -> Tuple[bool, str]:
+def run_command(
+    cmd: str, description: str, stream_output: bool = True
+) -> Tuple[bool, str]:
     """
     Run a command and return success status and output.
 
     Args:
         cmd: Command to run
         description: Description of the command for logging
+        stream_output: If True, stream output in real-time; if False, capture and return
 
     Returns:
         Tuple of (success: bool, output: str)
@@ -75,21 +78,33 @@ def run_command(cmd: str, description: str) -> Tuple[bool, str]:
     print(f"  Command: {cmd}")
 
     try:
-        result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, check=False
-        )
-
-        if result.returncode == 0:
-            print_success(f"{description} - PASSED")
-            return True, result.stdout
+        if stream_output:
+            # Stream output in real-time for better progress visibility
+            result = subprocess.run(cmd, shell=True, check=False)
+            if result.returncode == 0:
+                print_success(f"{description} - PASSED")
+                return True, ""
+            else:
+                print_error(f"{description} - FAILED")
+                print(f"  Return code: {result.returncode}")
+                return False, ""
         else:
-            print_error(f"{description} - FAILED")
-            print(f"  Return code: {result.returncode}")
-            if result.stderr:
-                print(f"  Error output:\n{result.stderr}")
-            if result.stdout:
-                print(f"  Standard output:\n{result.stdout}")
-            return False, result.stderr + "\n" + result.stdout
+            # Capture output (for cases where we need to parse it)
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, check=False
+            )
+
+            if result.returncode == 0:
+                print_success(f"{description} - PASSED")
+                return True, result.stdout
+            else:
+                print_error(f"{description} - FAILED")
+                print(f"  Return code: {result.returncode}")
+                if result.stderr:
+                    print(f"  Error output:\n{result.stderr}")
+                if result.stdout:
+                    print(f"  Standard output:\n{result.stdout}")
+                return False, result.stderr + "\n" + result.stdout
     except Exception as e:
         print_error(f"{description} - EXCEPTION: {e}")
         return False, str(e)
@@ -106,17 +121,17 @@ def check_pixi() -> bool:
 
 
 def run_lint_tests() -> bool:
-    """Run linting tests"""
-    print_header("LINTING")
+    """Run linting (auto-fix formatting issues)"""
+    print_header("LINTING (Auto-fixing)")
 
     success = True
 
-    # Check C++ formatting
-    result, _ = run_command("pixi run check-lint-cpp", "C++ format check")
+    # Auto-fix C++ formatting
+    result, _ = run_command("pixi run lint-cpp", "C++ auto-format")
     success = success and result
 
-    # Check Python formatting
-    result, _ = run_command("pixi run check-lint-py", "Python format check")
+    # Auto-fix Python formatting
+    result, _ = run_command("pixi run lint-py", "Python auto-format")
     success = success and result
 
     return success
