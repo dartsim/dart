@@ -29,13 +29,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [jammy, noble, oracular, plucky]
+        distro: [jammy, noble, questing]
         dart_version: [v6.15]
         platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
     env:
       UBUNTU_VERSION: ${{ matrix.distro }}
       DART_VERSION: ${{ matrix.dart_version }}
     steps:
+      # https://github.com/marketplace/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -75,6 +78,9 @@ jobs:
         dart_version: [v6.15]
         experimental: [false]
     steps:
+      # https://github.com/marketplace/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
