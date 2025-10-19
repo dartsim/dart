@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/HierarchicalIK.hpp"
 
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -64,6 +65,8 @@ bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool applySolution)
 //==============================================================================
 bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 {
+  DART_DEBUG("  [findSolution] ENTRY");
+
   if (nullptr == mSolver) {
     dtwarn << "[HierarchicalIK::findSolution] The Solver for a HierarchicalIK "
            << "module associated with [" << mSkeleton.lock()->getName()
@@ -89,9 +92,16 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
   }
 
   const std::size_t nDofs = skel->getNumDofs();
+  DART_DEBUG("    Setting problem dimension: {}", nDofs);
   mProblem->setDimension(nDofs);
 
-  mProblem->setInitialGuess(skel->getPositions());
+  const Eigen::VectorXd initialGuess = skel->getPositions();
+  std::string init_str = "    Setting initial guess (first 10): ";
+  for (size_t i = 0; i < std::min(static_cast<size_t>(10), nDofs); ++i) {
+    init_str += std::to_string(initialGuess[i]) + " ";
+  }
+  DART_DEBUG("{}", init_str);
+  mProblem->setInitialGuess(initialGuess);
 
   Eigen::VectorXd bounds(nDofs);
   for (std::size_t i = 0; i < nDofs; ++i)
@@ -102,7 +112,22 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
     bounds[i] = skel->getDof(i)->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
+  DART_DEBUG("    Refreshing IK hierarchy...");
   refreshIKHierarchy();
+  DART_DEBUG("    IK hierarchy has {} levels", mHierarchy.size());
+  for (size_t i = 0; i < mHierarchy.size(); ++i) {
+    DART_DEBUG("      Level {}: {} modules", i, mHierarchy[i].size());
+    for (size_t j = 0; j < mHierarchy[i].size(); ++j) {
+      [[maybe_unused]] const std::shared_ptr<InverseKinematics>& ik
+          = mHierarchy[i][j];
+      DART_DEBUG(
+          "        Module {}: {}, active={}, has_target={}",
+          j,
+          (ik->getNode() ? ik->getNode()->getName() : "null"),
+          ik->isActive(),
+          (ik->getTarget() != nullptr));
+    }
+  }
 
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
@@ -111,22 +136,117 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
   skel->resetVelocities();
 
   const Eigen::VectorXd originalPositions = skel->getPositions();
+
+  DART_DEBUG("    Calling mSolver->solve()...");
   const bool wasSolved = mSolver->solve();
+  DART_DEBUG("    mSolver->solve() returned: {}", wasSolved);
 
   positions = mProblem->getOptimalSolution();
+  DART_DEBUG("    Optimal solution size: {}", positions.size());
 
+  std::string sol_str = "    Optimal solution (first 10): ";
+  for (size_t i = 0;
+       i < std::min(
+           static_cast<size_t>(10), static_cast<size_t>(positions.size()));
+       ++i) {
+    sol_str += std::to_string(positions[i]) + " ";
+  }
+  DART_DEBUG("{}", sol_str);
+
+  // Check if solution differs from original
+  double max_diff = 0.0;
+  for (size_t i = 0; i < nDofs; ++i) {
+    double diff = std::abs(positions[i] - originalPositions[i]);
+    max_diff = std::max(max_diff, diff);
+  }
+  DART_DEBUG("    Max difference between solution and original: {}", max_diff);
+  if (max_diff < 1e-10) {
+    DART_WARN("    >>> Solution is IDENTICAL to original positions! <<<");
+  }
+
+  DART_DEBUG("    Restoring original positions...");
   setPositions(originalPositions);
   skel->setVelocities(originalVelocities);
+  DART_DEBUG("  [findSolution] EXIT returning {}", wasSolved);
   return wasSolved;
 }
 
 //==============================================================================
 bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 {
+  // DEBUG: Log entry
+  DART_DEBUG("[HierarchicalIK::solveAndApply] ENTRY");
+  DART_DEBUG("  allowIncompleteResult: {}", allowIncompleteResult);
+
+  const SkeletonPtr& skel = getSkeleton();
+  Eigen::VectorXd positions_before; // Declare at function scope
+
+  if (skel) {
+    positions_before = skel->getPositions();
+    DART_DEBUG("  Skeleton: {}", skel->getName());
+    DART_DEBUG("  DOFs: {}", skel->getNumDofs());
+    std::string pos_str = "  Positions before (first 10): ";
+    for (size_t i = 0;
+         i < std::min(static_cast<size_t>(10), skel->getNumDofs());
+         ++i) {
+      pos_str += std::to_string(positions_before[i]) + " ";
+    }
+    DART_DEBUG("{}", pos_str);
+  }
+
   Eigen::VectorXd solution;
+
+  DART_DEBUG("  Calling findSolution...");
   const auto wasSolved = findSolution(solution);
-  if (wasSolved || allowIncompleteResult)
+  DART_DEBUG("  findSolution returned: {}", wasSolved);
+  DART_DEBUG("  Solution size: {}", solution.size());
+
+  std::string sol_str = "  Solution (first 10): ";
+  for (size_t i = 0;
+       i < std::min(
+           static_cast<size_t>(10), static_cast<size_t>(solution.size()));
+       ++i) {
+    sol_str += std::to_string(solution[i]) + " ";
+  }
+  DART_DEBUG("{}", sol_str);
+
+  if (wasSolved || allowIncompleteResult) {
+    DART_DEBUG(
+        "  Applying solution (wasSolved={}, allowIncompleteResult={})...",
+        wasSolved,
+        allowIncompleteResult);
     setPositions(solution);
+    DART_DEBUG("  setPositions completed");
+
+    if (skel) {
+      const Eigen::VectorXd positions_after = skel->getPositions();
+      std::string pos_after_str = "  Positions after (first 10): ";
+      for (size_t i = 0;
+           i < std::min(static_cast<size_t>(10), skel->getNumDofs());
+           ++i) {
+        pos_after_str += std::to_string(positions_after[i]) + " ";
+      }
+      DART_DEBUG("{}", pos_after_str);
+
+      // Check if positions actually changed
+      double max_change = 0.0;
+      for (size_t i = 0; i < skel->getNumDofs(); ++i) {
+        double change = std::abs(positions_after[i] - positions_before[i]);
+        max_change = std::max(max_change, change);
+      }
+      DART_DEBUG("  Max position change: {}", max_change);
+      if (max_change < 1e-10) {
+        DART_WARN("  >>> NO POSITIONS CHANGED! <<<");
+      }
+    }
+  } else {
+    DART_DEBUG(
+        "  NOT applying solution (wasSolved={}, allowIncompleteResult={})",
+        wasSolved,
+        allowIncompleteResult);
+  }
+
+  DART_DEBUG("[HierarchicalIK::solveAndApply] EXIT returning {}\n", wasSolved);
   return wasSolved;
 }
 

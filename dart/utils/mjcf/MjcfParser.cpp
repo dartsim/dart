@@ -32,11 +32,11 @@
 
 #include "dart/utils/mjcf/MjcfParser.hpp"
 
-#include "dart/collision/collision.hpp"
-#include "dart/common/common.hpp"
+#include "dart/collision/all.hpp"
+#include "dart/common/all.hpp"
 #include "dart/config.hpp"
-#include "dart/constraint/constraint.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/constraint/all.hpp"
+#include "dart/dynamics/all.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"

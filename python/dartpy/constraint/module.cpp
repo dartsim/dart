@@ -49,6 +49,8 @@ void PgsBoxedLcpSolver(py::module& sm);
 void ConstraintSolver(py::module& sm);
 void BoxedLcpConstraintSolver(py::module& sm);
 
+void BalanceConstraint(py::module& sm);
+
 void dart_constraint(py::module& m)
 {
   auto sm = m.def_submodule("constraint");
@@ -64,6 +66,8 @@ void dart_constraint(py::module& m)
 
   ConstraintSolver(sm);
   BoxedLcpConstraintSolver(sm);
+
+  BalanceConstraint(sm);
 }
 
 } // namespace python

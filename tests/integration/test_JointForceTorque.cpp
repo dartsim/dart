@@ -35,7 +35,7 @@
 
 #include "TestHelpers.hpp"
 #include "dart/dart.hpp"
-#include "dart/utils/sdf/sdf.hpp"
+#include "dart/utils/sdf/all.hpp"
 
 #include <gtest/gtest.h>
 

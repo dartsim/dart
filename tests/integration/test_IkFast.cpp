@@ -32,7 +32,7 @@
 
 #include "TestHelpers.hpp"
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/all.hpp>
 
 #include <dart/dart.hpp>
 

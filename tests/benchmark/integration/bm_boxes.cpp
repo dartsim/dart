@@ -36,9 +36,9 @@
 
 #include <dart/collision/bullet/bullet.hpp>
 
-#include <dart/dynamics/dynamics.hpp>
+#include <dart/dynamics/all.hpp>
 
-#include <dart/math/math.hpp>
+#include <dart/math/all.hpp>
 
 #include <benchmark/benchmark.h>
 

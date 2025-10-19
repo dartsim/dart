@@ -46,7 +46,6 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-gui
   dart-gui-osg
 )
 foreach(dartpy_library ${dartpy_libraries})

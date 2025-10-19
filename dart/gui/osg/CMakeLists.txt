@@ -11,7 +11,7 @@ set(component_dependency_packages )
 set(link_libraries )
 
 # Dependency checks
-dart_check_dependent_target(${target_name} dart-gui)
+dart_check_dependent_target(${target_name} dart-utils)
 
 # OpenSceneGraph
 dart_find_package(OpenSceneGraph)
@@ -42,26 +42,27 @@ add_subdirectory(render)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-gui osg::osg ${link_libraries})
+target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
+add_component_dependencies(${PROJECT_NAME} ${component_name} utils ${component_dependencies})
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/render.hpp")
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/osg.hpp"
-  "dart/gui/osg/"
-  ${header_names}
+list(APPEND header_names "render/all.hpp")
+dart_generate_component_headers(
+  COMPONENT_NAME osg
+  TARGET_DIR "dart/gui/osg/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )

@@ -34,7 +34,7 @@
 
 #include <dart/simulation/simulation.hpp>
 
-#include <dart/dynamics/dynamics.hpp>
+#include <dart/dynamics/all.hpp>
 
 #include <dart/math/Random.hpp>
 

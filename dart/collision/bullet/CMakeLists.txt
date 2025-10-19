@@ -64,15 +64,16 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} Bullet)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp"
-  "dart/collision/bullet/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME bullet
+  TARGET_DIR "dart/collision/bullet/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
   DESTINATION include/dart/collision/bullet
   COMPONENT headers
 )

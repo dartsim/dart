@@ -45,7 +45,7 @@
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/dynamics/all.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 

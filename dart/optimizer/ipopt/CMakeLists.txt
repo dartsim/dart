@@ -22,10 +22,11 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} IPOPT)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp"
-  "dart/optimizer/ipopt/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME ipopt
+  TARGET_DIR "dart/optimizer/ipopt/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Add definitions for the IpOpt version
@@ -42,7 +43,7 @@ target_compile_definitions(${target_name}
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )

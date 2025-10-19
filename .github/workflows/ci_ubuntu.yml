@@ -20,6 +20,11 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
 
+# Cancel in-progress workflows when a new workflow is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   coverage:
     if: github.event_name != 'workflow_dispatch'
@@ -79,12 +84,14 @@ jobs:
         with:
           cache: true
 
-      - uses: awalsh128/cache-apt-pkgs-action@v1.5.3
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.5.3
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
 
-      - name: Check Lint
+      - name: Check Lint (Release only)
+        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
@@ -96,7 +103,8 @@ jobs:
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
-      - name: Install
+      - name: Install (Release only)
+        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \

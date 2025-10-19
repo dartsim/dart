@@ -13,7 +13,8 @@ build:
 # Build configuration
 sphinx:
   configuration: docs/readthedocs/conf.py
-  fail_on_warning: true
+  # Note: fail_on_warning is disabled because Python API warnings are expected
+  # until dartpy wheels are published to PyPI
 
 # Required dependencies for building Sphinx documentation
 python:

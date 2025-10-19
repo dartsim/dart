@@ -40,23 +40,24 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2)
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils headers" ${hdrs})
 if(urdfdom_FOUND)
-  list(APPEND header_names "urdf/urdf.hpp")
+  list(APPEND header_names "urdf/all.hpp")
 endif()
 set(
   header_names
   ${header_names}
-  mjcf/mjcf.hpp
-  sdf/sdf.hpp
+  mjcf/all.hpp
+  sdf/all.hpp
 )
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/utils.hpp"
-  "dart/utils/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME utils
+  TARGET_DIR "dart/utils/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
   DESTINATION include/dart/utils
   COMPONENT headers
 )

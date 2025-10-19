@@ -34,7 +34,7 @@
 
 #if HAVE_BULLET
 
-  #include <dart/collision/bullet/bullet.hpp>
+  #include <dart/collision/bullet/all.hpp>
 
   #include <pybind11/pybind11.h>
 

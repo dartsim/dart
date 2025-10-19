@@ -45,8 +45,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart}, gui, [opengl, glut]
-# dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -57,8 +56,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # collision-bullet - (dart), {dart-collision-bullet}
 # utils - (collision-bullet), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui - (utils), {dart-gui}
-# gui-osg - (gui), {dart-gui-osg}
+# gui-osg - (utils), {dart-gui-osg}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -82,7 +80,7 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
 add_subdirectory(utils) # tinyxml2, bullet
-add_subdirectory(gui) # opengl, glut, bullet
+add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)

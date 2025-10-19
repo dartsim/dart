@@ -8,15 +8,16 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "constraint headers" ${hdrs})
-dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp"
-  "dart/constraint/"
-  ${header_names}
+dart_generate_component_headers(
+  COMPONENT_NAME constraint
+  TARGET_DIR "dart/constraint/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
   DESTINATION include/dart/constraint
   COMPONENT headers
 )
