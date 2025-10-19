@@ -1,7 +1,7 @@
 ---
 name: Publish dartpy
 
-'on':
+"on":
   push:
     branches:
       - "**"

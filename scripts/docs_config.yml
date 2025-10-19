@@ -1,12 +1,12 @@
 # DART API Documentation Build Configuration
 
 # Version selection strategy
-version_strategy: auto  # Options: auto, manual, latest_n
+version_strategy: auto # Options: auto, manual, latest_n
 
 # Auto-discovery settings (when version_strategy: auto)
 auto_discover:
   # Git tag pattern to match (regex)
-  tag_pattern: '^v6\.\d+\.\d+$'  # Matches v6.x.y (excludes alpha, beta, rc)
+  tag_pattern: '^v6\.\d+\.\d+$' # Matches v6.x.y (excludes alpha, beta, rc)
 
   # Minimum version to include (optional)
   min_version: v6.9.0
@@ -15,7 +15,7 @@ auto_discover:
   max_versions: null
 
   # Sort order for versions (when max_versions is set)
-  sort_order: desc  # desc (newest first) or asc (oldest first)
+  sort_order: desc # desc (newest first) or asc (oldest first)
 
 # Manual version list (when version_strategy: manual)
 # Only used if version_strategy is set to 'manual'
@@ -33,7 +33,7 @@ manual_versions:
 
 # Latest N strategy (when version_strategy: latest_n)
 latest_n:
-  count: 5  # Number of most recent versions to build
+  count: 5 # Number of most recent versions to build
   tag_pattern: '^v6\.\d+\.\d+$'
 
 # Version grouping for index page
@@ -72,7 +72,7 @@ build:
 # Documentation output
 output:
   # C++ documentation suffix (e.g., v6.13.2/ for C++)
-  cpp_suffix: ''
+  cpp_suffix: ""
 
   # Python documentation suffix (e.g., v6.13.2-python/ for Python)
   python_suffix: -python
