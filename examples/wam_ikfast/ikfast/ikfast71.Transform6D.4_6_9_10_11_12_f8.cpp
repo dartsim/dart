@@ -5,7 +5,7 @@
 /// you may not use this file except in compliance with the License.
 /// You may obtain a copy of the License at
 ///     http://www.apache.org/licenses/LICENSE-2.0
-/// 
+///
 /// Unless required by applicable law or agreed to in writing, software
 /// distributed under the License is distributed on an "AS IS" BASIS,
 /// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,7 @@
 /// To compile without any main function as a shared object (might need -llapack):
 ///     gcc -fPIC -lstdc++ -DIKFAST_NO_MAIN -DIKFAST_CLIBRARY -shared -Wl,-soname,libik.so -o libik.so ik.cpp
 #define IKFAST_HAS_LIBRARY
-#include "dart/external/ikfast/ikfast.h" // found inside share/openrave-X.Y/python/ikfast.h
+#include <dart/dynamics/ikfast.h> // found inside share/openrave-X.Y/python/ikfast.h
 using namespace ikfast;
 
 // check if the included ikfast version matches what this file was compiled with
@@ -278,7 +278,7 @@ inline CheckValue<T> IKPowWithIntegerCheck(T f, int n)
             f *= f;
         }
     }
-    
+
     if( n < 0 ) {
         ret.value = T(1.0)/ret.value;
     }
@@ -383,7 +383,7 @@ unsigned char _ij4[2], _nj4,_ij6[2], _nj6,_ij9[2], _nj9,_ij10[2], _nj10,_ij11[2]
 IkReal j100, cj100, sj100;
 unsigned char _ij100[2], _nj100;
 bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* pfree, IkSolutionListBase<IkReal>& solutions) {
-j4=numeric_limits<IkReal>::quiet_NaN(); _ij4[0] = -1; _ij4[1] = -1; _nj4 = -1; j6=numeric_limits<IkReal>::quiet_NaN(); _ij6[0] = -1; _ij6[1] = -1; _nj6 = -1; j9=numeric_limits<IkReal>::quiet_NaN(); _ij9[0] = -1; _ij9[1] = -1; _nj9 = -1; j10=numeric_limits<IkReal>::quiet_NaN(); _ij10[0] = -1; _ij10[1] = -1; _nj10 = -1; j11=numeric_limits<IkReal>::quiet_NaN(); _ij11[0] = -1; _ij11[1] = -1; _nj11 = -1; j12=numeric_limits<IkReal>::quiet_NaN(); _ij12[0] = -1; _ij12[1] = -1; _nj12 = -1;  _ij8[0] = -1; _ij8[1] = -1; _nj8 = 0; 
+j4=numeric_limits<IkReal>::quiet_NaN(); _ij4[0] = -1; _ij4[1] = -1; _nj4 = -1; j6=numeric_limits<IkReal>::quiet_NaN(); _ij6[0] = -1; _ij6[1] = -1; _nj6 = -1; j9=numeric_limits<IkReal>::quiet_NaN(); _ij9[0] = -1; _ij9[1] = -1; _nj9 = -1; j10=numeric_limits<IkReal>::quiet_NaN(); _ij10[0] = -1; _ij10[1] = -1; _nj10 = -1; j11=numeric_limits<IkReal>::quiet_NaN(); _ij11[0] = -1; _ij11[1] = -1; _nj11 = -1; j12=numeric_limits<IkReal>::quiet_NaN(); _ij12[0] = -1; _ij12[1] = -1; _nj12 = -1;  _ij8[0] = -1; _ij8[1] = -1; _nj8 = 0;
 for(int dummyiter = 0; dummyiter < 1; ++dummyiter) {
     solutions.Clear();
 j8=pfree[0]; cj8=cos(pfree[0]); sj8=sin(pfree[0]), htj8=tan(pfree[0]*0.5);
@@ -467,7 +467,7 @@ for(int iij9 = ij9+1; iij9 < 2; ++iij9)
 {
 if( j9valid[iij9] && IKabs(cj9array[ij9]-cj9array[iij9]) < IKFAST_SOLUTION_THRESH && IKabs(sj9array[ij9]-sj9array[iij9]) < IKFAST_SOLUTION_THRESH )
 {
-    j9valid[iij9]=false; _ij9[1] = iij9; break; 
+    j9valid[iij9]=false; _ij9[1] = iij9; break;
 }
 }
 j9 = j9array[ij9]; cj9 = cj9array[ij9]; sj9 = sj9array[ij9];
@@ -568,7 +568,7 @@ for(int iij4 = ij4+1; iij4 < 2; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -827,7 +827,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -935,7 +935,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1047,7 +1047,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1159,7 +1159,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1271,7 +1271,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1358,7 +1358,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1434,7 +1434,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1511,7 +1511,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1614,7 +1614,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1700,7 +1700,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -1784,7 +1784,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2016,7 +2016,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2124,7 +2124,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2236,7 +2236,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2348,7 +2348,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2460,7 +2460,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2547,7 +2547,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2622,7 +2622,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2698,7 +2698,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2800,7 +2800,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2885,7 +2885,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -2970,7 +2970,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -3086,7 +3086,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -3181,7 +3181,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -3273,7 +3273,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -3382,7 +3382,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -3604,7 +3604,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -3673,7 +3673,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -3743,7 +3743,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -3813,7 +3813,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -3983,7 +3983,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4052,7 +4052,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4123,7 +4123,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4194,7 +4194,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4303,7 +4303,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4375,7 +4375,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4449,7 +4449,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4523,7 +4523,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4756,7 +4756,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4825,7 +4825,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4895,7 +4895,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -4965,7 +4965,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5136,7 +5136,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5205,7 +5205,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5276,7 +5276,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5347,7 +5347,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5457,7 +5457,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5529,7 +5529,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5604,7 +5604,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5679,7 +5679,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5880,7 +5880,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -5947,7 +5947,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6012,7 +6012,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6156,7 +6156,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6223,7 +6223,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6288,7 +6288,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6431,7 +6431,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6498,7 +6498,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6563,7 +6563,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6707,7 +6707,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6774,7 +6774,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6839,7 +6839,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -6943,7 +6943,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7023,7 +7023,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7104,7 +7104,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7184,7 +7184,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7389,7 +7389,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7456,7 +7456,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7521,7 +7521,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7665,7 +7665,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7732,7 +7732,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7797,7 +7797,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7901,7 +7901,7 @@ for(int iij4 = ij4+1; iij4 < 4; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -7975,7 +7975,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8056,7 +8056,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8136,7 +8136,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8246,7 +8246,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8338,7 +8338,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8427,7 +8427,7 @@ for(int iij4 = ij4+1; iij4 < 1; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8533,7 +8533,7 @@ for(int iij4 = ij4+1; iij4 < 2; ++iij4)
 {
 if( j4valid[iij4] && IKabs(cj4array[ij4]-cj4array[iij4]) < IKFAST_SOLUTION_THRESH && IKabs(sj4array[ij4]-sj4array[iij4]) < IKFAST_SOLUTION_THRESH )
 {
-    j4valid[iij4]=false; _ij4[1] = iij4; break; 
+    j4valid[iij4]=false; _ij4[1] = iij4; break;
 }
 }
 j4 = j4array[ij4]; cj4 = cj4array[ij4]; sj4 = sj4array[ij4];
@@ -8774,7 +8774,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -8882,7 +8882,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -8994,7 +8994,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9106,7 +9106,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9218,7 +9218,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9305,7 +9305,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9381,7 +9381,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9458,7 +9458,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9561,7 +9561,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9647,7 +9647,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9731,7 +9731,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -9963,7 +9963,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10071,7 +10071,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10183,7 +10183,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10295,7 +10295,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10407,7 +10407,7 @@ for(int iij6 = ij6+1; iij6 < 2; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10494,7 +10494,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10569,7 +10569,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10645,7 +10645,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10747,7 +10747,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10832,7 +10832,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -10917,7 +10917,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -11033,7 +11033,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -11128,7 +11128,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -11220,7 +11220,7 @@ for(int iij6 = ij6+1; iij6 < 1; ++iij6)
 {
 if( j6valid[iij6] && IKabs(cj6array[ij6]-cj6array[iij6]) < IKFAST_SOLUTION_THRESH && IKabs(sj6array[ij6]-sj6array[iij6]) < IKFAST_SOLUTION_THRESH )
 {
-    j6valid[iij6]=false; _ij6[1] = iij6; break; 
+    j6valid[iij6]=false; _ij6[1] = iij6; break;
 }
 }
 j6 = j6array[ij6]; cj6 = cj6array[ij6]; sj6 = sj6array[ij6];
@@ -11336,7 +11336,7 @@ for(int iij11 = ij11+1; iij11 < 2; ++iij11)
 {
 if( j11valid[iij11] && IKabs(cj11array[ij11]-cj11array[iij11]) < IKFAST_SOLUTION_THRESH && IKabs(sj11array[ij11]-sj11array[iij11]) < IKFAST_SOLUTION_THRESH )
 {
-    j11valid[iij11]=false; _ij11[1] = iij11; break; 
+    j11valid[iij11]=false; _ij11[1] = iij11; break;
 }
 }
 j11 = j11array[ij11]; cj11 = cj11array[ij11]; sj11 = sj11array[ij11];
@@ -11460,7 +11460,7 @@ for(int iij10 = ij10+1; iij10 < 2; ++iij10)
 {
 if( j10valid[iij10] && IKabs(cj10array[ij10]-cj10array[iij10]) < IKFAST_SOLUTION_THRESH && IKabs(sj10array[ij10]-sj10array[iij10]) < IKFAST_SOLUTION_THRESH )
 {
-    j10valid[iij10]=false; _ij10[1] = iij10; break; 
+    j10valid[iij10]=false; _ij10[1] = iij10; break;
 }
 }
 j10 = j10array[ij10]; cj10 = cj10array[ij10]; sj10 = sj10array[ij10];
@@ -11502,7 +11502,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -11632,7 +11632,7 @@ for(int iij10 = ij10+1; iij10 < 2; ++iij10)
 {
 if( j10valid[iij10] && IKabs(cj10array[ij10]-cj10array[iij10]) < IKFAST_SOLUTION_THRESH && IKabs(sj10array[ij10]-sj10array[iij10]) < IKFAST_SOLUTION_THRESH )
 {
-    j10valid[iij10]=false; _ij10[1] = iij10; break; 
+    j10valid[iij10]=false; _ij10[1] = iij10; break;
 }
 }
 j10 = j10array[ij10]; cj10 = cj10array[ij10]; sj10 = sj10array[ij10];
@@ -11674,7 +11674,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -11806,7 +11806,7 @@ for(int iij10 = ij10+1; iij10 < 1; ++iij10)
 {
 if( j10valid[iij10] && IKabs(cj10array[ij10]-cj10array[iij10]) < IKFAST_SOLUTION_THRESH && IKabs(sj10array[ij10]-sj10array[iij10]) < IKFAST_SOLUTION_THRESH )
 {
-    j10valid[iij10]=false; _ij10[1] = iij10; break; 
+    j10valid[iij10]=false; _ij10[1] = iij10; break;
 }
 }
 j10 = j10array[ij10]; cj10 = cj10array[ij10]; sj10 = sj10array[ij10];
@@ -11987,7 +11987,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12106,7 +12106,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12227,7 +12227,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12350,7 +12350,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12470,7 +12470,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12592,7 +12592,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12714,7 +12714,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12839,7 +12839,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -12977,7 +12977,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13101,7 +13101,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13221,7 +13221,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13347,7 +13347,7 @@ for(int iij10 = ij10+1; iij10 < 1; ++iij10)
 {
 if( j10valid[iij10] && IKabs(cj10array[ij10]-cj10array[iij10]) < IKFAST_SOLUTION_THRESH && IKabs(sj10array[ij10]-sj10array[iij10]) < IKFAST_SOLUTION_THRESH )
 {
-    j10valid[iij10]=false; _ij10[1] = iij10; break; 
+    j10valid[iij10]=false; _ij10[1] = iij10; break;
 }
 }
 j10 = j10array[ij10]; cj10 = cj10array[ij10]; sj10 = sj10array[ij10];
@@ -13528,7 +13528,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13647,7 +13647,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13768,7 +13768,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -13891,7 +13891,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14011,7 +14011,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14133,7 +14133,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14255,7 +14255,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14380,7 +14380,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14518,7 +14518,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14642,7 +14642,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
@@ -14762,7 +14762,7 @@ for(int iij12 = ij12+1; iij12 < 1; ++iij12)
 {
 if( j12valid[iij12] && IKabs(cj12array[ij12]-cj12array[iij12]) < IKFAST_SOLUTION_THRESH && IKabs(sj12array[ij12]-sj12array[iij12]) < IKFAST_SOLUTION_THRESH )
 {
-    j12valid[iij12]=false; _ij12[1] = iij12; break; 
+    j12valid[iij12]=false; _ij12[1] = iij12; break;
 }
 }
 j12 = j12array[ij12]; cj12 = cj12array[ij12]; sj12 = sj12array[ij12];
