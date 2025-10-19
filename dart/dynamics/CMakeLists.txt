@@ -19,7 +19,7 @@ dart_generate_component_headers(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp ikfast.h
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
