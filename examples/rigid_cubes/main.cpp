@@ -92,14 +92,12 @@ public:
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
+      static bool eventHandlerOn = true;
       switch (ea.getKey()) {
         case ' ': // Space bar: toggle simulation
           mViewer->simulate(!mViewer->isSimulating());
           return true;
         case 'p': // Toggle playback mode
-          // Note: There's no way to query the current state, so we just toggle
-          // by switching to false and then back to true on next press
-          static bool eventHandlerOn = true;
           eventHandlerOn = !eventHandlerOn;
           mViewer->switchDefaultEventHandler(eventHandlerOn);
           return true;
