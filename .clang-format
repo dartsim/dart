@@ -52,43 +52,50 @@ ForEachMacros: [foreach, Q_FOREACH]
 # Sort headers by main include file (implicit priority 0),
 # then project and private includes, then system headers
 IncludeCategories:
-  - Regex: '^".*\.h(pp)?"$' # headers relative to this project
+  # Project-relative headers (with quotes) - ordered by specificity
+  - Regex: '^"helpers\/GTestUtils\.h(pp)?"$' # core test utility (most specific)
     Priority: 1
+  - Regex: '^"helpers\/common_helpers\.h(pp)?"$' # common test helpers
+    Priority: 2
+  - Regex: '^"helpers\/dynamics_helpers\.h(pp)?"$' # dynamics test helpers
+    Priority: 3
+  - Regex: '^"helpers\/.*\.h(pp)?"$' # other test helpers
+    Priority: 4
+  - Regex: '^".*\.h(pp)?"$' # other project headers
+    Priority: 5
 
-  # DART headers
-  - Regex: '^<dart\/config.hpp>$'
+  # DART library headers (with angle brackets) - ordered from high-level to low-level
+  - Regex: '^<dart\/config\.hpp>$' # config first
     Priority: 10
-  - Regex: '^<dart\/test\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/test\/.*\.h(pp)?>$' # test utilities
     Priority: 20
-  - Regex: '^<dart\/python\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/python\/.*\.h(pp)?>$' # bindings
     Priority: 21
-  - Regex: '^<dart\/gui\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/gui\/.*\.h(pp)?>$' # GUI layer
     Priority: 22
-  - Regex: '^<dart\/utils\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/utils\/.*\.h(pp)?>$' # utilities & parsers
     Priority: 23
-  - Regex: '^<dart\/simulation\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/simulation\/.*\.h(pp)?>$' # simulation layer
     Priority: 24
-  - Regex: '^<dart\/constraint\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/constraint\/.*\.h(pp)?>$' # constraints
     Priority: 25
-  - Regex: '^<dart\/collision\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/collision\/.*\.h(pp)?>$' # collision detection
     Priority: 26
-  - Regex: '^<dart\/dynamics\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/dynamics\/.*\.h(pp)?>$' # dynamics
     Priority: 27
-  - Regex: '^<dart\/optimizer\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/optimizer\/.*\.h(pp)?>$' # optimization
     Priority: 28
-  - Regex: '^<dart\/lcpsolver\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/lcpsolver\/.*\.h(pp)?>$' # LCP solver
     Priority: 29
-  - Regex: '^<dart\/integration\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/integration\/.*\.h(pp)?>$' # integration
     Priority: 30
-  - Regex: '^<dart\/math\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/math\/.*\.h(pp)?>$' # math primitives
     Priority: 31
-  - Regex: '^<dart\/common\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/common\/.*\.h(pp)?>$' # common/base utilities
     Priority: 32
-  - Regex: '^<dart\/common\/.*\.h(pp)?>$'
-    Priority: 33
-  - Regex: '^<dart\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/.*\.h(pp)?>$' # other DART headers
     Priority: 40
-  - Regex: '^<dart\/external\/.*\.h(pp)?>$'
+  - Regex: '^<dart\/external\/.*\.h(pp)?>$' # external dependencies
     Priority: 50
 
   # 3rd-party headers

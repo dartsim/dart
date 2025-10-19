@@ -92,17 +92,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several
 #   components are correctly performs together
-# - "regression": issue wise tests to verify that the GitHub issues are still
-#   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
 add_subdirectory(integration)
-add_subdirectory(regression)
 add_subdirectory(unit)
 
 # Print tests
 dart_get_tests(integration_tests "integration")
-dart_get_tests(regression_tests "regression")
 dart_get_tests(unit_tests "unit")
 
 if(DART_VERBOSE)
@@ -111,23 +107,18 @@ if(DART_VERBOSE)
   foreach(test ${integration_tests})
     message(STATUS "Adding test: integration/${test}")
   endforeach()
-  foreach(test ${regression_tests})
-    message(STATUS "Adding test: regression/${test}")
-  endforeach()
   foreach(test ${unit_tests})
     message(STATUS "Adding test: unit/${test}")
   endforeach()
 else()
   list(LENGTH integration_tests integration_tests_len)
-  list(LENGTH regression_tests regression_tests_len)
   list(LENGTH unit_tests unit_tests_len)
   math(
     EXPR tests_len
-    "${integration_tests_len} + ${regression_tests_len} + ${unit_tests_len}"
+    "${integration_tests_len} + ${unit_tests_len}"
   )
   message(STATUS "Adding ${tests_len} tests ("
       "integration: ${integration_tests_len}, "
-      "regression: ${regression_tests_len}, "
       "unit: ${unit_tests_len}"
       ")"
   )
@@ -136,22 +127,26 @@ endif()
 # Add custom target to build all the tests as a single target
 add_custom_target(
   tests
-  DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+  DEPENDS ${integration_tests} ${unit_tests}
 )
 
 # Add custom target to build all the tests and run the tests
 if(MSVC)
   add_custom_target(tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
-    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+    DEPENDS ${integration_tests} ${unit_tests}
   )
 else()
   add_custom_target(tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+    DEPENDS ${integration_tests} ${unit_tests}
   )
 endif()
 
-dart_format_add(GTestUtils.hpp)
+dart_format_add(
+  helpers/GTestUtils.hpp
+  helpers/common_helpers.hpp
+  helpers/dynamics_helpers.hpp
+)
 
 add_subdirectory(benchmark)

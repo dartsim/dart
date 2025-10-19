@@ -104,24 +104,42 @@ def run_command(
         Tuple of (success: bool, output: str)
     """
     print_step(f"Running: {description}")
-    print(f"  Command: {cmd}\n")
+    print(f"  Command: {cmd}")
+    print()  # Add blank line for readability
 
     try:
         if stream_output:
             # Stream output in real-time
-            result = subprocess.run(cmd, shell=True, check=False)
+            process = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+            )
 
-            if result.returncode == 0:
-                print()
+            output_lines = []
+            if process.stdout:
+                for line in process.stdout:
+                    print(line, end="")  # Print line in real-time
+                    output_lines.append(line)
+
+            returncode = process.wait()
+            output = "".join(output_lines)
+
+            if returncode == 0:
+                print()  # Add blank line
                 print_success(f"{description} - PASSED")
-                return True, ""
+                return True, output
             else:
-                print()
+                print()  # Add blank line
                 print_error(f"{description} - FAILED")
-                print(f"  Return code: {result.returncode}")
-                return False, ""
+                print(f"  Return code: {returncode}")
+                return False, output
         else:
-            # Capture output
+            # Capture output without streaming
             result = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True, check=False
             )
@@ -228,13 +246,18 @@ def generate_report(results: dict):
     print(f"Failed: {failed_color}{failed_tests}{Colors.ENDC}")
     print()
 
+    # Find the longest test name for alignment
+    max_name_length = max(len(name) for name in results.keys()) if results else 0
+
     for test_name, passed in results.items():
         status = (
             f"{Colors.OKGREEN}PASSED{Colors.ENDC}"
             if passed
             else f"{Colors.FAIL}FAILED{Colors.ENDC}"
         )
-        print(f"  {test_name}: {status}")
+        # Pad the test name to align the status column
+        padded_name = test_name.ljust(max_name_length)
+        print(f"  {padded_name}: {status}")
 
     print()
     if failed_tests == 0:

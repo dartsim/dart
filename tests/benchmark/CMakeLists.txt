@@ -41,5 +41,40 @@ else()
   FetchContent_MakeAvailable(benchmark)
 endif()
 
-add_subdirectory(unit)
-add_subdirectory(integration)
+# ==============================================================================
+# Collision Benchmarks
+# ==============================================================================
+if(TARGET dart-collision-bullet)
+  add_executable(bm_boxes collision/bm_boxes.cpp)
+  target_link_libraries(bm_boxes
+    dart-collision-bullet
+    benchmark::benchmark
+    benchmark::benchmark_main
+  )
+  dart_format_add(collision/bm_boxes.cpp)
+endif()
+
+# ==============================================================================
+# Dynamics Benchmarks
+# ==============================================================================
+if(TARGET dart-utils)
+  add_executable(bm_kinematics dynamics/bm_kinematics.cpp)
+  target_link_libraries(bm_kinematics
+    dart-utils
+    benchmark::benchmark
+    benchmark::benchmark_main
+  )
+  dart_format_add(dynamics/bm_kinematics.cpp)
+endif()
+
+# ==============================================================================
+# Note: Benchmarks are standalone executables for performance measurement.
+# They are NOT registered as ctests since they measure performance, not correctness.
+#
+# Run benchmarks manually:
+#   ./build/default/cpp/Release/tests/benchmark/bm_boxes
+#   ./build/default/cpp/Release/tests/benchmark/bm_kinematics
+#
+# With custom settings:
+#   ./bm_boxes --benchmark_min_time=1s --benchmark_repetitions=10
+# ==============================================================================

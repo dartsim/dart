@@ -17,6 +17,14 @@ This document describes the code style conventions used in the DART project.
 
 C++ headers and sources should be contained in the same subdirectory of `dart/` that matches their namespace, with the extension `.hpp` and `.cpp`, respectively.
 
+### File Naming Conventions
+
+- **Public headers and sources**: Use **PascalCase** for compatibility with existing code (e.g., `MyClass.hpp`, `MyClass.cpp`)
+- **Test files**: Use **snake_case** with `test_` prefix (e.g., `test_my_class.cpp`, `test_collision_accuracy.cpp`)
+- **Implementation details**: Use `-impl` suffix for template implementations (e.g., `MyClass-impl.hpp`)
+
+**Rationale**: Test files use snake_case for better readability with descriptive multi-word names, while maintaining backward compatibility for public headers.
+
 ### Quick Reference
 
 - **Indentation**: 2 spaces
@@ -24,6 +32,7 @@ C++ headers and sources should be contained in the same subdirectory of `dart/` 
 - **Classes**: PascalCase
 - **Member variables**: Prefixed with `m` (e.g., `mExampleMember`)
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
+- **File naming**: PascalCase for public headers, snake_case for test files
 - **Header guards**: `DART_NAMESPACE_CLASSNAME_HPP_`
 - **Braces**: No "cuddled" braces (except namespaces)
 - **Documentation**: Doxygen-style comments (`///`)
