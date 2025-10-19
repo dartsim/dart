@@ -20,6 +20,11 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
 
+# Cancel in-progress workflows when a new workflow is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.build_type }}
