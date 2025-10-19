@@ -486,6 +486,18 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+# Docker build tasks - Test Docker images locally
+# Requires Docker to be installed on the system
+# Usage:
+#   pixi run docker-build                              # Build all Ubuntu versions
+#   pixi run docker-build-ubuntu distro=jammy          # Build specific distro
+#   pixi run docker-build-manylinux                    # Build manylinux image
+docker-build = { cmd = "python scripts/build_docker.py all" }
+
+docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu $DISTRO", env = { DISTRO = "jammy" } }
+
+docker-build-manylinux = { cmd = "python scripts/build_docker.py manylinux" }
+
 ################################################################################
 # linux-64
 ################################################################################

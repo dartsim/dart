@@ -1,5 +1,4 @@
-ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:questing
+FROM ubuntu:questing
 
 ARG DEBIAN_FRONTEND=noninteractive
 

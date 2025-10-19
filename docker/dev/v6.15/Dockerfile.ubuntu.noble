@@ -1,5 +1,4 @@
-ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:noble
+FROM ubuntu:noble
 
 ARG DEBIAN_FRONTEND=noninteractive
 
