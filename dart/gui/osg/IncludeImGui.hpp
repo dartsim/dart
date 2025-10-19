@@ -35,12 +35,41 @@
 
 #include <dart/config.hpp>
 
-#if DART_USE_SYSTEM_IMGUI
+// ImGui header inclusion handling for different configurations
+//
+// When DART_USE_SYSTEM_IMGUI=OFF:
+//   - Build tree: ImGui fetched via FetchContent, headers in
+//   build/_deps/imgui-src
+//   - Install tree: Headers installed to include/ and include/backends/
+//   - Include directories configured in cmake/DARTFindDependencies.cmake
+//
+// When DART_USE_SYSTEM_IMGUI=ON:
+//   - Package managers install ImGui in different locations:
+//     * conda-forge: include/imgui.h, include/imgui_impl_opengl2.h
+//     * vcpkg: include/imgui.h, include/imgui/backends/imgui_impl_opengl2.h
+//     * apt (varies): include/imgui/imgui.h,
+//     include/imgui/backends/imgui_impl_opengl2.h
+//   - cmake/Findimgui.cmake handles these variations and adds proper include
+//   paths
+//
+// Both configurations end up with compatible include paths, so we try standard
+// patterns in order of preference:
+#if __has_include(<imgui.h>)
   #include <imgui.h>
-  #include <imgui_impl_opengl2.h>
+#elif __has_include(<imgui/imgui.h>)
+  #include <imgui/imgui.h>
 #else
-  #include <dart/external/imgui/imgui.h>
-  #include <dart/external/imgui/imgui_impl_opengl2.h>
+  #error "Could not find imgui.h - check your ImGui installation"
+#endif
+
+#if __has_include(<imgui_impl_opengl2.h>)
+  #include <imgui_impl_opengl2.h>
+#elif __has_include(<backends/imgui_impl_opengl2.h>)
+  #include <backends/imgui_impl_opengl2.h>
+#elif __has_include(<imgui/backends/imgui_impl_opengl2.h>)
+  #include <imgui/backends/imgui_impl_opengl2.h>
+#else
+  #error "Could not find imgui_impl_opengl2.h - check your ImGui installation"
 #endif
 
 #endif // DART_GUI_OSG_INCLUDEIMGUI_HPP_

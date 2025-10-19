@@ -97,7 +97,8 @@ dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
-dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
+dart_option(DART_USE_SYSTEM_IMGUI
+  "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
