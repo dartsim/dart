@@ -22,7 +22,7 @@ def main():
 
     # Determine the dartpy module path
     # Check if PYTHONPATH is set (for local builds with compiled module)
-    pythonpath = os.environ.get('PYTHONPATH', '')
+    pythonpath = os.environ.get("PYTHONPATH", "")
     if not pythonpath:
         print("ERROR: PYTHONPATH is not set. Please build dartpy first.")
         print("Run: pixi run build-py-dev")
@@ -34,6 +34,7 @@ def main():
     # Verify dartpy can be imported
     try:
         import dartpy  # type: ignore
+
         print(f"✓ Found dartpy at: {dartpy.__file__}")
     except ImportError as e:
         print(f"ERROR: Cannot import dartpy: {e}")
@@ -50,7 +51,8 @@ def main():
     cmd = [
         "pybind11-stubgen",
         "dartpy",
-        "-o", str(stubs_dir),
+        "-o",
+        str(stubs_dir),
         "--numpy-array-use-type-var",
     ]
 

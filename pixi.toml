@@ -71,6 +71,7 @@ config = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
+# Auto-fix formatting issues (runs black and isort to format code)
 lint-cpp = { cmd = """
     cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -78,12 +79,12 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' \
-    && isort . --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
+""" }
 
 lint = { depends-on = ["lint-cpp", "lint-py"] }
 
+# Check formatting without modifying files (used in CI)
 check-lint-cpp = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -91,9 +92,8 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' \
-    && isort . --check --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
+""" }
 
 check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
 
@@ -590,14 +590,14 @@ config = { cmd = """
 """, env = { DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' && isort . --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
+""" }
 
 lint = { depends-on = ["lint-py"] }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
+""" }
 
 check-lint = { depends-on = ["check-lint-py"] }
 
