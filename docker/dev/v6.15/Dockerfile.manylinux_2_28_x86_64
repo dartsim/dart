@@ -3,6 +3,11 @@ FROM $BASE_IMAGE
 
 ARG NUM_CORES=8
 
+# CMake 4.0 removed support for cmake_minimum_required() < 3.5.
+# Set CMAKE_POLICY_VERSION_MINIMUM to work around dependencies with old CMake version requirements.
+# This must be set as an environment variable (not via -D flag which doesn't work).
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
+
 # Missing optional dependencies:
 #   ipopt
 #   nlopt
@@ -15,7 +20,7 @@ RUN yum install -y \
     python3-devel
 
 # fmt
-RUN git clone https://github.com/fmtlib/fmt.git -b '11.1.3' \
+RUN git clone https://github.com/fmtlib/fmt.git -b '11.1.4' \
     && mkdir -p fmt/build \
     && cmake fmt -B fmt/build \
     -DCMAKE_BUILD_TYPE=Release \
@@ -61,7 +66,7 @@ RUN git clone https://github.com/flexible-collision-library/fcl.git -b '0.7.0' \
     && rm -rf fcl
 
 # tinyxml2
-RUN git clone https://github.com/leethomason/tinyxml2.git -b '10.0.0' \
+RUN git clone https://github.com/leethomason/tinyxml2.git -b '11.0.0' \
     && mkdir -p tinyxml2/build \
     && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     && cmake --build tinyxml2/build --target install -j${NUM_CORES} \
@@ -75,14 +80,14 @@ RUN git clone https://github.com/ros/console_bridge.git -b '1.0.2' \
     && rm -rf console_bridge
 
 # urdfdom_headers
-RUN git clone https://github.com/ros/urdfdom_headers.git -b '1.1.1' \
+RUN git clone https://github.com/ros/urdfdom_headers.git -b '1.1.2' \
     && mkdir -p urdfdom_headers/build \
     && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom_headers/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom_headers
 
 # urdfdom
-RUN git clone https://github.com/ros/urdfdom.git -b '4.0.0' \
+RUN git clone https://github.com/ros/urdfdom.git -b '4.0.1' \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
