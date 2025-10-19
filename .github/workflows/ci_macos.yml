@@ -20,6 +20,11 @@ on:
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
 
+# Cancel in-progress workflows when a new workflow is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.os == 'macos-latest-large' && 'x86_64' || 'arm64' }}-${{ matrix.build_type }}
@@ -38,7 +43,8 @@ jobs:
         with:
           cache: true
 
-      - name: Check Lint
+      - name: Check Lint (Release only)
+        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
@@ -50,7 +56,8 @@ jobs:
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
-      - name: Install
+      - name: Install (Release only)
+        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
