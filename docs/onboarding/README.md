@@ -1,5 +1,7 @@
 # DART GUI - Developer Onboarding Guide
 
+> **Documentation Principle**: This onboarding documentation avoids hardcoded lists (dependencies, versions, CMake options, build targets, etc.) that can become outdated. Instead, it points to authoritative sources in the codebase (`CMakeLists.txt`, `pixi.toml`, source files) as the single source of truth.
+
 ## 1. Overview
 
 **DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
@@ -1047,15 +1049,9 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Common CMake Options
+### CMake Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `DART_BUILD_GUI_OSG` | ON | Build OSG-based GUI |
-| `DART_BUILD_DARTPY` | OFF | Build Python bindings |
-| `DART_USE_SYSTEM_IMGUI` | OFF | Use system ImGui vs fetched |
-| `DART_CODECOV` | OFF | Enable code coverage |
-| `DART_BUILD_EXTRAS` | ON | Build examples/tutorials |
+For the complete list of CMake configuration options and their defaults, refer to [`CMakeLists.txt`](/home/jeongseok/dev/dartsim/dart_ci/CMakeLists.txt).
 
 ### Running Examples
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
 """
 Test script to verify dartpy installation works correctly.

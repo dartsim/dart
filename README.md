@@ -14,79 +14,26 @@ dynamics.
 
 ## Getting Started
 
-DART provides both C++ and Python interfaces, which can be installed using
-various package managers. For cross-platform compatibility, we recommend using
-Conda or Pixi.
+Install DART using your preferred package manager:
 
-### C++
-
-#### Cross-Platform (Recommended)
-
-Conda:
-
+**Python**
 ```shell
-conda install -c conda-forge dartsim-cpp
+pip install dartpy                        # PyPI
+conda install -c conda-forge dartpy       # or Conda
+pixi add dartpy                           # or Pixi
 ```
 
-Pixi:
-
+**C++**
 ```shell
-pixi add dartsim-cpp
-```
+# Cross-platform (recommended)
+conda install -c conda-forge dartsim-cpp  # or: pixi add dartsim-cpp
 
-#### Linux
-
-Ubuntu:
-
-```shell
-sudo apt install libdart-all-dev
-```
-
-Arch Linux:
-
-```shell
-yay -S libdart
-```
-
-FreeBSD:
-
-```shell
-pkg install dartsim
-```
-
-#### macOS (Homebrew)
-
-```shell
-brew install dartsim
-```
-
-#### Windows (Vcpkg)
-
-```shell
-vcpkg install dartsim:x64-windows
-```
-
-### Python
-
-For the Python interface, we recommend using Conda or Pixi. Note that the PyPI
-package is being deprecated to reduce maintenance—contributions are welcome!
-
-Conda:
-
-```shell
-conda install -c conda-forge dartpy
-```
-
-Pixi:
-
-```shell
-pixi add dartpy
-```
-
-PyPI (deprecated):
-
-```shell
-pip install dartpy
+# Platform-specific
+sudo apt install libdart-all-dev          # Ubuntu
+yay -S libdart                            # Arch Linux
+pkg install dartsim                       # FreeBSD
+brew install dartsim                      # macOS
+vcpkg install dartsim:x64-windows         # Windows
 ```
 
 ## Documentation
