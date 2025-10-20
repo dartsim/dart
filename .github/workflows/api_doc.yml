@@ -17,12 +17,11 @@ on:
       - "docker/dev/**"
   schedule:
     # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:

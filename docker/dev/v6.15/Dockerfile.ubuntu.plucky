@@ -1,5 +1,4 @@
-ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:plucky
+FROM ubuntu:plucky
 
 ARG DEBIAN_FRONTEND=noninteractive
 

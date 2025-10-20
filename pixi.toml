@@ -20,6 +20,7 @@ ninja = ">=1.12.1,<2"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
+prettier = ">=3.4.2,<4"
 pybind11-stubgen = ">=2.5.1,<3"
 pytest = ">=8.3.5,<9"
 setuptools = ">=80.1.0,<81"
@@ -82,7 +83,11 @@ lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-py"] }
+lint-yaml = { cmd = """
+    prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+""" }
+
+lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
 
 # Check formatting without modifying files (used in CI)
 check-lint-cpp = { cmd = """
@@ -95,7 +100,11 @@ check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
 """ }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
+check-lint-yaml = { cmd = """
+    prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+""" }
+
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-py", "check-lint-yaml"] }
 
 build = { cmd = """
     cmake \
@@ -486,6 +495,20 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+# Docker build tasks - Test Docker images locally
+# Requires Docker to be installed on the system
+# Usage:
+#   pixi run docker-build                              # Build all Ubuntu versions
+#   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
+#   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
+#   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
+#   pixi run docker-build-manylinux                    # Build manylinux image
+docker-build = { cmd = "python scripts/build_docker.py all" }
+
+docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [{ arg = "distro", default = "jammy" }] }
+
+docker-build-manylinux = { cmd = "python scripts/build_docker.py manylinux" }
+
 ################################################################################
 # linux-64
 ################################################################################
@@ -577,6 +600,7 @@ config = { cmd = """
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
         -G 'Visual Studio 17 2022' \
+        -A x64 \
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
