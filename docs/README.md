@@ -10,7 +10,7 @@ This directory contains documentation for DART users, developers, and contributo
 
 ### Developer Onboarding (Markdown)
 
-Located in `onboarding/` - **Architecture guides for developers and LLMs:**
+Located in `onboarding/` - **Architecture guides for developers:**
 
 - **[Onboarding Guide](onboarding/README.md)** - Complete internal architecture overview with diagrams
 - [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals

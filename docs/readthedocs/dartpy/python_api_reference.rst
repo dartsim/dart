@@ -29,4 +29,4 @@ Available Versions
 Building Locally
 ----------------
 
-See :doc:`developer_guide/api_docs` for instructions on building Python API documentation locally.
+See :doc:`developer_guide/api_docs` for information about documentation architecture and instructions on building API documentation locally.

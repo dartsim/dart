@@ -94,24 +94,9 @@ TODO
 
 ## Dependency Reference
 
-Summary of dependencies required to build DART:
-
-| Dependency     | Required | Type    | Min. Version | Notes |
-|----------------|----------|---------|--------------|-------|
-| CMake          | Yes      | Build   | 3.22.1       |       |
-| Assimp         | Yes      | Runtime | 5.2.2        |       |
-| Eigen          | Yes      | Runtime | 3.4.0        |       |
-| FCL            | Yes      | Runtime | 0.7.0        |       |
-| fmt            | Yes      | Runtime | 8.1.1        |       |
-| Bullet         | No       | Runtime | 3.06         |       |
-| Ipopt          | No       | Runtime | 3.11.9       |       |
-| Octomap        | No       | Runtime | 1.9.7        |       |
-| ODE            | No       | Runtime | 0.16.2       |       |
-| Pagmo          | No       | Runtime | 2.18.0       |       |
-| spdlog         | No       | Runtime | 1.9.2        |       |
-| tinyxml2       | No       | Runtime | 9.0.0        |       |
-| urdfdom        | No       | Runtime | 3.0.1        |       |
-| OpenSceneGraph | No       | Runtime | 3.6.5        |       |
+For the complete and up-to-date list of dependencies with version requirements, refer to:
+- [`CMakeLists.txt`](../../CMakeLists.txt) - Authoritative source for CMake dependencies and version requirements
+- [`pixi.toml`](../../pixi.toml) - Managed dependencies for reproducible builds
 
 ## Clone the Repository
 
@@ -150,16 +135,10 @@ DART uses CMake as its build system. CMake generates build files for various bui
 
 ### CMake Options
 
-DART provides several CMake options to customize the build:
-
-| Option                    | Default Value | Description                              |
-|---------------------------|---------------|------------------------------------------|
-| CMAKE_BUILD_TYPE          | Release       | Specifies the build type                 |
-| DART_ENABLE_SIMD          | ON            | Enables use of SIMD instructions         |
-| DART_BUILD_DARTPY         | OFF           | Build Python bindings                    |
-| DART_BUILD_GUI_OSG        | ON            | Build OpenSceneGraph GUI                 |
-
-> **Note:** This list may not be exhaustive. Refer to the main `CMakeLists.txt` file for the complete list of options.
+For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
+- `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
+- `DART_BUILD_DARTPY` - Enable Python bindings
+- `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI
 
 ### Platform-Specific Configuration Examples
 

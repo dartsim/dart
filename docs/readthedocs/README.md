@@ -112,12 +112,12 @@ Until then: **Use local builds for complete documentation with Python API refere
 docs/readthedocs/
 ├── conf.py                          # Sphinx configuration
 ├── index.rst                         # Main documentation index
-├── dart/                            # C++ documentation
+├── developer_resources.rst           # Points to docs/onboarding/ for developer docs
+├── dart/                            # C++ user documentation
+│   └── user_guide/
+├── dartpy/                          # Python user documentation
 │   ├── user_guide/
-│   └── developer_guide/
-├── dartpy/                          # Python documentation
-│   ├── user_guide/
-│   ├── developer_guide/
+│   ├── developer_guide/             # API docs architecture info only
 │   ├── python_api_reference.rst     # Main API reference page
 │   └── modules/                     # Individual module documentation
 │       ├── collision.rst
@@ -126,6 +126,9 @@ docs/readthedocs/
 │       └── ...
 ├── _static/                         # Static assets (images, CSS)
 └── locales/                         # Translations (Korean, etc.)
+
+Note: Developer documentation (build guides, contribution guidelines, code style)
+has been consolidated to docs/onboarding/ for better maintenance and LLM accessibility.
 ```
 
 ## Contributing

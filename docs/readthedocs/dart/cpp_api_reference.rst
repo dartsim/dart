@@ -29,4 +29,4 @@ Available Versions
 Building Locally
 ----------------
 
-See :doc:`../dartpy/developer_guide/api_docs` for instructions on building C++ API documentation locally.
+See :doc:`../dartpy/developer_guide/api_docs` for instructions on building API documentation locally.
