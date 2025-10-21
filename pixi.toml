@@ -632,21 +632,32 @@ config = { cmd = """
 # Multi-config generator uses same build directory for all configurations
 config-debug = { depends-on = ["config"] }
 
+# C++ formatting - use multi-config generator path structure
+lint-cpp = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        --target format
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+check-lint-cpp = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        --target check-format
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-# Note: C++ formatting targets (format/check-format) don't work with Visual Studio generator
-# C++ formatting is checked on Linux/Mac platforms
-lint = { depends-on = ["lint-py"] }
+lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
 
 check-lint-py = { cmd = """
-    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-# Note: C++ formatting targets (format/check-format) don't work with Visual Studio generator
-# C++ formatting is checked on Linux/Mac platforms
-check-lint = { depends-on = ["check-lint-py"] }
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-py", "check-lint-yaml"] }
 
 build = { cmd = """
     cmake \
