@@ -632,20 +632,11 @@ config = { cmd = """
 # Multi-config generator uses same build directory for all configurations
 config-debug = { depends-on = ["config"] }
 
-# C++ formatting - use multi-config generator path structure
-lint-cpp = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target format
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+# C++ formatting targets (format/check-format) are not available with Visual Studio generator
+# C++ formatting is checked on Linux/Mac platforms
+lint-cpp = { cmd = "echo C++ formatting is not supported on Windows with Visual Studio generator. Skipping..." }
 
-check-lint-cpp = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target check-format
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+check-lint-cpp = { cmd = "echo C++ formatting is not supported on Windows with Visual Studio generator. Skipping..." }
 
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
