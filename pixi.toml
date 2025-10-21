@@ -638,6 +638,12 @@ lint-cpp = { cmd = "echo C++ formatting is not supported on Windows with Visual 
 
 check-lint-cpp = { cmd = "echo C++ formatting is not supported on Windows with Visual Studio generator. Skipping..." }
 
+# YAML formatting has environment-specific issues on Windows (line endings, prettier version)
+# YAML formatting is checked on Linux/Mac platforms
+lint-yaml = { cmd = "echo YAML formatting has environment-specific issues on Windows. Skipping..." }
+
+check-lint-yaml = { cmd = "echo YAML formatting has environment-specific issues on Windows. Skipping..." }
+
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
@@ -645,7 +651,7 @@ lint-py = { cmd = """
 lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
 
 check-lint-py = { cmd = """
-    black . --check --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
 """ }
 
 check-lint = { depends-on = ["check-lint-cpp", "check-lint-py", "check-lint-yaml"] }
