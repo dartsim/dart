@@ -7,76 +7,128 @@ dart_build_tests(
   SOURCES
     test_Aspect.cpp
     test_Building.cpp
+    test_CollisionGroups.cpp
     test_Common.cpp
     test_Concurrency.cpp
     test_Constraint.cpp
+    test_ConstraintSolver.cpp
+    test_ContactConstraint.cpp
+    test_Distance.cpp
     test_Frames.cpp
     test_Friction.cpp
+    test_GenericJoints.cpp
+    test_Inertia.cpp
     test_InverseKinematics.cpp
+    test_Lemke.cpp
+    test_LocalResourceRetriever.cpp
     test_NameManagement.cpp
+    test_Optimizer.cpp
+    test_Raycast.cpp
+    test_ScrewJoint.cpp
     test_Signal.cpp
+    test_Subscriptions.cpp
 )
 
-dart_add_test("integration" test_CollisionGroups)
-foreach(collision_engine
-  dart-collision-bullet
-  dart-collision-ode)
-  if(TARGET ${collision_engine})
-    target_link_libraries(test_CollisionGroups ${collision_engine})
-  endif()
-endforeach()
-dart_add_test("integration" test_ConstraintSolver)
-dart_add_test("integration" test_ContactConstraint)
-dart_add_test("integration" test_GenericJoints)
-dart_add_test("integration" test_Inertia)
-dart_add_test("integration" test_Lemke)
-dart_add_test("integration" test_LocalResourceRetriever)
-dart_add_test("integration" test_Optimizer)
-dart_add_test("integration" test_ScrewJoint)
-dart_add_test("integration" test_Subscriptions)
-
 if(TARGET dart-optimizer-ipopt)
-  target_link_libraries(test_Optimizer dart-optimizer-ipopt)
+  target_link_libraries(INTEGRATION_Optimizer PRIVATE dart-optimizer-ipopt)
 endif()
 
 if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(test_Optimizer dart-optimizer-nlopt)
+  target_link_libraries(INTEGRATION_Optimizer PRIVATE dart-optimizer-nlopt)
+endif()
+
+if(TARGET dart-collision-bullet)
+  target_link_libraries(INTEGRATION_CollisionGroups PRIVATE dart-collision-bullet)
+  target_link_libraries(INTEGRATION_Distance PRIVATE dart-collision-bullet)
+  target_link_libraries(INTEGRATION_Raycast PRIVATE dart-collision-bullet)
+endif()
+
+if(TARGET dart-collision-ode)
+  target_link_libraries(INTEGRATION_CollisionGroups PRIVATE dart-collision-ode)
+
+  # This test doesn't work with FCL because it converts simple shapes to meshes, which makes
+  # it difficult to come up with correct test expectations.
+  dart_build_tests(
+    TYPE integration
+    TARGET_PREFIX INTEGRATION
+    LINK_LIBRARIES dart dart-collision-ode
+    SOURCES
+      test_ForceDependentSlip.cpp
+  )
+endif()
+
+if(TARGET dart-optimizer-pagmo)
+  dart_build_tests(
+    TYPE integration
+    TARGET_PREFIX INTEGRATION
+    LINK_LIBRARIES dart dart-optimizer-pagmo
+    SOURCES
+      test_MultiObjectiveOptimization.cpp
+  )
 endif()
 
 if(TARGET dart-utils)
+  dart_build_tests(
+    TYPE integration
+    TARGET_PREFIX INTEGRATION
+    LINK_LIBRARIES dart dart-utils
+    SOURCES
+      test_Collision.cpp
+      test_CompositeResourceRetriever.cpp
+      test_DartResourceRetriever.cpp
+      test_Dynamics.cpp
+      test_FileInfoWorld.cpp
+      test_JointForceTorque.cpp
+      test_Joints.cpp
+      test_MetaSkeleton.cpp
+      test_MjcfParser.cpp
+      test_PackageResourceRetriever.cpp
+      test_SdfParser.cpp
+      test_SkelParser.cpp
+      test_Skeleton.cpp
+      test_SoftDynamics.cpp
+      test_World.cpp
+  )
 
-  dart_add_test("integration" test_CompositeResourceRetriever)
-  target_link_libraries(test_CompositeResourceRetriever dart-utils)
-
-  dart_add_test("integration" test_DartResourceRetriever)
-  target_link_libraries(test_DartResourceRetriever dart-utils)
-  
-  dart_add_test("integration" test_FileInfoWorld)
-  target_link_libraries(test_FileInfoWorld dart-utils)
-
-  dart_add_test("integration" test_PackageResourceRetriever)
-  target_link_libraries(test_PackageResourceRetriever dart-utils)
-
-  dart_add_test("integration" test_MjcfParser)
-  target_link_libraries(test_MjcfParser dart-utils)
-  
-  dart_add_test("integration" test_SdfParser)
-  target_link_libraries(test_SdfParser dart-utils)
-  
-  dart_add_test("integration" test_SkelParser)
-  target_link_libraries(test_SkelParser dart-utils)
-
-  if(NOT MSVC) 
-    dart_add_test("integration" test_VskParser)
-    target_link_libraries(test_VskParser dart-utils)
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(INTEGRATION_Collision PRIVATE dart-collision-bullet)
+    target_link_libraries(INTEGRATION_World PRIVATE dart-collision-bullet)
   endif()
 
+  if(TARGET dart-collision-ode)
+    target_link_libraries(INTEGRATION_Collision PRIVATE dart-collision-ode)
+  endif()
+
+  if(NOT MSVC)
+    dart_build_tests(
+      TYPE integration
+      TARGET_PREFIX INTEGRATION
+      LINK_LIBRARIES dart dart-utils
+      SOURCES
+        test_VskParser.cpp
+    )
+  endif()
+
+  if(TARGET dart-utils-urdf)
+    dart_build_tests(
+      TYPE integration
+      TARGET_PREFIX INTEGRATION
+      LINK_LIBRARIES dart dart-utils-urdf
+      SOURCES
+        test_ForwardKinematics.cpp
+    )
+  endif()
 endif()
 
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
-    dart_add_test("integration" test_DartLoader)
-    target_link_libraries(test_DartLoader dart-utils-urdf)
+    dart_build_tests(
+      TYPE integration
+      TARGET_PREFIX INTEGRATION
+      LINK_LIBRARIES dart dart-utils-urdf
+      SOURCES
+        test_DartLoader.cpp
+    )
   endif()
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
@@ -90,9 +142,14 @@ if(TARGET dart-utils-urdf)
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
   if(BUILD_SHARED_LIBS)
-    dart_add_test("integration" test_IkFast)
-    target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    dart_build_tests(
+      TYPE integration
+      TARGET_PREFIX INTEGRATION
+      LINK_LIBRARIES dart dart-utils-urdf
+      SOURCES
+        test_IkFast.cpp
+    )
+    add_dependencies(INTEGRATION_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
   endif()
 endif()
 
@@ -101,67 +158,3 @@ dart_format_add(
   SharedLibraryWamIkFast.hpp
   SharedLibraryWamIkFast.cpp
 )
-
-if(TARGET dart-optimizer-pagmo)
-  dart_add_test("integration" test_MultiObjectiveOptimization)
-  target_link_libraries(test_MultiObjectiveOptimization dart-optimizer-pagmo)
-endif()
-
-dart_add_test("integration" test_Distance)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(test_Distance dart-collision-bullet)
-endif()
-
-dart_add_test("integration" test_Raycast)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(test_Raycast dart-collision-bullet)
-endif()
-
-if(TARGET dart-collision-ode)
-  # This test doesn't work with FCL because it converts simple shapes to meshes, which makes
-  # it difficult to come up with correct test expectations.
-  dart_add_test("integration" test_ForceDependentSlip)
-  target_link_libraries(test_ForceDependentSlip dart-collision-ode)
-endif()
-
-if(TARGET dart-utils)
-
-  dart_add_test("integration" test_Collision)
-  target_link_libraries(test_Collision dart-utils)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_Collision dart-collision-bullet)
-  endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(test_Collision dart-collision-ode)
-  endif()
-
-  dart_add_test("integration" test_Dynamics)
-  target_link_libraries(test_Dynamics dart-utils)
-
-  dart_add_test("integration" test_Joints)
-  target_link_libraries(test_Joints dart-utils)
-
-  dart_add_test("integration" test_JointForceTorque)
-  target_link_libraries(test_JointForceTorque dart-utils)
-
-  dart_add_test("integration" test_Skeleton)
-  target_link_libraries(test_Skeleton dart-utils)
-
-  dart_add_test("integration" test_MetaSkeleton)
-  target_link_libraries(test_MetaSkeleton dart-utils)
-
-  dart_add_test("integration" test_SoftDynamics)
-  target_link_libraries(test_SoftDynamics dart-utils)
-
-  dart_add_test("integration" test_World)
-  target_link_libraries(test_World dart-utils)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(test_World dart-collision-bullet)
-  endif()
-
-  if(TARGET dart-utils-urdf)
-    dart_add_test("integration" test_ForwardKinematics)
-    target_link_libraries(test_ForwardKinematics dart-utils-urdf)
-  endif()
-
-endif()

@@ -1,3 +1,33 @@
+# Copyright (c) The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the following "BSD-style" License:
+#   Redistribution and use in source and binary forms, with or
+#   without modification, are permitted provided that the following
+#   conditions are met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+#   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+#   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+#   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+#   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+#   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+
 # Make sure pytest is installed
 execute_process(
   COMMAND ${Python3_EXECUTABLE} -c "import pytest; print(pytest.__version__)"
@@ -28,9 +58,16 @@ file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
+  # On Windows with multi-config generators, the .pyd file is in a config subdirectory
+  if(MSVC OR XCODE)
+    set(DARTPY_PYTHONPATH "${DART_DARTPY_BUILD_DIR}/$<CONFIG>")
+  else()
+    set(DARTPY_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")
+  endif()
+
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_DARTPY_BUILD_DIR}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DARTPY_PYTHONPATH} ${Python3_EXECUTABLE} -m pytest [sources]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DARTPY_PYTHONPATH}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy

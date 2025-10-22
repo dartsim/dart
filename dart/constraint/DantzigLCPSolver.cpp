@@ -142,13 +142,17 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
       }
     }
 
+#if DART_BUILD_MODE_DEBUG
     assert(isSymmetric(
         n, A, offset[i], offset[i] + constraint->getDimension() - 1));
+#endif
 
     constraint->unexcite();
   }
 
+#if DART_BUILD_MODE_DEBUG
   assert(isSymmetric(n, A));
+#endif
 
   // Print LCP formulation
   //  dtdbg << "Before solve:" << std::endl;

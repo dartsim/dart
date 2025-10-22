@@ -16,7 +16,11 @@ find_package(OpenSceneGraph 3.0.0 QUIET
 #   - https://github.com/dartsim/dart/issues/1439
 if(APPLE)
   if(OPENSCENEGRAPH_VERSION VERSION_LESS 3.7.0)
-    message(WARNING "OSG (${OPENSCENEGRAPH_VERSION} < 3.7.0) doesn't work on macOS 10.15 or greater. See: https://github.com/openscenegraph/OpenSceneGraph/issues/926")
+    message(
+      WARNING
+      "OSG (${OPENSCENEGRAPH_VERSION} < 3.7.0) doesn't work on macOS 10.15 or greater. "
+      "See: https://github.com/openscenegraph/OpenSceneGraph/issues/926"
+    )
   endif()
 endif()
 
@@ -42,8 +46,11 @@ else()
       set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
     endif()
   endif()
-  message(STATUS "${warning_msg} -- we will skip dart-gui-osg\n"
-          "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+  message(
+    STATUS
+    "${warning_msg} -- we will skip dart-gui-osg\n"
+    "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR"
+  )
   return()
 endif()
 
@@ -56,7 +63,7 @@ endif()
 # variables contain absolute paths of OpenSceneGraph that could be different in
 # where the system that DART is built and where the system that consumes DART.
 if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
-  add_library(osg::osg INTERFACE IMPORTED)
-  target_include_directories(osg::osg INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS})
-  target_link_libraries(osg::osg INTERFACE ${OPENSCENEGRAPH_LIBRARIES})
+    add_library(osg::osg INTERFACE IMPORTED)
+    target_include_directories(osg::osg INTERFACE "${OPENSCENEGRAPH_INCLUDE_DIRS}")
+    target_link_libraries(osg::osg INTERFACE "${OPENSCENEGRAPH_LIBRARIES}")
 endif()

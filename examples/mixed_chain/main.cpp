@@ -31,8 +31,11 @@
  */
 
 #include <dart/gui/osg/osg.hpp>
+
 #include <dart/utils/utils.hpp>
+
 #include <dart/dart.hpp>
+
 #include <iostream>
 
 #define FORCE_ON_RIGIDBODY 500.0
@@ -46,13 +49,11 @@ public:
     mForceOnRigidBody.setZero();
   }
 
-  bool handle(const osgGA::GUIEventAdapter& ea,
-              osgGA::GUIActionAdapter&) override
+  bool handle(
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
-    {
-      switch (ea.getKey())
-      {
+    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+      switch (ea.getKey()) {
         case 'q':
           mForceOnRigidBody[0] = -FORCE_ON_RIGIDBODY;
           mImpulseDuration = 100;
@@ -86,20 +87,17 @@ public:
 
   void applyForces()
   {
-    if (mImpulseDuration > 0)
-    {
+    if (mImpulseDuration > 0) {
       dart::dynamics::SkeletonPtr skeleton = mWorld->getSkeleton(1);
-      if (skeleton && skeleton->getNumSoftBodyNodes() > 3)
-      {
-        dart::dynamics::SoftBodyNode* softBodyNode = skeleton->getSoftBodyNode(3);
-        if (softBodyNode)
-        {
+      if (skeleton && skeleton->getNumSoftBodyNodes() > 3) {
+        dart::dynamics::SoftBodyNode* softBodyNode
+            = skeleton->getSoftBodyNode(3);
+        if (softBodyNode) {
           softBodyNode->addExtForce(mForceOnRigidBody);
         }
       }
       mImpulseDuration--;
-      if (mImpulseDuration <= 0)
-      {
+      if (mImpulseDuration <= 0) {
         mImpulseDuration = 0;
         mForceOnRigidBody.setZero();
       }
@@ -115,8 +113,9 @@ private:
 class MixedChainWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
-  MixedChainWorldNode(dart::simulation::WorldPtr world,
-                      std::shared_ptr<MixedChainEventHandler> eventHandler)
+  MixedChainWorldNode(
+      dart::simulation::WorldPtr world,
+      ::osg::ref_ptr<MixedChainEventHandler> eventHandler)
     : dart::gui::osg::RealTimeWorldNode(world), mEventHandler(eventHandler)
   {
   }
@@ -129,7 +128,7 @@ protected:
   }
 
 private:
-  std::shared_ptr<MixedChainEventHandler> mEventHandler;
+  ::osg::ref_ptr<MixedChainEventHandler> mEventHandler;
 };
 
 int main()
@@ -146,13 +145,14 @@ int main()
     initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
   myWorld->getSkeleton(1)->setPositions(initPose);
 
-  // Create event handler for keyboard input
-  std::shared_ptr<MixedChainEventHandler> eventHandler =
-      std::make_shared<MixedChainEventHandler>(myWorld);
+  // Create event handler for keyboard input (using osg::ref_ptr for OSG
+  // compatibility)
+  ::osg::ref_ptr<MixedChainEventHandler> eventHandler
+      = new MixedChainEventHandler(myWorld);
 
   // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<MixedChainWorldNode> node =
-      new MixedChainWorldNode(myWorld, eventHandler);
+  ::osg::ref_ptr<MixedChainWorldNode> node
+      = new MixedChainWorldNode(myWorld, eventHandler);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::Viewer viewer;

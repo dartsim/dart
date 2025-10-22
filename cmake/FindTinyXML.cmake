@@ -20,22 +20,28 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_TinyXML tinyxml QUIET)
 
 # Include directories
-find_path(TinyXML_INCLUDE_DIRS
+find_path(
+  TinyXML_INCLUDE_DIRS
   NAMES tinyxml.h
   HINTS ${PC_TinyXML_INCLUDEDIR}
   PATHS "${CMAKE_INSTALL_PREFIX}/include"
 )
 
 # Libraries
-find_library(TinyXML_LIBRARIES NAMES tinyxml HINTS ${PC_TinyXML_LIBDIR})
+find_library(
+  TinyXML_LIBRARIES
+  NAMES tinyxml
+  HINTS ${PC_TinyXML_LIBDIR}
+)
 
 # Version
 set(TinyXML_VERSION ${PC_TinyXML_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(TinyXML
-  FAIL_MESSAGE  DEFAULT_MSG
+find_package_handle_standard_args(
+  TinyXML
+  FAIL_MESSAGE DEFAULT_MSG
   REQUIRED_VARS TinyXML_INCLUDE_DIRS TinyXML_LIBRARIES
-  VERSION_VAR   TinyXML_VERSION
+  VERSION_VAR TinyXML_VERSION
 )

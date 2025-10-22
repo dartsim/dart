@@ -27,22 +27,28 @@ pkg_check_modules(PC_IPOPT ipopt QUIET)
 set(IPOPT_DEFINITIONS ${PC_IPOPT_CFLAGS_OTHER})
 
 # Include directories
-find_path(IPOPT_INCLUDE_DIRS
-    NAMES IpIpoptNLP.hpp
-    HINTS ${PC_IPOPT_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(
+  IPOPT_INCLUDE_DIRS
+  NAMES IpIpoptNLP.hpp
+  HINTS ${PC_IPOPT_INCLUDEDIR}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+)
 
 # Libraries
-find_library(IPOPT_LIBRARIES
-    NAMES ipopt ipopt-3
-    HINTS ${PC_IPOPT_LIBDIR})
+find_library(
+  IPOPT_LIBRARIES
+  NAMES ipopt ipopt-3
+  HINTS ${PC_IPOPT_LIBDIR}
+)
 
 # Version
 set(IPOPT_VERSION ${PC_IPOPT_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(IPOPT
-    FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS IPOPT_INCLUDE_DIRS IPOPT_LIBRARIES
-    VERSION_VAR   IPOPT_VERSION)
+find_package_handle_standard_args(
+  IPOPT
+  FAIL_MESSAGE DEFAULT_MSG
+  REQUIRED_VARS IPOPT_INCLUDE_DIRS IPOPT_LIBRARIES
+  VERSION_VAR IPOPT_VERSION
+)

@@ -345,8 +345,10 @@ void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
   mIsNextContiguous = true;
   mSize = sizeToSplit;
 
+#if DART_BUILD_MODE_DEBUG
   DART_ASSERT(isValid());
   DART_ASSERT(new_block->isValid());
+#endif
 }
 
 //==============================================================================
@@ -368,7 +370,9 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
 
   other->~MemoryBlockHeader(); // TODO(JS): Need this?
 
+#if DART_BUILD_MODE_DEBUG
   DART_ASSERT(isValid());
+#endif
 }
 
 //==============================================================================

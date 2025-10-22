@@ -32,15 +32,15 @@
 
 #include "SimulationEventHandler.hpp"
 
-#include <iostream>
-#include <iomanip>
-
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/Material>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>
+
+#include <iomanip>
+#include <iostream>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -49,8 +49,7 @@ using namespace dart::gui::osg;
 using namespace dart::math;
 
 SimulationEventHandler::SimulationEventHandler(
-    WorldPtr world,
-    dart::gui::osg::Viewer* viewer)
+    WorldPtr world, dart::gui::osg::Viewer* viewer)
   : mWorld(world),
     mViewer(viewer),
     mSelectedBody(nullptr),
@@ -76,8 +75,7 @@ SimulationEventHandler::SimulationEventHandler(
 }
 
 bool SimulationEventHandler::handle(
-    const osgGA::GUIEventAdapter& ea,
-    osgGA::GUIActionAdapter& aa)
+    const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 {
   if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN) {
     return false;
@@ -85,89 +83,89 @@ bool SimulationEventHandler::handle(
 
   switch (ea.getKey()) {
     // Simulation control
-    case ' ':  // Space bar - toggle simulation
+    case ' ': // Space bar - toggle simulation
       toggleSimulation();
       return true;
 
-    case 's':  // Step simulation
+    case 's': // Step simulation
     case 'S':
       stepSimulation();
       return true;
 
-    case 'r':  // Reset simulation
+    case 'r': // Reset simulation
     case 'R':
       resetSimulation();
       return true;
 
     // Body selection
-    case osgGA::GUIEventAdapter::KEY_Tab:  // Next body
+    case osgGA::GUIEventAdapter::KEY_Tab: // Next body
       selectNextBody();
       return true;
 
-    case osgGA::GUIEventAdapter::KEY_BackSpace:  // Previous body
+    case osgGA::GUIEventAdapter::KEY_BackSpace: // Previous body
       selectPreviousBody();
       return true;
 
     // Force application (world coordinates)
-    case osgGA::GUIEventAdapter::KEY_Up:  // +Y force
+    case osgGA::GUIEventAdapter::KEY_Up: // +Y force
       applyForceToSelectedBody(Eigen::Vector3d(0, mForceMagnitude, 0));
       return true;
 
-    case osgGA::GUIEventAdapter::KEY_Down:  // -Y force
+    case osgGA::GUIEventAdapter::KEY_Down: // -Y force
       applyForceToSelectedBody(Eigen::Vector3d(0, -mForceMagnitude, 0));
       return true;
 
-    case osgGA::GUIEventAdapter::KEY_Left:  // -X force
+    case osgGA::GUIEventAdapter::KEY_Left: // -X force
       applyForceToSelectedBody(Eigen::Vector3d(-mForceMagnitude, 0, 0));
       return true;
 
-    case osgGA::GUIEventAdapter::KEY_Right:  // +X force
+    case osgGA::GUIEventAdapter::KEY_Right: // +X force
       applyForceToSelectedBody(Eigen::Vector3d(mForceMagnitude, 0, 0));
       return true;
 
-    case 'u':  // +Z force (up)
+    case 'u': // +Z force (up)
     case 'U':
       applyForceToSelectedBody(Eigen::Vector3d(0, 0, mForceMagnitude));
       return true;
 
-    case 'd':  // -Z force (down)
+    case 'd': // -Z force (down)
     case 'D':
       applyForceToSelectedBody(Eigen::Vector3d(0, 0, -mForceMagnitude));
       return true;
 
     // Torque application (world coordinates)
-    case 'q':  // +X torque
+    case 'q': // +X torque
     case 'Q':
       applyTorqueToSelectedBody(Eigen::Vector3d(mTorqueMagnitude, 0, 0));
       return true;
 
-    case 'w':  // +Y torque
+    case 'w': // +Y torque
     case 'W':
       applyTorqueToSelectedBody(Eigen::Vector3d(0, mTorqueMagnitude, 0));
       return true;
 
-    case 'e':  // +Z torque
+    case 'e': // +Z torque
     case 'E':
       applyTorqueToSelectedBody(Eigen::Vector3d(0, 0, mTorqueMagnitude));
       return true;
 
-    case 'a':  // -X torque
+    case 'a': // -X torque
     case 'A':
       applyTorqueToSelectedBody(Eigen::Vector3d(-mTorqueMagnitude, 0, 0));
       return true;
 
-    case 'z':  // -Y torque
+    case 'z': // -Y torque
     case 'Z':
       applyTorqueToSelectedBody(Eigen::Vector3d(0, -mTorqueMagnitude, 0));
       return true;
 
-    case 'c':  // -Z torque
+    case 'c': // -Z torque
     case 'C':
       applyTorqueToSelectedBody(Eigen::Vector3d(0, 0, -mTorqueMagnitude));
       return true;
 
     // Force/torque magnitude adjustment
-    case '+':  // Increase magnitude
+    case '+': // Increase magnitude
     case '=':
       mForceMagnitude *= 1.5;
       mTorqueMagnitude *= 1.5;
@@ -175,7 +173,7 @@ bool SimulationEventHandler::handle(
                 << ", Torque magnitude: " << mTorqueMagnitude << std::endl;
       return true;
 
-    case '-':  // Decrease magnitude
+    case '-': // Decrease magnitude
     case '_':
       mForceMagnitude *= 0.67;
       mTorqueMagnitude *= 0.67;
@@ -184,14 +182,14 @@ bool SimulationEventHandler::handle(
       return true;
 
     // Time step adjustment
-    case '>':  // Increase time step
+    case '>': // Increase time step
     case '.':
       mTimeStep *= 1.5;
       mWorld->setTimeStep(mTimeStep);
       std::cout << "Time step: " << mTimeStep << " seconds" << std::endl;
       return true;
 
-    case '<':  // Decrease time step
+    case '<': // Decrease time step
     case ',':
       mTimeStep *= 0.67;
       mWorld->setTimeStep(mTimeStep);
@@ -199,22 +197,23 @@ bool SimulationEventHandler::handle(
       return true;
 
     // Visualization
-    case 'v':  // Toggle force arrows
+    case 'v': // Toggle force arrows
     case 'V':
       mShowForceArrows = !mShowForceArrows;
       if (!mShowForceArrows) {
         clearForceArrows();
       }
-      std::cout << "Force arrows: " << (mShowForceArrows ? "ON" : "OFF") << std::endl;
+      std::cout << "Force arrows: " << (mShowForceArrows ? "ON" : "OFF")
+                << std::endl;
       return true;
 
     // Information
-    case 'i':  // Print simulation state
+    case 'i': // Print simulation state
     case 'I':
       printSimulationState();
       return true;
 
-    case 'h':  // Print help
+    case 'h': // Print help
     case 'H':
     case '?':
       printInstructions();
@@ -234,7 +233,8 @@ void SimulationEventHandler::update()
   }
 }
 
-void SimulationEventHandler::applyForceToSelectedBody(const Eigen::Vector3d& force)
+void SimulationEventHandler::applyForceToSelectedBody(
+    const Eigen::Vector3d& force)
 {
   if (!mSelectedBody) {
     std::cout << "No body selected!" << std::endl;
@@ -251,7 +251,8 @@ void SimulationEventHandler::applyForceToSelectedBody(const Eigen::Vector3d& for
             << "] to body: " << mSelectedBody->getName() << std::endl;
 }
 
-void SimulationEventHandler::applyTorqueToSelectedBody(const Eigen::Vector3d& torque)
+void SimulationEventHandler::applyTorqueToSelectedBody(
+    const Eigen::Vector3d& torque)
 {
   if (!mSelectedBody) {
     std::cout << "No body selected!" << std::endl;
@@ -292,8 +293,7 @@ void SimulationEventHandler::updateForceArrows()
 }
 
 void SimulationEventHandler::addForceArrow(
-    BodyNodePtr bodyNode,
-    const Eigen::Vector3d& force)
+    BodyNodePtr bodyNode, const Eigen::Vector3d& force)
 {
   if (!mViewer || force.norm() < 1e-6) {
     return;
@@ -303,7 +303,7 @@ void SimulationEventHandler::addForceArrow(
   Eigen::Vector3d bodyPos = bodyNode->getCOM();
 
   // Normalize force for visualization (scale to reasonable size)
-  Eigen::Vector3d normalizedForce = force.normalized() * 0.5;  // 0.5 meter arrow
+  Eigen::Vector3d normalizedForce = force.normalized() * 0.5; // 0.5 meter arrow
   Eigen::Vector3d arrowEnd = bodyPos + normalizedForce;
 
   // Create arrow geometry
@@ -318,9 +318,11 @@ void SimulationEventHandler::addForceArrow(
   // Create simple arrowhead
   Eigen::Vector3d perpendicular1, perpendicular2;
   if (std::abs(normalizedForce.z()) < 0.9) {
-    perpendicular1 = normalizedForce.cross(Eigen::Vector3d::UnitZ()).normalized() * 0.1;
+    perpendicular1
+        = normalizedForce.cross(Eigen::Vector3d::UnitZ()).normalized() * 0.1;
   } else {
-    perpendicular1 = normalizedForce.cross(Eigen::Vector3d::UnitX()).normalized() * 0.1;
+    perpendicular1
+        = normalizedForce.cross(Eigen::Vector3d::UnitX()).normalized() * 0.1;
   }
   perpendicular2 = normalizedForce.cross(perpendicular1).normalized() * 0.1;
 
@@ -343,16 +345,18 @@ void SimulationEventHandler::addForceArrow(
   // Create colors (red for forces)
   ::osg::ref_ptr<::osg::Vec4Array> colors = new ::osg::Vec4Array;
   for (size_t i = 0; i < vertices->size(); ++i) {
-    colors->push_back(::osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));  // Red
+    colors->push_back(::osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
   }
   geometry->setColorArray(colors, ::osg::Array::BIND_PER_VERTEX);
 
   // Create line primitives
-  geometry->addPrimitiveSet(new ::osg::DrawArrays(::osg::PrimitiveSet::LINES, 0, vertices->size()));
+  geometry->addPrimitiveSet(
+      new ::osg::DrawArrays(::osg::PrimitiveSet::LINES, 0, vertices->size()));
 
   // Set line width
   ::osg::ref_ptr<::osg::LineWidth> lineWidth = new ::osg::LineWidth(3.0f);
-  geometry->getOrCreateStateSet()->setAttributeAndModes(lineWidth, ::osg::StateAttribute::ON);
+  geometry->getOrCreateStateSet()->setAttributeAndModes(
+      lineWidth, ::osg::StateAttribute::ON);
 
   geode->addDrawable(geometry);
 
@@ -362,25 +366,34 @@ void SimulationEventHandler::addForceArrow(
 
   mForceArrowNodes.push_back(arrowGroup);
 
-  // Add to scene (this is a simplified approach; in practice you'd want to add to appropriate scene nodes)
-  if (mViewer->getScene()) {
-    mViewer->getScene()->addChild(arrowGroup);
+  // Add to scene (this is a simplified approach; in practice you'd want to add
+  // to appropriate scene nodes)
+  if (mViewer->getSceneData()) {
+    ::osg::Group* root = dynamic_cast<::osg::Group*>(mViewer->getSceneData());
+    if (root) {
+      root->addChild(arrowGroup);
+    }
   }
 }
 
 void SimulationEventHandler::clearForceArrows()
 {
-  if (!mViewer || !mViewer->getScene()) {
+  if (!mViewer || !mViewer->getSceneData()) {
+    return;
+  }
+
+  ::osg::Group* root = dynamic_cast<::osg::Group*>(mViewer->getSceneData());
+  if (!root) {
     return;
   }
 
   // Remove all arrow nodes from scene
   for (auto& arrowNode : mForceArrowNodes) {
-    mViewer->getScene()->removeChild(arrowNode);
+    root->removeChild(arrowNode);
   }
 
   for (auto& arrowNode : mTorqueArrowNodes) {
-    mViewer->getScene()->removeChild(arrowNode);
+    root->removeChild(arrowNode);
   }
 
   mForceArrowNodes.clear();
@@ -396,8 +409,8 @@ void SimulationEventHandler::selectNextBody()
   mSelectedBodyIndex = (mSelectedBodyIndex + 1) % mRigidBodies.size();
   mSelectedBody = mRigidBodies[mSelectedBodyIndex];
 
-  std::cout << "Selected body: " << mSelectedBody->getName()
-            << " (" << (mSelectedBodyIndex + 1) << "/" << mRigidBodies.size() << ")"
+  std::cout << "Selected body: " << mSelectedBody->getName() << " ("
+            << (mSelectedBodyIndex + 1) << "/" << mRigidBodies.size() << ")"
             << std::endl;
 }
 
@@ -415,8 +428,8 @@ void SimulationEventHandler::selectPreviousBody()
 
   mSelectedBody = mRigidBodies[mSelectedBodyIndex];
 
-  std::cout << "Selected body: " << mSelectedBody->getName()
-            << " (" << (mSelectedBodyIndex + 1) << "/" << mRigidBodies.size() << ")"
+  std::cout << "Selected body: " << mSelectedBody->getName() << " ("
+            << (mSelectedBodyIndex + 1) << "/" << mRigidBodies.size() << ")"
             << std::endl;
 }
 
@@ -464,7 +477,8 @@ void SimulationEventHandler::toggleSimulation()
     mViewer->allowSimulation(mSimulationRunning);
   }
 
-  std::cout << "Simulation " << (mSimulationRunning ? "STARTED" : "PAUSED") << std::endl;
+  std::cout << "Simulation " << (mSimulationRunning ? "STARTED" : "PAUSED")
+            << std::endl;
 }
 
 void SimulationEventHandler::printSimulationState()
@@ -480,7 +494,8 @@ void SimulationEventHandler::printSimulationState()
   std::cout << "Running: " << (mSimulationRunning ? "YES" : "NO") << std::endl;
   std::cout << "Force magnitude: " << mForceMagnitude << " N" << std::endl;
   std::cout << "Torque magnitude: " << mTorqueMagnitude << " Nm" << std::endl;
-  std::cout << "Show arrows: " << (mShowForceArrows ? "YES" : "NO") << std::endl;
+  std::cout << "Show arrows: " << (mShowForceArrows ? "YES" : "NO")
+            << std::endl;
 
   if (mSelectedBody) {
     std::cout << "Selected body: " << mSelectedBody->getName() << std::endl;
@@ -543,12 +558,11 @@ std::vector<BodyNodePtr> SimulationEventHandler::getRigidBodies()
 
       // Consider bodies with FreeJoint or similar as rigid bodies
       // Also include bodies that are not fixed to the world
-      if (joint &&
-          (joint->getType() == "FreeJoint" ||
-           joint->getType() == "BallJoint" ||
-           joint->getType() == "EulerJoint" ||
-           joint->getType() == "TranslationalJoint" ||
-           joint->getNumDofs() > 0)) {
+      if (joint
+          && (joint->getType() == "FreeJoint" || joint->getType() == "BallJoint"
+              || joint->getType() == "EulerJoint"
+              || joint->getType() == "TranslationalJoint"
+              || joint->getNumDofs() > 0)) {
         rigidBodies.push_back(body);
       }
     }

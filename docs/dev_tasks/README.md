@@ -5,7 +5,6 @@ Documentation for development tasks in DART.
 ## Structure
 
 - **active/** - Currently active projects with task trackers
-- **completed/** - Archived completed tasks (optional)
 
 ## Guidelines
 
@@ -13,7 +12,7 @@ Documentation for development tasks in DART.
 - Keep docs updated with current progress and status
 - Focus on latest state and lessons learned, not full history
 - Remove outdated details as tasks evolve
-- Archive completed tasks when no longer actively referenced
+- When tasks are completed: Consider updating docs in `docs/onboarding/` instead of archiving here. Keep onboarding docs accumulating and up-to-date with the latest best practices and learnings
 
 **Before committing:**
 - Run `validate_changes` to check for errors

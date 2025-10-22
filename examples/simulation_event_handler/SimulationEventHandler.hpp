@@ -33,8 +33,10 @@
 #ifndef EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
 #define EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
 
-#include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+
+#include <dart/dart.hpp>
+
 #include <osgGA/GUIEventHandler>
 
 /// \brief Comprehensive event handler for rigid body physics simulation
@@ -58,28 +60,47 @@ public:
   virtual ~SimulationEventHandler() = default;
 
   /// \brief Handle GUI events (keyboard input, etc.)
-  bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override;
+  bool handle(
+      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override;
 
   /// \brief Update simulation state (called each frame)
   void update();
 
   /// \brief Set the time step for the simulation
-  void setTimeStep(double timeStep) { mTimeStep = timeStep; }
+  void setTimeStep(double timeStep)
+  {
+    mTimeStep = timeStep;
+  }
 
   /// \brief Get the current time step
-  double getTimeStep() const { return mTimeStep; }
+  double getTimeStep() const
+  {
+    return mTimeStep;
+  }
 
   /// \brief Enable/disable force visualization arrows
-  void setShowForceArrows(bool show) { mShowForceArrows = show; }
+  void setShowForceArrows(bool show)
+  {
+    mShowForceArrows = show;
+  }
 
   /// \brief Check if force arrows are shown
-  bool getShowForceArrows() const { return mShowForceArrows; }
+  bool getShowForceArrows() const
+  {
+    return mShowForceArrows;
+  }
 
   /// \brief Set the magnitude of applied forces
-  void setForceMagnitude(double magnitude) { mForceMagnitude = magnitude; }
+  void setForceMagnitude(double magnitude)
+  {
+    mForceMagnitude = magnitude;
+  }
 
   /// \brief Get the force magnitude
-  double getForceMagnitude() const { return mForceMagnitude; }
+  double getForceMagnitude() const
+  {
+    return mForceMagnitude;
+  }
 
 protected:
   /// \brief Apply force to the selected rigid body
@@ -96,7 +117,8 @@ protected:
   /// \brief Create and add force arrow visualization
   /// \param bodyNode The body node to attach arrow to
   /// \param force The force vector to visualize
-  void addForceArrow(dart::dynamics::BodyNodePtr bodyNode, const Eigen::Vector3d& force);
+  void addForceArrow(
+      dart::dynamics::BodyNodePtr bodyNode, const Eigen::Vector3d& force);
 
   /// \brief Clear all force arrows
   void clearForceArrows();
@@ -157,10 +179,12 @@ private:
   bool mShowForceArrows;
 
   /// Current applied forces for visualization
-  std::vector<std::pair<dart::dynamics::BodyNodePtr, Eigen::Vector3d>> mAppliedForces;
+  std::vector<std::pair<dart::dynamics::BodyNodePtr, Eigen::Vector3d>>
+      mAppliedForces;
 
   /// Current applied torques for visualization
-  std::vector<std::pair<dart::dynamics::BodyNodePtr, Eigen::Vector3d>> mAppliedTorques;
+  std::vector<std::pair<dart::dynamics::BodyNodePtr, Eigen::Vector3d>>
+      mAppliedTorques;
 
   /// Arrow visualization nodes
   std::vector<::osg::ref_ptr<::osg::Group>> mForceArrowNodes;

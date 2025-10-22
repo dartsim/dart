@@ -29,6 +29,7 @@ dart_generate_component_headers(
   TARGET_DIR "dart/collision/ode/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs}
 )
 
 # Install
@@ -37,5 +38,13 @@ install(
   DESTINATION include/dart/collision/ode
   COMPONENT headers
 )
+
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/collision/ode/detail
+  COMPONENT headers
+)
+
+dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/ode)
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

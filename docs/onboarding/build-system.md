@@ -3,7 +3,7 @@
 **Project:** DART (Dynamic Animation and Robotics Toolkit)
 **Version:** 7.0.0
 **Analysis Date:** 2025-10-19
-**Root Directory:** `/home/jeongseok/dev/dartsim/dart_gui`
+**Root Directory:** `<project_root>`
 
 ---
 
