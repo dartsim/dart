@@ -18,15 +18,16 @@ Install DART using your preferred package manager:
 
 **Python**
 ```shell
+uv add dartpy                             # uv (preferred)
 pip install dartpy                        # PyPI
+pixi add dartpy                           # or Pixi (preferred)
 conda install -c conda-forge dartpy       # or Conda
-pixi add dartpy                           # or Pixi
 ```
 
 **C++**
 ```shell
 # Cross-platform (recommended)
-conda install -c conda-forge dartsim-cpp  # or: pixi add dartsim-cpp
+pixi add dartsim-cpp  # or: conda install -c conda-forge dartsim-cpp
 
 # Platform-specific
 sudo apt install libdart-all-dev          # Ubuntu
