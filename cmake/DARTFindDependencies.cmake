@@ -252,6 +252,9 @@ if(DART_BUILD_GUI_OSG)
       target_compile_options(${imgui_target_name} PRIVATE -w)
     endif()
 
+    # Set position independent code for linking into shared libraries (e.g., Python extensions)
+    set_target_properties(${imgui_target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
