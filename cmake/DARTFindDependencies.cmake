@@ -167,10 +167,10 @@ if(DART_BUILD_GUI_OSG)
     include(FetchContent)
 
     # ImGui version constraint
-    # Current: v1.92.4 (released 2025-10-09)
+    # Current: v1.84.2 (released 2021-08-23)
     # Minimum required: v1.80 for stable table API
     set(IMGUI_MIN_VERSION "1.80")
-    set(IMGUI_TARGET_VERSION "v1.92.4")
+    set(IMGUI_TARGET_VERSION "v1.84.2")
 
     message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
