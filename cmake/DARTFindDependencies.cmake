@@ -220,11 +220,11 @@ if(DART_BUILD_GUI_OSG)
     )
 
     # Create the ImGui library target
-    # Use imgui::imgui as the target name to match system-installed imgui convention
-    set(imgui_target_name imgui::imgui)
-    set(imgui_component_name imgui)
-    # Create actual target with unique name to avoid conflicts with example executables
+    # Use a unique name to avoid conflicts with example executables
+    # Note: We use dart-imgui-lib as the real target name (not an alias)
+    # System ImGui provides imgui::imgui, but we can't use that name for export
     set(imgui_library_name dart-imgui-lib)
+    set(imgui_component_name imgui)
 
     dart_add_library(${imgui_library_name}
       ${IMGUI_CORE_SOURCES}
@@ -262,10 +262,10 @@ if(DART_BUILD_GUI_OSG)
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
-    # Create an ALIAS target to match the imgui::imgui convention used by system packages
-    add_library(${imgui_target_name} ALIAS ${imgui_library_name})
-
     # Component registration
+    # Note: We use dart-imgui-lib as the real target name (not imgui::imgui with ALIAS)
+    # because ALIAS targets cannot be exported by CMake install(EXPORT) commands.
+    # dart-gui-osg links directly to dart-imgui-lib when using fetched ImGui.
     add_component(${PROJECT_NAME} ${imgui_component_name})
     add_component_targets(${PROJECT_NAME} ${imgui_component_name} ${imgui_library_name})
 

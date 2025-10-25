@@ -24,7 +24,7 @@ if(DART_USE_SYSTEM_IMGUI)
   list(APPEND link_libraries imgui::imgui)
 else()
   list(APPEND component_dependencies imgui)
-  list(APPEND link_libraries imgui::imgui)
+  list(APPEND link_libraries dart-imgui-lib)
 endif()
 
 # Search all header and source files
