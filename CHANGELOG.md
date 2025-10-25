@@ -5,13 +5,19 @@
 ### [DART 7.0.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
 
 * Breaking Changes
-  * TBD
+  * Increased required C++ standard from C++17 to C++20
+    * See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+
+* Minimum Compiler Requirements
+  * Linux: GCC 11.0+
+  * macOS: Clang 12.0+
+  * Windows: MSVC 19.40+ (Visual Studio 2022)
 
 * Tested Platforms
-  * TBD
+  * TBD (will be updated upon release)
 
 * Build
-  * TBD
+  * Minimum C++ standard: C++20 (previously C++17)
 
 * Core
   * TBD

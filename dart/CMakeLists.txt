@@ -161,7 +161,7 @@ if(TARGET octomap)
 endif()
 
 # C++ standard settings
-target_compile_features(dart PUBLIC cxx_std_17)
+target_compile_features(dart PUBLIC cxx_std_20)
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
