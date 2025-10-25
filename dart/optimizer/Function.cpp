@@ -129,7 +129,7 @@ void ModularFunction::setCostFunction(CostFunction _cost)
 //==============================================================================
 void ModularFunction::clearCostFunction(bool _printWarning)
 {
-  mCostFunction = [=](const Eigen::VectorXd&) {
+  mCostFunction = [this, _printWarning](const Eigen::VectorXd&) {
     if (_printWarning) {
       dterr
           << "A cost function has not yet been assigned to the ModularFunction "

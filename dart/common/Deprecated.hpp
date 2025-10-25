@@ -90,4 +90,26 @@
 
 #endif
 
+// Macros to suppress C++20 preprocessor warnings from third-party headers.
+//
+// Some third-party libraries (e.g., octomap, pagmo) use headers deprecated
+// in C++20 such as <ciso646>. Use these macros to suppress preprocessor
+// warnings only around third-party includes.
+//
+// Example usage:
+//
+// DART_SUPPRESS_CPP_WARNING_BEGIN
+// #include <third_party/header.hpp>
+// DART_SUPPRESS_CPP_WARNING_END
+//
+#if defined(__GNUC__) || defined(__clang__)
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN \
+    _Pragma("GCC diagnostic push")        \
+    _Pragma("GCC diagnostic ignored \"-Wcpp\"")
+  #define DART_SUPPRESS_CPP_WARNING_END _Pragma("GCC diagnostic pop")
+#else
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN
+  #define DART_SUPPRESS_CPP_WARNING_END
+#endif
+
 #endif // DART_COMMON_DEPRECATED_HPP_

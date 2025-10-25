@@ -36,6 +36,7 @@
 #include <dart/common/Logging.hpp>
 
 #if DART_HAVE_spdlog
+  #include <fmt/core.h>
   #include <spdlog/spdlog.h>
 #else
   #include <iostream>
@@ -80,7 +81,7 @@ template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::trace(format_str, std::forward<Args>(args)...);
+  spdlog::trace(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
@@ -92,7 +93,7 @@ template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::debug(format_str, std::forward<Args>(args)...);
+  spdlog::debug(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
@@ -104,7 +105,7 @@ template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::info(format_str, std::forward<Args>(args)...);
+  spdlog::info(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
@@ -116,7 +117,7 @@ template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::warn(format_str, std::forward<Args>(args)...);
+  spdlog::warn(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
@@ -128,7 +129,7 @@ template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::error(format_str, std::forward<Args>(args)...);
+  spdlog::error(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
@@ -140,7 +141,7 @@ template <typename S, typename... Args>
 void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::critical(format_str, std::forward<Args>(args)...);
+  spdlog::critical(fmt::runtime(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);

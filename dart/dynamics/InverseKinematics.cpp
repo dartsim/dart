@@ -909,9 +909,9 @@ void InverseKinematics::Analytical::UniqueProperties::
 {
   // This function prefers the configuration whose highest joint velocity is
   // smaller than the highest joint velocity of the other configuration.
-  mQualityComparator = [=](const Eigen::VectorXd& better,
-                           const Eigen::VectorXd& worse,
-                           const InverseKinematics* ik) {
+  mQualityComparator = [](const Eigen::VectorXd& better,
+                          const Eigen::VectorXd& worse,
+                          const InverseKinematics* ik) {
     const std::vector<std::size_t>& dofs = ik->getAnalytical()->getDofs();
     double biggestJump = 0.0;
     bool isBetter = true;
@@ -1010,7 +1010,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
       mOutOfReachCache.push_back(s);
   }
 
-  auto comparator = [=](const Solution& s1, const Solution& s2) {
+  auto comparator = [this](const Solution& s1, const Solution& s2) {
     return mAnalyticalP.mQualityComparator(s1.mConfig, s2.mConfig, mIK);
   };
 
@@ -1778,7 +1778,7 @@ void InverseKinematics::resetTargetConnection()
 {
   mTargetConnection.disconnect();
   mTargetConnection = mTarget->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+      [this](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
@@ -1787,7 +1787,7 @@ void InverseKinematics::resetNodeConnection()
 {
   mNodeConnection.disconnect();
   mNodeConnection = mNode->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+      [this](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
