@@ -120,6 +120,8 @@ skip = [
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
+before-test = "ldconfig"
+repair-wheel-command = "auditwheel repair --lib-sdir /usr/local/lib --lib-sdir /usr/local/lib64 -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"] # TODO: Add universal2 and arm64
