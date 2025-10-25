@@ -107,33 +107,21 @@ def run_command(
     print(f"  Command: {cmd}")
 
     try:
-        if stream_output:
-            # Stream output in real-time for better progress visibility
-            result = subprocess.run(cmd, shell=True, check=False)
-            if result.returncode == 0:
-                print_success(f"{description} - PASSED")
-                return True, ""
-            else:
-                print_error(f"{description} - FAILED")
-                print(f"  Return code: {result.returncode}")
-                return False, ""
-        else:
-            # Capture output (for cases where we need to parse it)
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, check=False
-            )
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, check=False
+        )
 
-            if result.returncode == 0:
-                print_success(f"{description} - PASSED")
-                return True, result.stdout
-            else:
-                print_error(f"{description} - FAILED")
-                print(f"  Return code: {result.returncode}")
-                if result.stderr:
-                    print(f"  Error output:\n{result.stderr}")
-                if result.stdout:
-                    print(f"  Standard output:\n{result.stdout}")
-                return False, result.stderr + "\n" + result.stdout
+        if result.returncode == 0:
+            print_success(f"{description} - PASSED")
+            return True, result.stdout
+        else:
+            print_error(f"{description} - FAILED")
+            print(f"  Return code: {result.returncode}")
+            if result.stderr:
+                print(f"  Error output:\n{result.stderr}")
+            if result.stdout:
+                print(f"  Standard output:\n{result.stdout}")
+            return False, result.stderr + "\n" + result.stdout
     except Exception as e:
         print_error(f"{description} - EXCEPTION: {e}")
         return False, str(e)
@@ -155,12 +143,12 @@ def run_lint_tests() -> bool:
 
     success = True
 
-    # Auto-fix C++ formatting
-    result, _ = run_command("pixi run lint-cpp", "C++ auto-format")
+    # Check C++ formatting
+    result, _ = run_command("pixi run check-lint-cpp", "C++ format check")
     success = success and result
 
-    # Auto-fix Python formatting
-    result, _ = run_command("pixi run lint-py", "Python auto-format")
+    # Check Python formatting
+    result, _ = run_command("pixi run check-lint-py", "Python format check")
     success = success and result
 
     return success
@@ -226,7 +214,10 @@ def generate_report(results: dict):
 
     print(f"Total Tests: {total_tests}")
     print(f"Passed: {Colors.OKGREEN}{passed_tests}{Colors.ENDC}")
-    print(f"Failed: {Colors.FAIL}{failed_tests}{Colors.ENDC}")
+
+    # Use green for 0 failures, red otherwise
+    failed_color = Colors.OKGREEN if failed_tests == 0 else Colors.FAIL
+    print(f"Failed: {failed_color}{failed_tests}{Colors.ENDC}")
     print()
 
     for test_name, passed in results.items():

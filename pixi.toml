@@ -146,6 +146,18 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+build-math-tests = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target UNIT_math_Convhull \
+        --target UNIT_math_Geometry \
+        --target UNIT_math_Icosphere \
+        --target UNIT_math_Math \
+        --target UNIT_math_Random \
+        --target UNIT_math_TriMesh
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
 build-py-dev = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -195,6 +207,13 @@ test = { cmd = """
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
+test-math = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        -R "^UNIT_math_"
+""", depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-py = { cmd = """
     cmake \
@@ -315,6 +334,14 @@ bm-kinematics = { cmd = """
 """, depends-on = [
     "config",
 ], env = { BUILD_TYPE = "Release" } }
+
+bm-convhull = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target BM_UNIT_convhull \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_UNIT_convhull
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped = { cmd = """
     cmake \
