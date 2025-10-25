@@ -37,43 +37,13 @@
 
 #include <dart/math/Constants.hpp>
 
-#include <assimp/scene.h>
-
 #include <cmath>
 
 namespace dart {
 namespace collision {
 
-template <class BV>
-::fcl::BVHModel<BV>* createMesh(
-    float _scaleX,
-    float _scaleY,
-    float _scaleZ,
-    const aiScene* _mesh,
-    const dart::collision::fcl::Transform3& _transform)
-{
-  assert(_mesh);
-  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
-  model->beginModel();
-
-  for (unsigned int i = 0; i < _mesh->mNumMeshes; i++) {
-    for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      dart::collision::fcl::Vector3 vertices[3];
-      for (unsigned int k = 0; k < 3; k++) {
-        const aiVector3D& vertex
-            = _mesh->mMeshes[i]
-                  ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = dart::collision::fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
-        vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
-      }
-      model->addTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-  }
-
-  model->endModel();
-  return model;
-}
+// Deprecated aiScene-based createMesh removed - use TriMesh-based alternatives
+// in FCLCollisionDetector instead
 
 template <class BV>
 ::fcl::BVHModel<BV>* createEllipsoid(

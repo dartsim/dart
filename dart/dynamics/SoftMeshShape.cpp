@@ -40,7 +40,9 @@ namespace dart {
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
-  : Shape(SOFT_MESH), mSoftBodyNode(_softBodyNode), mAssimpMesh(nullptr)
+  : Shape(SOFT_MESH),
+    mSoftBodyNode(_softBodyNode),
+    mTriMesh(std::make_shared<math::TriMesh<double>>())
 {
   assert(_softBodyNode != nullptr);
   // Build mesh here using soft body node
@@ -68,9 +70,45 @@ const std::string& SoftMeshShape::getStaticType()
 }
 
 //==============================================================================
+std::shared_ptr<math::TriMesh<double>> SoftMeshShape::getTriMesh() const
+{
+  return mTriMesh;
+}
+
+//==============================================================================
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
-  return mAssimpMesh.get();
+  // Convert TriMesh to aiMesh for backward compatibility
+  // WARNING: This is expensive and creates a temporary mesh
+  dtwarn
+      << "[SoftMeshShape::getAssimpMesh] Deprecated method called. "
+      << "Use getTriMesh() instead. This performs an expensive conversion.\n";
+
+  auto* aiMesh = new ::aiMesh();
+  const auto& vertices = mTriMesh->getVertices();
+  const auto& triangles = mTriMesh->getTriangles();
+
+  // Set vertices
+  aiMesh->mNumVertices = vertices.size();
+  aiMesh->mVertices = new aiVector3D[vertices.size()];
+  for (size_t i = 0; i < vertices.size(); ++i) {
+    aiMesh->mVertices[i]
+        = aiVector3D(vertices[i][0], vertices[i][1], vertices[i][2]);
+  }
+
+  // Set faces
+  aiMesh->mNumFaces = triangles.size();
+  aiMesh->mFaces = new aiFace[triangles.size()];
+  for (size_t i = 0; i < triangles.size(); ++i) {
+    aiFace* face = &aiMesh->mFaces[i];
+    face->mNumIndices = 3;
+    face->mIndices = new unsigned int[3];
+    face->mIndices[0] = triangles[i][0];
+    face->mIndices[1] = triangles[i][1];
+    face->mIndices[2] = triangles[i][2];
+  }
+
+  return aiMesh;
 }
 
 //==============================================================================
@@ -115,46 +153,37 @@ void SoftMeshShape::_buildMesh()
   int nVertices = mSoftBodyNode->getNumPointMasses();
   int nFaces = mSoftBodyNode->getNumFaces();
 
-  // Create new aiMesh
-  mAssimpMesh = std::make_unique<aiMesh>();
+  // Reserve space for vertices and triangles
+  mTriMesh->reserveVertices(nVertices);
+  mTriMesh->reserveTriangles(nFaces);
 
-  // Set vertices and normals
-  mAssimpMesh->mNumVertices = nVertices;
-  mAssimpMesh->mVertices = new aiVector3D[nVertices];
-  mAssimpMesh->mNormals = new aiVector3D[nVertices];
-  aiVector3D itAIVector3d;
+  // Add vertices (using resting positions)
   for (int i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
-    itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
-    mAssimpMesh->mVertices[i] = itAIVector3d;
-    mAssimpMesh->mNormals[i] = itAIVector3d;
+    mTriMesh->addVertex(vertex);
   }
 
-  // Set faces
-  mAssimpMesh->mNumFaces = nFaces;
-  mAssimpMesh->mFaces = new aiFace[nFaces];
+  // Add faces (triangles)
   for (int i = 0; i < nFaces; ++i) {
     Eigen::Vector3i itFace = mSoftBodyNode->getFace(i);
-    aiFace* itAIFace = &mAssimpMesh->mFaces[i];
-    itAIFace->mNumIndices = 3;
-    itAIFace->mIndices = new unsigned int[3];
-    itAIFace->mIndices[0] = itFace[0];
-    itAIFace->mIndices[1] = itFace[1];
-    itAIFace->mIndices[2] = itFace[2];
+    mTriMesh->addTriangle(
+        math::TriMesh<double>::Triangle(itFace[0], itFace[1], itFace[2]));
   }
 }
 
 void SoftMeshShape::update()
 {
+  // Update vertex positions from soft body node
   std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
 
-  aiVector3D itAIVector3d;
+  // Get non-const access to vertices for in-place update
+  auto& vertices
+      = const_cast<std::vector<Eigen::Vector3d>&>(mTriMesh->getVertices());
+
   for (std::size_t i = 0; i < nVertices; ++i) {
     PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
-    const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
-    itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
-    mAssimpMesh->mVertices[i] = itAIVector3d;
+    vertices[i] = itPointMass->getLocalPosition();
   }
 }
 

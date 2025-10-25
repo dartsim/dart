@@ -33,10 +33,9 @@
 #include "dart/utils/mjcf/detail/Mesh.hpp"
 
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
-
-#include <assimp/scene.h>
 
 namespace dart {
 namespace utils {
@@ -114,13 +113,14 @@ Errors Mesh::postprocess(const Compiler& /*compiler*/)
 //==============================================================================
 dynamics::MeshShapePtr Mesh::createMeshShape() const
 {
-  const aiScene* model = dynamics::MeshShape::loadMesh(mMeshUri, mRetriever);
-  if (model == nullptr) {
+  auto loader = std::make_unique<utils::MeshLoaderd>();
+  auto triMesh = loader->load(mMeshUri.toString(), mRetriever);
+  if (triMesh == nullptr) {
     return nullptr;
   }
 
   auto shape = std::make_shared<dynamics::MeshShape>(
-      mScale, model, mMeshUri, mRetriever);
+      mScale, std::move(triMesh), mMeshUri);
   shape->setColorMode(dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
   return shape;
 }

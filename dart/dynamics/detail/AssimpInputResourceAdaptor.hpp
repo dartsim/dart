@@ -43,7 +43,11 @@
 namespace dart {
 namespace dynamics {
 
-class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
+/// @deprecated This class will be removed in DART 7.1. It is an internal
+/// implementation detail for Assimp-based mesh loading.
+class [[deprecated(
+    "Will be removed in DART 7.1")]] AssimpInputResourceRetrieverAdaptor
+  : public Assimp::IOSystem
 {
 public:
   explicit AssimpInputResourceRetrieverAdaptor(
@@ -76,13 +80,16 @@ public:
   /// \brief Closes the given file and releases all resources
   ///   associated with it.
   /// \param pFile The file instance previously created by Open().
-  void Close(Assimp::IOStream* pFile) override;
+  void Close(Assimp::IOStream * pFile) override;
 
 private:
   common::ResourceRetrieverPtr mResourceRetriever;
 };
 
-class AssimpInputResourceAdaptor : public Assimp::IOStream
+/// @deprecated This class will be removed in DART 7.1. It is an internal
+/// implementation detail for Assimp-based mesh loading.
+class [[deprecated("Will be removed in DART 7.1")]] AssimpInputResourceAdaptor
+  : public Assimp::IOStream
 {
 public:
   explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
@@ -91,12 +98,12 @@ public:
   /// \brief Read from the file
   ///
   /// See fread() for more details
-  std::size_t Read(
-      void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Read(void* pvBuffer, std::size_t pSize, std::size_t pCount)
+      override;
 
   /// \brief Not implemented. This is a read-only stream.
-  std::size_t Write(
-      const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Write(const void* pvBuffer, std::size_t pSize, std::size_t pCount)
+      override;
 
   /// \brief Set the read/write cursor of the file
   ///
@@ -121,7 +128,10 @@ private:
   common::ResourcePtr mResource;
 };
 
-aiFileIO createFileIO(Assimp::IOSystem* adaptor);
+/// @deprecated This function will be removed in DART 7.1. It is an internal
+/// implementation detail for Assimp-based mesh loading.
+[[deprecated("Will be removed in DART 7.1")]] aiFileIO createFileIO(
+    Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
 } // namespace dart

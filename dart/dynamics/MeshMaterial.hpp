@@ -30,57 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
+#define DART_DYNAMICS_MESHMATERIAL_HPP_
 
-#include <dart/collision/ode/detail/OdeGeom.hpp>
+#include <Eigen/Core>
 
-#include <dart/math/TriMesh.hpp>
-
-#include <ode/ode.h>
-
-#include <memory>
+#include <string>
+#include <vector>
 
 namespace dart {
-namespace collision {
-namespace detail {
+namespace dynamics {
 
-class OdeMesh : public OdeGeom
+/// Simple material representation for mesh rendering
+/// Stores material properties independently of Assimp types
+struct MeshMaterial
 {
-public:
-  /// Constructor using TriMesh (preferred)
-  OdeMesh(
-      const OdeCollisionObject* parent,
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+  /// Material colors
+  Eigen::Vector4f ambient{0.2f, 0.2f, 0.2f, 1.0f};
+  Eigen::Vector4f diffuse{0.8f, 0.8f, 0.8f, 1.0f};
+  Eigen::Vector4f specular{0.0f, 0.0f, 0.0f, 1.0f};
+  Eigen::Vector4f emissive{0.0f, 0.0f, 0.0f, 1.0f};
 
-  /// Destructor
-  virtual ~OdeMesh();
+  /// Shininess coefficient
+  float shininess{0.0f};
 
-  // Documentation inherited
-  void updateEngineData() override;
+  /// Texture image paths (absolute paths)
+  /// Index 0: diffuse texture
+  /// Index 1: specular texture
+  /// Index 2: normal texture
+  /// etc.
+  std::vector<std::string> textureImagePaths;
 
-private:
-  void fillArraysFromTriMesh(
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-
-private:
-  /// Array of vertex values.
-  std::vector<double> mVertices;
-
-  /// Array of normals values.
-  std::vector<double> mNormals;
-
-  /// Array of index values.
-  std::vector<int> mIndices;
-
-  /// ODE trimesh data.
-  dTriMeshDataID mOdeTriMeshDataId;
+  /// Default constructor
+  MeshMaterial() = default;
 };
 
-} // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

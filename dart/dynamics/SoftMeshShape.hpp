@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Shape.hpp>
 
+#include <dart/math/TriMesh.hpp>
+
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
@@ -61,8 +63,13 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
+  /// Returns the TriMesh representation of this soft mesh.
+  std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the aiMesh representation (deprecated, for backward
+  /// compatibility). WARNING: Creates temporary aiMesh on every call.
+  [[deprecated("Use getTriMesh() instead")]] const aiMesh* getAssimpMesh()
+      const;
 
   /// Get the SoftBodyNode that is associated with this SoftMeshShape
   const SoftBodyNode* getSoftBodyNode() const;
@@ -90,8 +97,8 @@ private:
   /// \brief
   SoftBodyNode* mSoftBodyNode;
 
-  /// \brief
-  std::unique_ptr<aiMesh> mAssimpMesh;
+  /// TriMesh representation (preferred).
+  std::shared_ptr<math::TriMesh<double>> mTriMesh;
 };
 
 } // namespace dynamics

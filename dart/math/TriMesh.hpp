@@ -64,6 +64,33 @@ public:
   /// Sets vertices and triangles.
   void setTriangles(const Vertices& vertices, const Triangles& triangles);
 
+  /// Reserves space for vertices.
+  void reserveVertices(std::size_t n);
+
+  /// Adds a vertex to the mesh.
+  void addVertex(S x, S y, S z);
+
+  /// Adds a vertex to the mesh.
+  void addVertex(const Vector3& vertex);
+
+  /// Reserves space for triangles.
+  void reserveTriangles(std::size_t n);
+
+  /// Adds a triangle to the mesh.
+  void addTriangle(Index idx0, Index idx1, Index idx2);
+
+  /// Adds a triangle to the mesh.
+  void addTriangle(const Triangle& triangle);
+
+  /// Reserves space for vertex normals.
+  void reserveVertexNormals(std::size_t n);
+
+  /// Adds a vertex normal to the mesh.
+  void addVertexNormal(S x, S y, S z);
+
+  /// Adds a vertex normal to the mesh.
+  void addVertexNormal(const Vector3& normal);
+
   /// Computes vertex normals.
   void computeVertexNormals();
 

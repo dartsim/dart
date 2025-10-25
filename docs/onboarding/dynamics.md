@@ -472,6 +472,10 @@ const Eigen::VectorXd& C = skeleton->getCoriolisForces();
 const Eigen::VectorXd& g = skeleton->getGravityForces();
 ```
 
+## MeshShape and TriMesh
+
+**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion. For OSG rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` (acceptable since TriMesh doesn't include scene graph structure). See `dart/dynamics/MeshShape.hpp` and `dart/utils/MeshLoader.hpp` for implementation.
+
 ## Summary
 
 The DART dynamics module provides a comprehensive framework for:

@@ -78,9 +78,12 @@ void FCLCollisionObject::updateEngineData()
     assert(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
-    const aiMesh* mesh = softMeshShape->getAssimpMesh();
     const_cast<SoftMeshShape*>(softMeshShape)->update();
     // TODO(JS): update function be called by somewhere out of here.
+
+    const auto triMesh = softMeshShape->getTriMesh();
+    const auto& vertices = triMesh->getVertices();
+    const auto& triangles = triMesh->getTriangles();
 
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
@@ -90,14 +93,14 @@ void FCLCollisionObject::updateEngineData()
         = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
-    for (auto i = 0u; i < mesh->mNumFaces; ++i) {
-      dart::collision::fcl::Vector3 vertices[3];
+    for (const auto& triangle : triangles) {
+      dart::collision::fcl::Vector3 fclVertices[3];
       for (auto j = 0u; j < 3; ++j) {
-        const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-        vertices[j]
-            = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
+        const auto& vertex = vertices[triangle[j]];
+        fclVertices[j]
+            = dart::collision::fcl::Vector3(vertex.x(), vertex.y(), vertex.z());
       }
-      bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
+      bvhModel->updateTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
     }
     bvhModel->endUpdateModel();
   }

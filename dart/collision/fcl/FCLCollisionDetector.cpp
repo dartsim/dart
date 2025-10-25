@@ -53,8 +53,6 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
-#include <assimp/scene.h>
-
 namespace dart {
 namespace collision {
 
@@ -530,36 +528,76 @@ template <typename BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createMesh(
-    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMeshFromTriMesh(
+    float _scaleX,
+    float _scaleY,
+    float _scaleZ,
+    const std::shared_ptr<math::TriMesh<double>>& _triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
 
-  assert(_mesh);
+  assert(_triMesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
-  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
-    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      fcl::Vector3 vertices[3];
-      for (std::size_t k = 0; k < 3; k++) {
-        const aiVector3D& vertex
-            = _mesh->mMeshes[i]
-                  ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
-      }
-      model->addTriangle(vertices[0], vertices[1], vertices[2]);
+
+  const auto& vertices = _triMesh->getVertices();
+  const auto& triangles = _triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
+    for (std::size_t i = 0; i < 3; i++) {
+      unsigned int vertexIndex;
+      if (i == 0)
+        vertexIndex = triangle.x();
+      else if (i == 1)
+        vertexIndex = triangle.y();
+      else
+        vertexIndex = triangle.z();
+
+      const auto& vertex = vertices[vertexIndex];
+      fclVertices[i] = fcl::Vector3(
+          vertex.x() * _scaleX, vertex.y() * _scaleY, vertex.z() * _scaleZ);
     }
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
   }
+
   model->endModel();
   return model;
 }
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
+::fcl::BVHModel<BV>* createSoftMesh(
+    const std::shared_ptr<math::TriMesh<double>>& triMesh)
 {
-  // Create FCL mesh from Assimp mesh
+  // Create FCL mesh from TriMesh
+
+  assert(triMesh);
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+  model->beginModel();
+
+  const auto& vertices = triMesh->getVertices();
+  const auto& triangles = triMesh->getTriangles();
+
+  for (const auto& triangle : triangles) {
+    fcl::Vector3 fclVertices[3];
+    for (std::size_t j = 0; j < 3; j++) {
+      const auto& vertex = vertices[triangle[j]];
+      fclVertices[j] = fcl::Vector3(vertex.x(), vertex.y(), vertex.z());
+    }
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
+  }
+
+  model->endModel();
+  return model;
+}
+
+//==============================================================================
+template <class BV>
+[[deprecated("Use TriMesh version instead")]] ::fcl::BVHModel<BV>*
+createSoftMesh(const aiMesh* _mesh)
+{
+  // Create FCL mesh from Assimp mesh (deprecated)
 
   assert(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
@@ -979,16 +1017,18 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
 
-    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+    auto triMesh = shapeMesh->getTriMesh();
+
+    geom = createMeshFromTriMesh<fcl::OBBRSS>(
+        scale[0], scale[1], scale[2], triMesh);
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-    auto aiMesh = softMeshShape->getAssimpMesh();
+    auto triMesh = softMeshShape->getTriMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+    geom = createSoftMesh<fcl::OBBRSS>(triMesh);
   }
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {

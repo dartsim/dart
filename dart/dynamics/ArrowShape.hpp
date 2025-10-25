@@ -79,6 +79,9 @@ public:
       const Eigen::Vector4d& _color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
       std::size_t _resolution = 10);
 
+  /// Destructor
+  ~ArrowShape() override;
+
   /// Set the positions of the tail and head of the arrow without changing any
   /// settings
   void setPositions(const Eigen::Vector3d& _tail, const Eigen::Vector3d& _head);
@@ -113,6 +116,9 @@ protected:
   Eigen::Vector3d mHead;
 
   Properties mProperties;
+
+  /// Resolution used for mesh generation
+  std::size_t mResolution;
 };
 
 } // namespace dynamics

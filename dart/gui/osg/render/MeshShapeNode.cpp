@@ -32,12 +32,12 @@
 
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 
-#include "dart/common/Console.hpp"
-#include "dart/common/Filesystem.hpp"
+#include "dart/dynamics/MeshMaterial.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
 
+#include <assimp/scene.h>
 #include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
@@ -53,39 +53,6 @@ namespace osg {
 namespace render {
 
 namespace {
-
-//==============================================================================
-#define GET_TEXTURE_TYPE_AND_COUNT(MATERIAL, TYPE)                             \
-  {                                                                            \
-    const auto count = MATERIAL.GetTextureCount(TYPE);                         \
-    if (count)                                                                 \
-      return std::make_pair(TYPE, count);                                      \
-  }
-
-//==============================================================================
-std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
-    const aiMaterial& material)
-{
-  // For now, only sinlge texture is supported. So we only checks whether the
-  // texture counter is non-zero.
-
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NONE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DIFFUSE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SPECULAR)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_AMBIENT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_EMISSIVE)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_HEIGHT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NORMALS)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SHININESS)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_OPACITY)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DISPLACEMENT)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_LIGHTMAP)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_REFLECTION)
-  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_UNKNOWN)
-
-  // This shouldn't be reached but put
-  return std::make_pair(aiTextureType_UNKNOWN, 0u);
-}
 
 //==============================================================================
 bool isTransparent(const ::osg::Material* material)
@@ -228,99 +195,67 @@ bool checkSpecularSanity(const aiColor4D& c)
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
+  // Use deprecated getMesh() for now to maintain backward compatibility
+  // with the scene graph structure (aiScene contains node hierarchy)
+  // TODO: Future work - refactor to use TriMesh directly with a scene graph
   const aiScene* scene = mMeshShape->getMesh();
   const aiNode* root = scene->mRootNode;
 
-  if (firstTime) // extract material properties
+  if (firstTime) // extract material properties from MeshShape (Assimp-free)
   {
-    mMaterials.reserve(scene->mNumMaterials);
-    mTextureImageArrays.reserve(scene->mNumMaterials);
+    const auto& meshMaterials = mMeshShape->getMaterials();
+    mMaterials.reserve(meshMaterials.size());
+    mTextureImageArrays.reserve(meshMaterials.size());
 
-    for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
-      aiMaterial* aiMat = scene->mMaterials[i];
-      assert(aiMat);
-
+    for (const auto& meshMat : meshMaterials) {
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
 
-      aiColor4D c;
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)
-          == AI_SUCCESS) {
-        material->setAmbient(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
+      // Convert from MeshMaterial to OSG Material
+      material->setAmbient(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.ambient[0],
+              meshMat.ambient[1],
+              meshMat.ambient[2],
+              meshMat.ambient[3]));
+
+      material->setDiffuse(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.diffuse[0],
+              meshMat.diffuse[1],
+              meshMat.diffuse[2],
+              meshMat.diffuse[3]));
+
+      // Check specular sanity
+      const bool specularSane
+          = !(meshMat.specular[0] >= 1.0f && meshMat.specular[1] >= 1.0f
+              && meshMat.specular[2] >= 1.0f && meshMat.specular[3] >= 1.0f);
+      if (specularSane) {
+        material->setSpecular(
+            ::osg::Material::FRONT_AND_BACK,
+            ::osg::Vec4(
+                meshMat.specular[0],
+                meshMat.specular[1],
+                meshMat.specular[2],
+                meshMat.specular[3]));
       }
 
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)
-          == AI_SUCCESS) {
-        material->setDiffuse(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
+      material->setEmission(
+          ::osg::Material::FRONT_AND_BACK,
+          ::osg::Vec4(
+              meshMat.emissive[0],
+              meshMat.emissive[1],
+              meshMat.emissive[2],
+              meshMat.emissive[3]));
 
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c)
-          == AI_SUCCESS) {
-        // Some files have insane specular vectors like [1.0, 1.0, 1.0, 1.0], so
-        // we weed those out here
-        if (checkSpecularSanity(c))
-          material->setSpecular(
-              ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
-
-      if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)
-          == AI_SUCCESS) {
-        material->setEmission(
-            ::osg::Material::FRONT_AND_BACK, ::osg::Vec4(c.r, c.g, c.b, c.a));
-      }
-
-      unsigned int maxValue = 1;
-      float shininess = 0.0f, strength = 1.0f;
-      if (aiGetMaterialFloatArray(
-              aiMat, AI_MATKEY_SHININESS, &shininess, &maxValue)
-          == AI_SUCCESS) {
-        maxValue = 1;
-        if (aiGetMaterialFloatArray(
-                aiMat, AI_MATKEY_SHININESS_STRENGTH, &strength, &maxValue)
-            == AI_SUCCESS)
-          shininess *= strength;
-        material->setShininess(::osg::Material::FRONT_AND_BACK, shininess);
-      } else {
-        material->setShininess(::osg::Material::FRONT_AND_BACK, 0.0f);
-      }
+      material->setShininess(
+          ::osg::Material::FRONT_AND_BACK, meshMat.shininess);
 
       mMaterials.push_back(material);
 
-      // Parse texture image paths
-      const auto textureTypeAndCount = getTextureTypeAndCount(*aiMat);
-      const auto& type = textureTypeAndCount.first;
-      const auto& count = textureTypeAndCount.second;
-
-      std::vector<std::string> textureImageArray;
-      textureImageArray.reserve(count);
-
-      aiString imagePath;
-      std::error_code ec;
-      for (auto j = 0u; j < count; ++j) {
-        if ((textureTypeAndCount.first == aiTextureType_NONE)
-            || (textureTypeAndCount.first == aiTextureType_UNKNOWN)) {
-          textureImageArray.emplace_back("");
-        } else {
-          aiMat->GetTexture(type, j, &imagePath);
-          const common::filesystem::path meshPath = mMeshShape->getMeshPath();
-          const common::filesystem::path relativeImagePath = imagePath.C_Str();
-          const common::filesystem::path absoluteImagePath
-              = common::filesystem::canonical(
-                  meshPath.parent_path() / relativeImagePath, ec);
-
-          if (ec) {
-            dtwarn << "[MeshShapeNode] Failed to resolve an file path to a "
-                   << "texture image from (base: `" << meshPath.parent_path()
-                   << "', relative: '" << relativeImagePath << "').\n";
-            textureImageArray.emplace_back("");
-          } else {
-            textureImageArray.emplace_back(absoluteImagePath.string());
-          }
-        }
-      }
-
-      mTextureImageArrays.emplace_back(std::move(textureImageArray));
+      // Use texture paths from MeshMaterial
+      mTextureImageArrays.emplace_back(meshMat.textureImagePaths);
     }
   }
 
@@ -361,14 +296,9 @@ void MeshShapeNode::extractData(bool firstTime)
   if (index < mMaterials.size())
     return mMaterials[index];
 
-  if (!mMaterials.empty()) {
-    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-           << index << ", but materials only go up to " << index - 1 << "\n";
-  } else {
-    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-           << index << ", but there are no materials available\n";
-  }
-
+  // Silently return nullptr when materials don't exist - this is expected for
+  // many mesh formats (e.g., STL, plain OBJ) and robotics meshes without
+  // embedded materials. The renderer will use default materials.
   return nullptr;
 }
 
@@ -385,16 +315,8 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
   if (index == std::numeric_limits<unsigned int>::max())
     return {};
 
-  if (!mTextureImageArrays.empty()) {
-    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
-           << "texture image set #" << index << ", but materials only go up to "
-           << index - 1 << "\n";
-  } else {
-    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
-           << "texture image set #" << index
-           << ", but there are no materials available\n";
-  }
-
+  // Silently return empty vector when textures don't exist - this is expected
+  // for meshes without embedded materials
   return std::vector<std::string>();
 }
 
@@ -746,7 +668,18 @@ void MeshShapeGeometry::extractData(bool firstTime)
       {
         isColored = true;
         ::osg::Material* material = mMainNode->getMaterial(matIndex);
-        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+
+        // Check if material exists - if not, fall back to default rendering
+        // This is expected for mesh files without embedded materials
+        if (!material) {
+          ss->removeAttribute(::osg::StateAttribute::MATERIAL);
+          ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+          ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+          ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+          depth->setWriteMask(true);
+          ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+        } else if (
+            mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
           const float shapeAlpha
               = static_cast<float>(mVisualAspect->getAlpha());
 

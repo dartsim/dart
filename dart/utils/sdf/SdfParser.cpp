@@ -53,6 +53,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
@@ -930,11 +931,13 @@ dynamics::ShapePtr readShape(
                                 : Eigen::Vector3d::Ones();
 
     const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
-    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
 
-    if (model)
+    auto loader = std::make_unique<utils::MeshLoaderd>();
+    auto triMesh = loader->load(meshUri, _retriever);
+
+    if (triMesh)
       newShape = std::make_shared<dynamics::MeshShape>(
-          scale, model, meshUri, _retriever);
+          scale, std::move(triMesh), common::Uri(meshUri));
     else {
       dtwarn << "[SdfParser::readShape] Failed to load mesh model [" << meshUri
              << "].\n";

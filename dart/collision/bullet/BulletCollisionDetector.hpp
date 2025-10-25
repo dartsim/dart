@@ -38,8 +38,6 @@
 #include <dart/collision/bullet/BulletCollisionShape.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
 
-#include <assimp/scene.h>
-
 #include <vector>
 
 namespace dart {

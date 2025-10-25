@@ -98,6 +98,7 @@ If you use DART in an academic publication, please consider citing this
    dartpy/user_guide/tutorials
    dartpy/python_api_reference
    dartpy/api_docs
+   dartpy/user_guide/migration_guide
 
 .. toctree::
    :maxdepth: 1
@@ -106,8 +107,8 @@ If you use DART in an academic publication, please consider citing this
 
    dart/user_guide/installation
    dart/user_guide/tutorials
-   dart/user_guide/migration_guide
    dart/cpp_api_reference
+   dart/user_guide/migration_guide
 
 .. toctree::
    :maxdepth: 1

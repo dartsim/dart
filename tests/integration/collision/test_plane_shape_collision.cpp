@@ -94,11 +94,15 @@ void runIssue1234Test(
     std::function<dart::collision::CollisionDetectorPtr()> detectorFactory)
 {
   const std::string meshUri = "dart://sample/obj/BoxSmall.obj";
-  const auto aiscene = dart::dynamics::MeshShape::loadMesh(
-      meshUri, dart::utils::DartResourceRetriever::create());
-  ASSERT_TRUE(aiscene);
+
+  // Load mesh using MeshShape::loadMesh
+  const auto retriever = dart::utils::DartResourceRetriever::create();
+  const aiScene* aiMesh
+      = dart::dynamics::MeshShape::loadMesh(meshUri, retriever);
+
+  ASSERT_TRUE(aiMesh);
   const auto mesh = std::make_shared<dart::dynamics::MeshShape>(
-      100.0 * Eigen::Vector3d::Ones(), aiscene, meshUri);
+      100.0 * Eigen::Vector3d::Ones(), aiMesh, dart::common::Uri(meshUri));
 
   const auto bb = mesh->getBoundingBox();
   for (int i = 0; i < 3; ++i) {

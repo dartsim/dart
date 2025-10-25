@@ -209,9 +209,9 @@ detail::OdeGeom* createOdeGeom(
     geom = new detail::OdePlane(collObj, normal, offset);
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
+    auto triMesh = shapeMesh->getTriMesh();
 
-    geom = new detail::OdeMesh(collObj, aiScene, scale);
+    geom = new detail::OdeMesh(collObj, triMesh, scale);
   } else if (const auto heightMap = shape->as<HeightmapShapef>()) {
     geom = new detail::OdeHeightmapf(collObj, heightMap);
   } else if (const auto heightMap = shape->as<HeightmapShaped>()) {

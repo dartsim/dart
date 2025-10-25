@@ -30,57 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
-
-#include <dart/collision/ode/detail/OdeGeom.hpp>
-
-#include <dart/math/TriMesh.hpp>
-
-#include <ode/ode.h>
-
-#include <memory>
+#ifndef DART_DYNAMICS_FWD_HPP_
+#define DART_DYNAMICS_FWD_HPP_
 
 namespace dart {
-namespace collision {
-namespace detail {
+namespace dynamics {
 
-class OdeMesh : public OdeGeom
-{
-public:
-  /// Constructor using TriMesh (preferred)
-  OdeMesh(
-      const OdeCollisionObject* parent,
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+// Forward declarations for dart::dynamics
 
-  /// Destructor
-  virtual ~OdeMesh();
+struct MeshMaterial;
 
-  // Documentation inherited
-  void updateEngineData() override;
-
-private:
-  void fillArraysFromTriMesh(
-      const std::shared_ptr<math::TriMesh<double>>& mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-
-private:
-  /// Array of vertex values.
-  std::vector<double> mVertices;
-
-  /// Array of normals values.
-  std::vector<double> mNormals;
-
-  /// Array of index values.
-  std::vector<int> mIndices;
-
-  /// ODE trimesh data.
-  dTriMeshDataID mOdeTriMeshDataId;
-};
-
-} // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#endif // DART_DYNAMICS_FWD_HPP_

@@ -297,28 +297,23 @@ void Shape(py::module& m)
       dart::dynamics::MeshShape,
       dart::dynamics::Shape,
       std::shared_ptr<dart::dynamics::MeshShape>>(m, "MeshShape")
-      .def(
-          ::py::init<const Eigen::Vector3d&, const aiScene*>(),
-          ::py::arg("scale"),
-          ::py::arg("mesh"))
+      // Modern TriMesh-based constructors (PREFERRED)
       .def(
           ::py::init<
               const Eigen::Vector3d&,
-              const aiScene*,
+              std::shared_ptr<dart::math::TriMesh<double>>>(),
+          ::py::arg("scale"),
+          ::py::arg("mesh"),
+          "Construct MeshShape with TriMesh (modern API)")
+      .def(
+          ::py::init<
+              const Eigen::Vector3d&,
+              std::shared_ptr<dart::math::TriMesh<double>>,
               const dart::common::Uri&>(),
           ::py::arg("scale"),
           ::py::arg("mesh"),
-          ::py::arg("uri"))
-      .def(
-          ::py::init<
-              const Eigen::Vector3d&,
-              const aiScene*,
-              const dart::common::Uri&,
-              dart::common::ResourceRetrieverPtr>(),
-          ::py::arg("scale"),
-          ::py::arg("mesh"),
-          ::py::arg("uri"),
-          ::py::arg("resourceRetriever"))
+          ::py::arg("uri") = "",
+          "Construct MeshShape with TriMesh and URI (modern API)")
       .def(
           "getType",
           +[](const dart::dynamics::MeshShape* self) -> const std::string& {
@@ -334,47 +329,13 @@ void Shape(py::module& m)
           },
           ::py::arg("alpha"))
       .def(
-          "setMesh",
-          +[](dart::dynamics::MeshShape* self, const aiScene* mesh) {
-            self->setMesh(mesh);
+          "getTriMesh",
+          +[](const dart::dynamics::MeshShape* self)
+              -> std::shared_ptr<const dart::math::TriMesh<double>> {
+            return self->getTriMesh();
           },
-          ::py::arg("mesh"))
-      .def(
-          "setMesh",
-          +[](dart::dynamics::MeshShape* self,
-              const aiScene* mesh,
-              const std::string& path) { self->setMesh(mesh, path); },
-          ::py::arg("mesh"),
-          ::py::arg("path"))
-      .def(
-          "setMesh",
-          +[](dart::dynamics::MeshShape* self,
-              const aiScene* mesh,
-              const std::string& path,
-              dart::common::ResourceRetrieverPtr resourceRetriever) {
-            self->setMesh(mesh, path, resourceRetriever);
-          },
-          ::py::arg("mesh"),
-          ::py::arg("path"),
-          ::py::arg("resourceRetriever"))
-      .def(
-          "setMesh",
-          +[](dart::dynamics::MeshShape* self,
-              const aiScene* mesh,
-              const dart::common::Uri& path) { self->setMesh(mesh, path); },
-          ::py::arg("mesh"),
-          ::py::arg("path"))
-      .def(
-          "setMesh",
-          +[](dart::dynamics::MeshShape* self,
-              const aiScene* mesh,
-              const dart::common::Uri& path,
-              dart::common::ResourceRetrieverPtr resourceRetriever) {
-            self->setMesh(mesh, path, resourceRetriever);
-          },
-          ::py::arg("mesh"),
-          ::py::arg("path"),
-          ::py::arg("resourceRetriever"))
+          ::py::return_value_policy::reference_internal,
+          "Get the TriMesh representation of this mesh")
       .def(
           "getMeshUri",
           +[](const dart::dynamics::MeshShape* self) -> std::string {

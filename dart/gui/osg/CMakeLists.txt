@@ -44,6 +44,14 @@ file(GLOB render_hdrs "render/*.hpp")
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
+# Suppress deprecated warnings for files using backward-compatible API
+# TODO: MeshShapeNode needs proper refactoring to use TriMesh API + material system - see mesh_branch_reimplementation_plan.md
+set_source_files_properties(
+  render/MeshShapeNode.cpp
+  PROPERTIES
+  COMPILE_FLAGS "-Wno-deprecated-declarations"
+)
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})

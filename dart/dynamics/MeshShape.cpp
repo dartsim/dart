@@ -33,11 +33,14 @@
 #include "dart/dynamics/MeshShape.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/Filesystem.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/MeshMaterial.hpp"
+#include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/cimport.h>
@@ -130,22 +133,58 @@ namespace dynamics {
 MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     const aiScene* mesh,
-    const common::Uri& path,
+    const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
-  : Shape(MESH),
+  : Shape(),
+    mTriMesh(convertAssimpMesh(mesh)),
+    mCachedAiScene(nullptr),
+    mMeshUri(uri),
+    mMeshPath(uri.getPath()),
+    mResourceRetriever(std::move(resourceRetriever)),
     mDisplayList(0),
+    mScale(scale),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  setMesh(mesh, path, std::move(resourceRetriever));
+  // NOTE: This constructor converts aiScene to TriMesh and stores only TriMesh.
+  // The aiScene parameter is not retained. If getMesh() is called later, it
+  // will perform an expensive conversion back to aiScene.
+
+  // Extract materials from aiScene for Assimp-free rendering
+  extractMaterialsFromScene(mesh, uri.getPath());
+
+  setScale(scale);
+}
+
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    std::shared_ptr<math::TriMesh<double>> mesh,
+    const common::Uri& uri)
+  : Shape(),
+    mTriMesh(std::move(mesh)),
+    mCachedAiScene(nullptr),
+    mMeshUri(uri),
+    mMeshPath(uri.getPath()),
+    mResourceRetriever(nullptr),
+    mDisplayList(0),
+    mScale(scale),
+    mColorMode(MATERIAL_COLOR),
+    mAlphaMode(BLEND),
+    mColorIndex(0)
+{
   setScale(scale);
 }
 
 //==============================================================================
 MeshShape::~MeshShape()
 {
-  aiReleaseImport(mMesh);
+  // Clean up cached aiScene if it was created
+  if (mCachedAiScene) {
+    aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
+  }
 }
 
 //==============================================================================
@@ -162,9 +201,147 @@ const std::string& MeshShape::getStaticType()
 }
 
 //==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
+{
+  return mTriMesh;
+}
+
+//==============================================================================
 const aiScene* MeshShape::getMesh() const
 {
-  return mMesh;
+  // Lazy conversion: only convert once and cache the result
+  // NOTE: This is still expensive on first call! Please use getTriMesh()
+  // instead.
+  if (!mCachedAiScene) {
+    mCachedAiScene = convertToAssimpMesh();
+  }
+  return mCachedAiScene;
+}
+
+//==============================================================================
+const aiScene* MeshShape::convertToAssimpMesh() const
+{
+  if (!mTriMesh) {
+    return nullptr;
+  }
+
+  // Create a new aiScene structure
+  aiScene* scene = new aiScene();
+
+  // Set up basic scene structure
+  scene->mNumMeshes = 1;
+  scene->mMeshes = new aiMesh*[1];
+  scene->mMeshes[0] = new aiMesh();
+
+  aiMesh* mesh = scene->mMeshes[0];
+
+  const auto& vertices = mTriMesh->getVertices();
+  const auto& triangles = mTriMesh->getTriangles();
+  const auto& normals = mTriMesh->getVertexNormals();
+
+  // Set vertex data
+  mesh->mNumVertices = vertices.size();
+  mesh->mVertices = new aiVector3D[mesh->mNumVertices];
+  for (size_t i = 0; i < vertices.size(); ++i) {
+    mesh->mVertices[i]
+        = aiVector3D(vertices[i].x(), vertices[i].y(), vertices[i].z());
+  }
+
+  // Set normal data
+  if (!normals.empty()) {
+    mesh->mNormals = new aiVector3D[mesh->mNumVertices];
+    for (size_t i = 0; i < normals.size(); ++i) {
+      mesh->mNormals[i]
+          = aiVector3D(normals[i].x(), normals[i].y(), normals[i].z());
+    }
+  }
+
+  // Set face data
+  mesh->mNumFaces = triangles.size();
+  mesh->mFaces = new aiFace[mesh->mNumFaces];
+  for (size_t i = 0; i < triangles.size(); ++i) {
+    aiFace& face = mesh->mFaces[i];
+    face.mNumIndices = 3;
+    face.mIndices = new unsigned int[3];
+    face.mIndices[0] = triangles[i].x();
+    face.mIndices[1] = triangles[i].y();
+    face.mIndices[2] = triangles[i].z();
+  }
+
+  mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
+  mesh->mMaterialIndex = 0;
+
+  // Set up root node
+  scene->mRootNode = new aiNode();
+  scene->mRootNode->mNumMeshes = 1;
+  scene->mRootNode->mMeshes = new unsigned int[1];
+  scene->mRootNode->mMeshes[0] = 0;
+
+  // Set up a default material
+  scene->mNumMaterials = 1;
+  scene->mMaterials = new aiMaterial*[1];
+  scene->mMaterials[0] = new aiMaterial();
+
+  return scene;
+}
+
+//==============================================================================
+std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
+    const aiScene* scene)
+{
+  if (!scene || scene->mNumMeshes == 0) {
+    return nullptr;
+  }
+
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+
+  // Process all meshes in the scene
+  // TODO: Support merging multiple meshes from the scene
+  const aiMesh* assimpMesh = scene->mMeshes[0];
+
+  // Reserve space for vertices
+  triMesh->reserveVertices(assimpMesh->mNumVertices);
+
+  // Parse vertices
+  for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+    const aiVector3D& vertex = assimpMesh->mVertices[i];
+    triMesh->addVertex(
+        static_cast<double>(vertex.x),
+        static_cast<double>(vertex.y),
+        static_cast<double>(vertex.z));
+  }
+
+  // Parse faces (triangles)
+  triMesh->reserveTriangles(assimpMesh->mNumFaces);
+  for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+    const aiFace& face = assimpMesh->mFaces[i];
+
+    // Skip non-triangular faces
+    if (face.mNumIndices != 3) {
+      dtwarn << "[MeshShape::convertAssimpMesh] Non-triangular face detected. "
+             << "Skipping this face.\n";
+      continue;
+    }
+
+    triMesh->addTriangle(face.mIndices[0], face.mIndices[1], face.mIndices[2]);
+  }
+
+  // Parse vertex normals
+  if (assimpMesh->mNormals) {
+    triMesh->reserveVertexNormals(assimpMesh->mNumVertices);
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+      const aiVector3D& normal = assimpMesh->mNormals[i];
+      triMesh->addVertexNormal(
+          static_cast<double>(normal.x),
+          static_cast<double>(normal.y),
+          static_cast<double>(normal.z));
+    }
+  } else {
+    // Compute vertex normals if not provided
+    triMesh->computeVertexNormals();
+  }
+
+  return triMesh;
 }
 
 //==============================================================================
@@ -212,9 +389,10 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  mMesh = mesh;
+  // Convert aiScene to TriMesh
+  mTriMesh = convertAssimpMesh(mesh);
 
-  if (!mMesh) {
+  if (!mTriMesh) {
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
@@ -304,6 +482,120 @@ void MeshShape::setDisplayList(int index)
 }
 
 //==============================================================================
+const std::vector<MeshMaterial>& MeshShape::getMaterials() const
+{
+  return mMaterials;
+}
+
+//==============================================================================
+std::size_t MeshShape::getNumMaterials() const
+{
+  return mMaterials.size();
+}
+
+//==============================================================================
+const MeshMaterial* MeshShape::getMaterial(std::size_t index) const
+{
+  if (index < mMaterials.size()) {
+    return &mMaterials[index];
+  }
+  return nullptr;
+}
+
+//==============================================================================
+void MeshShape::extractMaterialsFromScene(
+    const aiScene* scene, const std::string& basePath)
+{
+  if (!scene || scene->mNumMaterials == 0) {
+    return;
+  }
+
+  mMaterials.clear();
+  mMaterials.reserve(scene->mNumMaterials);
+
+  for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
+    aiMaterial* aiMat = scene->mMaterials[i];
+    assert(aiMat);
+
+    MeshMaterial material;
+
+    // Extract colors
+    aiColor4D c;
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c) == AI_SUCCESS) {
+      material.ambient = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c) == AI_SUCCESS) {
+      material.diffuse = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c) == AI_SUCCESS) {
+      material.specular = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c) == AI_SUCCESS) {
+      material.emissive = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
+    // Extract shininess
+    unsigned int maxValue = 1;
+    float shininess = 0.0f, strength = 1.0f;
+    if (aiGetMaterialFloatArray(
+            aiMat, AI_MATKEY_SHININESS, &shininess, &maxValue)
+        == AI_SUCCESS) {
+      maxValue = 1;
+      if (aiGetMaterialFloatArray(
+              aiMat, AI_MATKEY_SHININESS_STRENGTH, &strength, &maxValue)
+          == AI_SUCCESS) {
+        shininess *= strength;
+      }
+      material.shininess = shininess;
+    }
+
+    // Extract texture paths for all texture types
+    // Check common texture types and store them
+    const aiTextureType textureTypes[]
+        = {aiTextureType_DIFFUSE,
+           aiTextureType_SPECULAR,
+           aiTextureType_NORMALS,
+           aiTextureType_AMBIENT,
+           aiTextureType_EMISSIVE,
+           aiTextureType_HEIGHT,
+           aiTextureType_SHININESS,
+           aiTextureType_OPACITY,
+           aiTextureType_DISPLACEMENT,
+           aiTextureType_LIGHTMAP,
+           aiTextureType_REFLECTION};
+
+    for (const auto& type : textureTypes) {
+      const auto count = aiMat->GetTextureCount(type);
+      for (auto j = 0u; j < count; ++j) {
+        aiString imagePath;
+        if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
+          const common::filesystem::path relativeImagePath = imagePath.C_Str();
+          const common::filesystem::path meshPath = basePath;
+          std::error_code ec;
+          const common::filesystem::path absoluteImagePath
+              = common::filesystem::canonical(
+                  meshPath.parent_path() / relativeImagePath, ec);
+
+          if (ec) {
+            dtwarn
+                << "[MeshShape::extractMaterialsFromScene] Failed to resolve "
+                << "texture image path from (base: `" << meshPath.parent_path()
+                << "', relative: '" << relativeImagePath << "').\n";
+          } else {
+            material.textureImagePaths.emplace_back(absoluteImagePath.string());
+          }
+        }
+      }
+    }
+
+    mMaterials.emplace_back(std::move(material));
+  }
+}
+
+//==============================================================================
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 {
   // Use bounding box to represent the mesh
@@ -329,7 +621,7 @@ ShapePtr MeshShape::clone() const
 //==============================================================================
 void MeshShape::updateBoundingBox() const
 {
-  if (!mMesh) {
+  if (!mTriMesh) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -340,13 +632,11 @@ void MeshShape::updateBoundingBox() const
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
   Eigen::Vector3d maxPoint = -minPoint;
 
-  for (unsigned i = 0u; i < mMesh->mNumMeshes; i++) {
-    for (unsigned j = 0u; j < mMesh->mMeshes[i]->mNumVertices; j++) {
-      const auto& vertex = mMesh->mMeshes[i]->mVertices[j];
-      const Eigen::Vector3d eigenVertex(vertex.x, vertex.y, vertex.z);
-      minPoint = minPoint.cwiseMin(eigenVertex.cwiseProduct(mScale));
-      maxPoint = maxPoint.cwiseMax(eigenVertex.cwiseProduct(mScale));
-    }
+  const auto& vertices = mTriMesh->getVertices();
+  for (const auto& vertex : vertices) {
+    const Eigen::Vector3d scaledVertex = vertex.cwiseProduct(mScale);
+    minPoint = minPoint.cwiseMin(scaledVertex);
+    maxPoint = maxPoint.cwiseMax(scaledVertex);
   }
 
   mBoundingBox.setMin(minPoint);
@@ -366,6 +656,12 @@ void MeshShape::updateVolume() const
 //==============================================================================
 aiScene* MeshShape::cloneMesh() const
 {
+  // Convert TriMesh to aiScene for cloning
+  const aiScene* mMesh = convertToAssimpMesh();
+  if (!mMesh) {
+    return nullptr;
+  }
+
   // Create new assimp mesh
   aiScene* new_scene = new aiScene();
   // Copy basic data
@@ -563,8 +859,12 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
+  // Suppress deprecation warnings - we need to use this for backward
+  // compatibility
+  DART_SUPPRESS_DEPRECATED_BEGIN
   AssimpInputResourceRetrieverAdaptor systemIO(retriever);
   aiFileIO fileIO = createFileIO(&systemIO);
+  DART_SUPPRESS_DEPRECATED_END
 
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(

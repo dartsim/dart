@@ -234,6 +234,10 @@ robot.setForces(forces)
 
 **Generation**: Can be regenerated with `pixi run generate-stubs`
 
+## MeshShape and TriMesh Bindings
+
+**Design Decision:** Python bindings expose only `dart::math::TriMesh<double>` for mesh operations, not Assimp's `aiScene*` types. This ensures Python users work with clean, format-agnostic mesh data. The MeshShape bindings provide TriMesh-based constructors and `getTriMesh()` accessor. Deprecated aiScene-based constructors were intentionally not exposed in Python bindings (breaking change allowed for dartpy). See `python/dartpy/math/TriMesh.cpp` and `python/dartpy/dynamics/Shape.cpp` for bindings implementation.
+
 ## References
 
 - **Package configuration**: `pyproject.toml`

@@ -41,12 +41,12 @@ namespace detail {
 //==============================================================================
 OdeMesh::OdeMesh(
     const OdeCollisionObject* parent,
-    const aiScene* scene,
+    const std::shared_ptr<math::TriMesh<double>>& mesh,
     const Eigen::Vector3d& scale)
   : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
 {
   // Fill vertices, normals, and indices in the ODE friendly data structures.
-  fillArrays(scene, scale);
+  fillArraysFromTriMesh(mesh, scale);
 
   /// This will hold the vertex data of the triangle mesh
   if (!mOdeTriMeshDataId)
@@ -82,54 +82,44 @@ void OdeMesh::updateEngineData()
 }
 
 //==============================================================================
-void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
+void OdeMesh::fillArraysFromTriMesh(
+    const std::shared_ptr<math::TriMesh<double>>& mesh,
+    const Eigen::Vector3d& scale)
 {
   mVertices.clear();
   mNormals.clear();
   mIndices.clear();
 
-  // Cound the total numbers of vertices and indices.
-  auto mNumVertices = 0u;
-  auto mNumIndices = 0u;
-  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
-    const auto mesh = scene->mMeshes[i];
-
-    mNumVertices += mesh->mNumVertices;
-    mNumIndices += mesh->mNumFaces;
+  if (!mesh) {
+    return;
   }
-  mNumVertices *= 3u;
-  mNumIndices *= 3u;
-  // The number of indices of each face is always 3 because we use the assimp
-  // option `aiProcess_Triangulate` when loading meshes.
 
-  mVertices.resize(mNumVertices);
-  mNormals.resize(mNumVertices);
-  mIndices.resize(mNumIndices);
+  const auto& vertices = mesh->getVertices();
+  const auto& triangles = mesh->getTriangles();
+  const auto& normals = mesh->getVertexNormals();
 
-  auto vertexIndex = 0u;
-  auto indexIndex = 0u;
-  auto offset = 0u;
-  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
-    const auto mesh = scene->mMeshes[i];
+  // Fill vertices
+  mVertices.reserve(vertices.size() * 3);
+  for (const auto& vertex : vertices) {
+    mVertices.push_back(vertex.x() * scale.x());
+    mVertices.push_back(vertex.y() * scale.y());
+    mVertices.push_back(vertex.z() * scale.z());
+  }
 
-    for (auto j = 0u; j < mesh->mNumVertices; ++j) {
-      mVertices[vertexIndex] = mesh->mVertices[j].x * scale.x();
-      mNormals[vertexIndex++] = mesh->mNormals[j].x;
+  // Fill normals
+  mNormals.reserve(normals.size() * 3);
+  for (const auto& normal : normals) {
+    mNormals.push_back(normal.x());
+    mNormals.push_back(normal.y());
+    mNormals.push_back(normal.z());
+  }
 
-      mVertices[vertexIndex] = mesh->mVertices[j].y * scale.y();
-      mNormals[vertexIndex++] = mesh->mNormals[j].y;
-
-      mVertices[vertexIndex] = mesh->mVertices[j].z * scale.z();
-      mNormals[vertexIndex++] = mesh->mNormals[j].z;
-    }
-
-    for (auto j = 0u; j < mesh->mNumFaces; ++j) {
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[0] + offset;
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[1] + offset;
-      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[2] + offset;
-    }
-
-    offset += mesh->mNumVertices;
+  // Fill indices
+  mIndices.reserve(triangles.size() * 3);
+  for (const auto& triangle : triangles) {
+    mIndices.push_back(static_cast<int>(triangle.x()));
+    mIndices.push_back(static_cast<int>(triangle.y()));
+    mIndices.push_back(static_cast<int>(triangle.z()));
   }
 }
 

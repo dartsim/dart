@@ -97,10 +97,11 @@ public:
         case ' ': // Space bar: toggle simulation
           mViewer->simulate(!mViewer->isSimulating());
           return true;
-        case 'p': // Toggle playback mode
+        case 'p': { // Toggle playback mode
           eventHandlerOn = !eventHandlerOn;
           mViewer->switchDefaultEventHandler(eventHandlerOn);
           return true;
+        }
         case 'v': // Toggle visualization markers
           if (mWorldNode) {
             // Toggle marker visibility (implementation would depend on specific

@@ -305,146 +305,93 @@ void InteractiveFrame::createStandardVisualizationShapes(
         new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
   }
 
-  // Create rotation rings
+  // Create rotation rings - Generate TriMesh directly
   for (std::size_t r = 0; r < 3; ++r) {
-    aiMesh* mesh = new aiMesh;
-    mesh->mMaterialIndex = (unsigned int)(-1);
+    auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
 
     std::size_t numVertices = 8 * resolution;
     std::size_t R = 4 * resolution;
-    mesh->mNumVertices = numVertices;
-    mesh->mVertices = new aiVector3D[numVertices];
-    mesh->mNormals = new aiVector3D[numVertices];
-    mesh->mColors[0] = new aiColor4D[numVertices];
-    aiVector3D vertex;
-    aiVector3D normal;
-    aiColor4D color1;
-    aiColor4D color2;
+    std::size_t numFaces = 4 * resolution;
+    std::size_t H = resolution / 2;
+
+    triMesh->reserveVertices(numVertices);
+    triMesh->reserveTriangles(numFaces);
+
+    // Generate vertices
     for (std::size_t j = 0; j < 2; ++j) {
       for (std::size_t i = 0; i < resolution; ++i) {
         double theta = (double)(i) / (double)(resolution)*2 * pi;
 
+        // Inner ring vertices
         double x = 0;
         double y = ring_inner_scale * cos(theta);
         double z = ring_inner_scale * sin(theta);
-        vertex.Set(x, y, z);
-        mesh->mVertices[4 * i + j] = vertex; // Front
+        triMesh->addVertex(Eigen::Vector3d(x, y, z)); // Front: index 4*i + j
 
-        mesh->mVertices[4 * i + j + R] = vertex; // Back
-
+        // Outer ring vertices
         y = ring_outer_scale * cos(theta);
         z = ring_outer_scale * sin(theta);
-        vertex.Set(x, y, z);
-        mesh->mVertices[4 * i + 2 + j] = vertex; // Front
-
-        mesh->mVertices[4 * i + 2 + j + R] = vertex; // Back
-
-        normal.Set(1.0f, 0.0f, 0.0f);
-        mesh->mNormals[4 * i + j] = normal;
-        mesh->mNormals[4 * i + 2 + j] = normal;
-
-        normal.Set(-1.0f, 0.0f, 0.0f);
-        mesh->mNormals[4 * i + j + R] = normal;
-        mesh->mNormals[4 * i + 2 + j + R] = normal;
-
-        for (std::size_t c = 0; c < 3; ++c) {
-          color1[c] = 0.0;
-          color2[c] = 0.0;
-        }
-        color1[r] = 1.0;
-        color2[r] = 0.6;
-        color1.a = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
-        color2.a = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
-        mesh->mColors[0][4 * i + j] = ((4 * i + j) % 2 == 0) ? color1 : color2;
-        mesh->mColors[0][4 * i + j + R]
-            = ((4 * i + j + R) % 2 == 0) ? color1 : color2;
-        mesh->mColors[0][4 * i + 2 + j]
-            = ((4 * i + 2 + j) % 2 == 0) ? color1 : color2;
-        mesh->mColors[0][4 * i + 2 + j + R]
-            = ((4 * i + 2 + j + R) % 2 == 0) ? color1 : color2;
+        triMesh->addVertex(
+            Eigen::Vector3d(x, y, z)); // Front: index 4*i + 2 + j
       }
     }
 
-    std::size_t numFaces = 4 * resolution;
-    std::size_t F = 2 * resolution;
-    std::size_t H = resolution / 2;
-    mesh->mNumFaces = numFaces;
-    mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t i = 0; i < H; ++i) {
-      // Front
-      aiFace* face = &mesh->mFaces[2 * i];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i;
-      face->mIndices[1] = 8 * i + 2;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 6 : 2;
+    // Add back face vertices (duplicate of front, for proper rendering)
+    for (std::size_t j = 0; j < 2; ++j) {
+      for (std::size_t i = 0; i < resolution; ++i) {
+        double theta = (double)(i) / (double)(resolution)*2 * pi;
 
-      face = &mesh->mFaces[2 * i + 2 * H];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 6 : 2;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 4 : 0;
+        // Inner ring vertices (back)
+        double x = 0;
+        double y = ring_inner_scale * cos(theta);
+        double z = ring_inner_scale * sin(theta);
+        triMesh->addVertex(Eigen::Vector3d(x, y, z)); // Back: index 4*i + j + R
 
-      // Back
-      face = &mesh->mFaces[2 * i + F];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + R;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 6 + R : 2 + R;
-      face->mIndices[2] = 8 * i + 2 + R;
-
-      face = &mesh->mFaces[2 * i + 2 * H + F];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + R;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 4 + R : 0;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 6 + R : 2;
-
-      // Front
-      face = &mesh->mFaces[2 * i + 1];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + 5;
-      face->mIndices[1] = 8 * i + 7;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 11 : 3;
-
-      face = &mesh->mFaces[2 * i + 1 + 2 * H];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + 5;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 11 : 3;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 9 : 1;
-
-      // Back
-      face = &mesh->mFaces[2 * i + 1 + F];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + 5 + R;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 11 + R : 3 + R;
-      face->mIndices[2] = 8 * i + 7 + R;
-
-      face = &mesh->mFaces[2 * i + 1 + 2 * H + F];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 8 * i + 5 + R;
-      face->mIndices[1] = (i + 1 < H) ? 8 * i + 9 + R : 1 + R;
-      face->mIndices[2] = (i + 1 < H) ? 8 * i + 11 + R : 3 + R;
+        // Outer ring vertices (back)
+        y = ring_outer_scale * cos(theta);
+        z = ring_outer_scale * sin(theta);
+        triMesh->addVertex(
+            Eigen::Vector3d(x, y, z)); // Back: index 4*i + 2 + j + R
+      }
     }
 
-    aiNode* node = new aiNode;
-    node->mNumMeshes = 1;
-    node->mMeshes = new unsigned int[1];
-    node->mMeshes[0] = 0;
+    // Generate triangles
+    for (std::size_t i = 0; i < H; ++i) {
+      // Front faces
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i, 8 * i + 2, (i + 1 < H) ? 8 * i + 6 : 2));
 
-    aiScene* scene = new aiScene;
-    scene->mNumMeshes = 1;
-    scene->mMeshes = new aiMesh*[1];
-    scene->mMeshes[0] = mesh;
-    scene->mRootNode = node;
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i, (i + 1 < H) ? 8 * i + 6 : 2, (i + 1 < H) ? 8 * i + 4 : 0));
+
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + 5, 8 * i + 7, (i + 1 < H) ? 8 * i + 11 : 3));
+
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + 5,
+          (i + 1 < H) ? 8 * i + 11 : 3,
+          (i + 1 < H) ? 8 * i + 9 : 1));
+
+      // Back faces
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + R, (i + 1 < H) ? 8 * i + 6 + R : 2 + R, 8 * i + 2 + R));
+
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + R,
+          (i + 1 < H) ? 8 * i + 4 + R : 0,
+          (i + 1 < H) ? 8 * i + 6 + R : 2));
+
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + 5 + R, (i + 1 < H) ? 8 * i + 11 + R : 3 + R, 8 * i + 7 + R));
+
+      triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(
+          8 * i + 5 + R,
+          (i + 1 < H) ? 8 * i + 9 + R : 1 + R,
+          (i + 1 < H) ? 8 * i + 11 + R : 3 + R));
+    }
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), triMesh));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -457,78 +404,39 @@ void InteractiveFrame::createStandardVisualizationShapes(
     shapeFrame->setRelativeTransform(tf);
   }
 
-  // Create translation planes
+  // Create translation planes - Generate TriMesh directly
   for (std::size_t p = 0; p < 3; ++p) {
-    aiMesh* mesh = new aiMesh;
-    mesh->mMaterialIndex = (unsigned int)(-1);
-
-    std::size_t numVertices = 8;
-    mesh->mNumVertices = numVertices;
-    mesh->mVertices = new aiVector3D[numVertices];
-    mesh->mNormals = new aiVector3D[numVertices];
-    mesh->mColors[0] = new aiColor4D[numVertices];
+    auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
 
     double L = plane_length;
-    for (std::size_t i = 0; i < 2; ++i) {
-      mesh->mVertices[4 * i + 0] = aiVector3D(0, -L, -L);
-      mesh->mVertices[4 * i + 1] = aiVector3D(0, L, -L);
-      mesh->mVertices[4 * i + 2] = aiVector3D(0, -L, L);
-      mesh->mVertices[4 * i + 3] = aiVector3D(0, L, L);
-    }
 
-    for (std::size_t i = 0; i < 4; ++i) {
-      mesh->mNormals[i] = aiVector3D(1, 0, 0);
-      mesh->mNormals[i + 4] = aiVector3D(-1, 0, 0);
-    }
+    // Add 8 vertices (2 quads for front and back faces)
+    triMesh->reserveVertices(8);
+    triMesh->reserveTriangles(4);
 
-    aiColor4D color(
-        0.1, 0.1, 0.1, getTool(InteractiveTool::PLANAR, p)->getDefaultAlpha());
-    color[p] = 0.9;
-    for (std::size_t i = 0; i < numVertices; ++i)
-      mesh->mColors[0][i] = color;
+    // Front face vertices (indices 0-3)
+    triMesh->addVertex(Eigen::Vector3d(0, -L, -L)); // 0
+    triMesh->addVertex(Eigen::Vector3d(0, L, -L));  // 1
+    triMesh->addVertex(Eigen::Vector3d(0, -L, L));  // 2
+    triMesh->addVertex(Eigen::Vector3d(0, L, L));   // 3
 
-    std::size_t numFaces = 4;
-    mesh->mNumFaces = numFaces;
-    mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t i = 0; i < numFaces; ++i) {
-      aiFace* face = &mesh->mFaces[i];
-      face->mNumIndices = 3;
-      face->mIndices = new unsigned int[3];
-    }
+    // Back face vertices (indices 4-7)
+    triMesh->addVertex(Eigen::Vector3d(0, -L, -L)); // 4
+    triMesh->addVertex(Eigen::Vector3d(0, L, -L));  // 5
+    triMesh->addVertex(Eigen::Vector3d(0, -L, L));  // 6
+    triMesh->addVertex(Eigen::Vector3d(0, L, L));   // 7
 
-    aiFace* face = &mesh->mFaces[0];
-    face->mIndices[0] = 0;
-    face->mIndices[1] = 1;
-    face->mIndices[2] = 3;
+    // Add triangles (2 per face, 4 total)
+    // Front face
+    triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(0, 1, 3));
+    triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(0, 3, 2));
 
-    face = &mesh->mFaces[1];
-    face->mIndices[0] = 0;
-    face->mIndices[1] = 3;
-    face->mIndices[2] = 2;
-
-    face = &mesh->mFaces[2];
-    face->mIndices[0] = 4;
-    face->mIndices[1] = 7;
-    face->mIndices[2] = 5;
-
-    face = &mesh->mFaces[3];
-    face->mIndices[0] = 4;
-    face->mIndices[1] = 6;
-    face->mIndices[2] = 7;
-
-    aiNode* node = new aiNode;
-    node->mNumMeshes = 1;
-    node->mMeshes = new unsigned int[1];
-    node->mMeshes[0] = 0;
-
-    aiScene* scene = new aiScene;
-    scene->mNumMeshes = 1;
-    scene->mMeshes = new aiMesh*[1];
-    scene->mMeshes[0] = mesh;
-    scene->mRootNode = node;
+    // Back face
+    triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(4, 7, 5));
+    triMesh->addTriangle(dart::math::TriMesh<double>::Triangle(4, 6, 7));
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), triMesh));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

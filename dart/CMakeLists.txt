@@ -126,6 +126,7 @@ target_link_libraries(
     fcl
     assimp
 )
+
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)

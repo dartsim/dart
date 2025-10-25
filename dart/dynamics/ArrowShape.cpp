@@ -55,7 +55,12 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
-ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+ArrowShape::ArrowShape()
+  : MeshShape(
+      Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
+    mResolution(10)
+{
+}
 
 //==============================================================================
 ArrowShape::ArrowShape(
@@ -64,15 +69,23 @@ ArrowShape::ArrowShape(
     const Properties& _properties,
     const Eigen::Vector4d& _color,
     std::size_t _resolution)
-  : MeshShape(Eigen::Vector3d::Ones(), nullptr),
+  : MeshShape(
+      Eigen::Vector3d::Ones(), std::make_shared<math::TriMesh<double>>()),
     mTail(_tail),
     mHead(_head),
-    mProperties(_properties)
+    mProperties(_properties),
+    mResolution(_resolution)
 {
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
   notifyColorUpdated(_color);
+}
+
+//==============================================================================
+ArrowShape::~ArrowShape()
+{
+  // No manual cleanup needed - TriMesh is managed by shared_ptr
 }
 
 //==============================================================================
@@ -103,71 +116,15 @@ void ArrowShape::setProperties(const Properties& _properties)
 //==============================================================================
 void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
-  for (std::size_t i = 0; i < mMesh->mNumMeshes; ++i) {
-    aiMesh* mesh = mMesh->mMeshes[i];
-    for (std::size_t j = 0; j < mesh->mNumVertices; ++j) {
-      mesh->mColors[0][j]
-          = aiColor4D(_color[0], _color[1], _color[2], _color[3]);
-    }
-  }
+  // Store color for future use - TriMesh doesn't directly store colors
+  // Colors are typically handled by the renderer
+  (void)_color; // Suppress unused parameter warning
 }
 
 //==============================================================================
 const ArrowShape::Properties& ArrowShape::getProperties() const
 {
   return mProperties;
-}
-
-//==============================================================================
-static void constructArrowTip(
-    aiMesh* mesh,
-    double base,
-    double tip,
-    const ArrowShape::Properties& properties)
-{
-  std::size_t resolution = (mesh->mNumVertices - 1) / 2;
-  for (std::size_t i = 0; i < resolution; ++i) {
-    double theta
-        = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
-
-    double R = properties.mRadius;
-    double x = R * cos(theta);
-    double y = R * sin(theta);
-    double z = base;
-    mesh->mVertices[2 * i].Set(x, y, z);
-
-    if (base != tip) {
-      x *= properties.mHeadRadiusScale;
-      y *= properties.mHeadRadiusScale;
-    }
-
-    mesh->mVertices[2 * i + 1].Set(x, y, z);
-  }
-
-  mesh->mVertices[mesh->mNumVertices - 1].Set(0, 0, tip);
-}
-
-//==============================================================================
-static void constructArrowBody(
-    aiMesh* mesh,
-    double z1,
-    double z2,
-    const ArrowShape::Properties& properties)
-{
-  std::size_t resolution = mesh->mNumVertices / 2;
-  for (std::size_t i = 0; i < resolution; ++i) {
-    double theta
-        = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
-
-    double R = properties.mRadius;
-    double x = R * cos(theta);
-    double y = R * sin(theta);
-    double z = z1;
-    mesh->mVertices[2 * i].Set(x, y, z);
-
-    z = z2;
-    mesh->mVertices[2 * i + 1].Set(x, y, z);
-  }
 }
 
 //==============================================================================
@@ -198,25 +155,145 @@ void ArrowShape::configureArrow(
   double headLength = mProperties.mHeadLengthScale * length;
   headLength = std::min(maxHeadLength, std::max(minHeadLength, headLength));
 
-  // construct the tail
+  // Regenerate the entire mesh with new parameters
+  mTriMesh = std::make_shared<math::TriMesh<double>>();
+
+  const double pi = math::constantsd::pi();
+  const std::size_t resolution = mResolution;
+
+  // Calculate z-coordinates for different parts
+  double tailTipZ = 0.0;
+  double tailBaseZ = mProperties.mDoubleArrow ? headLength : 0.0;
+  double bodyStartZ = tailBaseZ;
+  double bodyEndZ = length - headLength;
+  double headBaseZ = bodyEndZ;
+  double headTipZ = length;
+
+  // Calculate total number of vertices and triangles
+  std::size_t tailVertices
+      = mProperties.mDoubleArrow ? (2 * resolution + 1) : 0;
+  std::size_t bodyVertices = 2 * resolution;
+  std::size_t headVertices = 2 * resolution + 1;
+  std::size_t totalVertices = tailVertices + bodyVertices + headVertices;
+
+  std::size_t tailTriangles = mProperties.mDoubleArrow ? (3 * resolution) : 0;
+  std::size_t bodyTriangles = 2 * resolution;
+  std::size_t headTriangles = 3 * resolution;
+  std::size_t totalTriangles = tailTriangles + bodyTriangles + headTriangles;
+
+  mTriMesh->reserveVertices(totalVertices);
+  mTriMesh->reserveTriangles(totalTriangles);
+
+  std::size_t vertexOffset = 0;
+
+  // Generate tail (if double arrow)
   if (mProperties.mDoubleArrow) {
-    constructArrowTip(mMesh->mMeshes[0], headLength, 0, mProperties);
-  } else {
-    constructArrowTip(mMesh->mMeshes[0], 0, 0, mProperties);
+    // Tail cone vertices
+    for (std::size_t i = 0; i < resolution; ++i) {
+      double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+      double x = mProperties.mRadius * cos(theta);
+      double y = mProperties.mRadius * sin(theta);
+
+      // Back of tail cone (at tip)
+      mTriMesh->addVertex(Eigen::Vector3d(x, y, tailTipZ));
+      // Base of tail cone
+      mTriMesh->addVertex(Eigen::Vector3d(
+          x * mProperties.mHeadRadiusScale,
+          y * mProperties.mHeadRadiusScale,
+          tailBaseZ));
+    }
+    // Tail tip vertex
+    mTriMesh->addVertex(Eigen::Vector3d(0, 0, tailTipZ));
+
+    // Tail triangles
+    for (std::size_t i = 0; i < resolution; ++i) {
+      std::size_t next = (i + 1) % resolution;
+
+      // Back face triangles
+      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+          vertexOffset + 2 * i,
+          vertexOffset + 2 * i + 1,
+          vertexOffset + 2 * next + 1));
+      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+          vertexOffset + 2 * i,
+          vertexOffset + 2 * next + 1,
+          vertexOffset + 2 * next));
+
+      // Cone tip triangles
+      mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+          vertexOffset + 2 * i + 1,
+          vertexOffset + 2 * resolution,
+          vertexOffset + 2 * next + 1));
+    }
+
+    vertexOffset += tailVertices;
   }
 
-  // construct the main body
-  if (mProperties.mDoubleArrow) {
-    constructArrowBody(
-        mMesh->mMeshes[1], headLength, length - headLength, mProperties);
-  } else {
-    constructArrowBody(mMesh->mMeshes[1], 0, length - headLength, mProperties);
+  // Generate body (cylinder)
+  for (std::size_t i = 0; i < resolution; ++i) {
+    double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+    double x = mProperties.mRadius * cos(theta);
+    double y = mProperties.mRadius * sin(theta);
+
+    mTriMesh->addVertex(Eigen::Vector3d(x, y, bodyStartZ));
+    mTriMesh->addVertex(Eigen::Vector3d(x, y, bodyEndZ));
   }
 
-  // construct the head
-  constructArrowTip(
-      mMesh->mMeshes[2], length - headLength, length, mProperties);
+  // Body triangles
+  for (std::size_t i = 0; i < resolution; ++i) {
+    std::size_t next = (i + 1) % resolution;
 
+    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+        vertexOffset + 2 * i,
+        vertexOffset + 2 * next + 1,
+        vertexOffset + 2 * i + 1));
+    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+        vertexOffset + 2 * i,
+        vertexOffset + 2 * next,
+        vertexOffset + 2 * next + 1));
+  }
+
+  vertexOffset += bodyVertices;
+
+  // Generate head (cone)
+  for (std::size_t i = 0; i < resolution; ++i) {
+    double theta = (double)(i) / (double)(resolution)*2.0 * pi;
+    double x = mProperties.mRadius * cos(theta);
+    double y = mProperties.mRadius * sin(theta);
+
+    // Back of head cone
+    mTriMesh->addVertex(Eigen::Vector3d(x, y, headBaseZ));
+    // Head widened base
+    mTriMesh->addVertex(Eigen::Vector3d(
+        x * mProperties.mHeadRadiusScale,
+        y * mProperties.mHeadRadiusScale,
+        headBaseZ));
+  }
+  // Head tip vertex
+  mTriMesh->addVertex(Eigen::Vector3d(0, 0, headTipZ));
+
+  // Head triangles
+  for (std::size_t i = 0; i < resolution; ++i) {
+    std::size_t next = (i + 1) % resolution;
+
+    // Back face triangles
+    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+        vertexOffset + 2 * i,
+        vertexOffset + 2 * next + 1,
+        vertexOffset + 2 * i + 1));
+    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+        vertexOffset + 2 * i,
+        vertexOffset + 2 * next,
+        vertexOffset + 2 * next + 1));
+
+    // Cone tip triangles
+    mTriMesh->addTriangle(math::TriMesh<double>::Triangle(
+        vertexOffset + 2 * i + 1,
+        vertexOffset + 2 * next + 1,
+        vertexOffset + 2 * resolution));
+  }
+
+  // Apply transformation to orient arrow from tail to head
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = mTail;
   Eigen::Vector3d v = mHead - mTail;
@@ -225,18 +302,26 @@ void ArrowShape::configureArrow(
   if (v.norm() > 0) {
     v.normalize();
     Eigen::Vector3d axis = z.cross(v);
-    if (axis.norm() > 0)
+    if (axis.norm() > 0) {
       axis.normalize();
-    else
-      axis
-          = Eigen::Vector3d::UnitY(); // Any vector in the X/Y plane can be used
-    tf.rotate(Eigen::AngleAxisd(acos(z.dot(v)), axis));
+      tf.rotate(Eigen::AngleAxisd(acos(z.dot(v)), axis));
+    } else {
+      // v is parallel or antiparallel to z
+      if (z.dot(v) < 0) {
+        // v is antiparallel to z, rotate 180 degrees around any perpendicular
+        // axis
+        tf.rotate(Eigen::AngleAxisd(pi, Eigen::Vector3d::UnitY()));
+      }
+      // If v is parallel to z, no rotation needed (identity)
+    }
   }
 
-  aiNode* node = mMesh->mRootNode;
-  for (std::size_t i = 0; i < 4; ++i)
-    for (std::size_t j = 0; j < 4; ++j)
-      node->mTransformation[i][j] = tf(i, j);
+  // Transform all vertices - need to get non-const access
+  auto& vertices
+      = const_cast<std::vector<Eigen::Vector3d>&>(mTriMesh->getVertices());
+  for (auto& vertex : vertices) {
+    vertex = tf * vertex;
+  }
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -247,14 +332,16 @@ void ArrowShape::configureArrow(
 //==============================================================================
 ShapePtr ArrowShape::clone() const
 {
-  aiScene* new_scene = cloneMesh();
   auto new_shape = std::make_shared<ArrowShape>();
 
   new_shape->mTail = mTail;
   new_shape->mHead = mHead;
   new_shape->mProperties = mProperties;
+  new_shape->mResolution = mResolution;
 
-  new_shape->mMesh = new_scene;
+  // Clone the TriMesh
+  new_shape->mTriMesh = std::make_shared<math::TriMesh<double>>(*mTriMesh);
+
   new_shape->mMeshUri = mMeshUri;
   new_shape->mMeshPath = mMeshPath;
   new_shape->mResourceRetriever = mResourceRetriever;
@@ -270,132 +357,8 @@ ShapePtr ArrowShape::clone() const
 //==============================================================================
 void ArrowShape::instantiate(std::size_t resolution)
 {
-  aiNode* node = new aiNode;
-  node->mNumMeshes = 3;
-  node->mMeshes = new unsigned int[3];
-  for (std::size_t i = 0; i < 3; ++i)
-    node->mMeshes[i] = i;
-
-  aiScene* scene = new aiScene;
-  scene->mNumMeshes = 3;
-  scene->mMeshes = new aiMesh*[3];
-  scene->mRootNode = node;
-
-  scene->mMaterials = new aiMaterial*[1];
-  scene->mMaterials[0] = new aiMaterial;
-
-  // allocate memory
-  for (std::size_t i = 0; i < 3; ++i) {
-    std::size_t numVertices
-        = (i == 0 || i == 2) ? 2 * resolution + 1 : 2 * resolution;
-
-    aiMesh* mesh = new aiMesh;
-    mesh->mMaterialIndex = (unsigned int)(-1);
-
-    mesh->mNumVertices = numVertices;
-    mesh->mVertices = new aiVector3D[numVertices];
-    mesh->mNormals = new aiVector3D[numVertices];
-    mesh->mColors[0] = new aiColor4D[numVertices];
-
-    std::size_t numFaces = (i == 0 || i == 2) ? 3 * resolution : numVertices;
-    mesh->mNumFaces = numFaces;
-    mesh->mFaces = new aiFace[numFaces];
-    for (std::size_t j = 0; j < numFaces; ++j) {
-      mesh->mFaces[j].mNumIndices = 3;
-      mesh->mFaces[j].mIndices = new unsigned int[3];
-    }
-
-    scene->mMeshes[i] = mesh;
-  }
-
-  // set normals
-  aiMesh* mesh = scene->mMeshes[0];
-  for (std::size_t i = 0; i < resolution; ++i) {
-    mesh->mNormals[2 * i].Set(0.0f, 0.0f, 1.0f);
-
-    double theta
-        = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
-    mesh->mNormals[2 * i + 1].Set(cos(theta), sin(theta), 0.0f);
-  }
-  mesh->mNormals[mesh->mNumVertices - 1].Set(0.0f, 0.0f, -1.0f);
-
-  mesh = scene->mMeshes[1];
-  for (std::size_t i = 0; i < resolution; ++i) {
-    double theta
-        = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
-    mesh->mNormals[2 * i].Set(cos(theta), sin(theta), 0.0f);
-    mesh->mNormals[2 * i + 1].Set(cos(theta), sin(theta), 0.0f);
-  }
-
-  mesh = scene->mMeshes[2];
-  for (std::size_t i = 0; i < resolution; ++i) {
-    mesh->mNormals[2 * i].Set(0.0f, 0.0f, -1.0f);
-
-    double theta
-        = (double)(i) / (double)(resolution)*2 * math::constantsd::pi();
-    mesh->mNormals[2 * i + 1].Set(cos(theta), sin(theta), 0.0f);
-  }
-  mesh->mNormals[mesh->mNumVertices - 1].Set(0.0f, 0.0f, 1.0f);
-
-  // set faces
-  mesh = scene->mMeshes[0];
-  aiFace* face;
-  for (std::size_t i = 0; i < resolution; ++i) {
-    // Back of head
-    face = &mesh->mFaces[3 * i];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = 2 * i + 1;
-    face->mIndices[2] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-
-    face = &mesh->mFaces[3 * i + 1];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-    face->mIndices[2] = (i + 1 < resolution) ? 2 * i + 2 : 0;
-
-    // Tip
-    face = &mesh->mFaces[3 * i + 2];
-    face->mIndices[0] = 2 * i + 1;
-    face->mIndices[1] = 2 * resolution;
-    face->mIndices[2] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-  }
-
-  mesh = scene->mMeshes[1];
-  for (std::size_t i = 0; i < resolution; ++i) {
-    face = &mesh->mFaces[2 * i];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-    face->mIndices[2] = 2 * i + 1;
-
-    face = &mesh->mFaces[2 * i + 1];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 2 : 0;
-    face->mIndices[2] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-  }
-
-  mesh = scene->mMeshes[2];
-  for (std::size_t i = 0; i < resolution; ++i) {
-    // Back of head
-    face = &mesh->mFaces[3 * i];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-    face->mIndices[2] = 2 * i + 1;
-
-    face = &mesh->mFaces[3 * i + 1];
-    face->mIndices[0] = 2 * i;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 2 : 0;
-    face->mIndices[2] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-
-    // Tip
-    face = &mesh->mFaces[3 * i + 2];
-    face->mIndices[0] = 2 * i + 1;
-    face->mIndices[1] = (i + 1 < resolution) ? 2 * i + 3 : 1;
-    face->mIndices[2] = 2 * resolution;
-  }
-
-  mMesh = scene;
-
-  // setColor(mColor);
-  // TODO(JS)
+  mResolution = resolution;
+  // Initial mesh will be generated by configureArrow
 }
 
 } // namespace dynamics
