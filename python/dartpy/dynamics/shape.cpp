@@ -2,8 +2,10 @@
 
 #include "common/repr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/TriMesh.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -127,6 +129,35 @@ void defShape(nb::module_& m)
         fields.emplace_back("size", size_stream.str());
         return format_repr("BoxShape", fields);
       });
+
+  nb::class_<dart::dynamics::MeshShape, Shape>(m, "MeshShape")
+      .def(
+          nb::new_([](const nb::handle& scale,
+                      const std::shared_ptr<dart::math::TriMesh<double>>& mesh) {
+            nb::sequence seq = nb::cast<nb::sequence>(scale);
+            if (nb::len(seq) != 3) {
+              throw nb::type_error("MeshShape scale must have length 3");
+            }
+
+            Eigen::Vector3d vec;
+            for (size_t i = 0; i < 3; ++i) {
+              vec[i] = nb::cast<double>(seq[i]);
+            }
+
+            return std::make_shared<dart::dynamics::MeshShape>(vec, mesh);
+          }),
+          nb::arg("scale"),
+          nb::arg("mesh"))
+      .def("getTriMesh", &dart::dynamics::MeshShape::getTriMesh)
+      .def(
+          "getScale",
+          [](const dart::dynamics::MeshShape& self) { return self.getScale(); })
+      .def_static(
+          "getStaticType",
+          []() -> const std::string& {
+            return dart::dynamics::MeshShape::getStaticType();
+          },
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace dart::python_nb

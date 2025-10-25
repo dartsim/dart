@@ -34,6 +34,9 @@
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
 #include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/fwd.hpp>
+
+#include <dart/math/TriMesh.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -41,6 +44,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
@@ -87,8 +91,14 @@ public:
     SHAPE_ALPHA
   };
 
-  /// Constructor.
+  /// Constructor using TriMesh (preferred).
   MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri = "");
+
+  /// Constructor using aiScene (deprecated, for backward compatibility).
+  [[deprecated("Use TriMesh-based constructor instead")]] MeshShape(
       const Eigen::Vector3d& scale,
       const aiScene* mesh,
       const common::Uri& uri = "",
@@ -112,7 +122,15 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  const aiScene* getMesh() const;
+  /// Returns the TriMesh representation of this mesh (preferred).
+  std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the aiScene representation of this mesh (deprecated).
+  ///
+  /// WARNING: This method performs an expensive conversion from TriMesh to
+  /// aiScene on every call. It is provided only for backward compatibility.
+  /// Please migrate to getTriMesh() for better performance.
+  [[deprecated("Use getTriMesh() instead")]] const aiScene* getMesh() const;
 
   /// Updates positions of the vertices or the elements. By default, this does
   /// nothing; you must extend the MeshShape class and implement your own
@@ -201,6 +219,17 @@ public:
 
   void setDisplayList(int index);
 
+  /// Returns materials extracted from the mesh (for rendering without Assimp).
+  /// This provides an Assimp-free way to access material properties.
+  const std::vector<MeshMaterial>& getMaterials() const;
+
+  /// Returns the number of materials in this mesh.
+  std::size_t getNumMaterials() const;
+
+  /// Returns a specific material by index.
+  /// Returns nullptr if index is out of bounds.
+  const MeshMaterial* getMaterial(std::size_t index) const;
+
   static const aiScene* loadMesh(const std::string& filePath);
 
   static const aiScene* loadMesh(
@@ -229,6 +258,26 @@ protected:
   std::shared_ptr<const aiScene> mMesh;
   MeshOwnership mMeshOwnership{MeshOwnership::None};
 
+  /// Converts aiScene to TriMesh for internal use.
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene);
+
+  /// Converts TriMesh back to aiScene for backward compatibility.
+  /// NOTE: This creates a new aiScene on every call and the caller is
+  /// responsible for freeing it with aiReleaseImport().
+  const aiScene* convertToAssimpMesh() const;
+
+  /// Extracts material information from aiScene for Assimp-free rendering.
+  void extractMaterialsFromScene(
+      const aiScene* scene, const std::string& basePath);
+
+  /// TriMesh representation (preferred, ownership shared).
+  std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Cached aiScene for backward compatibility (created on-demand).
+  /// Mutable to allow lazy conversion in const getMesh() method.
+  mutable const aiScene* mCachedAiScene;
+
   /// URI the mesh, if available).
   common::Uri mMeshUri;
 
@@ -252,6 +301,9 @@ protected:
 
   /// Specifies which color index should be used when mColorMode is COLOR_INDEX
   int mColorIndex;
+
+  /// Materials extracted from the mesh (for Assimp-free rendering).
+  std::vector<MeshMaterial> mMaterials;
 };
 
 } // namespace dynamics

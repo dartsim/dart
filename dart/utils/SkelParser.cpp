@@ -70,6 +70,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/MeshLoader.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 #include <Eigen/Dense>
@@ -1379,10 +1380,13 @@ dynamics::ShapePtr readShape(
 
     const common::Uri meshUri
         = common::Uri::createFromRelativeUri(baseUri, filename);
-    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
-    if (model) {
+
+    auto loader = std::make_unique<utils::MeshLoaderd>();
+    auto triMesh = loader->load(meshUri.toString(), retriever);
+
+    if (triMesh) {
       newShape = std::make_shared<dynamics::MeshShape>(
-          scale, model, meshUri, retriever);
+          scale, std::move(triMesh), meshUri);
     } else {
       DART_ERROR("Fail to load model[{}].", filename);
     }

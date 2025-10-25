@@ -104,6 +104,7 @@ set(dartpy_headers
   math/geometry.hpp
   math/random.hpp
   math/eigen_geometry.hpp
+  math/trimesh.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
   dynamics/degree_of_freedom.hpp
@@ -179,6 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/TriMesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp

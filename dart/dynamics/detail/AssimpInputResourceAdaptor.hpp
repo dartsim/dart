@@ -93,8 +93,8 @@ public:
   /// @brief Read from the file
   ///
   /// See fread() for more details
-  std::size_t Read(
-      void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+  std::size_t Read(void* pvBuffer, std::size_t pSize, std::size_t pCount)
+      override;
 
   /// @brief Not implemented. This is a read-only stream.
   std::size_t Write(

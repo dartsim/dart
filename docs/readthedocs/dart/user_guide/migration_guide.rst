@@ -58,3 +58,6 @@ Need another migration?
 -----------------------
 
 Looking for guidance on a different upgrade path? Open a discussion or issue on GitHub so we can expand this page with the details you need.
+
+.. note::
+   For Python migrations, see :doc:`/dartpy/user_guide/migration_guide`.

@@ -30,14 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "dart/dynamics/detail/AssimpInputResourceAdaptor.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
 #include <assimp/IOStream.hpp>
-
-#include <iostream>
 
 #include <cassert>
 
@@ -88,10 +86,14 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
     return nullptr;
   }
 
-  if (const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
+  if (const common::ResourcePtr resource
+      = mResourceRetriever->retrieve(pFile)) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
     return new AssimpInputResourceAdaptor(resource);
-  else
+    DART_SUPPRESS_DEPRECATED_END
+  } else {
     return nullptr;
+  }
 }
 
 //==============================================================================
