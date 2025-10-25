@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,13 +39,17 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
+#if HAVE_DART_GUI_OSG
 void dart_gui_osg(py::module& m);
+#endif
 
 void dart_gui(py::module& m)
 {
   auto sm = m.def_submodule("gui");
 
+#if HAVE_DART_GUI_OSG
   dart_gui_osg(sm);
+#endif
 }
 
 } // namespace python
