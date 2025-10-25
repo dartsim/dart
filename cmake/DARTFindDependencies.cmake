@@ -223,8 +223,8 @@ if(DART_BUILD_GUI_OSG)
     # Use imgui::imgui as the target name to match system-installed imgui convention
     set(imgui_target_name imgui::imgui)
     set(imgui_component_name imgui)
-    # Create actual target named 'imgui' for the library
-    set(imgui_library_name imgui)
+    # Create actual target with unique name to avoid conflicts with example executables
+    set(imgui_library_name dart-imgui-lib)
 
     dart_add_library(${imgui_library_name}
       ${IMGUI_CORE_SOURCES}
