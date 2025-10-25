@@ -96,6 +96,10 @@
 // in C++20 such as <ciso646>. Use these macros to suppress preprocessor
 // warnings only around third-party includes.
 //
+// TODO: Remove these macros once upstream libraries are C++20 compatible:
+//   - octomap: Check if fixed in versions > 1.10.0
+//   - pagmo: Check if fixed in versions > 2.19.0
+//
 // Example usage:
 //
 // DART_SUPPRESS_CPP_WARNING_BEGIN
