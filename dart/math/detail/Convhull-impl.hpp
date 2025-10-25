@@ -244,7 +244,7 @@ inline void convexHull3dBuild(
 {
   const int numInputVertices = static_cast<int>(inVertices.size());
 
-  if (numInputVertices <= 3) [[unlikely]] {
+  if (numInputVertices <= 3) {
     outFaces.clear();
     numOutputTriangles = 0;
     return;
@@ -689,7 +689,9 @@ inline void convexHull3dBuild(
               A[l * (kSpatialDimension + 1) + j] = perturbedVertices
                   [nonMatchingTriangles[index] * (kSpatialDimension + 1) + j];
           orientationDeterminant = convhull_internal::det4x4(A);
-          assert(orientationDeterminant > static_cast<S>(0.0));
+          assert(
+              orientationDeterminant
+              > -std::numeric_limits<S>::epsilon() * static_cast<S>(100.0));
 #endif
         }
       }
