@@ -30,7 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
+#include "helpers/GTestUtils.hpp"
+
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
@@ -39,7 +40,9 @@
 #include <iostream>
 
 using namespace dart;
-using namespace math;
+using namespace dart::math;
+using namespace dart::test;
+using namespace Eigen;
 
 #define LIE_GROUP_OPT_TOL 1e-12
 

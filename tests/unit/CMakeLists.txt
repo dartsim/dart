@@ -1,4 +1,71 @@
 # Copyright (c) 2011-2025, The DART development contributors
 
-add_subdirectory(common)
-add_subdirectory(math)
+# ==============================================================================
+# Collision Tests
+# ==============================================================================
+dart_add_test("unit" test_Distance collision/test_Distance.cpp)
+if(TARGET dart-collision-bullet)
+  target_link_libraries(test_Distance dart-collision-bullet)
+endif()
+
+dart_add_test("unit" test_Raycast collision/test_Raycast.cpp)
+if(TARGET dart-collision-bullet)
+  target_link_libraries(test_Raycast dart-collision-bullet)
+endif()
+
+# ==============================================================================
+# Common Tests
+# ==============================================================================
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT
+  LINK_LIBRARIES dart
+  SOURCES
+    common/test_CAllocator.cpp
+    common/test_Factory.cpp
+    common/test_FreeListAllocator.cpp
+    common/test_Logging.cpp
+    common/test_MemoryManager.cpp
+    common/test_PoolAllocator.cpp
+    common/test_StlAllocator.cpp
+    common/test_Stopwatch.cpp
+    common/test_String.cpp
+    common/test_Uri.cpp
+)
+
+# ==============================================================================
+# Constraint Tests
+# ==============================================================================
+dart_add_test("unit" test_ConstraintSolver constraint/test_ConstraintSolver.cpp)
+
+# ==============================================================================
+# Dynamics Tests
+# ==============================================================================
+dart_add_test("unit" test_GenericJoints dynamics/test_GenericJoints.cpp)
+dart_add_test("unit" test_Inertia dynamics/test_Inertia.cpp)
+dart_add_test("unit" test_ScrewJoint dynamics/test_ScrewJoint.cpp)
+
+# Additional dynamics tests
+if(TARGET dart-utils-urdf)
+  dart_add_test("unit" test_create_shape_node_api dynamics/test_create_shape_node_api.cpp)
+endif()
+
+# ==============================================================================
+# LCP Solver Tests
+# ==============================================================================
+dart_add_test("unit" test_Lemke lcpsolver/test_Lemke.cpp)
+
+# ==============================================================================
+# Math Tests
+# ==============================================================================
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT
+  LINK_LIBRARIES dart
+  SOURCES
+    math/test_Geometry.cpp
+    math/test_Icosphere.cpp
+    math/test_Math.cpp
+    math/test_Random.cpp
+    math/test_TriMesh.cpp
+)

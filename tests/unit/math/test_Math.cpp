@@ -30,7 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TestHelpers.hpp"
+#include "helpers/GTestUtils.hpp"
+
 #include "dart/common/Stopwatch.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -43,10 +44,12 @@
 #include <iostream>
 
 using namespace dart;
-using namespace common;
-using namespace math;
-using namespace dynamics;
-using namespace simulation;
+using namespace dart::common;
+using namespace dart::math;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::test;
+using namespace Eigen;
 
 #define MATH_TOL 0.000001
 #define MATH_EPS 0.000001

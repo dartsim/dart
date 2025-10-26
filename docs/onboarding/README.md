@@ -6,6 +6,23 @@
 
 **DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
 
+### Documentation Principles
+
+**This documentation prioritizes the codebase as the source of truth:**
+- Minimal code snippets (prefer links to actual source)
+- Avoid details that can become outdated or out-of-sync
+- Focus on concepts, patterns, and architecture
+- Direct readers to the code for specifics
+
+### Design Principles
+
+**Prefer simplicity over premature generalization:**
+- Start with the simplest solution that solves the current problem
+- Only add abstraction, hierarchy, or scalability when actually needed
+- Resist the urge to design for hypothetical future requirements
+- Refactor to add complexity when pain points emerge, not before
+- Example: `helpers/common_helpers.hpp` not `helpers/common/test_helpers.hpp` - flat structure is simpler until we have enough helpers to warrant deeper nesting
+
 ### Documentation Structure
 
 This onboarding guide is organized into several focused documents:
@@ -14,6 +31,7 @@ This onboarding guide is organized into several focused documents:
 - **[building.md](building.md)** - Step-by-step build instructions for all platforms
 - **[contributing.md](contributing.md)** - Comprehensive contribution workflow and guidelines
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
+- **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
