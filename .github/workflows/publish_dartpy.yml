@@ -32,25 +32,31 @@ jobs:
   build_wheels:
     name: ${{ matrix.os }}-py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    # Use manylinux container for Linux builds to link against glibc 2.28
+    container: ${{ matrix.container }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         include:
           # Linux builds - py312 always runs, others only for PRs/tags
+          # Build in manylinux_2_28 container to ensure glibc 2.28 compatibility
           - os: ubuntu-latest
             python-version: "312"
             experimental: false
+            container: quay.io/pypa/manylinux_2_28_x86_64
 
           - os: ubuntu-latest
             python-version: "313"
             experimental: false
             skip_for_commit: true
+            container: quay.io/pypa/manylinux_2_28_x86_64
 
           - os: ubuntu-latest
             python-version: "314"
             experimental: false
             skip_for_commit: true
+            container: quay.io/pypa/manylinux_2_28_x86_64
 
           # macOS builds - py312 runs on commits, others only for PRs/tags
           - os: macos-latest
@@ -97,6 +103,16 @@ jobs:
           else
             echo "run=false" >> $GITHUB_OUTPUT
             echo "Skipping build for regular commit (not PR or tag)"
+          fi
+
+      # Install git in manylinux container (required for actions/checkout)
+      - name: Install git in container
+        if: steps.should_run.outputs.run == 'true' && matrix.container != ''
+        run: |
+          if command -v yum &> /dev/null; then
+            yum install -y git
+          elif command -v apt-get &> /dev/null; then
+            apt-get update && apt-get install -y git
           fi
 
       - uses: actions/checkout@v5
