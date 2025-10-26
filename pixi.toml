@@ -967,6 +967,12 @@ patchelf = ">=0.17"
 mesalib = ">=24"
 libglvnd = ">=1.7"
 
+[feature.py312-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py312-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
 [feature.py312-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
 
@@ -1034,6 +1040,12 @@ patchelf = ">=0.17"
 mesalib = ">=24"
 libglvnd = ">=1.7"
 
+[feature.py313-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py313-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
 [feature.py313-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
 
@@ -1098,6 +1110,12 @@ auditwheel = ">=6.0"
 patchelf = ">=0.17"
 mesalib = ">=24"
 libglvnd = ">=1.7"
+
+[feature.py314-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py314-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
 
 [feature.py314-wheel.target.win-64.dependencies]
 openscenegraph = ">=3.6.5,<4"
