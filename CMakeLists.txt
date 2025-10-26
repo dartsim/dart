@@ -268,11 +268,11 @@ endif()
 #===============================================================================
 if(MSVC)
 
-  # Visual Studio enables C++17 support by default
-  set(msvc_required_version 1920)
+  # Visual Studio 2022 17.10+ required for C++20 support
+  set(msvc_required_version 1940)
   if(MSVC_VERSION VERSION_LESS ${msvc_required_version} AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
     message(FATAL_ERROR "Visual Studio ${MSVC_VERSION} is detected, but "
-      "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater."
+      "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater (Visual Studio 2022 17.10+)."
     )
   endif()
 

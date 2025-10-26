@@ -8,6 +8,12 @@ name: Publish dartpy
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+  pull_request:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/workflows/cache_*.yml"
+      - "docker/dev/**"
   schedule:
     - cron: "0 10 * * 0,3"
   workflow_dispatch:

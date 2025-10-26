@@ -37,6 +37,15 @@
 
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
+  // Check if spdlog is using fmt or std::format backend
+  #if defined(SPDLOG_USE_STD_FORMAT)
+    // spdlog uses std::format - no need for runtime wrapper
+    #define DART_SPDLOG_RUNTIME(str) str
+  #else
+    // spdlog uses fmt - need fmt::runtime for non-compile-time strings
+    #include <spdlog/fmt/fmt.h>
+    #define DART_SPDLOG_RUNTIME(str) fmt::runtime(str)
+  #endif
 #else
   #include <iostream>
   #include <string>
@@ -80,7 +89,7 @@ template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::trace(format_str, std::forward<Args>(args)...);
+  spdlog::trace(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
@@ -92,7 +101,7 @@ template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::debug(format_str, std::forward<Args>(args)...);
+  spdlog::debug(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
@@ -104,7 +113,7 @@ template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::info(format_str, std::forward<Args>(args)...);
+  spdlog::info(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
@@ -116,7 +125,7 @@ template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::warn(format_str, std::forward<Args>(args)...);
+  spdlog::warn(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
@@ -128,7 +137,7 @@ template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::error(format_str, std::forward<Args>(args)...);
+  spdlog::error(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
@@ -140,7 +149,8 @@ template <typename S, typename... Args>
 void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::critical(format_str, std::forward<Args>(args)...);
+  spdlog::critical(
+      DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);

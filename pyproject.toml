@@ -120,15 +120,19 @@ skip = [
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
+before-test = "ldconfig"
+repair-wheel-command = "auditwheel repair --lib-sdir /usr/local/lib --lib-sdir /usr/local/lib64 -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
 archs = ["auto64"] # TODO: Add universal2 and arm64
 before-all = [
     "brew update > /dev/null",
     "brew bundle || brew bundle",
-    "brew install open-scene-graph", # TODO: --HEAD is needed to build the latest version, but it's currently broken
+    # Note: open-scene-graph < 3.7.0 from Homebrew doesn't work on macOS 10.15+
+    # Building from --HEAD is broken, so we skip OSG for macOS wheels
     "sw_vers",
 ]
+environment = { SKBUILD_CMAKE_DEFINE = "DART_BUILD_GUI_OSG=OFF" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64", "ARM64"]

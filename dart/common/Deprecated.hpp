@@ -90,4 +90,37 @@
 
 #endif
 
+// Macros to suppress C++20 preprocessor warnings from third-party headers.
+//
+// Some third-party libraries (e.g., octomap, pagmo) use headers deprecated
+// in C++20 such as <ciso646>. Use these macros to suppress preprocessor
+// warnings only around third-party includes.
+//
+// TODO: Remove these macros once upstream libraries are C++20 compatible:
+//   - octomap: Check if fixed in versions > 1.10.0
+//   - pagmo: Check if fixed in versions > 2.19.0
+//
+// Example usage:
+//
+// DART_SUPPRESS_CPP_WARNING_BEGIN
+// #include <third_party/header.hpp>
+// DART_SUPPRESS_CPP_WARNING_END
+//
+#if defined(DART_COMPILER_GCC)
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN                                      \
+    _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wcpp\"")
+  #define DART_SUPPRESS_CPP_WARNING_END _Pragma("GCC diagnostic pop")
+#elif defined(DART_COMPILER_CLANG)
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN                                      \
+    _Pragma("clang diagnostic push")                                           \
+        _Pragma("clang diagnostic ignored \"-W#pragma-messages\"")
+  #define DART_SUPPRESS_CPP_WARNING_END _Pragma("clang diagnostic pop")
+#elif defined(DART_COMPILER_MSVC)
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN __pragma(warning(push))
+  #define DART_SUPPRESS_CPP_WARNING_END __pragma(warning(pop))
+#else
+  #define DART_SUPPRESS_CPP_WARNING_BEGIN
+  #define DART_SUPPRESS_CPP_WARNING_END
+#endif
+
 #endif // DART_COMMON_DEPRECATED_HPP_

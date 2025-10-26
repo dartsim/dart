@@ -50,6 +50,7 @@
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 // clang-format on
 
+DART_SUPPRESS_CPP_WARNING_BEGIN
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/config.h>
 #include <fcl/geometry/bvh/BVH_model.h>
@@ -64,8 +65,7 @@
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
   #include <fcl/geometry/octree/octree.h>
 #endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
-
-#include <memory>
+DART_SUPPRESS_CPP_WARNING_END
 
 namespace dart {
 namespace collision {

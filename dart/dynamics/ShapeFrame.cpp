@@ -263,12 +263,12 @@ const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const
 //==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
-  if (shape == ShapeFrame::mAspectProperties.mShape)
+  if (shape == mAspectProperties.mShape)
     return;
 
-  ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
+  ShapePtr oldShape = mAspectProperties.mShape;
 
-  ShapeFrame::mAspectProperties.mShape = shape;
+  mAspectProperties.mShape = shape;
   incrementVersion();
 
   mConnectionForShapeVersionChange.disconnect();
@@ -276,26 +276,25 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   if (shape) {
     mConnectionForShapeVersionChange
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
-            assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());
+            assert(shape == this->mAspectProperties.mShape.get());
             DART_UNUSED(shape);
             this->incrementVersion();
           });
   }
 
-  mShapeUpdatedSignal.raise(
-      this, oldShape, ShapeFrame::mAspectProperties.mShape);
+  mShapeUpdatedSignal.raise(this, oldShape, mAspectProperties.mShape);
 }
 
 //==============================================================================
 ShapePtr ShapeFrame::getShape()
 {
-  return ShapeFrame::mAspectProperties.mShape;
+  return mAspectProperties.mShape;
 }
 
 //==============================================================================
 ConstShapePtr ShapeFrame::getShape() const
 {
-  return ShapeFrame::mAspectProperties.mShape;
+  return mAspectProperties.mShape;
 }
 
 //==============================================================================

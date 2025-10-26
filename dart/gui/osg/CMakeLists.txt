@@ -23,8 +23,8 @@ if(DART_USE_SYSTEM_IMGUI)
   list(APPEND component_dependency_packages imgui)
   list(APPEND link_libraries imgui::imgui)
 else()
-  list(APPEND component_dependencies external-imgui)
-  list(APPEND link_libraries ${PROJECT_NAME}-external-imgui)
+  list(APPEND component_dependencies imgui)
+  list(APPEND link_libraries dart-imgui-lib)
 endif()
 
 # Search all header and source files
