@@ -52,11 +52,10 @@ jobs:
             experimental: false
             skip_for_commit: true
 
-          # macOS builds - only for PRs and tags
+          # macOS builds - py312 runs on commits, others only for PRs/tags
           - os: macos-latest
             python-version: "312"
             experimental: false
-            skip_for_commit: true
 
           - os: macos-latest
             python-version: "313"
@@ -68,11 +67,10 @@ jobs:
             experimental: false
             skip_for_commit: true
 
-          # Windows builds - only for PRs and tags
+          # Windows builds - py312 runs on commits, others only for PRs/tags
           - os: windows-latest
             python-version: "312"
             experimental: false
-            skip_for_commit: true
 
           - os: windows-latest
             python-version: "313"
