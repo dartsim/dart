@@ -996,11 +996,23 @@ wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verif
 wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
 
 # macOS-specific: OSG is available but imgui needs to be built from source (not available on conda-forge for macOS)
+[feature.py312-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py312-wheel.target.osx-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
 
+wheel-repair = { cmd = "delocate-wheel --require-archs x86_64 -w dist/ -v dist/dartpy-*-cp312-*-macosx_*_x86_64.whl && rm dist/dartpy-*-cp312-*-macosx_*_x86_64.whl" }
+
+[feature.py312-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py312-wheel.target.osx-arm64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+wheel-repair = { cmd = "delocate-wheel --require-archs arm64 -w dist/ -v dist/dartpy-*-cp312-*-macosx_*_arm64.whl && rm dist/dartpy-*-cp312-*-macosx_*_arm64.whl" }
 
 #======================
 # Feature: Python 3.13 Wheel Building
@@ -1067,11 +1079,23 @@ wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verif
 
 wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
 
+[feature.py313-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py313-wheel.target.osx-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
 
+wheel-repair = { cmd = "delocate-wheel --require-archs x86_64 -w dist/ -v dist/dartpy-*-cp313-*-macosx_*_x86_64.whl && rm dist/dartpy-*-cp313-*-macosx_*_x86_64.whl" }
+
+[feature.py313-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py313-wheel.target.osx-arm64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+wheel-repair = { cmd = "delocate-wheel --require-archs arm64 -w dist/ -v dist/dartpy-*-cp313-*-macosx_*_arm64.whl && rm dist/dartpy-*-cp313-*-macosx_*_arm64.whl" }
 
 #======================
 # Feature: Python 3.14 Wheel Building
@@ -1138,11 +1162,23 @@ wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verif
 
 wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
 
+[feature.py314-wheel.target.osx-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py314-wheel.target.osx-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
 
+wheel-repair = { cmd = "delocate-wheel --require-archs x86_64 -w dist/ -v dist/dartpy-*-cp314-*-macosx_*_x86_64.whl && rm dist/dartpy-*-cp314-*-macosx_*_x86_64.whl" }
+
+[feature.py314-wheel.target.osx-arm64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+delocate = ">=0.11.0"
+
 [feature.py314-wheel.target.osx-arm64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+wheel-repair = { cmd = "delocate-wheel --require-archs arm64 -w dist/ -v dist/dartpy-*-cp314-*-macosx_*_arm64.whl && rm dist/dartpy-*-cp314-*-macosx_*_arm64.whl" }
 
 #==============
 # Environments
