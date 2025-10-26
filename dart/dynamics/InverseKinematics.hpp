@@ -50,6 +50,7 @@
 
 #include <functional>
 #include <memory>
+#include <span>
 
 namespace dart {
 namespace dynamics {
