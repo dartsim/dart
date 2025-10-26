@@ -32,10 +32,10 @@
 
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
+#include <dart/dynamics/InvalidIndex.hpp>
+#include <dart/dynamics/detail/BodyNodePtr.hpp>
 
-#include <dart/dynamics/detail/NodePtr.hpp>
-
-#include <memory>
+#include <compare>
 
 namespace dart {
 namespace dynamics {

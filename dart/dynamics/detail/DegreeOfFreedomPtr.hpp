@@ -36,6 +36,8 @@
 #include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
 
+#include <compare>
+
 namespace dart {
 namespace dynamics {
 

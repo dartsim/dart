@@ -32,8 +32,10 @@
 
 #ifndef DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
-
+#include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
+
+#include <compare>
 
 namespace dart {
 namespace dynamics {

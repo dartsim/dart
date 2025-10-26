@@ -32,6 +32,8 @@
 
 #include <dart/math/Random.hpp>
 
+#include <concepts>
+
 namespace dart {
 namespace math {
 
