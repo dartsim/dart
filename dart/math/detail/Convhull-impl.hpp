@@ -617,9 +617,9 @@ inline void convexHull3dBuild(
         triangleOffsets[(currentTriangleCount - 1)] = tempOffset;
       }
 
-      allTriangleIndices.resize(currentTriangleCount);
-      faceContainsVertexFlags.resize(currentTriangleCount);
-      for (int j = 0; j < currentTriangleCount; j++)
+      allTriangleIndices.resize(numInputVertices);
+      faceContainsVertexFlags.resize(numInputVertices);
+      for (int j = 0; j < numInputVertices; j++)
         allTriangleIndices[j] = j;
 
       for (k = firstNewTriangleIndex; k < currentTriangleCount; k++) {
@@ -630,17 +630,17 @@ inline void convexHull3dBuild(
             allTriangleIndices.data(),
             sortedCurrentFace,
             faceContainsVertexFlags.data(),
-            currentTriangleCount,
+            numInputVertices,
             kSpatialDimension);
 
         int numCandidateOrientationTriangles = 0;
-        for (int j = 0; j < currentTriangleCount; j++)
+        for (int j = 0; j < numInputVertices; j++)
           if (!faceContainsVertexFlags[j])
             numCandidateOrientationTriangles++;
 
         nonMatchingTriangles.resize(numCandidateOrientationTriangles);
         l = 0;
-        for (int j = 0; j < currentTriangleCount; j++) {
+        for (int j = 0; j < numInputVertices; j++) {
           if (!faceContainsVertexFlags[j]) {
             nonMatchingTriangles[l] = allTriangleIndices[j];
             l++;
