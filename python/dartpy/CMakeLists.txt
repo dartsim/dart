@@ -111,6 +111,13 @@ target_compile_definitions(${pybind_module}
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
 
+# Pass DART_BUILD_GUI_OSG to Python bindings so they can conditionally compile OSG support
+if(DART_BUILD_GUI_OSG)
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+else()
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=0)
+endif()
+
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
 

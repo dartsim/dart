@@ -922,9 +922,216 @@ test-gz = { cmd = "bash -c 'cd .deps/gz-physics/build/lib && (otool -L libgz-phy
     "build-gz",
 ], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
+#======================
+# Feature: Python 3.12 Wheel Building
+#======================
+#
+# IMPORTANT NOTES:
+# - All CMake configuration MUST be done via CMAKE_ARGS environment variable
+# - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
+# - DART_BUILD_GUI_OSG controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
+# - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
+# - DART_BUILD_GUI_OSG=ON enables dartpy.gui.osg Python bindings on all platforms
+
+[feature.py312-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py312-wheel.dependencies]
+python = "3.12.*"
+pip = ">=25"
+scikit-build-core = ">=0.10"
+pybind11 = ">=3.0"
+cmake = ">=4.0"
+ninja = ">=1.12"
+assimp = ">=5.4.3,<6"
+bullet-cpp = ">=3.25,<4"
+console_bridge = ">=1.0.2,<2"
+eigen = ">=3.4.0,<4"
+fcl = ">=0.7.0,<0.8"
+fmt = ">=11.1.4,<12"
+imgui = ">=1.91.9,<2"
+libboost-devel = ">=1.86.0,<2"
+octomap = ">=1.10.0,<2"
+tinyxml2 = ">=11.0.0,<12"
+urdfdom = ">=4.0.1,<5"
+numpy = ">=2"
+# Testing and publishing
+uv = ">=0.5"
+twine = ">=6.0"
+
+[feature.py312-wheel.target.linux-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+auditwheel = ">=6.0"
+patchelf = ">=0.17"
+mesalib = ">=24"
+libglvnd = ">=1.7"
+
+[feature.py312-wheel.target.win-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py312-wheel.tasks]
+# Build wheel with OSG enabled (Linux/Windows have OSG available)
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
+
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp312-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp312-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+
+wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp312-*.whl" }
+
+wheel-test = { cmd = "python scripts/test_wheel.py dist/dartpy-*-cp312-*.whl" }
+
+wheel-upload = { cmd = "twine upload --repository dartpy dist/dartpy-*-cp312-*.whl" }
+
+wheel-upload-test = { cmd = "twine upload --repository testpypi dist/dartpy-*-cp312-*.whl" }
+
+# High-level workflow tasks
+wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload-test"] }
+
+wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
+
+# macOS-specific: OSG is available but imgui needs to be built from source (not available on conda-forge for macOS)
+[feature.py312-wheel.target.osx-64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+[feature.py312-wheel.target.osx-arm64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+#======================
+# Feature: Python 3.13 Wheel Building
+#======================
+
+[feature.py313-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py313-wheel.dependencies]
+python = "3.13.*"
+pip = ">=25"
+scikit-build-core = ">=0.10"
+pybind11 = ">=3.0"
+cmake = ">=4.0"
+ninja = ">=1.12"
+assimp = ">=5.4.3,<6"
+bullet-cpp = ">=3.25,<4"
+console_bridge = ">=1.0.2,<2"
+eigen = ">=3.4.0,<4"
+fcl = ">=0.7.0,<0.8"
+fmt = ">=11.1.4,<12"
+imgui = ">=1.91.9,<2"
+libboost-devel = ">=1.86.0,<2"
+octomap = ">=1.10.0,<2"
+tinyxml2 = ">=11.0.0,<12"
+urdfdom = ">=4.0.1,<5"
+numpy = ">=2"
+# Testing and publishing
+uv = ">=0.5"
+twine = ">=6.0"
+
+[feature.py313-wheel.target.linux-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+auditwheel = ">=6.0"
+patchelf = ">=0.17"
+mesalib = ">=24"
+libglvnd = ">=1.7"
+
+[feature.py313-wheel.target.win-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py313-wheel.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
+
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp313-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp313-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+
+wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp313-*.whl" }
+
+wheel-test = { cmd = "python scripts/test_wheel.py dist/dartpy-*-cp313-*.whl" }
+
+wheel-upload = { cmd = "twine upload --repository dartpy dist/dartpy-*-cp313-*.whl" }
+
+wheel-upload-test = { cmd = "twine upload --repository testpypi dist/dartpy-*-cp313-*.whl" }
+
+# High-level workflow tasks
+wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload-test"] }
+
+wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
+
+[feature.py313-wheel.target.osx-64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+[feature.py313-wheel.target.osx-arm64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+#======================
+# Feature: Python 3.14 Wheel Building
+#======================
+
+[feature.py314-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py314-wheel.dependencies]
+python = "3.14.*"
+pip = ">=25"
+scikit-build-core = ">=0.10"
+pybind11 = ">=3.0"
+cmake = ">=4.0"
+ninja = ">=1.12"
+assimp = ">=5.4.3,<6"
+bullet-cpp = ">=3.25,<4"
+console_bridge = ">=1.0.2,<2"
+eigen = ">=3.4.0,<4"
+fcl = ">=0.7.0,<0.8"
+fmt = ">=11.1.4,<12"
+imgui = ">=1.91.9,<2"
+libboost-devel = ">=1.86.0,<2"
+octomap = ">=1.10.0,<2"
+tinyxml2 = ">=11.0.0,<12"
+urdfdom = ">=4.0.1,<5"
+numpy = ">=2"
+# Testing and publishing
+uv = ">=0.5"
+twine = ">=6.0"
+
+[feature.py314-wheel.target.linux-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+auditwheel = ">=6.0"
+patchelf = ">=0.17"
+mesalib = ">=24"
+libglvnd = ">=1.7"
+
+[feature.py314-wheel.target.win-64.dependencies]
+openscenegraph = ">=3.6.5,<4"
+
+[feature.py314-wheel.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
+
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp314-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp314-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+
+wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp314-*.whl" }
+
+wheel-test = { cmd = "python scripts/test_wheel.py dist/dartpy-*-cp314-*.whl" }
+
+wheel-upload = { cmd = "twine upload --repository dartpy dist/dartpy-*-cp314-*.whl" }
+
+wheel-upload-test = { cmd = "twine upload --repository testpypi dist/dartpy-*-cp314-*.whl" }
+
+# High-level workflow tasks
+wheel-publish-test = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload-test"] }
+
+wheel-publish = { depends-on = ["wheel-build", "wheel-repair", "wheel-verify", "wheel-test", "wheel-upload"] }
+
+[feature.py314-wheel.target.osx-64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
+[feature.py314-wheel.target.osx-arm64.tasks]
+wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=OFF" } }
+
 #==============
 # Environments
 #==============
 
 [environments]
 gazebo = ["gazebo"]
+py312-wheel = ["py312-wheel"]
+py313-wheel = ["py313-wheel"]
+py314-wheel = ["py314-wheel"]

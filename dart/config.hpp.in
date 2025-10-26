@@ -7,6 +7,8 @@
 #define DART_PATCH_VERSION @DART_PATCH_VERSION@
 
 #define DART_VERSION "@DART_VERSION@"
+#define DART_VERSION_FULL "@DART_VERSION_FULL@"
+#define DART_VERSION_SUFFIX "@DART_VERSION_SUFFIX@"
 #define DART_DESCRIPTION "@DART_PKG_DESC@"
 
 #define DART_VERSION_GT(x, y, z)                                               \

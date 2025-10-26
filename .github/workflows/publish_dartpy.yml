@@ -5,6 +5,8 @@ name: Publish dartpy
   push:
     branches:
       - "**"
+    tags:
+      - "v*.*.*" # Trigger on version tags (e.g., v7.0.0, v7.0.1)
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
@@ -28,146 +30,106 @@ concurrency:
 #   - https://github.com/pypa/cibuildwheel/blob/main/examples/github-deploy.yml
 jobs:
   build_wheels:
-    name: ${{ matrix.os }}-${{ matrix.build }}
+    name: ${{ matrix.os }}-py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        build: ["cp313-manylinux_x86_64"]
-        experimental: [false]
-        release_only: [false]
-
         include:
+          # Linux builds - py312 for commits, all versions for PRs
           - os: ubuntu-latest
-            build: "cp312-manylinux_x86_64"
+            python-version: "312"
             experimental: false
-            release_only: true
+            skip_on_commit: false
 
           - os: ubuntu-latest
-            build: "cp311-manylinux_x86_64"
+            python-version: "313"
             experimental: false
-            release_only: true
+            skip_on_commit: true
 
           - os: ubuntu-latest
-            build: "cp310-manylinux_x86_64"
+            python-version: "314"
             experimental: false
-            release_only: true
+            skip_on_commit: true
+
+          # macOS builds - only for PRs and tags
+          - os: macos-latest
+            python-version: "312"
+            experimental: false
+            skip_on_commit: true
 
           - os: macos-latest
-            build: "cp313-macosx_arm64"
+            python-version: "313"
             experimental: false
-            release_only: false
+            skip_on_commit: true
 
           - os: macos-latest
-            build: "cp312-macosx_arm64"
+            python-version: "314"
             experimental: false
-            release_only: true
+            skip_on_commit: true
+
+          # Windows builds - only for PRs and tags
+          - os: windows-latest
+            python-version: "312"
+            experimental: false
+            skip_on_commit: true
 
           - os: windows-latest
-            build: "cp313-win_amd64"
+            python-version: "313"
             experimental: false
-            release_only: false
+            skip_on_commit: true
 
           - os: windows-latest
-            build: "cp312-win_amd64"
+            python-version: "314"
             experimental: false
-            release_only: true
-
-    env:
-      CIBW_BUILD: ${{ matrix.build }}
-      CIBW_PRERELEASE_PYTHONS: true
-
+            skip_on_commit: true
+    # Skip this job if:
+    # - It's a regular commit (push to branch, not a tag)
+    # - It's not a PR
+    # - skip_on_commit is true
+    if: |
+      github.event_name == 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      matrix.skip_on_commit == false
     steps:
       - uses: actions/checkout@v5
 
-      - name: Cache Homebrew packages
-        if: ${{ matrix.os == 'macos-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: actions/cache@v4
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar
-          key: ${{ runner.os }}-brew-${{ hashFiles('**/Brewfile') }}
-          restore-keys: |
-            ${{ runner.os }}-brew-
+          pixi-version: latest
+          cache: true
 
-      - name: Set up Vcpkg
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: johnwason/vcpkg-action@v7
-        with:
-          # TODO: Add ode and coin-or-ipopt
-          pkgs: >-
-            assimp
-            eigen3
-            fcl
-            fmt
-            spdlog
-            bullet3
-            freeglut
-            glfw3
-            imgui[opengl2-binding]
-            nlopt
-            opengl
-            osg
-            pagmo2
-            tinyxml2
-            tracy
-            urdfdom
-          triplet: x64-windows
-          revision: "2025.09.17"
-          token: ${{ github.token }}
+      - name: Build wheel
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
-      - name: Build wheels
-        if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v3.2.1
-        env:
-          # macOS
-          MACOSX_DEPLOYMENT_TARGET: 15.0
+      - name: Repair wheel (Linux only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
 
-          # Windows
-          CMAKE_TOOLCHAIN_FILE: ""
+      - name: Verify wheel
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
 
-      - name: Build wheels (Windows)
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
-        uses: pypa/cibuildwheel@v3.2.1
-        env:
-          # macOS
-          MACOSX_DEPLOYMENT_TARGET: 15.0
+      - name: Test wheel
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
-          # Windows
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      - name: Prepare artifacts
+        run: |
+          mkdir -p wheelhouse
+          mv dist/*.whl wheelhouse/
 
       - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
-          name: ${{ matrix.os }}-${{ matrix.build }}
-
-  # TODO: Disabled because installing from source doesn't work when the deps are not
-  # installed in the system
-  # build_sdist:
-  #   name: Build source distribution
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-
-  #     - name: Build SDist
-  #       run: pipx run build --sdist
-
-  #     - uses: actions/upload-artifact@v4
-  #       with:
-  #         path: dist/*.tar.gz
+          name: ${{ matrix.os }}-py${{ matrix.python-version }}
 
   upload_pypi:
-    # needs: [build_wheels, build_sdist]
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # upload to PyPI on every tag starting with 'release-'
-    # if: github.event_name == 'push' && startsWith(github.ref, 'release-')
-    # alternatively, to publish when a GitHub Release is created, use the following rule:
-    if: github.event_name == 'release'
+    # Only publish to production PyPI when a version tag (v*.*.*) is pushed
+    # Dev versions (X.Y.Z.devN) should only go to Test PyPI to avoid cluttering production
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v5
         with:

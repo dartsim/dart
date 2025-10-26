@@ -7,10 +7,10 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "dartpy"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.12"
 license = "BSD-2-Clause"
 authors = [
     {name = "Jeongseok Lee", email = "jslee02@gmail.com"}
@@ -41,6 +41,10 @@ Repository = "https://github.com/dartsim/dart.git"
 build-dir = "build/{wheel_tag}"
 # Enable verbose build output
 build.verbose = true
+# Dynamic metadata
+metadata.version.provider = "scikit_build_core.metadata.regex"
+metadata.version.input = "package.xml"
+metadata.version.regex = "<version>(?P<value>[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.dev[0-9]+)?)</version>"
 
 [tool.scikit-build.cmake]
 # CMake version requirement
@@ -72,67 +76,9 @@ strict = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]
 testpaths = ["tests"]
-
-# https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
-[tool.cibuildwheel]
-manylinux-x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
-manylinux-aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
-manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
-manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
-test-requires = "pytest"
-test-command = "pytest {project}/python/tests"
-# https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
-skip = [
-    # Common
-    "pp*",
-
-    # Linux
-    "*musllinux*",
-    "cp36-*linux*",
-    "cp37-*linux*",
-    "cp38-*linux*",
-    "cp39-*linux*",
-
-    # macOS
-    "cp36-macosx*",
-    "cp37-macosx*",
-    "cp38-macosx*",
-    "cp39-macosx*",
-    "cp310-macosx*",
-    "cp311-macosx*",
-
-    # Windows
-    "cp*-win32",
-    "cp36-win*",
-    "cp37-win*",
-    "cp38-win*",
-    "cp39-win*",
-    "cp310-win*",
-    "cp311-win*",
-]
-
-[tool.cibuildwheel.linux]
-archs = ["x86_64"]
-before-test = "ldconfig"
-repair-wheel-command = "auditwheel repair --lib-sdir /usr/local/lib --lib-sdir /usr/local/lib64 -w {dest_dir} {wheel}"
-
-[tool.cibuildwheel.macos]
-archs = ["auto64"] # TODO: Add universal2 and arm64
-before-all = [
-    "brew update > /dev/null",
-    "brew bundle || brew bundle",
-    # Note: open-scene-graph < 3.7.0 from Homebrew doesn't work on macOS 10.15+
-    # Building from --HEAD is broken, so we skip OSG for macOS wheels
-    "sw_vers",
-]
-environment = { SKBUILD_CMAKE_DEFINE = "DART_BUILD_GUI_OSG=OFF" }
-
-[tool.cibuildwheel.windows]
-archs = ["AMD64", "ARM64"]

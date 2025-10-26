@@ -1,6 +1,16 @@
 # DART GUI - Developer Onboarding Guide
 
-> **Documentation Principle**: This onboarding documentation avoids hardcoded lists (dependencies, versions, CMake options, build targets, etc.) that can become outdated. Instead, it points to authoritative sources in the codebase (`CMakeLists.txt`, `pixi.toml`, source files) as the single source of truth.
+## Documentation Principles
+
+**Onboarding docs should**:
+- ✅ Explain **design decisions** and **why** (not just what)
+- ✅ Point to **code as source of truth** (CMakeLists.txt, pixi.toml, source files)
+- ✅ Focus on **current state**, not history
+- ❌ Avoid hardcoded lists (dependencies, file lists, versions) that become outdated
+- ❌ Avoid repeating what's obvious from reading the code
+
+**When information changes frequently** → Point to authoritative source
+**When explaining architecture** → Focus on relationships and design decisions
 
 ## 1. Overview
 
