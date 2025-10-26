@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/simulation.hpp>
+#include <dart/simulation/all.hpp>
 
-#include <dart/constraint/constraint.hpp>
+#include <dart/constraint/all.hpp>
 
-#include <dart/collision/bullet/bullet.hpp>
+#include <dart/collision/bullet/all.hpp>
 
 #include <dart/dynamics/all.hpp>
 

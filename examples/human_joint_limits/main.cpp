@@ -33,9 +33,9 @@
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/collision/bullet/bullet.hpp>
+#include <dart/gui/osg/all.hpp>
+#include <dart/utils/all.hpp>
+#include <dart/collision/bullet/all.hpp>
 #include <dart/collision/ode/ode.hpp>
 #include <dart/dart.hpp>
 

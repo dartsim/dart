@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/utils.hpp>
+#include <dart/utils/all.hpp>
 
-#include <dart/simulation/simulation.hpp>
+#include <dart/simulation/all.hpp>
 
 #include <dart/dynamics/all.hpp>
 
