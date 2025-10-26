@@ -64,7 +64,7 @@ bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool applySolution)
 //==============================================================================
 bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 {
-  if (nullptr == mSolver) {
+  if (nullptr == mSolver) [[unlikely]] {
     dtwarn << "[HierarchicalIK::findSolution] The Solver for a HierarchicalIK "
            << "module associated with [" << mSkeleton.lock()->getName()
            << "] is a nullptr. You must reset the module's Solver before you "
@@ -72,7 +72,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
     return false;
   }
 
-  if (nullptr == mProblem) {
+  if (nullptr == mProblem) [[unlikely]] {
     dtwarn << "[HierarchicalIK::findSolution] The Problem for a HierarchicalIK "
            << "module associated with [" << mSkeleton.lock()->getName()
            << "] is a nullptr. You must reset the module's Problem before you "
@@ -82,7 +82,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 
   const SkeletonPtr& skel = getSkeleton();
 
-  if (nullptr == skel) {
+  if (nullptr == skel) [[unlikely]] {
     dtwarn << "[HierarchicalIK::findSolution] Calling a HierarchicalIK module "
            << "which is associated with a Skeleton that no longer exists.\n";
     return false;
@@ -298,9 +298,10 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
       const std::vector<std::size_t>& dofs = ik->getDofs();
 
       mJacCache.setZero();
-      for (std::size_t d = 0; d < dofs.size(); ++d) {
-        std::size_t k = dofs[d];
+      std::size_t d = 0;
+      for (const auto k : dofs) {
         mJacCache.block<6, 1>(0, k) = J.block<6, 1>(0, d);
+        ++d;
       }
 
       mSVDCache.compute(mJacCache, Eigen::ComputeFullV);

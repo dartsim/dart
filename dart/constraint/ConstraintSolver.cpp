@@ -120,7 +120,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
+void ConstraintSolver::addSkeletons(std::span<const SkeletonPtr> skeletons)
 {
   for (const auto& skeleton : skeletons)
     addSkeleton(skeleton);
@@ -152,8 +152,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeletons(
-    const std::vector<SkeletonPtr>& skeletons)
+void ConstraintSolver::removeSkeletons(std::span<const SkeletonPtr> skeletons)
 {
   for (const auto& skeleton : skeletons)
     removeSkeleton(skeleton);

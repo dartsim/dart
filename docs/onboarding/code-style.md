@@ -17,6 +17,53 @@ This document describes the code style conventions used in the DART project.
 
 C++ headers and sources should be contained in the same subdirectory of `dart/` that matches their namespace, with the extension `.hpp` and `.cpp`, respectively.
 
+### C++20 Modern Patterns
+
+DART uses C++20 features to improve code clarity, maintainability, and performance. Use these patterns when appropriate:
+
+**Concepts for Template Constraints:**
+```cpp
+// Prefer concepts over SFINAE
+template <std::floating_point T>
+T normalize(T value);
+
+// Custom concepts for domain-specific constraints
+template <typename T>
+concept UniformIntCompatible = std::integral<T> && !std::same_as<T, bool>;
+```
+
+**std::span for Function Parameters:**
+```cpp
+// Prefer std::span over const std::vector<T>&
+void addSkeletons(std::span<const SkeletonPtr> skeletons);
+
+// Accepts vectors, arrays, subranges without temporary allocations
+```
+
+**Spaceship Operator for Comparisons:**
+```cpp
+// Replace 6 operators with 2
+auto operator<=>(const Ptr& other) const {
+  return std::tie(mT1, mT2) <=> std::tie(other.mT1, other.mT2);
+}
+bool operator==(const Ptr& other) const = default;
+```
+
+**Branch Prediction Attributes:**
+```cpp
+// Use [[likely]] / [[unlikely]] for hot paths
+if (objects.empty()) [[unlikely]]
+  return false;
+
+if (!result.isCollision()) [[likely]]
+  return;
+```
+
+**When NOT to use C++20 features:**
+- Avoid `std::format` until Ubuntu 24.04 LTS (GCC 13+)
+- Don't replace clear index-based loops with complex range expressions
+- Keep SFINAE for Eigen compile-time traits (not proper constexpr)
+
 ### File Naming Conventions
 
 - **Public headers and sources**: Use **PascalCase** for compatibility with existing code (e.g., `MyClass.hpp`, `MyClass.cpp`)

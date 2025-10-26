@@ -1333,9 +1333,9 @@ void InverseKinematics::useWholeBody()
 }
 
 //==============================================================================
-void InverseKinematics::setDofs(const std::vector<std::size_t>& _dofs)
+void InverseKinematics::setDofs(std::span<const std::size_t> _dofs)
 {
-  mDofs = _dofs;
+  mDofs.assign(_dofs.begin(), _dofs.end());
   const std::vector<std::size_t>& entityDependencies
       = mNode->getDependentGenCoordIndices();
 

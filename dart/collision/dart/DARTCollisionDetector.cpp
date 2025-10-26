@@ -128,7 +128,7 @@ bool DARTCollisionDetector::collide(
   if (result)
     result->clear();
 
-  if (0u == option.maxNumContacts)
+  if (0u == option.maxNumContacts) [[unlikely]]
     return false;
 
   if (!checkGroupValidity(this, group))
@@ -137,7 +137,7 @@ bool DARTCollisionDetector::collide(
   auto casted = static_cast<DARTCollisionGroup*>(group);
   const auto& objects = casted->mCollisionObjects;
 
-  if (objects.empty())
+  if (objects.empty()) [[unlikely]]
     return false;
 
   auto collisionFound = false;
@@ -149,17 +149,17 @@ bool DARTCollisionDetector::collide(
     for (auto j = i + 1u; j < objects.size(); ++j) {
       auto* collObj2 = objects[j];
 
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]]
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
       if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
+        if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]]
           return true;
       } else {
         // If no result is passed, stop checking when the first contact is found
-        if (collisionFound)
+        if (collisionFound) [[unlikely]]
           return true;
       }
     }
@@ -194,7 +194,7 @@ bool DARTCollisionDetector::collide(
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
 
-  if (objects1.empty() || objects2.empty())
+  if (objects1.empty() || objects2.empty()) [[unlikely]]
     return false;
 
   auto collisionFound = false;
@@ -342,7 +342,7 @@ void postProcess(
     CollisionResult& totalResult,
     const CollisionResult& pairResult)
 {
-  if (!pairResult.isCollision())
+  if (!pairResult.isCollision()) [[likely]]
     return;
 
   // Don't add repeated points

@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Shape.hpp>
 
+#include <span>
+
 #if HAVE_OCTOMAP
   #include <octomap/Pointcloud.h>
 #endif
@@ -90,10 +92,10 @@ public:
   void addPoint(const Eigen::Vector3d& point);
 
   /// Adds points to this point cloud.
-  void addPoint(const std::vector<Eigen::Vector3d>& points);
+  void addPoint(std::span<const Eigen::Vector3d> points);
 
   /// Replaces points with \c points.
-  void setPoint(const std::vector<Eigen::Vector3d>& points);
+  void setPoint(std::span<const Eigen::Vector3d> points);
 
 #if HAVE_OCTOMAP
   /// Replaces points with \c pointCloud.

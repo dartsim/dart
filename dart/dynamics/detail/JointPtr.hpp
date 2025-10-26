@@ -32,8 +32,10 @@
 
 #ifndef DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
-
+#include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
+
+#include <compare>
 
 namespace dart {
 namespace dynamics {
@@ -134,7 +136,7 @@ public:
   /// \{ \name Comparison operators
   //----------------------------------------------------------------------------
 
-  /// Equality
+  /// Equality comparison
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator==(
       const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
@@ -142,44 +144,12 @@ public:
     return mBodyNodePtr == _rhs.mBodyNodePtr;
   }
 
-  /// Inequality
+  /// Three-way comparison (spaceship operator)
   template <class OtherJointT, class OtherBodyNodeT>
-  bool operator!=(
+  auto operator<=>(
       const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
   {
-    return !(*this == _rhs);
-  }
-
-  /// Less than
-  template <class OtherJointT, class OtherBodyNodeT>
-  bool operator<(
-      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
-  {
-    return (mBodyNodePtr < _rhs.mBodyNodePtr);
-  }
-
-  /// Greater than
-  template <class OtherJointT, class OtherBodyNodeT>
-  bool operator>(
-      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
-  {
-    return (mBodyNodePtr > _rhs.mBodyNodePtr);
-  }
-
-  /// Less than or equal to
-  template <class OtherJointT, class OtherBodyNodeT>
-  bool operator<=(
-      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
-  {
-    return (*this < _rhs) || (*this == _rhs);
-  }
-
-  /// Greater than or equal to
-  template <class OtherJointT, class OtherBodyNodeT>
-  bool operator>=(
-      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _rhs) const
-  {
-    return (*this > _rhs) || (*this == _rhs);
+    return mBodyNodePtr <=> _rhs.mBodyNodePtr;
   }
 
   /// \}

@@ -36,6 +36,8 @@
 #include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
 
+#include <compare>
+
 namespace dart {
 namespace dynamics {
 
@@ -150,64 +152,23 @@ public:
   /// \{ \name Comparison operators
   //----------------------------------------------------------------------------
 
-  /// Equality
+  /// Equality comparison
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator==(
       const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
   {
-    if (nullptr == mBodyNodePtr && nullptr == _rhs.mBodyNodePtr)
-      return true;
-
-    if ((mBodyNodePtr == _rhs.mBodyNodePtr) && (mIndex == _rhs.mIndex))
-      return true;
-
-    return false;
+    return (mBodyNodePtr == _rhs.mBodyNodePtr) && (mIndex == _rhs.mIndex);
   }
 
-  /// Inequality
+  /// Three-way comparison (spaceship operator)
+  /// Performs lexicographic comparison of (mBodyNodePtr, mIndex)
   template <class OtherDofT, class OtherBodyNodeT>
-  bool operator!=(
+  auto operator<=>(
       const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
   {
-    return !(*this == _rhs);
-  }
-
-  /// Less than
-  template <class OtherDofT, class OtherBodyNodeT>
-  bool operator<(
-      const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
-  {
-    if (mBodyNodePtr == _rhs.mBodyNodePtr)
-      return (mIndex < _rhs.mIndex);
-
-    return (mBodyNodePtr < _rhs.mBodyNodePtr);
-  }
-
-  /// Greater than
-  template <class OtherDofT, class OtherBodyNodeT>
-  bool operator>(
-      const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
-  {
-    if (mBodyNodePtr == _rhs.mBodyNodePtr)
-      return (mIndex > _rhs.mIndex);
-
-    return (mBodyNodePtr > _rhs.mBodyNodePtr);
-  }
-
-  /// Less than or equal to
-  template <class OtherDofT, class OtherBodyNodeT>
-  bool operator<=(
-      const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
-  {
-    return (*this < _rhs) || (*this == _rhs);
-  }
-
-  /// Greater than or equal to
-  template <class OtherDofT, class OtherBodyNodeT>
-  bool operator>=(
-      const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
-  {
-    return (*this > _rhs) || (*this == _rhs);
+    if (auto cmp = mBodyNodePtr <=> _rhs.mBodyNodePtr; cmp != 0)
+      return cmp;
+    return mIndex <=> _rhs.mIndex;
   }
 
   /// \}
