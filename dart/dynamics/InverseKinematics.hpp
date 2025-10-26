@@ -277,7 +277,7 @@ public:
   /// Explicitly set which degrees of freedom should be used to solve the IK for
   /// this module. The values in the vector should correspond to the Skeleton
   /// indices of each DOF.
-  void setDofs(const std::vector<std::size_t>& _dofs);
+  void setDofs(std::span<const std::size_t> _dofs);
 
   /// Get the indices of the DOFs that this IK module will use when solving.
   const std::vector<std::size_t>& getDofs() const;

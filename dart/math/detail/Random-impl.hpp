@@ -38,6 +38,25 @@ namespace math {
 namespace detail {
 
 //==============================================================================
+// C++20 Concepts for type constraints
+
+/// Check whether T can be used for std::uniform_int_distribution<T>
+/// Reference:
+/// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
+template <typename T>
+concept UniformIntCompatible = std::same_as < std::remove_cv_t<T>,
+short >
+    || std::
+        same_as<std::remove_cv_t<T>, int> || std::same_as<std::remove_cv_t<T>, long> || std::same_as<std::remove_cv_t<T>, long long> || std::same_as<std::remove_cv_t<T>, unsigned short> || std::same_as<std::remove_cv_t<T>, unsigned int> || std::same_as<std::remove_cv_t<T>, unsigned long> || std::same_as<std::remove_cv_t<T>, unsigned long long>;
+
+/// Check whether T is derived from Eigen::MatrixBase
+template <typename T>
+concept EigenMatrix = std::is_base_of_v<
+    Eigen::MatrixBase<std::remove_cvref_t<T>>,
+    std::remove_cvref_t<T>>;
+
+//==============================================================================
+// Kept for backward compatibility if needed elsewhere
 template <template <typename...> class C, typename... Ts>
 std::true_type is_base_of_template_impl(const C<Ts...>*);
 
@@ -52,49 +71,14 @@ template <typename T>
 using is_base_of_matrix = is_base_of_template<Eigen::MatrixBase, T>;
 
 //==============================================================================
-/// Check whether \c T can be used for std::uniform_int_distribution<T>
-/// Reference:
-/// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
-template <typename T, typename Enable = void>
-struct is_compatible_to_uniform_int_distribution : std::false_type
-{
-  // Define nothing
-};
-
-// clang-format off
-
-template <typename T>
-struct is_compatible_to_uniform_int_distribution<
-    T, typename std::enable_if<
-        std::is_same<typename std::remove_cv<T>::type, short>::value
-        || std::is_same<typename std::remove_cv<T>::type, int>::value
-        || std::is_same<typename std::remove_cv<T>::type, long>::value
-        || std::is_same<typename std::remove_cv<T>::type, long long>::value
-        || std::is_same<typename std::remove_cv<T>::type, unsigned short>::value
-        || std::is_same<typename std::remove_cv<T>::type, unsigned int>::value
-        || std::is_same<typename std::remove_cv<T>::type, unsigned long>::value
-        || std::is_same<typename std::remove_cv<T>::type, unsigned long long>::value
-        >::type
-    > : std::true_type
-{
-  // Define nothing
-};
-
-// clang-format on
-
-//==============================================================================
-template <typename S, typename Enable = void>
-struct UniformScalarImpl
-{
-  // Define nothing
-};
+template <typename S>
+struct UniformScalarImpl;
 
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct UniformScalarImpl<
-    S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
+requires std::floating_point<S>
+struct UniformScalarImpl<S>
 {
   static S run(S min, S max)
   {
@@ -106,12 +90,10 @@ struct UniformScalarImpl<
 };
 
 //==============================================================================
-// Floating-point case
+// Integer case
 template <typename S>
-struct UniformScalarImpl<
-    S,
-    typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
+requires UniformIntCompatible<S>
+struct UniformScalarImpl<S>
 {
   static S run(S min, S max)
   {
@@ -132,11 +114,12 @@ struct UniformMatrixImpl
 //==============================================================================
 // Dynamic matrix case
 template <typename Derived>
+requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
-    typename std::enable_if<
+    std::enable_if_t<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -153,11 +136,12 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Dynamic vector case
 template <typename Derived>
+requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
-    typename std::enable_if<
+    std::enable_if_t<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -173,11 +157,12 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed matrix case
 template <typename Derived>
+requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
-    typename std::enable_if<
+    std::enable_if_t<
         !Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -193,11 +178,12 @@ struct UniformMatrixImpl<
 //==============================================================================
 // Fixed vector case
 template <typename Derived>
+requires EigenMatrix<Derived>
 struct UniformMatrixImpl<
     Derived,
-    typename std::enable_if<
+    std::enable_if_t<
         Derived::IsVectorAtCompileTime
-        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -211,17 +197,13 @@ struct UniformMatrixImpl<
 };
 
 //==============================================================================
-template <typename T, typename Enable = void>
-struct UniformImpl
-{
-  // Define nothing
-};
+template <typename T>
+struct UniformImpl;
 
 //==============================================================================
 template <typename T>
-struct UniformImpl<
-    T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
+requires std::is_arithmetic_v<T>
+struct UniformImpl<T>
 {
   static T run(T min, T max)
   {
@@ -231,9 +213,8 @@ struct UniformImpl<
 
 //==============================================================================
 template <typename T>
-struct UniformImpl<
-    T,
-    typename std::enable_if<is_base_of_matrix<T>::value>::type>
+requires EigenMatrix<T>
+struct UniformImpl<T>
 {
   static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
   {
@@ -242,18 +223,14 @@ struct UniformImpl<
 };
 
 //==============================================================================
-template <typename S, typename Enable = void>
-struct NormalScalarImpl
-{
-  // Define nothing
-};
+template <typename S>
+struct NormalScalarImpl;
 
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct NormalScalarImpl<
-    S,
-    typename std::enable_if<std::is_floating_point<S>::value>::type>
+requires std::floating_point<S>
+struct NormalScalarImpl<S>
 {
   static S run(S mean, S sigma)
   {
@@ -263,12 +240,10 @@ struct NormalScalarImpl<
 };
 
 //==============================================================================
-// Floating-point case
+// Integer case - rounds normal distribution to nearest integer
 template <typename S>
-struct NormalScalarImpl<
-    S,
-    typename std::enable_if<
-        is_compatible_to_uniform_int_distribution<S>::value>::type>
+requires UniformIntCompatible<S>
+struct NormalScalarImpl<S>
 {
   static S run(S mean, S sigma)
   {
@@ -281,17 +256,13 @@ struct NormalScalarImpl<
 };
 
 //==============================================================================
-template <typename T, typename Enable = void>
-struct NormalImpl
-{
-  // Define nothing
-};
+template <typename T>
+struct NormalImpl;
 
 //==============================================================================
 template <typename T>
-struct NormalImpl<
-    T,
-    typename std::enable_if<std::is_arithmetic<T>::value>::type>
+requires std::is_arithmetic_v<T>
+struct NormalImpl<T>
 {
   static T run(T min, T max)
   {

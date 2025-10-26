@@ -168,7 +168,7 @@ public:
   /// \{ \name Comparison operators
   //----------------------------------------------------------------------------
 
-  /// Equality
+  /// Equality comparison
   template <class OtherIkT, class OtherJacNodeT>
   bool operator==(
       const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
@@ -176,44 +176,12 @@ public:
     return (mIK == _rhs.mIK);
   }
 
-  /// Inequality
+  /// Three-way comparison (spaceship operator)
   template <class OtherIkT, class OtherJacNodeT>
-  bool operator!=(
+  auto operator<=>(
       const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
   {
-    return !(*this == _rhs);
-  }
-
-  /// Less than
-  template <class OtherIkT, class OtherJacNodeT>
-  bool operator<(
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
-  {
-    return (mIK < _rhs.mIK);
-  }
-
-  /// Greater than
-  template <class OtherIkT, class OtherJacNodeT>
-  bool operator>(
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
-  {
-    return (mIK > _rhs.mIK);
-  }
-
-  /// Less than or equal to
-  template <class OtherIkT, class OtherJacNodeT>
-  bool operator<=(
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
-  {
-    return (*this < _rhs) || (*this == _rhs);
-  }
-
-  /// Greater than or equal to
-  template <class OtherIkT, class OtherJacNodeT>
-  bool operator>=(
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs) const
-  {
-    return (*this > _rhs) || (*this == _rhs);
+    return mIK <=> _rhs.mIK;
   }
 
   /// \}

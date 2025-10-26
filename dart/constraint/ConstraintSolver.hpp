@@ -43,6 +43,7 @@
 
 #include <Eigen/Dense>
 
+#include <span>
 #include <vector>
 
 namespace dart {
@@ -85,7 +86,7 @@ public:
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Add mutiple skeletons
-  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
+  void addSkeletons(std::span<const dynamics::SkeletonPtr> skeletons);
 
   /// Returns all the skeletons added to this ConstraintSolver.
   const std::vector<dynamics::SkeletonPtr>& getSkeletons() const;
@@ -94,7 +95,7 @@ public:
   void removeSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Remove multiple skeletons
-  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
+  void removeSkeletons(std::span<const dynamics::SkeletonPtr> skeletons);
 
   /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();

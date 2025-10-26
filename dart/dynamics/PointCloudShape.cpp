@@ -94,7 +94,7 @@ void PointCloudShape::addPoint(const Eigen::Vector3d& point)
 }
 
 //==============================================================================
-void PointCloudShape::addPoint(const std::vector<Eigen::Vector3d>& points)
+void PointCloudShape::addPoint(std::span<const Eigen::Vector3d> points)
 {
   mPoints.reserve(mPoints.size() + points.size());
   for (const auto& point : points)
@@ -103,9 +103,9 @@ void PointCloudShape::addPoint(const std::vector<Eigen::Vector3d>& points)
 }
 
 //==============================================================================
-void PointCloudShape::setPoint(const std::vector<Eigen::Vector3d>& points)
+void PointCloudShape::setPoint(std::span<const Eigen::Vector3d> points)
 {
-  mPoints = points;
+  mPoints.assign(points.begin(), points.end());
   incrementVersion();
 }
 
