@@ -20,7 +20,8 @@ def extract_version_from_package_xml(package_xml_path: Path) -> str:
     """Extract version from package.xml."""
     content = package_xml_path.read_text()
     match = re.search(
-        r"<version>([0-9]+\.[0-9]+\.[0-9]+(?:\.dev[0-9]+)?)</version>", content
+        r"<version>([0-9]+\.[0-9]+\.[0-9]+(?:\.(dev|alpha|beta|rc)[0-9]+)?)</version>",
+        content,
     )
     if not match:
         raise ValueError(f"Could not find version in {package_xml_path}")
@@ -51,15 +52,15 @@ def main():
     print(f"✓ package.xml version: {pkg_version}")
 
     # Validate version format
-    version_pattern = r"^[0-9]+\.[0-9]+\.[0-9]+(?:\.dev[0-9]+)?$"
+    version_pattern = r"^[0-9]+\.[0-9]+\.[0-9]+(?:\.(dev|alpha|beta|rc)[0-9]+)?$"
     if not re.match(version_pattern, pkg_version):
         print(f"✗ ERROR: Invalid version format: {pkg_version}")
-        print(f"  Expected format: X.Y.Z or X.Y.Z.devN")
+        print(f"  Expected format: X.Y.Z or X.Y.Z.{dev|alpha|beta|rc}N")
         return 1
 
-    # Check if it's a dev version
-    if ".dev" in pkg_version:
-        print(f"  → Development version (pre-release)")
+    # Check if it's a pre-release version
+    if any(suffix in pkg_version for suffix in [".dev", ".alpha", ".beta", ".rc"]):
+        print(f"  → Pre-release version")
     else:
         print(f"  → Release version")
 

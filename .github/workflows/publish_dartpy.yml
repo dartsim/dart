@@ -141,16 +141,10 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
-      - name: Prepare artifacts
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          mkdir -p wheelhouse
-          mv dist/*.whl wheelhouse/
-
       - uses: actions/upload-artifact@v4
         if: steps.should_run.outputs.run == 'true'
         with:
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
 
   upload_pypi:
