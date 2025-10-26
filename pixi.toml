@@ -974,7 +974,7 @@ openscenegraph = ">=3.6.5,<4"
 # Build wheel with OSG enabled (Linux/Windows have OSG available)
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp312-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp312-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp312-*-linux_x86_64.whl -w dist/ --plat manylinux_2_28_x86_64 && rm dist/dartpy-*-cp312-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
 wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp312-*.whl" }
 
@@ -1040,7 +1040,7 @@ openscenegraph = ">=3.6.5,<4"
 [feature.py313-wheel.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp313-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp313-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp313-*-linux_x86_64.whl -w dist/ --plat manylinux_2_28_x86_64 && rm dist/dartpy-*-cp313-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
 wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp313-*.whl" }
 
@@ -1105,7 +1105,7 @@ openscenegraph = ">=3.6.5,<4"
 [feature.py314-wheel.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp314-*-linux_x86_64.whl -w dist/ --plat manylinux_2_39_x86_64 && rm dist/dartpy-*-cp314-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+wheel-repair = { cmd = "auditwheel repair dist/dartpy-*-cp314-*-linux_x86_64.whl -w dist/ --plat manylinux_2_28_x86_64 && rm dist/dartpy-*-cp314-*-linux_x86_64.whl", env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
 wheel-verify = { cmd = "python scripts/verify_version.py dist/dartpy-*-cp314-*.whl" }
 
