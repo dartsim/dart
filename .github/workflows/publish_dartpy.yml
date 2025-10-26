@@ -29,14 +29,22 @@ jobs:
     name: ubuntu-py${{ matrix.python-version }}
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
-    if: >-
-      github.event_name == 'pull_request' ||
-      startsWith(github.ref, 'refs/tags/v') ||
-      matrix.python-version == '312'
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["312", "313", "314"]
+        include:
+          # py312: Always build
+          - python-version: "312"
+          # py313, py314: Only build on PRs and tags
+          - python-version: "313"
+            only-on-pr-or-tag: true
+          - python-version: "314"
+            only-on-pr-or-tag: true
+    # Skip py313/314 on regular commits (only build on PRs/tags)
+    if: >-
+      matrix.only-on-pr-or-tag != true ||
+      github.event_name == 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Install git
         run: yum install -y git
@@ -68,15 +76,33 @@ jobs:
   build_wheels_macos_windows:
     name: ${{ matrix.os }}-py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    if: >-
-      github.event_name == 'pull_request' ||
-      startsWith(github.ref, 'refs/tags/v') ||
-      matrix.python-version == '312'
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
-        python-version: ["312", "313", "314"]
+        include:
+          # py312: Always build on all platforms
+          - os: macos-latest
+            python-version: "312"
+          - os: windows-latest
+            python-version: "312"
+          # py313, py314: Only build on PRs and tags
+          - os: macos-latest
+            python-version: "313"
+            only-on-pr-or-tag: true
+          - os: windows-latest
+            python-version: "313"
+            only-on-pr-or-tag: true
+          - os: macos-latest
+            python-version: "314"
+            only-on-pr-or-tag: true
+          - os: windows-latest
+            python-version: "314"
+            only-on-pr-or-tag: true
+    # Skip py313/314 on regular commits (only build on PRs/tags)
+    if: >-
+      matrix.only-on-pr-or-tag != true ||
+      github.event_name == 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v5
 
