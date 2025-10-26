@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/all.hpp>
 
 #include <dart/dart.hpp>
 

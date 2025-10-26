@@ -94,3 +94,12 @@ To install DART on FreeBSD, you can use the following commands:
 .. code-block:: bash
 
    pkg install dartsim
+
+Package Availability
+--------------------
+
+DART is available in many package repositories across different distributions and platforms:
+
+.. image:: https://repology.org/badge/vertical-allrepos/dart-sim.svg
+   :target: https://repology.org/project/dart-sim/versions
+   :alt: Packaging status

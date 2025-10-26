@@ -318,6 +318,9 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   add_compile_options(-Wall -Wextra -fPIC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
+    # Also treat preprocessor warnings (like #warning directives in deprecated
+    # headers) as errors
+    add_compile_options(-Werror=cpp)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
@@ -356,6 +359,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   add_compile_options(-Wall -Wextra -fPIC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
+    # Also treat preprocessor warnings (like #warning directives in deprecated
+    # headers) as errors
+    add_compile_options(-Werror=cpp)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)

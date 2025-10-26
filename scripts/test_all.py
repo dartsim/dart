@@ -104,24 +104,39 @@ def run_command(
         Tuple of (success: bool, output: str)
     """
     print_step(f"Running: {description}")
-    print(f"  Command: {cmd}")
+    print(f"  Command: {cmd}\n")
 
     try:
-        result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, check=False
-        )
+        if stream_output:
+            # Stream output in real-time
+            result = subprocess.run(cmd, shell=True, check=False)
 
-        if result.returncode == 0:
-            print_success(f"{description} - PASSED")
-            return True, result.stdout
+            if result.returncode == 0:
+                print()
+                print_success(f"{description} - PASSED")
+                return True, ""
+            else:
+                print()
+                print_error(f"{description} - FAILED")
+                print(f"  Return code: {result.returncode}")
+                return False, ""
         else:
-            print_error(f"{description} - FAILED")
-            print(f"  Return code: {result.returncode}")
-            if result.stderr:
-                print(f"  Error output:\n{result.stderr}")
-            if result.stdout:
-                print(f"  Standard output:\n{result.stdout}")
-            return False, result.stderr + "\n" + result.stdout
+            # Capture output
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, check=False
+            )
+
+            if result.returncode == 0:
+                print_success(f"{description} - PASSED")
+                return True, result.stdout
+            else:
+                print_error(f"{description} - FAILED")
+                print(f"  Return code: {result.returncode}")
+                if result.stderr:
+                    print(f"  Error output:\n{result.stderr}")
+                if result.stdout:
+                    print(f"  Standard output:\n{result.stdout}")
+                return False, result.stderr + "\n" + result.stdout
     except Exception as e:
         print_error(f"{description} - EXCEPTION: {e}")
         return False, str(e)
@@ -141,17 +156,10 @@ def run_lint_tests() -> bool:
     """Run linting (auto-fix formatting issues)"""
     print_header("LINTING (Auto-fixing)")
 
-    success = True
+    # Run all linting tasks (C++, Python, YAML)
+    result, _ = run_command("pixi run lint", "Auto-fix formatting (all languages)")
 
-    # Check C++ formatting
-    result, _ = run_command("pixi run check-lint-cpp", "C++ format check")
-    success = success and result
-
-    # Check Python formatting
-    result, _ = run_command("pixi run check-lint-py", "Python format check")
-    success = success and result
-
-    return success
+    return result
 
 
 def run_build_tests(skip_debug: bool = False) -> bool:

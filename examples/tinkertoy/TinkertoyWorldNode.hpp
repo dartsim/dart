@@ -33,9 +33,9 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/all.hpp>
 
-#include <dart/utils/utils.hpp>
+#include <dart/utils/all.hpp>
 
 #include <dart/dart.hpp>
 
