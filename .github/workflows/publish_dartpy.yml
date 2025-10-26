@@ -83,20 +83,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # py312: Always build on all platforms
+          # macOS builds
           - os: macos-latest
             python-version: "312"
-          - os: windows-latest
-            python-version: "312"
-          # py313, py314: Only build on PRs and tags
           - os: macos-latest
-            python-version: "313"
-            skip-on-commit: true
-          - os: windows-latest
             python-version: "313"
             skip-on-commit: true
           - os: macos-latest
             python-version: "314"
+            skip-on-commit: true
+          # Windows builds
+          - os: windows-latest
+            python-version: "312"
+          - os: windows-latest
+            python-version: "313"
             skip-on-commit: true
           - os: windows-latest
             python-version: "314"
