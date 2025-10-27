@@ -6,23 +6,29 @@ Documentation for development tasks in DART.
 
 - **active/** - Currently active projects with task trackers
 
-## Guidelines
+## Documentation Principles
 
-**Maintaining task documentation:**
-- Keep docs updated with current progress and status
-- Focus on latest state and lessons learned, not full history
-- Remove outdated details as tasks evolve
-- When tasks are completed: Consider updating docs in `docs/onboarding/` instead of archiving here. Keep onboarding docs accumulating and up-to-date with the latest best practices and learnings
+**Task docs should**:
+- ✅ Track **current status** and **next steps**
+- ✅ Document **key decisions** and **why** (not just what)
+- ✅ Point to **code as source of truth**
+- ❌ Avoid hardcoded lists (file lists, dependency versions) that become outdated
+- ❌ Avoid full history - focus on current state
+
+**When task is completed**:
+1. Move long-term content to `docs/onboarding/` (design decisions, architecture, workflows)
+2. Remove the entire task folder from `docs/dev_tasks/`
+3. No archiving - keep onboarding docs up-to-date instead
+
+**Before submitting PRs:**
+1. Run `pixi run test-all` - comprehensive test suite
+2. Fix any failures before pushing
+3. **Important**: If GitHub CI fails but `test-all` passed locally, update `test-all` to catch that failure
 
 **Before committing:**
 - Run `validate_changes` to check for errors
 - Update task status in tracker
-
-**Documentation standards:**
-- Agent-agnostic (useful for both humans and AI)
 - No author names or ownership attribution
-- Include testing/validation steps
-- Document key decisions and troubleshooting
 
 ## Related
 

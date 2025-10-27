@@ -55,28 +55,48 @@ initialize_component_helpers(${PROJECT_NAME})
 #===============================================================================
 
 # Extract version numbers from package.xml
+# Supports both release versions (X.Y.Z) and dev versions (X.Y.Z.devN)
 file(READ package.xml PACKAGE_XML)
 string(
-  REGEX MATCH "<version>[0-9]+\\.[0-9]+\\.[0-9]+</version>"
+  REGEX MATCH "<version>[0-9]+\\.[0-9]+\\.[0-9]+(\\.(dev|alpha|beta|rc)[0-9]+)?</version>"
   DIRTY_VERSION_STRING
   "${PACKAGE_XML}"
 )
+# Remove <version> tags to get clean version string
 string(
-  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\1"
+  REGEX REPLACE "^<version>([0-9]+\\.[0-9]+\\.[0-9]+(\\.(dev|alpha|beta|rc)[0-9]+)?)</version>$" "\\1"
+  DART_VERSION_FULL
+  "${DIRTY_VERSION_STRING}"
+)
+# Extract numeric components
+string(
+  REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\.(dev|alpha|beta|rc)[0-9]+)?$" "\\1"
   DART_MAJOR_VERSION
-  "${DIRTY_VERSION_STRING}"
+  "${DART_VERSION_FULL}"
 )
 string(
-  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\2"
+  REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\.(dev|alpha|beta|rc)[0-9]+)?$" "\\2"
   DART_MINOR_VERSION
-  "${DIRTY_VERSION_STRING}"
+  "${DART_VERSION_FULL}"
 )
 string(
-  REGEX REPLACE "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$" "\\3"
+  REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\.(dev|alpha|beta|rc)[0-9]+)?$" "\\3"
   DART_PATCH_VERSION
-  "${DIRTY_VERSION_STRING}"
+  "${DART_VERSION_FULL}"
 )
+# Extract suffix if present (e.g., "dev0" from "7.0.0.dev0")
+string(
+  REGEX MATCH "\\.(dev|alpha|beta|rc)[0-9]+" DART_VERSION_SUFFIX "${DART_VERSION_FULL}"
+)
+if(DART_VERSION_SUFFIX)
+  string(SUBSTRING "${DART_VERSION_SUFFIX}" 1 -1 DART_VERSION_SUFFIX) # Remove leading dot
+else()
+  set(DART_VERSION_SUFFIX "")
+endif()
+# DART_VERSION: Short version for CMake compatibility (X.Y.Z)
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
+# DART_VERSION_FULL: Complete version including suffix (X.Y.Z or X.Y.Z.devN)
+# Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")

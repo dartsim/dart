@@ -1,3 +1,18 @@
+# Homebrew dependencies for building DART on macOS
+#
+# NOTE: If you're using pixi, you don't need this file!
+# Pixi manages all dependencies automatically via pixi.toml
+#
+# This Brewfile is for users who want to build DART manually
+# without pixi using Homebrew packages.
+#
+# Usage:
+#   brew bundle
+#
+# For pixi users, instead run:
+#   pixi install
+#   pixi run build
+
 # Build dependencies
 brew 'cmake'
 brew 'ninja'
