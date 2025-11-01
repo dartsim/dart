@@ -810,7 +810,8 @@ void _dFactorLDLT(Scalar* A, Scalar* d, int n, int nskip1)
   }
 }
 
-// Solve L*X=B with 4×4 and 12×12 blocking (L is lower triangular with 1s on diagonal)
+// Solve L*X=B with 4×4 and 12×12 blocking (L is lower triangular with 1s on
+// diagonal)
 template <typename Scalar>
 void _dSolveL1(const Scalar* L, Scalar* B, int n, int lskip1)
 {
@@ -1024,7 +1025,8 @@ void _dSolveL1(const Scalar* L, Scalar* B, int n, int lskip1)
   }
 }
 
-// Solve L^T * X=B with 4×4 blocking (L transpose, lower triangular with 1s on diagonal)
+// Solve L^T * X=B with 4×4 blocking (L transpose, lower triangular with 1s on
+// diagonal)
 template <typename Scalar>
 void _dSolveL1T(const Scalar* L, Scalar* B, int n, int lskip1)
 {

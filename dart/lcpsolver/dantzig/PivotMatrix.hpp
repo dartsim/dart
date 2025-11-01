@@ -114,11 +114,13 @@ public:
   /// Construct from raw pointer array (OPTIMIZED - single copy)
   ///
   /// Copies data directly from a raw pointer array into internal storage.
-  /// This avoids the double-copy overhead of going through an Eigen intermediate.
+  /// This avoids the double-copy overhead of going through an Eigen
+  /// intermediate.
   ///
   /// @param rows Number of rows
   /// @param cols Number of columns
-  /// @param data Pointer to source data (row-major with nskip leading dimension)
+  /// @param data Pointer to source data (row-major with nskip leading
+  /// dimension)
   /// @param nskip Leading dimension of source data
   PivotMatrix(int rows, int cols, const Scalar* data, int nskip)
     : rows_(rows), cols_(cols), nskip_(nskip), data_(rows, cols)
@@ -314,10 +316,10 @@ private:
     }
   }
 
-  int rows_; ///< Number of rows
-  int cols_; ///< Number of columns
-  int nskip_; ///< Leading dimension (for compatibility)
-  MatrixType data_; ///< Underlying Eigen matrix storage
+  int rows_;                      ///< Number of rows
+  int cols_;                      ///< Number of columns
+  int nskip_;                     ///< Leading dimension (for compatibility)
+  MatrixType data_;               ///< Underlying Eigen matrix storage
   std::vector<Scalar*> row_ptrs_; ///< Row pointers for O(1) swapping
 };
 
