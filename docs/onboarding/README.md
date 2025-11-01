@@ -42,6 +42,7 @@ This onboarding guide is organized into several focused documents:
 - **[contributing.md](contributing.md)** - Comprehensive contribution workflow and guidelines
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
+- **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
