@@ -5,16 +5,18 @@ name: API Documentation
 on:
   push:
     branches:
-      - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
+      - "main"
+    paths:
+      - "docs/**"
+      - "dart/**/*.hpp"
+      - "dart/**/*.h"
+      - ".github/workflows/api_doc.yml"
+      - "scripts/build_docs.py"
   pull_request:
-    branches:
-      - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
+    paths:
+      - "docs/**"
+      - ".github/workflows/api_doc.yml"
+      - "scripts/build_docs.py"
   workflow_dispatch:
 
 concurrency:
