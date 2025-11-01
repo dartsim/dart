@@ -861,7 +861,7 @@ int main()
 {
   // Create and configure the physics world
   WorldPtr world = World::create();
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 
   // Create and add skeletons to the world
   SkeletonPtr atlas = createAtlas();
