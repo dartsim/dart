@@ -5,7 +5,8 @@ dart_add_core_headers(${hdrs})
 dart_add_core_sources(${srcs})
 
 # Add dantzig LCP solver sources and headers
-file(GLOB dantzig_hdrs "dantzig/*.h")
+# Include both .h and .hpp files since public headers include implementation headers
+file(GLOB dantzig_hdrs "dantzig/*.h" "dantzig/*.hpp")
 file(GLOB dantzig_srcs "dantzig/*.cpp")
 dart_add_core_headers(${dantzig_hdrs})
 dart_add_core_sources(${dantzig_srcs})
