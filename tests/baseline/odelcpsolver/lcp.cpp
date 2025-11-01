@@ -1034,9 +1034,7 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0. Print only first occurrence to avoid log spam.
           if (s < REAL(-1e-6)) {
-            static int error_count = 0;
             static bool printed_once = false;
-            error_count++;
             if (!printed_once) {
               dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e) [suppressing further messages]",
                         (double)s);
