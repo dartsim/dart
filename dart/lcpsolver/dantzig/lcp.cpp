@@ -202,7 +202,7 @@ bool dSolveLCP(
     if (n != nskip) {
       A_work = new dReal[n * nskip];
       for (int i = 0; i < n; ++i) {
-        memcpy(&A_work[i * nskip], &A[i * n], n * sizeof(dReal));
+        memcpy(&A_work[i * nskip], &A[i * nskip], n * sizeof(dReal));
       }
     } else {
       // No padding needed - use input array directly
@@ -230,7 +230,7 @@ bool dSolveLCP(
   if (n != nskip) {
     A_work = new dReal[n * nskip];
     for (int i = 0; i < n; ++i) {
-      memcpy(&A_work[i * nskip], &A[i * n], n * sizeof(dReal));
+      memcpy(&A_work[i * nskip], &A[i * nskip], n * sizeof(dReal));
     }
     allocated_A = true;
   } else {
