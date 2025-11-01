@@ -38,7 +38,7 @@
 
 #include <dart/common/Console.hpp>
 
-#include <dart/external/odelcpsolver/lcp.h>
+#include <dart/lcpsolver/dantzig/lcp.h>
 
 #include <iostream>
 

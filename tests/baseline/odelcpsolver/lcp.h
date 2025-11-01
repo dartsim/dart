@@ -20,48 +20,56 @@
  *                                                                       *
  *************************************************************************/
 
-/* generated code, do not edit. */
+/*
 
-#include "dart/external/odelcpsolver/matrix.h"
+given (A,b,lo,hi), solve the LCP problem: A*x = b+w, where each x(i),w(i)
+satisfies one of
+	(1) x = lo, w >= 0
+	(2) x = hi, w <= 0
+	(3) lo < x < hi, w = 0
+A is a matrix of dimension n*n, everything else is a vector of size n*1.
+lo and hi can be +/- dInfinity as needed. the first `nub' variables are
+unbounded, i.e. hi and lo are assumed to be +/- dInfinity.
+
+we restrict lo(i) <= 0 and hi(i) >= 0.
+
+the original data (A,b) may be modified by this function.
+
+if the `findex' (friction index) parameter is nonzero, it points to an array
+of index values. in this case constraints that have findex[i] >= 0 are
+special. all non-special constraints are solved for, then the lo and hi values
+for the special constraints are set:
+  hi[i] = abs( hi[i] * x[findex[i]] )
+  lo[i] = -hi[i]
+and the solution continues. this mechanism allows a friction approximation
+to be implemented. the first `nub' variables are assumed to have findex < 0.
+
+*/
+
+
+#ifndef _ODE_LCP_H_
+#define _ODE_LCP_H_
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <cassert>
+
+#include "odeconfig.h"
+#include "common.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
-dReal _dDot (const dReal *a, const dReal *b, int n)
-{  
-  dReal p0,q0,m0,p1,q1,m1,sum;
-  sum = 0;
-  n -= 2;
-  while (n >= 0) {
-    p0 = a[0]; q0 = b[0];
-    m0 = p0 * q0;
-    p1 = a[1]; q1 = b[1];
-    m1 = p1 * q1;
-    sum += m0;
-    sum += m1;
-    a += 2;
-    b += 2;
-    n -= 2;
-  }
-  n += 2;
-  while (n > 0) {
-    sum += (*a) * (*b);
-    a++;
-    b++;
-    n--;
-  }
-  return sum;
-}
+bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b, dReal *w,
+  int nub, dReal *lo, dReal *hi, int *findex, bool earlyTermination = false);
 
+size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail);
 
-#undef dDot
-
-dReal dDot (const dReal *a, const dReal *b, int n)
-{
-  return _dDot (a, b, n);
-}
+ODE_API int dTestSolveLCP();
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
+
+#endif

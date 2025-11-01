@@ -32,8 +32,8 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "dart/lcpsolver/dantzig/matrix.h"
+#include "dart/lcpsolver/dantzig/misc.h"
 #include "dart/math/Constants.hpp"
 
 #include <Eigen/Dense>
@@ -87,7 +87,7 @@ bool PgsBoxedLcpSolver::solve(
     int* findex,
     bool /*earlyTermination*/)
 {
-  const int nskip = dPAD(n);
+  const int nskip = lcpsolver::padding(n);
 
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
@@ -95,8 +95,8 @@ bool PgsBoxedLcpSolver::solve(
     mCacheD.resize(n);
     std::fill(mCacheD.begin(), mCacheD.end(), 0);
 
-    external::ode::dFactorLDLT(A, mCacheD.data(), n, nskip);
-    external::ode::dSolveLDLT(A, mCacheD.data(), b, n, nskip);
+    lcpsolver::dFactorLDLT(A, mCacheD.data(), n, nskip);
+    lcpsolver::dSolveLDLT(A, mCacheD.data(), b, n, nskip);
     std::memcpy(x, b, n * sizeof(double));
 
     return true;
@@ -173,7 +173,7 @@ bool PgsBoxedLcpSolver::solve(
       if ((iter & 7) == 0) {
         for (std::size_t i = 1; i < mCacheOrder.size(); ++i) {
           const int tmp = mCacheOrder[i];
-          const int swapi = external::ode::dRandInt(i + 1);
+          const int swapi = lcpsolver::dRandInt(i + 1);
           mCacheOrder[i] = mCacheOrder[swapi];
           mCacheOrder[swapi] = tmp;
         }
@@ -232,7 +232,7 @@ bool PgsBoxedLcpSolver::solve(
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {
-  const int nskip = dPAD(n);
+  const int nskip = lcpsolver::padding(n);
 
   // Return false if A has zero-diagonal or A is nonsymmetric matrix
   for (auto i = 0; i < n; ++i) {

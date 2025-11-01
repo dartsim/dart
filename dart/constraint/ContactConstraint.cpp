@@ -36,20 +36,26 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/lcp.h"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
+
+namespace dart {
+namespace constraint {
+
+using dart::lcpsolver::dInfinity;
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
 #define DART_MAX_ERV 1e-3
 #define DART_CFM 1e-5
-// #define DART_MAX_NUMBER_OF_CONTACTS 32
-
-namespace dart {
-namespace constraint {
+#define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
+#define DART_FRICTION_COEFF_THRESHOLD 1e-3
+#define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
+#define DART_MAX_BOUNCING_VELOCITY 1e+2
+#define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
 
 double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;

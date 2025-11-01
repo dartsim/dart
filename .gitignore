@@ -99,3 +99,6 @@ dist/
 
 # ImGui configuration
 imgui.ini
+
+# Profiling logs
+profiling/*.txt

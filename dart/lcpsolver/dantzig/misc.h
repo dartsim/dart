@@ -30,60 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+/*
+ * This file contains code derived from Open Dynamics Engine (ODE).
+ * Original copyright notice:
+ *
+ * Open Dynamics Engine, Copyright (C) 2001,2002 Russell L. Smith.
+ * All rights reserved.  Email: russ@q12.org   Web: www.q12.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of EITHER:
+ *   (1) The GNU Lesser General Public License as published by the Free
+ *       Software Foundation; either version 2.1 of the License, or (at
+ *       your option) any later version. The text of the GNU Lesser
+ *       General Public License is included with this library in the
+ *       file LICENSE.TXT.
+ *   (2) The BSD-style license that is included with this library in
+ *       the file LICENSE-BSD.TXT.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files
+ * LICENSE.TXT and LICENSE-BSD.TXT for more details.
+ */
 
-#include "dart/common/Profile.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+/* miscellaneous math functions. these are mostly useful for testing */
 
-namespace dart {
-namespace constraint {
+#pragma once
+
+#include "dart/lcpsolver/dantzig/common.h"
+
+namespace dart::lcpsolver {
 
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
-{
-  return getStaticType();
-}
-
+// Random Number Generation (Used by tests and benchmarks)
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
+
+/// Return next 32-bit random number using linear congruential method
+unsigned long dRand();
+
+/// Get current random number seed
+unsigned long dRandGetSeed();
+
+/// Set random number seed
+void dRandSetSeed(unsigned long s);
+
+/// Return a random integer between 0..n-1
+int dRandInt(int n);
+
+/// Return a random real number between 0..1
+dReal dRandReal();
+
+/// Template version of random real number generation
+template <typename Scalar>
+inline Scalar RandReal()
 {
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
+  return static_cast<Scalar>(dRandReal());
 }
 
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
-
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
-
-  bool result = lcpsolver::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
-
-  delete[] w;
-  return result;
-}
-
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
-#endif
-
-} // namespace constraint
-} // namespace dart
+} // namespace dart::lcpsolver

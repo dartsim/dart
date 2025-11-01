@@ -1,5 +1,3 @@
-add_subdirectory(external)
-
 # Enable multi-threaded compilation.
 # We do this here and not in the root folder since the examples and the
 # tutorials do not have enough source files to benefit from this.
@@ -69,7 +67,6 @@ function(dart_add_core_sources)
   dart_property_add(DART_CORE_SOURCES ${ARGN})
 endfunction()
 
-# Add subdirectories
 add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(integration)
@@ -125,7 +122,6 @@ target_link_libraries(
   dart
   PUBLIC
     ${CMAKE_DL_LIBS}
-    ${PROJECT_NAME}-external-odelcpsolver
     Eigen3::Eigen
     fcl
     assimp
@@ -213,9 +209,7 @@ endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
-add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
-add_component_dependency_packages(
-  ${PROJECT_NAME} dart
+add_component_dependency_packages(${PROJECT_NAME} dart
   assimp Eigen3 fcl fmt
 )
 if(TARGET octomap)

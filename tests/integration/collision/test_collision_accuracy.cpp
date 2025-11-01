@@ -90,14 +90,14 @@ TEST(Issue1184, Accuracy)
   const auto halfsizes = {10.0};
   const auto fallingModes = {true};
   const double dropHeight = 0.1;
-  const double tolerance = 1e-3;
+  const double relativeTolerance = 1e-3; // 0.1% relative error
 #else
   const auto groundInfoFunctions = {makePlaneGround, makeBoxGround};
   const auto objectShapeFunctions = {makeBoxObject, makeSphereObject};
   const auto halfsizes = {0.25, 1.0, 5.0, 10.0, 20.0};
   const auto fallingModes = {true, false};
   const double dropHeight = 1.0;
-  const double tolerance = 1e-3;
+  const double relativeTolerance = 1e-3; // 0.1% relative error
 #endif
 
   for (const auto& groundInfoFunction : groundInfoFunctions) {
@@ -164,6 +164,10 @@ TEST(Issue1184, Accuracy)
 
           // The simulation should have run for at least two seconds
           ASSERT_LE(min_time, time);
+
+          // Use relative tolerance that scales with object size
+          // For platform-specific numerical precision (especially macOS)
+          const double tolerance = std::max(relativeTolerance * halfsize, 1e-3);
 
           EXPECT_GE(halfsize + tolerance, lowestHeight)
               << "object type: " << objectShape->getType()

@@ -25,8 +25,8 @@
 
 #include <math.h>
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/error.h"
+#include "odeconfig.h"
+#include "error.h"
 
 #define PURE_INLINE static __inline
 
@@ -100,7 +100,7 @@
 #define dDOUBLE 1
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 #if defined(dSINGLE)
@@ -412,7 +412,7 @@ ODE_API const char* dGetConfiguration (void);
 ODE_API int dCheckConfiguration( const char* token );
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif
