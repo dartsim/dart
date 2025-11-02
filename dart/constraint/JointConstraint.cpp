@@ -289,7 +289,8 @@ void JointConstraint::update()
         continue;
       }
 
-      // Ignore for Servo motor
+      // Skip velocity limit enforcement for servo joints so they can recover
+      // from position limits even when the velocity bounds prohibit reversing.
       if (mJoint->getActuatorType() != dynamics::Joint::SERVO) {
         // Check lower velocity bound
         const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
