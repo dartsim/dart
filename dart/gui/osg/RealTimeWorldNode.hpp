@@ -112,6 +112,9 @@ protected:
   /// The RTF that was achieved in the last refresh cycle
   double mLastRealTimeFactor;
 
+  /// Amount of simulation time available to spend during refresh
+  double mSimTimeBudget;
+
   /// The lowest RTF that has been achieved
   double mLowestRealTimeFactor;
 
