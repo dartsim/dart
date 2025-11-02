@@ -6,13 +6,13 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT Vulkan_LIBRARY
-    OR (NOT CMAKE_CROSSCOMPILING
-        AND (Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)"
-             OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)")))
+if(NOT CMAKE_CROSSCOMPILING
+    AND (NOT Vulkan_LIBRARY
+         OR Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)"
+         OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)"))
   # Prefer the Vulkan loader that ships with the active prefix (e.g., pixi/conda)
   # to avoid RPATH conflicts when the system loader is also present. Skip this
-  # override when cross-compiling so toolchains can provide their own loader.
+  # override entirely when cross-compiling so toolchains can provide their own loader.
   set(_dart_vulkan_search_prefixes)
   if(DEFINED ENV{CONDA_PREFIX})
     list(APPEND _dart_vulkan_search_prefixes "$ENV{CONDA_PREFIX}")
