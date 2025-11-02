@@ -292,18 +292,14 @@ void JointConstraint::update()
       }
 
       const bool isServo = mJoint->getActuatorType() == dynamics::Joint::SERVO;
-      const double servoCommand = isServo
-                                  ? mJoint->getCommand(
-                                      static_cast<std::size_t>(i))
-                                  : 0.0;
-      const bool atLowerLimit = mJoint->areLimitsEnforced()
-                                && positions[i]
-                                       <= positionLowerLimits[i]
-                                              + mErrorAllowance;
-      const bool atUpperLimit = mJoint->areLimitsEnforced()
-                                && positions[i]
-                                       >= positionUpperLimits[i]
-                                              - mErrorAllowance;
+      const double servoCommand
+          = isServo ? mJoint->getCommand(static_cast<std::size_t>(i)) : 0.0;
+      const bool atLowerLimit
+          = mJoint->areLimitsEnforced()
+            && positions[i] <= positionLowerLimits[i] + mErrorAllowance;
+      const bool atUpperLimit
+          = mJoint->areLimitsEnforced()
+            && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       // Servo joints may need to violate the velocity bound that pushes them
       // into a limit so they can reverse direction and recover.
       const bool allowServoLowerRecovery
