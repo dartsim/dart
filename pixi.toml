@@ -774,10 +774,10 @@ tracy = { cmd = "tracy-profiler.exe" }
 # Gazebo Physics Integration Testing
 #
 # This feature tests DART integration with Gazebo Physics (gz-physics) by:
-# 1. Downloading gz-physics from source (gz-physics8_8.0.0 branch)
+# 1. Downloading gz-physics from source (gz-physics9_9.0.0 branch)
 # 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
-# 3. Building gz-physics with the dartsim plugin
-# 4. Verifying the dartsim plugin links against DART libraries
+# 3. Building gz-physics with the dartsim plugin and test binaries
+# 4. Running the gz-physics test suite and verifying the dartsim plugin links against DART libraries
 #
 # Usage (single command runs entire chain):
 #   pixi run -e gazebo test-gz
@@ -799,12 +799,12 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.gazebo.dependencies]
 git = ">=1"
-libgz-cmake4 = ">=4.0.0"
-libgz-plugin3 = ">=3.0.0"
-libgz-math8 = ">=8.0.0"
-libgz-common6 = ">=6.0.0"
-libgz-utils2 = ">=2.0.0"
-libsdformat15 = ">=15.0.0"
+libgz-cmake = ">=5.0.0"
+libgz-plugin = ">=4.0.0"
+libgz-math = ">=9.0.0"
+libgz-common = ">=7.0.0"
+libgz-utils = ">=4.0.0"
+libsdformat = ">=16.0.0"
 eigen = ">=3.4.0"
 assimp = ">=5.4.3"
 libode = ">=0.16.2"
@@ -813,10 +813,8 @@ bullet-cpp = ">=3.25"
 [feature.gazebo.tasks]
 download-gz = { cmd = """
     rm -rf .deps/gz-physics/ \
-    && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
-    """, outputs = [
-    ".deps/gz-physics/README.md",
-] }
+    && git clone --branch gz-physics9_9.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
+    """ }
 
 patch-gz = { cmd = "python3 scripts/patch_gz_physics.py", depends-on = ["download-gz"] }
 
@@ -828,16 +826,53 @@ config-gz = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DBUILD_TESTING=OFF
+        -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+        -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+        -DBUILD_TESTING=ON
 """, depends-on = ["patch-gz", "install"] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",
 ] }
 
-test-gz = { cmd = "bash -c 'cd .deps/gz-physics/build/lib && (otool -L libgz-physics8-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics8-dartsim-plugin.so 2>/dev/null) | grep dart && echo \"✓ DART plugin built successfully with DART integration!\"'", depends-on = [
+test-gz = { cmd = """
+    bash -c '
+        set -euo pipefail
+        export CTEST_OUTPUT_ON_FAILURE=1
+        export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
+        export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
+        cd .deps/gz-physics/build
+        cmake --build . -j --target all
+        python <<\"PY\"
+import subprocess
+from pathlib import Path
+
+build_dir = Path(\".\")
+ctest = subprocess.run([\"ctest\", \"-N\"], cwd=build_dir, text=True, capture_output=True, check=True)
+targets = set()
+for line in ctest.stdout.splitlines():
+    line = line.strip()
+    if not line.startswith(\"Test #\"):
+        continue
+    name = line.split(\":\", 1)[1].strip()
+    if name.startswith(\"UNIT_\"):
+        targets.add(name)
+        if name.startswith(\"check_UNIT_\"):
+            base = name[len(\"check_\"):]
+            targets.add(base)
+    elif name.startswith(\"COMMON_TEST_\") and name.endswith(\"_dartsim\"):
+        base = name.rsplit(\"_\", 1)[0]
+        targets.add(base)
+subprocess.check_call([\"ninja\", \"-j\", \"8\", *sorted(targets)], cwd=build_dir)
+PY
+        ctest --output-on-failure --tests-regex \"^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)\"
+        cd lib
+        (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
+        echo "✓ DART plugin built successfully with DART integration!"
+    '
+""", depends-on = [
     "build-gz",
-], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+] }
 
 #======================
 # Feature: Python 3.12 Wheel Building
