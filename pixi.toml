@@ -364,18 +364,31 @@ tu-multi-pendulum = { depends-on = [{ task = "run-cpp-target", args = ["tutorial
 tu-multi-pendulum-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_multi_pendulum_finished"] }] }
 
 install = { cmd = """
-    if [ "{{ dartpy }}" != "OFF" ]; then
-        cmake \
-            --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-            --config $BUILD_TYPE \
-            --parallel \
-            --target dartpy || exit $?
-    fi
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target install
+    python - <<'PY'
+import os
+import subprocess
+import sys
+
+dartpy = "{{ dartpy }}"
+build_type = os.environ.get("BUILD_TYPE", "Release")
+pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME") or "default"
+build_dir = os.path.join("build", pixi_env, "cpp")
+
+def run_build(target):
+    cmd = [
+        "cmake",
+        "--build", build_dir,
+        "--config", build_type,
+        "--parallel",
+        "--target", target,
+    ]
+    subprocess.check_call(cmd)
+
+if dartpy.upper() != "OFF":
+    run_build("dartpy")
+
+run_build("install")
+PY
 """, depends-on = [{ task = "config-install", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 config-install = { cmd = """
