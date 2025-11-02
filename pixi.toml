@@ -364,6 +364,13 @@ tu-multi-pendulum = { depends-on = [{ task = "run-cpp-target", args = ["tutorial
 tu-multi-pendulum-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_multi_pendulum_finished"] }] }
 
 install = { cmd = """
+    if [ "{{ dartpy }}" != "OFF" ]; then
+        cmake \
+            --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+            --config $BUILD_TYPE \
+            --parallel \
+            --target dartpy || exit $?
+    fi
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
