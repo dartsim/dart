@@ -215,6 +215,13 @@ test-math = { cmd = """
         -R "^UNIT_math_"
 """, depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
+test-lcpsolver = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        -R UNIT_lcpsolver
+""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
 test-py = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -341,6 +348,14 @@ bm-convhull = { cmd = """
         --target BM_UNIT_convhull \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_UNIT_convhull
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+bm-lcpsolver = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target BM_LCPSOLVER \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 tu-biped = { cmd = """

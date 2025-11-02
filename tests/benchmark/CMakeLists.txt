@@ -68,6 +68,11 @@ if(TARGET dart-utils)
 endif()
 
 # ==============================================================================
+# Component Benchmarks (organized in subdirectories)
+# ==============================================================================
+add_subdirectory(lcpsolver)
+
+# ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.
 # They are NOT registered as ctests since they measure performance, not correctness.
 #

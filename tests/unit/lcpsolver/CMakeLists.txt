@@ -1,0 +1,9 @@
+# Copyright (c) 2011-2025, The DART development contributors
+
+dart_build_tests(
+  TYPE unit
+  COMPONENT_NAME lcpsolver
+  TARGET_PREFIX UNIT_lcpsolver
+  LINK_LIBRARIES dart dart-baseline-ode
+  GLOB_SOURCES
+)

@@ -89,6 +89,12 @@ endfunction()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# Build baseline libraries for testing (ODE reference implementation)
+add_subdirectory(baseline)
+
+# Common test utilities shared across test types
+add_subdirectory(common)
+
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several
 #   components are correctly performs together
