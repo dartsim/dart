@@ -113,6 +113,29 @@ endfunction()
 #   dart_option(<variable> "<help_text>" <value>)
 #-------------------------------------------------------------------------------
 function(dart_option variable help_text default_value)
+  set(option_category "")
+
+  if(ARGC GREATER 3)
+    cmake_parse_arguments(
+      DART_OPTION
+      ""
+      ""
+      "CATEGORY"
+      ${ARGN}
+    )
+
+    if(DART_OPTION_UNPARSED_ARGUMENTS)
+      message(
+        FATAL_ERROR
+        "dart_option(${variable} ...): unrecognized arguments: ${DART_OPTION_UNPARSED_ARGUMENTS}"
+      )
+    endif()
+
+    if(DART_OPTION_CATEGORY)
+      set(option_category "${DART_OPTION_CATEGORY}")
+    endif()
+  endif()
+
   set_property(
     GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND
   )
@@ -122,6 +145,12 @@ function(dart_option variable help_text default_value)
   set_property(
     GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
     APPEND
+  )
+  if(option_category STREQUAL "")
+    set(option_category "__DART_AUTO__")
+  endif()
+  set_property(
+    GLOBAL PROPERTY DART_DETAIL_property_option_category "${option_category}" APPEND
   )
 
   # Add option
@@ -153,6 +182,9 @@ function(dart_print_options)
     option_default_values GLOBAL
     PROPERTY DART_DETAIL_property_option_default_value
   )
+  get_property(
+    option_categories GLOBAL PROPERTY DART_DETAIL_property_option_category
+  )
 
   dart_get_max_string_length(option_variable_max_len ${option_variables})
   list(LENGTH option_variables option_count)
@@ -161,6 +193,26 @@ function(dart_print_options)
   else()
     return()
   endif()
+
+  set(group_order
+    build
+    performance
+    system
+    msvc
+    diagnostics
+    other
+  )
+  set(group_label_build "Build Outputs")
+  set(group_label_performance "Performance & Debug")
+  set(group_label_system "System Integrations")
+  set(group_label_msvc "MSVC Toolchain")
+  set(group_label_diagnostics "Developer Experience")
+  set(group_label_other "Other")
+
+  foreach(group IN LISTS group_order)
+    set(group_${group})
+  endforeach()
+
   foreach(val RANGE ${option_count})
     list(GET option_variables ${val} option_variable)
     list(GET option_default_values ${val} option_default_value)
@@ -179,7 +231,73 @@ function(dart_print_options)
       set(option_str "${option_str} [default]")
     endif()
 
-    message(STATUS "${option_str}")
+    set(group_key "")
+    list(GET option_categories ${val} option_category_raw)
+    set(option_category "${option_category_raw}")
+    if(option_category STREQUAL "__DART_AUTO__")
+      set(option_category "")
+    endif()
+    string(STRIP "${option_category}" option_category)
+
+    if(option_category)
+      string(REGEX REPLACE "[^A-Za-z0-9]+" "_" option_category_key "${option_category}")
+      string(TOLOWER "${option_category_key}" option_category_key)
+      string(REGEX REPLACE "^_+|_+$" "" option_category_key "${option_category_key}")
+
+      if(option_category_key STREQUAL "build" OR option_category_key STREQUAL "build_outputs")
+        set(group_key build)
+      elseif(option_category_key STREQUAL "performance" OR option_category_key STREQUAL "performance_debug" OR option_category_key STREQUAL "debug")
+        set(group_key performance)
+      elseif(option_category_key STREQUAL "system" OR option_category_key STREQUAL "system_integrations")
+        set(group_key system)
+      elseif(option_category_key STREQUAL "msvc" OR option_category_key STREQUAL "msvc_toolchain")
+        set(group_key msvc)
+      elseif(option_category_key STREQUAL "diagnostics" OR option_category_key STREQUAL "developer_experience")
+        set(group_key diagnostics)
+      elseif(option_category_key STREQUAL "other")
+        set(group_key other)
+      elseif(option_category_key)
+        set(group_key "custom_${option_category_key}")
+        if(NOT DEFINED group_label_${group_key})
+          set(group_label_${group_key} "${option_category}")
+        endif()
+        list(FIND group_order ${group_key} _group_index)
+        if(_group_index EQUAL -1)
+          list(APPEND group_order ${group_key})
+        endif()
+      endif()
+    endif()
+
+    if(NOT group_key)
+      if(option_variable MATCHES "^DART_USE_SYSTEM_")
+        set(group_key system)
+      elseif(option_variable MATCHES "^DART_MSVC_" OR option_variable STREQUAL "DART_RUNTIME_LIBRARY")
+        set(group_key msvc)
+      elseif(option_variable STREQUAL "BUILD_SHARED_LIBS"
+          OR (option_variable MATCHES "^DART_BUILD_" AND NOT option_variable STREQUAL "DART_BUILD_PROFILE"))
+        set(group_key build)
+      elseif(option_variable MATCHES "^DART_(BUILD_PROFILE|FAST_DEBUG|ENABLE_SIMD|CODECOV)$")
+        set(group_key performance)
+      elseif(option_variable MATCHES "^DART_(FORCE_COLORED_OUTPUT|VERBOSE)$")
+        set(group_key diagnostics)
+      else()
+        set(group_key other)
+      endif()
+    endif()
+
+    list(APPEND group_${group_key} "${option_str}")
+  endforeach()
+
+  foreach(group IN LISTS group_order)
+    set(group_entries ${group_${group}})
+    if(group_entries)
+      set(group_label_var "group_label_${group}")
+      set(group_label "${${group_label_var}}")
+      message(STATUS "- ${group_label}")
+      foreach(entry IN LISTS group_entries)
+        message(STATUS "  ${entry}")
+      endforeach()
+    endif()
   endforeach()
 
   message(STATUS "")
