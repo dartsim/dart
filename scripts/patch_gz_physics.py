@@ -169,7 +169,9 @@ endif()
         )
         return False
 
-    test_cmake.write_text(content.replace("add_subdirectory(gtest_vendor)\n", replacement))
+    test_cmake.write_text(
+        content.replace("add_subdirectory(gtest_vendor)\n", replacement)
+    )
     print(f"✓ Updated {test_cmake} to prefer system GTest")
     return True
 
@@ -179,7 +181,9 @@ def main():
     # Get the gz-physics CMakeLists.txt path
     repo_root = Path(__file__).parent.parent
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
-    gtest_vendor_cmake = repo_root / ".deps" / "gz-physics" / "test" / "gtest_vendor" / "CMakeLists.txt"
+    gtest_vendor_cmake = (
+        repo_root / ".deps" / "gz-physics" / "test" / "gtest_vendor" / "CMakeLists.txt"
+    )
     test_cmake = repo_root / ".deps" / "gz-physics" / "test" / "CMakeLists.txt"
 
     # Patch versions
@@ -192,7 +196,9 @@ def main():
     gtest_system_success = prefer_system_gtest(test_cmake)
 
     # Exit with appropriate code
-    sys.exit(0 if cmake_success and gtest_include_success and gtest_system_success else 1)
+    sys.exit(
+        0 if cmake_success and gtest_include_success and gtest_system_success else 1
+    )
 
 
 if __name__ == "__main__":
