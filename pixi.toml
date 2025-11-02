@@ -64,6 +64,8 @@ config = { cmd = """
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DART7=ON \
+        -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -130,6 +132,8 @@ config-debug = { cmd = """
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DART7=ON \
+        -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -165,6 +169,13 @@ build-py-dev = { cmd = """
         --target dartpy
 """, depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
 
+build-dartpy7 = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --parallel \
+        --target dartpy7
+""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
 config-py = { cmd = """
     cmake \
         -G Ninja \
@@ -174,6 +185,8 @@ config-py = { cmd = """
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DART7=ON \
+        -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -208,6 +221,13 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
+test-dart7 = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        -R "^dart7"
+""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
 test-math = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -221,6 +241,10 @@ test-lcpsolver = { cmd = """
         --output-on-failure \
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
+test-dartpy7 = { cmd = """
+    python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
+""", depends-on = ["build-dartpy7"], env = { BUILD_TYPE = "Release" } }
 
 test-py = { cmd = """
     cmake \
@@ -603,6 +627,8 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DART7=ON \
+        -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \

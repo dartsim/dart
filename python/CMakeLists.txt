@@ -28,7 +28,7 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-if(NOT DART_BUILD_DARTPY)
+if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY7)
   return()
 endif()
 
@@ -55,15 +55,26 @@ if(NOT pybind11_FOUND)
   return()
 endif()
 
-set(DART_DARTPY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy")
+if(DART_BUILD_DARTPY)
+  set(DART_DARTPY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy")
 
-add_subdirectory(dartpy)
-add_subdirectory(tests)
-add_subdirectory(examples)
-add_subdirectory(tutorials)
+  add_subdirectory(dartpy)
+  add_subdirectory(tests)
+  add_subdirectory(examples)
+  add_subdirectory(tutorials)
 
-message(STATUS "")
-message(STATUS "[ dartpy ]")
-message(STATUS "- Python3_EXECUTABLE  : ${Python3_EXECUTABLE}")
-message(STATUS "- PYTHON_SITE_PACKAGES: ${PYTHON_SITE_PACKAGES}")
-message(STATUS "- DARTPY_PYTEST_FOUND : ${DARTPY_PYTEST_FOUND}")
+  message(STATUS "")
+  message(STATUS "[ dartpy ]")
+  message(STATUS "- Python3_EXECUTABLE  : ${Python3_EXECUTABLE}")
+  message(STATUS "- PYTHON_SITE_PACKAGES: ${PYTHON_SITE_PACKAGES}")
+  message(STATUS "- DARTPY_PYTEST_FOUND : ${DARTPY_PYTEST_FOUND}")
+endif()
+
+if(DART_BUILD_DARTPY7)
+  add_subdirectory(dartpy7)
+
+  message(STATUS "")
+  message(STATUS "[ dartpy7 ]")
+  message(STATUS "- Python3_EXECUTABLE  : ${Python3_EXECUTABLE}")
+  message(STATUS "- PYTHON_SITE_PACKAGES: ${PYTHON_SITE_PACKAGES}")
+endif()

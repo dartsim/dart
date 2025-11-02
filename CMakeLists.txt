@@ -158,6 +158,12 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
+dart_option(DART_BUILD_DART7 "Build experimental DART7 library" OFF CATEGORY build)
+dart_option(DART_BUILD_DARTPY7 "Build experimental dartpy7 Python bindings" OFF CATEGORY build)
+
+if(DART_BUILD_DARTPY7)
+  set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+endif()
 
 #===============================================================================
 # Print intro
@@ -444,6 +450,10 @@ endif()
 
 add_subdirectory(dart)
 
+if(DART_BUILD_DART7)
+  add_subdirectory(dart7)
+endif()
+
 set(DART_IN_SOURCE_BUILD TRUE)
 
 if(TARGET dart)
@@ -504,6 +514,9 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
+if(DART_BUILD_DARTPY7)
+  list(APPEND all_target_candidates dartpy7)
+endif()
 if(BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)
 endif()
