@@ -32,7 +32,7 @@
 
 #include <dart/gui/osg/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 using namespace dart::dynamics;
 using namespace dart::gui;

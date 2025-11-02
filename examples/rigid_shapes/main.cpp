@@ -40,7 +40,7 @@
 
 #include <dart/utils/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <fcl/config.h>
 

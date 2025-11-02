@@ -32,7 +32,7 @@
 
 #include "eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <pybind11/pybind11.h>
 

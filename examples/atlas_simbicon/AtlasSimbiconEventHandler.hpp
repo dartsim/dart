@@ -39,7 +39,7 @@
 
 #include <dart/utils/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 class AtlasSimbiconEventHandler : public osgGA::GUIEventHandler
 {

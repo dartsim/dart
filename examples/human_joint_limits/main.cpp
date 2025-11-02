@@ -37,7 +37,7 @@
 #include <dart/utils/all.hpp>
 #include <dart/collision/bullet/all.hpp>
 #include <dart/collision/ode/ode.hpp>
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <cmath>
 

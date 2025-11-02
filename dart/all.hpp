@@ -30,38 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/all.hpp>
+#pragma once
 
-#include <dart/all.hpp>
-
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
-namespace dart {
-namespace python {
-
-void SkelParser(py::module& m)
-{
-  auto sm = m.def_submodule("SkelParser");
-
-  sm.def(
-      "readWorld",
-      &utils::SkelParser::readWorld,
-      ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr);
-  sm.def(
-      "readWorldXML",
-      &utils::SkelParser::readWorldXML,
-      ::py::arg("xmlString"),
-      ::py::arg("baseUri") = "",
-      ::py::arg("retriever") = nullptr);
-  sm.def(
-      "readSkeleton",
-      &utils::SkelParser::readSkeleton,
-      ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr);
-}
-
-} // namespace python
-} // namespace dart
+// clang-format off
+#include <dart/config.hpp>
+#include <dart/common/all.hpp>
+#include <dart/math/all.hpp>
+#include <dart/integration/all.hpp>
+#include <dart/collision/all.hpp>
+#include <dart/lcpsolver/all.hpp>
+#include <dart/constraint/all.hpp>
+#include <dart/optimizer/all.hpp>
+#include <dart/dynamics/all.hpp>
+#include <dart/simulation/all.hpp>
+// clang-format on

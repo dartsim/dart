@@ -32,7 +32,7 @@
 
 #include "Joint.hpp"
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>

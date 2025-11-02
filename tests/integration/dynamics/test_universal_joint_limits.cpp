@@ -36,7 +36,7 @@
 
 #include <dart/utils/sdf/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 

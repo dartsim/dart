@@ -37,7 +37,7 @@
 
 #include <dart/utils/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 const double DefaultBlockLength = 0.5;
 const double DefaultBlockWidth = 0.075;

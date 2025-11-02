@@ -39,7 +39,7 @@
 
 #include <dart/utils/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode
 {

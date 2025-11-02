@@ -32,7 +32,7 @@
 
 #include <dart/gui/osg/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
