@@ -268,50 +268,80 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
 
   auto triMesh = std::make_shared<math::TriMesh<double>>();
 
-  // Process all meshes in the scene
-  // TODO: Support merging multiple meshes from the scene
-  const aiMesh* assimpMesh = scene->mMeshes[0];
+  // ALWAYS merge all meshes into a single TriMesh
+  // This is necessary because:
+  // 1. Files with multiple materials (common in COLLADA/OBJ) have multiple aiMesh objects
+  // 2. All meshes in a scene belong to the same shape for collision/rendering
+  // 3. CustomMeshShape from gz-physics creates one aiMesh per submesh
+  const std::size_t numMeshesToProcess = scene->mNumMeshes;
 
-  // Reserve space for vertices
-  triMesh->reserveVertices(assimpMesh->mNumVertices);
-
-  // Parse vertices
-  for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-    const aiVector3D& vertex = assimpMesh->mVertices[i];
-    triMesh->addVertex(
-        static_cast<double>(vertex.x),
-        static_cast<double>(vertex.y),
-        static_cast<double>(vertex.z));
+  // Reserve space for all vertices and faces upfront
+  std::size_t totalVertices = 0;
+  std::size_t totalFaces = 0;
+  for (std::size_t i = 0; i < numMeshesToProcess; ++i) {
+    if (scene->mMeshes[i]) {
+      totalVertices += scene->mMeshes[i]->mNumVertices;
+      totalFaces += scene->mMeshes[i]->mNumFaces;
+    }
   }
+  triMesh->reserveVertices(totalVertices);
+  triMesh->reserveTriangles(totalFaces);
+  triMesh->reserveVertexNormals(totalVertices);
 
-  // Parse faces (triangles)
-  triMesh->reserveTriangles(assimpMesh->mNumFaces);
-  for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
-    const aiFace& face = assimpMesh->mFaces[i];
+  // Process all meshes and merge them into a single TriMesh
+  for (std::size_t meshIndex = 0; meshIndex < numMeshesToProcess; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
 
-    // Skip non-triangular faces
-    if (face.mNumIndices != 3) {
-      DART_WARN(
-          "[MeshShape::convertAssimpMesh] Non-triangular face detected. "
-          "Skipping this face.");
+    if (!assimpMesh) {
       continue;
     }
 
-    triMesh->addTriangle(face.mIndices[0], face.mIndices[1], face.mIndices[2]);
+    // Track the vertex offset for this submesh (for face indices)
+    const std::size_t vertexOffset = triMesh->getVertices().size();
+
+    // Parse vertices
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+      const aiVector3D& vertex = assimpMesh->mVertices[i];
+      triMesh->addVertex(
+          static_cast<double>(vertex.x),
+          static_cast<double>(vertex.y),
+          static_cast<double>(vertex.z));
+    }
+
+    // Parse faces (triangles), adjusting indices by vertex offset
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+
+      // Skip non-triangular faces
+      if (face.mNumIndices != 3) {
+        DART_WARN(
+            "[MeshShape::convertAssimpMesh] Non-triangular face detected in "
+            "mesh {}. Skipping this face.",
+            meshIndex);
+        continue;
+      }
+
+      triMesh->addTriangle(
+          face.mIndices[0] + vertexOffset,
+          face.mIndices[1] + vertexOffset,
+          face.mIndices[2] + vertexOffset);
+    }
+
+    // Parse vertex normals
+    if (assimpMesh->mNormals) {
+      for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+        const aiVector3D& normal = assimpMesh->mNormals[i];
+        triMesh->addVertexNormal(
+            static_cast<double>(normal.x),
+            static_cast<double>(normal.y),
+            static_cast<double>(normal.z));
+      }
+    }
   }
 
-  // Parse vertex normals
-  if (assimpMesh->mNormals) {
-    triMesh->reserveVertexNormals(assimpMesh->mNumVertices);
-    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
-      const aiVector3D& normal = assimpMesh->mNormals[i];
-      triMesh->addVertexNormal(
-          static_cast<double>(normal.x),
-          static_cast<double>(normal.y),
-          static_cast<double>(normal.z));
-    }
-  } else {
-    // Compute vertex normals if not provided
+  // Compute vertex normals if they are missing or incomplete.
+  if (triMesh->hasTriangles()
+      && triMesh->getVertexNormals().size() != triMesh->getVertices().size()) {
     triMesh->computeVertexNormals();
   }
 
@@ -755,15 +785,19 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 //==============================================================================
 ShapePtr MeshShape::clone() const
 {
-  aiScene* new_scene = cloneMesh();
+  std::shared_ptr<math::TriMesh<double>> clonedTriMesh;
+  if (const auto triMesh = getTriMesh()) {
+    clonedTriMesh = std::make_shared<math::TriMesh<double>>(*triMesh);
+  }
 
-  auto new_shape = std::make_shared<MeshShape>(
-      mScale, new_scene, mMeshUri, mResourceRetriever, MeshOwnership::Copied);
+  auto new_shape = std::make_shared<MeshShape>(mScale, clonedTriMesh, mMeshUri);
   new_shape->mMeshPath = mMeshPath;
+  new_shape->mResourceRetriever = mResourceRetriever;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mColorMode = mColorMode;
   new_shape->mAlphaMode = mAlphaMode;
   new_shape->mColorIndex = mColorIndex;
+  new_shape->mMaterials = mMaterials;
 
   return new_shape;
 }
@@ -771,7 +805,11 @@ ShapePtr MeshShape::clone() const
 //==============================================================================
 void MeshShape::updateBoundingBox() const
 {
-  if (!mTriMesh) {
+  // Use getTriMesh() instead of directly accessing mTriMesh
+  // This handles lazy conversion for backward compatibility with CustomMeshShape
+  const auto* triMesh = getTriMesh().get();
+
+  if (!triMesh) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -782,7 +820,7 @@ void MeshShape::updateBoundingBox() const
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
   Eigen::Vector3d maxPoint = -minPoint;
 
-  const auto& vertices = mTriMesh->getVertices();
+  const auto& vertices = triMesh->getVertices();
   for (const auto& vertex : vertices) {
     const Eigen::Vector3d scaledVertex = vertex.cwiseProduct(mScale);
     minPoint = minPoint.cwiseMin(scaledVertex);
