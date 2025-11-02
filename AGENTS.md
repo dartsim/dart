@@ -37,3 +37,14 @@ If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and
 - Documentation lives in `docs/` and `tutorials/`.
 - Examples demonstrating API usage can be found in `examples/`.
 
+## Submitting Changes
+- Always create a fresh topic branch from `main` before making edits:
+  ```bash
+  git checkout main
+  git pull --rebase
+  git checkout -b <topic-branch-name>
+  ```
+- Keep work in progress off `main`. Commit locally with focused messages, then push the branch (`git push origin <topic-branch-name>`).
+- Review your diff (`git status`, `git diff`) and run the relevant `pixi` checks prior to committing.
+- Open a draft PR using the template in `.github/PULL_REQUEST_TEMPLATE.md`. Replace the placeholder summary text instead of leaving it quoted and tick only the checklist items you completed.
+- Convert the PR from draft once validation passes and the change is ready for review.
