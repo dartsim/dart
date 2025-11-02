@@ -31,8 +31,8 @@ Architecture Diagram
    │ • Links to API docs →        │        │   {version}-py/             │
    │                              │        │                             │
    │                              │        │ Examples:                   │
-   │ Build: Sphinx                │        │ • v6.13.2/     (C++)        │
-   │ Trigger: Push to main        │        │ • v6.13.2-py/  (Python)     │
+   │ Build: Sphinx                │        │ • <version>/   (C++)        │
+   │ Trigger: Push to main        │        │ • <version>-py/ (Python)    │
    └──────────────────────────────┘        └─────────────────────────────┘
             │                                       │
             │                                       │
@@ -82,8 +82,8 @@ GitHub Pages
 
 **Examples:**
 
-- C++ v6.13.2: https://dartsim.github.io/dart/v6.13.2/
-- Python v6.13.2: https://dartsim.github.io/dart/v6.13.2-py/
+- C++ latest: `|dart_cpp_api_url| <|dart_cpp_api_url|>`_
+- Python latest: `|dart_python_api_url| <|dart_python_api_url|>`_
 
 **Why GitHub Pages?**
 
@@ -255,8 +255,8 @@ To add a new version to GitHub Pages:
 
    .. code-block:: bash
 
-      git tag v6.14.0
-      git push origin v6.14.0
+      git tag vX.Y.Z
+      git push origin vX.Y.Z
 
 2. **Update version list:**
 
@@ -265,7 +265,7 @@ To add a new version to GitHub Pages:
    .. code-block:: text
 
       DART 6
-      v6.14.0
+      vX.Y.Z
       v6.13.2
       v6.12.2
 
@@ -273,13 +273,13 @@ To add a new version to GitHub Pages:
 
    .. code-block:: bash
 
-      git commit -am "Add v6.14.0 to API documentation"
+      git commit -am "Add vX.Y.Z to API documentation"
       git push origin main
 
 GitHub Actions will automatically build and deploy:
 
-- C++ API → ``v6.14.0/``
-- Python API → ``v6.14.0-py/``
+- C++ API → ``vX.Y.Z/``
+- Python API → ``vX.Y.Z-py/``
 
 Troubleshooting
 ---------------
@@ -291,7 +291,7 @@ Python API is Empty on Read the Docs
 
 **Current Status:** Expected until dartpy wheels are published to PyPI
 
-**Workaround:** Use GitHub Pages for Python API: https://dartsim.github.io/dart/v6.13.2-py/
+**Workaround:** Use GitHub Pages for Python API: `|dart_python_api_url| <|dart_python_api_url|>`_
 
 **Future Fix:** Once dartpy is published to PyPI, RTD will be able to ``pip install dartpy`` and generate full API docs.
 
@@ -312,6 +312,6 @@ C++ API Not Available on Read the Docs
 
 **Status:** By design - Read the Docs cannot build C++ code
 
-**Solution:** C++ API is available on GitHub Pages: https://dartsim.github.io/dart/v6.13.2/
+**Solution:** C++ API is available on GitHub Pages: `|dart_cpp_api_url| <|dart_cpp_api_url|>`_
 
 The main RTD documentation includes prominent links to the C++ API on GitHub Pages.
