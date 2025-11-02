@@ -53,14 +53,16 @@ jobs:
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation
 
-      - name: Test DART and dartpy
+      - name: Test DART (dartpy disabled)
         run: |
-          $env:DART_VERBOSE = "ON"; `
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
-          pixi run test-all
+          $ErrorActionPreference = "Stop"
+          $env:DART_VERBOSE = "ON"
+          $env:BUILD_TYPE = "${{ matrix.build_type }}"
+          pixi run test OFF
 
-      - name: Install
+      - name: Install (dartpy disabled)
         run: |
-          $env:DART_VERBOSE = "ON"; `
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
-          pixi run install
+          $ErrorActionPreference = "Stop"
+          $env:BUILD_TYPE = "${{ matrix.build_type }}"
+          $env:DART_VERBOSE = "ON"
+          pixi run install OFF

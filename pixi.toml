@@ -64,7 +64,7 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
@@ -75,7 +75,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
 lint-cpp = { cmd = """
@@ -133,7 +133,7 @@ config-debug = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
@@ -144,14 +144,14 @@ config-debug = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-tests = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --parallel \
         --target tests
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-math-tests = { cmd = """
     cmake \
@@ -187,7 +187,7 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
         -DDART_BUILD_PROFILE=ON \
@@ -197,7 +197,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
@@ -223,7 +223,7 @@ test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-dart7 = { cmd = """
     ctest \
@@ -369,7 +369,7 @@ install = { cmd = """
         --config $BUILD_TYPE \
         --parallel \
         --target install
-""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config-install", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 config-install = { cmd = """
     cmake \
@@ -379,13 +379,14 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 tracy = { cmd = "tracy-profiler" }
 
