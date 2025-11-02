@@ -39,7 +39,7 @@
 #include <dart/utils/all.hpp>
 #include <dart/utils/urdf/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 int main()
 {

@@ -32,7 +32,7 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/dart.hpp"
+#include <dart/all.hpp>
 #include "dart/utils/all.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"

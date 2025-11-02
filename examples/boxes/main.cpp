@@ -34,7 +34,7 @@
 
 #include <dart/collision/bullet/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <osgShadow/ShadowMap>
 

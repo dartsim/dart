@@ -32,7 +32,7 @@
 
 #include <dart/utils/all.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <pybind11/pybind11.h>
 

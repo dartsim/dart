@@ -593,7 +593,7 @@ World (simulation environment)
 
 The main DART header that includes all modules:
 
-**File:** `dart/dart.hpp`
+**File:** `dart/all.hpp`
 
 **Includes (in order):**
 ```cpp
@@ -609,7 +609,7 @@ The main DART header that includes all modules:
 #include <dart/simulation/all.hpp> // Simulation
 ```
 
-Users typically include just `<dart/dart.hpp>` to access all functionality.
+Users typically include just `<dart/all.hpp>` to access all functionality.
 
 ---
 
@@ -856,7 +856,7 @@ CollisionDetector
 ## Usage Example (Pseudocode)
 
 ```cpp
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 int main() {
   // 1. Create world

@@ -31,7 +31,7 @@
  */
 
 #include "dart/collision/fcl/all.hpp"
-#include "dart/dart.hpp"
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 #if HAVE_BULLET
