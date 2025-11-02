@@ -107,7 +107,7 @@ set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF CATEGORY msvc)
 
   # Option to force /MD (Release runtime) for all configurations including Debug.
   # This is useful when linking against pre-built libraries (e.g., conda-forge packages)
@@ -115,7 +115,8 @@ if(MSVC)
   # Default: ON (recommended for most users using package managers like conda/pixi)
   # Set to OFF if you're building all dependencies from source with matching runtime libraries.
   dart_option(DART_MSVC_FORCE_RELEASE_RUNTIME
-    "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON)
+    "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON
+    CATEGORY msvc)
 
   if(DART_MSVC_FORCE_RELEASE_RUNTIME AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.15")
     # Use modern CMake 3.15+ approach with CMAKE_MSVC_RUNTIME_LIBRARY
@@ -127,12 +128,12 @@ if(MSVC)
     message(STATUS "  Set -DDART_MSVC_FORCE_RELEASE_RUNTIME=OFF if building all deps from source")
   endif()
 else()
-  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+  dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
-dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
-dart_option(DART_CODECOV "Turn on codecov support" OFF)
+dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
+dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON CATEGORY build)
+dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
+dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
 # option `-march=native` is added to the target `dart` that enables all
@@ -141,22 +142,22 @@ dart_option(DART_CODECOV "Turn on codecov support" OFF)
 # compile options, which may cause runtime errors especially memory alignment
 # errors.
 dart_option(DART_ENABLE_SIMD
-  "Build DART with all SIMD instructions on the current local machine" OFF)
-dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
+  "Build DART with all SIMD instructions on the current local machine" OFF CATEGORY performance)
+dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF CATEGORY performance)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
 # to always generate ANSI-formatted colors regardless of the output medium types.
 # See: https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 dart_option(DART_FORCE_COLORED_OUTPUT
-  "Always produce ANSI-colored output (GNU/Clang only)." OFF)
+  "Always produce ANSI-colored output (GNU/Clang only)." OFF CATEGORY diagnostics)
 dart_option(DART_USE_SYSTEM_IMGUI
-  "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF)
-dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
-dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
-dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
-dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
-dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
+  "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
+dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 
 #===============================================================================
 # Print intro
@@ -785,17 +786,32 @@ endif()
 # Build Instructions
 #===============================================================================
 message(STATUS "")
-message(STATUS "Run 'make' to build all the components")
-if (BUILD_TESTING)
-  message(STATUS "Run 'make tests' to build all the tests")
+set(DART_CMAKE_BUILD_CMD_BASE "cmake --build .")
+set(DART_CMAKE_BUILD_CMD_SUFFIX "")
+
+if(CMAKE_CONFIGURATION_TYPES)
+  if(CMAKE_BUILD_TYPE)
+    set(DART_CMAKE_BUILD_CMD_SUFFIX " --config ${CMAKE_BUILD_TYPE}")
+  else()
+    list(JOIN CMAKE_CONFIGURATION_TYPES ", " DART_CMAKE_KNOWN_CONFIGS)
+    set(DART_CMAKE_BUILD_CMD_SUFFIX " --config <config>")
+    message(STATUS "Available build configurations: ${DART_CMAKE_KNOWN_CONFIGS}")
+  endif()
 endif()
-message(STATUS "Run 'make examples' to build all the examples")
-message(STATUS "Run 'make tutorials' to build all the tutorials")
-message(STATUS "Run 'make view_docs' to see the API documentation")
-message(STATUS "Run 'make install' to install all the C++ components")
+
+set(DART_CMAKE_BUILD_CMD "${DART_CMAKE_BUILD_CMD_BASE}${DART_CMAKE_BUILD_CMD_SUFFIX}")
+
+message(STATUS "Run '${DART_CMAKE_BUILD_CMD}' to build all the components")
+if (BUILD_TESTING)
+  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target tests' to build all the tests")
+endif()
+message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target examples' to build all the examples")
+message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target tutorials' to build all the tutorials")
+message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target view_docs' to see the API documentation")
+message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install all the C++ components")
 if(TARGET dartpy)
-  message(STATUS "Run 'make dartpy' to build dartpy")
-  message(STATUS "Run 'make install' to install dartpy")
+  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target dartpy' to build dartpy")
+  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install dartpy")
 endif()
 if(TARGET coverage)
   message(STATUS "- 'coverage'     : generage coverage report")
