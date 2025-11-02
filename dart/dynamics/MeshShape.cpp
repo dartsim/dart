@@ -352,7 +352,53 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
-  setMesh(mesh, MeshOwnership::Imported, uri, std::move(resourceRetriever));
+  // This overload intentionally does not retain the aiScene pointer. Call the
+  // MeshOwnership overload if you need explicit lifetime management.
+
+  // Clear cached aiScene to prevent stale data.
+  if (mCachedAiScene) {
+    aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
+  }
+
+  mTriMesh = convertAssimpMesh(mesh);
+  mMaterials.clear();
+
+  if (!mTriMesh) {
+    releaseMesh();
+    mMeshUri.clear();
+    mMeshPath.clear();
+    mResourceRetriever = nullptr;
+    mIsBoundingBoxDirty = true;
+    mIsVolumeDirty = true;
+    return;
+  }
+
+  mMeshUri = uri;
+
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    mMeshPath = uri.getFilesystemPath();
+  } else if (resourceRetriever) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    mMeshPath = resourceRetriever->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
+  } else {
+    mMeshPath.clear();
+  }
+
+  mResourceRetriever = std::move(resourceRetriever);
+
+  // Extract material properties for Assimp-free rendering.
+  extractMaterialsFromScene(
+      mesh, mMeshPath.empty() ? uri.getPath() : mMeshPath);
+
+  // Clear any previously retained aiScene after conversion/material extraction.
+  releaseMesh();
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -399,6 +445,7 @@ void MeshShape::setMesh(
     return;
   }
 
+  // Clear cached aiScene to prevent stale data.
   if (mCachedAiScene) {
     aiReleaseImport(mCachedAiScene);
     mCachedAiScene = nullptr;
