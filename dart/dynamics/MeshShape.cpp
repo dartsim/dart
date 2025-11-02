@@ -135,7 +135,7 @@ MeshShape::MeshShape(
     const aiScene* mesh,
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
-  : Shape(),
+  : Shape(Shape::MESH),
     mTriMesh(convertAssimpMesh(mesh)),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
@@ -162,7 +162,7 @@ MeshShape::MeshShape(
     const Eigen::Vector3d& scale,
     std::shared_ptr<math::TriMesh<double>> mesh,
     const common::Uri& uri)
-  : Shape(),
+  : Shape(Shape::MESH),
     mTriMesh(std::move(mesh)),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
@@ -389,6 +389,12 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  // Clear cached aiScene to prevent stale data
+  if (mCachedAiScene) {
+    aiReleaseImport(mCachedAiScene);
+    mCachedAiScene = nullptr;
+  }
+
   // Convert aiScene to TriMesh
   mTriMesh = convertAssimpMesh(mesh);
 
@@ -396,6 +402,7 @@ void MeshShape::setMesh(
     mMeshUri.clear();
     mMeshPath.clear();
     mResourceRetriever = nullptr;
+    mMaterials.clear();
     return;
   }
 
@@ -407,6 +414,9 @@ void MeshShape::setMesh(
     mMeshPath.clear();
 
   mResourceRetriever = std::move(resourceRetriever);
+
+  // Refresh materials from the new mesh
+  extractMaterialsFromScene(mesh, mMeshPath);
 
   incrementVersion();
 }
