@@ -30,8 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma message(                                                               \
-    "This header has been deprecated in DART 7.1. "                            \
-    "Please include dart/all.hpp instead.")
+#pragma once
 
-#include <dart/all.hpp>
+// clang-format off
+#include <dart/config.hpp>
+#include <dart/common/all.hpp>
+#include <dart/math/all.hpp>
+#include <dart/integration/all.hpp>
+#include <dart/collision/all.hpp>
+#include <dart/lcpsolver/all.hpp>
+#include <dart/constraint/all.hpp>
+#include <dart/optimizer/all.hpp>
+#include <dart/dynamics/all.hpp>
+#include <dart/simulation/all.hpp>
+// clang-format on
