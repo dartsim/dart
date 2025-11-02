@@ -30,16 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-#include <string>
-
 #include <dart7/version.hpp>
 #include <dart7/world.hpp>
 
-namespace py = pybind11;
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
-PYBIND11_MODULE(dartpy7, m)
+#include <string>
+
+namespace nb = nanobind;
+
+NB_MODULE(dartpy7, m)
 {
   m.doc() = "Experimental bindings for the dart7 prototype library.";
 
@@ -49,5 +50,5 @@ PYBIND11_MODULE(dartpy7, m)
   m.def("version_minor", &dart7::versionMinor);
   m.def("version_patch", &dart7::versionPatch);
 
-  py::class_<dart7::World>(m, "World").def(py::init<>());
+  nb::class_<dart7::World>(m, "World").def(nb::init<>());
 }

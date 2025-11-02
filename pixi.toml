@@ -26,6 +26,7 @@ jinja2 = ">=3.1.2"
 libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
 myst-parser = "*"
+nanobind = ">=2.4.0"
 ninja = ">=1.12.1,<2"
 nlopt = ">=2.10.0,<3"
 numpy = ">=2.2.5,<3"
@@ -71,6 +72,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
+        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -139,6 +141,7 @@ config-debug = { cmd = """
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
+        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
@@ -191,6 +194,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -920,6 +924,7 @@ python = "3.12.*"
 pip = ">=25"
 scikit-build-core = ">=0.10"
 pybind11 = ">=3.0"
+nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"

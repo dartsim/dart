@@ -28,9 +28,19 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-pybind11_add_module(dartpy7 MODULE
+nanobind_add_module(
+  dartpy7
+  MODULE
   dartpy7.cpp
 )
+
+if(TARGET nanobind)
+  target_compile_options(nanobind PRIVATE -Wno-error -Wno-error=sign-compare)
+endif()
+
+if(TARGET nanobind-static)
+  target_compile_options(nanobind-static PRIVATE -Wno-error -Wno-error=sign-compare)
+endif()
 
 target_link_libraries(dartpy7
   PRIVATE
