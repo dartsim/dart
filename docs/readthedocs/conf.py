@@ -64,37 +64,6 @@ html_context = {
     'gh_pages_url': 'https://dartsim.github.io/dart/',
 }
 
-generated_dir = Path(__file__).parent / '_generated'
-generated_dir.mkdir(exist_ok=True)
-
-if api_versions:
-    cpp_versions_body = "\n".join(
-        f"- `{version} <https://dartsim.github.io/dart/{version}/>`_" for version in api_versions
-    )
-    python_versions_body = "\n".join(
-        f"- `{version}-py <https://dartsim.github.io/dart/{version}-py/>`_" for version in api_versions
-    )
-else:
-    cpp_versions_body = "- (No published C++ API versions yet.)"
-    python_versions_body = "- (No published Python API versions yet.)"
-
-cpp_versions_rst = ":orphan:\n\n" + cpp_versions_body + "\n"
-python_versions_rst = ":orphan:\n\n" + python_versions_body + "\n"
-
-(generated_dir / 'cpp_versions.rst').write_text(cpp_versions_rst, encoding='utf-8')
-(generated_dir / 'python_versions.rst').write_text(python_versions_rst, encoding='utf-8')
-
-rst_epilog = "\n".join(
-    [
-        "",
-        f".. |dart_current_version| replace:: {current_version}",
-        f".. |dart_latest_stable| replace:: {api_version_to_link}",
-        f".. |dart_cpp_api_url| replace:: https://dartsim.github.io/dart/{api_version_to_link}/",
-        f".. |dart_python_api_url| replace:: https://dartsim.github.io/dart/{api_version_to_link}-py/",
-        f".. |dart_all_versions_url| replace:: https://dartsim.github.io/dart/",
-    ]
-)
-
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
