@@ -291,42 +291,46 @@ void JointConstraint::update()
         continue;
       }
 
-      // Check lower velocity bound
-      const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
-      const double vel_lb_error = velocities[i] - vel_lb;
-      if (vel_lb_error < 0.0) {
-        mDesiredVelocityChange[i] = -vel_lb_error;
-        mImpulseLowerBound[i] = 0.0;
-        mImpulseUpperBound[i] = static_cast<double>(dInfinity);
+      // Skip velocity limit enforcement for servo joints so they can recover
+      // from position limits even when the velocity bounds prohibit reversing.
+      if (mJoint->getActuatorType() != dynamics::Joint::SERVO) {
+        // Check lower velocity bound
+        const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
+        const double vel_lb_error = velocities[i] - vel_lb;
+        if (vel_lb_error < 0.0) {
+          mDesiredVelocityChange[i] = -vel_lb_error;
+          mImpulseLowerBound[i] = 0.0;
+          mImpulseUpperBound[i] = static_cast<double>(dInfinity);
 
-        if (mActive[i]) {
-          ++(mLifeTime[i]);
-        } else {
-          mActive[i] = true;
-          mLifeTime[i] = 0;
+          if (mActive[i]) {
+            ++(mLifeTime[i]);
+          } else {
+            mActive[i] = true;
+            mLifeTime[i] = 0;
+          }
+
+          ++mDim;
+          continue;
         }
 
-        ++mDim;
-        continue;
-      }
+        // Check upper velocity bound
+        const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
+        const double vel_ub_error = velocities[i] - vel_ub;
+        if (vel_ub_error > 0.0) {
+          mDesiredVelocityChange[i] = -vel_ub_error;
+          mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
+          mImpulseUpperBound[i] = 0.0;
 
-      // Check upper velocity bound
-      const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
-      const double vel_ub_error = velocities[i] - vel_ub;
-      if (vel_ub_error > 0.0) {
-        mDesiredVelocityChange[i] = -vel_ub_error;
-        mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
-        mImpulseUpperBound[i] = 0.0;
+          if (mActive[i]) {
+            ++(mLifeTime[i]);
+          } else {
+            mActive[i] = true;
+            mLifeTime[i] = 0;
+          }
 
-        if (mActive[i]) {
-          ++(mLifeTime[i]);
-        } else {
-          mActive[i] = true;
-          mLifeTime[i] = 0;
+          ++mDim;
+          continue;
         }
-
-        ++mDim;
-        continue;
       }
     }
 
