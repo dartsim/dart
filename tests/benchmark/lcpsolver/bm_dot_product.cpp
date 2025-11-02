@@ -52,7 +52,8 @@ dReal dotEigen(const dReal* a, const dReal* b, int n)
 
 // Benchmark fixture
 template <int N>
-class DotProductFixture : public benchmark::Fixture {
+class DotProductFixture : public benchmark::Fixture
+{
 public:
   void SetUp(const ::benchmark::State&) override
   {
@@ -78,7 +79,8 @@ using DotProduct100 = DotProductFixture<100>;
 using DotProduct200 = DotProductFixture<200>;
 
 // Benchmarks for N=10
-BENCHMARK_F(DotProduct10, Original)(benchmark::State& st) {
+BENCHMARK_F(DotProduct10, Original)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotOriginal(a.data(), b.data(), 10);
@@ -87,7 +89,8 @@ BENCHMARK_F(DotProduct10, Original)(benchmark::State& st) {
   st.SetLabel("Original-10");
 }
 
-BENCHMARK_F(DotProduct10, Eigen)(benchmark::State& st) {
+BENCHMARK_F(DotProduct10, Eigen)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotEigen(a.data(), b.data(), 10);
@@ -97,7 +100,8 @@ BENCHMARK_F(DotProduct10, Eigen)(benchmark::State& st) {
 }
 
 // Benchmarks for N=50
-BENCHMARK_F(DotProduct50, Original)(benchmark::State& st) {
+BENCHMARK_F(DotProduct50, Original)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotOriginal(a.data(), b.data(), 50);
@@ -106,7 +110,8 @@ BENCHMARK_F(DotProduct50, Original)(benchmark::State& st) {
   st.SetLabel("Original-50");
 }
 
-BENCHMARK_F(DotProduct50, Eigen)(benchmark::State& st) {
+BENCHMARK_F(DotProduct50, Eigen)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotEigen(a.data(), b.data(), 50);
@@ -116,7 +121,8 @@ BENCHMARK_F(DotProduct50, Eigen)(benchmark::State& st) {
 }
 
 // Benchmarks for N=100
-BENCHMARK_F(DotProduct100, Original)(benchmark::State& st) {
+BENCHMARK_F(DotProduct100, Original)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotOriginal(a.data(), b.data(), 100);
@@ -125,7 +131,8 @@ BENCHMARK_F(DotProduct100, Original)(benchmark::State& st) {
   st.SetLabel("Original-100");
 }
 
-BENCHMARK_F(DotProduct100, Eigen)(benchmark::State& st) {
+BENCHMARK_F(DotProduct100, Eigen)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotEigen(a.data(), b.data(), 100);
@@ -135,7 +142,8 @@ BENCHMARK_F(DotProduct100, Eigen)(benchmark::State& st) {
 }
 
 // Benchmarks for N=200
-BENCHMARK_F(DotProduct200, Original)(benchmark::State& st) {
+BENCHMARK_F(DotProduct200, Original)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotOriginal(a.data(), b.data(), 200);
@@ -144,7 +152,8 @@ BENCHMARK_F(DotProduct200, Original)(benchmark::State& st) {
   st.SetLabel("Original-200");
 }
 
-BENCHMARK_F(DotProduct200, Eigen)(benchmark::State& st) {
+BENCHMARK_F(DotProduct200, Eigen)(benchmark::State& st)
+{
   volatile dReal result;
   for (auto _ : st) {
     result = dotEigen(a.data(), b.data(), 200);
