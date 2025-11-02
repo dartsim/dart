@@ -997,7 +997,13 @@ delvewheel = ">=1.8.1"
 [feature.py312-wheel.target.win-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "delvewheel repair dist/dartpy-*-cp312-*-win_amd64.whl -w dist/ && del dist\\dartpy-*-cp312-*-win_amd64.whl" }
+wheel-repair = { cmd = """
+    rm -rf dist/repaired &&
+    delvewheel repair dist/dartpy-*-cp312-*-win_amd64.whl -w dist/repaired &&
+    rm dist/dartpy-*-cp312-*-win_amd64.whl &&
+    mv dist/repaired/*.whl dist/ &&
+    rm -rf dist/repaired
+""" }
 
 [feature.py312-wheel.tasks]
 # Build wheel with OSG enabled (Linux/Windows have OSG available)
@@ -1087,7 +1093,13 @@ delvewheel = ">=1.8.1"
 [feature.py313-wheel.target.win-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "delvewheel repair dist/dartpy-*-cp313-*-win_amd64.whl -w dist/ && del dist\\dartpy-*-cp313-*-win_amd64.whl" }
+wheel-repair = { cmd = """
+    rm -rf dist/repaired &&
+    delvewheel repair dist/dartpy-*-cp313-*-win_amd64.whl -w dist/repaired &&
+    rm dist/dartpy-*-cp313-*-win_amd64.whl &&
+    mv dist/repaired/*.whl dist/ &&
+    rm -rf dist/repaired
+""" }
 
 [feature.py313-wheel.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
@@ -1169,7 +1181,13 @@ delvewheel = ">=1.8.1"
 [feature.py314-wheel.target.win-64.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
-wheel-repair = { cmd = "delvewheel repair dist/dartpy-*-cp314-*-win_amd64.whl -w dist/ && del dist\\dartpy-*-cp314-*-win_amd64.whl" }
+wheel-repair = { cmd = """
+    rm -rf dist/repaired &&
+    delvewheel repair dist/dartpy-*-cp314-*-win_amd64.whl -w dist/repaired &&
+    rm dist/dartpy-*-cp314-*-win_amd64.whl &&
+    mv dist/repaired/*.whl dist/ &&
+    rm -rf dist/repaired
+""" }
 
 [feature.py314-wheel.tasks]
 wheel-build = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
