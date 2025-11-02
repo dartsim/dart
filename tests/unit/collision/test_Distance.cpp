@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/fcl/all.hpp"
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
