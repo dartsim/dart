@@ -1,4 +1,4 @@
-(/*
+/*
  * Benchmark: Dot Product Optimization
  *
  * Compares manual loop unrolling vs Eigen SIMD for dot products.
