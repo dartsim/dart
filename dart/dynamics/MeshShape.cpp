@@ -156,6 +156,21 @@ const std::string& MeshShape::getStaticType()
 //==============================================================================
 std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
 {
+  // Handle backward compatibility: if a derived class bypasses setMesh() and
+  // updates the underlying aiScene directly, we lazily populate the TriMesh.
+  if (!mTriMesh) {
+    const aiScene* scene = nullptr;
+    if (mMesh) {
+      scene = mMesh.get();
+    } else if (mCachedAiScene) {
+      scene = mCachedAiScene;
+    }
+
+    if (scene) {
+      // Const cast is safe here - we're lazily populating internal cache.
+      const_cast<MeshShape*>(this)->mTriMesh = convertAssimpMesh(scene);
+    }
+  }
   return mTriMesh;
 }
 

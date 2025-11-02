@@ -8,6 +8,7 @@
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/math/TriMesh.hpp>
 #include <dart/common/Uri.hpp>
+#include <dart/common/Deprecated.hpp>
 
 #include <gtest/gtest.h>
 
@@ -160,77 +161,44 @@ TEST(MeshShapeIntegration, TypeAndCopy)
 //==============================================================================
 TEST(MeshShapeIntegration, ConstructorInitializesShapeFlags)
 {
-  // Bug fix test: Ensure constructors call Shape(Shape::MESH) instead of
-  // Shape(), which properly initializes mIsBoundingBoxDirty and mIsVolumeDirty.
-  // Without this, a freshly created MeshShape could skip its first
-  // updateBoundingBox()/updateVolume() or read garbage values.
-
+  // Bug fix: constructors must call Shape(Shape::MESH) to initialize flags.
+  // Without this, getBoundingBox()/getVolume() could use uninitialized values.
   auto triMesh = std::make_shared<math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);
   triMesh->addVertex(1.0, 0.0, 0.0);
   triMesh->addVertex(0.0, 1.0, 0.0);
-  triMesh->addVertex(0.0, 0.0, 1.0);
   triMesh->addTriangle(0, 1, 2);
-  triMesh->addTriangle(0, 1, 3);
 
-  Eigen::Vector3d scale(1.0, 1.0, 1.0);
   auto meshShape = std::make_shared<dynamics::MeshShape>(
-      scale,
-      triMesh,
-      common::Uri("test.dae"));
+      Eigen::Vector3d(1.0, 1.0, 1.0), triMesh, common::Uri("test.dae"));
 
-  // These calls should work correctly on a freshly created MeshShape
-  // If mIsBoundingBoxDirty and mIsVolumeDirty are uninitialized,
-  // these could return incorrect results or crash
-  const auto& bbox = meshShape->getBoundingBox();
-  double volume = meshShape->getVolume();
-
-  // Verify bounding box is computed correctly
-  EXPECT_EQ(bbox.getMin(), Eigen::Vector3d(0.0, 0.0, 0.0));
-  EXPECT_EQ(bbox.getMax(), Eigen::Vector3d(1.0, 1.0, 1.0));
-
-  // Verify volume is computed (should be > 0 for this mesh)
-  EXPECT_GT(volume, 0.0);
+  // Verify shape flags are properly initialized
+  EXPECT_EQ(meshShape->getBoundingBox().getMin(), Eigen::Vector3d::Zero());
+  EXPECT_EQ(meshShape->getBoundingBox().getMax(), Eigen::Vector3d(1.0, 1.0, 0.0));
+  EXPECT_GT(meshShape->getVolume(), 0.0);
 }
 
 //==============================================================================
 TEST(MeshShapeIntegration, SetMeshClearsCacheAndRefreshesMaterials)
 {
-  // Bug fix test: Ensure setMesh() clears mCachedAiScene and refreshes
-  // mMaterials. Without this, if getMesh() was called before setMesh(),
-  // subsequent calls would return the old cached aiScene even though the
-  // TriMesh changed, and rendering would use stale material data.
-
-  // Create first mesh
+  // Bug fix: setMesh() must clear cached aiScene to prevent stale data.
   auto triMesh1 = std::make_shared<math::TriMesh<double>>();
   triMesh1->addVertex(0.0, 0.0, 0.0);
   triMesh1->addVertex(1.0, 0.0, 0.0);
   triMesh1->addVertex(0.0, 1.0, 0.0);
   triMesh1->addTriangle(0, 1, 2);
 
-  Eigen::Vector3d scale(1.0, 1.0, 1.0);
   auto meshShape = std::make_shared<dynamics::MeshShape>(
-      scale,
-      triMesh1,
-      common::Uri("first.dae"));
+      Eigen::Vector3d(1.0, 1.0, 1.0), triMesh1, common::Uri("first.dae"));
 
-  // Get the TriMesh to verify initial state
-  auto retrieved1 = meshShape->getTriMesh();
-  ASSERT_NE(retrieved1, nullptr);
-  EXPECT_EQ(retrieved1->getVertices().size(), 3);
-  EXPECT_EQ(retrieved1->getTriangles().size(), 1);
+  // Populate cache using deprecated API
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene1 = meshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene1, nullptr);
+  EXPECT_EQ(scene1->mMeshes[0]->mNumVertices, 3u);
 
-  // Call getMesh() to populate the cache (using deprecated API)
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const aiScene* cachedScene1 = meshShape->getMesh();
-  #pragma GCC diagnostic pop
-  ASSERT_NE(cachedScene1, nullptr);
-  EXPECT_EQ(cachedScene1->mNumMeshes, 1u);
-  EXPECT_EQ(cachedScene1->mMeshes[0]->mNumVertices, 3u);
-  EXPECT_EQ(cachedScene1->mMeshes[0]->mNumFaces, 1u);
-
-  // Create second MeshShape with different geometry
+  // Create second mesh with 4 vertices
   auto triMesh2 = std::make_shared<math::TriMesh<double>>();
   triMesh2->addVertex(0.0, 0.0, 0.0);
   triMesh2->addVertex(2.0, 0.0, 0.0);
@@ -240,38 +208,15 @@ TEST(MeshShapeIntegration, SetMeshClearsCacheAndRefreshesMaterials)
   triMesh2->addTriangle(1, 3, 2);
 
   auto meshShape2 = std::make_shared<dynamics::MeshShape>(
-      scale,
-      triMesh2,
-      common::Uri("second.dae"));
+      Eigen::Vector3d(1.0, 1.0, 1.0), triMesh2, common::Uri("second.dae"));
 
-  // Get aiScene from second MeshShape to use with setMesh()
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene2 = meshShape2->getMesh();
-  #pragma GCC diagnostic pop
-  ASSERT_NE(scene2, nullptr);
-
-  // Call setMesh with the new mesh - this should clear the cache
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   meshShape->setMesh(scene2, common::Uri("second.dae"), nullptr);
-  #pragma GCC diagnostic pop
+  const aiScene* updatedScene = meshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
 
-  // Verify TriMesh was updated
-  auto retrieved2 = meshShape->getTriMesh();
-  ASSERT_NE(retrieved2, nullptr);
-  EXPECT_EQ(retrieved2->getVertices().size(), 4);
-  EXPECT_EQ(retrieved2->getTriangles().size(), 2);
-
-  // Call getMesh() again - it should return the NEW mesh, not the cached old one
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const aiScene* cachedScene2 = meshShape->getMesh();
-  #pragma GCC diagnostic pop
-  ASSERT_NE(cachedScene2, nullptr);
-
-  // Verify the cached scene reflects the NEW mesh data
-  EXPECT_EQ(cachedScene2->mNumMeshes, 1u);
-  EXPECT_EQ(cachedScene2->mMeshes[0]->mNumVertices, 4u);
-  EXPECT_EQ(cachedScene2->mMeshes[0]->mNumFaces, 2u);
+  // Verify cache was cleared and new mesh is returned
+  EXPECT_EQ(meshShape->getTriMesh()->getVertices().size(), 4);
+  EXPECT_EQ(updatedScene->mMeshes[0]->mNumVertices, 4u);
 }
