@@ -289,13 +289,31 @@ void JointConstraint::update()
         continue;
       }
 
-      // Skip velocity limit enforcement for servo joints so they can recover
-      // from position limits even when the velocity bounds prohibit reversing.
-      if (mJoint->getActuatorType() != dynamics::Joint::SERVO) {
-        // Check lower velocity bound
-        const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
-        const double vel_lb_error = velocities[i] - vel_lb;
-        if (vel_lb_error < 0.0) {
+      const bool isServo = mJoint->getActuatorType() == dynamics::Joint::SERVO;
+      const double servoCommand = isServo
+                                  ? mJoint->getCommand(
+                                      static_cast<std::size_t>(i))
+                                  : 0.0;
+      const bool atLowerLimit = mJoint->areLimitsEnforced()
+                                && positions[i]
+                                       <= positionLowerLimits[i]
+                                              + mErrorAllowance;
+      const bool atUpperLimit = mJoint->areLimitsEnforced()
+                                && positions[i]
+                                       >= positionUpperLimits[i]
+                                              - mErrorAllowance;
+      // Allow servo joints to violate the bound that would otherwise push them
+      // deeper into a position limit so they can reverse and recover.
+      const bool allowServoLowerRecovery
+          = isServo && atLowerLimit && servoCommand > 0.0;
+      const bool allowServoUpperRecovery
+          = isServo && atUpperLimit && servoCommand < 0.0;
+
+      // Check lower velocity bound
+      const double vel_lb = std::max(velocityLowerLimits[i], vel_to_pos_lb);
+      const double vel_lb_error = velocities[i] - vel_lb;
+      if (vel_lb_error < 0.0) {
+        if (!allowServoLowerRecovery) {
           mDesiredVelocityChange[i] = -vel_lb_error;
           mImpulseLowerBound[i] = 0.0;
           mImpulseUpperBound[i] = static_cast<double>(dInfinity);
@@ -310,11 +328,13 @@ void JointConstraint::update()
           ++mDim;
           continue;
         }
+      }
 
-        // Check upper velocity bound
-        const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
-        const double vel_ub_error = velocities[i] - vel_ub;
-        if (vel_ub_error > 0.0) {
+      // Check upper velocity bound
+      const double vel_ub = std::min(velocityUpperLimits[i], vel_to_pos_ub);
+      const double vel_ub_error = velocities[i] - vel_ub;
+      if (vel_ub_error > 0.0) {
+        if (!allowServoUpperRecovery) {
           mDesiredVelocityChange[i] = -vel_ub_error;
           mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
           mImpulseUpperBound[i] = 0.0;

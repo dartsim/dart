@@ -134,3 +134,49 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
   EXPECT_GT(firstMovementStep, 0u);
   EXPECT_LT(joint->getPosition(0), posUpperBound - 1e-3);
 }
+
+//========================================================================================
+TEST(Issue1683, ServoJointRespectsVelocityLimitsAwayFromBounds)
+{
+  const double velLimit = 0.1;
+  const double torque = 5.0;
+
+  auto skel = dart::utils::SdfParser::readSkeleton(
+      "dart://sample/sdf/test/test_issue1583.model");
+  ASSERT_NE(skel, nullptr);
+
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(skel);
+  ASSERT_EQ(world->getNumSkeletons(), 1);
+
+  auto* joint = skel->getJoint("j1");
+  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  joint->setLimitEnforcement(true);
+  joint->setVelocityLowerLimit(0, -velLimit);
+  joint->setVelocityUpperLimit(0, +velLimit);
+  joint->setPositionLowerLimit(0, -1.0);
+  joint->setPositionUpperLimit(0, +1.0);
+
+  auto* bodyNode = skel->getBodyNode("bar");
+  ASSERT_NE(bodyNode, nullptr);
+
+  for (std::size_t i = 0; i < 200; ++i) {
+    joint->setCommand(0, 0.0);
+    skel->clearExternalForces();
+    bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, torque));
+    world->step();
+    EXPECT_LE(joint->getVelocity(0), velLimit + 1e-6);
+  }
+
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, 0.0);
+
+  for (std::size_t i = 0; i < 200; ++i) {
+    joint->setCommand(0, 0.0);
+    skel->clearExternalForces();
+    bodyNode->addExtTorque(Eigen::Vector3d(0.0, 0.0, -torque));
+    world->step();
+    EXPECT_GE(joint->getVelocity(0), -velLimit - 1e-6);
+  }
+}
