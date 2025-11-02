@@ -242,6 +242,13 @@ protected:
   /// Mutable to allow lazy conversion in const getMesh() method.
   mutable const aiScene* mCachedAiScene;
 
+  /// DEPRECATED: For backward compatibility with derived classes.
+  /// This is a reference to mCachedAiScene. Derived classes that directly
+  /// access mMesh should migrate to using mTriMesh instead.
+  /// @note Not marked with [[deprecated]] to avoid warnings in our own code
+  ///       and to maintain full backward compatibility with external libraries.
+  const aiScene*& mMesh;
+
   /// URI the mesh, if available).
   common::Uri mMeshUri;
 

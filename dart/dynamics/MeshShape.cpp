@@ -138,6 +138,7 @@ MeshShape::MeshShape(
   : Shape(Shape::MESH),
     mTriMesh(convertAssimpMesh(mesh)),
     mCachedAiScene(nullptr),
+    mMesh(mCachedAiScene),
     mMeshUri(uri),
     mMeshPath(uri.getPath()),
     mResourceRetriever(std::move(resourceRetriever)),
@@ -165,6 +166,7 @@ MeshShape::MeshShape(
   : Shape(Shape::MESH),
     mTriMesh(std::move(mesh)),
     mCachedAiScene(nullptr),
+    mMesh(mCachedAiScene),
     mMeshUri(uri),
     mMeshPath(uri.getPath()),
     mResourceRetriever(nullptr),
@@ -203,6 +205,12 @@ const std::string& MeshShape::getStaticType()
 //==============================================================================
 std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
 {
+  // Handle backward compatibility: if derived class set mMesh directly
+  // (via mCachedAiScene reference), convert it to TriMesh on demand
+  if (!mTriMesh && mCachedAiScene) {
+    // Const cast is safe here - we're lazily populating internal cache
+    const_cast<MeshShape*>(this)->mTriMesh = convertAssimpMesh(mCachedAiScene);
+  }
   return mTriMesh;
 }
 
