@@ -30,34 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#include <dart7/gui/renderer.hpp>
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/string.h>
+#include <utility>
 
-#include <string>
+namespace dart7::gui {
 
-#if DART_BUILD_DARTPY7_GUI
-#  include "gui/module.hpp"
-#endif
+Renderer::Renderer() = default;
 
-namespace nb = nanobind;
-
-NB_MODULE(dartpy7, m)
+Renderer::Renderer(RendererOptions options)
+  : mOptions(std::move(options))
 {
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
-
-  m.attr("__version__") = std::string(dart7::version());
-  m.attr("gui_available") = nb::bool_(DART_BUILD_DARTPY7_GUI);
-
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
-
-  nb::class_<dart7::World>(m, "World").def(nb::init<>());
-
-#if DART_BUILD_DARTPY7_GUI
-  dart7::python::defGui(m);
-#endif
 }
+
+Renderer::~Renderer() = default;
+
+Renderer::Renderer(Renderer&& other) noexcept = default;
+
+Renderer& Renderer::operator=(Renderer&& other) noexcept = default;
+
+const RendererOptions& Renderer::options() const
+{
+  return mOptions;
+}
+
+bool Renderer::isHeadless() const
+{
+  return mOptions.mode == BackingMode::Headless;
+}
+
+void Renderer::renderFrame()
+{
+  // Rendering is intentionally left as a no-op until the VulkanSceneGraph
+  // backend lands.
+}
+
+void Renderer::pollEvents()
+{
+  // Event processing will be wired up alongside the actual GUI backend.
+}
+
+} // namespace dart7::gui

@@ -30,34 +30,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#include <dart7/gui/renderer.hpp>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 
-#include <string>
-
-#if DART_BUILD_DARTPY7_GUI
-#  include "gui/module.hpp"
-#endif
+#include <gui/module.hpp>
 
 namespace nb = nanobind;
 
-NB_MODULE(dartpy7, m)
+namespace dart7::python {
+
+void defGui(nb::module_& module)
 {
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
+  auto gui = module.def_submodule("gui", "Experimental GUI bindings for dart7.");
 
-  m.attr("__version__") = std::string(dart7::version());
-  m.attr("gui_available") = nb::bool_(DART_BUILD_DARTPY7_GUI);
+  gui.attr("is_supported") = nb::bool_(true);
 
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
+  nb::enum_<dart7::gui::BackingMode>(gui, "BackingMode")
+    .value("Headless", dart7::gui::BackingMode::Headless)
+    .value("Window", dart7::gui::BackingMode::Window)
+    .export_values();
 
-  nb::class_<dart7::World>(m, "World").def(nb::init<>());
+  nb::class_<dart7::gui::RendererOptions>(gui, "RendererOptions")
+    .def(nb::init<>())
+    .def_rw("mode", &dart7::gui::RendererOptions::mode)
+    .def_rw("window_title", &dart7::gui::RendererOptions::windowTitle)
+    .def_rw("width", &dart7::gui::RendererOptions::width)
+    .def_rw("height", &dart7::gui::RendererOptions::height);
 
-#if DART_BUILD_DARTPY7_GUI
-  dart7::python::defGui(m);
-#endif
+  nb::class_<dart7::gui::Renderer>(gui, "Renderer")
+    .def(nb::init<>())
+    .def(nb::init<dart7::gui::RendererOptions>(), nb::arg("options"))
+    .def("is_headless", &dart7::gui::Renderer::isHeadless)
+    .def("render_frame", &dart7::gui::Renderer::renderFrame)
+    .def("poll_events", &dart7::gui::Renderer::pollEvents)
+    .def_prop_ro(
+      "options",
+      [](const dart7::gui::Renderer& self) -> const dart7::gui::RendererOptions& {
+        return self.options();
+      },
+      nb::rv_policy::reference_internal
+    );
 }
+
+} // namespace dart7::python

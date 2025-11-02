@@ -67,6 +67,8 @@ config = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DART7_GUI=ON \
+        -DDART_BUILD_DARTPY7_GUI=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -136,6 +138,8 @@ config-debug = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DART7_GUI=ON \
+        -DDART_BUILD_DARTPY7_GUI=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -179,6 +183,13 @@ build-dartpy7 = { cmd = """
         --target dartpy7
 """, depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
 
+build-dart7-gui = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --parallel \
+        --target dart7-gui
+""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
 config-py = { cmd = """
     cmake \
         -G Ninja \
@@ -190,6 +201,8 @@ config-py = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_DART7=ON \
         -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DART7_GUI=ON \
+        -DDART_BUILD_DARTPY7_GUI=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -248,6 +261,12 @@ test-lcpsolver = { cmd = """
 
 test-dartpy7 = { cmd = """
     python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
+""", depends-on = ["build-dartpy7"], env = { BUILD_TYPE = "Release" } }
+
+test-dartpy7-gui = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target dartpy7-tests
 """, depends-on = ["build-dartpy7"], env = { BUILD_TYPE = "Release" } }
 
 test-py = { cmd = """

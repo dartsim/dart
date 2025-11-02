@@ -39,6 +39,15 @@ target_include_directories(dart7
     $<INSTALL_INTERFACE:include>
 )
 
+target_compile_definitions(dart7
+  PUBLIC
+    DART_BUILD_DART7_GUI=$<BOOL:${DART_BUILD_DART7_GUI}>
+)
+
 target_compile_features(dart7 PUBLIC cxx_std_20)
 
 add_library(dart7::dart7 ALIAS dart7)
+
+if(DART_BUILD_DART7_GUI)
+  add_subdirectory(gui)
+endif()

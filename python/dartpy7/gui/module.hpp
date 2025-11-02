@@ -30,34 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#pragma once
 
 #include <nanobind/nanobind.h>
-#include <nanobind/stl/string.h>
 
-#include <string>
+namespace dart7::python {
 
-#if DART_BUILD_DARTPY7_GUI
-#  include "gui/module.hpp"
-#endif
+void defGui(nanobind::module_& module);
 
-namespace nb = nanobind;
-
-NB_MODULE(dartpy7, m)
-{
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
-
-  m.attr("__version__") = std::string(dart7::version());
-  m.attr("gui_available") = nb::bool_(DART_BUILD_DARTPY7_GUI);
-
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
-
-  nb::class_<dart7::World>(m, "World").def(nb::init<>());
-
-#if DART_BUILD_DARTPY7_GUI
-  dart7::python::defGui(m);
-#endif
-}
+} // namespace dart7::python

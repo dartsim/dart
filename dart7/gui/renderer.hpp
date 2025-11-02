@@ -30,34 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#pragma once
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/string.h>
-
+#include <cstdint>
 #include <string>
 
-#if DART_BUILD_DARTPY7_GUI
-#  include "gui/module.hpp"
-#endif
+namespace dart7::gui {
 
-namespace nb = nanobind;
-
-NB_MODULE(dartpy7, m)
+/// Rendering backend selection. Headless rendering keeps GPU resources dormant
+/// until a windowed renderer is requested.
+enum class BackingMode
 {
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
+  Headless,
+  Window
+};
 
-  m.attr("__version__") = std::string(dart7::version());
-  m.attr("gui_available") = nb::bool_(DART_BUILD_DARTPY7_GUI);
+/// Options passed to the Renderer to control the initial output surface.
+struct RendererOptions
+{
+  BackingMode mode{BackingMode::Headless};
+  std::string windowTitle{"dart7"};
+  std::uint32_t width{1280};
+  std::uint32_t height{720};
+};
 
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
+/// Minimal placeholder renderer that will back the VulkanSceneGraph + ImGui
+/// integration in future revisions. For now it simply records configuration and
+/// exposes a few no-op hooks that higher layers can call without needing a
+/// concrete backend.
+class Renderer
+{
+public:
+  Renderer();
+  explicit Renderer(RendererOptions options);
+  ~Renderer();
 
-  nb::class_<dart7::World>(m, "World").def(nb::init<>());
+  Renderer(const Renderer&) = delete;
+  Renderer& operator=(const Renderer&) = delete;
+  Renderer(Renderer&&) noexcept;
+  Renderer& operator=(Renderer&&) noexcept;
 
-#if DART_BUILD_DARTPY7_GUI
-  dart7::python::defGui(m);
-#endif
-}
+  const RendererOptions& options() const;
+  bool isHeadless() const;
+
+  void renderFrame();
+  void pollEvents();
+
+private:
+  RendererOptions mOptions;
+};
+
+} // namespace dart7::gui

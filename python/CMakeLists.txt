@@ -124,11 +124,12 @@ if(BUILD_DARTPY_ENABLED)
   message(STATUS "- DARTPY_PYTEST_FOUND : ${DARTPY_PYTEST_FOUND}")
 endif()
 
-#===============================================================================
-# dartpy7 (nanobind)
-#===============================================================================
 if(BUILD_DARTPY7_ENABLED)
+  set(DART_DARTPY7_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy7")
+  set(DART_DARTPY7_BUILD_DIR ${DART_DARTPY7_BUILD_DIR} PARENT_SCOPE)
+
   add_subdirectory(dartpy7)
+  add_subdirectory(dartpy7/tests)
 
   message(STATUS "")
   message(STATUS "[ dartpy7 ]")

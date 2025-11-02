@@ -161,9 +161,26 @@ dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART7 "Build experimental DART7 library" OFF CATEGORY build)
 dart_option(DART_BUILD_DARTPY7 "Build experimental dartpy7 Python bindings" OFF CATEGORY build)
+dart_option(DART_BUILD_DART7_GUI "Build experimental DART7 GUI components" ON CATEGORY build)
+dart_option(DART_BUILD_DARTPY7_GUI "Build experimental dartpy7 GUI bindings" ON CATEGORY build)
 
 if(DART_BUILD_DARTPY7)
   set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+  set(DART_BUILD_DART7 ON)
+endif()
+
+if(DART_BUILD_DART7_GUI)
+  set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+  set(DART_BUILD_DART7 ON)
+endif()
+
+if(DART_BUILD_DARTPY7_GUI)
+  set(DART_BUILD_DARTPY7 ON CACHE BOOL "Build experimental dartpy7 Python bindings" FORCE)
+  set(DART_BUILD_DARTPY7 ON)
+  set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+  set(DART_BUILD_DART7 ON)
+  set(DART_BUILD_DART7_GUI ON CACHE BOOL "Build experimental DART7 GUI components" FORCE)
+  set(DART_BUILD_DART7_GUI ON)
 endif()
 
 #===============================================================================

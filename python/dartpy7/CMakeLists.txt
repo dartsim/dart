@@ -28,10 +28,20 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+set(dartpy7_sources
+  dartpy7.cpp
+)
+
+if(DART_BUILD_DARTPY7_GUI)
+  list(APPEND dartpy7_sources
+    gui/module.cpp
+  )
+endif()
+
 nanobind_add_module(
   dartpy7
   MODULE
-  dartpy7.cpp
+  ${dartpy7_sources}
 )
 
 if(TARGET nanobind)
@@ -42,9 +52,27 @@ if(TARGET nanobind-static)
   target_compile_options(nanobind-static PRIVATE -Wno-error -Wno-error=sign-compare)
 endif()
 
+target_include_directories(dartpy7
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_link_libraries(dartpy7
   PRIVATE
     dart7::dart7
+)
+
+if(DART_BUILD_DARTPY7_GUI)
+  target_link_libraries(dartpy7
+    PRIVATE
+      dart7::gui
+  )
+endif()
+
+target_compile_definitions(dartpy7
+  PRIVATE
+    DART_BUILD_DART7_GUI=$<BOOL:${DART_BUILD_DART7_GUI}>
+    DART_BUILD_DARTPY7_GUI=$<BOOL:${DART_BUILD_DARTPY7_GUI}>
 )
 
 set_target_properties(dartpy7 PROPERTIES OUTPUT_NAME "dartpy7")
