@@ -35,6 +35,8 @@
 #include "dart/common/Console.hpp"
 #include "dart/simulation/World.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 namespace osg {
@@ -50,6 +52,7 @@ RealTimeWorldNode::RealTimeWorldNode(
     mTargetRealTimeLapse(1.0 / targetFrequency),
     mTargetSimTimeLapse(targetRealTimeFactor * mTargetRealTimeLapse),
     mLastRealTimeFactor(0.0),
+    mSimTimeBudget(0.0),
     mLowestRealTimeFactor(std::numeric_limits<double>::infinity()),
     mHighestRealTimeFactor(0.0)
 {
@@ -118,25 +121,48 @@ void RealTimeWorldNode::refresh()
   if (mWorld && mSimulating) {
     if (mFirstRefresh) {
       mRefreshTimer.setStartTick();
+      mSimTimeBudget = 0.0;
       mFirstRefresh = false;
     }
 
     const double startSimTime = mWorld->getTime();
     const double simTimeStep = mWorld->getTimeStep();
+    const double elapsedRealTime = mRefreshTimer.time_s();
+    const double targetRTF = getTargetRealTimeFactor();
 
-    while (mRefreshTimer.time_s() < mTargetRealTimeLapse) {
-      const double nextSimTimeLapse
-          = mWorld->getTime() - startSimTime + simTimeStep;
+    if (targetRTF > 0.0 && elapsedRealTime > 0.0)
+      mSimTimeBudget += elapsedRealTime * targetRTF;
+    else if (elapsedRealTime <= 0.0)
+      mSimTimeBudget += mTargetSimTimeLapse;
 
-      if (nextSimTimeLapse <= mTargetSimTimeLapse) {
-        customPreStep();
-        mWorld->step();
-        customPostStep();
-      }
+    std::size_t numSteps = 0;
+    const std::size_t maxStepsPerRefresh = 2048;
+    while (simTimeStep > 0.0 && mSimTimeBudget + 1e-12 >= simTimeStep
+           && numSteps < maxStepsPerRefresh) {
+      customPreStep();
+      mWorld->step();
+      customPostStep();
+      mSimTimeBudget -= simTimeStep;
+      ++numSteps;
     }
 
-    mLastRealTimeFactor
-        = (mWorld->getTime() - startSimTime) / mTargetRealTimeLapse;
+    if (numSteps == maxStepsPerRefresh) {
+      dtwarn << "[RealTimeWorldNode] Reached step limit during refresh; "
+             << "simulation may be lagging behind real time.\n";
+      mSimTimeBudget = 0.0;
+    } else if (mSimTimeBudget < 0.0) {
+      mSimTimeBudget = 0.0;
+    }
+
+    const double simAdvanced = mWorld->getTime() - startSimTime;
+    const double denominator
+        = (elapsedRealTime > 0.0) ? elapsedRealTime : mTargetRealTimeLapse;
+
+    if (denominator > 0.0)
+      mLastRealTimeFactor = simAdvanced / denominator;
+    else
+      mLastRealTimeFactor = 0.0;
+
     mLowestRealTimeFactor
         = std::min(mLastRealTimeFactor, mLowestRealTimeFactor);
     mHighestRealTimeFactor
@@ -145,6 +171,7 @@ void RealTimeWorldNode::refresh()
     mRefreshTimer.setStartTick();
   } else {
     mFirstRefresh = true;
+    mSimTimeBudget = 0.0;
   }
 
   refreshSkeletons();
