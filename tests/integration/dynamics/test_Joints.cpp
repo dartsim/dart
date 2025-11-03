@@ -429,6 +429,39 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 }
 
 //==============================================================================
+TEST_F(JOINTS, PASSIVE_ACTUATOR_CLEARS_COMMAND)
+{
+  auto world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/joint_limit_test.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  auto skeleton = world->getSkeleton("double_pendulum");
+  ASSERT_TRUE(skeleton != nullptr);
+
+  auto joint = skeleton->getJoint("joint1");
+  ASSERT_TRUE(joint != nullptr);
+
+  // Start in FORCE mode so that commands are stored.
+  joint->setActuatorType(Joint::FORCE);
+  ASSERT_EQ(joint->getActuatorType(), Joint::FORCE);
+
+  // Store an arbitrary command while the joint is FORCE actuated.
+  const double storedCommand = 1.23;
+  joint->setCommand(0, storedCommand);
+  ASSERT_DOUBLE_EQ(joint->getCommand(0), storedCommand);
+
+  // Switching to PASSIVE should discard any previously stored command values.
+  joint->setActuatorType(Joint::PASSIVE);
+  EXPECT_EQ(joint->getActuatorType(), Joint::PASSIVE);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+  EXPECT_TRUE(joint->getCommands().isZero());
+
+  // The skeleton view should also observe the cleared command.
+  const auto dofIndex = joint->getDof(0)->getIndexInSkeleton();
+  EXPECT_DOUBLE_EQ(skeleton->getCommand(dofIndex), 0.0);
+}
+
+//==============================================================================
 TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-3;

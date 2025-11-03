@@ -195,7 +195,11 @@ const std::string& Joint::getName() const
 //==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
+  if (mAspectProperties.mActuatorType == _actuatorType)
+    return;
+
   mAspectProperties.mActuatorType = _actuatorType;
+  resetCommands();
 }
 
 //==============================================================================
