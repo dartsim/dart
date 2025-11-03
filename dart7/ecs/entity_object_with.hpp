@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart7/common/type_list.hpp"
-#include "dart7/ecs/entity_object_base.hpp"
+#include <dart7/common/type_list.hpp>
+#include <dart7/ecs/entity_object_base.hpp>
 
 namespace dart7 {
 
@@ -217,4 +217,4 @@ public:
 
 } // namespace dart7
 
-#include "dart7/ecs/entity_object_with_impl.hpp"
+#include <dart7/ecs/entity_object_with_impl.hpp>

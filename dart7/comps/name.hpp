@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart7/comps/component_category.hpp"
+#include <dart7/comps/component_category.hpp>
 
 #include <string>
 

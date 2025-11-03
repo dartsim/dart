@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "dart7/common/exceptions.hpp"
+#include <dart7/common/exceptions.hpp>
 
 #include <entt/entt.hpp>
 

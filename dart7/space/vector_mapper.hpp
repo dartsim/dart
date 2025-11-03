@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart7/space/component_mapper.hpp"
-#include "dart7/space/state_space.hpp"
+#include <dart7/space/component_mapper.hpp>
+#include <dart7/space/state_space.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>

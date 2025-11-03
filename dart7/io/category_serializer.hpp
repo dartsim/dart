@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include "dart7/common/macros.hpp"
-#include "dart7/comps/component_category.hpp"
-#include "dart7/io/auto_serialization.hpp"
-#include "dart7/io/serializer.hpp"
+#include <dart7/common/macros.hpp>
+#include <dart7/comps/component_category.hpp>
+#include <dart7/io/auto_serialization.hpp>
+#include <dart7/io/serializer.hpp>
 
 #include <entt/entt.hpp>
 

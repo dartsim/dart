@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart7/comps/component_category.hpp"
-#include "dart7/space/component_mapper.hpp"
+#include <dart7/comps/component_category.hpp>
+#include <dart7/space/component_mapper.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

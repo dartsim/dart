@@ -32,9 +32,10 @@
 
 #pragma once
 
-#include "dart7/body/rigid_body_options.hpp"
-#include "dart7/frame/frame.hpp"
-#include "dart7/fwd.hpp"
+#include <dart7/fwd.hpp>
+
+#include <dart7/body/rigid_body_options.hpp>
+#include <dart7/frame/frame.hpp>
 
 #include <entt/entt.hpp>
 

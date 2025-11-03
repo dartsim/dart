@@ -36,5 +36,5 @@
 // For template method implementations, include entity_object_with_impl.hpp in
 // .cpp files
 
-#include "dart7/ecs/entity_object_base.hpp"
-#include "dart7/ecs/entity_object_with.hpp"
+#include <dart7/ecs/entity_object_base.hpp>
+#include <dart7/ecs/entity_object_with.hpp>

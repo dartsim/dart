@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "dart7/comps/component_category.hpp"
-#include "dart7/io/binary_io.hpp"
+#include <dart7/comps/component_category.hpp>
+#include <dart7/io/binary_io.hpp>
 
 #include <boost/pfr.hpp>
 
