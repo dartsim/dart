@@ -168,7 +168,7 @@ build-dart7-tests = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --parallel \
         --target dart7_tests
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-math-tests = { cmd = """
     cmake \
@@ -247,14 +247,17 @@ test-no-plane = { cmd = """
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
         --exclude-regex "test_plane_shape_collision"
-""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [
+    { task = "build-tests", args = ["{{ dartpy }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
+], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-dart7 = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
         -L dart7
-""", depends-on = ["build-dart7-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "build-dart7-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-math = { cmd = """
     ctest \
@@ -715,6 +718,14 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
+build-dart7-tests = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        --parallel \
+        --target dart7_tests
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
 build-py-dev = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -754,7 +765,21 @@ test-no-plane = { cmd = """
         --build-config $BUILD_TYPE \
         --output-on-failure \
         --exclude-regex "test_plane_shape_collision"
-""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [
+    { task = "build-tests", args = ["{{ dartpy }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
+], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
+test-dart7 = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --build-config $BUILD_TYPE \
+        --output-on-failure \
+        -L dart7
+""", depends-on = [
+    { task = "build-tests", args = ["{{ dartpy }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
+], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-py = { cmd = """
     cmake \
