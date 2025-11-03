@@ -89,6 +89,9 @@ void Frame::setParentFrame(const Frame& parent)
   DART7_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
+  DART7_THROW_T_IF(
+      !parent.isValid(), InvalidArgumentException, "Invalid parent frame");
+
   // World frame cannot change parent
   if (m_entity == entt::null) {
     DART7_THROW_T(
@@ -112,6 +115,44 @@ void Frame::setParentFrame(const Frame& parent)
           InvalidOperationException,
           "Cannot change parent frame of Link. Links are connected through "
           "joints in a fixed tree structure.");
+    }
+  }
+
+  if (parent.getEntity() != entt::null) {
+    DART7_THROW_T_IF(
+        m_world != parent.m_world,
+        InvalidArgumentException,
+        "Parent frame belongs to a different world");
+  }
+
+  DART7_THROW_T_IF(
+      parent.getEntity() == m_entity,
+      InvalidArgumentException,
+      "Cannot parent a frame to itself");
+
+  // Prevent cycles by walking up the prospective parent's ancestry.
+  Frame ancestor = parent;
+  std::size_t depth = 0;
+  while (ancestor.getEntity() != entt::null) {
+    if (ancestor.getEntity() == m_entity) {
+      DART7_THROW_T(
+          InvalidOperationException,
+          "Cannot create cyclic frame hierarchy");
+    }
+
+    auto next = ancestor.getParentFrame();
+
+    // Defensive break in case getParentFrame() returns self (shouldn't happen).
+    if (next.getEntity() == ancestor.getEntity()) {
+      break;
+    }
+
+    ancestor = next;
+
+    if (++depth > 1024) {
+      DART7_THROW_T(
+          InvalidOperationException,
+          "Cycle detection depth limit exceeded");
     }
   }
 

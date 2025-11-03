@@ -31,6 +31,7 @@
  */
 
 #include <dart7/comps/frame_types.hpp>
+#include <dart7/common/exceptions.hpp>
 #include <dart7/frame/fixed_frame.hpp>
 #include <dart7/frame/frame.hpp>
 #include <dart7/frame/free_frame.hpp>
@@ -164,6 +165,37 @@ TEST(Frame, DISABLED_HierarchicalTransforms)
 //==============================================================================
 // FixedFrame Caching Tests
 //==============================================================================
+
+// Reject parenting across worlds
+TEST(Frame, RejectCrossWorldParent)
+{
+  World world1;
+  World world2;
+
+  auto frame1 = world1.addFreeFrame("frame1");
+  auto frame2 = world2.addFreeFrame("frame2");
+
+  EXPECT_THROW(frame1.setParentFrame(frame2), dart7::InvalidArgumentException);
+}
+
+// Reject parenting a frame to itself
+TEST(Frame, RejectSelfParent)
+{
+  World world;
+  auto frame = world.addFreeFrame("self");
+
+  EXPECT_THROW(frame.setParentFrame(frame), dart7::InvalidArgumentException);
+}
+
+// Reject cycles in the frame hierarchy
+TEST(Frame, RejectCyclicParent)
+{
+  World world;
+  auto parent = world.addFreeFrame("parent");
+  auto child = world.addFreeFrame("child", parent);
+
+  EXPECT_THROW(parent.setParentFrame(child), dart7::InvalidOperationException);
+}
 
 // Test FixedFrame lazy evaluation
 TEST(Frame, FixedFrameCaching)
