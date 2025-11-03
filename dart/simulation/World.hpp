@@ -129,7 +129,7 @@ public:
   /// Get gravity
   const Eigen::Vector3d& getGravity() const;
 
-  /// Set time step
+  /// Set time step. Invalid (<= 0 or non-finite) values are ignored.
   void setTimeStep(double _timeStep);
 
   /// Get time step

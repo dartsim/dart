@@ -4,6 +4,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 from pathlib import Path
+from datetime import datetime
 
 # Note: API documentation is hosted on GitHub Pages, not Read the Docs
 # This configuration file is for user guides, tutorials, and developer documentation only
@@ -61,14 +62,14 @@ html_context = {
     'api_version_to_link': api_version_to_link,
     'cpp_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}/',
     'python_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}-py/',
-    'gh_pages_url': 'https://dartsim.github.io/dart/',
+    'gh_pages_url': 'https://github.com/dartsim/dart/tree/gh-pages',
 }
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'DART'
-copyright = '2011-2024, The DART development contributors'
+copyright = f'2011-{datetime.now().year}, The DART development contributors'
 author = 'The DART development contributors'
 
 # -- General configuration ---------------------------------------------------

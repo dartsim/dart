@@ -135,7 +135,8 @@ public:
   /// Gets a string representing the joint type
   virtual const std::string& getType() const = 0;
 
-  /// Set actuator type
+  /// Set actuator type. Switching types clears any cached commands so stale
+  /// inputs do not leak across actuator modes.
   void setActuatorType(ActuatorType _actuatorType);
 
   /// Get actuator type

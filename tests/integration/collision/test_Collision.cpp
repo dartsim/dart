@@ -40,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <limits>
 #if HAVE_ODE
   #include "dart/collision/ode/all.hpp"
 #endif
@@ -1596,6 +1597,39 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
     EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
+}
+
+//==============================================================================
+TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
+{
+  WorldPtr world = SkelParser::readWorld(
+      "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const double originalTimeStep = world->getTimeStep();
+  ASSERT_GT(originalTimeStep, 0.0);
+
+  const double invalidValues[]
+      = {std::numeric_limits<double>::quiet_NaN(),
+         std::numeric_limits<double>::infinity(),
+         -std::numeric_limits<double>::infinity(),
+         0.0,
+         -1.0};
+
+  for (double invalid : invalidValues) {
+    world->setTimeStep(invalid);
+    EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+  }
+
+  // The skeletons and constraint solver must keep the valid timestep as well.
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
+    EXPECT_DOUBLE_EQ(world->getSkeleton(i)->getTimeStep(), originalTimeStep);
+
+  EXPECT_DOUBLE_EQ(
+      world->getConstraintSolver()->getTimeStep(), originalTimeStep);
+
+  // The simulation should still advance without producing NaNs.
+  EXPECT_NO_THROW(world->step(false));
 }
 
 //==============================================================================
