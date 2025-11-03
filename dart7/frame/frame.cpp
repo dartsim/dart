@@ -35,7 +35,9 @@
 #include "dart7/common/exceptions.hpp"
 #include "dart7/frame/free_frame.hpp"
 #include "dart7/world.hpp"
+
 #include <dart7/comps/link.hpp>
+
 #include <vector>
 
 namespace {
@@ -150,8 +152,7 @@ void Frame::setParentFrame(const Frame& parent)
 
   if (m_world && m_entity != entt::null) {
     auto& registry = m_world->getRegistry();
-    if (registry.valid(m_entity)
-        && registry.all_of<comps::Link>(m_entity)) {
+    if (registry.valid(m_entity) && registry.all_of<comps::Link>(m_entity)) {
       DART7_THROW_T(
           InvalidOperationException,
           "Cannot change parent frame of Link. Links are connected through "
@@ -179,8 +180,7 @@ void Frame::setParentFrame(const Frame& parent)
   while (ancestor.getEntity() != entt::null) {
     if (ancestor.getEntity() == m_entity) {
       DART7_THROW_T(
-          InvalidOperationException,
-          "Cannot create cyclic frame hierarchy");
+          InvalidOperationException, "Cannot create cyclic frame hierarchy");
     }
 
     auto next = ancestor.getParentFrame();
@@ -194,8 +194,7 @@ void Frame::setParentFrame(const Frame& parent)
 
     if (++depth > 1024) {
       DART7_THROW_T(
-          InvalidOperationException,
-          "Cycle detection depth limit exceeded");
+          InvalidOperationException, "Cycle detection depth limit exceeded");
     }
   }
 

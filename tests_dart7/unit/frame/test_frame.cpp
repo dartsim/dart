@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/comps/frame_types.hpp>
 #include <dart7/common/exceptions.hpp>
+#include <dart7/comps/frame_types.hpp>
 #include <dart7/frame/fixed_frame.hpp>
 #include <dart7/frame/frame.hpp>
 #include <dart7/frame/free_frame.hpp>
@@ -219,8 +219,10 @@ TEST(Frame, ReparentInvalidatesSubtreeCaches)
 
   // Prime caches
   [[maybe_unused]] auto grandWorld = grandchild.getTransform();
-  EXPECT_FALSE(registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
-  EXPECT_FALSE(registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
+  EXPECT_FALSE(
+      registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
+  EXPECT_FALSE(
+      registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
 
   child.setParentFrame(Frame::world());
 
@@ -229,8 +231,10 @@ TEST(Frame, ReparentInvalidatesSubtreeCaches)
 
   auto newGrandWorld = grandchild.getTransform();
   (void)newGrandWorld;
-  EXPECT_FALSE(registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
-  EXPECT_FALSE(registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
+  EXPECT_FALSE(
+      registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
+  EXPECT_FALSE(
+      registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
 }
 
 // Test FixedFrame lazy evaluation

@@ -112,8 +112,8 @@ TEST(MultiBody, LinkReparentThrows)
   dart7::World world;
   auto robot = world.addMultiBody("robot");
   auto base = robot.addLink("base");
-  auto child = robot.addLink(
-      "child", {.parentLink = base, .jointName = "joint"});
+  auto child
+      = robot.addLink("child", {.parentLink = base, .jointName = "joint"});
 
   EXPECT_THROW(child.setParentFrame(base), dart7::InvalidOperationException);
 }
