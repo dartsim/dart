@@ -113,12 +113,12 @@ auto normalize(T&& arg)
         std::is_enum_v<Decayed> && !kHasFormatter) {
       return static_cast<std::underlying_type_t<Decayed>>(arg);
     } else if constexpr (kHasFormatter) {
-    return std::forward<T>(arg);
+      return std::forward<T>(arg);
     } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
-    return fmt::streamed(std::forward<T>(arg));
-  } else {
-    return std::forward<T>(arg);
-  }
+      return fmt::streamed(std::forward<T>(arg));
+    } else {
+      return std::forward<T>(arg);
+    }
   }
 }
 
