@@ -132,9 +132,7 @@ void Controller::changeStateMachine(
 
   if (mVerbosity) {
     DART_INFO(
-        "State machine transition: from [{}] to [{}].",
-        prevName,
-        nextName);
+        "State machine transition: from [{}] to [{}].", prevName, nextName);
   }
 }
 
