@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/PointMass.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Geometry.hpp"

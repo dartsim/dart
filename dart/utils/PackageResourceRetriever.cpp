@@ -32,8 +32,8 @@
 
 #include "dart/utils/PackageResourceRetriever.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
 
 #include <iostream>
@@ -136,11 +136,13 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
   if (it != std::end(mPackageMap))
     return it->second;
   else {
-    dtwarn << "[PackageResourceResolver::getPackagePaths] Unable to resolve"
-              "path to package '"
-           << _packageName
-           << "'. Did you call"
-              " addPackageDirectory(~) for this package name?\n";
+    DART_WARN(
+        "{}{}{}",
+        "[PackageResourceResolver::getPackagePaths] Unable to resolve"
+        "path to package '",
+        _packageName,
+        "'. Did you call"
+        " addPackageDirectory(~) for this package name?\n");
     return empty_placeholder;
   }
 }
@@ -155,17 +157,21 @@ bool PackageResourceRetriever::resolvePackageUri(
     return false;
 
   if (!_uri.mAuthority) {
-    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-              " package name from URI '"
-           << _uri.toString() << "'.\n";
+    DART_WARN(
+        "{}{}'.",
+        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+        " package name from URI '",
+        _uri.toString());
     return false;
   }
   _packageName = *_uri.mAuthority;
 
   if (!_uri.mPath) {
-    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-              " relative path from URI '"
-           << _uri.toString() << "'.\n";
+    DART_WARN(
+        "{}{}'.",
+        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+        " relative path from URI '",
+        _uri.toString());
     return false;
   }
   _relativePath = _uri.mPath.get_value_or("");

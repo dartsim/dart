@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/SoftBodyNode.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -78,14 +78,20 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
 {
   if (i1 >= mPointProps.size() || i2 >= mPointProps.size()) {
     if (mPointProps.size() == 0)
-      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
-             << "add a connection between indices " << i1 << " and " << i2
-             << ", but there are currently no entries in mPointProps!\n";
+      DART_WARN(
+          "[SoftBodyNode::Properties::addConnection] Attempting to add a "
+          "connection between indices {} and {}, but there are currently no "
+          "entries in mPointProps!",
+          i1,
+          i2);
     else
-      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
-             << "add a connection between indices " << i1 << " and " << i2
-             << ", but the entries in mPointProps only go up to "
-             << mPointProps.size() - 1 << "!\n";
+      DART_WARN(
+          "[SoftBodyNode::Properties::addConnection] Attempting to add a "
+          "connection between indices {} and {}, but the entries in "
+          "mPointProps only go up to {}!",
+          i1,
+          i2,
+          mPointProps.size() - 1);
     return false;
   }
 
@@ -322,11 +328,13 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
     if (softShape)
       softShape->_buildMesh();
   } else {
-    dtwarn << "[SoftBodyNode::configurePointMasses] The ShapeNode containing "
-           << "the SoftMeshShape for the SoftBodyNode named [" << getName()
-           << "] (" << this << ") has been removed. The soft body features for "
-           << "this SoftBodyNode cannot be used unless you recreate the "
-           << "SoftMeshShape.\n";
+    DART_WARN(
+        "[SoftBodyNode::configurePointMasses] The ShapeNode containing the "
+        "SoftMeshShape for the SoftBodyNode named [{}] ({}) has been removed. "
+        "The soft body features for this SoftBodyNode cannot be used unless "
+        "you recreate the SoftMeshShape.",
+        getName(),
+        this);
 
     std::cout << "ShapeNodes: " << std::endl;
     for (std::size_t i = 0; i < getNumShapeNodes(); ++i) {
@@ -1389,10 +1397,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 
   for (int i = 0; i < 3; ++i) {
     if (frags[i] <= 2) {
-      dtwarn << "[SoftBodyNodeHelper::makeBoxProperties] Invalid argument for "
-             << "_frags. The number of vertices assigned to soft box edge #"
-             << i << " is " << frags[i] << ", but it must be greater than or "
-             << "equal to 3. We will set it to 3.\n";
+      DART_WARN(
+          "[SoftBodyNodeHelper::makeBoxProperties] Invalid argument for "
+          "_frags. The number of vertices assigned to soft box edge #{} is {}, "
+          "but it must be greater than or equal to 3. We will set it to 3.",
+          i,
+          frags[i]);
       frags[i] = 3;
     }
   }

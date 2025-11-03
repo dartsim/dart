@@ -301,23 +301,26 @@ bool shouldUseVisualAspectColor(
     return true;
   } else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL) {
     if (colors.empty()) {
-      dtwarn << "[PointCloudShapeNode] The color array in PointCloudShape "
-             << "is empty while the color mode is BIND_OVERALL, which "
-             << "requires at least on color in the color array. "
-             << "Using visual aspect color instead.\n";
+      DART_WARN(
+          "[PointCloudShapeNode] The color array in PointCloudShape is empty "
+          "while the color mode is BIND_OVERALL, which requires at least on "
+          "color in the color array. Using visual aspect color instead.");
       return true;
     }
   } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
     if (colors.size() != points.size()) {
-      dtwarn << "[PointCloudShapeNode] The color array in PointCloudShape "
-             << "has different size from the point array while the color mode "
-             << "is BIND_PER_POINT, which requires the same number of colors. "
-             << "Using visual aspect color instead.\n";
+      DART_WARN(
+          "[PointCloudShapeNode] The color array in PointCloudShape has "
+          "different size from the point array while the color mode is "
+          "BIND_PER_POINT, which requires the same number of colors. Using "
+          "visual aspect color instead.");
       return true;
     }
   } else {
-    dtwarn << "[PointCloudShapeNode] The current color mode '" << colorMode
-           << "' is not supported by OSG renderer.\n";
+    DART_WARN(
+        "[PointCloudShapeNode] The current color mode '{}' is not supported by "
+        "OSG renderer.",
+        colorMode);
     return true;
   }
 
@@ -342,8 +345,10 @@ bool shouldUseVisualAspectColor(
       == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE) {
     return new BillboardPointNode<CircleDrawable>(point, size, color);
   } else {
-    dterr << "[PointCloudShapeNode] Unsupported PointShapeType '"
-          << pointShapeType << "'. Using BOX instead.\n";
+    DART_ERROR(
+        "[PointCloudShapeNode] Unsupported PointShapeType '{}'. Using BOX "
+        "instead.",
+        pointShapeType);
     return new BoxPointNode(point, size, color);
   }
 }
@@ -626,8 +631,10 @@ PointCloudShapeNode::~PointCloudShapeNode()
       mPointShapeType == dynamics::PointCloudShape::PointShapeType::POINT) {
     return new VertexPointNodes(mPointCloudShape, mVisualAspect);
   } else {
-    dtwarn << "[PointCloudShapeNode] Unsupported PointShapeType '"
-           << mPointShapeType << "'. Using POINT instead.\n";
+    DART_WARN(
+        "[PointCloudShapeNode] Unsupported PointShapeType '{}'. Using POINT "
+        "instead.",
+        mPointShapeType);
     return new VertexPointNodes(mPointCloudShape, mVisualAspect);
   }
 }

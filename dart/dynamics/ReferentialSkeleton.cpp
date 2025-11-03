@@ -107,9 +107,11 @@ BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name)
       if (!bodyNodeFound) {
         bodyNodeFound = bodyNode.get();
       } else {
-        dtwarn << "[ReferentialSkeleton] This ReferentialSkeleton contains "
-               << "more than one body node with name '" << name
-               << "'. Returning the first body node found.\n";
+        DART_WARN(
+            "[ReferentialSkeleton] This ReferentialSkeleton contains more than "
+            "one body node with name '{}'. Returning the first body node "
+            "found.",
+            name);
 
         return bodyNodeFound;
       }
@@ -192,8 +194,9 @@ std::size_t ReferentialSkeleton::getIndexOf(
 {
   if (nullptr == _bn) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
-            << "nullptr BodyNode!\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
+          "BodyNode!");
       assert(false);
     }
     return INVALID_INDEX;
@@ -203,10 +206,13 @@ std::size_t ReferentialSkeleton::getIndexOf(
       = mIndexMap.find(_bn);
   if (it == mIndexMap.end()) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
-            << "BodyNode [" << _bn->getName() << "] (" << _bn << ") that is "
-            << "not in this ReferentialSkeleton [" << getName() << "] (" << this
-            << ").\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a BodyNode "
+          "[{}] ({}) that is not in this ReferentialSkeleton [{}] ({}).",
+          _bn->getName(),
+          _bn,
+          getName(),
+          this);
       assert(false);
     }
     return INVALID_INDEX;
@@ -243,9 +249,10 @@ Joint* ReferentialSkeleton::getJoint(const std::string& name)
       if (!jointFound) {
         jointFound = joint.get();
       } else {
-        dtwarn << "[ReferentialSkeleton] This ReferentialSkeleton contains "
-               << "more than one joint with name '" << name << "'. Returning "
-               << "the first joint found.\n";
+        DART_WARN(
+            "[ReferentialSkeleton] This ReferentialSkeleton contains more than "
+            "one joint with name '{}'. Returning the first joint found.",
+            name);
 
         return jointFound;
       }
@@ -322,9 +329,9 @@ std::size_t ReferentialSkeleton::getIndexOf(
 {
   if (nullptr == _joint) {
     if (_warning) {
-      dterr
-          << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
-          << "Joint!\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
+          "Joint!");
       assert(false);
     }
     return INVALID_INDEX;
@@ -334,9 +341,13 @@ std::size_t ReferentialSkeleton::getIndexOf(
       = mIndexMap.find(_joint->getChildBodyNode());
   if (it == mIndexMap.end()) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a Joint ["
-            << _joint->getName() << "] (" << _joint << ") that is not in this "
-            << "ReferentialSkeleton [" << getName() << "] (" << this << ").\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a Joint [{}] "
+          "({}) that is not in this ReferentialSkeleton [{}] ({}).",
+          _joint->getName(),
+          _joint,
+          getName(),
+          this);
       assert(false);
     }
     return INVALID_INDEX;
@@ -388,8 +399,9 @@ std::size_t ReferentialSkeleton::getIndexOf(
 {
   if (nullptr == _dof) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
-            << "nullptr DegreeOfFreedom!\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
+          "DegreeOfFreedom!");
       assert(false);
     }
     return INVALID_INDEX;
@@ -400,10 +412,14 @@ std::size_t ReferentialSkeleton::getIndexOf(
       = mIndexMap.find(bn);
   if (it == mIndexMap.end()) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
-            << "DegreeOfFreedom [" << _dof->getName() << "] (" << _dof
-            << ") that is not in this ReferentialSkeleton [" << getName()
-            << "] (" << this << ").\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] Requesting index of a "
+          "DegreeOfFreedom [{}] ({}) that is not in this ReferentialSkeleton "
+          "[{}] ({}).",
+          _dof->getName(),
+          _dof,
+          getName(),
+          this);
       assert(false);
     }
     return INVALID_INDEX;
@@ -413,11 +429,15 @@ std::size_t ReferentialSkeleton::getIndexOf(
   if (it->second.mDofIndices.size() <= localIndex
       || it->second.mDofIndices[localIndex] == INVALID_INDEX) {
     if (_warning) {
-      dterr << "[ReferentialSkeleton::getIndexOf] BodyNode named ["
-            << bn->getName() << "] (" << bn << ") is referenced by the "
-            << "ReferentialSkeleton named [" << getName() << "] (" << this
-            << "), but it does not include the DegreeOfFreedom #" << localIndex
-            << " of its parent Joint!\n";
+      DART_ERROR(
+          "[ReferentialSkeleton::getIndexOf] BodyNode named [{}] ({}) is "
+          "referenced by the ReferentialSkeleton named [{}] ({}), but it does "
+          "not include the DegreeOfFreedom #{} of its parent Joint!",
+          bn->getName(),
+          bn,
+          getName(),
+          this,
+          localIndex);
       assert(false);
     }
     return INVALID_INDEX;
@@ -433,8 +453,10 @@ static bool isValidBodyNode(
     const std::string& _fname)
 {
   if (nullptr == _node) {
-    dtwarn << "[ReferentialSkeleton::" << _fname << "] Invalid BodyNode "
-           << "pointer: nullptr. Returning zero Jacobian.\n";
+    DART_WARN(
+        "[ReferentialSkeleton::{}] Invalid BodyNode pointer: nullptr. "
+        "Returning zero Jacobian.",
+        _fname);
     assert(false);
     return false;
   }
@@ -1233,9 +1255,9 @@ void ReferentialSkeleton::unregisterBodyNode(
     BodyNode* _bn, bool _unregisterDofs)
 {
   if (nullptr == _bn) {
-    dterr << "[ReferentialSkeleton::unregisterBodyNode] Attempting to "
-          << "unregister a nullptr BodyNode. This is most likely a bug. Please "
-          << "report this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterBodyNode] Attempting to unregister a "
+        "nullptr BodyNode. This is most likely a bug. Please report this!");
     assert(false);
     return;
   }
@@ -1244,10 +1266,10 @@ void ReferentialSkeleton::unregisterBodyNode(
       = mIndexMap.find(_bn);
 
   if (it == mIndexMap.end()) {
-    dterr << "[ReferentialSkeleton::unregisterBodyNode] Attempting to "
-          << "unregister a BodyNode that is not referred to by this "
-          << "ReferentialSkeleton. This is most likely a bug. Please report "
-          << "this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterBodyNode] Attempting to unregister a "
+        "BodyNode that is not referred to by this ReferentialSkeleton. This is "
+        "most likely a bug. Please report this!");
     assert(false);
     return;
   }
@@ -1282,9 +1304,10 @@ void ReferentialSkeleton::unregisterBodyNode(
 void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 {
   if (nullptr == _child) {
-    dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
-          << "a Joint from a nullptr BodyNode. This is most likely a bug. "
-          << "Please report this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterJoint] Attempting to unregister a "
+        "Joint from a nullptr BodyNode. This is most likely a bug. Please "
+        "report this!");
     assert(false);
     return;
   }
@@ -1295,12 +1318,15 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
       = mIndexMap.find(_child);
 
   if (it == mIndexMap.end() || INVALID_INDEX == it->second.mJointIndex) {
-    dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
-          << "a Joint named [" << joint->getName() << "] (" << joint << "), "
-          << "which is the parent Joint of BodyNode [" << _child->getName()
-          << "] (" << _child << "), but the Joint is not currently in this "
-          << "ReferentialSkeleton! This is most likely a bug. Please report "
-          << "this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterJoint] Attempting to unregister a "
+        "Joint named [{}] ({}), which is the parent Joint of BodyNode [{}] "
+        "({}), but the Joint is not currently in this ReferentialSkeleton! "
+        "This is most likely a bug. Please report this!",
+        joint->getName(),
+        joint,
+        _child->getName(),
+        _child);
     assert(false);
     return;
   }
@@ -1333,9 +1359,10 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     BodyNode* _bn, std::size_t _localIndex)
 {
   if (nullptr == _bn) {
-    dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
-          << "unregister a DegreeOfFreedom from a nullptr BodyNode. This is "
-          << "most likely a bug. Please report this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
+        "unregister a DegreeOfFreedom from a nullptr BodyNode. This is most "
+        "likely a bug. Please report this!");
     assert(false);
     return;
   }
@@ -1345,11 +1372,14 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
 
   if (it == mIndexMap.end() || it->second.mDofIndices.size() <= _localIndex
       || it->second.mDofIndices[_localIndex] == INVALID_INDEX) {
-    dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
-          << "unregister DegreeOfFreedom #" << _localIndex << " of a BodyNode "
-          << "named [" << _bn->getName() << "] (" << _bn << "), but it is not "
-          << "currently in the ReferentialSkeleton! This is most likely a bug. "
-          << "Please report this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
+        "unregister DegreeOfFreedom #{} of a BodyNode named [{}] ({}), but it "
+        "is not currently in the ReferentialSkeleton! This is most likely a "
+        "bug. Please report this!",
+        _localIndex,
+        _bn->getName(),
+        _bn);
     assert(false);
     return;
   }
@@ -1429,9 +1459,9 @@ void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
 void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
 {
   if (!skel) {
-    dterr << "[ReferentialSkeleton::unregisterSkeleton] Attempting to "
-          << "unregister a nullptr Skeleton. This is most likely a bug. Please "
-          << "report this!\n";
+    DART_ERROR(
+        "[ReferentialSkeleton::unregisterSkeleton] Attempting to unregister a "
+        "nullptr Skeleton. This is most likely a bug. Please report this!");
     assert(false);
     return;
   }

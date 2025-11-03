@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/BodyNode.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -374,8 +374,9 @@ BodyNode& BodyNode::operator=(const BodyNode& otherBodyNode)
 void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
 {
   if (nullptr == otherBodyNode) {
-    dterr << "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes "
-          << "of a nullptr, which is not allowed!\n";
+    DART_ERROR(
+        "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes of a "
+        "nullptr, which is not allowed!");
     assert(false);
     return;
   }
@@ -391,8 +392,9 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
 void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 {
   if (nullptr == otherBodyNode) {
-    dterr << "[BodyNode::matchNodes] You have asked to match the Nodes of a "
-          << "nullptr, which is not allowed!\n";
+    DART_ERROR(
+        "[BodyNode::matchNodes] You have asked to match the Nodes of a "
+        "nullptr, which is not allowed!");
     assert(false);
     return;
   }
@@ -479,10 +481,12 @@ void BodyNode::setCollidable(bool _isCollidable)
 void checkMass(const BodyNode& bodyNode, const double mass)
 {
   if (mass <= 0.0) {
-    dtwarn << "[BodyNode] A negative or zero mass [" << mass
-           << "] is set to BodyNode [" << bodyNode.getName()
-           << "], which can cause invalid physical behavior or segfault. "
-           << "Consider setting positive value instead.\n";
+    DART_WARN(
+        "[BodyNode] A negative or zero mass [{}] is set to BodyNode [{}], "
+        "which can cause invalid physical behavior or segfault. Consider "
+        "setting positive value instead.",
+        mass,
+        bodyNode.getName());
   }
 }
 
@@ -729,24 +733,32 @@ static bool checkSkeletonNodeAgreement(
     const std::string& _operation)
 {
   if (nullptr == _newSkeleton) {
-    dterr << "[BodyNode::" << _function << "] Attempting to " << _operation
-          << " a BodyNode tree starting "
-          << "from [" << _bodyNode->getName() << "] in the Skeleton named ["
-          << _bodyNode->getSkeleton()->getName()
-          << "] into a nullptr Skeleton.\n";
+    DART_ERROR(
+        "[BodyNode::{}] Attempting to {} a BodyNode tree starting from [{}] in "
+        "the Skeleton named [{}] into a nullptr Skeleton.",
+        _function,
+        _operation,
+        _bodyNode->getName(),
+        _bodyNode->getSkeleton()->getName());
     return false;
   }
 
   if (_newParent && _newSkeleton != _newParent->getSkeleton()) {
-    dterr << "[BodyNode::" << _function << "] Mismatch between the specified "
-          << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
-          << ") and the specified new parent BodyNode ["
-          << _newParent->getName() << "] whose actual Skeleton is named ["
-          << _newParent->getSkeleton()->getName() << "] ("
-          << _newParent->getSkeleton() << ") while attempting to " << _operation
-          << " the BodyNode [" << _bodyNode->getName() << "] from the "
-          << "Skeleton named [" << _bodyNode->getSkeleton()->getName() << "] ("
-          << _bodyNode->getSkeleton() << ").\n";
+    DART_ERROR(
+        "[BodyNode::{}] Mismatch between the specified Skeleton [{}] ({}) and "
+        "the specified new parent BodyNode [{}] whose actual Skeleton is named "
+        "[{}] ({}) while attempting to {} the BodyNode [{}] from the Skeleton "
+        "named [{}] ({}).",
+        _function,
+        _newSkeleton->getName(),
+        _newSkeleton,
+        _newParent->getName(),
+        _newParent->getSkeleton()->getName(),
+        _newParent->getSkeleton(),
+        _operation,
+        _bodyNode->getName(),
+        _bodyNode->getSkeleton()->getName(),
+        _bodyNode->getSkeleton());
     return false;
   }
 
@@ -873,9 +885,11 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 
   if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body)
       != mChildBodyNodes.end()) {
-    dtwarn << "[BodyNode::addChildBodyNode] Attempting to add a BodyNode '"
-           << _body->getName() << "' as a child BodyNode of '" << getName()
-           << "', which is already its parent." << std::endl;
+    DART_WARN(
+        "[BodyNode::addChildBodyNode] Attempting to add a BodyNode '{}' as a "
+        "child BodyNode of '{}', which is already its parent.",
+        _body->getName(),
+        getName());
     return;
   }
 
@@ -1332,8 +1346,9 @@ BodyNode* BodyNode::clone(
 //==============================================================================
 Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 {
-  dterr << "[BodyNode::cloneNode] This function should never be called! Please "
-        << "report this as an error!\n";
+  DART_ERROR(
+      "[BodyNode::cloneNode] This function should never be called! Please "
+      "report this as an error!");
   assert(false);
   return nullptr;
 }
@@ -1441,9 +1456,11 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   // Check if it's already accounted for in our Non-BodyNode Entities
   if (mNonBodyNodeEntities.find(_newChildEntity)
       != mNonBodyNodeEntities.end()) {
-    dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity ["
-           << _newChildEntity->getName() << "] as a child Entity of ["
-           << getName() << "], which is already its parent." << std::endl;
+    DART_WARN(
+        "[BodyNode::processNewEntity] Attempting to add an Entity [{}] as a "
+        "child Entity of [{}], which is already its parent.",
+        _newChildEntity->getName(),
+        getName());
     return;
   }
 

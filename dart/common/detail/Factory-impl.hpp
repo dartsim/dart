@@ -33,8 +33,8 @@
 #ifndef DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 
-#include <dart/common/Console.hpp>
 #include <dart/common/Factory.hpp>
+#include <dart/common/Logging.hpp>
 #include <dart/common/Memory.hpp>
 
 namespace dart {
@@ -137,9 +137,11 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
 
   const auto found = (it != mCreatorMap.end());
   if (!found) {
-    dtwarn << "[Factory] Failed to create an object of '"
-           << typeid(BaseT).name() << "' class with the key (type: '"
-           << typeid(KeyT).name() << "'). Returning nullptr instead.\n";
+    DART_WARN(
+        "[Factory] Failed to create an object of '{}' class with the key "
+        "(type: '{}'). Returning nullptr instead.",
+        typeid(BaseT).name(),
+        typeid(KeyT).name());
     // TODO(JS): Print the key if the << operator is defined.
 
     return nullptr;

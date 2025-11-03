@@ -228,9 +228,12 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
   if (treeIndex >= mTreeNodeMaps.size()) {
-    dterr << "[Skeleton::getNumNodes<" << typeid(SpecNode).name() << ">] "
-          << "Requested tree index (" << treeIndex << "), but there are only ("
-          << mTreeNodeMaps.size() << ") trees available\n";
+    DART_ERROR(
+        "[Skeleton::getNumNodes<{}>] Requested tree index ({}), but there are "
+        "only ({}) trees available",
+        typeid(SpecNode).name(),
+        treeIndex,
+        mTreeNodeMaps.size());
     assert(false);
     return 0;
   }
@@ -258,9 +261,12 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
   if (treeIndex >= mTreeNodeMaps.size()) {
-    dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
-          << "Requested tree index (" << treeIndex << "), but there are only ("
-          << mTreeNodeMaps.size() << ") trees available\n";
+    DART_ERROR(
+        "[Skeleton::getNode<{}>] Requested tree index ({}), but there are only "
+        "({}) trees available",
+        typeid(SpecNode).name(),
+        treeIndex,
+        mTreeNodeMaps.size());
     assert(false);
     return nullptr;
   }
@@ -268,10 +274,13 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
   NodeMap::iterator& it = mTreeSpecNodeIterators[treeIndex];
 
   if (nodeIndex >= it->second.size()) {
-    dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
-          << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
-          << "), but there are only (" << it->second.size() << ") Nodes of the "
-          << "requested type within that tree\n";
+    DART_ERROR(
+        "[Skeleton::getNode<{}>] Requested index ({}) within tree ({}), but "
+        "there are only ({}) Nodes of the requested type within that tree",
+        typeid(SpecNode).name(),
+        nodeIndex,
+        treeIndex,
+        it->second.size());
     assert(false);
     return nullptr;
   }

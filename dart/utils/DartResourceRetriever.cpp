@@ -32,8 +32,8 @@
 
 #include "dart/utils/DartResourceRetriever.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/config.hpp"
 
 #include <fstream>
@@ -78,10 +78,11 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
       if (mLocalRetriever->exists(fileUri))
         return true;
 
-      dtwarn << "Failed to retrieve a resource from '" << uri.toString()
-             << "'. Please make sure you set the environment variable for DART "
-             << "data path. For example:\n"
-             << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
+      DART_WARN(
+          "Failed to retrieve a resource from '{}'. Please make sure you set "
+          "the environment variable for DART data path. For example:\\n  $ "
+          "export DART_DATA_PATH=/usr/local/share/doc/dart/data/",
+          uri.toString());
     }
   } else {
     if (mLocalRetriever->exists(uri))
@@ -107,10 +108,11 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
         return resource;
     }
 
-    dtwarn << "Failed to retrieve a resource from '" << uri.toString()
-           << "'. Please make sure you set the environment variable for DART "
-           << "data path. For example:\n"
-           << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
+    DART_WARN(
+        "Failed to retrieve a resource from '{}'. Please make sure you set the "
+        "environment variable for DART data path. For example:\\n  $ export "
+        "DART_DATA_PATH=/usr/local/share/doc/dart/data/",
+        uri.toString());
   } else {
     if (const auto resource = mLocalRetriever->retrieve(uri))
       return resource;
@@ -138,10 +140,11 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
         return path;
     }
 
-    dtwarn << "Failed to retrieve a resource from '" << uri.toString()
-           << "'. Please make sure you set the environment variable for "
-           << "DART data path. For example:\n"
-           << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
+    DART_WARN(
+        "Failed to retrieve a resource from '{}'. Please make sure you set the "
+        "environment variable for DART data path. For example:\\n  $ export "
+        "DART_DATA_PATH=/usr/local/share/doc/dart/data/",
+        uri.toString());
   } else {
     const auto path = mLocalRetriever->getFilePath(uri);
 
@@ -175,9 +178,11 @@ bool DartResourceRetriever::resolveDataUri(
     return false;
 
   if (!uri.mPath) {
-    dtwarn << "[DartResourceRetriever::resolveDataUri] Failed extracting"
-              " relative path from URI '"
-           << uri.toString() << "'.\n";
+    DART_WARN(
+        "{}{}'.",
+        "[DartResourceRetriever::resolveDataUri] Failed extracting"
+        " relative path from URI '",
+        uri.toString());
     return false;
   }
   relativePath = uri.mPath.get_value_or("");

@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 
-#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
@@ -61,15 +60,16 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
       void* pointer = it.first;
       size_t size = it.second;
       totalSize += size;
-      dtdbg << "Found potential memory leak at " << pointer << " (" << size
-            << " bytes).\n";
+      DART_DEBUG(
+          "Found potential memory leak at {} ({} bytes).", pointer, size);
       // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
       // destructor is resolved.
     }
 
-    dtdbg << "Found potential memory leak of total " << totalSize
-          << " bytes. The internal allocator will try to forcefully "
-          << "deallocate it but it's is not guaranteed.\n";
+    DART_DEBUG(
+        "Found potential memory leak of total {} bytes. The internal allocator "
+        "will try to forcefully deallocate it but it's is not guaranteed.",
+        totalSize);
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
   }

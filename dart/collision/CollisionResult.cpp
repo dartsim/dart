@@ -126,9 +126,10 @@ void CollisionResult::clear()
 void CollisionResult::addObject(CollisionObject* object)
 {
   if (!object) {
-    dterr << "[CollisionResult::addObject] Attempting to add a collision with "
-          << "a nullptr object to a CollisionResult instance. This is not "
-          << "allowed. Please report this as a bug!\n";
+    DART_ERROR(
+        "[CollisionResult::addObject] Attempting to add a collision with a "
+        "nullptr object to a CollisionResult instance. This is not allowed. "
+        "Please report this as a bug!");
     assert(false);
     return;
   }

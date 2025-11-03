@@ -68,8 +68,9 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   const std::shared_ptr<dynamics::HierarchicalIK>& ik = mIK.lock();
 
   if (nullptr == ik) {
-    dterr << "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
-          << "function associated to a HierarchicalIK that no longer exists!\n";
+    DART_ERROR(
+        "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
+        "function associated to a HierarchicalIK that no longer exists!");
     assert(false);
     return 0.0;
   }
@@ -77,8 +78,9 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   const dynamics::SkeletonPtr& skel = ik->getSkeleton();
 
   if (nullptr == skel) {
-    dterr << "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
-          << "function on a Skeleton which no longer exists!\n";
+    DART_ERROR(
+        "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
+        "function on a Skeleton which no longer exists!");
     assert(false);
     return 0.0;
   }
@@ -272,11 +274,12 @@ void BalanceConstraint::evalGradient(
             = skel->getEndEffector(mClosestEndEffector[i]);
 
         if (!ee->getSupport() || !ee->getSupport()->isActive()) {
-          dtwarn << "[BalanceConstraint::evalGradient] The EndEffector named ["
-                 << ee->getName() << "] was identified as the closest "
-                 << "supporting EndEffector, but it does not appear to be a "
-                 << "supporting EndEffector at all. This is most likely a bug, "
-                 << "please report it!\n";
+          DART_WARN(
+              "[BalanceConstraint::evalGradient] The EndEffector named [{}] "
+              "was identified as the closest supporting EndEffector, but it "
+              "does not appear to be a supporting EndEffector at all. This is "
+              "most likely a bug, please report it!",
+              ee->getName());
           continue;
         }
 

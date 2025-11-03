@@ -32,7 +32,7 @@
 
 #include "LocalResource.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <iostream>
 #include <limits>
@@ -47,8 +47,11 @@ LocalResource::LocalResource(const std::string& _path)
   : mFile(std::fopen(_path.c_str(), "rb"))
 {
   if (!mFile) {
-    dtwarn << "[LocalResource::constructor] Failed opening file '" << _path
-           << "' for reading: " << std::strerror(errno) << "\n";
+    DART_WARN(
+        "[LocalResource::constructor] Failed opening file '{}' for reading: "
+        "{}",
+        _path,
+        std::strerror(errno));
   }
 }
 
@@ -59,8 +62,9 @@ LocalResource::~LocalResource()
     return;
 
   if (std::fclose(mFile) == EOF) {
-    dtwarn << "[LocalResource::destructor] Failed closing file: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "[LocalResource::destructor] Failed closing file: {}",
+        std::strerror(errno));
   }
 }
 
@@ -78,26 +82,32 @@ std::size_t LocalResource::getSize()
 
   const long offset = std::ftell(mFile);
   if (offset == -1L) {
-    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-              " getting current offset: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "{}{}",
+        "[LocalResource::getSize] Unable to compute file size: Failed"
+        " getting current offset: ",
+        std::strerror(errno));
     return 0;
   }
 
   // The SEEK_END option is not required by the C standard. However, it is
   // required by POSIX.
   if (std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile)) {
-    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-              " seeking to the end of the file: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "{}{}",
+        "[LocalResource::getSize] Unable to compute file size: Failed"
+        " seeking to the end of the file: ",
+        std::strerror(errno));
     return 0;
   }
 
   const long size = std::ftell(mFile);
   if (size == -1L) {
-    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-              " getting end of file offset: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "{}{}",
+        "[LocalResource::getSize] Unable to compute file size: Failed"
+        " getting end of file offset: ",
+        std::strerror(errno));
     return 0;
   }
   // fopen, ftell, and fseek produce undefined behavior when called on
@@ -106,15 +116,19 @@ std::size_t LocalResource::getSize()
   //
   // See here: http://stackoverflow.com/a/18193383/111426
   else if (size == std::numeric_limits<long>::max()) {
-    dtwarn << "[LocalResource::getSize] Unable to compute file size: Computed"
-              " file size of LONG_MAX. Is this a directory?\n";
+    DART_WARN(
+        "{}",
+        "[LocalResource::getSize] Unable to compute file size: Computed"
+        " file size of LONG_MAX. Is this a directory?\n");
     return 0;
   }
 
   if (std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile)) {
-    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-              " restoring offset: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "{}{}",
+        "[LocalResource::getSize] Unable to compute file size: Failed"
+        " restoring offset: ",
+        std::strerror(errno));
     return 0;
   }
 
@@ -129,8 +143,9 @@ std::size_t LocalResource::tell()
 
   const long offset = std::ftell(mFile);
   if (offset == -1L) {
-    dtwarn << "[LocalResource::tell] Failed getting current offset: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "[LocalResource::tell] Failed getting current offset: {}",
+        std::strerror(errno));
   }
   // fopen, ftell, and fseek produce undefined behavior when called on
   // directories. ftell() on Linux libc returns LONG_MAX, unless you are in an
@@ -138,8 +153,10 @@ std::size_t LocalResource::tell()
   //
   // See here: http://stackoverflow.com/a/18193383/111426
   else if (offset == std::numeric_limits<long>::max()) {
-    dtwarn << "[LocalResource::tell] Failed getting current offset: ftell"
-              " returned LONG_MAX. Is this a directory?\n";
+    DART_WARN(
+        "{}",
+        "[LocalResource::tell] Failed getting current offset: ftell"
+        " returned LONG_MAX. Is this a directory?\n");
     return -1L;
   }
 
@@ -165,16 +182,17 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
       break;
 
     default:
-      dtwarn << "[LocalResource::seek] Invalid origin. Expected"
-                " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n";
+      DART_WARN(
+          "{}",
+          "[LocalResource::seek] Invalid origin. Expected"
+          " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n");
       return false;
   }
 
   if (!std::fseek(mFile, _offset, origin) && !std::ferror(mFile))
     return true;
   else {
-    dtwarn << "[LocalResource::seek] Failed seeking: " << std::strerror(errno)
-           << "\n";
+    DART_WARN("[LocalResource::seek] Failed seeking: {}", std::strerror(errno));
     return false;
   }
 }
@@ -188,8 +206,8 @@ std::size_t LocalResource::read(
 
   const std::size_t result = std::fread(_buffer, _size, _count, mFile);
   if (std::ferror(mFile)) {
-    dtwarn << "[LocalResource::read] Failed reading file: "
-           << std::strerror(errno) << "\n";
+    DART_WARN(
+        "[LocalResource::read] Failed reading file: {}", std::strerror(errno));
   }
   return result;
 }

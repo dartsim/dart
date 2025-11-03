@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Joint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -287,7 +287,7 @@ bool Joint::isKinematic() const
     case LOCKED:
       return true;
     default: {
-      dterr << "Unsupported actuator type." << std::endl;
+      DART_ERROR("Unsupported actuator type.");
       return false;
     }
   }
@@ -512,12 +512,16 @@ bool Joint::checkSanity(bool _printWarnings) const
     if (getInitialPosition(i) < getPositionLowerLimit(i)
         || getPositionUpperLimit(i) < getInitialPosition(i)) {
       if (_printWarnings) {
-        dtwarn << "[Joint::checkSanity] Initial position of index " << i << " ["
-               << getDofName(i) << "] in Joint [" << getName() << "] is "
-               << "outside of its position limits\n"
-               << " -- Initial Position: " << getInitialPosition(i) << "\n"
-               << " -- Limits: [" << getPositionLowerLimit(i) << ", "
-               << getPositionUpperLimit(i) << "]\n";
+        DART_WARN(
+            "[Joint::checkSanity] Initial position of index {} [{}] in Joint "
+            "[{}] is outside of its position limits\\n -- Initial Position: "
+            "{}\\n -- Limits: [{}, {}]",
+            i,
+            getDofName(i),
+            getName(),
+            getInitialPosition(i),
+            getPositionLowerLimit(i),
+            getPositionUpperLimit(i));
       } else {
         return false;
       }
@@ -528,12 +532,16 @@ bool Joint::checkSanity(bool _printWarnings) const
     if (getInitialVelocity(i) < getVelocityLowerLimit(i)
         || getVelocityUpperLimit(i) < getInitialVelocity(i)) {
       if (_printWarnings) {
-        dtwarn << "[Joint::checkSanity] Initial velocity of index " << i << " ["
-               << getDofName(i) << "] is Joint [" << getName() << "] is "
-               << "outside of its velocity limits\n"
-               << " -- Initial Velocity: " << getInitialVelocity(i) << "\n"
-               << " -- Limits: [" << getVelocityLowerLimit(i) << ", "
-               << getVelocityUpperLimit(i) << "]\n";
+        DART_WARN(
+            "[Joint::checkSanity] Initial velocity of index {} [{}] is Joint "
+            "[{}] is outside of its velocity limits\\n -- Initial Velocity: "
+            "{}\\n -- Limits: [{}, {}]",
+            i,
+            getDofName(i),
+            getName(),
+            getInitialVelocity(i),
+            getVelocityLowerLimit(i),
+            getVelocityUpperLimit(i));
       } else {
         return false;
       }

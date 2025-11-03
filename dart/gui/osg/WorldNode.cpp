@@ -298,10 +298,12 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
   }
 
   if (!frame->isShapeFrame()) {
-    dtwarn << "[WorldNode::refreshShapeFrameNode] Frame named ["
-           << frame->getName() << "] (" << frame << ") claims to be a "
-           << "ShapeFrame, but failed to be converted. Please report this as a "
-           << "bug!\n";
+    DART_WARN(
+        "[WorldNode::refreshShapeFrameNode] Frame named [{}] ({}) claims to be "
+        "a ShapeFrame, but failed to be converted. Please report this as a "
+        "bug!",
+        frame->getName(),
+        frame);
     return;
   }
 

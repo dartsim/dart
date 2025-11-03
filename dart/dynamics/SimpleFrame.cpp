@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/SimpleFrame.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {

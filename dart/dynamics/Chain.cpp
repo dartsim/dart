@@ -87,26 +87,29 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
 {
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
   if (!startBodyNode) {
-    dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
-           << "start node of the input criteria is not valid anymore. Using "
-           << "the returning Criteria will lead to creating an empty Chain.\n";
+    DART_WARN(
+        "[Chain::Criteria::convert] Failed in conversion because the start "
+        "node of the input criteria is not valid anymore. Using the returning "
+        "Criteria will lead to creating an empty Chain.");
     return Chain::Criteria(nullptr, nullptr);
   }
 
   if (criteria.mTargets.size() != 1u) {
-    dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
-           << "input criteria is not for Chain. The number of targets should "
-           << "be one while the input is " << criteria.mTargets.size() << ". "
-           << "Using the returning Criteria will lead to creating an empty "
-           << "Chain.\n";
+    DART_WARN(
+        "[Chain::Criteria::convert] Failed in conversion because the input "
+        "criteria is not for Chain. The number of targets should be one while "
+        "the input is {}. Using the returning Criteria will lead to creating "
+        "an empty Chain.",
+        criteria.mTargets.size());
     return Chain::Criteria(nullptr, nullptr);
   }
   const Linkage::Criteria::Target& target = criteria.mTargets[0];
   BodyNodePtr targetBodyNode = target.mNode.lock();
   if (!targetBodyNode) {
-    dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
-           << "end node of the input criteria is not valid anymore. Using the "
-           << "returning Criteria will lead to creating an empty Chain.\n";
+    DART_WARN(
+        "[Chain::Criteria::convert] Failed in conversion because the end node "
+        "of the input criteria is not valid anymore. Using the returning "
+        "Criteria will lead to creating an empty Chain.");
     return Chain::Criteria(nullptr, nullptr);
   }
 
@@ -168,9 +171,10 @@ ChainPtr Chain::cloneChain(const std::string& cloneName) const
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode) {
-    dtwarn << "[Chain::cloneMetaSkeleton] Failed to clone because the "
-           << "start node of the criteria in this Chain is not valid anymore. "
-           << "Returning nullptr.\n";
+    DART_WARN(
+        "[Chain::cloneMetaSkeleton] Failed to clone because the start node of "
+        "the criteria in this Chain is not valid anymore. Returning "
+        "nullptr.");
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();

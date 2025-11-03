@@ -36,7 +36,7 @@
 
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/utils/urdf/IncludeUrdf.hpp"
 
 #include <tinyxml2.h>
@@ -63,7 +63,7 @@ bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
       try {
         pose.position.init(xyz_str);
       } catch (urdf::ParseError& e) {
-        dterr << e.what() << "\n";
+        DART_ERROR("{}", e.what());
         return false;
       }
     }
@@ -73,7 +73,7 @@ bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
       try {
         pose.rotation.init(rpy_str);
       } catch (urdf::ParseError& e) {
-        dterr << e.what() << "\n";
+        DART_ERROR("{}", e.what());
         return false;
       }
     }
@@ -100,24 +100,30 @@ std::shared_ptr<World> parseWorldURDF(
   tinyxml2::XMLDocument xml_doc;
   const auto result = xml_doc.Parse(&_xml_string.front());
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
-              " code "
-           << result << ".\n";
+    DART_WARN(
+        "{}{}.",
+        "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
+        " code ",
+        result);
     return nullptr;
   }
 
   auto* world_xml = xml_doc.FirstChildElement("world");
   if (!world_xml) {
-    dtwarn << "[parseWorldURDF] ERROR: Could not find a <world> element in "
-              "XML, exiting and not loading! \n";
+    DART_WARN(
+        "{}",
+        "[parseWorldURDF] ERROR: Could not find a <world> element in "
+        "XML, exiting and not loading! \n");
     return nullptr;
   }
 
   // Get world name
   const char* name = world_xml->Attribute("name");
   if (!name) {
-    dtwarn << "[parseWorldURDF] ERROR: World does not have a name tag "
-              "specified. Exiting and not loading! \n";
+    DART_WARN(
+        "{}",
+        "[parseWorldURDF] ERROR: World does not have a name tag "
+        "specified. Exiting and not loading! \n");
     return nullptr;
   }
 
@@ -159,19 +165,21 @@ std::shared_ptr<World> parseWorldURDF(
 
       // Find the model
       if (includedFiles.find(string_entity_model) == includedFiles.end()) {
-        dtwarn << "[parseWorldURDF] Cannot find the model ["
-               << string_entity_model << "], did you provide the correct name? "
-               << "We will return a nullptr.\n"
-               << std::endl;
+        DART_WARN(
+            "[parseWorldURDF] Cannot find the model [{}], did you provide the "
+            "correct name? We will return a nullptr.\\n",
+            string_entity_model);
         return nullptr;
       } else {
         std::string fileName = includedFiles.find(string_entity_model)->second;
 
         dart::common::Uri absoluteUri;
         if (!absoluteUri.fromRelativeUri(_baseUri, fileName)) {
-          dtwarn << "[parseWorldURDF] Failed resolving mesh URI '" << fileName
-                 << "' relative to '" << _baseUri.toString()
-                 << "'. We will return a nullptr.\n";
+          DART_WARN(
+              "[parseWorldURDF] Failed resolving mesh URI '{}' relative to "
+              "'{}'. We will return a nullptr.",
+              fileName,
+              _baseUri.toString());
           return nullptr;
         }
 
@@ -182,17 +190,20 @@ std::shared_ptr<World> parseWorldURDF(
         entity.model = urdf::parseURDF(xml_model_string);
 
         if (!entity.model) {
-          dtwarn << "[parseWorldURDF] Could not find a model named ["
-                 << xml_model_string << "] from [" << absoluteUri.toString()
-                 << "]. We will return a nullptr.\n";
+          DART_WARN(
+              "[parseWorldURDF] Could not find a model named [{}] from [{}]. "
+              "We will return a nullptr.",
+              xml_model_string,
+              absoluteUri.toString());
           return nullptr;
         } else {
           // Parse location
           auto* origin = entity_xml->FirstChildElement("origin");
           if (origin) {
             if (!urdf_parsing::parsePose(entity.origin, origin)) {
-              dtwarn << "[ERROR] Missing origin tag for '"
-                     << entity.model->getName() << "'\n";
+              DART_WARN(
+                  "[ERROR] Missing origin tag for '{}'",
+                  entity.model->getName());
               return world;
             }
           }

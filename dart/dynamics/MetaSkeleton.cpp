@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/MetaSkeleton.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
@@ -52,15 +52,22 @@ static bool checkIndexArrayValidity(
   for (std::size_t i = 0; i < _indices.size(); ++i) {
     if (_indices[i] >= dofs) {
       if (dofs > 0) {
-        dterr << "[Skeleton::" << _fname << "] Invalid entry (" << i << ") in "
-              << "_indices array: " << _indices[i]
-              << ". Value must be less than " << dofs
-              << " for the Skeleton named [" << skel->getName() << "] (" << skel
-              << ")\n";
+        DART_ERROR(
+            "[Skeleton::{}] Invalid entry ({}) in _indices array: {}. Value "
+            "must be less than {} for the Skeleton named [{}] ({})",
+            _fname,
+            i,
+            _indices[i],
+            dofs,
+            skel->getName(),
+            static_cast<const void*>(skel));
       } else {
-        dterr << "[Skeleton::" << _fname << "] The Skeleton named ["
-              << skel->getName() << "] (" << skel << ") is empty, but _indices "
-              << "has entries in it. Nothing will be set!\n";
+        DART_ERROR(
+            "[Skeleton::{}] The Skeleton named [{}] ({}) is empty, but "
+            "_indices has entries in it. Nothing will be set!",
+            _fname,
+            skel->getName(),
+            static_cast<const void*>(skel));
       }
 
       return false;
@@ -78,10 +85,15 @@ static bool checkIndexArrayAgreement(
     const std::string& _vname)
 {
   if (static_cast<int>(_indices.size()) != _values.size()) {
-    dterr << "[Skeleton::" << _fname << "] Mismatch between _indices size ("
-          << _indices.size() << ") and " << _vname << " size ("
-          << _values.size() << ") for Skeleton named [" << skel->getName()
-          << "] (" << skel << "). Nothing will be set!\n";
+    DART_ERROR(
+        "[Skeleton::{}] Mismatch between _indices size ({}) and {} size ({}) "
+        "for Skeleton named [{}] ({}). Nothing will be set!",
+        _fname,
+        _indices.size(),
+        _vname,
+        _values.size(),
+        skel->getName(),
+        static_cast<const void*>(skel));
     assert(false);
     return false;
   }
@@ -106,11 +118,15 @@ static void setValuesFromVector(
     if (dof) {
       (dof->*setValue)(_values[i]);
     } else {
-      dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #"
-            << _indices[i] << " (entry #" << i << " in " << _vname << ") has "
-            << "expired! ReferentialSkeletons should call update() after "
-            << "structural changes have been made to the BodyNodes they refer "
-            << "to. Nothing will be set for this specific DegreeOfFreedom.\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] DegreeOfFreedom #{} (entry #{} in {}) has "
+          "expired! ReferentialSkeletons should call update() after structural "
+          "changes have been made to the BodyNodes they refer to. Nothing will "
+          "be set for this specific DegreeOfFreedom.",
+          _fname,
+          _indices[i],
+          i,
+          _vname);
       assert(false);
     }
   }
@@ -126,10 +142,16 @@ static void setAllValuesFromVector(
 {
   std::size_t nDofs = skel->getNumDofs();
   if (_values.size() != static_cast<int>(skel->getNumDofs())) {
-    dterr << "[MetaSkeleton::" << _fname << "] Invalid number of entries ("
-          << _values.size() << ") in " << _vname << " for MetaSkeleton named ["
-          << skel->getName() << "] (" << skel << "). Must be equal to ("
-          << skel->getNumDofs() << "). Nothing will be set!\n";
+    DART_ERROR(
+        "[MetaSkeleton::{}] Invalid number of entries ({}) in {} for "
+        "MetaSkeleton named [{}] ({}). Must be equal to ({}). Nothing will be "
+        "set!",
+        _fname,
+        _values.size(),
+        _vname,
+        skel->getName(),
+        static_cast<const void*>(skel),
+        skel->getNumDofs());
     assert(false);
     return;
   }
@@ -139,12 +161,15 @@ static void setAllValuesFromVector(
     if (dof) {
       (dof->*setValue)(_values[i]);
     } else {
-      dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << i
-            << " in the MetaSkeleton named [" << skel->getName() << "] ("
-            << skel << ") has expired! ReferentialSkeletons should call "
-            << "update() after structural changes have been made to the "
-            << "BodyNodes they refer to. Nothing will be set for this specific "
-            << "DegreeOfFreedom.\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] DegreeOfFreedom #{} in the MetaSkeleton named "
+          "[{}] ({}) has expired! ReferentialSkeletons should call update() "
+          "after structural changes have been made to the BodyNodes they refer "
+          "to. Nothing will be set for this specific DegreeOfFreedom.",
+          _fname,
+          i,
+          skel->getName(),
+          static_cast<const void*>(skel));
       assert(false);
     }
   }
@@ -166,18 +191,26 @@ static Eigen::VectorXd getValuesFromVector(
     } else {
       values[i] = 0.0;
       if (i < skel->getNumDofs()) {
-        dterr << "[MetaSkeleton::" << _fname << "] Requesting value for "
-              << "DegreeOfFreedom #" << _indices[i] << " ("
-              << "entry #" << i << " in _indices), but this index has expired! "
-              << "ReferentialSkeletons should call update() after structural "
-              << "changes have been made to the BodyNodes they refer to. The "
-              << "return value for this entry will be zero.\n";
+        DART_ERROR(
+            "[MetaSkeleton::{}] Requesting value for DegreeOfFreedom #{} "
+            "(entry #{} in _indices), but this index has expired! "
+            "ReferentialSkeletons should call update() after structural "
+            "changes have been made to the BodyNodes they refer to. The return "
+            "value for this entry will be zero.",
+            _fname,
+            _indices[i],
+            i);
       } else {
-        dterr << "[MetaSkeleton::" << _fname << "] Requesting out of bounds "
-              << "DegreeOfFreedom #" << _indices[i] << " (entry #" << i
-              << " in _indices) for MetaSkeleton named [" << skel->getName()
-              << "] (" << skel << "). The max index is (" << skel->getNumDofs()
-              << "). The return value for this entry will be zero.\n";
+        DART_ERROR(
+            "[MetaSkeleton::{}] Requesting out of bounds DegreeOfFreedom #{} "
+            "(entry #{} in _indices) for MetaSkeleton named [{}] ({}). The max "
+            "index is ({}). The return value for this entry will be zero.",
+            _fname,
+            _indices[i],
+            i,
+            skel->getName(),
+            static_cast<const void*>(skel),
+            skel->getNumDofs());
       }
       assert(false);
     }
@@ -199,10 +232,13 @@ static Eigen::VectorXd getValuesFromAllDofs(
     if (dof) {
       values[i] = (skel->getDof(i)->*getValue)();
     } else {
-      dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << i
-            << " has expired! ReferentialSkeletons should call update() after "
-            << "structural changes have been made to the BodyNodes they refer "
-            << "to. The return value for this entry will be zero.\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] DegreeOfFreedom #{} has expired! "
+          "ReferentialSkeletons should call update() after structural changes "
+          "have been made to the BodyNodes they refer to. The return value for "
+          "this entry will be zero.",
+          _fname,
+          i);
       values[i] = 0.0;
       assert(false);
     }
@@ -233,14 +269,22 @@ static void setValueFromIndex(
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
-      dterr << "[MetaSkeleton::" << _fname << "] Out of bounds index ("
-            << _index << ") for MetaSkeleton named [" << skel->getName()
-            << "] (" << skel << "). Must be less than " << skel->getNumDofs()
-            << "!\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] Out of bounds index ({}) for MetaSkeleton named "
+          "[{}] ({}). Must be less than {}!",
+          _fname,
+          _index,
+          skel->getName(),
+          static_cast<const void*>(skel),
+          skel->getNumDofs());
     else
-      dterr << "[MetaSkeleton::" << _fname << "] Index (" << _index
-            << ") cannot be used on MetaSkeleton [" << skel->getName() << "] ("
-            << skel << ") because it is empty!\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] Index ({}) cannot be used on MetaSkeleton [{}] "
+          "({}) because it is empty!",
+          _fname,
+          _index,
+          skel->getName(),
+          static_cast<const void*>(skel));
     assert(false);
     return;
   }
@@ -249,11 +293,15 @@ static void setValueFromIndex(
   if (dof) {
     (dof->*setValue)(_value);
   } else {
-    dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << _index
-          << " in the MetaSkeleton named [" << skel->getName() << "] (" << skel
-          << ") has expired! ReferentialSkeletons should call update() after "
-          << "structural changes have been made to the BodyNodes they refer "
-          << "to. Nothing will be set!\n";
+    DART_ERROR(
+        "[MetaSkeleton::{}] DegreeOfFreedom #{} in the MetaSkeleton named [{}] "
+        "({}) has expired! ReferentialSkeletons should call update() after "
+        "structural changes have been made to the BodyNodes they refer to. "
+        "Nothing will be set!",
+        _fname,
+        _index,
+        skel->getName(),
+        static_cast<const void*>(skel));
     assert(false);
   }
 }
@@ -265,16 +313,22 @@ static double getValueFromIndex(
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
-      dterr << "[MetaSkeleton::" << _fname << "] Out of bounds index ("
-            << _index << ") for MetaSkeleton named [" << skel->getName()
-            << "] (" << skel << "). Must be less than " << skel->getNumDofs()
-            << "! The return value will be zero.\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] Out of bounds index ({}) for MetaSkeleton named "
+          "[{}] ({}). Must be less than {}! The return value will be zero.",
+          _fname,
+          _index,
+          skel->getName(),
+          static_cast<const void*>(skel),
+          skel->getNumDofs());
     else
-      dterr << "[MetaSkeleton::" << _fname << "] Index (" << _index
-            << ") cannot "
-            << "be requested for MetaSkeleton [" << skel->getName() << "] ("
-            << skel << ") because it is empty! "
-            << "The return value will be zero.\n";
+      DART_ERROR(
+          "[MetaSkeleton::{}] Index ({}) cannot be requested for MetaSkeleton "
+          "[{}] ({}) because it is empty! The return value will be zero.",
+          _fname,
+          _index,
+          skel->getName(),
+          static_cast<const void*>(skel));
     assert(false);
     return 0.0;
   }
@@ -284,11 +338,15 @@ static double getValueFromIndex(
     return (skel->getDof(_index)->*getValue)();
   }
 
-  dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << _index
-        << "in the MetaSkeleton named [" << skel->getName() << "] (" << skel
-        << ") has expired! ReferentialSkeletons should call update() after "
-        << "structural changes have been made to the BodyNodes they refer to. "
-        << "The return value will be zero.\n";
+  DART_ERROR(
+      "[MetaSkeleton::{}] DegreeOfFreedom #{}in the MetaSkeleton named [{}] "
+      "({}) has expired! ReferentialSkeletons should call update() after "
+      "structural changes have been made to the BodyNodes they refer to. The "
+      "return value will be zero.",
+      _fname,
+      _index,
+      skel->getName(),
+      static_cast<const void*>(skel));
   assert(false);
   return 0.0;
 }

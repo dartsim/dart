@@ -34,7 +34,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -324,9 +324,9 @@ void SoftContactConstraint::setErrorAllowance(double _allowance)
 {
   // Clamp error reduction parameter if it is out of the range
   if (_allowance < 0.0) {
-    dtwarn << "Error reduction parameter[" << _allowance
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
+        _allowance);
     mErrorAllowance = 0.0;
   }
 
@@ -344,13 +344,16 @@ void SoftContactConstraint::setErrorReductionParameter(double _erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
   if (_erp < 0.0) {
-    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
+        _erp);
     mErrorReductionParameter = 0.0;
   }
   if (_erp > 1.0) {
-    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
-           << "It is set to 1.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is greater than 1.0. It is set to "
+        "1.0.",
+        _erp);
     mErrorReductionParameter = 1.0;
   }
 
@@ -368,9 +371,10 @@ void SoftContactConstraint::setMaxErrorReductionVelocity(double _erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
   if (_erv < 0.0) {
-    dtwarn << "Maximum error reduction velocity[" << _erv
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
+        "0.0.",
+        _erv);
     mMaxErrorReductionVelocity = 0.0;
   }
 
@@ -388,9 +392,10 @@ void SoftContactConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (_cfm < 1e-9) {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. "
-           << "It is set to 1e-9." << std::endl;
+    DART_WARN(
+        "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
+        "to 1e-9.",
+        _cfm);
     mConstraintForceMixing = 1e-9;
   }
 
@@ -855,10 +860,11 @@ double SoftContactConstraint::computeFrictionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract friction coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract friction coefficient from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_FRICTION_COEFF);
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
@@ -874,10 +880,11 @@ double SoftContactConstraint::computeRestitutionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract restitution coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_RESTITUTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract restitution coefficient from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_RESTITUTION_COEFF);
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 

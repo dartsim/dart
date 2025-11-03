@@ -35,7 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -417,15 +417,15 @@ simulation::WorldPtr SkelParser::readWorld(
   try {
     openXMLFile(_dartFile, _uri, retriever);
   } catch (std::exception const& e) {
-    dterr << "[readWorld] LoadFile [" << _uri.toString()
-          << "] Failed: " << e.what() << "\n";
+    DART_ERROR(
+        "[readWorld] LoadFile [{}] Failed: {}", _uri.toString(), e.what());
     return nullptr;
   }
 
   tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
   if (!worldElement) {
-    dterr << "[readWorld] File named [" << _uri.toString()
-          << "] could not be parsed!\n";
+    DART_ERROR(
+        "[readWorld] File named [{}] could not be parsed!", _uri.toString());
     return nullptr;
   }
 
@@ -448,7 +448,7 @@ simulation::WorldPtr SkelParser::readWorldXML(
 
   tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
   if (!worldElement) {
-    dterr << "[readWorldXML] XML String could not be parsed!\n";
+    DART_ERROR("[readWorldXML] XML String could not be parsed!");
     return nullptr;
   }
 
@@ -477,8 +477,9 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   tinyxml2::XMLElement* skelElement = nullptr;
   skelElement = dartFile.FirstChildElement("skel");
   if (skelElement == nullptr) {
-    dterr << "Skel file[" << uri.toString()
-          << "] does not contain <skel> as the element.\n";
+    DART_ERROR(
+        "Skel file[{}] does not contain <skel> as the element.",
+        uri.toString());
     return nullptr;
   }
 
@@ -487,9 +488,10 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   tinyxml2::XMLElement* skeletonElement = nullptr;
   skeletonElement = skelElement->FirstChildElement("skeleton");
   if (skeletonElement == nullptr) {
-    dterr << "Skel file[" << uri.toString()
-          << "] does not contain <skeleton> element "
-          << "under <skel> element.\n";
+    DART_ERROR(
+        "Skel file[{}] does not contain <skeleton> element under <skel> "
+        "element.",
+        uri.toString());
     return nullptr;
   }
 
@@ -548,10 +550,11 @@ void readVisualizationShapeNode(
     } else if (color.size() == 4) {
       visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
     } else {
-      dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
-             << "element; " << color.size() << "d vector is given. It should "
-             << "be either 3d vector or 4d vector (the 4th element is for "
-             << "alpha). Ignoring the given color value.\n";
+      DART_WARN(
+          "[readVisualizationShapeNode] Invalid format for <color> element; "
+          "{}d vector is given. It should be either 3d vector or 4d vector "
+          "(the 4th element is for alpha). Ignoring the given color value.",
+          color.size());
     }
   }
 }
@@ -641,7 +644,7 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
   tinyxml2::XMLElement* skelElement = nullptr;
   skelElement = _document.FirstChildElement("skel");
   if (skelElement == nullptr) {
-    dterr << "XML Document does not contain <skel> as the root element.\n";
+    DART_ERROR("XML Document does not contain <skel> as the root element.");
     return nullptr;
   }
 
@@ -650,8 +653,9 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
   tinyxml2::XMLElement* worldElement = nullptr;
   worldElement = skelElement->FirstChildElement("world");
   if (worldElement == nullptr) {
-    dterr << "XML Document does not contain a <world> element under the <skel> "
-          << "element.\n";
+    DART_ERROR(
+        "XML Document does not contain a <world> element under the <skel> "
+        "element.");
     return nullptr;
   }
 
@@ -726,8 +730,10 @@ simulation::WorldPtr readWorld(
       }
 
       if (!collision_detector) {
-        dtwarn << "Unknown collision detector[" << cdType << "]. "
-               << "Default collision detector[fcl_mesh] will be loaded.\n";
+        DART_WARN(
+            "Unknown collision detector[{}]. Default collision "
+            "detector[fcl_mesh] will be loaded.",
+            cdType);
       }
     }
 
@@ -770,10 +776,12 @@ NextResult getNextJointAndNodePair(
       BodyMap::const_iterator check_parent_node
           = bodyNodes.find(joint.parentName);
       if (check_parent_node == bodyNodes.end()) {
-        dterr << "[getNextJointAndNodePair] Could not find BodyNode "
-              << "named [" << joint.parentName << "] requested as parent of "
-              << "the Joint named [" << joint.properties->mName << "]. We will "
-              << "now quit parsing.\n";
+        DART_ERROR(
+            "[getNextJointAndNodePair] Could not find BodyNode named [{}] "
+            "requested as parent of the Joint named [{}]. We will now quit "
+            "parsing.",
+            joint.parentName,
+            joint.properties->mName);
         return BREAK;
       }
 
@@ -789,10 +797,12 @@ NextResult getNextJointAndNodePair(
   // Find the child node of this Joint, so we can create them together
   child = bodyNodes.find(joint.childName);
   if (child == bodyNodes.end()) {
-    dterr << "[getNextJointAndNodePair] Could not find BodyNode "
-          << "named [" << joint.childName << "] requested as child of Joint ["
-          << joint.properties->mName << "]. This should not be possible! "
-          << "We will now quit parsing. Please report this bug!\n";
+    DART_ERROR(
+        "[getNextJointAndNodePair] Could not find BodyNode named [{}] "
+        "requested as child of Joint [{}]. This should not be possible! We "
+        "will now quit parsing. Please report this bug!",
+        joint.childName,
+        joint.properties->mName);
     return BREAK;
   }
 
@@ -872,9 +882,11 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
         body);
 
   else {
-    dterr << "[createJointAndNodePair] Unsupported Joint type (" << joint.type
-          << ") for Joint named [" << joint.properties->mName
-          << "]! It will be discarded.\n";
+    DART_ERROR(
+        "[createJointAndNodePair] Unsupported Joint type ({}) for Joint named "
+        "[{}]! It will be discarded.",
+        joint.type,
+        joint.properties->mName);
     return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
   }
 }
@@ -901,8 +913,10 @@ bool createJointAndNodePair(
         static_cast<const dynamics::SoftBodyNode::Properties&>(
             *body.properties));
   else {
-    dterr << "[createJointAndNodePair] Invalid type (" << body.type
-          << ") for BodyNode named [" << body.properties->mName << "]\n";
+    DART_ERROR(
+        "[createJointAndNodePair] Invalid type ({}) for BodyNode named [{}]",
+        body.type,
+        body.properties->mName);
     return false;
   }
 
@@ -964,10 +978,12 @@ dynamics::SkeletonPtr readSkeleton(
 
     BodyMap::const_iterator it = bodyNodes.find(newBodyNode.properties->mName);
     if (it != bodyNodes.end()) {
-      dterr << "[readSkeleton] Skeleton named [" << name << "] has "
-            << "multiple BodyNodes with the name ["
-            << newBodyNode.properties->mName << "], but BodyNode names must be "
-            << "unique! We will discard all BodyNodes with a repeated name.\n";
+      DART_ERROR(
+          "[readSkeleton] Skeleton named [{}] has multiple BodyNodes with the "
+          "name [{}], but BodyNode names must be unique! We will discard all "
+          "BodyNodes with a repeated name.",
+          name,
+          newBodyNode.properties->mName);
       continue;
     }
 
@@ -1191,9 +1207,9 @@ SkelBodyNode readSoftBodyNode(
       newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
-      dterr << "[readSoftBodyNode] Unknown soft shape in "
-            << "SoftBodyNode named [" << standardBodyNode.properties->mName
-            << "]\n";
+      DART_ERROR(
+          "[readSoftBodyNode] Unknown soft shape in SoftBodyNode named [{}]",
+          standardBodyNode.properties->mName);
     }
 
     // kv
@@ -1276,14 +1292,15 @@ dynamics::ShapePtr readShape(
       double offset = getValueDouble(planeEle, "offset");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, offset));
     } else if (hasElement(planeEle, "point")) {
-      dtwarn << "[readShape] <point> element of <plane> is "
-             << "deprecated as of DART 4.3. Please use <offset> element "
-             << "instead." << std::endl;
+      DART_WARN(
+          "[readShape] <point> element of <plane> is deprecated as of DART "
+          "4.3. Please use <offset> element instead.");
       Eigen::Vector3d point = getValueVector3d(planeEle, "point");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, point));
     } else {
-      dtwarn << "[readShape] <offset> element is not specified for "
-             << "plane shape. DART will use 0.0." << std::endl;
+      DART_WARN(
+          "[readShape] <offset> element is not specified for plane shape. DART "
+          "will use 0.0.");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
     }
   } else if (hasElement(geometryEle, "multi_sphere")) {
@@ -1314,11 +1331,12 @@ dynamics::ShapePtr readShape(
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, model, meshUri, retriever);
     } else {
-      dterr << "Fail to load model[" << filename << "]." << std::endl;
+      DART_ERROR("Fail to load model[{}].", filename);
     }
   } else {
-    dterr << "[readShape] Unknown visualization shape in BodyNode "
-          << "named [" << bodyName << "]\n";
+    DART_ERROR(
+        "[readShape] Unknown visualization shape in BodyNode named [{}]",
+        bodyName);
     assert(0);
     return nullptr;
   }
@@ -1388,9 +1406,11 @@ void readJoint(
   else if (joint.type == std::string("free"))
     joint.properties = readFreeJoint(_jointElement, joint, name);
   else {
-    dterr << "[readJoint] Unsupported joint type [" << joint.type
-          << "] requested by Joint named [" << name << "]. This Joint will be "
-          << "discarded.\n";
+    DART_ERROR(
+        "[readJoint] Unsupported joint type [{}] requested by Joint named "
+        "[{}]. This Joint will be discarded.",
+        joint.type,
+        name);
     return;
   }
   assert(joint.properties != nullptr);
@@ -1415,8 +1435,10 @@ void readJoint(
     else if (actuator == "locked")
       joint.properties->mActuatorType = dynamics::Joint::LOCKED;
     else
-      dterr << "Joint named [" << name
-            << "] contains invalid actuator attribute [" << actuator << "].\n";
+      DART_ERROR(
+          "Joint named [{}] contains invalid actuator attribute [{}].",
+          name,
+          actuator);
   } else {
     joint.properties->mActuatorType = dynamics::Joint::DefaultActuatorType;
   }
@@ -1428,8 +1450,8 @@ void readJoint(
     joint.parentName = getValueString(_jointElement, "parent");
     parent = _bodyNodes.find(joint.parentName);
   } else {
-    dterr << "[readJoint] Joint named [" << name << "] is missing "
-          << "a parent BodyNode!\n";
+    DART_ERROR(
+        "[readJoint] Joint named [{}] is missing a parent BodyNode!", name);
     assert(0);
   }
 
@@ -1440,8 +1462,11 @@ void readJoint(
     joint.parentName.clear();
 
   if (parent == _bodyNodes.end() && !joint.parentName.empty()) {
-    dterr << "[readJoint] Could not find a BodyNode named [" << joint.parentName
-          << "] requested as the parent of Joint named [" << name << "]!\n";
+    DART_ERROR(
+        "[readJoint] Could not find a BodyNode named [{}] requested as the "
+        "parent of Joint named [{}]!",
+        joint.parentName,
+        name);
     return;
   }
 
@@ -1452,14 +1477,17 @@ void readJoint(
     joint.childName = getValueString(_jointElement, "child");
     child = _bodyNodes.find(joint.childName);
   } else {
-    dterr << "[readJoint] Joint named [" << name << "] is missing "
-          << "a child BodyNode!\n";
+    DART_ERROR(
+        "[readJoint] Joint named [{}] is missing a child BodyNode!", name);
     assert(0);
   }
 
   if (child == _bodyNodes.end()) {
-    dterr << "[readJoint] Could not find a BodyNode named [" << joint.childName
-          << "] requested as the child of Joint named [" << name << "]!\n";
+    DART_ERROR(
+        "[readJoint] Could not find a BodyNode named [{}] requested as the "
+        "child of Joint named [{}]!",
+        joint.childName,
+        name);
     return;
   }
 
@@ -1480,23 +1508,30 @@ void readJoint(
 
   joint.properties->mT_ParentBodyToJoint = parentToJoint;
   if (!math::verifyTransform(joint.properties->mT_ParentBodyToJoint))
-    dterr << "[readJoint] Invalid parent to Joint transform for "
-          << "Joint named [" << name << "]:\n"
-          << joint.properties->mT_ParentBodyToJoint.matrix() << "\n";
+    DART_ERROR(
+        "[readJoint] Invalid parent to Joint transform for Joint named "
+        "[{}]:\\n{}",
+        name,
+        joint.properties->mT_ParentBodyToJoint.matrix());
 
   joint.properties->mT_ChildBodyToJoint = childToJoint;
   if (!math::verifyTransform(joint.properties->mT_ChildBodyToJoint))
-    dterr << "[readJoint] Invalid child to Joint transform for "
-          << "Joint named [" << name << "]:\n"
-          << joint.properties->mT_ChildBodyToJoint.matrix() << "\n";
+    DART_ERROR(
+        "[readJoint] Invalid child to Joint transform for Joint named "
+        "[{}]:\\n{}",
+        name,
+        joint.properties->mT_ChildBodyToJoint.matrix());
 
   JointMap::iterator it = _joints.find(joint.childName);
   if (it != _joints.end()) {
-    dterr << "[readJoint] BodyNode named [" << joint.childName
-          << "] has been assigned two parent Joints: ["
-          << it->second.properties->mName << "] and [" << name << "]. A "
-          << "BodyNode must have exactly one parent Joint. [" << name << "] "
-          << "will be discarded!\n";
+    DART_ERROR(
+        "[readJoint] BodyNode named [{}] has been assigned two parent Joints: "
+        "[{}] and [{}]. A BodyNode must have exactly one parent Joint. [{}] "
+        "will be discarded!",
+        joint.childName,
+        it->second.properties->mName,
+        name,
+        name);
     return;
   }
 
@@ -1525,9 +1560,13 @@ void getDofAttributeIfItExists(
 {
   if (_xmlElement->QueryDoubleAttribute(_attribute.c_str(), _value)
       == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE) {
-    dterr << "[getDofAttributeIfItExists] Invalid type for [" << _attribute
-          << "] attribute of [" << _element_type << "] element in the ["
-          << _index << "] dof of Joint [" << _jointName << "].\n";
+    DART_ERROR(
+        "[getDofAttributeIfItExists] Invalid type for [{}] attribute of [{}] "
+        "element in the [{}] dof of Joint [{}].",
+        _attribute,
+        _element_type,
+        _index,
+        _jointName);
   }
 }
 
@@ -1618,9 +1657,12 @@ struct DofProxy
       name(&properties.mDofNames[index])
   {
     if ((int)index >= properties.mPositionLowerLimits.size()) {
-      dterr << "[SkelParser] Joint named [" << jointName << "] has a dof "
-            << "element (" << index << ") which is out of bounds (max "
-            << properties.mPositionLowerLimits.size() - 1 << ")\n";
+      DART_ERROR(
+          "[SkelParser] Joint named [{}] has a dof element ({}) which is out "
+          "of bounds (max {})",
+          jointName,
+          index,
+          properties.mPositionLowerLimits.size() - 1);
       valid = false;
     }
   }
@@ -1675,25 +1717,30 @@ void readDegreeOfFreedom(
 
   // If the localIndex is out of bounds, quit
   if (localIndex >= (int)numDofs) {
-    dterr << "[readDegreeOfFreedom] Joint named '" << jointName
-          << "' contains dof element with invalid "
-          << "number attribute [" << localIndex << "]. It must be less than "
-          << numDofs << ".\n";
+    DART_ERROR(
+        "[readDegreeOfFreedom] Joint named '{}' contains dof element with "
+        "invalid number attribute [{}]. It must be less than {}.",
+        jointName,
+        localIndex,
+        numDofs);
     return;
   }
 
   // If no localIndex was found, report an error and quit
   if (localIndex == -1 && numDofs > 1) {
     if (tinyxml2::XML_NO_ATTRIBUTE == xml_err) {
-      dterr << "[readDegreeOfFreedom] Joint named [" << jointName << "] has ["
-            << numDofs
-            << "] DOFs, but the xml contains a dof element without its "
-            << "local_index specified. For Joints with multiple DOFs, all dof "
-            << "elements must specify their local_index attribute.\n";
+      DART_ERROR(
+          "[readDegreeOfFreedom] Joint named [{}] has [{}] DOFs, but the xml "
+          "contains a dof element without its local_index specified. For "
+          "Joints with multiple DOFs, all dof elements must specify their "
+          "local_index attribute.",
+          jointName,
+          numDofs);
     } else if (tinyxml2::XML_WRONG_ATTRIBUTE_TYPE == xml_err) {
-      dterr << "[readDegreeOfFreedom] Joint named [" << jointName
-            << "] has a dof element with a wrongly "
-            << "formatted local_index attribute.\n";
+      DART_ERROR(
+          "[readDegreeOfFreedom] Joint named [{}] has a dof element with a "
+          "wrongly formatted local_index attribute.",
+          jointName);
     }
 
     return;
@@ -1797,9 +1844,10 @@ void readJointDynamicsAndLimit(
 
       // damping
       if (hasElement(axisElement, "damping")) {
-        dtwarn << "[SkelParser] <damping> tag is now an element under the "
-               << "<dynamics> tag. Please see "
-               << "(https://github.com/dartsim/dart/wiki/) for more details.\n";
+        DART_WARN(
+            "[SkelParser] <damping> tag is now an element under the <dynamics> "
+            "tag. Please see (https://github.com/dartsim/dart/wiki/) for more "
+            "details.");
         double damping = getValueDouble(axisElement, "damping");
         *proxy.dampingCoefficient = damping;
       }
@@ -1882,8 +1930,10 @@ JointPropPtr readRevoluteJoint(
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis = xyz;
   } else {
-    dterr << "[readRevoluteJoint] Revolute Joint named [" << _name
-          << "] is missing axis information!\n";
+    DART_ERROR(
+        "[readRevoluteJoint] Revolute Joint named [{}] is missing axis "
+        "information!",
+        _name);
     assert(0);
   }
 
@@ -1935,8 +1985,10 @@ JointPropPtr readPrismaticJoint(
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis = xyz;
   } else {
-    dterr << "[readPrismaticJoint] Prismatic Joint named [" << _name
-          << "] is missing axis information!\n";
+    DART_ERROR(
+        "[readPrismaticJoint] Prismatic Joint named [{}] is missing axis "
+        "information!",
+        _name);
     assert(0);
   }
 
@@ -1994,8 +2046,10 @@ JointPropPtr readScrewJoint(
       properties.mPitch = pitch;
     }
   } else {
-    dterr << "[readScrewJoint] Screw Joint named [" << _name
-          << "] is missing axis information!\n";
+    DART_ERROR(
+        "[readScrewJoint] Screw Joint named [{}] is missing axis "
+        "information!",
+        _name);
     assert(0);
   }
 
@@ -2047,8 +2101,10 @@ JointPropPtr readUniversalJoint(
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     properties.mAxis[0] = xyz;
   } else {
-    dterr << "[readUniversalJoint] Universal Joint named [" << _name
-          << "] is missing axis information!\n";
+    DART_ERROR(
+        "[readUniversalJoint] Universal Joint named [{}] is missing axis "
+        "information!",
+        _name);
     assert(0);
   }
 
@@ -2061,8 +2117,10 @@ JointPropPtr readUniversalJoint(
     Eigen::Vector3d xyz = getValueVector3d(axis2Element, "xyz");
     properties.mAxis[1] = xyz;
   } else {
-    dterr << "[readUniversalJoint] Universal Joint named [" << _name
-          << "] is missing axis2 information!\n";
+    DART_ERROR(
+        "[readUniversalJoint] Universal Joint named [{}] is missing axis2 "
+        "information!",
+        _name);
     assert(0);
   }
 
@@ -2138,8 +2196,10 @@ JointPropPtr readEulerJoint(
   } else if (order == "zyx") {
     properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::ZYX;
   } else {
-    dterr << "[readEulerJoint] Undefined Euler axis order for "
-          << "Euler Joint named [" << _name << "]\n";
+    DART_ERROR(
+        "[readEulerJoint] Undefined Euler axis order for Euler Joint named "
+        "[{}]",
+        _name);
     assert(0);
   }
 
@@ -2238,15 +2298,17 @@ JointPropPtr readTranslationalJoint2D(
           getValueVector3d(transAxis1Element, "xyz"),
           getValueVector3d(transAxis2Element, "xyz"));
     } else {
-      dterr << "[readTranslationalJoint2D] TranslationalJoint2D named ["
-            << _name << "] contains unsupported plane type. "
-            << "Defaulting to XY-Plane.\n";
+      DART_ERROR(
+          "[readTranslationalJoint2D] TranslationalJoint2D named [{}] contains "
+          "unsupported plane type. Defaulting to XY-Plane.",
+          _name);
       properties.setXYPlane();
     }
   } else {
-    dtwarn << "[readTranslationalJoint2D] TranslationalJoint2D named [" << _name
-           << "] doesn't contain plane element. "
-           << "Defaulting to XY-Plane.\n";
+    DART_WARN(
+        "[readTranslationalJoint2D] TranslationalJoint2D named [{}] doesn't "
+        "contain plane element. Defaulting to XY-Plane.",
+        _name);
     properties.setXYPlane();
   }
 
@@ -2312,13 +2374,17 @@ JointPropPtr readPlanarJoint(
 
       properties.mTransAxis2 = getValueVector3d(transAxis2Element, "xyz");
     } else {
-      dterr << "[readPlanarJoint] Planar Joint named [" << _name
-            << "] is missing plane type information. Defaulting to XY-Plane.\n";
+      DART_ERROR(
+          "[readPlanarJoint] Planar Joint named [{}] is missing plane type "
+          "information. Defaulting to XY-Plane.",
+          _name);
       properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
     }
   } else {
-    dtwarn << "[readPlanarJoint] Planar Joint named [" << _name
-           << "] is missing plane type information. Defaulting to XY-Plane.\n";
+    DART_WARN(
+        "[readPlanarJoint] Planar Joint named [{}] is missing plane type "
+        "information. Defaulting to XY-Plane.",
+        _name);
     properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
   }
 

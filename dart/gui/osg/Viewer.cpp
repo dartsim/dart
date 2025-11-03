@@ -97,8 +97,9 @@ public:
         if (::osgDB::writeImageFile(*mImage, str.str())) {
           ++mViewer->mImageSequenceNum;
         } else {
-          dtwarn << "[SaveScreen::record] Unable to save image to file named: "
-                 << str.str() << "\n";
+          DART_WARN(
+              "[SaveScreen::record] Unable to save image to file named: {}",
+              str.str());
 
           // Toggle off recording if the file cannot be saved.
           mViewer->mRecording = false;
@@ -109,8 +110,9 @@ public:
     if (mViewer->mScreenCapture) {
       if (!mViewer->mScreenCapName.empty()) {
         if (!::osgDB::writeImageFile(*mImage, mViewer->mScreenCapName))
-          dtwarn << "[SaveScreen::capture] Unable to save image to file named: "
-                 << mViewer->mScreenCapName << "\n";
+          DART_WARN(
+              "[SaveScreen::capture] Unable to save image to file named: {}",
+              mViewer->mScreenCapName);
 
         // Toggle off the screen capture after the image is grabbed (or the
         // attempt is made).
@@ -236,13 +238,13 @@ Viewer::~Viewer()
 void Viewer::captureScreen(const std::string& filename)
 {
   if (filename.empty()) {
-    dtwarn << "[Viewer::captureScreen] Passed in empty filename for screen "
-           << "capture. This is not allowed!\n";
+    DART_WARN(
+        "[Viewer::captureScreen] Passed in empty filename for screen capture. "
+        "This is not allowed!");
     return;
   }
 
-  dtmsg << "[Viewer::captureScreen] Saving image to file: " << filename
-        << std::endl;
+  DART_INFO("[Viewer::captureScreen] Saving image to file: {}", filename);
 
   mScreenCapName = filename;
   mScreenCapture = true;
@@ -256,8 +258,9 @@ void Viewer::record(
     std::size_t digits)
 {
   if (directory.empty()) {
-    dtwarn << "[Viewer::record] Passed in empty directory name for screen "
-           << "recording. This is not allowed!\n";
+    DART_WARN(
+        "[Viewer::record] Passed in empty directory name for screen recording. "
+        "This is not allowed!");
     return;
   }
 
@@ -271,10 +274,12 @@ void Viewer::record(
 
   mRecording = true;
 
-  dtmsg << "[Viewer::record] Recording screen image sequence to directory ["
-        << mImageDirectory << "] with a prefix of [" << mImagePrefix << "]"
-        << " starting from sequence number [" << mImageSequenceNum << "]"
-        << std::endl;
+  DART_INFO(
+      "[Viewer::record] Recording screen image sequence to directory [{}] with "
+      "a prefix of [{}] starting from sequence number [{}]",
+      mImageDirectory,
+      mImagePrefix,
+      mImageSequenceNum);
 }
 
 //==============================================================================
@@ -284,8 +289,10 @@ void Viewer::pauseRecording()
     return;
 
   mRecording = false;
-  dtmsg << "[Viewer::pauseRecording] Screen recording is paused at image "
-        << "sequence number [" << mImageSequenceNum << "]" << std::endl;
+  DART_INFO(
+      "[Viewer::pauseRecording] Screen recording is paused at image sequence "
+      "number [{}]",
+      mImageSequenceNum);
 }
 
 //==============================================================================
@@ -842,8 +849,9 @@ void Viewer::setVerticalFieldOfView(const double fov)
   auto* camera = getCamera();
 
   if (!camera) {
-    dtwarn << "[Viewer::setMasterCameraFieldOfView] This viewer doesn't have "
-           << "any cameras. Ignoring this request.\n";
+    DART_WARN(
+        "[Viewer::setMasterCameraFieldOfView] This viewer doesn't have any "
+        "cameras. Ignoring this request.");
     return;
   }
 
@@ -851,9 +859,10 @@ void Viewer::setVerticalFieldOfView(const double fov)
       fovy, aspectRatio, zNear, zFar);
 
   if (!result) {
-    dtwarn << "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical "
-           << "field of view while the camera isn't perspective view. "
-           << "Ignoring this request.\n";
+    DART_WARN(
+        "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical field "
+        "of view while the camera isn't perspective view. Ignoring this "
+        "request.");
     return;
   }
 
@@ -871,8 +880,9 @@ double Viewer::getVerticalFieldOfView() const
   const auto* camera = getCamera();
 
   if (!camera) {
-    dtwarn << "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have "
-           << "any cameras. Returning 0.0.\n";
+    DART_WARN(
+        "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have any "
+        "cameras. Returning 0.0.");
     return 0.0;
   }
 
@@ -880,9 +890,9 @@ double Viewer::getVerticalFieldOfView() const
       fovy, aspectRatio, zNear, zFar);
 
   if (!result) {
-    dtwarn << "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
-           << "requested while the camera isn't perspective view. "
-           << "Returning 0.0.\n";
+    DART_WARN(
+        "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
+        "requested while the camera isn't perspective view. Returning 0.0.");
     return 0.0;
   }
 

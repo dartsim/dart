@@ -32,8 +32,8 @@
 
 #include "dart/utils/XmlHelpers.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <fmt/format.h>
@@ -88,8 +88,7 @@ bool toBool(const std::string& str)
   else if (common::toUpper(str) == "FALSE" || str == "0")
     return false;
   else {
-    dterr << "value [" << str << "] is not a valid boolean type. "
-          << "Retuning false." << std::endl;
+    DART_ERROR("value [{}] is not a valid boolean type. Retuning false.", str);
     return false;
   }
 }
@@ -627,8 +626,9 @@ void openXMLFile(
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error '"
-           << toString(result) << "'.\n";
+    DART_WARN(
+        "[openXMLFile] Failed parsing XML: TinyXML2 returned error '{}'.",
+        toString(result));
     throw std::runtime_error("Failed parsing XML.");
   }
 }
@@ -648,8 +648,9 @@ bool readXmlFile(
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[readXmlFile] Failed parsing XML: TinyXML2 returned error '"
-           << toString(result) << "'.\n";
+    DART_WARN(
+        "[readXmlFile] Failed parsing XML: TinyXML2 returned error '{}'.",
+        toString(result));
     return false;
   }
 
@@ -683,9 +684,11 @@ std::string getAttributeString(
   const char* const result = element->Attribute(attributeName.c_str());
 
   if (nullptr == result) {
-    dtwarn << "[getAttribute] Error in parsing string type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning empty string.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing string type attribute [{}] of an "
+        "element [{}]. Returning empty string.",
+        attributeName,
+        element->Name());
     return std::string();
   }
 
@@ -700,9 +703,11 @@ bool getAttributeBool(
   const int result = element->QueryBoolAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing bool type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning false instead.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing bool type attribute [{}] of an "
+        "element [{}]. Returning false instead.",
+        attributeName,
+        element->Name());
     return false;
   }
 
@@ -717,9 +722,11 @@ int getAttributeInt(
   const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing int type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning zero instead.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing int type attribute [{}] of an element "
+        "[{}]. Returning zero instead.",
+        attributeName,
+        element->Name());
     return 0;
   }
 
@@ -735,9 +742,11 @@ unsigned int getAttributeUInt(
       = element->QueryUnsignedAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing unsiged int type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning zero instead.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing unsiged int type attribute [{}] of an "
+        "element [{}]. Returning zero instead.",
+        attributeName,
+        element->Name());
     return 0u;
   }
 
@@ -752,9 +761,11 @@ float getAttributeFloat(
   const int result = element->QueryFloatAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing float type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning zero instead.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing float type attribute [{}] of an "
+        "element [{}]. Returning zero instead.",
+        attributeName,
+        element->Name());
     return 0.0f;
   }
 
@@ -769,9 +780,11 @@ double getAttributeDouble(
   const int result = element->QueryDoubleAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing double type attribute ["
-           << attributeName << "] of an element [" << element->Name()
-           << "]. Returning zero instead.\n";
+    DART_WARN(
+        "[getAttribute] Error in parsing double type attribute [{}] of an "
+        "element [{}]. Returning zero instead.",
+        attributeName,
+        element->Name());
     return 0.0;
   }
 

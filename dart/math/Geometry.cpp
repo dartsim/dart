@@ -32,12 +32,13 @@
 
 #include "dart/math/Geometry.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include <cassert>
@@ -1481,8 +1482,8 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m)
 #if DART_BUILD_MODE_DEBUG
   if (std::abs(_m(0, 0)) > DART_EPSILON || std::abs(_m(1, 1)) > DART_EPSILON
       || std::abs(_m(2, 2)) > DART_EPSILON) {
-    dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
-           << _m << "\n";
+    DART_WARN(
+        "[math::fromSkewSymmetric] Not skew a symmetric matrix:\\n{}\\n", _m);
     return Eigen::Vector3d::Zero();
   }
 #endif
@@ -1621,8 +1622,12 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 {
   if (_convexHull.size() == 0) {
     Eigen::Vector2d invalid = Eigen::Vector2d::Constant(std::nan(""));
-    dtwarn << "[computeCentroidOfHull] Requesting the centroid of an empty set "
-           << "of points! We will return <" << invalid.transpose() << ">.\n";
+    std::ostringstream invalidStream;
+    invalidStream << invalid.transpose();
+    DART_WARN(
+        "[computeCentroidOfHull] Requesting the centroid of an empty set of "
+        "points. Returning {}.",
+        invalidStream.str());
     return invalid;
   }
 
@@ -1637,6 +1642,12 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
   double area = 0;
   double area_i;
   Eigen::Vector2d midp12, midp01;
+
+  const auto pointToString = [](const Eigen::Vector2d& v) {
+    std::ostringstream oss;
+    oss << v.transpose();
+    return oss.str();
+  };
 
   for (std::size_t i = 2; i < _convexHull.size(); ++i) {
     const Eigen::Vector2d& p0 = _convexHull[0];
@@ -1657,19 +1668,23 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
       double a1 = atan2((p1 - p0)[1], (p1 - p0)[0]) * 180.0 / constantsd::pi();
       double a2 = atan2((p2 - p0)[1], (p2 - p0)[0]) * 180.0 / constantsd::pi();
       double diff = a1 - a2;
-      dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
-             << "which is not a proper convex hull! The invalid segment "
-             << "contains indices " << i - 1 << " -> " << i << ":\n"
-             << i - 1 << ") " << p1.transpose() << " (" << a1 << " degrees)"
-             << "\n"
-             << i << ") " << p2.transpose() << " (" << a2 << " degrees)"
-             << "\n"
-             << "0) " << p0.transpose() << "\n"
-             << "(" << result << ") "
-             << (PARALLEL == result
-                     ? "These segments are parallel!\n"
-                     : "These segments are too short to intersect!\n")
-             << "Difference in angle: " << diff << "\n\n";
+      const char* intersectionNote
+          = (PARALLEL == result) ? "Segments are parallel."
+                                 : "Segments are too short to intersect.";
+      DART_WARN(
+          "[computeCentroidOfHull] Non-convex hull segment indices {} -> {}. "
+          "p1={} (angle={} deg), p2={} (angle={} deg), anchor={}, "
+          "intersectionResult={}, note={}, angleDiff={}",
+          i - 1,
+          i,
+          pointToString(p1),
+          a1,
+          pointToString(p2),
+          a2,
+          pointToString(p0),
+          static_cast<int>(result),
+          intersectionNote,
+          diff);
       continue;
     }
 

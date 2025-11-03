@@ -66,8 +66,8 @@ TEST(Raycast, RaycastResultDefaultConstructor)
 void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 {
   if (cd->getType() != "bullet") {
-    dtwarn << "Aborting test: distance check is not supported by "
-           << cd->getType() << ".\n";
+    DART_WARN(
+        "Aborting test: distance check is not supported by {}.", cd->getType());
     return;
   }
 
@@ -164,8 +164,8 @@ TEST(Raycast, testBasicInterface)
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
   if (cd->getType() != "bullet") {
-    dtwarn << "Aborting test: distance check is not supported by "
-           << cd->getType() << ".\n";
+    DART_WARN(
+        "Aborting test: distance check is not supported by {}.", cd->getType());
     return;
   }
 

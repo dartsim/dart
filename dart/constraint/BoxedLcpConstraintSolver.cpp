@@ -32,13 +32,15 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
+#include <fmt/ostream.h>
+
 #include <cassert>
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>
 #endif
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -84,9 +86,9 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
   if (boxedLcpSolver) {
     setBoxedLcpSolver(std::move(boxedLcpSolver));
   } else {
-    dtwarn << "[BoxedLcpConstraintSolver] Attempting to construct with nullptr "
-           << "LCP solver, which is not allowed. Using Dantzig solver "
-           << "instead.\n";
+    DART_WARN(
+        "[BoxedLcpConstraintSolver] Attempting to construct with nullptr LCP "
+        "solver, which is not allowed. Using Dantzig solver instead.");
     setBoxedLcpSolver(std::make_shared<DantzigBoxedLcpSolver>());
   }
 
@@ -97,15 +99,17 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 {
   if (!lcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
-           << "nullptr for boxed LCP solver is not allowed.\n";
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] nullptr for boxed LCP "
+        "solver is not allowed.");
     return;
   }
 
   if (lcpSolver == mSecondaryBoxedLcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
-           << "a primary LCP solver that is the same with the secondary LCP "
-           << "solver, which is discouraged. Ignoring this request.\n";
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set a "
+        "primary LCP solver that is the same with the secondary LCP solver, "
+        "which is discouraged. Ignoring this request.");
   }
 
   mBoxedLcpSolver = std::move(lcpSolver);
@@ -122,10 +126,11 @@ void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
     BoxedLcpSolverPtr lcpSolver)
 {
   if (lcpSolver == mBoxedLcpSolver) {
-    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
-           << "the secondary LCP solver that is identical to the primary LCP "
-           << "solver, which is redundant. Please use different solvers or set "
-           << "the secondary LCP solver to nullptr.\n";
+    DART_WARN(
+        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set the "
+        "secondary LCP solver that is identical to the primary LCP solver, "
+        "which is redundant. Please use different solvers or set the secondary "
+        "LCP solver to nullptr.");
   }
 
   mSecondaryBoxedLcpSolver = std::move(lcpSolver);
@@ -242,7 +247,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 #endif
 
   // Print LCP formulation
-  //  dtdbg << "Before solve:" << std::endl;
+  //  DART_DEBUG("Before solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
@@ -292,16 +297,17 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
 
   if (mX.hasNaN()) {
-    dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
-          << "values: " << mX.transpose() << ". We're setting it zero for "
-          << "safety. Consider using more robust solver such as PGS as a "
-          << "secondary solver. If this happens even with PGS solver, please "
-          << "report this as a bug.\n";
+    DART_ERROR(
+        "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
+        "{}. We're setting it zero for safety. Consider using more robust "
+        "solver such as PGS as a secondary solver. If this happens even with "
+        "PGS solver, please report this as a bug.",
+        fmt::streamed(mX.transpose()));
     mX.setZero();
   }
 
   // Print LCP formulation
-  //  dtdbg << "After solve:" << std::endl;
+  //  DART_DEBUG("After solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 

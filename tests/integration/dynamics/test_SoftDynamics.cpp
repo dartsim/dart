@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -270,9 +270,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
 
     if (dof == 0) {
-      dtmsg << "Skeleton [" << softSkel->getName()
-            << "] is skipped since it has "
-            << "0 DOF." << endl;
+      DART_INFO(
+          "Skeleton [{}] is skipped since it has 0 DOF.", softSkel->getName());
       continue;
     }
 
@@ -431,7 +430,7 @@ TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
   //  for (int i = 0; i < getList().size(); ++i)
   //  {
   // #if DART_BUILD_MODE_DEBUG
-  //    dtdbg << getList()[i] << std::endl;
+  //    DART_DEBUG("{}", getList()[i]);
   // #endif
   //    compareEquationsOfMotion(getList()[i]);
   //  }

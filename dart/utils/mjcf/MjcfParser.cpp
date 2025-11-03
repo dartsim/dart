@@ -382,7 +382,7 @@ createJointAndBodyNodePairForMultipleJoints(
     }
   }
 
-  dterr << "[MjcfParser] Attempted to create unsupported joint composition.\n";
+  DART_ERROR("[MjcfParser] Attempted to create unsupported joint composition.");
 
   return std::make_pair(nullptr, nullptr);
 }
@@ -444,7 +444,7 @@ dynamics::ShapePtr createShape(
       break;
     }
     case detail::GeomType::HFIELD: {
-      dterr << "[MjcfParser] Not implemented for 'HFIELD' geom type.\n";
+      DART_ERROR("[MjcfParser] Not implemented for 'HFIELD' geom type.");
       break;
     }
     case detail::GeomType::MESH: {
@@ -474,8 +474,9 @@ bool createShapeNodes(
 
     const dynamics::ShapePtr shape = createShape(geom, mjcfAsset);
     if (shape == nullptr) {
-      dterr << "[MjcfParser] Failed to create ShapeNode given <geom> in the "
-            << "MJCF file.\n";
+      DART_ERROR(
+          "[MjcfParser] Failed to create ShapeNode given <geom> in the MJCF "
+          "file.");
       return false;
     }
 
@@ -508,8 +509,9 @@ bool createShapeNodes(
 
     const dynamics::ShapePtr shape = createShape(site);
     if (shape == nullptr) {
-      dterr << "[MjcfParser] Failed to create ShapeNode given <geom> in the "
-            << "MJCF file.\n";
+      DART_ERROR(
+          "[MjcfParser] Failed to create ShapeNode given <geom> in the MJCF "
+          "file.");
       return false;
     }
 
@@ -617,8 +619,8 @@ dynamics::SkeletonPtr createSkeleton(
   if (!success) {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
-    dterr << "[MjcfParser] Failed to create Skeleton from Body '" << bodyName
-          << "'.\n";
+    DART_ERROR(
+        "[MjcfParser] Failed to create Skeleton from Body '{}'.", bodyName);
     return nullptr;
   }
 
@@ -641,8 +643,9 @@ simulation::WorldPtr createWorld(
     const dynamics::SkeletonPtr& skel = createSkeleton(mjcfRootBody, mjcfAsset);
 
     if (skel == nullptr) {
-      dterr << "[MjcfParser] Failed to parse a Skeleton. Stop parsing the "
-            << "rest of elements.\n";
+      DART_ERROR(
+          "[MjcfParser] Failed to parse a Skeleton. Stop parsing the rest of "
+          "elements.");
       return nullptr;
     }
 
@@ -654,9 +657,11 @@ simulation::WorldPtr createWorld(
 
     // Skeleton name should be unique in the World.
     if (world->hasSkeleton(skel->getName())) {
-      dtwarn << "[MjcfParser] World '" << world->getName() << "' already "
-             << "contains skeleton has the same name '" << skel->getName()
-             << "', which is an error. Please report this error.\n";
+      DART_WARN(
+          "[MjcfParser] World '{}' already contains skeleton has the same name "
+          "'{}', which is an error. Please report this error.",
+          world->getName(),
+          skel->getName());
     }
 
     world->addSkeleton(skel);
@@ -752,8 +757,9 @@ dynamics::BodyNode* getUniqueBodyOrNull(
   if (bodyNodes.empty()) {
     return nullptr;
   } else if (bodyNodes.size() != 1u) {
-    dterr << "[MjcfParser] Found multiple BodyNodes have the same name. "
-          << "Please report this bug.\n";
+    DART_ERROR(
+        "[MjcfParser] Found multiple BodyNodes have the same name. Please "
+        "report this bug.");
     return nullptr;
   }
 
@@ -766,10 +772,12 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   auto mujoco = detail::MujocoModel();
   const detail::Errors errors = mujoco.read(uri, options.mRetriever);
   if (!errors.empty()) {
-    dterr << "[MjcfParser] Failed to parse MJCF file for the following "
-             "reason(s):\n";
+    DART_ERROR(
+        "{}",
+        "[MjcfParser] Failed to parse MJCF file for the following "
+        "reason(s):\n");
     for (const auto& error : errors)
-      dterr << " - " << error.getMessage() << "\n";
+      DART_ERROR(" - {}", error.getMessage());
 
     return nullptr;
   }
@@ -784,8 +792,10 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     // Body1
     dynamics::BodyNode* body1 = getUniqueBodyOrNull(*world, weld.getBody1());
     if (body1 == nullptr) {
-      dterr << "[MjcfParser] Failed to find BodyNode by name '"
-            << weld.getBody1() << "' Not adding weld joint constraint.\n";
+      DART_ERROR(
+          "[MjcfParser] Failed to find BodyNode by name '{}' Not adding weld "
+          "joint constraint.",
+          weld.getBody1());
       continue;
     }
 
@@ -795,13 +805,15 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     if (!bodyName2.empty()) {
       body2 = getUniqueBodyOrNull(*world, bodyName2);
       if (body2 == nullptr) {
-        dterr << "[MjcfParser] Failed to find BodyNode by name '" << bodyName2
-              << "' Not adding weld joint constraint.\n";
+        DART_ERROR(
+            "[MjcfParser] Failed to find BodyNode by name '{}' Not adding weld "
+            "joint constraint.",
+            bodyName2);
         continue;
       }
 
       if (body1 == body2) {
-        dterr << "[MjcfParser] Not allowed to set <weld> with same bodies.\n";
+        DART_ERROR("[MjcfParser] Not allowed to set <weld> with same bodies.");
         continue;
       }
     }

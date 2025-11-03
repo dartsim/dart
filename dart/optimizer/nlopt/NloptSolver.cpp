@@ -32,7 +32,7 @@
 
 #include "dart/optimizer/nlopt/NloptSolver.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"
@@ -130,15 +130,20 @@ bool NloptSolver::solve()
       mOpt->add_equality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
-      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
-            << "] while adding an equality constraint to an Nlopt solver. "
-            << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
-            << "] (" << mAlg << ") supports equality constraints!\n";
+      DART_ERROR(
+          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "equality constraint to an Nlopt solver. Check whether your "
+          "algorithm [{}] ({}) supports equality constraints!",
+          e.what(),
+          nlopt::algorithm_name(mAlg),
+          mAlg);
       assert(false);
     } catch (const std::exception& e) {
-      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
-            << "] while adding an equality constraint to the Nlopt solver. "
-            << "This might be a bug in DART; please report this!\n";
+      DART_ERROR(
+          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "equality constraint to the Nlopt solver. This might be a bug in "
+          "DART; please report this!",
+          e.what());
       assert(false);
     }
   }
@@ -149,15 +154,20 @@ bool NloptSolver::solve()
       mOpt->add_inequality_constraint(
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
-      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
-            << "] while adding an inequality constraint to an Nlopt solver. "
-            << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
-            << "] (" << mAlg << ") supports inequality constraints!\n";
+      DART_ERROR(
+          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "inequality constraint to an Nlopt solver. Check whether your "
+          "algorithm [{}] ({}) supports inequality constraints!",
+          e.what(),
+          nlopt::algorithm_name(mAlg),
+          mAlg);
       assert(false);
     } catch (const std::exception& e) {
-      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
-            << "] while adding an inequality constraint to the Nlopt solver. "
-            << "This might be a bug in DART; please report this!\n";
+      DART_ERROR(
+          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "inequality constraint to the Nlopt solver. This might be a bug in "
+          "DART; please report this!",
+          e.what());
       assert(false);
     }
   }
@@ -293,8 +303,10 @@ nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(LD_CCSAQ)
     NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(GN_ESCH)
     default:
-      dtwarn << "[NloptSolver] Attempt to convert unsupported algorithm '"
-             << algorithm << "'. Use nlopt::algorithm::LN_COBYLA instead. \n";
+      DART_WARN(
+          "[NloptSolver] Attempt to convert unsupported algorithm '{}'. Use "
+          "nlopt::algorithm::LN_COBYLA instead. ",
+          algorithm);
       return nlopt::algorithm::LN_COBYLA;
   }
 }
@@ -349,9 +361,10 @@ NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_CCSAQ)
     NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_ESCH)
     default:
-      dtwarn << "[NloptSolver] Attempt to convert unsupported algorithm '"
-             << algorithm
-             << "'. Use NloptSolver::Algorithm::LN_COBYLA instead. \n";
+      DART_WARN(
+          "[NloptSolver] Attempt to convert unsupported algorithm '{}'. Use "
+          "NloptSolver::Algorithm::LN_COBYLA instead. ",
+          algorithm);
       return LN_COBYLA;
   }
 }

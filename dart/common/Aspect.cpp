@@ -32,7 +32,7 @@
 
 #include "dart/common/Aspect.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <iostream>
 #include <string>

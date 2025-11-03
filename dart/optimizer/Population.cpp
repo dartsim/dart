@@ -32,7 +32,7 @@
 
 #include "dart/optimizer/Population.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Random.hpp"
 
 namespace dart {
@@ -44,9 +44,11 @@ namespace {
 bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
 {
   if (problem.getSolutionDimension() != static_cast<std::size_t>(x.size())) {
-    dtwarn << "[Population] Attempting to add an incompatible decision vector. "
-           << "The dimension of the decision vector '" << x.size()
-           << "' should be '" << problem.getSolutionDimension() << "'.\n";
+    DART_WARN(
+        "[Population] Attempting to add an incompatible decision vector. The "
+        "dimension of the decision vector '{}' should be '{}'.",
+        x.size(),
+        problem.getSolutionDimension());
     return false;
   }
 
@@ -57,9 +59,11 @@ bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
 bool isValidF(const MultiObjectiveProblem& problem, const Eigen::VectorXd& f)
 {
   if (problem.getFitnessDimension() != static_cast<std::size_t>(f.size())) {
-    dtwarn << "[Population] Attempting to add an incompatible decision vector. "
-           << "The dimension of the decision vector '" << f.size()
-           << "' should be '" << problem.getFitnessDimension() << "'.\n";
+    DART_WARN(
+        "[Population] Attempting to add an incompatible decision vector. The "
+        "dimension of the decision vector '{}' should be '{}'.",
+        f.size(),
+        problem.getFitnessDimension());
     return false;
   }
 

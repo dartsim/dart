@@ -38,7 +38,7 @@
 
 #include "dart/gui/osg/ImGuiHandler.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 #include "dart/gui/osg/IncludeImGui.hpp"
 
@@ -301,9 +301,10 @@ void ImGuiHandler::addWidget(
     const std::shared_ptr<ImGuiWidget>& widget, bool visible)
 {
   if (hasWidget(widget)) {
-    dtwarn
-        << "[ImGuiHandler::addWidget] Attempting to add existing widget to the "
-           "viewer. Ignoring this action.";
+    DART_WARN(
+        "{}",
+        "[ImGuiHandler::addWidget] Attempting to add existing widget to the "
+        "viewer. Ignoring this action.");
     return;
   }
 
@@ -315,8 +316,10 @@ void ImGuiHandler::addWidget(
 void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
 {
   if (!hasWidget(widget)) {
-    dtwarn << "[ImGuiHandler::removeWidget] Attempting to remove not existing "
-              "widget from the viewer. Ignoring this action.\n";
+    DART_WARN(
+        "{}",
+        "[ImGuiHandler::removeWidget] Attempting to remove not existing "
+        "widget from the viewer. Ignoring this action.\n");
     return;
   }
 

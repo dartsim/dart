@@ -32,7 +32,7 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
@@ -211,7 +211,7 @@ TEST(Optimizer, BasicIpopt)
 #if HAVE_SNOPT
 TEST(Optimizer, BasicSnopt)
 {
-  dterr << "SNOPT is not implemented yet.\n";
+  DART_ERROR("SNOPT is not implemented yet.");
   return;
 }
 #endif
