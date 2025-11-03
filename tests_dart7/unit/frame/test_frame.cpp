@@ -197,6 +197,42 @@ TEST(Frame, RejectCyclicParent)
   EXPECT_THROW(parent.setParentFrame(child), dart7::InvalidOperationException);
 }
 
+// Mark descendants dirty when reparenting
+TEST(Frame, ReparentInvalidatesSubtreeCaches)
+{
+  World world;
+  auto parent = world.addFreeFrame("parent");
+  auto child = world.addFreeFrame("child", parent);
+  auto grandchild = world.addFreeFrame("grand", child);
+
+  Eigen::Isometry3d T_child = Eigen::Isometry3d::Identity();
+  T_child.translate(Eigen::Vector3d(1, 0, 0));
+  child.setLocalTransform(T_child);
+
+  Eigen::Isometry3d T_grand = Eigen::Isometry3d::Identity();
+  T_grand.translate(Eigen::Vector3d(0, 2, 0));
+  grandchild.setLocalTransform(T_grand);
+
+  auto& registry = world.getRegistry();
+  auto childEntity = child.getEntity();
+  auto grandEntity = grandchild.getEntity();
+
+  // Prime caches
+  [[maybe_unused]] auto grandWorld = grandchild.getTransform();
+  EXPECT_FALSE(registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
+  EXPECT_FALSE(registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
+
+  child.setParentFrame(Frame::world());
+
+  EXPECT_TRUE(registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
+  EXPECT_TRUE(registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
+
+  auto newGrandWorld = grandchild.getTransform();
+  (void)newGrandWorld;
+  EXPECT_FALSE(registry.get<comps::FrameCache>(childEntity).needTransformUpdate);
+  EXPECT_FALSE(registry.get<comps::FrameCache>(grandEntity).needTransformUpdate);
+}
+
 // Test FixedFrame lazy evaluation
 TEST(Frame, FixedFrameCaching)
 {

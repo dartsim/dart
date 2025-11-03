@@ -36,6 +36,47 @@
 #include "dart7/frame/free_frame.hpp"
 #include "dart7/world.hpp"
 #include <dart7/comps/link.hpp>
+#include <vector>
+
+namespace {
+
+void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
+{
+  if (root == entt::null) {
+    return;
+  }
+
+  if (!registry.valid(root)) {
+    return;
+  }
+
+  std::vector<entt::entity> stack;
+  stack.push_back(root);
+
+  auto frameStateView = registry.view<dart7::comps::FrameState>();
+
+  while (!stack.empty()) {
+    auto entity = stack.back();
+    stack.pop_back();
+
+    if (!registry.valid(entity)) {
+      continue;
+    }
+
+    if (auto* cache = registry.try_get<dart7::comps::FrameCache>(entity)) {
+      cache->needTransformUpdate = true;
+    }
+
+    for (auto child : frameStateView) {
+      const auto& state = frameStateView.get<dart7::comps::FrameState>(child);
+      if (state.parentFrame == entity) {
+        stack.push_back(child);
+      }
+    }
+  }
+}
+
+} // namespace
 
 namespace dart7 {
 
@@ -118,7 +159,9 @@ void Frame::setParentFrame(const Frame& parent)
     }
   }
 
-  if (parent.getEntity() != entt::null) {
+  const auto parentEntity = parent.getEntity();
+
+  if (parentEntity != entt::null) {
     DART7_THROW_T_IF(
         m_world != parent.m_world,
         InvalidArgumentException,
@@ -126,7 +169,7 @@ void Frame::setParentFrame(const Frame& parent)
   }
 
   DART7_THROW_T_IF(
-      parent.getEntity() == m_entity,
+      parentEntity == m_entity,
       InvalidArgumentException,
       "Cannot parent a frame to itself");
 
@@ -157,12 +200,10 @@ void Frame::setParentFrame(const Frame& parent)
   }
 
   // Update parent in FrameState component
-  frameState->parentFrame = parent.getEntity();
+  frameState->parentFrame = parentEntity;
 
-  // Invalidate cache
-  auto* cache = getCacheMutable<comps::FrameCache>();
-  if (cache) {
-    cache->needTransformUpdate = true;
+  if (m_world) {
+    markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
   }
 }
 
