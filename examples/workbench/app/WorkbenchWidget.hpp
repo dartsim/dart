@@ -8,11 +8,13 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <imgui.h>
 
 #include "../core/WorkbenchTypes.hpp"
+#include "../core/UiScaling.hpp"
 
 namespace workbench {
 
@@ -36,7 +38,8 @@ public:
   WorkbenchWidget(
       ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer,
       ::osg::ref_ptr<WorkbenchWorldNode> worldNode,
-      std::filesystem::path examplesRoot);
+      std::filesystem::path examplesRoot,
+      float preferredScale = 0.0f);
 
   void render() override;
 
@@ -60,6 +63,7 @@ private:
   void loadExample(std::size_t index);
   void unloadExample();
   void toggleSimulation();
+  void applyUiScale(float scale);
 
   void rebuildCategoryView();
   void ensureSelection();
@@ -81,6 +85,10 @@ private:
   std::vector<float> mRtfHistory;
 
   std::size_t mSelectedIndex{std::numeric_limits<std::size_t>::max()};
+
+  float mCurrentUiScale{1.0f};
+  float mDetectedUiScale{1.0f};
+  float mUiScaleControl{1.0f};
 };
 
 } // namespace workbench

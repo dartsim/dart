@@ -21,7 +21,8 @@ namespace workbench {
 WorkbenchWidget::WorkbenchWidget(
     ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer,
     ::osg::ref_ptr<WorkbenchWorldNode> worldNode,
-    std::filesystem::path examplesRoot)
+    std::filesystem::path examplesRoot,
+    float preferredScale)
   : mViewer(std::move(viewer)),
     mWorldNode(std::move(worldNode)),
     mExamplesRoot(std::move(examplesRoot))
@@ -30,6 +31,14 @@ WorkbenchWidget::WorkbenchWidget(
   mServices.viewer = mViewer.get();
   mServices.worldNode = mWorldNode.get();
   mWorldNode->setServicesPtr(&mServices);
+
+  if (!(preferredScale > 0.0f && std::isfinite(preferredScale)))
+    preferredScale = detectUiScale();
+
+  preferredScale = std::clamp(preferredScale, 0.5f, 3.0f);
+  mDetectedUiScale = preferredScale;
+  mUiScaleControl = preferredScale;
+  applyUiScale(preferredScale);
 
   mExamples = loadExampleRecords(mExamplesRoot);
   rebuildCategoryView();
@@ -327,6 +336,17 @@ void WorkbenchWidget::drawProperties(const WorkbenchLayout& layout)
       ImGui::Spacing();
     }
 
+    if (ImGui::SliderFloat("UI scale", &mUiScaleControl, 0.6f, 2.5f, "%.2fx")) {
+      applyUiScale(mUiScaleControl);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset scale")) {
+      mUiScaleControl = mDetectedUiScale;
+      applyUiScale(mUiScaleControl);
+    }
+
+    ImGui::Spacing();
+
     if (mActiveSession && mActiveSession->onPropertiesUi) {
       ImGui::Separator();
       mActiveSession->onPropertiesUi(mServices);
@@ -458,6 +478,29 @@ void WorkbenchWidget::toggleSimulation()
   viewer().simulate(!running);
   mWorldNode->simulate(!running);
   log(std::string("Simulation ") + (!running ? "resumed" : "paused") + ".");
+}
+
+void WorkbenchWidget::applyUiScale(float scale)
+{
+  if (!ImGui::GetCurrentContext())
+    return;
+
+  if (!(scale > 0.0f) || !std::isfinite(scale))
+    return;
+
+  scale = std::clamp(scale, 0.5f, 3.0f);
+  const float epsilon = 0.001f;
+  if (std::fabs(scale - mCurrentUiScale) < epsilon)
+    return;
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  const float ratio = scale / mCurrentUiScale;
+  style.ScaleAllSizes(ratio);
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.FontGlobalScale = scale;
+
+  mCurrentUiScale = scale;
 }
 
 void WorkbenchWidget::rebuildCategoryView()
