@@ -301,7 +301,8 @@ void JointConstraint::update()
           = mJoint->areLimitsEnforced()
             && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       const bool servoHasFiniteLowerLimit
-          = isServo && velocityLowerLimits[i] != -static_cast<double>(dInfinity);
+          = isServo
+            && velocityLowerLimits[i] != -static_cast<double>(dInfinity);
       const bool servoHasFiniteUpperLimit
           = isServo && velocityUpperLimits[i] != static_cast<double>(dInfinity);
       const bool processServoVelocityLimits
