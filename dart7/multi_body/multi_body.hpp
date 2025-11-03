@@ -38,9 +38,9 @@
 #include <dart7/multi_body/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
-#include <optional>
 #include <entt/entt.hpp>
 
+#include <optional>
 #include <string>
 #include <string_view>
 

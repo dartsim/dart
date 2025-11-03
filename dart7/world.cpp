@@ -261,7 +261,7 @@ MultiBody World::addMultiBody(std::string_view name)
   ensureDesignMode();
 
   std::string candidateName
-      = name.empty() ? std::format("multi_body_{:03d}", m_multiBodyCounter + 1)
+      = name.empty() ? std::format("multibody_{:03d}", m_multiBodyCounter + 1)
                      : std::string(name);
 
   DART7_THROW_T_IF(

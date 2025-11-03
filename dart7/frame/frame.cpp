@@ -35,6 +35,7 @@
 #include "dart7/common/exceptions.hpp"
 #include "dart7/frame/free_frame.hpp"
 #include "dart7/world.hpp"
+#include <dart7/comps/link.hpp>
 
 namespace dart7 {
 
@@ -97,12 +98,22 @@ void Frame::setParentFrame(const Frame& parent)
   // Get FrameState component (common to FreeFrame and FixedFrame)
   auto* frameState = tryGetMutable<comps::FrameState>();
 
-  // Links don't have FrameState, so they cannot change parent
   DART7_THROW_T_IF(
       !frameState,
       InvalidOperationException,
       "Cannot change parent frame of Link. Links are connected through "
       "joints in a fixed tree structure.");
+
+  if (m_world && m_entity != entt::null) {
+    auto& registry = m_world->getRegistry();
+    if (registry.valid(m_entity)
+        && registry.all_of<comps::Link>(m_entity)) {
+      DART7_THROW_T(
+          InvalidOperationException,
+          "Cannot change parent frame of Link. Links are connected through "
+          "joints in a fixed tree structure.");
+    }
+  }
 
   // Update parent in FrameState component
   frameState->parentFrame = parent.getEntity();
