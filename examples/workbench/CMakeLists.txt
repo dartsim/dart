@@ -21,6 +21,10 @@ if(DART_IN_SOURCE_BUILD)
     ${CMAKE_CURRENT_LIST_DIR}/registry
     ${CMAKE_CURRENT_LIST_DIR}/scenes)
   target_link_libraries(${example_name} PUBLIC ${required_libraries})
+  if(UNIX AND NOT APPLE)
+    find_package(X11 REQUIRED)
+    target_link_libraries(${example_name} PRIVATE X11::X11)
+  endif()
   set_target_properties(${example_name}
     PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
@@ -37,3 +41,8 @@ target_include_directories(${example_name} PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/registry
   ${CMAKE_CURRENT_LIST_DIR}/scenes)
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
+
+if(UNIX AND NOT APPLE)
+  find_package(X11 REQUIRED)
+  target_link_libraries(${example_name} PRIVATE X11::X11)
+endif()
