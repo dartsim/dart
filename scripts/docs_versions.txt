@@ -1,4 +1,4 @@
 DART 6 (latest release)
-v6.13.2
+v6.15.0
 DART 6 (active minor support)
-v6.12.2
+v6.13.2

@@ -98,7 +98,6 @@ If you use DART in an academic publication, please consider citing this
    dartpy/user_guide/examples
    dartpy/user_guide/tutorials
    dartpy/python_api_reference
-   dartpy/api_docs
 
 .. toctree::
    :maxdepth: 1
