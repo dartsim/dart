@@ -64,9 +64,9 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -75,7 +75,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
 lint-cpp = { cmd = """
@@ -133,9 +133,9 @@ config-debug = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -144,14 +144,14 @@ config-debug = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-tests = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --parallel \
         --target tests
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-math-tests = { cmd = """
     cmake \
@@ -187,9 +187,9 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -197,7 +197,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
@@ -223,7 +223,14 @@ test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
+test-no-plane = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        --exclude-regex "test_plane_shape_collision"
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-dart7 = { cmd = """
     ctest \
@@ -363,13 +370,7 @@ tu-multi-pendulum = { depends-on = [{ task = "run-cpp-target", args = ["tutorial
 
 tu-multi-pendulum-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_multi_pendulum_finished"] }] }
 
-install = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target install
-""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
+install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [{ task = "config-install", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 config-install = { cmd = """
     cmake \
@@ -379,13 +380,16 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DART7={{ dartpy }} \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 tracy = { cmd = "tracy-profiler" }
 
@@ -630,9 +634,9 @@ config = { cmd = """
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
@@ -642,10 +646,10 @@ config = { cmd = """
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" } }
+""", env = { DART_VERBOSE = "OFF" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 # Multi-config generator uses same build directory for all configurations
-config-debug = { depends-on = ["config"] }
+config-debug = { depends-on = [{ task = "config", args = ["{{ dartpy }}"] }] }
 
 # C++ formatting targets (format/check-format) are not available with Visual Studio generator
 # C++ formatting is checked on Linux/Mac platforms
@@ -676,7 +680,7 @@ build = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-debug = { cmd = """
     cmake \
@@ -692,7 +696,7 @@ build-tests = { cmd = """
         --config $BUILD_TYPE \
         --parallel \
         --target tests
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-py-dev = { cmd = """
     cmake \
@@ -725,7 +729,15 @@ test = { cmd = """
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --build-config $BUILD_TYPE \
         --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
+test-no-plane = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --build-config $BUILD_TYPE \
+        --output-on-failure \
+        --exclude-regex "test_plane_shape_collision"
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-py = { cmd = """
     cmake \
@@ -770,13 +782,7 @@ tu-multi-pendulum = { depends-on = [{ task = "run-cpp-target-win", args = ["tuto
 
 tu-multi-pendulum-fi = { depends-on = [{ task = "run-cpp-target-win", args = ["tutorial_multi_pendulum_finished", "tutorial_multi_pendulum"] }] }
 
-install = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target install
-""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
+install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [{ task = "config-install", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 config-install = { cmd = """
     cmake \
@@ -786,6 +792,9 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DART7={{ dartpy }} \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -793,7 +802,7 @@ config-install = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 tracy = { cmd = "tracy-profiler.exe" }
 
@@ -859,7 +868,7 @@ config-gz = { cmd = """
         -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
         -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
         -DBUILD_TESTING=ON
-""", depends-on = ["patch-gz", "install"] }
+""", depends-on = ["patch-gz", { task = "install", args = ["OFF"] }] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",

@@ -536,6 +536,7 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     auto bulletCollisionShape
         = std::make_unique<btStaticPlaneShape>(convertVector3(normal), offset);
+    bulletCollisionShape->setMargin(btScalar(0.0));
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
