@@ -30,24 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#include "version_bind.hpp"
 
-#include <pybind11/pybind11.h>
+#include "dart7/common/logging.hpp"
+#include "dart7/version.hpp"
 
-#include <string>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
-PYBIND11_MODULE(dartpy7, m)
+namespace dartpy7 {
+
+void defVersion(nb::module_& m)
 {
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
+  DART7_DEBUG("Registering version API");
 
-  m.attr("__version__") = std::string(dart7::version());
+  // Convert string_view to string for Python compatibility
+  std::string versionStr(dart7::version());
 
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
+  // Set __version__ attribute using nb::str() for proper conversion
+  m.attr("__version__") = nb::str(versionStr.c_str());
 
-  py::class_<dart7::World>(m, "World").def(py::init<>());
+  // Register version functions
+  m.def(
+      "version",
+      []() { return std::string(dart7::version()); },
+      "Get DART7 version string");
+
+  m.def(
+      "version_major", &dart7::versionMajor, "Get DART7 major version number");
+
+  m.def(
+      "version_minor", &dart7::versionMinor, "Get DART7 minor version number");
+
+  m.def(
+      "version_patch", &dart7::versionPatch, "Get DART7 patch version number");
 }
+
+} // namespace dartpy7
