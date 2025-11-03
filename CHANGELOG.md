@@ -18,6 +18,7 @@
 
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
+  * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
 
 * Core
   * TBD
