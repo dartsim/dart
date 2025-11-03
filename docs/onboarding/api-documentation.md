@@ -62,8 +62,8 @@ DART documentation lives on two publishing surfaces, each with a dedicated purpo
   - ✅ C++ API documentation (Doxygen): `{version}/`
   - ✅ Python API documentation (Sphinx): `{version}-py/`
 - **Examples:**
-- C++ latest published: <https://dartsim.github.io/dart/v6.15.0/>
-- Python latest published: <https://dartsim.github.io/dart/v6.15.0-py/>
+  - C++ latest published: <https://dartsim.github.io/dart/v6.13.2/>
+  - Python latest published: <https://dartsim.github.io/dart/v6.13.2-py/>
 
 **Why GitHub Pages?**
 
@@ -172,8 +172,8 @@ pixi run api-docs-clean-gh     # Remove build artifacts
 
 To balance coverage with maintenance cost we publish two tiers of API documentation builds:
 
-1. **Latest release for each major line** – ensures we always have a single, well-tested reference for every supported major (e.g., v6.15.0 for the DART 6 line).
-2. **Latest patch for active minor lines** – keeps a single patch-level build for any older minor that still receives fixes (currently v6.13.2).
+1. **Latest release for each major line** – ensures we always have a single, well-tested reference for every supported major (currently v6.13.2 for the DART 6 line; v6.15.0 is pending publication on GitHub Pages).
+2. **Latest patch for active minor lines** – keeps a single patch-level build for any older minor that still receives fixes (currently v6.12.2).
 
 Update `scripts/docs_versions.txt` when the set of supported majors or minors changes. The GitHub Pages workflow consumes that file directly, so trimming the list immediately reduces CI time and storage for historical builds.
 
@@ -203,7 +203,7 @@ GitHub Actions picks up the change and deploys both `vX.Y.Z/` and `vX.Y.Z-py/` t
 
 - **Cause:** the RTD build cannot compile `dartpy`.
 - **Current status:** expected until prebuilt wheels are published.
-- **Workaround:** browse the Python API at <https://dartsim.github.io/dart/v6.15.0-py/>.
+- **Workaround:** browse the Python API at <https://dartsim.github.io/dart/v6.13.2-py/>.
 - **Long-term fix:** publish wheels so RTD can `pip install dartpy`.
 
 ### Python API appears empty locally
@@ -219,5 +219,5 @@ pixi run api-docs-py       # GitHub Pages-style Python API docs
 ### C++ API missing on RTD
 
 - **Status:** by design — RTD does not run Doxygen.
-- **Solution:** view the C++ API at <https://dartsim.github.io/dart/v6.15.0/>.
+- **Solution:** view the C++ API at <https://dartsim.github.io/dart/v6.13.2/>.
 *** End Patch
