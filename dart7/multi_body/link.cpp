@@ -68,9 +68,7 @@ const Eigen::Isometry3d& Link::getLocalTransform() const
 //==============================================================================
 const Eigen::Isometry3d& Link::getWorldTransform() const
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.worldTransform;
+  return Frame::getTransform();
 }
 
 } // namespace dart7
