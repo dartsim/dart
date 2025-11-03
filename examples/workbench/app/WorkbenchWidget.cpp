@@ -1,6 +1,7 @@
 #include "WorkbenchWidget.hpp"
 
 #include <imgui.h>
+#include <imgui_impl_opengl2.h>
 
 #include <algorithm>
 #include <chrono>
@@ -35,7 +36,7 @@ WorkbenchWidget::WorkbenchWidget(
   if (!(preferredScale > 0.0f && std::isfinite(preferredScale)))
     preferredScale = detectUiScale();
 
-  preferredScale = std::clamp(preferredScale, 0.5f, 3.0f);
+  preferredScale = std::clamp(preferredScale, 0.75f, 3.0f);
   mDetectedUiScale = preferredScale;
   mUiScaleControl = preferredScale;
   applyUiScale(preferredScale);
@@ -121,17 +122,25 @@ WorkbenchLayout WorkbenchWidget::computeLayout() const
   const float minRight = 280.0f;
   const float minBottom = 220.0f;
 
+  const float minViewerHeight = 360.0f;
+
+  const float availableHeight = std::max(
+      layout.viewportSize.y - layout.topBarHeight - layout.padding * 2.0f,
+      minViewerHeight + minBottom + layout.padding);
+
   layout.leftWidth = std::max(minLeft, layout.viewportSize.x * 0.22f);
   layout.rightWidth = std::max(minRight, layout.viewportSize.x * 0.26f);
-  layout.bottomHeight = std::max(minBottom, layout.viewportSize.y * 0.28f);
+  layout.bottomHeight = std::max(minBottom, availableHeight * 0.28f);
   layout.centerWidth = std::max(
       320.0f,
       layout.viewportSize.x - layout.leftWidth - layout.rightWidth
           - layout.padding * 4.0f);
   layout.centerHeight = std::max(
       240.0f,
-      layout.viewportSize.y - layout.bottomHeight - layout.topBarHeight
-          - layout.padding * 4.0f);
+      availableHeight - layout.bottomHeight - layout.padding * 3.0f);
+  layout.viewerHeight
+      = std::max(minViewerHeight, availableHeight - layout.bottomHeight
+          - layout.padding * 3.0f);
 
   layout.origin = ImVec2(
       layout.viewportPos.x + layout.padding,
@@ -255,7 +264,7 @@ void WorkbenchWidget::drawOverview(const WorkbenchLayout& layout)
   ImGui::SetNextWindowPos(ImVec2(
       layout.origin.x + layout.leftWidth + layout.padding,
       layout.origin.y));
-  ImGui::SetNextWindowSize(ImVec2(layout.centerWidth, layout.centerHeight));
+  ImGui::SetNextWindowSize(ImVec2(layout.centerWidth, layout.viewerHeight));
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse
       | ImGuiWindowFlags_NoMove
       | ImGuiWindowFlags_NoResize;
@@ -336,7 +345,7 @@ void WorkbenchWidget::drawProperties(const WorkbenchLayout& layout)
       ImGui::Spacing();
     }
 
-    if (ImGui::SliderFloat("UI scale", &mUiScaleControl, 0.6f, 2.5f, "%.2fx")) {
+    if (ImGui::SliderFloat("UI scale", &mUiScaleControl, 0.75f, 3.0f, "%.2fx")) {
       applyUiScale(mUiScaleControl);
     }
     ImGui::SameLine();
@@ -488,7 +497,7 @@ void WorkbenchWidget::applyUiScale(float scale)
   if (!(scale > 0.0f) || !std::isfinite(scale))
     return;
 
-  scale = std::clamp(scale, 0.5f, 3.0f);
+  scale = std::clamp(scale, 0.75f, 3.0f);
   const float epsilon = 0.001f;
   if (std::fabs(scale - mCurrentUiScale) < epsilon)
     return;
@@ -498,7 +507,15 @@ void WorkbenchWidget::applyUiScale(float scale)
   style.ScaleAllSizes(ratio);
 
   ImGuiIO& io = ImGui::GetIO();
-  io.FontGlobalScale = scale;
+  io.DisplayFramebufferScale = ImVec2(scale, scale);
+  io.Fonts->Clear();
+  ImFontConfig config;
+  config.SizePixels = 16.0f * scale;
+  io.Fonts->AddFontDefault(&config);
+  io.Fonts->Build();
+  ImGui_ImplOpenGL2_DestroyDeviceObjects();
+  ImGui_ImplOpenGL2_CreateDeviceObjects();
+  io.FontGlobalScale = 1.0f;
 
   mCurrentUiScale = scale;
 }

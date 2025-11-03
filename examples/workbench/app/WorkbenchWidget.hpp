@@ -30,6 +30,7 @@ struct WorkbenchLayout
   float bottomHeight;
   float padding;
   float topBarHeight;
+  float viewerHeight;
 };
 
 class WorkbenchWidget : public dart::gui::osg::ImGuiWidget
