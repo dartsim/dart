@@ -247,7 +247,13 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   auto& jointComp = registry.emplace<comps::Joint>(jointEntity);
   jointComp.type = options.jointType;
   jointComp.name = std::move(actualJointName);
-  jointComp.axis = options.axis.normalized();
+
+  const double axisNorm = options.axis.norm();
+  DART7_THROW_T_IF(
+      axisNorm <= 1e-9,
+      InvalidArgumentException,
+      "Joint axis must be non-zero");
+  jointComp.axis = options.axis / axisNorm;
   jointComp.parentLink = parentEntity;
   jointComp.childLink = linkEntity;
 

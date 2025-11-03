@@ -264,12 +264,6 @@ MultiBody World::addMultiBody(std::string_view name)
       = name.empty() ? std::format("multibody_{:03d}", m_multiBodyCounter + 1)
                      : std::string(name);
 
-  DART7_THROW_T_IF(
-      hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName),
-      InvalidArgumentException,
-      "MultiBody '{}' already exists",
-      candidateName);
-
   if (name.empty()) {
     ++m_multiBodyCounter;
   }
