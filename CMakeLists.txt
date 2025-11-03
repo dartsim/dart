@@ -195,9 +195,21 @@ message(STATUS "")
 dart_print_options()
 
 # Print build tool information
+set(_dart_cmake_release "unknown")
+if(EXISTS "${CMAKE_COMMAND}")
+  file(TIMESTAMP "${CMAKE_COMMAND}" _dart_cmake_release "%Y-%m-%d" UTC)
+  string(APPEND _dart_cmake_release " UTC")
+endif()
+
+set(_dart_cxx_compiler_release "unknown")
+if(EXISTS "${CMAKE_CXX_COMPILER}")
+  file(TIMESTAMP "${CMAKE_CXX_COMPILER}" _dart_cxx_compiler_release "%Y-%m-%d" UTC)
+  string(APPEND _dart_cxx_compiler_release " UTC")
+endif()
+
 message(STATUS "[ Build Tools ]")
-message(STATUS "- CMake               : ${CMAKE_VERSION}")
-message(STATUS "- C++                 : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "- CMake               : ${CMAKE_VERSION} (build timestamp ${_dart_cmake_release})")
+message(STATUS "- C++                 : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (build timestamp ${_dart_cxx_compiler_release})")
 if(MSVC)
   message(STATUS "- CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
