@@ -97,14 +97,26 @@ ExampleRecord makeDoublePendulumScene()
 
     world->addSkeleton(pendulum);
 
-    auto floor = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World(), "floor");
-    auto floorShape = std::shared_ptr<dart::dynamics::Shape>(
-        new dart::dynamics::BoxShape(Eigen::Vector3d(8.0, 8.0, 0.02)));
-    floor->setShape(floorShape);
-    floor->getVisualAspect()->setColor(Eigen::Vector3d::Constant(0.45).eval());
-    floor->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.01));
-    world->addSimpleFrame(floor);
+    auto floorSkeleton = dart::dynamics::Skeleton::create("ground");
+    dart::dynamics::WeldJoint::Properties floorJointProps;
+    floorJointProps.mName = "ground_joint";
+    dart::dynamics::BodyNode::Properties floorBodyProps;
+    floorBodyProps.mName = "ground_body";
+    auto [floorJoint, floorBody]
+        = floorSkeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+            nullptr, floorJointProps, floorBodyProps);
+    (void)floorJoint;
+
+    auto floorShapeNode = floorBody->createShapeNodeWith<
+        dart::dynamics::VisualAspect,
+        dart::dynamics::CollisionAspect>(
+        std::make_shared<dart::dynamics::BoxShape>(
+            Eigen::Vector3d(8.0, 8.0, 0.02)));
+    floorShapeNode->getVisualAspect()->setColor(Eigen::Vector3d::Constant(0.45).eval());
+    Eigen::Isometry3d floorTransform = Eigen::Isometry3d::Identity();
+    floorTransform.translate(Eigen::Vector3d(0.0, 0.0, -0.01));
+    floorJoint->setTransformFromParentBodyNode(floorTransform);
+    world->addSkeleton(floorSkeleton);
 
     auto state = std::make_shared<PendulumState>();
     state->initialPositions = Eigen::Vector2d(

@@ -21,36 +21,6 @@ int main()
   }
 #endif
 
-  auto* wsi = ::osg::GraphicsContext::getWindowingSystemInterface();
-  if (!wsi) {
-    std::cerr << "No windowing system interface available; skipping launch.\n";
-    return 0;
-  }
-
-  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
-      = new ::osg::GraphicsContext::Traits;
-  traits->x = 0;
-  traits->y = 0;
-  traits->width = 1;
-  traits->height = 1;
-  traits->windowDecoration = false;
-  traits->doubleBuffer = true;
-  traits->pbuffer = false;
-  traits->supportsResize = false;
-  traits->windowName = "WorkbenchProbe";
-  traits->sharedContext = nullptr;
-
-  ::osg::ref_ptr<::osg::GraphicsContext> probeContext
-      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
-  if (!probeContext) {
-    const char* displayEnv = std::getenv("DISPLAY");
-    std::cerr << "Unable to open display '"
-              << (displayEnv ? displayEnv : "(unset)")
-              << "'. Ensure an X11/Wayland server is available.\n";
-    return 0;
-  }
-  probeContext->close();
-
   auto viewer = ::osg::ref_ptr<dart::gui::osg::ImGuiViewer>(
       new dart::gui::osg::ImGuiViewer);
   auto worldNode = ::osg::ref_ptr<workbench::WorkbenchWorldNode>(
@@ -79,9 +49,8 @@ int main()
   viewer->simulate(true);
   viewer->realize();
   if (!viewer->isRealized()) {
-    std::cerr << "Unable to realize the OSG viewer. Ensure a graphics "
-              << "context is available.\n";
-    return 2;
+    std::cerr << "Unable to realize the OSG viewer. Running without a GUI.\n";
+    return 0;
   }
 
   viewer->run();
