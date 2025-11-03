@@ -119,6 +119,11 @@ jobs:
           BUILD_TYPE=Release \
           pixi run test-all
 
+      - name: Test with AddressSanitizer
+        run: |
+          DART_VERBOSE=ON \
+          pixi run test-asan
+
       - name: Install
         run: |
           DART_VERBOSE=ON \

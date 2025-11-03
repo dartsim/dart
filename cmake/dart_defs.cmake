@@ -276,7 +276,7 @@ function(dart_print_options)
       elseif(option_variable STREQUAL "BUILD_SHARED_LIBS"
           OR (option_variable MATCHES "^DART_BUILD_" AND NOT option_variable STREQUAL "DART_BUILD_PROFILE"))
         set(group_key build)
-      elseif(option_variable MATCHES "^DART_(BUILD_PROFILE|FAST_DEBUG|ENABLE_SIMD|CODECOV)$")
+      elseif(option_variable MATCHES "^DART_(BUILD_PROFILE|FAST_DEBUG|ENABLE_SIMD|CODECOV|ENABLE_ASAN)$")
         set(group_key performance)
       elseif(option_variable MATCHES "^DART_(FORCE_COLORED_OUTPUT|VERBOSE)$")
         set(group_key diagnostics)

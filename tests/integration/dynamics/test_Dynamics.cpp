@@ -120,6 +120,7 @@ public:
 protected:
   // Sets up the test fixture.
   void SetUp() override;
+  void TearDown() override;
 
   // Skel file list.
   std::vector<common::Uri> fileList;
@@ -166,6 +167,15 @@ void DynamicsTest::SetUp()
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame4"));
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
   refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame6"));
+}
+
+//==============================================================================
+void DynamicsTest::TearDown()
+{
+  for (SimpleFrame* frame : refFrames) {
+    delete frame;
+  }
+  refFrames.clear();
 }
 
 //==============================================================================

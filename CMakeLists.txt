@@ -155,6 +155,7 @@ dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF CATEGORY performance)
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF CATEGORY performance)
+dart_option(DART_ENABLE_ASAN "Build DART with AddressSanitizer instrumentation" OFF CATEGORY diagnostics)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
 # invoked by Ninja. DART_FORCE_COLORED_OUTPUT can be used in this case to enforce
@@ -426,6 +427,31 @@ else()
 
   message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
 
+endif()
+
+if(DART_ENABLE_ASAN)
+  if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
+    message(FATAL_ERROR "DART_ENABLE_ASAN is only supported with GCC or Clang.")
+  endif()
+
+  set(_DART_ASAN_FLAGS "-fsanitize=address")
+  add_compile_options(${_DART_ASAN_FLAGS})
+  add_link_options(${_DART_ASAN_FLAGS})
+
+  foreach(link_var CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+    set(${link_var} "${${link_var}} ${_DART_ASAN_FLAGS}")
+  endforeach()
+
+  foreach(lang C CXX)
+    set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS} -fno-omit-frame-pointer")
+  endforeach()
+
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${_DART_ASAN_FLAGS}")
+  set(CMAKE_REQUIRED_LINK_OPTIONS "${CMAKE_REQUIRED_LINK_OPTIONS} ${_DART_ASAN_FLAGS}")
+
+  # Disable Boost's embedded GDB scripts, which are known to trigger quoting issues
+  # with recent GCC versions when AddressSanitizer instrumentation is enabled.
+  add_compile_definitions(BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 endif()
 
 #===============================================================================

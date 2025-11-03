@@ -86,6 +86,8 @@ bool runIssue1234Subtest(
                          << " degrees"
                          << "\nAgainst: " << against->getType() << std::endl;
 
+  group->removeAllShapeFrames();
+
   return collision;
 }
 

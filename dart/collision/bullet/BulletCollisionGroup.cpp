@@ -36,8 +36,126 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
+#include <LinearMath/btAlignedAllocator.h>
+
+#include <atomic>
+#include <mutex>
+#include <new>
+#include <unordered_set>
+#include <vector>
+
+#include <cstdlib>
+
 namespace dart {
 namespace collision {
+
+namespace {
+
+using BulletAllocSet = std::unordered_set<void*>;
+
+BulletAllocSet& getOutstandingAllocs()
+{
+  static BulletAllocSet* allocs = new BulletAllocSet();
+  return *allocs;
+}
+
+std::mutex& getAllocMutex()
+{
+  static std::mutex* mtx = new std::mutex();
+  return *mtx;
+}
+
+std::atomic<bool>& cleanupInProgress()
+{
+  static auto* flag = new std::atomic<bool>(false);
+  return *flag;
+}
+
+void dartBulletFreeImpl(void* ptr)
+{
+  if (!ptr)
+    return;
+
+  bool shouldFree = true;
+  {
+    std::lock_guard<std::mutex> lock(getAllocMutex());
+    auto& allocs = getOutstandingAllocs();
+    const auto erased = allocs.erase(ptr);
+    if (erased == 0 && cleanupInProgress().load(std::memory_order_relaxed))
+      shouldFree = false;
+  }
+
+#if defined(_MSC_VER)
+  if (!shouldFree)
+    return;
+  _aligned_free(ptr);
+#else
+  if (!shouldFree)
+    return;
+  std::free(ptr);
+#endif
+}
+
+void dartBulletFree(void* ptr)
+{
+  dartBulletFreeImpl(ptr);
+}
+
+void* dartBulletAlloc(size_t size, std::size_t alignment)
+{
+  void* mem = nullptr;
+#if defined(_MSC_VER)
+  mem = _aligned_malloc(size, alignment);
+  if (!mem)
+    throw std::bad_alloc();
+#else
+  if (posix_memalign(&mem, std::max<int>(alignment, 16), size) != 0)
+    throw std::bad_alloc();
+#endif
+  {
+    std::lock_guard<std::mutex> lock(getAllocMutex());
+    getOutstandingAllocs().insert(mem);
+  }
+  return mem;
+}
+
+void* dartBulletAllocStd(size_t size)
+{
+  return dartBulletAlloc(size, 16);
+}
+
+void releaseOutstandingBulletAllocations()
+{
+  std::vector<void*> toFree;
+  {
+    std::lock_guard<std::mutex> lock(getAllocMutex());
+    auto& allocs = getOutstandingAllocs();
+    if (allocs.empty())
+      return;
+    toFree.assign(allocs.begin(), allocs.end());
+    cleanupInProgress().store(true, std::memory_order_relaxed);
+  }
+
+  for (void* ptr : toFree) {
+    dartBulletFreeImpl(ptr);
+  }
+}
+
+void ensureBulletAllocator()
+{
+  static std::once_flag flag;
+  std::call_once(flag, []() {
+    btAlignedAllocSetCustom(&dartBulletAllocStd, &dartBulletFree);
+    std::atexit(releaseOutstandingBulletAllocations);
+  });
+}
+
+const bool bulletAllocatorReady = []() {
+  ensureBulletAllocator();
+  return true;
+}();
+
+} // namespace
 
 //==============================================================================
 BulletCollisionGroup::BulletCollisionGroup(
@@ -90,9 +208,23 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
   auto casted = static_cast<BulletCollisionObject*>(object);
+  auto* btObject = casted->getBulletCollisionObject();
+  auto* proxy = btObject->getBroadphaseHandle();
+  auto* pairCache
+      = mBulletCollisionWorld->getBroadphase()->getOverlappingPairCache();
 
-  mBulletCollisionWorld->removeCollisionObject(
-      casted->getBulletCollisionObject());
+  if (proxy && pairCache) {
+    pairCache->cleanProxyFromPairs(proxy, mBulletDispatcher.get());
+    pairCache->removeOverlappingPairsContainingProxy(
+        proxy, mBulletDispatcher.get());
+  }
+
+  mBulletCollisionWorld->removeCollisionObject(btObject);
+
+  if (auto* dbvt
+      = dynamic_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get())) {
+    dbvt->resetPool(mBulletDispatcher.get());
+  }
 
   initializeEngineData();
 }
@@ -102,6 +234,11 @@ void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   for (const auto& info : mObjectInfoList)
     removeCollisionObjectFromEngine(info->mObject.get());
+
+  if (auto* dbvt
+      = dynamic_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get())) {
+    dbvt->resetPool(mBulletDispatcher.get());
+  }
 
   initializeEngineData();
 }

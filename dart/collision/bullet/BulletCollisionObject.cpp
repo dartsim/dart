@@ -55,10 +55,12 @@ const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
 BulletCollisionObject::BulletCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
+    const dynamics::ConstShapePtr& shape,
     const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
     mBulletCollisionShape(bulletCollisionShape),
-    mBulletCollisionObject(new btCollisionObject())
+    mBulletCollisionObject(new btCollisionObject()),
+    mCachedShape(shape)
 {
   DART_ASSERT(bulletCollisionShape);
 
@@ -66,6 +68,18 @@ BulletCollisionObject::BulletCollisionObject(
       mBulletCollisionShape->mCollisionShape.get());
 
   mBulletCollisionObject->setUserPointer(this);
+}
+
+//==============================================================================
+const dynamics::ConstShapePtr& BulletCollisionObject::getCachedShape() const
+{
+  return mCachedShape;
+}
+
+//==============================================================================
+void BulletCollisionObject::setCachedShape(const dynamics::ConstShapePtr& shape)
+{
+  mCachedShape = shape;
 }
 
 //==============================================================================
