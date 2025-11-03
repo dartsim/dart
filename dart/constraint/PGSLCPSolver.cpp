@@ -37,7 +37,7 @@
   #include <iostream>
 #endif
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
@@ -150,7 +150,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 #endif
 
   // Print LCP formulation
-  //  dtdbg << "Before solve:" << std::endl;
+  //  DART_DEBUG("Before solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
@@ -161,7 +161,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   solvePGS(n, nSkip, 0, A, x, b, lo, hi, findex, &option);
 
   // Print LCP formulation
-  //  dtdbg << "After solve:" << std::endl;
+  //  DART_DEBUG("After solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 

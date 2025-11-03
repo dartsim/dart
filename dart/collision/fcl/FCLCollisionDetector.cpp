@@ -39,7 +39,7 @@
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -630,9 +630,10 @@ std::unique_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup()
 static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
-    dterr << "[FCLCollisionDetector::collide] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
+    DART_ERROR(
+        "[FCLCollisionDetector::collide] Attempting to check collision for a "
+        "collision group that is created from a different collision detector "
+        "instance.");
 
     return false;
   }
@@ -759,12 +760,12 @@ void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
   if (type == PRIMITIVE) {
-    dtwarn << "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use "
-           << "FCL's primitive shape collision feature while it's not complete "
-           << "(at least until 0.4.0) especially in use of dynamics "
-           << "simulation. It's recommended to use mesh even for primitive "
-           << "shapes by settting "
-           << "FCLCollisionDetector::setPrimitiveShapeType(MESH).\n";
+    DART_WARN(
+        "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use FCL's "
+        "primitive shape collision feature while it's not complete (at least "
+        "until 0.4.0) especially in use of dynamics simulation. It's "
+        "recommended to use mesh even for primitive shapes by settting "
+        "FCLCollisionDetector::setPrimitiveShapeType(MESH).");
   }
 
   mPrimitiveShapeType = type;
@@ -782,13 +783,13 @@ void FCLCollisionDetector::setContactPointComputationMethod(
     FCLCollisionDetector::ContactPointComputationMethod method)
 {
   if (method == FCL) {
-    dtwarn << "[FCLCollisionDetector::setContactPointComputationMethod] You "
-           << "chose to use FCL's built in contact point computation while"
-           << "it's buggy (see https://github.com/flexible-collision-library/"
-           << "fcl/issues/106) at least until 0.4.0. It's recommended to use "
-           << "DART's implementation for the contact point computation by "
-           << "setting "
-           << "FCLCollisionDetector::setContactPointComputationMethod(DART).\n";
+    DART_WARN(
+        "[FCLCollisionDetector::setContactPointComputationMethod] You chose to "
+        "use FCL's built in contact point computation whileit's buggy (see "
+        "https://github.com/flexible-collision-library/fcl/issues/106) at "
+        "least until 0.4.0. It's recommended to use DART's implementation for "
+        "the contact point computation by setting "
+        "FCLCollisionDetector::setContactPointComputationMethod(DART).");
   }
 
   mContactPointComputationMethod = method;
@@ -969,10 +970,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
     } else {
       geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
-      dtwarn
-          << "[FCLCollisionDetector] PlaneShape is not supported by "
-          << "FCLCollisionDetector. We create a thin box mesh instead, where "
-          << "the size is [1000 0 1000].\n";
+
+      DART_WARN(
+          "[FCLCollisionDetector] PlaneShape is not supported by "
+          "FCLCollisionDetector. We create a thin box mesh instead, where the "
+          "size is [1000 0 1000].");
     }
   } else if (MeshShape::getStaticType() == shapeType) {
     assert(dynamic_cast<const MeshShape*>(shape.get()));
@@ -1000,20 +1002,22 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = new fcl::OcTree(octree);
   #else
-    dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
-          << "Attempting to create an collision geometry for VoxelGridShape, "
-          << "but the installed FCL isn't built with Octomap support. "
-          << "Creating a sphere with 0.1 radius instead.\n";
+    DART_ERROR(
+        "[FCLCollisionDetector::createFCLCollisionGeometry] Attempting to "
+        "create an collision geometry for VoxelGridShape, but the installed "
+        "FCL isn't built with Octomap support. Creating a sphere with 0.1 "
+        "radius instead.");
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
   }
 #endif // HAVE_OCTOMAP
   else {
-    dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
-          << "Attempting to create an unsupported shape type [" << shapeType
-          << "]. Creating a sphere with 0.1 radius "
-          << "instead.\n";
+    DART_ERROR(
+        "[FCLCollisionDetector::createFCLCollisionGeometry] Attempting to "
+        "create an unsupported shape type [{}]. Creating a sphere with 0.1 "
+        "radius instead.",
+        shapeType);
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   }

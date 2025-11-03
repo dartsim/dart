@@ -34,7 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -1593,8 +1593,8 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
     //    int nBodyNodes = skel->getNumBodyNodes();
 
     if (dof == 0) {
-      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF." << endl;
+      DART_INFO(
+          "Skeleton [{}] is skipped since it has 0 DOF.", skel->getName());
       continue;
     }
 
@@ -1868,8 +1868,8 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
     std::size_t dof = skeleton->getNumDofs();
     if (dof == 0) {
-      dtmsg << "Skeleton [" << skeleton->getName() << "] is skipped since it "
-            << "has 0 DOF." << endl;
+      DART_INFO(
+          "Skeleton [{}] is skipped since it has 0 DOF.", skeleton->getName());
       continue;
     }
 
@@ -2030,9 +2030,10 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
     if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof) {
 #if DART_BUILD_MODE_DEBUG
-      dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
-            << "] since the Skeleton doesn't have FreeJoint at the root body "
-            << " or immobile." << endl;
+      DART_INFO(
+          "Skipping COM free fall test for Skeleton [{}] since the Skeleton "
+          "doesn't have a FreeJoint at the root body or is immobile.",
+          skel->getName());
 #endif
       continue;
     } else {
@@ -2123,8 +2124,9 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
     //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile()) {
-      dtdbg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF or is immobile." << endl;
+      DART_DEBUG(
+          "Skeleton [{}] is skipped since it has 0 DOF or is immobile.",
+          skel->getName());
       continue;
     }
 
@@ -2212,8 +2214,9 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
     //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile()) {
-      dtdbg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF or is immobile." << endl;
+      DART_DEBUG(
+          "Skeleton [{}] is skipped since it has 0 DOF or is immobile.",
+          skel->getName());
       continue;
     }
 
@@ -2269,7 +2272,7 @@ TEST_F(DynamicsTest, testJacobians)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testJacobians(getList()[i]);
   }
@@ -2280,7 +2283,7 @@ TEST_F(DynamicsTest, testFiniteDifference)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
     testFiniteDifferenceBodyNodeVelocity(getList()[i]);
@@ -2293,7 +2296,7 @@ TEST_F(DynamicsTest, testForwardKinematics)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testForwardKinematics(getList()[i]);
   }
@@ -2304,7 +2307,7 @@ TEST_F(DynamicsTest, testInverseDynamics)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testInverseDynamics(getList()[i]);
   }
@@ -2330,7 +2333,7 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     ////////////////////////////////////////////////////////////////////////////
 
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     compareEquationsOfMotion(getList()[i]);
   }
@@ -2341,7 +2344,7 @@ TEST_F(DynamicsTest, testCenterOfMass)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testCenterOfMass(getList()[i]);
   }
@@ -2352,7 +2355,7 @@ TEST_F(DynamicsTest, testCenterOfMassFreeFall)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testCenterOfMassFreeFall(getList()[i]);
   }
@@ -2363,7 +2366,7 @@ TEST_F(DynamicsTest, testConstraintImpulse)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testConstraintImpulse(getList()[i]);
   }
@@ -2374,7 +2377,7 @@ TEST_F(DynamicsTest, testImpulseBasedDynamics)
 {
   for (std::size_t i = 0; i < getList().size(); ++i) {
 #if DART_BUILD_MODE_DEBUG
-    dtdbg << getList()[i].toString() << std::endl;
+    DART_DEBUG("{}", getList()[i].toString());
 #endif
     testImpulseBasedDynamics(getList()[i]);
   }

@@ -98,7 +98,7 @@ void StateMachine::setInitialState(State* _state)
 //==============================================================================
 void StateMachine::begin(double _currentTime)
 {
-  //  dtmsg << "StateMachine [" << getName() << "]: begin()." << endl;
+  //  DART_INFO("StateMachine [{}]: begin().", getName());
 
   mBeginTime = _currentTime;
   mFrame = 0;
@@ -126,7 +126,7 @@ void StateMachine::end(double _currentTime)
 {
   mEndTime = _currentTime;
 
-  //  dtmsg << "StateMachine [" << getName() << "]: end()." << endl;
+  //  DART_INFO("StateMachine [{}]: end().", getName());
 }
 
 //==============================================================================
@@ -157,8 +157,7 @@ void StateMachine::transiteTo(State* _state, double _currentTime)
   mCurrentState->begin(_currentTime);
 
   if (mVerbosity) {
-    dtmsg << "Transition: [" << prevStateName << "] --> [" << nextStateName
-          << "]." << endl;
+    DART_INFO("Transition: [{}] --> [{}].", prevStateName, nextStateName);
   }
 }
 

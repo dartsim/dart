@@ -70,9 +70,10 @@ Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
 {
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
   if (!startBodyNode) {
-    dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
-           << "start node of the input criteria is not valid anymore. Using "
-           << "the returning Criteria will lead to creating an empty Branch.\n";
+    DART_WARN(
+        "[Chain::Criteria::convert] Failed in conversion because the start "
+        "node of the input criteria is not valid anymore. Using the returning "
+        "Criteria will lead to creating an empty Branch.");
     return Branch::Criteria(nullptr);
   }
 
@@ -100,9 +101,10 @@ BranchPtr Branch::cloneBranch(const std::string& cloneName) const
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode) {
-    dtwarn << "[Branch::cloneMetaSkeleton] Failed to clone because the "
-           << "start node of the criteria in this Branch is not valid anymore. "
-           << "Returning nullptr.\n";
+    DART_WARN(
+        "[Branch::cloneMetaSkeleton] Failed to clone because the start node of "
+        "the criteria in this Branch is not valid anymore. Returning "
+        "nullptr.");
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();

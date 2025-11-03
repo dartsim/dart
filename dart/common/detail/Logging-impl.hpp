@@ -37,13 +37,92 @@
 
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
+
+  #include <type_traits>
+  #include <utility>
   // Check if spdlog is using fmt or std::format backend
   #if defined(SPDLOG_USE_STD_FORMAT)
     // spdlog uses std::format - no need for runtime wrapper
     #define DART_SPDLOG_RUNTIME(str) str
   #else
     // spdlog uses fmt - need fmt::runtime for non-compile-time strings
+    #include <fmt/ostream.h>
     #include <spdlog/fmt/fmt.h>
+    #include <spdlog/fmt/ostr.h>
+
+    #include <ostream>
+
+namespace detail_log_arg {
+
+template <typename Stream, typename T, typename = void>
+struct is_stream_insertable : std::false_type
+{
+};
+
+template <typename Stream, typename T>
+struct is_stream_insertable<
+    Stream,
+    T,
+    std::void_t<decltype(std::declval<Stream&>() << std::declval<const T&>())>>
+  : std::true_type
+{
+};
+
+template <typename T, typename = void>
+struct has_pointer_get : std::false_type
+{
+};
+
+template <typename T>
+struct has_pointer_get<T, std::void_t<decltype(std::declval<T&>().get())>>
+  : std::bool_constant<std::is_pointer_v<
+        std::remove_reference_t<decltype(std::declval<T&>().get())>>>
+{
+};
+
+template <typename T>
+auto normalize(T&& arg)
+{
+  using Decayed = std::decay_t<T>;
+  if constexpr (std::is_pointer_v<Decayed>) {
+    using Pointee = std::remove_cv_t<std::remove_pointer_t<Decayed>>;
+    if constexpr (
+        !std::is_same_v<
+            Pointee,
+            char> && !std::is_same_v<Pointee, signed char> && !std::is_same_v<Pointee, unsigned char>) {
+      return fmt::ptr(arg);
+    } else {
+      return std::forward<T>(arg);
+    }
+  } else if constexpr (has_pointer_get<Decayed>::value) {
+    using RawPointer
+        = std::remove_reference_t<decltype(std::declval<Decayed&>().get())>;
+    using Pointee = std::remove_cv_t<std::remove_pointer_t<RawPointer>>;
+    if constexpr (
+        !std::is_same_v<
+            Pointee,
+            char> && !std::is_same_v<Pointee, signed char> && !std::is_same_v<Pointee, unsigned char>) {
+      return fmt::ptr(arg.get());
+    } else {
+      return std::forward<T>(arg);
+    }
+  } else {
+    using Char = typename fmt::format_context::char_type;
+    constexpr bool kHasFormatter = fmt::detail::has_formatter<Decayed, Char>();
+    if constexpr (std::is_enum_v<Decayed> && !kHasFormatter) {
+      return static_cast<std::underlying_type_t<Decayed>>(arg);
+    } else if constexpr (kHasFormatter) {
+      return std::forward<T>(arg);
+    } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
+      return fmt::streamed(std::forward<T>(arg));
+    } else {
+      return std::forward<T>(arg);
+    }
+  }
+}
+
+} // namespace detail_log_arg
+
     #define DART_SPDLOG_RUNTIME(str) fmt::runtime(str)
   #endif
 #else
@@ -89,7 +168,9 @@ template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::trace(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  spdlog::trace(
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
@@ -101,7 +182,9 @@ template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::debug(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  spdlog::debug(
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
@@ -113,7 +196,9 @@ template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::info(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  spdlog::info(
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
@@ -125,7 +210,9 @@ template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::warn(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  spdlog::warn(
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
@@ -137,7 +224,9 @@ template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::error(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  spdlog::error(
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
@@ -150,7 +239,8 @@ void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
   spdlog::critical(
-      DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+      DART_SPDLOG_RUNTIME(format_str),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
 #else
   detail::print(
       std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);

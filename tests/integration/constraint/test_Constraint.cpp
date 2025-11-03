@@ -35,7 +35,7 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -228,7 +228,7 @@ TEST_F(ConstraintTest, SingleContactTest)
   //  for (int i = 0; i < getList().size(); ++i)
   //  {
   // #if DART_BUILD_MODE_DEBUG
-  //    dtdbg << getList()[i] << std::endl;
+  //    DART_DEBUG("{}", getList()[i]);
   // #endif
   //    SingleContactTest(getList()[i]);
   //  }

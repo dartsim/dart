@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/SharedLibraryIkFast.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/SharedLibrary.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -56,8 +56,10 @@ bool loadFunction(
   auto symbol = lib->getSymbol(symbolName);
 
   if (!symbol) {
-    dterr << "Failed to load the symbol '" << symbolName << "' from the file '"
-          << fileName << "'.\n";
+    DART_ERROR(
+        "Failed to load the symbol '{}' from the file '{}'.",
+        symbolName,
+        fileName);
     return false;
   }
 
@@ -92,8 +94,10 @@ SharedLibraryIkFast::SharedLibraryIkFast(
   auto lib = common::SharedLibrary::create(mFilePath);
 
   if (!lib) {
-    dterr << "[SharedLibraryIkFast] Could not load dynamic library '"
-          << mFilePath << "'. This SharedLibraryIkFast is invalid.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast] Could not load dynamic library '{}'. This "
+        "SharedLibraryIkFast is invalid.",
+        mFilePath);
     return;
   }
 
@@ -141,8 +145,9 @@ auto SharedLibraryIkFast::clone(InverseKinematics* newIK) const
 int SharedLibraryIkFast::getNumFreeParameters() const
 {
   if (!mGetNumFreeParameters) {
-    dterr << "[SharedLibraryIkFast::getNumFreeParameters] This SharedLibrary "
-          << "is invalid. Returning 0.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::getNumFreeParameters] This SharedLibrary is "
+        "invalid. Returning 0.");
     return 0;
   }
 
@@ -153,8 +158,9 @@ int SharedLibraryIkFast::getNumFreeParameters() const
 int* SharedLibraryIkFast::getFreeParameters() const
 {
   if (!mGetFreeParameters) {
-    dterr << "[SharedLibraryIkFast::mGetFreeParameters] This SharedLibrary is "
-          << "invalid. Returning nullptr.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetFreeParameters] This SharedLibrary is "
+        "invalid. Returning nullptr.");
     return nullptr;
   }
 
@@ -165,8 +171,9 @@ int* SharedLibraryIkFast::getFreeParameters() const
 int SharedLibraryIkFast::getNumJoints() const
 {
   if (!mGetNumJoints) {
-    dterr << "[SharedLibraryIkFast::mGetNumJoints] This SharedLibrary is "
-          << "invalid. Returning 0.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetNumJoints] This SharedLibrary is invalid. "
+        "Returning 0.");
     return 0;
   }
 
@@ -177,8 +184,9 @@ int SharedLibraryIkFast::getNumJoints() const
 int SharedLibraryIkFast::getIkRealSize() const
 {
   if (!mGetIkRealSize) {
-    dterr << "[SharedLibraryIkFast::mGetIkRealSize] This SharedLibrary is "
-          << "invalid. Returning 0.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetIkRealSize] This SharedLibrary is invalid. "
+        "Returning 0.");
     return 0;
   }
 
@@ -189,8 +197,9 @@ int SharedLibraryIkFast::getIkRealSize() const
 int SharedLibraryIkFast::getIkType() const
 {
   if (!mGetIkType) {
-    dterr << "[SharedLibraryIkFast::mGetIkType] This SharedLibrary is "
-          << "invalid. Returning 0.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetIkType] This SharedLibrary is invalid. "
+        "Returning 0.");
     return 0;
   }
 
@@ -205,8 +214,9 @@ bool SharedLibraryIkFast::computeIk(
     ikfast::IkSolutionListBase<IkReal>& solutions)
 {
   if (!mComputeIk) {
-    dterr << "[SharedLibraryIkFast::mComputeIk] This SharedLibrary is "
-          << "invalid. Returning false.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mComputeIk] This SharedLibrary is invalid. "
+        "Returning false.");
     return false;
   }
 
@@ -218,8 +228,8 @@ void SharedLibraryIkFast::computeFk(
     const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
 {
   if (!mComputeFk) {
-    dterr << "[SharedLibraryIkFast::mComputeFk] This SharedLibrary is "
-          << "invalid.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mComputeFk] This SharedLibrary is invalid.");
     return;
   }
 
@@ -230,8 +240,9 @@ void SharedLibraryIkFast::computeFk(
 const char* SharedLibraryIkFast::getKinematicsHash()
 {
   if (!mGetKinematicsHash) {
-    dterr << "[SharedLibraryIkFast::mGetKinematicsHash] This SharedLibrary is "
-          << "invalid. Returning nullptr.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetKinematicsHash] This SharedLibrary is "
+        "invalid. Returning nullptr.");
     return nullptr;
   }
 
@@ -242,8 +253,9 @@ const char* SharedLibraryIkFast::getKinematicsHash()
 const char* SharedLibraryIkFast::getIkFastVersion()
 {
   if (!mGetIkFastVersion) {
-    dterr << "[SharedLibraryIkFast::mGetIkFastVersion] This SharedLibrary is "
-          << "invalid. Returning nullptr.\n";
+    DART_ERROR(
+        "[SharedLibraryIkFast::mGetIkFastVersion] This SharedLibrary is "
+        "invalid. Returning nullptr.");
     return nullptr;
   }
 

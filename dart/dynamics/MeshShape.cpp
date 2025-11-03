@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/MeshShape.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
@@ -578,7 +578,7 @@ const aiScene* MeshShape::loadMesh(
   // If succeeded, store the importer in the scene to keep it alive. This is
   // necessary because the importer owns the memory that it allocates.
   if (!scene) {
-    dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
+    DART_WARN("[MeshShape::loadMesh] Failed loading mesh '{}'.", _uri);
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
@@ -606,7 +606,7 @@ const aiScene* MeshShape::loadMesh(
   // import process, because we may have changed mTransformation above.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
   if (!scene)
-    dtwarn << "[MeshShape::loadMesh] Failed pre-transforming vertices.\n";
+    DART_WARN("[MeshShape::loadMesh] Failed pre-transforming vertices.");
 
   aiReleasePropertyStore(propertyStore);
 

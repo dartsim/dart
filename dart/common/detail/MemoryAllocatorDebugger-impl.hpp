@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 
-#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
@@ -56,20 +55,21 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (!mMapPointerToSize.empty()) {
-    size_t totalSize = 0;
-    for (auto it : mMapPointerToSize) {
-      void* pointer = it.first;
-      size_t size = it.second;
-      totalSize += size;
-      dtdbg << "Found potential memory leak at " << pointer << " (" << size
-            << " bytes).\n";
+    [[maybe_unused]] size_t totalSize = 0;
+    for (const auto& entry : mMapPointerToSize) {
+      totalSize += entry.second;
+      DART_DEBUG(
+          "Found potential memory leak at {} ({} bytes).",
+          fmt::ptr(entry.first),
+          entry.second);
       // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
       // destructor is resolved.
     }
 
-    dtdbg << "Found potential memory leak of total " << totalSize
-          << " bytes. The internal allocator will try to forcefully "
-          << "deallocate it but it's is not guaranteed.\n";
+    DART_DEBUG(
+        "Found potential memory leak of total {} bytes. The internal allocator "
+        "will try to forcefully deallocate it but it's is not guaranteed.",
+        totalSize);
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
   }

@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/EndEffector.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {

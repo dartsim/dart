@@ -78,18 +78,20 @@ bool InverseKinematics::solve(Eigen::VectorXd& positions, bool applySolution)
 bool InverseKinematics::findSolution(Eigen::VectorXd& positions)
 {
   if (nullptr == mSolver) {
-    dtwarn << "[InverseKinematics::findSolution] The Solver for an "
-           << "InverseKinematics module associated with [" << mNode->getName()
-           << "] is a nullptr. You must reset the module's Solver before you "
-           << "can use it.\n";
+    DART_WARN(
+        "[InverseKinematics::findSolution] The Solver for an InverseKinematics "
+        "module associated with [{}] is a nullptr. You must reset the module's "
+        "Solver before you can use it.",
+        mNode->getName());
     return false;
   }
 
   if (nullptr == mProblem) {
-    dtwarn << "[InverseKinematics::findSolution] The Problem for an "
-           << "InverseKinematics module associated with [" << mNode->getName()
-           << "] is a nullptr. You must reset the module's Problem before you "
-           << "can use it.\n";
+    DART_WARN(
+        "[InverseKinematics::findSolution] The Problem for an "
+        "InverseKinematics module associated with [{}] is a nullptr. You must "
+        "reset the module's Problem before you can use it.",
+        mNode->getName());
     return false;
   }
 
@@ -242,12 +244,15 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
   if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
-    dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
-          << "joint positions size [" << _q.size() << "] and the available "
-          << "degrees of freedom [" << mIK->getDofs().size() << "]."
-          << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getNode()->getName()
-          << "\nMethod name: " << mMethodName << "\n";
+    DART_ERROR(
+        "[InverseKinematics::ErrorMethod::evalError] Mismatch between joint "
+        "positions size [{}] and the available degrees of freedom "
+        "[{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: {}",
+        _q.size(),
+        mIK->getDofs().size(),
+        mIK->getNode()->getSkeleton()->getName(),
+        mIK->getNode()->getName(),
+        mMethodName);
     mLastError.setZero();
     return mLastError;
   }
@@ -623,12 +628,15 @@ void InverseKinematics::GradientMethod::evalGradient(
     const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
 {
   if (_q.size() != static_cast<int>(mIK->getDofs().size())) {
-    dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
-          << "between joint positions size [" << _q.size() << "] and the "
-          << "available degrees of freedom [" << mIK->getDofs().size() << "]."
-          << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getNode()->getName()
-          << "\nMethod name: " << mMethodName << "\n";
+    DART_ERROR(
+        "[InverseKinematics::GradientMethod::evalGradient] Mismatch between "
+        "joint positions size [{}] and the available degrees of freedom "
+        "[{}].\\nSkeleton name: {}\\nBody name: {}\\nMethod name: {}",
+        _q.size(),
+        mIK->getDofs().size(),
+        mIK->getNode()->getSkeleton()->getName(),
+        mIK->getNode()->getName(),
+        mMethodName);
     assert(false);
     mLastGradient.resize(_q.size());
     mLastGradient.setZero();
@@ -1245,12 +1253,14 @@ void InverseKinematics::Analytical::constructDofMap()
           = mIK->getNode()->getSkeleton()->getDof(analyticalDofs[i]);
       std::string name
           = (dof == nullptr) ? std::string("nonexistent") : dof->getName();
-      dtwarn << "[InverseKinematics::Analytical::constructDofMap] Your "
-             << "analytical IK solver includes a DegreeOfFreedom ("
-             << analyticalDofs[i] << ") [" << name << "] which is not a "
-             << "dependent DOF of the JacobianNode ["
-             << mIK->getNode()->getName() << "]. This might result in "
-             << "undesirable behavior, such as that DOF being ignored\n";
+      DART_WARN(
+          "[InverseKinematics::Analytical::constructDofMap] Your analytical IK "
+          "solver includes a DegreeOfFreedom ({}) [{}] which is not a "
+          "dependent DOF of the JacobianNode [{}]. This might result in "
+          "undesirable behavior, such as that DOF being ignored",
+          analyticalDofs[i],
+          name,
+          mIK->getNode()->getName());
     }
   }
 
@@ -1605,9 +1615,11 @@ Eigen::VectorXd InverseKinematics::getPositions() const
 void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 {
   if (_q.size() != static_cast<int>(mDofs.size())) {
-    dterr << "[InverseKinematics::setPositions] Mismatch between joint "
-          << "positions size [" << _q.size() << "] and number of available "
-          << "degrees of freedom [" << mDofs.size() << "]\n";
+    DART_ERROR(
+        "[InverseKinematics::setPositions] Mismatch between joint positions "
+        "size [{}] and number of available degrees of freedom [{}]",
+        _q.size(),
+        mDofs.size());
     return;
   }
 
@@ -1639,8 +1651,9 @@ optimizer::FunctionPtr InverseKinematics::Objective::clone(
 double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
 {
   if (nullptr == mIK) {
-    dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
-          << "Objective function of an expired InverseKinematics module!\n";
+    DART_ERROR(
+        "[InverseKinematics::Objective::eval] Attempting to use an Objective "
+        "function of an expired InverseKinematics module!");
     assert(false);
     return 0;
   }
@@ -1661,8 +1674,9 @@ void InverseKinematics::Objective::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
   if (nullptr == mIK) {
-    dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
-          << "an Objective function of an expired InverseKinematics module!\n";
+    DART_ERROR(
+        "[InverseKinematics::Objective::evalGradient] Attempting to use an "
+        "Objective function of an expired InverseKinematics module!");
     assert(false);
     return;
   }
@@ -1703,8 +1717,9 @@ optimizer::FunctionPtr InverseKinematics::Constraint::clone(
 double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
 {
   if (nullptr == mIK) {
-    dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
-          << "Constraint function of an expired InverseKinematics module!\n";
+    DART_ERROR(
+        "[InverseKinematics::Constraint::eval] Attempting to use a Constraint "
+        "function of an expired InverseKinematics module!");
     assert(false);
     return 0;
   }
@@ -1717,8 +1732,9 @@ void InverseKinematics::Constraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
   if (nullptr == mIK) {
-    dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
-          << "a Constraint function of an expired InverseKinematics module!\n";
+    DART_ERROR(
+        "[InverseKinematics::Constraint::evalGradient] Attempting to use a "
+        "Constraint function of an expired InverseKinematics module!");
     assert(false);
     return;
   }

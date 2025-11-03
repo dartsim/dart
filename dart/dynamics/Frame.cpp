@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Frame.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -545,9 +545,10 @@ Frame::Frame() : Frame(ConstructAbstract)
 Frame::Frame(ConstructAbstractTag)
   : Entity(Entity::ConstructAbstract), mAmWorld(false), mAmShapeFrame(false)
 {
-  dterr << "[Frame::constructor] You are calling a constructor for the Frame "
-        << "class which is only meant to be used by pure abstract classes. If "
-        << "you are seeing this, then there is a bug!\n";
+  DART_ERROR(
+      "[Frame::constructor] You are calling a constructor for the Frame class "
+      "which is only meant to be used by pure abstract classes. If you are "
+      "seeing this, then there is a bug!");
   assert(false);
 }
 
@@ -563,10 +564,12 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       // We make an exception here for the World Frame, because it's
       // special/unique
       {
-        dtwarn << "[Frame::changeParentFrame] Attempting to create a circular "
-               << "kinematic dependency by making Frame '" << getName()
-               << "' a child of Frame '" << _newParentFrame->getName() << "'. "
-               << "This will not be allowed.\n";
+        DART_WARN(
+            "[Frame::changeParentFrame] Attempting to create a circular "
+            "kinematic dependency by making Frame '{}' a child of Frame '{}'. "
+            "This will not be allowed.",
+            getName(),
+            _newParentFrame->getName());
         return;
       }
     }
@@ -649,8 +652,10 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 //==============================================================================
 const std::string& WorldFrame::setName(const std::string& name)
 {
-  dterr << "[WorldFrame::setName] attempting to change name of World frame to ["
-        << name << "], but this is not allowed!\n";
+  DART_ERROR(
+      "[WorldFrame::setName] attempting to change name of World frame to [{}], "
+      "but this is not allowed!",
+      name);
   static const std::string worldName = "World";
   return worldName;
 }

@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Entity.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -223,8 +223,9 @@ Entity::Entity(ConstructAbstractTag)
     onAccelerationChanged(mAccelerationChangedSignal),
     mAmQuiet(false)
 {
-  dterr << "[Entity::Entity] Your class implementation is calling the Entity "
-        << "constructor that is meant to be reserved for abstract classes!\n";
+  DART_ERROR(
+      "[Entity::Entity] Your class implementation is calling the Entity "
+      "constructor that is meant to be reserved for abstract classes!");
   assert(false);
 }
 

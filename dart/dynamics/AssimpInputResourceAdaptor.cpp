@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <assimp/IOStream.hpp>
 
@@ -81,8 +81,10 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
   // TODO: How do we support text mode?
   if (pMode != std::string("r") && pMode != std::string("rb")
       && pMode != std::string("rt")) {
-    dtwarn << "[AssimpInputResourceRetrieverAdaptor::Open] Unsupported mode '"
-           << pMode << "'. Only 'r', 'rb', and 'rt' are supported.\n";
+    DART_WARN(
+        "[AssimpInputResourceRetrieverAdaptor::Open] Unsupported mode '{}'. "
+        "Only 'r', 'rb', and 'rt' are supported.",
+        pMode);
     return nullptr;
   }
 
@@ -128,8 +130,10 @@ std::size_t AssimpInputResourceAdaptor::Read(
 std::size_t AssimpInputResourceAdaptor::Write(
     const void* /*pvBuffer*/, std::size_t /*pSize*/, std::size_t /*pCount*/)
 {
-  dtwarn << "[AssimpInputResourceAdaptor::Write] Write is not implemented."
-            " This is a read-only stream.\n";
+  DART_WARN(
+      "{}",
+      "[AssimpInputResourceAdaptor::Write] Write is not implemented."
+      " This is a read-only stream.\n");
   return 0;
 }
 
@@ -153,8 +157,10 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
       break;
 
     default:
-      dtwarn << "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
-                " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n";
+      DART_WARN(
+          "{}",
+          "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
+          " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n");
       return aiReturn_FAILURE;
   }
 
@@ -179,8 +185,10 @@ std::size_t AssimpInputResourceAdaptor::FileSize() const
 //==============================================================================
 void AssimpInputResourceAdaptor::Flush()
 {
-  dtwarn << "[AssimpInputResourceAdaptor::Flush] Flush is not implemented."
-            " This is a read-only stream.\n";
+  DART_WARN(
+      "{}",
+      "[AssimpInputResourceAdaptor::Flush] Flush is not implemented."
+      " This is a read-only stream.\n");
 }
 
 /*

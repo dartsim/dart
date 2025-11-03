@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/ZeroDofJoint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Helpers.hpp"
@@ -62,8 +62,9 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 //==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 {
-  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
-        << "ZeroDofJoint. This is not allowed!\n";
+  DART_ERROR(
+      "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+      "ZeroDofJoint. This is not allowed!");
   assert(false);
   return nullptr;
 }
@@ -71,8 +72,9 @@ DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t) const
 {
-  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
-        << "ZeroDofJoint. This is not allowed!\n";
+  DART_ERROR(
+      "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+      "ZeroDofJoint. This is not allowed!");
   assert(false);
   return nullptr;
 }
@@ -111,8 +113,10 @@ std::size_t ZeroDofJoint::getNumDofs() const
 //==============================================================================
 std::size_t ZeroDofJoint::getIndexInSkeleton(std::size_t _index) const
 {
-  dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
-        << "called (" << _index << ")!\n";
+  DART_ERROR(
+      "[ZeroDofJoint::getIndexInSkeleton] This function should never be called "
+      "({})!",
+      _index);
   assert(false);
 
   return 0;
@@ -121,8 +125,10 @@ std::size_t ZeroDofJoint::getIndexInSkeleton(std::size_t _index) const
 //==============================================================================
 std::size_t ZeroDofJoint::getIndexInTree(std::size_t _index) const
 {
-  dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
-        << "called (" << _index << ")!\n";
+  DART_ERROR(
+      "ZeroDofJoint::getIndexInTree] This function should never be called "
+      "({})!",
+      _index);
   assert(false);
 
   return 0;
@@ -137,8 +143,7 @@ void ZeroDofJoint::setCommand(std::size_t /*_index*/, double /*_command*/)
 //==============================================================================
 double ZeroDofJoint::getCommand(std::size_t _index) const
 {
-  dterr << "[ZeroDofJoint::getCommand]: index[" << _index << "] out of range"
-        << std::endl;
+  DART_ERROR("[ZeroDofJoint::getCommand]: index[{}] out of range", _index);
 
   return 0.0;
 }
@@ -170,7 +175,7 @@ void ZeroDofJoint::setPosition(std::size_t, double)
 //==============================================================================
 double ZeroDofJoint::getPosition(std::size_t _index) const
 {
-  dterr << "getPosition index[" << _index << "] out of range" << std::endl;
+  DART_ERROR("getPosition index[{}] out of range", _index);
 
   return 0.0;
 }

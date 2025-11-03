@@ -217,9 +217,10 @@ detail::OdeGeom* createOdeGeom(
   } else if (const auto heightMap = shape->as<HeightmapShaped>()) {
     geom = new detail::OdeHeightmapd(collObj, heightMap);
   } else {
-    dterr << "[OdeCollisionDetector] Attempting to create an unsupported shape "
-          << "type '" << shape->getType() << "'. Creating a sphere with 0.01 "
-          << "radius instead.\n";
+    DART_ERROR(
+        "[OdeCollisionDetector] Attempting to create an unsupported shape type "
+        "'{}'. Creating a sphere with 0.01 radius instead.",
+        shape->getType());
 
     geom = new detail::OdeSphere(collObj, 0.01);
   }

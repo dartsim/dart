@@ -37,8 +37,10 @@
 
 #define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(Func, T, ReturnType)            \
   if (requiresAspect<T>()) {                                                   \
-    dterr << "[Composite::" #Func << "] Illegal request to remove required "   \
-          << "Aspect [" << typeid(T).name() << "]!\n";                         \
+    DART_ERROR(                                                                \
+        "[Composite::{}] Illegal request to remove required Aspect [{}]!",     \
+        #Func,                                                                 \
+        typeid(T).name());                                                     \
     assert(false);                                                             \
     return ReturnType;                                                         \
   }

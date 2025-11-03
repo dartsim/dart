@@ -56,8 +56,11 @@ void setOdeHeightfieldDetails(
   assert(width >= 2);
   assert(height >= 2);
   if ((width < 2) || (height < 2)) {
-    dtwarn << "Cannot create height field of dimensions " << width << "x"
-           << height << ", needs to be at least 2" << std::endl;
+    DART_WARN(
+        "Cannot create height field of dimensions {}x{}, needs to be at least "
+        "2",
+        width,
+        height);
     return;
   }
   dGeomHeightfieldDataBuildSingle(
@@ -88,8 +91,11 @@ void setOdeHeightfieldDetails(
   assert(width >= 2);
   assert(height >= 2);
   if ((width < 2) || (height < 2)) {
-    dtwarn << "Cannot create height field of dimensions " << width << "x"
-           << height << ", needs to be at least 2" << std::endl;
+    DART_WARN(
+        "Cannot create height field of dimensions {}x{}, needs to be at least "
+        "2",
+        width,
+        height);
     return;
   }
 
@@ -152,9 +158,14 @@ OdeHeightmap<S>::OdeHeightmap(
   // AABB is only needed for the debug print.
   dReal aabb[6];
   dGeomGetAABB(mGeomId, aabb);
-  dtdbg << "ODE Heightfield AABB: min = {" << aabb[0] << ", " << aabb[2] << ", "
-        << aabb[4] << "} max = {" << aabb[1] << ", " << aabb[3] << ", "
-        << aabb[5] << "}" << std::endl;
+  DART_DEBUG(
+      "ODE Heightfield AABB: min = {{}, {}, {}} max = {{}, {}, {}}",
+      aabb[0],
+      aabb[2],
+      aabb[4],
+      aabb[1],
+      aabb[3],
+      aabb[5]);
 }
 
 //==============================================================================

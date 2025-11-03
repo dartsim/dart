@@ -98,10 +98,11 @@ ShapeFrameNode::ShapeFrameNode(
 dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 {
   if (!mUtilized && checkUtilization) {
-    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
-           << "ShapeFrameNode. This can be dangerous because unused "
-           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
-           << "already got deleted.\n";
+    DART_WARN(
+        "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+        "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
+        "implies that it's possible that the ShapeFrame already got "
+        "deleted.");
   }
 
   return mShapeFrame;
@@ -112,10 +113,11 @@ const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
     bool checkUtilization) const
 {
   if (!mUtilized && checkUtilization) {
-    dtwarn << "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
-           << "ShapeFrameNode. This can be dangerous because unused "
-           << "ShapeFrameNode implies that it's possible that the ShapeFrame "
-           << "already got deleted.\n";
+    DART_WARN(
+        "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+        "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
+        "implies that it's possible that the ShapeFrame already got "
+        "deleted.");
   }
 
   return mShapeFrame;
@@ -189,11 +191,12 @@ void ShapeFrameNode::refreshShapeNode(
 static void warnAboutUnsuccessfulCast(
     const std::string& shapeType, const std::string& entityName)
 {
-  dtwarn << "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '"
-         << entityName << "' claimed to be a '" << shapeType
-         << "' but it failed to be dynamically cast to that type. "
-         << "It will not be added to the OSG tree, "
-         << "and therefore will not be rendered\n";
+  DART_WARN(
+      "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '{}' claimed "
+      "to be a '{}' but it failed to be dynamically cast to that type. It will "
+      "not be added to the OSG tree, and therefore will not be rendered",
+      entityName,
+      shapeType);
 }
 
 //==============================================================================

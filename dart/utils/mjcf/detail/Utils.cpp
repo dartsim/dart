@@ -126,9 +126,10 @@ Eigen::Matrix3d compileRotation(
       rot = math::eulerZYXToMatrix(angles);
       assert(math::verifyRotation(rot));
     } else {
-      dterr << "[MjcfParser] Unsupported Euler angle sequence: '"
-            << compiler.getEulerSeq() << "'. Please report this error. "
-            << "This should be an easy fix.\n";
+      DART_ERROR(
+          "[MjcfParser] Unsupported Euler angle sequence: '{}'. Please report "
+          "this error. This should be an easy fix.",
+          compiler.getEulerSeq());
       rot.setIdentity();
     }
   } else if (xyAxes) {

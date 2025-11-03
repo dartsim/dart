@@ -32,7 +32,7 @@
 
 #include "dart/optimizer/ipopt/IpoptSolver.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
@@ -92,7 +92,7 @@ bool IpoptSolver::solve()
   // Intialize the IpoptApplication and process the options
   Ipopt::ApplicationReturnStatus init_status = mIpoptApp->Initialize();
   if (init_status != Ipopt::Solve_Succeeded) {
-    dterr << "[IpoptSolver::solve] Error during ipopt initialization.\n";
+    DART_ERROR("[IpoptSolver::solve] Error during ipopt initialization.");
     assert(false);
     return false;
   }
@@ -251,16 +251,16 @@ bool DartTNLP::get_starting_point(
   // multipliers z^L and z^U
   if (init_z) {
     // TODO(JS): Not implemented yet.
-    dterr << "Initializing lower/upper bounds for z is not supported yet. "
-          << "Ignored here.\n";
+    DART_ERROR(
+        "Initializing lower/upper bounds for z is not supported yet. Ignored "
+        "here.");
   }
 
   // If init_lambda is true, this method must provide an initial value for the
   // constraint multipliers, lambda.
   if (init_lambda) {
     // TODO(JS): Not implemented yet.
-    dterr << "Initializing lambda is not supported yet. "
-          << "Ignored here.\n";
+    DART_ERROR("Initializing lambda is not supported yet. Ignored here.");
   }
 
   return true;
@@ -407,7 +407,7 @@ bool DartTNLP::eval_h(
     Ipopt::Number* _values)
 {
   // TODO(JS): Not implemented yet.
-  dterr << "[DartTNLP::eval_h] Not implemented yet.\n";
+  DART_ERROR("[DartTNLP::eval_h] Not implemented yet.");
 
   return TNLP::eval_h(
       _n,

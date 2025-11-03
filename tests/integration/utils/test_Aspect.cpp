@@ -569,9 +569,10 @@ void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
     aspect->randomize();
     ++counter;
     if (counter > 10) {
-      dtwarn
-          << "[testAspect::makeStatesDifferent] Randomization failed to make "
-          << "the states different after " << counter << " attempts!\n";
+      DART_WARN(
+          "[testAspect::makeStatesDifferent] Randomization failed to make the "
+          "states different after {} attempts!",
+          counter);
       break;
     }
   }
@@ -585,8 +586,10 @@ void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
     aspect->randomize();
     ++counter;
     if (counter > 10) {
-      dtwarn << "[testAspect::makePropertiesDifferent] Randomization failed to "
-             << "make the states different after " << counter << " attempts!\n";
+      DART_WARN(
+          "[testAspect::makePropertiesDifferent] Randomization failed to make "
+          "the states different after {} attempts!",
+          counter);
       break;
     }
   }

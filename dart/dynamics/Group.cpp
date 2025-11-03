@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Group.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -86,12 +86,12 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   GroupPtr newGroup = create(cloneName, nullptr);
 
   if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u)) {
-    dtwarn << "[Group::cloneMetaSkeletonHelper] Attempting to "
-           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
-           << "but including some Joints or DegreeOfFreedoms. This will lead "
-           << "to dangling Joints or DegreeOfFreedoms in the cloned "
-           << "ReferentialSkeleton because it only holds the stong reference "
-           << "to the BodyNodes but not others.\n";
+    DART_WARN(
+        "[Group::cloneMetaSkeletonHelper] Attempting to clone a "
+        "ReferentialSkeleton that doesn't include any BodyNodes but including "
+        "some Joints or DegreeOfFreedoms. This will lead to dangling Joints or "
+        "DegreeOfFreedoms in the cloned ReferentialSkeleton because it only "
+        "holds the stong reference to the BodyNodes but not others.");
   }
 
   // Array for Skeleton clones that will be collected durig cloning BodyNodes,
@@ -147,10 +147,15 @@ MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const
 void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
 {
   if (_index1 >= mBodyNodes.size() || _index2 >= mBodyNodes.size()) {
-    dterr << "[Group::swapBodyNodeIndices] Trying to swap out-of-bound indices "
-          << "for the Group named [" << getName() << "] (" << this << ")! "
-          << "_index1:" << _index1 << " | _index2:" << _index2 << " | Both "
-          << "values must be less than " << mBodyNodes.size() << "\n";
+    DART_ERROR(
+        "[Group::swapBodyNodeIndices] Trying to swap out-of-bound indices for "
+        "the Group named [{}] ({})! _index1:{} | _index2:{} | Both values must "
+        "be less than {}",
+        getName(),
+        static_cast<const void*>(this),
+        _index1,
+        _index2,
+        mBodyNodes.size());
     assert(false);
     return;
   }
@@ -162,10 +167,13 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
       = mIndexMap.find(bn1);
 
   if (it1 == mIndexMap.end()) {
-    dterr << "[Group::swapBodyNodeIndices] Unable to find BodyNode ["
-          << bn1->getName() << "] (" << bn1 << ") in the index map of the "
-          << "Group [" << getName() << "] (" << this << ")! Please report this "
-          << "as a bug!\n";
+    DART_ERROR(
+        "[Group::swapBodyNodeIndices] Unable to find BodyNode [{}] ({}) in the "
+        "index map of the Group [{}] ({})! Please report this as a bug!",
+        bn1->getName(),
+        static_cast<const void*>(bn1),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
     return;
   }
@@ -174,10 +182,13 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
       = mIndexMap.find(bn2);
 
   if (it2 == mIndexMap.end()) {
-    dterr << "[Group::swapBodyNodeIndices] Unable to find BodyNode ["
-          << bn2->getName() << "] (" << bn2 << ") in the index map of the "
-          << "Group [" << getName() << "] (" << this << ")! Please report this "
-          << "as a bug!\n";
+    DART_ERROR(
+        "[Group::swapBodyNodeIndices] Unable to find BodyNode [{}] ({}) in the "
+        "index map of the Group [{}] ({})! Please report this as a bug!",
+        bn2->getName(),
+        static_cast<const void*>(bn2),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
     return;
   }
@@ -194,10 +205,15 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
 void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
 {
   if (_index1 >= mDofs.size() || _index2 >= mDofs.size()) {
-    dterr << "[Group::swapDofIndices] Trying to swap out-of-bound indices for "
-          << "the Group named [" << getName() << "] (" << this << ")! "
-          << "_index1:" << _index1 << " | _index2:" << _index2 << " | Both "
-          << "values must be less than " << mDofs.size() << "\n";
+    DART_ERROR(
+        "[Group::swapDofIndices] Trying to swap out-of-bound indices for the "
+        "Group named [{}] ({})! _index1:{} | _index2:{} | Both values must be "
+        "less than {}",
+        getName(),
+        static_cast<const void*>(this),
+        _index1,
+        _index2,
+        mDofs.size());
     assert(false);
     return;
   }
@@ -209,10 +225,13 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
       = mIndexMap.find(dof1->getChildBodyNode());
 
   if (it1 == mIndexMap.end()) {
-    dterr << "[Group::swapDofIndices] Unable to find DegreeOfFreedom ["
-          << dof1->getName() << "] (" << dof1 << ") in the index map of the "
-          << "Group [" << getName() << "] (" << this << ")! Please report this "
-          << "as a bug!\n";
+    DART_ERROR(
+        "[Group::swapDofIndices] Unable to find DegreeOfFreedom [{}] ({}) in "
+        "the index map of the Group [{}] ({})! Please report this as a bug!",
+        dof1->getName(),
+        static_cast<const void*>(dof1),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
     return;
   }
@@ -221,10 +240,13 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
       = mIndexMap.find(dof2->getChildBodyNode());
 
   if (it2 == mIndexMap.end()) {
-    dterr << "[Group::swapDofIndices] Unable to find DegreeOfFreedom ["
-          << dof2->getName() << "] (" << dof2 << ") in the index map of the "
-          << "Group [" << getName() << "] (" << this << ")! Please report this "
-          << "as a bug!\n";
+    DART_ERROR(
+        "[Group::swapDofIndices] Unable to find DegreeOfFreedom [{}] ({}) in "
+        "the index map of the Group [{}] ({})! Please report this as a bug!",
+        dof2->getName(),
+        static_cast<const void*>(dof2),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
     return;
   }
@@ -246,8 +268,11 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 {
   if (nullptr == _bn) {
     if (_warning) {
-      dtwarn << "[Group::addComponent] Attempting to add a nullptr component "
-             << "to the Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addComponent] Attempting to add a nullptr component to the "
+          "Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -262,9 +287,13 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
     added |= addDof(_bn->getParentJoint()->getDof(i), false);
 
   if (_warning && !added) {
-    dtwarn << "[Group::addComponent] The BodyNode named [" << _bn->getName()
-           << "] (" << _bn << ") and all of its parent DegreesOfFreedom are "
-           << "already in the Group [" << getName() << "] (" << this << ")\n";
+    DART_WARN(
+        "[Group::addComponent] The BodyNode named [{}] ({}) and all of its "
+        "parent DegreesOfFreedom are already in the Group [{}] ({})",
+        _bn->getName(),
+        static_cast<const void*>(_bn),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
   }
 
@@ -287,9 +316,11 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 {
   if (nullptr == _bn) {
     if (_warning) {
-      dtwarn << "[Group::removeComponent] Attempting to remove a nullptr "
-             << "component from the Group [" << getName() << "] (" << this
-             << ")\n";
+      DART_WARN(
+          "[Group::removeComponent] Attempting to remove a nullptr component "
+          "from the Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -304,9 +335,13 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
     removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
 
   if (_warning && !removed) {
-    dtwarn << "[Group::removeComponent] The BodyNode named [" << _bn->getName()
-           << "] (" << _bn << ") and its parent DegreesOfFreedom were not in "
-           << "the Group [" << getName() << "] (" << this << ")\n";
+    DART_WARN(
+        "[Group::removeComponent] The BodyNode named [{}] ({}) and its parent "
+        "DegreesOfFreedom were not in the Group [{}] ({})",
+        _bn->getName(),
+        static_cast<const void*>(_bn),
+        getName(),
+        static_cast<const void*>(this));
     assert(false);
   }
 
@@ -329,8 +364,11 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
 {
   if (nullptr == _bn) {
     if (_warning) {
-      dtwarn << "[Group::addBodyNode] Attempting to add a nullptr BodyNode "
-             << "to the Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addBodyNode] Attempting to add a nullptr BodyNode to the "
+          "Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -339,9 +377,13 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
 
   if (INVALID_INDEX != getIndexOf(_bn, false)) {
     if (_warning) {
-      dtwarn << "[Group::addBodyNode] The BodyNode named [" << _bn->getName()
-             << "] (" << _bn << ") is already in the Group [" << getName()
-             << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addBodyNode] The BodyNode named [{}] ({}) is already in the "
+          "Group [{}] ({})",
+          _bn->getName(),
+          static_cast<const void*>(_bn),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -368,9 +410,11 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
 {
   if (nullptr == _bn) {
     if (_warning) {
-      dtwarn << "[Group::removeBodyNode] Attempting to remove a nullptr "
-             << "BodyNode from the Group [" << getName() << "] (" << this
-             << ")\n";
+      DART_WARN(
+          "[Group::removeBodyNode] Attempting to remove a nullptr BodyNode "
+          "from the Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -379,9 +423,13 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
 
   if (INVALID_INDEX == getIndexOf(_bn, false)) {
     if (_warning) {
-      dtwarn << "[Group::removeBodyNode] The BodyNode named [" << _bn->getName()
-             << "] (" << _bn << ") is NOT in the Group [" << getName() << "] ("
-             << this << ")\n";
+      DART_WARN(
+          "[Group::removeBodyNode] The BodyNode named [{}] ({}) is NOT in the "
+          "Group [{}] ({})",
+          _bn->getName(),
+          static_cast<const void*>(_bn),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -408,8 +456,11 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
 {
   if (nullptr == _joint) {
     if (_warning) {
-      dtwarn << "[Group::addJoint] Attempting to add a nullptr Joint to the "
-             << "Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addJoint] Attempting to add a nullptr Joint to the Group "
+          "[{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -429,14 +480,22 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
 
   if (!added && _warning) {
     if (_addDofs) {
-      dtwarn << "[Group::addJoint] The Joint named [" << _joint->getName()
-             << "] (" << _joint << ") and all its DOFs are already in the "
-             << "Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addJoint] The Joint named [{}] ({}) and all its DOFs are "
+          "already in the Group [{}] ({})",
+          _joint->getName(),
+          static_cast<const void*>(_joint),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     } else {
-      dtwarn << "[Group::addJoint] The Joint named [" << _joint->getName()
-             << "] (" << _joint << ") is already in the Group [" << getName()
-             << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addJoint] The Joint named [{}] ({}) is already in the Group "
+          "[{}] ({})",
+          _joint->getName(),
+          static_cast<const void*>(_joint),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
   }
@@ -460,8 +519,11 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 {
   if (nullptr == _joint) {
     if (_warning) {
-      dtwarn << "[Group::removeJoint] Attempting to remove a nullptr Joint "
-             << "from the Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::removeJoint] Attempting to remove a nullptr Joint from the "
+          "Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -484,14 +546,22 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 
   if (!removed && _warning) {
     if (_removeDofs) {
-      dtwarn << "[Group::removeJoint] The Joint named [" << _joint->getName()
-             << "] (" << _joint << ") and its DOFs were NOT in the Group ["
-             << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::removeJoint] The Joint named [{}] ({}) and its DOFs were "
+          "NOT in the Group [{}] ({})",
+          _joint->getName(),
+          static_cast<const void*>(_joint),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     } else {
-      dtwarn << "[Group::removeJoint] The Joint named [" << _joint->getName()
-             << "] (" << _joint << ") was NOT in the Group [" << getName()
-             << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::removeJoint] The Joint named [{}] ({}) was NOT in the Group "
+          "[{}] ({})",
+          _joint->getName(),
+          static_cast<const void*>(_joint),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
   }
@@ -515,8 +585,11 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
 {
   if (nullptr == _dof) {
     if (_warning) {
-      dtwarn << "[Group::addDof] Attempting to add a nullptr DegreeOfFreedom "
-             << "to the Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addDof] Attempting to add a nullptr DegreeOfFreedom to the "
+          "Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -534,14 +607,22 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
 
   if (!added && _warning) {
     if (_addJoint) {
-      dtwarn << "[Group::addDof] The DegreeOfFreedom named [" << _dof->getName()
-             << "] (" << _dof << ") and its Joint are already in the Group ["
-             << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addDof] The DegreeOfFreedom named [{}] ({}) and its Joint "
+          "are already in the Group [{}] ({})",
+          _dof->getName(),
+          static_cast<const void*>(_dof),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     } else {
-      dtwarn << "[Group::addDof] The DegreeOfFreedom named [" << _dof->getName()
-             << "] (" << _dof << ") is already in the Group [" << getName()
-             << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::addDof] The DegreeOfFreedom named [{}] ({}) is already in "
+          "the Group [{}] ({})",
+          _dof->getName(),
+          static_cast<const void*>(_dof),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
   }
@@ -565,9 +646,11 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
 {
   if (nullptr == _dof) {
     if (_warning) {
-      dtwarn << "[Group::removeDof] Attempting to remove a nullptr "
-             << "DegreeOfFreedom from the Group [" << getName() << "] (" << this
-             << ")\n";
+      DART_WARN(
+          "[Group::removeDof] Attempting to remove a nullptr DegreeOfFreedom "
+          "from the Group [{}] ({})",
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
 
@@ -603,14 +686,22 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
 
   if (!removed && _warning) {
     if (_cleanupJoint) {
-      dtwarn << "[Group::removeDof] The DegreeOfFreedom named ["
-             << _dof->getName() << "] (" << _dof << ") and its Joint were NOT "
-             << "in the Group [" << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::removeDof] The DegreeOfFreedom named [{}] ({}) and its "
+          "Joint were NOT in the Group [{}] ({})",
+          _dof->getName(),
+          static_cast<const void*>(_dof),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     } else {
-      dtwarn << "[Group::removeDof] The DegreeOfFreedom named ["
-             << _dof->getName() << "] (" << _dof << ") was NOT in the Group ["
-             << getName() << "] (" << this << ")\n";
+      DART_WARN(
+          "[Group::removeDof] The DegreeOfFreedom named [{}] ({}) was NOT in "
+          "the Group [{}] ({})",
+          _dof->getName(),
+          static_cast<const void*>(_dof),
+          getName(),
+          static_cast<const void*>(this));
       assert(false);
     }
   }

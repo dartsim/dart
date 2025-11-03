@@ -32,8 +32,8 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -264,9 +264,11 @@ bool checkVersion(
   // TODO: We need version aware SDF parser (see #264)
   // We support 1.4 ~ 1.6.
   if (version != "1.4" && version != "1.5" && version != "1.6") {
-    dtwarn << "[SdfParser] The file format of [" << uri.toString()
-           << "] was found to be [" << version << "], but we only support SDF "
-           << "1.4, 1.5, and 1.6!\n";
+    DART_WARN(
+        "[SdfParser] The file format of [{}] was found to be [{}], but we only "
+        "support SDF 1.4, 1.5, and 1.6!",
+        uri.toString(),
+        version);
     return false;
   }
 
@@ -284,8 +286,10 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   try {
     openXMLFile(sdfFile, uri, retriever);
   } catch (std::exception const& e) {
-    dtwarn << "[SdfParser::readSdfFile] Loading file [" << uri.toString()
-           << "] failed: " << e.what() << "\n";
+    DART_WARN(
+        "[SdfParser::readSdfFile] Loading file [{}] failed: {}",
+        uri.toString(),
+        e.what());
     return nullptr;
   }
 
@@ -332,8 +336,10 @@ dynamics::SkeletonPtr readSkeleton(
   try {
     openXMLFile(_dartFile, uri, retriever);
   } catch (std::exception const& e) {
-    dtwarn << "[SdfParser::readSkeleton] Loading file [" << uri.toString()
-           << "] failed: " << e.what() << "\n";
+    DART_WARN(
+        "[SdfParser::readSkeleton] Loading file [{}] failed: {}",
+        uri.toString(),
+        e.what());
     return nullptr;
   }
 
@@ -486,9 +492,9 @@ dynamics::SkeletonPtr readSkeleton(
             dynamics::Joint::Properties("root", body->second.initTransform));
         rootJoint.type = "fixed";
       } else {
-        dtwarn << "Unsupported root joint type ["
-               << static_cast<int>(options.mDefaultRootJointType)
-               << "]. Using FLOATING by default.\n";
+        DART_WARN(
+            "Unsupported root joint type [{}]. Using FLOATING by default.",
+            static_cast<int>(options.mDefaultRootJointType));
       }
 
       if (!createPair(newSkeleton, nullptr, rootJoint, body->second))
@@ -534,8 +540,8 @@ bool createPair(
     pair = createJointAndNodePair<dynamics::SoftBodyNode>(
         skeleton, parent, newJoint, newBody);
   } else {
-    dterr << "[SdfParser::createPair] Unsupported Link type: " << newBody.type
-          << "\n";
+    DART_ERROR(
+        "[SdfParser::createPair] Unsupported Link type: {}", newBody.type);
     return false;
   }
 
@@ -572,10 +578,11 @@ NextResult getNextJointAndNodePair(
 
     if (check_parent_body == sdfBodyNodes.end()) {
       // The Body does not exist in the file
-      dterr << "[SdfParser::getNextJointAndNodePair] Could not find Link "
-            << "named [" << parentBodyName << "] requested as parent of "
-            << "Joint [" << parentJointName << "]. We will now quit "
-            << "parsing.\n";
+      DART_ERROR(
+          "[SdfParser::getNextJointAndNodePair] Could not find Link named [{}] "
+          "requested as parent of Joint [{}]. We will now quit parsing.",
+          parentBodyName,
+          parentJointName);
       return BREAK;
     } else {
       body = check_parent_body;
@@ -665,9 +672,11 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
         static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
 
-  dterr << "[SdfParser::createJointAndNodePair] Unsupported Joint type "
-           "encountered: "
-        << type << ". Please report this as a bug! We will now quit parsing.\n";
+  DART_ERROR(
+      "{}{}. Please report this as a bug! We will now quit parsing.",
+      "[SdfParser::createJointAndNodePair] Unsupported Joint type "
+      "encountered: ",
+      type);
   return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
 }
 
@@ -686,9 +695,10 @@ BodyMap readAllBodyNodes(
 
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if (it != sdfBodyNodes.end()) {
-      dtwarn << "[SdfParser::readAllBodyNodes] Duplicate name in file: "
-             << body.properties->mName << "\n"
-             << "Every Link must have a unique name!\n";
+      DART_WARN(
+          "[SdfParser::readAllBodyNodes] Duplicate name in file: {}\\nEvery "
+          "Link must have a unique name!",
+          body.properties->mName);
       continue;
     }
 
@@ -849,7 +859,7 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
       softProperties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
-      dterr << "Unknown soft shape.\n";
+      DART_ERROR("Unknown soft shape.");
     }
 
     // kv
@@ -919,8 +929,9 @@ dynamics::ShapePtr readShape(
     // TODO(JS): We assume that uri is just file name for the mesh
     if (!hasElement(meshEle, "uri")) {
       // TODO(MXG): Figure out how to report the file name and line number of
-      dtwarn << "[SdfParser::readShape] Mesh is missing a URI, which is "
-             << "required in order to load it\n";
+      DART_WARN(
+          "[SdfParser::readShape] Mesh is missing a URI, which is required in "
+          "order to load it");
       return nullptr;
     }
     std::string uri = getValueString(meshEle, "uri");
@@ -936,8 +947,8 @@ dynamics::ShapePtr readShape(
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, model, meshUri, _retriever);
     else {
-      dtwarn << "[SdfParser::readShape] Failed to load mesh model [" << meshUri
-             << "].\n";
+      DART_WARN(
+          "[SdfParser::readShape] Failed to load mesh model [{}].", meshUri);
       return nullptr;
     }
   } else {
@@ -985,8 +996,9 @@ void readMaterial(
       Eigen::Vector4d color4d = color;
       visualAspect->setColor(color4d);
     } else {
-      dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
-            << color.size() << "\n";
+      DART_ERROR(
+          "[SdfParse::readMaterial] Unsupported color vector size: {}",
+          color.size());
     }
   }
 }
@@ -1002,8 +1014,10 @@ void readVisualizationShapeNode(
   if (hasAttribute(vizShapeNodeEle, "name")) {
     visualName = getAttributeString(vizShapeNodeEle, "name");
   } else {
-    dtwarn << "Missing required attribute [name] in <visual> element of "
-           << "<link name = " << bodyNode->getName() << ">.\n";
+    DART_WARN(
+        "Missing required attribute [name] in <visual> element of <link name = "
+        "{}>.",
+        bodyNode->getName());
   }
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
@@ -1033,8 +1047,10 @@ void readCollisionShapeNode(
   if (hasAttribute(collShapeNodeEle, "name")) {
     collName = getAttributeString(collShapeNodeEle, "name");
   } else {
-    dtwarn << "Missing required attribute [name] in <collision> element of "
-           << "<link name = " << bodyNode->getName() << ">.\n";
+    DART_WARN(
+        "Missing required attribute [name] in <collision> element of <link "
+        "name = {}>.",
+        bodyNode->getName());
   }
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
@@ -1086,20 +1102,23 @@ JointMap readAllJoints(
     SDFJoint joint = readJoint(joints.get(), sdfBodyNodes, skeletonFrame);
 
     if (joint.childName.empty()) {
-      dterr << "[SdfParser::readAllJoints] Joint named ["
-            << joint.properties->mName << "] does not have a valid child "
-            << "Link, so it will not be added to the Skeleton\n";
+      DART_ERROR(
+          "[SdfParser::readAllJoints] Joint named [{}] does not have a valid "
+          "child Link, so it will not be added to the Skeleton",
+          joint.properties->mName);
       continue;
     }
 
     JointMap::iterator it = sdfJoints.find(joint.childName);
     if (it != sdfJoints.end()) {
-      dterr << "[SdfParser::readAllJoints] Joint named ["
-            << joint.properties->mName << "] is claiming Link ["
-            << joint.childName << "] as its child, but that is already "
-            << "claimed by Joint [" << it->second.properties->mName
-            << "]. Joint [" << joint.properties->mName
-            << "] will be discarded\n";
+      DART_ERROR(
+          "[SdfParser::readAllJoints] Joint named [{}] is claiming Link [{}] "
+          "as its child, but that is already claimed by Joint [{}]. Joint [{}] "
+          "will be discarded",
+          joint.properties->mName,
+          joint.childName,
+          it->second.properties->mName,
+          joint.properties->mName);
       continue;
     }
 
@@ -1136,15 +1155,19 @@ SDFJoint readJoint(
       parent_it = _sdfBodyNodes.find(strParent);
 
       if (parent_it == _sdfBodyNodes.end()) {
-        dterr << "[SdfParser::readJoint] Cannot find a Link named ["
-              << strParent << "] requested as the parent of the Joint named ["
-              << name << "]\n";
+        DART_ERROR(
+            "[SdfParser::readJoint] Cannot find a Link named [{}] requested as "
+            "the parent of the Joint named [{}]",
+            strParent,
+            name);
         assert(0);
       }
     }
   } else {
-    dterr << "[SdfParser::readJoint] You must set parent link for "
-          << "the Joint [" << name << "]!\n";
+    DART_ERROR(
+        "[SdfParser::readJoint] You must set parent link for the Joint "
+        "[{}]!",
+        name);
     assert(0);
   }
 
@@ -1158,13 +1181,18 @@ SDFJoint readJoint(
     child_it = _sdfBodyNodes.find(strChild);
 
     if (child_it == _sdfBodyNodes.end()) {
-      dterr << "[SdfParser::readJoint] Cannot find a Link named [" << strChild
-            << "] requested as the child of the Joint named [" << name << "]\n";
+      DART_ERROR(
+          "[SdfParser::readJoint] Cannot find a Link named [{}] requested as "
+          "the child of the Joint named [{}]",
+          strChild,
+          name);
       assert(0);
     }
   } else {
-    dterr << "[SdfParser::readJoint] You must set the child link for the Joint "
-          << "[" << name << "]!\n";
+    DART_ERROR(
+        "[SdfParser::readJoint] You must set the child link for the Joint "
+        "[{}]!",
+        name);
     assert(0);
   }
 
@@ -1214,8 +1242,8 @@ SDFJoint readJoint(
     newJoint.properties = dynamics::BallJoint::Properties::createShared(
         readBallJoint(_jointElement, parentModelFrame, name));
   } else {
-    dterr << "Unsupported joint type [" << type
-          << "]. Using [fixed] joint type instead.\n";
+    DART_ERROR(
+        "Unsupported joint type [{}]. Using [fixed] joint type instead.", type);
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
         readWeldJoint(_jointElement, parentModelFrame, name));
   }
@@ -1236,8 +1264,12 @@ static void reportMissingElement(
     const std::string& objectType,
     const std::string& objectName)
 {
-  dterr << "[SdfParser::" << functionName << "] Missing element " << elementName
-        << " for " << objectType << " named " << objectName << "\n";
+  DART_ERROR(
+      "[SdfParser::{}] Missing element {} for {} named {}",
+      functionName,
+      elementName,
+      objectType,
+      objectName);
   assert(0);
 }
 

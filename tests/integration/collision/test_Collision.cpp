@@ -234,11 +234,11 @@ void Collision::printResult(
 
 TEST_F(Collision, DROP)
 {
-  dtdbg << "Unrotated box\n";
+  DART_DEBUG("Unrotated box");
   dart::collision::fcl::Box box1(0.5, 0.5, 0.5);
   dropWithRotation(&box1, 0, 0, 0);
 
-  dtdbg << "Rotated box\n";
+  DART_DEBUG("Rotated box");
   dart::collision::fcl::Box box2(0.5, 0.5, 0.5);
   dropWithRotation(
       &box2,
@@ -1177,11 +1177,11 @@ TEST_F(Collision, testHeightmapBox)
 #if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   // TODO take this message out as soon as testing is done
-  dtdbg << "Testing ODE (float)" << std::endl;
+  DART_DEBUG("Testing ODE (float)");
   testHeightmapBox<float>(ode.get(), true, true, 0.05f);
 
   // TODO take this message out as soon as testing is done
-  dtdbg << "Testing ODE (double)" << std::endl;
+  DART_DEBUG("Testing ODE (double)");
   testHeightmapBox<double>(ode.get(), true, true, 0.05);
 #endif
 
@@ -1189,7 +1189,7 @@ TEST_F(Collision, testHeightmapBox)
   auto bullet = BulletCollisionDetector::create();
 
   // TODO take this message out as soon as testing is done
-  dtdbg << "Testing Bullet (float)" << std::endl;
+  DART_DEBUG("Testing Bullet (float)");
   // bullet so far only supports float height fields, so don't test double here.
   testHeightmapBox<float>(bullet.get(), false, false);
 #endif

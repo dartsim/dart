@@ -131,8 +131,8 @@ void Controller::changeStateMachine(
   mCurrentStateMachine->begin(_currentTime);
 
   if (mVerbosity) {
-    dtmsg << "State machine transition: from [" << prevName << "] to ["
-          << nextName << "]." << endl;
+    DART_INFO(
+        "State machine transition: from [{}] to [{}].", prevName, nextName);
   }
 }
 
@@ -251,7 +251,7 @@ void Controller::harnessPelvis()
   mPelvisHarnessOn = true;
 
   if (mVerbosity)
-    dtmsg << "Pelvis is harnessed." << std::endl;
+    DART_INFO("Pelvis is harnessed.");
 }
 
 //==============================================================================
@@ -264,7 +264,7 @@ void Controller::unharnessPelvis()
   mPelvisHarnessOn = false;
 
   if (mVerbosity)
-    dtmsg << "Pelvis is unharnessed." << std::endl;
+    DART_INFO("Pelvis is unharnessed.");
 }
 
 //==============================================================================
@@ -278,7 +278,7 @@ void Controller::harnessLeftFoot()
   mLeftFootHarnessOn = true;
 
   if (mVerbosity)
-    dtmsg << "Left foot is harnessed." << std::endl;
+    DART_INFO("Left foot is harnessed.");
 }
 
 //==============================================================================
@@ -291,7 +291,7 @@ void Controller::unharnessLeftFoot()
   mLeftFootHarnessOn = false;
 
   if (mVerbosity)
-    dtmsg << "Left foot is unharnessed." << std::endl;
+    DART_INFO("Left foot is unharnessed.");
 }
 
 //==============================================================================
@@ -305,7 +305,7 @@ void Controller::harnessRightFoot()
   mRightFootHarnessOn = true;
 
   if (mVerbosity)
-    dtmsg << "Right foot is harnessed." << std::endl;
+    DART_INFO("Right foot is harnessed.");
 }
 
 //==============================================================================
@@ -318,7 +318,7 @@ void Controller::unharnessRightFoot()
   mRightFootHarnessOn = false;
 
   if (mVerbosity)
-    dtmsg << "Right foot is unharnessed." << std::endl;
+    DART_INFO("Right foot is unharnessed.");
 }
 
 //==============================================================================
@@ -327,7 +327,7 @@ void Controller::resetRobot()
   mAtlasRobot->setConfiguration(mInitialState);
 
   if (mVerbosity)
-    dtmsg << "Robot is reset." << std::endl;
+    DART_INFO("Robot is reset.");
 }
 
 //==============================================================================

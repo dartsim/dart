@@ -32,8 +32,8 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/LocalResource.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
 
 #include <fstream>

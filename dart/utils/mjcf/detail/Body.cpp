@@ -388,16 +388,18 @@ Inertial Body::computeInertialFromGeoms(
 
   // TODO(JS): Handle this error properly instead of seg-faulting
   if (geoms.empty()) {
-    dterr << "[MjcfParser] Faled to infer <inertial> because of no <geom> "
-          << "found.\n";
+    DART_ERROR(
+        "[MjcfParser] Faled to infer <inertial> because of no <geom> "
+        "found.");
     assert(false);
     return inertial;
   }
 
   // TODO(JS): Single geom assumed for now
   if (geoms.size() > 1) {
-    dtwarn << "[MjcfParser] Unsupported number of <geom> in inferring "
-           << "<inertial>. We use only the first <geom> for now.\n";
+    DART_WARN(
+        "[MjcfParser] Unsupported number of <geom> in inferring <inertial>. We "
+        "use only the first <geom> for now.");
   }
 
   if (compiler.getCoordinate() == Coordinate::LOCAL) {

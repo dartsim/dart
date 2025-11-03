@@ -32,7 +32,7 @@
 
 #include "dart/common/VersionCounter.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <iostream>
 
@@ -69,9 +69,9 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
   VersionCounter* next = dependent;
   do {
     if (next == this) {
-      dterr
-          << "[VersionCounter::setVersionDependentObject] Attempting to "
-          << "create a circular version dependency with the following loop:\n";
+      DART_ERROR(
+          "[VersionCounter::setVersionDependentObject] Attempting to create a "
+          "circular version dependency with the following loop:");
       next = dependent;
       while (next != this) {
         std::cerr << " -- " << next << "\n";
