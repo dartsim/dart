@@ -35,8 +35,6 @@
 
 #include <dart/config.hpp>
 
-#include <sstream>
-
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/DegreeOfFreedom.hpp>
 #include <dart/dynamics/GenericJoint.hpp>

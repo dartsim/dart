@@ -38,6 +38,7 @@
 #include "dart/constraint/ContactSurface.hpp"
 
 #include <fmt/ostream.h>
+
 #include <utility>
 
 namespace dart {
