@@ -169,6 +169,8 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF CATEGORY diagnostics)
 dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
+dart_option(DART_USE_IMGUI_DOCKING
+  "Fetch ImGui docking branch (experimental, internal testing only)" OFF CATEGORY experimental)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
@@ -176,6 +178,19 @@ dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
 dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
+
+if(DART_USE_IMGUI_DOCKING AND DART_USE_SYSTEM_IMGUI)
+  message(FATAL_ERROR "DART_USE_IMGUI_DOCKING requires DART_USE_SYSTEM_IMGUI=OFF.")
+endif()
+
+if(DART_USE_IMGUI_DOCKING)
+  add_compile_definitions(DART_IMGUI_DOCKING)
+  message(WARNING "ImGui docking build is intended for internal testing only; avoid using install/release packages with this option enabled.")
+endif()
+
+if(DART_BUILD_DARTPY7)
+  set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+endif()
 
 if(DART_BUILD_DARTPY8)
   set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)

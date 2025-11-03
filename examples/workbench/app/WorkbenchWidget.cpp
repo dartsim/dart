@@ -2,6 +2,9 @@
 
 #include <imgui.h>
 #include <imgui_impl_opengl2.h>
+#ifdef DART_IMGUI_DOCKING
+#  include <imgui_internal.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -53,7 +56,11 @@ void WorkbenchWidget::render()
   WorkbenchLayout layout = computeLayout();
   updateMetrics();
 
+#ifdef DART_IMGUI_DOCKING
+  renderDockingRoot(layout);
+#else
   drawTopBar(layout);
+#endif
   drawExampleBrowser(layout);
   drawOverview(layout);
   drawProperties(layout);
@@ -160,6 +167,51 @@ void WorkbenchWidget::updateMetrics()
     mRtfHistory.erase(mRtfHistory.begin());
 }
 
+void WorkbenchWidget::renderMenuBarContent(float windowWidth)
+{
+  if (!ImGui::BeginMenuBar())
+    return;
+
+  if (ImGui::BeginMenu("File")) {
+    const bool canReload = (mSelectedIndex < mExamples.size())
+        && mExamples[mSelectedIndex].hasFactory();
+    if (ImGui::MenuItem("Reload Example", "Ctrl+R", false, canReload))
+      reloadCurrentExample();
+    if (ImGui::MenuItem("Quit"))
+      viewer().setDone(true);
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("Simulation")) {
+    bool running = viewer().isSimulating();
+    if (ImGui::MenuItem(running ? "Pause" : "Play"))
+      toggleSimulation();
+    if (ImGui::MenuItem(
+            "Reset Scene",
+            nullptr,
+            false,
+            mSelectedIndex < mExamples.size()
+                && mExamples[mSelectedIndex].hasFactory()))
+      reloadCurrentExample();
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("Help")) {
+    if (ImGui::MenuItem("About DART"))
+      viewer().showAbout();
+    ImGui::EndMenu();
+  }
+
+  const float statsWidth = 220.0f;
+  ImGui::SameLine(std::max(0.0f, windowWidth - statsWidth));
+  ImGui::Text(
+      "RTF %.3f | Time %.2fs",
+      mWorldNode->getLastRealTimeFactor(),
+      mWorldNode->getWorld() ? mWorldNode->getWorld()->getTime() : 0.0);
+
+  ImGui::EndMenuBar();
+}
+
 void WorkbenchWidget::drawTopBar(const WorkbenchLayout& layout)
 {
   ImGui::SetNextWindowPos(layout.viewportPos);
@@ -170,55 +222,91 @@ void WorkbenchWidget::drawTopBar(const WorkbenchLayout& layout)
       | ImGuiWindowFlags_NoBringToFrontOnFocus
       | ImGuiWindowFlags_MenuBar;
 
-  if (ImGui::Begin("##WorkbenchTopBar", nullptr, flags)) {
-    if (ImGui::BeginMenuBar()) {
-      if (ImGui::BeginMenu("File")) {
-        const bool canReload
-            = (mSelectedIndex < mExamples.size())
-              && mExamples[mSelectedIndex].hasFactory();
-        if (ImGui::MenuItem("Reload Example", "Ctrl+R", false, canReload))
-          reloadCurrentExample();
-        if (ImGui::MenuItem("Quit"))
-          viewer().setDone(true);
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("Simulation")) {
-        bool running = viewer().isSimulating();
-        if (ImGui::MenuItem(running ? "Pause" : "Play"))
-          toggleSimulation();
-        if (ImGui::MenuItem("Reset Scene", nullptr, false,
-                mSelectedIndex < mExamples.size()
-                && mExamples[mSelectedIndex].hasFactory()))
-          reloadCurrentExample();
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
-          viewer().showAbout();
-        ImGui::EndMenu();
-      }
-
-      ImGui::EndMenuBar();
-    }
-
-    ImGui::SameLine();
-    ImGui::SetCursorPosX(layout.viewportSize.x - 220.0f);
-    ImGui::Text(
-        "RTF %.3f | Time %.2fs",
-        mWorldNode->getLastRealTimeFactor(),
-        mWorldNode->getWorld()
-            ? mWorldNode->getWorld()->getTime()
-            : 0.0);
-  }
+  if (ImGui::Begin("##WorkbenchTopBar", nullptr, flags))
+    renderMenuBarContent(layout.viewportSize.x);
   ImGui::End();
 }
 
+#ifdef DART_IMGUI_DOCKING
+void WorkbenchWidget::renderDockingRoot(const WorkbenchLayout& layout)
+{
+  ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowPos(viewport->Pos);
+  ImGui::SetNextWindowSize(viewport->Size);
+  ImGui::SetNextWindowViewport(viewport->ID);
+
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar
+      | ImGuiWindowFlags_NoDocking
+      | ImGuiWindowFlags_NoTitleBar
+      | ImGuiWindowFlags_NoCollapse
+      | ImGuiWindowFlags_NoResize
+      | ImGuiWindowFlags_NoMove
+      | ImGuiWindowFlags_NoBringToFrontOnFocus
+      | ImGuiWindowFlags_NoNavFocus
+      | ImGuiWindowFlags_NoBackground;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+  if (ImGui::Begin("WorkbenchDockRoot", nullptr, windowFlags)) {
+    renderMenuBarContent(ImGui::GetWindowWidth());
+
+    const ImGuiID dockspaceId = ImGui::GetID("WorkbenchDockspace");
+    ImGui::DockSpace(
+        dockspaceId,
+        ImVec2(0.0f, 0.0f),
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+
+    if (!mDockspaceInitialized) {
+      const ImVec2 dockSize = ImGui::GetWindowSize();
+      ImGui::DockBuilderRemoveNode(dockspaceId);
+      ImGuiID dockMain = ImGui::DockBuilderAddNode(dockspaceId);
+      ImGui::DockBuilderSetNodeSize(dockMain, dockSize);
+
+      const float totalWidth = std::max(1.0f, dockSize.x);
+      const float totalHeight = std::max(1.0f, dockSize.y);
+
+      ImGuiID dockLeft = ImGui::DockBuilderSplitNode(
+          dockMain,
+          ImGuiDir_Left,
+          std::clamp(layout.leftWidth / totalWidth, 0.1f, 0.4f),
+          nullptr,
+          &dockMain);
+      ImGuiID dockRight = ImGui::DockBuilderSplitNode(
+          dockMain,
+          ImGuiDir_Right,
+          std::clamp(layout.rightWidth / totalWidth, 0.1f, 0.5f),
+          nullptr,
+          &dockMain);
+      ImGuiID dockBottom = ImGui::DockBuilderSplitNode(
+          dockMain,
+          ImGuiDir_Down,
+          std::clamp(
+              layout.bottomHeight / std::max(layout.bottomHeight + layout.viewerHeight, 1.0f),
+              0.15f,
+              0.6f),
+          nullptr,
+          &dockMain);
+
+      ImGui::DockBuilderDockWindow("Example Browser", dockLeft);
+      ImGui::DockBuilderDockWindow("Properties", dockRight);
+      ImGui::DockBuilderDockWindow("Log & Metrics", dockBottom);
+      ImGui::DockBuilderDockWindow("Overview", dockMain);
+      ImGui::DockBuilderFinish(dockspaceId);
+      mDockspaceInitialized = true;
+    }
+  }
+  ImGui::End();
+  ImGui::PopStyleVar(2);
+}
+#endif
+
 void WorkbenchWidget::drawExampleBrowser(const WorkbenchLayout& layout)
 {
+#ifndef DART_IMGUI_DOCKING
   ImGui::SetNextWindowPos(layout.origin);
   ImGui::SetNextWindowSize(ImVec2(layout.leftWidth, layout.centerHeight));
+#endif
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse
       | ImGuiWindowFlags_NoMove
       | ImGuiWindowFlags_NoResize;
@@ -249,7 +337,9 @@ void WorkbenchWidget::drawExampleBrowser(const WorkbenchLayout& layout)
         }
 
         if (!record.description.empty()) {
-          ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + layout.leftWidth - 24.0f);
+          const float wrapWidth
+              = ImGui::GetCursorPos().x + ImGui::GetContentRegionAvail().x - 24.0f;
+          ImGui::PushTextWrapPos(wrapWidth);
           ImGui::TextDisabled("%s", record.description.c_str());
           ImGui::PopTextWrapPos();
         }
@@ -261,10 +351,12 @@ void WorkbenchWidget::drawExampleBrowser(const WorkbenchLayout& layout)
 
 void WorkbenchWidget::drawOverview(const WorkbenchLayout& layout)
 {
+#ifndef DART_IMGUI_DOCKING
   ImGui::SetNextWindowPos(ImVec2(
       layout.origin.x + layout.leftWidth + layout.padding,
       layout.origin.y));
   ImGui::SetNextWindowSize(ImVec2(layout.centerWidth, layout.viewerHeight));
+#endif
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse
       | ImGuiWindowFlags_NoMove
       | ImGuiWindowFlags_NoResize;
@@ -314,11 +406,13 @@ void WorkbenchWidget::drawOverview(const WorkbenchLayout& layout)
 
 void WorkbenchWidget::drawProperties(const WorkbenchLayout& layout)
 {
+#ifndef DART_IMGUI_DOCKING
   ImGui::SetNextWindowPos(ImVec2(
       layout.origin.x + layout.leftWidth + layout.padding + layout.centerWidth
           + layout.padding,
       layout.origin.y));
   ImGui::SetNextWindowSize(ImVec2(layout.rightWidth, layout.centerHeight));
+#endif
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse
       | ImGuiWindowFlags_NoMove
       | ImGuiWindowFlags_NoResize;
@@ -375,6 +469,7 @@ void WorkbenchWidget::drawProperties(const WorkbenchLayout& layout)
 
 void WorkbenchWidget::drawLog(const WorkbenchLayout& layout)
 {
+#ifndef DART_IMGUI_DOCKING
   ImGui::SetNextWindowPos(ImVec2(
       layout.origin.x,
       layout.origin.y + layout.centerHeight + layout.padding));
@@ -382,6 +477,7 @@ void WorkbenchWidget::drawLog(const WorkbenchLayout& layout)
       layout.leftWidth + layout.centerWidth + layout.rightWidth
           + layout.padding * 2.0f,
       layout.bottomHeight));
+#endif
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse
       | ImGuiWindowFlags_NoMove
       | ImGuiWindowFlags_NoResize;
@@ -518,6 +614,9 @@ void WorkbenchWidget::applyUiScale(float scale)
   io.FontGlobalScale = 1.0f;
 
   mCurrentUiScale = scale;
+#ifdef DART_IMGUI_DOCKING
+  mDockspaceInitialized = false;
+#endif
 }
 
 void WorkbenchWidget::rebuildCategoryView()

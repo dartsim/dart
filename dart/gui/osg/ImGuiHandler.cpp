@@ -241,6 +241,9 @@ ImGuiHandler::ImGuiHandler()
   : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f}
 {
   ImGui::CreateContext();
+#ifdef DART_IMGUI_DOCKING
+  ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
 
   ImGui::StyleColorsDark();
 
