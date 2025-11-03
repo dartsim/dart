@@ -109,7 +109,7 @@ check-lint-cpp = { cmd = """
 
 # Check dart7 and dartpy7 formatting without modifying files
 check-lint-dart7 = { cmd = """
-    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run -Werror -style=file
+    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
