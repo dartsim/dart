@@ -59,6 +59,10 @@ private:
   void drawOverview(const WorkbenchLayout& layout);
   void drawProperties(const WorkbenchLayout& layout);
   void drawLog(const WorkbenchLayout& layout);
+  void renderMenuBarContent(float windowWidth);
+#ifdef DART_IMGUI_DOCKING
+  void renderDockingRoot(const WorkbenchLayout& layout);
+#endif
 
   void selectExample(std::size_t index, bool forceReload);
   void loadExample(std::size_t index);
@@ -90,6 +94,9 @@ private:
   float mCurrentUiScale{1.0f};
   float mDetectedUiScale{1.0f};
   float mUiScaleControl{1.0f};
+#ifdef DART_IMGUI_DOCKING
+  bool mDockspaceInitialized{false};
+#endif
 };
 
 } // namespace workbench

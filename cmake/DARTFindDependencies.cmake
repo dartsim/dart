@@ -170,9 +170,15 @@ if(DART_BUILD_GUI_OSG)
     # Current: v1.84.2 (released 2021-08-23)
     # Minimum required: v1.80 for stable table API
     set(IMGUI_MIN_VERSION "1.80")
-    set(IMGUI_TARGET_VERSION "v1.84.2")
+    if(DART_USE_IMGUI_DOCKING)
+      set(IMGUI_TARGET_VERSION "docking")
+      set(_IMGUI_BRANCH_DESC "docking branch")
+    else()
+      set(IMGUI_TARGET_VERSION "v1.84.2")
+      set(_IMGUI_BRANCH_DESC "${IMGUI_TARGET_VERSION}")
+    endif()
 
-    message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
+    message(STATUS "Fetching ImGui ${_IMGUI_BRANCH_DESC} from GitHub...")
 
     FetchContent_Declare(
       imgui
@@ -261,6 +267,9 @@ if(DART_BUILD_GUI_OSG)
 
     # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
     target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+    if(DART_USE_IMGUI_DOCKING)
+      target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_ENABLE_DOCKING)
+    endif()
 
     # Component registration
     # Note: We use dart-imgui-lib as the real target name (not imgui::imgui with ALIAS)
@@ -269,23 +278,27 @@ if(DART_BUILD_GUI_OSG)
     add_component(${PROJECT_NAME} ${imgui_component_name})
     add_component_targets(${PROJECT_NAME} ${imgui_component_name} ${imgui_library_name})
 
-    # Install fetched ImGui headers to standard system-like paths
-    # This allows downstream projects to use standard includes like <imgui.h>
-    install(
-      FILES ${IMGUI_CORE_HEADERS}
-      DESTINATION include
-      COMPONENT headers
-    )
-    install(
-      FILES ${IMGUI_BACKEND_HEADERS}
-      DESTINATION include/backends
-      COMPONENT headers
-    )
+    if(NOT DART_USE_IMGUI_DOCKING)
+      # Install fetched ImGui headers to standard system-like paths
+      # This allows downstream projects to use standard includes like <imgui.h>
+      install(
+        FILES ${IMGUI_CORE_HEADERS}
+        DESTINATION include
+        COMPONENT headers
+      )
+      install(
+        FILES ${IMGUI_BACKEND_HEADERS}
+        DESTINATION include/backends
+        COMPONENT headers
+      )
 
-    message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
+      message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
 
-    # Add install-time warning about installing fetched ImGui
-    install(CODE "message(WARNING \"Installing fetched ImGui headers to \${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+      # Add install-time warning about installing fetched ImGui
+      install(CODE "message(WARNING \"Installing fetched ImGui headers to \\${CMAKE_INSTALL_PREFIX}/include/. If you have system ImGui installed, this may cause conflicts. For production use, consider building with -DDART_USE_SYSTEM_IMGUI=ON instead.\")" COMPONENT headers)
+    else()
+      message(STATUS "ImGui docking branch fetched successfully (installation disabled)")
+    endif()
   endif()
 endif()
 
