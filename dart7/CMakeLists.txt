@@ -29,8 +29,32 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 
 add_library(dart7 STATIC
+  body/rigid_body.cpp
+  common/diagnostics.cpp
+  common/exceptions.cpp
+  common/profiling.cpp
+  comps/dynamics.cpp
+  comps/frame_types.cpp
+  comps/joint.cpp
+  comps/link.cpp
+  comps/multi_body.cpp
+  comps/name.cpp
+  comps/rigid_body.cpp
+  frame/fixed_frame.cpp
+  frame/frame.cpp
+  frame/free_frame.cpp
+  io/binary_io.cpp
+  io/serializer.cpp
+  multi_body/joint.cpp
+  multi_body/link.cpp
+  multi_body/multi_body.cpp
+  space/state_space.cpp
+  space/vector_mapper.cpp
   world.cpp
 )
+
+include(dart7_defs)
+include(dart7_dependencies)
 
 target_include_directories(dart7
   PUBLIC
@@ -40,5 +64,12 @@ target_include_directories(dart7
 )
 
 target_compile_features(dart7 PUBLIC cxx_std_20)
+
+target_link_libraries(dart7
+  PUBLIC
+    Eigen3::Eigen
+    EnTT::EnTT
+    spdlog::spdlog
+)
 
 add_library(dart7::dart7 ALIAS dart7)
