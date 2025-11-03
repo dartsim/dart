@@ -168,6 +168,15 @@ pixi run api-docs-clean-gh     # Remove build artifacts
      - Build Python docs via Sphinx.
   3. Publish the aggregated site to the `gh-pages` branch.
 
+## Version Retention Policy
+
+To balance coverage with maintenance cost we publish two tiers of API documentation builds:
+
+1. **Latest release for each major line** – ensures we always have a single, well-tested reference for every supported major (e.g., v6.13.2 for the DART 6 line).
+2. **Latest patch for active minor lines** – keeps a single patch-level build for any older minor that still receives fixes (currently v6.12.2).
+
+Update `scripts/docs_versions.txt` when the set of supported majors or minors changes. The GitHub Pages workflow consumes that file directly, so trimming the list immediately reduces CI time and storage for historical builds.
+
 ## Adding New Versions
 
 1. Tag the release:

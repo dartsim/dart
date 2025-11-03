@@ -14,8 +14,3 @@ Available Versions
 
 - `v6.13.2-py <https://dartsim.github.io/dart/v6.13.2-py/>`_
 - `v6.12.2-py <https://dartsim.github.io/dart/v6.12.2-py/>`_
-- `v6.11.1-py <https://dartsim.github.io/dart/v6.11.1-py/>`_
-- `v6.10.1-py <https://dartsim.github.io/dart/v6.10.1-py/>`_
-- `v6.8.5-py <https://dartsim.github.io/dart/v6.8.5-py/>`_
-- `v6.7.3-py <https://dartsim.github.io/dart/v6.7.3-py/>`_
-- `v6.6.2-py <https://dartsim.github.io/dart/v6.6.2-py/>`_

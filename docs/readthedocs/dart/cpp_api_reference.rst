@@ -14,8 +14,3 @@ Available Versions
 
 - `v6.13.2 <https://dartsim.github.io/dart/v6.13.2/>`_
 - `v6.12.2 <https://dartsim.github.io/dart/v6.12.2/>`_
-- `v6.11.1 <https://dartsim.github.io/dart/v6.11.1/>`_
-- `v6.10.1 <https://dartsim.github.io/dart/v6.10.1/>`_
-- `v6.8.5 <https://dartsim.github.io/dart/v6.8.5/>`_
-- `v6.7.3 <https://dartsim.github.io/dart/v6.7.3/>`_
-- `v6.6.2 <https://dartsim.github.io/dart/v6.6.2/>`_
