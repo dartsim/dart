@@ -1,36 +1,39 @@
 Installation
 ============
 
-To install the Python bindings for DART using the `dartpy` package from PyPI,
-you can use the following command:
+Quick install commands
+----------------------
+
+Use your preferred package manager to add ``dartpy`` to an existing environment:
 
 .. code-block:: bash
 
-   pip install dartpy -U
+   uv add dartpy                 # uv (recommended for Python-first projects)
+   pip install dartpy --pre      # PyPI wheels (Linux x86_64, CPython 3.12–3.14)
+   pixi add dartpy               # Pixi environment
+   conda install -c conda-forge dartpy
 
-The following operating systems are currently supported:
+Supported platforms
+-------------------
 
-+----------------+--------+--------+--------+--------+--------+
-| Operating      | Python | Python | Python | Python | Python |
-| System         | 3.7    | 3.8    | 3.9    | 3.10   | 3.11   |
-+================+========+========+========+========+========+
-| Linux x86_64   |   O    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Linux arm64    |   X    |   X    |   X    |   X    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| macOS x86_64   |   X    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| macOS arm64    |   X    |   O    |   X    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Windows x86_64 |   X    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Windows arm64  |   X    |   X    |   X    |   X    |   O    |
-+----------------+--------+--------+--------+--------+--------+
+Pre-built wheels on PyPI currently cover the following configurations:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 50
+
+   * - Platform / Python
+     - Status
+   * - Linux x86_64 / CPython 3.12–3.14
+     - ✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)
+   * - Other CPython versions and platforms
+     - ⚠️ Use conda-forge, pixi, or build from source (no recent wheels yet)
 
 .. note::
 
-   This table may not be up-to-date. For the latest information on the
-   availability of the Python bindings for DART, please refer to the dartpy
-   package on PyPI: https://pypi.org/project/dartpy/. If you would like to use
-   dartpy on an unsupported OS or Python version, please let us know so we can
-   consider adding support.
+   The latest PyPI upload is a pre-release (``7.0.0.dev0``). Use the ``--pre`` flag with ``pip`` if you want that build; otherwise pip falls back to the last stable 0.2.x wheel. For the most up-to-date availability, check the `dartpy project page on PyPI <https://pypi.org/project/dartpy/>`_.
+
+Building from source
+--------------------
+
+If you need a configuration that is not covered by the pre-built packages, build the Python bindings locally by following the instructions in :doc:`../python_api_reference` or the developer onboarding guide. Building requires a full DART build with pybind11 enabled and a matching Python toolchain.
