@@ -98,7 +98,7 @@ void StateMachine::setInitialState(State* _state)
 //==============================================================================
 void StateMachine::begin(double _currentTime)
 {
-  //  DART_INFO("StateMachine [{}]: begin().{}", getName(), endl);
+  //  DART_INFO("StateMachine [{}]: begin().", getName());
 
   mBeginTime = _currentTime;
   mFrame = 0;
@@ -126,7 +126,7 @@ void StateMachine::end(double _currentTime)
 {
   mEndTime = _currentTime;
 
-  //  DART_INFO("StateMachine [{}]: end().{}", getName(), endl);
+  //  DART_INFO("StateMachine [{}]: end().", getName());
 }
 
 //==============================================================================
