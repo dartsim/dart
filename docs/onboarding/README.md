@@ -48,6 +48,7 @@ This onboarding guide is organized into several focused documents:
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
 - **[gui-rendering.md](gui-rendering.md)** - OpenSceneGraph integration details
 - **[python-bindings.md](python-bindings.md)** - pybind11 bindings architecture
+- **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
 
 ### Purpose and Problem Solved

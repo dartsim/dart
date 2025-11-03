@@ -1,32 +1,7 @@
 Migration Guide
 ===============
 
-DART 7 → DART 8
-----------------
-
-Header Names: PascalCase → snake_case
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Change**: PascalCase headers → snake_case headers
-
-.. code-block:: cpp
-
-   // Before
-   #include <dart/dynamics/BodyNode.hpp>
-   #include <dart/collision/CollisionDetector.hpp>
-
-   // After
-   #include <dart/dynamics/body_node.hpp>
-   #include <dart/collision/collision_detector.hpp>
-
-**Note**: Old PascalCase headers still work in DART 7.x with deprecation warnings (removed in DART 8.0)
-
-**Suppress warnings** (if needed during migration):
-
-.. code-block:: cpp
-
-   #define DART_SUPPRESS_DEPRECATED_HEADER_WARNING
-   #include <dart/dynamics/BodyNode.hpp>  // No warning
+This page captures noteworthy source-level changes between stable releases so you can migrate projects with minimal surprises. Only migrations for **published** versions are listed here; when a new major release approaches we will expand the guide accordingly.
 
 DART 6 → DART 7
 ----------------
@@ -46,7 +21,7 @@ Component Headers Renamed
    #include <dart/dynamics/all.hpp>
    #include <dart/collision/all.hpp>
 
-**Note**: Old headers still work but show deprecation warnings (removed in DART 8.0)
+**Note**: Old headers still work but show deprecation warnings (removed in a future major release).
 
 **Suppress warnings** (if needed during migration):
 
@@ -54,3 +29,32 @@ Component Headers Renamed
 
    #define DART_SUPPRESS_DEPRECATED_HEADER_WARNING
    #include <dart/dynamics/dynamics.hpp>
+
+Header Names: PascalCase → snake_case
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Change**: PascalCase headers → snake_case headers
+
+.. code-block:: cpp
+
+   // Before
+   #include <dart/dynamics/BodyNode.hpp>
+   #include <dart/collision/CollisionDetector.hpp>
+
+   // After
+   #include <dart/dynamics/body_node.hpp>
+   #include <dart/collision/collision_detector.hpp>
+
+**Note**: PascalCase headers continue to compile in DART 7.x but emit deprecation warnings. They are slated for removal in the next major release.
+
+**Suppress warnings** (if needed during migration):
+
+.. code-block:: cpp
+
+   #define DART_SUPPRESS_DEPRECATED_HEADER_WARNING
+   #include <dart/dynamics/BodyNode.hpp>  // No warning
+
+Need another migration?
+-----------------------
+
+Looking for guidance on a different upgrade path? Open a discussion or issue on GitHub so we can expand this page with the details you need.
