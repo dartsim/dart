@@ -679,6 +679,12 @@ ex-hello-world = { depends-on = [
   ] },
 ] }
 
+ex-workbench = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "workbench",
+  ] },
+] }
+
 py-atlas-puppet = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
     python python/examples/atlas_puppet/main.py
