@@ -32,19 +32,120 @@
 
 #pragma once
 
+#include "dart7/body/rigid_body_options.hpp"
+#include "dart7/fwd.hpp"
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+#include <iosfwd>
+#include <optional>
+#include <string>
+#include <string_view>
+
+#include <cstddef>
+
 namespace dart7 {
 
-/// Minimal placeholder world type used by the experimental dart7 bindings.
 class World
 {
 public:
-  World() = default;
+  World();
   ~World() = default;
 
-  World(const World&) = default;
-  World(World&&) noexcept = default;
-  World& operator=(const World&) = default;
-  World& operator=(World&&) noexcept = default;
+  World(const World&) = delete;
+  World& operator=(const World&) = delete;
+  World(World&&) = delete;
+  World& operator=(World&&) = delete;
+
+  //--------------------------------------------------------------------------
+  // Frame creation
+  //--------------------------------------------------------------------------
+  FreeFrame addFreeFrame();
+  FreeFrame addFreeFrame(std::string_view name);
+  FreeFrame addFreeFrame(std::string_view name, const Frame& parent);
+
+  FixedFrame addFixedFrame(std::string_view name, const Frame& parent);
+  FixedFrame addFixedFrame(
+      std::string_view name,
+      const Frame& parent,
+      const Eigen::Isometry3d& offset);
+
+  //--------------------------------------------------------------------------
+  // Multibody management
+  //--------------------------------------------------------------------------
+  MultiBody addMultiBody(std::string_view name);
+  std::optional<MultiBody> getMultiBody(std::string_view name);
+  std::size_t getMultiBodyCount() const;
+
+  //--------------------------------------------------------------------------
+  // Rigid body management
+  //--------------------------------------------------------------------------
+  RigidBody addRigidBody(
+      std::string_view name,
+      const RigidBodyOptions& options = RigidBodyOptions{});
+  bool hasRigidBody(std::string_view name) const;
+  std::size_t getRigidBodyCount() const;
+
+  //--------------------------------------------------------------------------
+  // Simulation control
+  //--------------------------------------------------------------------------
+  [[nodiscard]] bool isSimulationMode() const
+  {
+    return m_simulationMode;
+  }
+
+  void enterSimulationMode();
+  void updateKinematics();
+
+  //--------------------------------------------------------------------------
+  // Registry access
+  //--------------------------------------------------------------------------
+  entt::registry& getRegistry();
+  const entt::registry& getRegistry() const;
+
+  //--------------------------------------------------------------------------
+  // Serialization
+  //--------------------------------------------------------------------------
+  void saveBinary(std::ostream& output) const;
+  void loadBinary(std::istream& input);
+
+  //--------------------------------------------------------------------------
+  // Utilities
+  //--------------------------------------------------------------------------
+  void clear();
+
+private:
+  friend class Frame;
+  friend class FreeFrame;
+  friend class FixedFrame;
+  friend class Link;
+  friend class Joint;
+  friend class MultiBody;
+  friend class RigidBody;
+
+  Frame resolveParentFrame(const Frame& parent) const;
+  entt::entity createFrameEntity(
+      std::string_view name,
+      const Frame& parentFrame,
+      const Eigen::Isometry3d& localTransform,
+      std::size_t* autoNameCounter,
+      std::string_view autoNamePrefix,
+      bool isFixedFrame,
+      std::string& outName);
+
+  void ensureDesignMode() const;
+  void resetCountersFromRegistry();
+
+  entt::registry m_registry;
+  bool m_simulationMode{false};
+
+  std::size_t m_freeFrameCounter{0};
+  std::size_t m_fixedFrameCounter{0};
+  std::size_t m_multiBodyCounter{0};
+  std::size_t m_rigidBodyCounter{0};
+  std::size_t m_linkCounter{0};
+  std::size_t m_jointCounter{0};
 };
 
 } // namespace dart7

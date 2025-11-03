@@ -211,6 +211,14 @@ def run_unit_tests() -> bool:
     return success
 
 
+def run_dart7_tests() -> bool:
+    """Run dart7-specific tests (ctest filtered to dart7 labels)."""
+    print_header("DART7 TESTS")
+
+    result, _ = run_command("pixi run test-dart7", "dart7 C++ tests")
+    return result
+
+
 def run_python_tests() -> bool:
     """Run Python tests"""
     print_header("PYTHON TESTS")
@@ -218,6 +226,14 @@ def run_python_tests() -> bool:
     # Check if Python bindings are enabled
     result, _ = run_command("pixi run test-py", "Python tests")
 
+    return result
+
+
+def run_dartpy7_tests() -> bool:
+    """Run dartpy7 smoke test."""
+    print_header("DARTPY7 SMOKE TEST")
+
+    result, _ = run_command("pixi run test-dartpy7", "dartpy7 smoke test")
     return result
 
 
@@ -282,6 +298,12 @@ def main():
     )
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
+        "--skip-dart7", action="store_true", help="Skip dart7 C++ tests"
+    )
+    parser.add_argument(
+        "--skip-dartpy7", action="store_true", help="Skip dartpy7 smoke tests"
+    )
+    parser.add_argument(
         "--skip-debug",
         action="store_true",
         help="Skip Debug build (only build Release)",
@@ -318,11 +340,23 @@ def main():
     else:
         print_warning("Skipping unit tests")
 
+    # Run dart7 tests
+    if not args.skip_dart7:
+        results["DART7 Tests"] = run_dart7_tests()
+    else:
+        print_warning("Skipping dart7 tests")
+
     # Run Python tests
     if not args.skip_python:
         results["Python Tests"] = run_python_tests()
     else:
         print_warning("Skipping Python tests")
+
+    # Run dartpy7 tests
+    if not args.skip_dartpy7:
+        results["dartpy7 Tests"] = run_dartpy7_tests()
+    else:
+        print_warning("Skipping dartpy7 tests")
 
     # Run documentation build
     if not args.skip_docs:

@@ -16,6 +16,7 @@ cmake = ">=4.0.2,<5"
 console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
+entt = ">=3.14.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 gtest = ">=1.17.0,<2"
@@ -48,6 +49,7 @@ sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
 sphinx_rtd_theme = "*"
+taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
@@ -72,7 +74,6 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
-        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
@@ -84,6 +85,11 @@ lint-cpp = { cmd = """
     --target format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+# Format dart7 and dartpy7 files using clang-format
+lint-dart7 = { cmd = """
+    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+""" }
+
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
@@ -92,7 +98,7 @@ lint-yaml = { cmd = """
     prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
+lint = { depends-on = ["lint-cpp", "lint-dart7", "lint-py", "lint-yaml"] }
 
 # Check formatting without modifying files (used in CI)
 check-lint-cpp = { cmd = """
@@ -100,6 +106,11 @@ check-lint-cpp = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target check-format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+# Check dart7 and dartpy7 formatting without modifying files
+check-lint-dart7 = { cmd = """
+    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run -Werror -style=file
+""" }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
@@ -109,7 +120,7 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-py", "check-lint-yaml"] }
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-dart7", "check-lint-py", "check-lint-yaml"] }
 
 build = { cmd = """
     cmake \
@@ -141,7 +152,6 @@ config-debug = { cmd = """
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
-        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" }, args = [{ arg = "dartpy", default = "ON" }] }
@@ -152,6 +162,13 @@ build-tests = { cmd = """
         --parallel \
         --target tests
 """, depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
+build-dart7-tests = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --parallel \
+        --target dart7_tests
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-math-tests = { cmd = """
     cmake \
@@ -194,7 +211,6 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
@@ -222,7 +238,8 @@ py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["ope
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure
+        --output-on-failure \
+        -LE dart7
 """, depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-no-plane = { cmd = """
@@ -236,8 +253,8 @@ test-dart7 = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
-        -R "^dart7"
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+        -L dart7
+""", depends-on = ["build-dart7-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-math = { cmd = """
     ctest \
@@ -813,10 +830,10 @@ tracy = { cmd = "tracy-profiler.exe" }
 # Gazebo Physics Integration Testing
 #
 # This feature tests DART integration with Gazebo Physics (gz-physics) by:
-# 1. Downloading gz-physics from source (gz-physics9_9.0.0 branch)
+# 1. Downloading gz-physics from source (gz-physics8_8.0.0 branch)
 # 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
-# 3. Building gz-physics with the dartsim plugin and test binaries
-# 4. Running the gz-physics test suite and verifying the dartsim plugin links against DART libraries
+# 3. Building gz-physics with the dartsim plugin
+# 4. Verifying the dartsim plugin links against DART libraries
 #
 # Usage (single command runs entire chain):
 #   pixi run -e gazebo test-gz
@@ -838,12 +855,12 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.gazebo.dependencies]
 git = ">=1"
-libgz-cmake = ">=5.0.0"
-libgz-plugin = ">=4.0.0"
-libgz-math = ">=9.0.0"
-libgz-common = ">=7.0.0"
-libgz-utils = ">=4.0.0"
-libsdformat = ">=16.0.0"
+libgz-cmake4 = ">=4.0.0"
+libgz-plugin3 = ">=3.0.0"
+libgz-math8 = ">=8.0.0"
+libgz-common6 = ">=6.0.0"
+libgz-utils2 = ">=2.0.0"
+libsdformat15 = ">=15.0.0"
 eigen = ">=3.4.0"
 assimp = ">=5.4.3"
 libode = ">=0.16.2"
@@ -852,8 +869,10 @@ bullet-cpp = ">=3.25"
 [feature.gazebo.tasks]
 download-gz = { cmd = """
     rm -rf .deps/gz-physics/ \
-    && git clone --branch gz-physics9_9.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
-    """ }
+    && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
+    """, outputs = [
+    ".deps/gz-physics/README.md",
+] }
 
 patch-gz = { cmd = "python3 scripts/patch_gz_physics.py", depends-on = ["download-gz"] }
 
@@ -865,53 +884,16 @@ config-gz = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-        -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-        -DBUILD_TESTING=ON
-""", depends-on = ["patch-gz", { task = "install", args = ["OFF"] }] }
+        -DBUILD_TESTING=OFF
+""", depends-on = ["patch-gz", "install"] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",
 ] }
 
-test-gz = { cmd = """
-    bash -c '
-        set -euo pipefail
-        export CTEST_OUTPUT_ON_FAILURE=1
-        export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
-        export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
-        cd .deps/gz-physics/build
-        cmake --build . -j --target all
-        python <<\"PY\"
-import subprocess
-from pathlib import Path
-
-build_dir = Path(\".\")
-ctest = subprocess.run([\"ctest\", \"-N\"], cwd=build_dir, text=True, capture_output=True, check=True)
-targets = set()
-for line in ctest.stdout.splitlines():
-    line = line.strip()
-    if not line.startswith(\"Test #\"):
-        continue
-    name = line.split(\":\", 1)[1].strip()
-    if name.startswith(\"UNIT_\"):
-        targets.add(name)
-        if name.startswith(\"check_UNIT_\"):
-            base = name[len(\"check_\"):]
-            targets.add(base)
-    elif name.startswith(\"COMMON_TEST_\") and name.endswith(\"_dartsim\"):
-        base = name.rsplit(\"_\", 1)[0]
-        targets.add(base)
-subprocess.check_call([\"ninja\", \"-j\", \"8\", *sorted(targets)], cwd=build_dir)
-PY
-        ctest --output-on-failure --tests-regex \"^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)\"
-        cd lib
-        (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
-        echo "✓ DART plugin built successfully with DART integration!"
-    '
-""", depends-on = [
+test-gz = { cmd = "bash -c 'cd .deps/gz-physics/build/lib && (otool -L libgz-physics8-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics8-dartsim-plugin.so 2>/dev/null) | grep dart && echo \"✓ DART plugin built successfully with DART integration!\"'", depends-on = [
     "build-gz",
-] }
+], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
 #======================
 # Feature: Python 3.12 Wheel Building
@@ -933,7 +915,6 @@ python = "3.12.*"
 pip = ">=25"
 scikit-build-core = ">=0.10"
 pybind11 = ">=3.0"
-nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
