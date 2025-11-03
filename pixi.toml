@@ -866,7 +866,7 @@ config-gz = { cmd = """
         -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
         -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
         -DBUILD_TESTING=ON
-""", depends-on = ["patch-gz", "install"] }
+""", depends-on = ["patch-gz", { task = "install", args = ["OFF"] }] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",
