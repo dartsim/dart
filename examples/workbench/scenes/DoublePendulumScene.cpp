@@ -109,10 +109,12 @@ ExampleRecord makeDoublePendulumScene()
 
     auto floorShapeNode = floorBody->createShapeNodeWith<
         dart::dynamics::VisualAspect,
-        dart::dynamics::CollisionAspect>(
+        dart::dynamics::CollisionAspect,
+        dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::BoxShape>(
             Eigen::Vector3d(8.0, 8.0, 0.02)));
     floorShapeNode->getVisualAspect()->setColor(Eigen::Vector3d::Constant(0.45).eval());
+    floorShapeNode->getDynamicsAspect()->setFrictionCoeff(0.9);
     Eigen::Isometry3d floorTransform = Eigen::Isometry3d::Identity();
     floorTransform.translate(Eigen::Vector3d(0.0, 0.0, -0.01));
     floorJoint->setTransformFromParentBodyNode(floorTransform);

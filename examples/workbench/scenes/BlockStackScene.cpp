@@ -83,10 +83,12 @@ ExampleRecord makeBlockStackScene()
 
     auto floorShape = floorBody->createShapeNodeWith<
         dart::dynamics::VisualAspect,
-        dart::dynamics::CollisionAspect>(
+        dart::dynamics::CollisionAspect,
+        dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::BoxShape>(
             Eigen::Vector3d(6.0, 6.0, 0.1)));
     floorShape->getVisualAspect()->setColor(Eigen::Vector3d::Constant(0.3).eval());
+    floorShape->getDynamicsAspect()->setFrictionCoeff(0.9);
     Eigen::Isometry3d floorOffset = Eigen::Isometry3d::Identity();
     floorOffset.translate(Eigen::Vector3d(0.0, 0.0, -0.05));
     floorJoint->setTransformFromParentBodyNode(floorOffset);
