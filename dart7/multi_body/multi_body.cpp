@@ -40,6 +40,7 @@
 #include "dart7/world.hpp"
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace dart7 {
 
@@ -157,8 +158,17 @@ Link MultiBody::addLink(std::string_view name)
   // Add Name for consistency (all named entities should have this)
   m_world->getRegistry().emplace<comps::Name>(linkEntity, actualName);
 
-  // Add link components
-  m_world->getRegistry().emplace<comps::FrameTag>(linkEntity);
+  // Add frame and link components
+  auto& registry = m_world->getRegistry();
+  registry.emplace<comps::FrameTag>(linkEntity);
+  auto& frameState = registry.emplace<comps::FrameState>(linkEntity);
+  frameState.parentFrame = entt::null;
+  auto& frameCache = registry.emplace<comps::FrameCache>(linkEntity);
+  frameCache.worldTransform = Eigen::Isometry3d::Identity();
+  frameCache.needTransformUpdate = true;
+  registry.emplace<comps::FreeFrameProperties>(linkEntity).localTransform
+      = Eigen::Isometry3d::Identity();
+
   auto& linkComp = m_world->getRegistry().emplace<comps::Link>(linkEntity);
   linkComp.name = std::move(actualName);
   linkComp.parentJoint = entt::null;
@@ -212,8 +222,17 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   // Add Name for consistency (all named entities should have this)
   registry.emplace<comps::Name>(linkEntity, actualLinkName);
 
-  // Add components (FrameTag + Link)
+  // Add frame components required by Frame interface
   registry.emplace<comps::FrameTag>(linkEntity);
+  auto& frameState = registry.emplace<comps::FrameState>(linkEntity);
+  frameState.parentFrame = parentEntity;
+  auto& frameCache = registry.emplace<comps::FrameCache>(linkEntity);
+  frameCache.worldTransform = Eigen::Isometry3d::Identity();
+  frameCache.needTransformUpdate = true;
+  registry.emplace<comps::FreeFrameProperties>(linkEntity).localTransform
+      = Eigen::Isometry3d::Identity();
+
+  // Add link component
   auto& linkComp = registry.emplace<comps::Link>(linkEntity);
   linkComp.name = std::move(actualLinkName);
 
