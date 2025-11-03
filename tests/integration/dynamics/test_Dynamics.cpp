@@ -2032,9 +2032,8 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 #if DART_BUILD_MODE_DEBUG
       DART_INFO(
           "Skipping COM free fall test for Skeleton [{}] since the Skeleton "
-          "doesn't have FreeJoint at the root body  or immobile.{}",
-          skel->getName(),
-          endl);
+          "doesn't have a FreeJoint at the root body or is immobile.",
+          skel->getName());
 #endif
       continue;
     } else {
