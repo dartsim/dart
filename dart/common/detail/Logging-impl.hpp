@@ -106,17 +106,19 @@ auto normalize(T&& arg)
     } else {
       return std::forward<T>(arg);
     }
-  } else if constexpr (
-      std::is_enum_v<
-          Decayed> && !fmt::has_formatter<Decayed, fmt::format_context>::value) {
-    return static_cast<std::underlying_type_t<Decayed>>(arg);
-  } else if constexpr (fmt::has_formatter<Decayed, fmt::format_context>::
-                           value) {
+  } else {
+    using Char = typename fmt::format_context::char_type;
+    constexpr bool kHasFormatter = fmt::detail::has_formatter<Decayed, Char>();
+    if constexpr (
+        std::is_enum_v<Decayed> && !kHasFormatter) {
+      return static_cast<std::underlying_type_t<Decayed>>(arg);
+    } else if constexpr (kHasFormatter) {
     return std::forward<T>(arg);
-  } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
+    } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
     return fmt::streamed(std::forward<T>(arg));
   } else {
     return std::forward<T>(arg);
+  }
   }
 }
 
