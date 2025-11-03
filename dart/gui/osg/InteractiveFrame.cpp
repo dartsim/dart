@@ -32,7 +32,7 @@
 
 #include "dart/gui/osg/InteractiveFrame.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -197,16 +197,19 @@ InteractiveTool* InteractiveFrame::getTool(
     InteractiveTool::Type tool, std::size_t coordinate)
 {
   if (InteractiveTool::NUM_TYPES <= tool) {
-    dtwarn << "[InteractiveFrame::getTool] Attempting to access tool #" << tool
-           << ", but tools only go up to " << InteractiveTool::NUM_TYPES
-           << "\n";
+    DART_WARN(
+        "[InteractiveFrame::getTool] Attempting to access tool #{}, but tools "
+        "only go up to {}",
+        tool,
+        InteractiveTool::NUM_TYPES);
     return nullptr;
   }
 
   if (3 <= coordinate) {
-    dtwarn << "[InteractiveFrame::getTool] Attempting to access a tool with "
-           << "coordinate #" << coordinate << ", but tool coordinates only go "
-           << "up to 3\n";
+    DART_WARN(
+        "[InteractiveFrame::getTool] Attempting to access a tool with "
+        "coordinate #{}, but tool coordinates only go up to 3",
+        coordinate);
     return nullptr;
   }
 

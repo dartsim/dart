@@ -136,8 +136,9 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
     mFitAabb = getAttributeBool(element, "fitaabb");
   }
   if (mFitAabb) {
-    dtwarn << "[MjcfParser] 'fitaabb' attribute is set to true, but DART does "
-           << "not support this feature yet.\n";
+    DART_WARN(
+        "[MjcfParser] 'fitaabb' attribute is set to true, but DART does not "
+        "support this feature yet.");
   }
 
   // eulerseq

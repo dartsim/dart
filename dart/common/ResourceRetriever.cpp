@@ -32,7 +32,7 @@
 
 #include "dart/common/ResourceRetriever.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <sstream>
 

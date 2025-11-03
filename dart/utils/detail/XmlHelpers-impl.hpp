@@ -80,11 +80,17 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
   const std::vector<std::string> pieces = common::split(common::trim(str));
   const std::size_t sizeToRead = std::min(N, pieces.size());
   if (pieces.size() < N) {
-    dterr << "Failed to read a vector because the dimension '" << pieces.size()
-          << "' is less than the expectation '" << N << "'.\n";
+    DART_ERROR(
+        "Failed to read a vector because the dimension '{}' is less than the "
+        "expectation '{}'.",
+        pieces.size(),
+        N);
   } else if (pieces.size() > N) {
-    dterr << "Failed to read a vector because the dimension '" << pieces.size()
-          << "' is greater than the expectation '" << N << "'.\n";
+    DART_ERROR(
+        "Failed to read a vector because the dimension '{}' is greater than "
+        "the expectation '{}'.",
+        pieces.size(),
+        N);
   }
 
   Eigen::Matrix<double, N, 1> ret = Eigen::Matrix<double, N, 1>::Zero();
@@ -94,9 +100,12 @@ Eigen::Matrix<double, N, 1> toVectorNd(const std::string& str)
       try {
         ret[i] = toDouble(pieces[i]);
       } catch (std::exception& e) {
-        dterr << "value [" << pieces[i]
-              << "] is not a valid double for Eigen::Vector" << N << "d[" << i
-              << "]: " << e.what() << "\n";
+        DART_ERROR(
+            "value [{}] is not a valid double for Eigen::Vector{}d[{}]: {}",
+            pieces[i],
+            N,
+            i,
+            e.what());
       }
     }
   }

@@ -32,7 +32,7 @@
 
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/SharedLibrary.hpp"
 
 #include <fstream>
@@ -57,8 +57,10 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   // Check if the given path exits
   const bool exists = std::ifstream(path).good();
   if (!exists) {
-    dtwarn << "[SharedLibraryManager::load] Failed to load the shared library '"
-           << path.c_str() << "'. The file doesn't exist. Returning nullptr.\n";
+    DART_WARN(
+        "[SharedLibraryManager::load] Failed to load the shared library '{}'. "
+        "The file doesn't exist. Returning nullptr.",
+        path.c_str());
     return nullptr;
   }
 

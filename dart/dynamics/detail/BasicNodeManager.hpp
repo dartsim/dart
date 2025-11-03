@@ -184,9 +184,12 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(
     std::size_t treeIndex) const
 {
   if (treeIndex >= mTreeNodeMaps.size()) {
-    dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
-          << "Requested tree index (" << treeIndex << "), but there are only ("
-          << mTreeNodeMaps.size() << ") trees available\n";
+    DART_ERROR(
+        "[Skeleton::getNumNodes<{}>] Requested tree index ({}), but there are "
+        "only ({}) trees available",
+        typeid(NodeType).name(),
+        treeIndex,
+        mTreeNodeMaps.size());
     assert(false);
     return 0;
   }
@@ -205,9 +208,12 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
     std::size_t treeIndex, std::size_t nodeIndex)
 {
   if (treeIndex >= mTreeNodeMaps.size()) {
-    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
-          << "Requested tree index (" << treeIndex << "), but there are only ("
-          << mTreeNodeMaps.size() << ") trees available\n";
+    DART_ERROR(
+        "[Skeleton::getNode<{}>] Requested tree index ({}), but there are only "
+        "({}) trees available",
+        typeid(NodeType).name(),
+        treeIndex,
+        mTreeNodeMaps.size());
     assert(false);
     return nullptr;
   }
@@ -215,18 +221,24 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
   const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
   if (nodeMap.end() == it) {
-    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
-          << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
-          << "), but there are no Nodes of the requested type in this tree\n";
+    DART_ERROR(
+        "[Skeleton::getNode<{}>] Requested index ({}) within tree ({}), but "
+        "there are no Nodes of the requested type in this tree",
+        typeid(NodeType).name(),
+        nodeIndex,
+        treeIndex);
     assert(false);
     return nullptr;
   }
 
   if (nodeIndex >= it->second.size()) {
-    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
-          << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
-          << "), but there are only (" << it->second.size() << ") Nodes of the "
-          << "requested type within that tree\n";
+    DART_ERROR(
+        "[Skeleton::getNode<{}>] Requested index ({}) within tree ({}), but "
+        "there are only ({}) Nodes of the requested type within that tree",
+        typeid(NodeType).name(),
+        nodeIndex,
+        treeIndex,
+        it->second.size());
     assert(false);
     return nullptr;
   }

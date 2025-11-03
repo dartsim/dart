@@ -32,7 +32,7 @@
 
 #include "dart/common/Composite.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #include <iostream>
 
@@ -192,8 +192,9 @@ void Composite::copyCompositePropertiesTo(Properties& outgoingProperties) const
 void Composite::duplicateAspects(const Composite* fromComposite)
 {
   if (nullptr == fromComposite) {
-    dterr << "[Composite::duplicateAspects] You have asked to duplicate the "
-          << "Aspects of a nullptr, which is not allowed!\n";
+    DART_ERROR(
+        "[Composite::duplicateAspects] You have asked to duplicate the Aspects "
+        "of a nullptr, which is not allowed!");
     assert(false);
     return;
   }
@@ -233,8 +234,9 @@ void Composite::duplicateAspects(const Composite* fromComposite)
 void Composite::matchAspects(const Composite* otherComposite)
 {
   if (nullptr == otherComposite) {
-    dterr << "[Composite::matchAspects] You have asked to match the Aspects "
-          << "of a nullptr, which is not allowed!\n";
+    DART_ERROR(
+        "[Composite::matchAspects] You have asked to match the Aspects of a "
+        "nullptr, which is not allowed!");
     assert(false);
     return;
   }

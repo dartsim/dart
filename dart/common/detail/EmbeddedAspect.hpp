@@ -172,10 +172,10 @@ public:
     }
 
     if (!mTemporaryState) {
-      dterr << "[detail::EmbeddedStateAspect::getState] This Aspect is not in "
-            << "a Composite, but it also does not have a temporary State "
-            << "available. This should not happen! Please report this as a "
-            << "bug!\n";
+      DART_ERROR(
+          "[detail::EmbeddedStateAspect::getState] This Aspect is not in a "
+          "Composite, but it also does not have a temporary State available. "
+          "This should not happen! Please report this as a bug!");
       assert(false);
     }
 
@@ -342,10 +342,10 @@ public:
     }
 
     if (!mTemporaryProperties) {
-      dterr << "[detail::EmbeddedPropertiesAspect::getProperties] This Aspect "
-            << "is not in a Composite, but it also does not have temporary "
-            << "Properties available. This should not happen! Please report "
-            << "this as a bug!\n";
+      DART_ERROR(
+          "[detail::EmbeddedPropertiesAspect::getProperties] This Aspect is "
+          "not in a Composite, but it also does not have temporary Properties "
+          "available. This should not happen! Please report this as a bug!");
       assert(false);
     }
 

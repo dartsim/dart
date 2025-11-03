@@ -32,8 +32,8 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -69,9 +69,12 @@
   if (V.size() > 0) {                                                          \
     if (nonzero_size != INVALID_INDEX                                          \
         && V.size() != static_cast<int>(nonzero_size)) {                       \
-      dterr << "[Skeleton::Configuration] Mismatch in size of vector [" << #V  \
-            << "] (expected " << nonzero_size << " | found " << V.size()       \
-            << "\n";                                                           \
+      DART_ERROR(                                                              \
+          "[Skeleton::Configuration] Mismatch in size of vector [{}] "         \
+          "(expected {} | found {})",                                          \
+          #V,                                                                  \
+          nonzero_size,                                                        \
+          V.size());                                                           \
       assert(false);                                                           \
     } else if (nonzero_size == INVALID_INDEX)                                  \
       nonzero_size = V.size();                                                 \
@@ -103,10 +106,12 @@ template <
 void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
 {
   if (!owner) {
-    dterr << "[setAllMemberObjectData] Attempting to set ["
-          << typeid(Data).name() << "] of every [" << typeid(Object).name()
-          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
-          << "this as a bug!\n";
+    DART_ERROR(
+        "[setAllMemberObjectData] Attempting to set [{}] of every [{}] in a "
+        "nullptr [{}]. Please report this as a bug!",
+        typeid(Data).name(),
+        typeid(Object).name(),
+        typeid(Owner).name());
     assert(false);
     return;
   }
@@ -114,14 +119,19 @@ void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
   std::size_t numObjects = (owner->*getNumObjects)();
 
   if (data.size() != numObjects) {
-    dtwarn << "[setAllMemberObjectData] Mismatch between the number of ["
-           << typeid(Object).name() << "] member objects (" << numObjects
-           << ") in the [" << typeid(Owner).name() << "] named ["
-           << owner->getName() << "] (" << owner << ") and the number of ["
-           << typeid(Object).name() << "] which is (" << data.size()
-           << ") while setting [" << typeid(Data).name() << "]\n"
-           << " -- We will set (" << std::min(numObjects, data.size())
-           << ") of them.\n";
+    DART_WARN(
+        "[setAllMemberObjectData] Mismatch between the number of [{}] member "
+        "objects ({}) in the [{}] named [{}] ({}) and the number of [{}] which "
+        "is ({}) while setting [{}]. We will set ({}) of them.",
+        typeid(Object).name(),
+        numObjects,
+        typeid(Owner).name(),
+        owner->getName(),
+        static_cast<const void*>(owner),
+        typeid(Data).name(),
+        data.size(),
+        typeid(Data).name(),
+        std::min(numObjects, data.size()));
     numObjects = std::min(numObjects, data.size());
   }
 
@@ -150,10 +160,12 @@ template <
 std::vector<Data> getAllMemberObjectData(const Owner* owner)
 {
   if (!owner) {
-    dterr << "[getAllMemberObjectData] Attempting to get the ["
-          << typeid(Data).name() << "] from every [" << typeid(Object).name()
-          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
-          << "this as a bug!\n";
+    DART_ERROR(
+        "[getAllMemberObjectData] Attempting to get the [{}] from every [{}] "
+        "in a nullptr [{}]. Please report this as a bug!",
+        typeid(Data).name(),
+        typeid(Object).name(),
+        typeid(Owner).name());
     assert(false);
     return std::vector<Data>();
   }
@@ -470,11 +482,12 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
               : skelClone->getBodyNode(originalParent->getName());
 
     if ((nullptr != originalParent) && (nullptr == parentClone)) {
-      dterr << "[Skeleton::clone] Failed to find a clone of BodyNode named ["
-            << originalParent->getName() << "] which is needed as the parent "
-            << "of the BodyNode named [" << getBodyNode(i)->getName()
-            << "] and should already have been created. Please report this as "
-            << "a bug!\n";
+      DART_ERROR(
+          "[Skeleton::clone] Failed to find a clone of BodyNode named [{}] "
+          "which is needed as the parent of the BodyNode named [{}] and should "
+          "already have been created. Please report this as a bug!",
+          originalParent->getName(),
+          getBodyNode(i)->getName());
     }
 
     BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
@@ -514,10 +527,11 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
         joint->setMimicJoint(
             mimicJoint, joint->getMimicMultiplier(), joint->getMimicOffset());
       } else {
-        dterr << "[Skeleton::clone] Failed to clone mimic joint successfully: "
-              << "Unable to find the mimic joint ["
-              << joint->getMimicJoint()->getName()
-              << "] in the cloned Skeleton. Please report this as a bug!\n";
+        DART_ERROR(
+            "[Skeleton::clone] Failed to clone mimic joint successfully: "
+            "Unable to find the mimic joint [{}] in the cloned Skeleton. "
+            "Please report this as a bug!",
+            joint->getMimicJoint()->getName());
       }
     }
   }
@@ -536,9 +550,12 @@ MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
   if (configuration.m##V.size() > 0) {                                         \
     if (static_cast<int>(configuration.mIndices.size())                        \
         != configuration.m##V.size()) {                                        \
-      dterr << "[Skeleton::setConfiguration] Mismatch in size of vector ["     \
-            << #V << "] (expected " << configuration.mIndices.size()           \
-            << " | found " << configuration.m##V.size() << "\n";               \
+      DART_ERROR(                                                              \
+          "[Skeleton::setConfiguration] Mismatch in size of vector [{}] "      \
+          "(expected {} | found {})",                                          \
+          #V,                                                                  \
+          configuration.mIndices.size(),                                       \
+          configuration.m##V.size());                                          \
       assert(false);                                                           \
     } else                                                                     \
       set##V(configuration.mIndices, configuration.m##V);                      \
@@ -858,13 +875,16 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
 
   if (mTreeCache.size() == 0) {
-    dterr << "[Skeleton::getRootBodyNode] Requested a root BodyNode from a "
-          << "Skeleton with no BodyNodes!\n";
+    DART_ERROR(
+        "[Skeleton::getRootBodyNode] Requested a root BodyNode from a Skeleton "
+        "with no BodyNodes!");
     assert(false);
   } else {
-    dterr << "[Skeleton::getRootBodyNode] Requested invalid root BodyNode "
-          << "index (" << _treeIdx << ")! Must be less than "
-          << mTreeCache.size() << ".\n";
+    DART_ERROR(
+        "[Skeleton::getRootBodyNode] Requested invalid root BodyNode index "
+        "({})! Must be less than {}.",
+        _treeIdx,
+        mTreeCache.size());
     assert(false);
   }
 
@@ -1013,9 +1033,12 @@ static std::size_t templatedGetIndexOf(
 {
   if (nullptr == _obj) {
     if (_warning) {
-      dterr << "[Skeleton::getIndexOf] Requesting the index of a nullptr "
-            << _type << " within the Skeleton [" << _skel->getName() << "] ("
-            << _skel << ")!\n";
+      DART_ERROR(
+          "[Skeleton::getIndexOf] Requesting the index of a nullptr {} within "
+          "the Skeleton [{}] ({})!",
+          _type,
+          _skel->getName(),
+          _skel);
       assert(false);
     }
     return INVALID_INDEX;
@@ -1025,10 +1048,12 @@ static std::size_t templatedGetIndexOf(
     return (_obj->*getIndexInSkeleton)();
 
   if (_warning) {
-    dterr << "[Skeleton::getIndexOf] Requesting the index of a " << _type
-          << " [" << _obj->getName() << "] (" << _obj
-          << ") from a Skeleton that it does "
-          << "not belong to!\n";
+    DART_ERROR(
+        "[Skeleton::getIndexOf] Requesting the index of a {} [{}] ({}) from a "
+        "Skeleton that it does not belong to!",
+        _type,
+        _obj->getName(),
+        _obj);
     assert(false);
   }
 
@@ -1047,12 +1072,13 @@ const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
 {
   if (_treeIdx >= mTreeCache.size()) {
     std::size_t count = mTreeCache.size();
-    dterr << "[Skeleton::getTreeBodyNodes] Requesting an invalid tree ("
-          << _treeIdx << ") "
-          << (count > 0
-                  ? (std::string("when the max tree index is (")
-                     + std::to_string(count - 1) + ")\n")
-                  : std::string("when there are no trees in this Skeleton\n"));
+    DART_ERROR(
+        "[Skeleton::getTreeBodyNodes] Requesting an invalid tree ({}) {}",
+        _treeIdx,
+        (count > 0
+             ? (std::string("when the max tree index is (")
+                + std::to_string(count - 1) + ")\n")
+             : std::string("when there are no trees in this Skeleton\n")));
     assert(false);
   }
 
@@ -1248,23 +1274,30 @@ bool Skeleton::checkIndexingConsistency() const
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
     const BodyNode* bn = mSkelCache.mBodyNodes[i];
     if (bn->mIndexInSkeleton != i) {
-      dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
-            << bn->getName() << "] in Skeleton [" << getName() << "] is "
-            << "mistaken about its index in the Skeleton (" << i << " | "
-            << bn->mIndexInSkeleton << "). Please report this as a bug!"
-            << std::endl;
+      DART_ERROR(
+          "[Skeleton::checkIndexingConsistency] BodyNode named [{}] in "
+          "Skeleton [{}] is mistaken about its index in the Skeleton ({} | "
+          "{}). Please report this as a bug!",
+          bn->getName(),
+          getName(),
+          i,
+          bn->mIndexInSkeleton);
       consistent = false;
       assert(false);
     }
 
     const BodyNode* nameEntryForBodyNode = getBodyNode(bn->getName());
     if (nameEntryForBodyNode != bn) {
-      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
-            << getName() << "] (" << this << ") is mistaken about the name of "
-            << "BodyNode [" << bn->getName() << "] (" << bn << "). The name "
-            << "instead maps to [" << nameEntryForBodyNode->getName() << "] ("
-            << nameEntryForBodyNode << "). Please report this as a bug!"
-            << std::endl;
+      DART_ERROR(
+          "[Skeleton::checkIndexingConsistency] Skeleton named [{}] ({}) is "
+          "mistaken about the name of BodyNode [{}] ({}). The name instead "
+          "maps to [{}] ({}). Please report this as a bug!",
+          getName(),
+          this,
+          bn->getName(),
+          bn,
+          nameEntryForBodyNode->getName(),
+          nameEntryForBodyNode);
       consistent = false;
       assert(false);
     }
@@ -1272,12 +1305,16 @@ bool Skeleton::checkIndexingConsistency() const
     const Joint* joint = bn->getParentJoint();
     const Joint* nameEntryForJoint = getJoint(joint->getName());
     if (nameEntryForJoint != joint) {
-      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
-            << getName() << "] (" << this << ") is mistaken about the name of "
-            << "Joint [" << joint->getName() << "] (" << joint << "). The name "
-            << "instead maps to [" << nameEntryForJoint->getName() << "] ("
-            << nameEntryForJoint << "). Please report this as a bug!"
-            << std::endl;
+      DART_ERROR(
+          "[Skeleton::checkIndexingConsistency] Skeleton named [{}] ({}) is "
+          "mistaken about the name of Joint [{}] ({}). The name instead maps "
+          "to [{}] ({}). Please report this as a bug!",
+          getName(),
+          this,
+          joint->getName(),
+          joint,
+          nameEntryForJoint->getName(),
+          nameEntryForJoint);
       consistent = false;
       assert(false);
     }
@@ -1288,23 +1325,31 @@ bool Skeleton::checkIndexingConsistency() const
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getBodyNodePtr() != bn) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "BodyNode [" << node->getBodyNodePtr()->getName() << "] ("
-                << node->getBodyNodePtr() << "). Please report this as a bug!"
-                << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its BodyNode [{}] ({}). "
+              "Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              node->getBodyNodePtr()->getName(),
+              node->getBodyNodePtr());
           consistent = false;
           assert(false);
         }
 
         if (node->mIndexInBodyNode != k) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "index in its BodyNode (" << k << "|"
-                << node->mIndexInBodyNode << "). Please report this as a bug!"
-                << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its index in its BodyNode "
+              "({}|{}). Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              k,
+              node->mIndexInBodyNode);
           consistent = false;
           assert(false);
         }
@@ -1318,23 +1363,32 @@ bool Skeleton::checkIndexingConsistency() const
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
     const DegreeOfFreedom* dof = getDof(i);
     if (dof->getIndexInSkeleton() != i) {
-      dterr << "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named ["
-            << dof->getName() << "] (" << dof << ") in Skeleton [" << getName()
-            << "] (" << this << ") is mistaken about its index "
-            << "in its Skeleton (" << i << "|" << dof->getIndexInSkeleton()
-            << "). Please report this as a bug!" << std::endl;
+      DART_ERROR(
+          "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named [{}] "
+          "({}) in Skeleton [{}] ({}) is mistaken about its index in its "
+          "Skeleton ({}|{}). Please report this as a bug!",
+          dof->getName(),
+          dof,
+          getName(),
+          this,
+          i,
+          dof->getIndexInSkeleton());
       consistent = false;
       assert(false);
     }
 
     const DegreeOfFreedom* nameEntryForDof = getDof(dof->getName());
     if (nameEntryForDof != dof) {
-      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
-            << getName() << "] (" << this << ") is mistaken about the name of "
-            << "DegreeOfFreedom [" << dof->getName() << "] (" << dof << "). "
-            << "The name instead maps to [" << nameEntryForDof->getName()
-            << "] (" << nameEntryForDof << "). Please report this as a bug!"
-            << std::endl;
+      DART_ERROR(
+          "[Skeleton::checkIndexingConsistency] Skeleton named [{}] ({}) is "
+          "mistaken about the name of DegreeOfFreedom [{}] ({}). The name "
+          "instead maps to [{}] ({}). Please report this as a bug!",
+          getName(),
+          this,
+          dof->getName(),
+          dof,
+          nameEntryForDof->getName(),
+          nameEntryForDof);
       consistent = false;
       assert(false);
     }
@@ -1348,23 +1402,31 @@ bool Skeleton::checkIndexingConsistency() const
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getSkeleton().get() != this) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "Skeleton [" << node->getSkeleton()->getName() << "] ("
-                << node->getSkeleton() << "). Please report this as a bug!"
-                << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its Skeleton [{}] ({}). "
+              "Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              node->getSkeleton()->getName(),
+              node->getSkeleton());
           consistent = false;
           assert(false);
         }
 
         if (node->mIndexInSkeleton != k) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "index in its Skeleton (" << k << "|"
-                << node->mIndexInSkeleton << "). Please report this as a bug!"
-                << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its index in its Skeleton "
+              "({}|{}). Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              k,
+              node->mIndexInSkeleton);
           consistent = false;
           assert(false);
         }
@@ -1378,21 +1440,29 @@ bool Skeleton::checkIndexingConsistency() const
     for (std::size_t j = 0; j < cache.mBodyNodes.size(); ++j) {
       const BodyNode* bn = cache.mBodyNodes[j];
       if (bn->mTreeIndex != i) {
-        dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
-              << bn->getName() << "] in Skeleton [" << getName() << "] is "
-              << "mistaken about its tree's index (" << i << "|"
-              << bn->mTreeIndex << "). Please report this as a bug!"
-              << std::endl;
+        DART_ERROR(
+            "[Skeleton::checkIndexingConsistency] BodyNode named [{}] in "
+            "Skeleton [{}] is mistaken about its tree's index ({}|{}). Please "
+            "report this as a bug!",
+            bn->getName(),
+            getName(),
+            i,
+            bn->mTreeIndex);
         consistent = false;
         assert(false);
       }
 
       if (bn->mIndexInTree != j) {
-        dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
-              << bn->getName() << "] (" << bn << ") in Skeleton [" << getName()
-              << "] (" << this << ") is mistaken about its index "
-              << "in the tree (" << j << "|" << bn->mIndexInTree << "). Please "
-              << "report this as a bug!" << std::endl;
+        DART_ERROR(
+            "[Skeleton::checkIndexingConsistency] BodyNode named [{}] ({}) in "
+            "Skeleton [{}] ({}) is mistaken about its index in the tree "
+            "({}|{}). Please report this as a bug!",
+            bn->getName(),
+            bn,
+            getName(),
+            this,
+            j,
+            bn->mIndexInTree);
         consistent = false;
         assert(false);
       }
@@ -1401,11 +1471,16 @@ bool Skeleton::checkIndexingConsistency() const
     for (std::size_t j = 0; j < cache.mDofs.size(); ++j) {
       const DegreeOfFreedom* dof = cache.mDofs[j];
       if (dof->getTreeIndex() != i) {
-        dterr << "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named ["
-              << dof->getName() << "] (" << dof << ") in Skeleton ["
-              << getName() << "] (" << this << ") is mistaken about its tree's "
-              << "index (" << i << "|" << dof->getTreeIndex() << "). Please "
-              << "report this as a bug!" << std::endl;
+        DART_ERROR(
+            "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named [{}] "
+            "({}) in Skeleton [{}] ({}) is mistaken about its tree's index "
+            "({}|{}). Please report this as a bug!",
+            dof->getName(),
+            dof,
+            getName(),
+            this,
+            i,
+            dof->getTreeIndex());
         consistent = false;
         assert(false);
       }
@@ -1415,11 +1490,14 @@ bool Skeleton::checkIndexingConsistency() const
   // Check that the Tree cache and the number of Tree NodeMaps match up
   if (mTreeCache.size() != mTreeNodeMaps.size()) {
     consistent = false;
-    dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
-          << getName() << "] (" << this << ") has inconsistent tree cache "
-          << " and tree Node map sizes (" << mTreeCache.size() << "|"
-          << mTreeNodeMaps.size() << "). Please report this as a bug!"
-          << std::endl;
+    DART_ERROR(
+        "[Skeleton::checkIndexingConsistency] Skeleton named [{}] ({}) has "
+        "inconsistent tree cache  and tree Node map sizes ({}|{}). Please "
+        "report this as a bug!",
+        getName(),
+        this,
+        mTreeCache.size(),
+        mTreeNodeMaps.size());
     assert(false);
   }
 
@@ -1432,22 +1510,31 @@ bool Skeleton::checkIndexingConsistency() const
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getBodyNodePtr()->mTreeIndex != i) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "Tree Index (" << i << "|"
-                << node->getBodyNodePtr()->mTreeIndex << "). Please report "
-                << "this as a bug!" << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its Tree Index ({}|{}). "
+              "Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              i,
+              node->getBodyNodePtr()->mTreeIndex);
           consistent = false;
           assert(false);
         }
 
         if (node->mIndexInTree != k) {
-          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
-                << node->getName() << "] (" << node << ") in Skeleton ["
-                << getName() << "] (" << this << ") is mistaken about its "
-                << "index in its tree (" << k << "|" << node->mIndexInTree
-                << "). Please report this as a bug!" << std::endl;
+          DART_ERROR(
+              "[Skeleton::checkIndexingConsistency] Node named [{}] ({}) in "
+              "Skeleton [{}] ({}) is mistaken about its index in its tree "
+              "({}|{}). Please report this as a bug!",
+              node->getName(),
+              node,
+              getName(),
+              this,
+              k,
+              node->mIndexInTree);
           consistent = false;
           assert(false);
         }
@@ -1531,9 +1618,12 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 {
   if (static_cast<std::size_t>(_q2.size()) != getNumDofs()
       || static_cast<std::size_t>(_q1.size()) != getNumDofs()) {
-    dterr << "Skeleton::getPositionsDifference: q1's size[" << _q1.size()
-          << "] or q2's size[" << _q2.size() << "is different with the dof ["
-          << getNumDofs() << "]." << std::endl;
+    DART_ERROR(
+        "Skeleton::getPositionsDifference: q1's size[{}] or q2's size[{}is "
+        "different with the dof [{}].",
+        _q1.size(),
+        _q2.size(),
+        getNumDofs());
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
@@ -1560,9 +1650,12 @@ Eigen::VectorXd Skeleton::getVelocityDifferences(
 {
   if (static_cast<std::size_t>(_dq2.size()) != getNumDofs()
       || static_cast<std::size_t>(_dq1.size()) != getNumDofs()) {
-    dterr << "Skeleton::getPositionsDifference: dq1's size[" << _dq1.size()
-          << "] or dq2's size[" << _dq2.size() << "is different with the dof ["
-          << getNumDofs() << "]." << std::endl;
+    DART_ERROR(
+        "Skeleton::getPositionsDifference: dq1's size[{}] or dq2's size[{}is "
+        "different with the dof [{}].",
+        _dq1.size(),
+        _dq2.size(),
+        getNumDofs());
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
@@ -1577,20 +1670,26 @@ static bool isValidBodyNode(
     const std::string& _fname)
 {
   if (nullptr == _node) {
-    dtwarn << "[Skeleton::" << _fname << "] Invalid BodyNode pointer: "
-           << "nullptr. Returning zero Jacobian.\n";
+    DART_WARN(
+        "[Skeleton::{}] Invalid BodyNode pointer: nullptr. Returning zero "
+        "Jacobian.",
+        _fname);
     assert(false);
     return false;
   }
 
   // The given BodyNode should be in the Skeleton
   if (_node->getSkeleton().get() != _skeleton) {
-    dtwarn << "[Skeleton::" << _fname
-           << "] Attempting to get a Jacobian for a "
-              "BodyNode ["
-           << _node->getName() << "] (" << _node
-           << ") that is not in this Skeleton [" << _skeleton->getName()
-           << "] (" << _skeleton << "). Returning zero Jacobian.\n";
+    DART_WARN(
+        "[Skeleton::{}{}{}] ({}) that is not in this Skeleton [{}] ({}). "
+        "Returning zero Jacobian.",
+        _fname,
+        "] Attempting to get a Jacobian for a "
+        "BodyNode [",
+        _node->getName(),
+        _node,
+        _skeleton->getName(),
+        _skeleton);
     assert(false);
     return false;
   }
@@ -2110,10 +2209,12 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   std::vector<BodyNode*>::iterator repeat = std::find(
       mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end()) {
-    dterr << "[Skeleton::registerBodyNode] Attempting to double-register the "
-          << "BodyNode named [" << _newBodyNode->getName() << "] in the "
-          << "Skeleton named [" << getName() << "]. Please report this as a "
-          << "bug!\n";
+    DART_ERROR(
+        "[Skeleton::registerBodyNode] Attempting to double-register the "
+        "BodyNode named [{}] in the Skeleton named [{}]. Please report this as "
+        "a bug!",
+        _newBodyNode->getName(),
+        getName());
     assert(false);
     return;
   }
@@ -2158,11 +2259,14 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 #if DART_BUILD_MODE_DEBUG
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
     if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i) {
-      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-            << mSkelCache.mBodyNodes[i]->getName() << "] in Skeleton ["
-            << getName() << "] is mistaken about its index in the Skeleton ( "
-            << i << " : " << mSkelCache.mBodyNodes[i]->mIndexInSkeleton
-            << "). Please report this as a bug!\n";
+      DART_ERROR(
+          "[Skeleton::registerBodyNode] BodyNode named [{}] in Skeleton [{}] "
+          "is mistaken about its index in the Skeleton ( {} : {}). Please "
+          "report this as a bug!",
+          mSkelCache.mBodyNodes[i]->getName(),
+          getName(),
+          i,
+          mSkelCache.mBodyNodes[i]->mIndexInSkeleton);
       assert(false);
     }
   }
@@ -2172,18 +2276,26 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
     for (std::size_t j = 0; j < cache.mBodyNodes.size(); ++j) {
       BodyNode* bn = cache.mBodyNodes[j];
       if (bn->mTreeIndex != i) {
-        dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-              << bn->getName() << "] in Skeleton [" << getName() << "] is "
-              << "mistaken about its tree's index (" << i << " : "
-              << bn->mTreeIndex << "). Please report this as a bug!\n";
+        DART_ERROR(
+            "[Skeleton::registerBodyNode] BodyNode named [{}] in Skeleton [{}] "
+            "is mistaken about its tree's index ({} : {}). Please report this "
+            "as a bug!",
+            bn->getName(),
+            getName(),
+            i,
+            bn->mTreeIndex);
         assert(false);
       }
 
       if (bn->mIndexInTree != j) {
-        dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-              << bn->getName() << "] in Skeleton [" << getName() << "] is "
-              << "mistaken about its index in the tree (" << j << " : "
-              << bn->mIndexInTree << "). Please report this as a bug!\n";
+        DART_ERROR(
+            "[Skeleton::registerBodyNode] BodyNode named [{}] in Skeleton [{}] "
+            "is mistaken about its index in the tree ({} : {}). Please report "
+            "this as a bug!",
+            bn->getName(),
+            getName(),
+            j,
+            bn->mIndexInTree);
         assert(false);
       }
     }
@@ -2201,11 +2313,13 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 void Skeleton::registerJoint(Joint* _newJoint)
 {
   if (nullptr == _newJoint) {
-    dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
-             "Joint to the Skeleton named ["
-          << mAspectProperties.mName
-          << "]. Report "
-             "this as a bug!\n";
+    DART_ERROR(
+        "{}{}{}",
+        "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
+        "Joint to the Skeleton named [",
+        mAspectProperties.mName,
+        "]. Report "
+        "this as a bug!\n");
     assert(false);
     return;
   }
@@ -2372,9 +2486,10 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 void Skeleton::unregisterJoint(Joint* _oldJoint)
 {
   if (nullptr == _oldJoint) {
-    dterr << "[Skeleton::unregisterJoint] Attempting to unregister nullptr "
-          << "Joint from Skeleton named [" << getName() << "]. Report this as "
-          << "a bug!\n";
+    DART_ERROR(
+        "[Skeleton::unregisterJoint] Attempting to unregister nullptr Joint "
+        "from Skeleton named [{}]. Report this as a bug!",
+        getName());
     assert(false);
     return;
   }
@@ -2474,19 +2589,25 @@ bool Skeleton::moveBodyNodeTree(
     BodyNode* _parentNode)
 {
   if (nullptr == _bodyNode) {
-    dterr << "[Skeleton::moveBodyNodeTree] Skeleton named [" << getName()
-          << "] (" << this << ") is attempting to move a nullptr BodyNode. "
-          << "Please report this as a bug!\n";
+    DART_ERROR(
+        "[Skeleton::moveBodyNodeTree] Skeleton named [{}] ({}) is attempting "
+        "to move a nullptr BodyNode. Please report this as a bug!",
+        getName(),
+        this);
     assert(false);
     return false;
   }
 
   if (this != _bodyNode->getSkeleton().get()) {
-    dterr << "[Skeleton::moveBodyNodeTree] Skeleton named [" << getName()
-          << "] (" << this << ") is attempting to move a BodyNode named ["
-          << _bodyNode->getName() << "] even though it belongs to another "
-          << "Skeleton [" << _bodyNode->getSkeleton()->getName() << "] ("
-          << _bodyNode->getSkeleton() << "). Please report this as a bug!\n";
+    DART_ERROR(
+        "[Skeleton::moveBodyNodeTree] Skeleton named [{}] ({}) is attempting "
+        "to move a BodyNode named [{}] even though it belongs to another "
+        "Skeleton [{}] ({}). Please report this as a bug!",
+        getName(),
+        this,
+        _bodyNode->getName(),
+        _bodyNode->getSkeleton()->getName(),
+        _bodyNode->getSkeleton());
     assert(false);
     return false;
   }
@@ -2500,28 +2621,37 @@ bool Skeleton::moveBodyNodeTree(
   }
 
   if (_bodyNode == _parentNode) {
-    dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
-          << _bodyNode->getName() << "] (" << _bodyNode << ") to be its own "
-          << "parent. This is not permitted!\n";
+    DART_ERROR(
+        "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named [{}] "
+        "({}) to be its own parent. This is not permitted!",
+        _bodyNode->getName(),
+        _bodyNode);
     return false;
   }
 
   if (_parentNode && _parentNode->descendsFrom(_bodyNode)) {
-    dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
-          << _bodyNode->getName() << "] of Skeleton [" << getName() << "] ("
-          << this << ") to be a child of BodyNode [" << _parentNode->getName()
-          << "] in Skeleton [" << _newSkeleton->getName() << "] ("
-          << _newSkeleton << "), but that would create a closed kinematic "
-          << "chain, which is not permitted! Nothing will be moved.\n";
+    DART_ERROR(
+        "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named [{}] "
+        "of Skeleton [{}] ({}) to be a child of BodyNode [{}] in Skeleton [{}] "
+        "({}), but that would create a closed kinematic chain, which is not "
+        "permitted! Nothing will be moved.",
+        _bodyNode->getName(),
+        getName(),
+        this,
+        _parentNode->getName(),
+        _newSkeleton->getName(),
+        _newSkeleton);
     return false;
   }
 
   if (nullptr == _newSkeleton) {
     if (nullptr == _parentNode) {
-      dterr << "[Skeleton::moveBodyNodeTree] Attempting to move a BodyNode "
-            << "tree starting from [" << _bodyNode->getName() << "] in "
-            << "Skeleton [" << getName() << "] into a nullptr Skeleton. This "
-            << "is not permitted!\n";
+      DART_ERROR(
+          "[Skeleton::moveBodyNodeTree] Attempting to move a BodyNode tree "
+          "starting from [{}] in Skeleton [{}] into a nullptr Skeleton. This "
+          "is not permitted!",
+          _bodyNode->getName(),
+          getName());
       return false;
     }
 
@@ -2529,14 +2659,19 @@ bool Skeleton::moveBodyNodeTree(
   }
 
   if (_parentNode && _newSkeleton != _parentNode->getSkeleton()) {
-    dterr << "[Skeleton::moveBodyNodeTree] Mismatch between the specified "
-          << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
-          << ") and the specified new parent BodyNode ["
-          << _parentNode->getName() << "] whose actual Skeleton is named ["
-          << _parentNode->getSkeleton()->getName() << "] ("
-          << _parentNode->getSkeleton() << ") while attempting to move a "
-          << "BodyNode tree starting from [" << _bodyNode->getName() << "] in "
-          << "Skeleton [" << getName() << "] (" << this << ")\n";
+    DART_ERROR(
+        "[Skeleton::moveBodyNodeTree] Mismatch between the specified Skeleton "
+        "[{}] ({}) and the specified new parent BodyNode [{}] whose actual "
+        "Skeleton is named [{}] ({}) while attempting to move a BodyNode tree "
+        "starting from [{}] in Skeleton [{}] ({})",
+        _newSkeleton->getName(),
+        _newSkeleton,
+        _parentNode->getName(),
+        _parentNode->getSkeleton()->getName(),
+        _parentNode->getSkeleton(),
+        _bodyNode->getName(),
+        getName(),
+        this);
     return false;
   }
 
@@ -3366,9 +3501,9 @@ static void computeSupportPolygon(
 
   const Eigen::Vector3d& up = -skel->getGravity();
   if (up.norm() == 0.0) {
-    dtwarn << "[computeSupportPolygon] Requesting support polygon of a "
-           << "Skeleton with no gravity. The result will only be an empty "
-           << "set!\n";
+    DART_WARN(
+        "[computeSupportPolygon] Requesting support polygon of a Skeleton with "
+        "no gravity. The result will only be an empty set!");
     axis1.setZero();
     axis2.setZero();
     centroid = Eigen::Vector2d::Constant(std::nan(""));
@@ -3646,7 +3781,7 @@ void Skeleton::clearConstraintImpulses()
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   if (nullptr == _bodyNode) {
-    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
+    DART_ERROR("[Skeleton::updateBiasImpulse] Passed in a nullptr!");
     assert(false);
     return;
   }
@@ -3677,7 +3812,7 @@ void Skeleton::updateBiasImpulse(
     BodyNode* _bodyNode, const Eigen::Vector6d& _imp)
 {
   if (nullptr == _bodyNode) {
-    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
+    DART_ERROR("[Skeleton::updateBiasImpulse] Passed in a nullptr!");
     assert(false);
     return;
   }
@@ -3717,13 +3852,15 @@ void Skeleton::updateBiasImpulse(
 {
   // Assertions
   if (nullptr == _bodyNode1) {
-    dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode1!\n";
+    DART_ERROR(
+        "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode1!");
     assert(false);
     return;
   }
 
   if (nullptr == _bodyNode2) {
-    dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode2!\n";
+    DART_ERROR(
+        "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode2!");
     assert(false);
     return;
   }

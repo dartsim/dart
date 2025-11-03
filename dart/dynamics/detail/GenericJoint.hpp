@@ -42,28 +42,40 @@
 #include <dart/math/ConfigurationSpace.hpp>
 #include <dart/math/Helpers.hpp>
 
+#include <sstream>
+
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
-    dterr << "[GenericJoint::" #func "] Mismatch beteween size of "            \
-          << #arg " [" << arg.size() << "] and the number of "                 \
-          << "DOFs [" << getNumDofs() << "] for Joint named ["                 \
-          << this->getName() << "].\n";                                        \
+    DART_ERROR(                                                                \
+        "[GenericJoint::{}] The size of {} [{}] does not match the number of " \
+        "DOFs [{}] for Joint named [{}].",                                     \
+        #func,                                                                 \
+        #arg,                                                                  \
+        (arg).size(),                                                          \
+        this->getNumDofs(),                                                    \
+        this->getName());                                                      \
     assert(false);                                                             \
   }
 
 #define GenericJoint_REPORT_OUT_OF_RANGE(func, index)                          \
   {                                                                            \
-    dterr << "[GenericJoint::" << #func << "] The index [" << index            \
-          << "] is out of range for Joint named [" << this->getName()          \
-          << "] which has " << this->getNumDofs() << " DOFs.\n";               \
+    DART_ERROR(                                                                \
+        "[GenericJoint::{}] The index [{}] is out of range for Joint named "   \
+        "[{}] which has {} DOFs.",                                             \
+        #func,                                                                 \
+        (index),                                                               \
+        this->getName(),                                                       \
+        this->getNumDofs());                                                   \
     assert(false);                                                             \
   }
 
 #define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func)                         \
   {                                                                            \
-    dterr << "[GenericJoint::" #func "] Unsupported actuator type ("           \
-          << Joint::mAspectProperties.mActuatorType << ") for Joint ["         \
-          << this->getName() << "].\n";                                        \
+    DART_ERROR(                                                                \
+        "[GenericJoint::{}] Unsupported actuator type ({}) for Joint [{}].",   \
+        #func,                                                                 \
+        static_cast<int>(Joint::mAspectProperties.mActuatorType),              \
+        this->getName());                                                      \
     assert(false);                                                             \
   }
 
@@ -72,6 +84,19 @@
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
   Joint::incrementVersion();
+
+#include <sstream>
+
+namespace dart::dynamics::detail {
+
+inline std::string formatCommandVector(const Eigen::VectorXd& commands)
+{
+  std::ostringstream oss;
+  oss << commands.transpose();
+  return oss.str();
+}
+
+} // namespace dart::dynamics::detail
 
 namespace dart {
 namespace dynamics {
@@ -220,10 +245,12 @@ const std::string& GenericJoint<ConfigSpaceT>::setDofName(
     size_t index, const std::string& name, bool preserveName)
 {
   if (NumDofs <= index) {
-    dterr << "[GenericJoint::setDofName] Attempting to set the name of DOF "
-          << "index " << index << ", which is out of bounds for the Joint ["
-          << this->getName()
-          << "]. We will set the name of DOF index 0 instead.\n";
+    DART_ERROR(
+        "[GenericJoint::setDofName] Attempting to set the name of DOF index "
+        "{}, which is out of bounds for the Joint [{}]. We will set the name "
+        "of DOF index 0 instead.",
+        index,
+        this->getName());
     assert(false);
     index = 0u;
   }
@@ -274,10 +301,12 @@ template <class ConfigSpaceT>
 const std::string& GenericJoint<ConfigSpaceT>::getDofName(size_t index) const
 {
   if (NumDofs <= index) {
-    dterr << "[GenericJoint::getDofName] Requested name of DOF index [" << index
-          << "] in Joint [" << this->getName() << "], but that is "
-          << "out of bounds (max " << NumDofs - 1
-          << "). Returning name of DOF 0.\n";
+    DART_ERROR(
+        "[GenericJoint::getDofName] Requested name of DOF index [{}] in Joint "
+        "[{}], but that is out of bounds (max {}). Returning name of DOF 0.",
+        index,
+        this->getName(),
+        NumDofs - 1);
     assert(false);
     return Base::mAspectProperties.mDofNames[0];
   }
@@ -325,9 +354,11 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       break;
     case Joint::PASSIVE:
       if (0.0 != command) {
-        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
-               << command << ") command for a PASSIVE joint ["
-               << this->getName() << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+            "command for a PASSIVE joint [{}].",
+            command,
+            this->getName());
       }
       this->mAspectState.mCommands[index] = 0.0;
       break;
@@ -339,9 +370,11 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       break;
     case Joint::MIMIC:
       if (0.0 != command) {
-        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
-               << command << ") command for a MIMIC joint [" << this->getName()
-               << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+            "command for a MIMIC joint [{}].",
+            command,
+            this->getName());
       }
       this->mAspectState.mCommands[index] = 0.0;
       break;
@@ -360,9 +393,11 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       break;
     case Joint::LOCKED:
       if (0.0 != command) {
-        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
-               << command << ") command for a LOCKED joint [" << this->getName()
-               << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+            "command for a LOCKED joint [{}].",
+            command,
+            this->getName());
       }
       this->mAspectState.mCommands[index] = 0.0;
       break;
@@ -402,9 +437,11 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       break;
     case Joint::PASSIVE:
       if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a PASSIVE joint ["
-               << this->getName() << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+            "command for a PASSIVE joint [{}].",
+            detail::formatCommandVector(commands),
+            this->getName());
       }
       this->mAspectState.mCommands.setZero();
       break;
@@ -416,9 +453,11 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       break;
     case Joint::MIMIC:
       if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a MIMIC joint ["
-               << this->getName() << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+            "command for a MIMIC joint [{}].",
+            detail::formatCommandVector(commands),
+            this->getName());
       }
       this->mAspectState.mCommands.setZero();
       break;
@@ -437,9 +476,11 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       break;
     case Joint::LOCKED:
       if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a LOCKED joint ["
-               << this->getName() << "].\n";
+        DART_WARN(
+            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+            "command for a LOCKED joint [{}].",
+            detail::formatCommandVector(commands),
+            this->getName());
       }
       this->mAspectState.mCommands.setZero();
       break;
@@ -1337,9 +1378,13 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionDifferences(
 {
   if (static_cast<size_t>(q1.size()) != getNumDofs()
       || static_cast<size_t>(q2.size()) != getNumDofs()) {
-    dterr << "[GenericJoint::getPositionsDifference] q1's size [" << q1.size()
-          << "] or q2's size [" << q2.size() << "] must both equal the dof ["
-          << this->getNumDofs() << "] for Joint [" << this->getName() << "].\n";
+    DART_ERROR(
+        "[GenericJoint::getPositionsDifference] q1's size [{}] or q2's size "
+        "[{}] must both equal the dof [{}] for Joint [{}].",
+        q1.size(),
+        q2.size(),
+        this->getNumDofs(),
+        this->getName());
     assert(false);
     return Eigen::VectorXd::Zero(getNumDofs());
   }

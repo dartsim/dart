@@ -32,7 +32,7 @@
 
 #include "dart/gui/osg/RealTimeWorldNode.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <algorithm>
@@ -110,11 +110,13 @@ void RealTimeWorldNode::refresh()
   clearChildUtilizationFlags();
 
   if (mNumStepsPerCycle != 1) {
-    dtwarn << "[RealTimeWorldNode] The number of steps per cycle has been set "
-           << "to [" << mNumStepsPerCycle << "], but this value is ignored by "
-           << "the RealTimeWorldNode::refresh() function. Use the function "
-           << "RealTimeWorldNode::setTargetRealTimeFactor(double) to change "
-           << "the simulation speed.\n";
+    DART_WARN(
+        "[RealTimeWorldNode] The number of steps per cycle has been set to "
+        "[{}], but this value is ignored by the RealTimeWorldNode::refresh() "
+        "function. Use the function "
+        "RealTimeWorldNode::setTargetRealTimeFactor(double) to change the "
+        "simulation speed.",
+        mNumStepsPerCycle);
     mNumStepsPerCycle = 1;
   }
 
@@ -147,8 +149,9 @@ void RealTimeWorldNode::refresh()
     }
 
     if (numSteps == maxStepsPerRefresh) {
-      dtwarn << "[RealTimeWorldNode] Reached step limit during refresh; "
-             << "simulation may be lagging behind real time.\n";
+      DART_WARN(
+          "[RealTimeWorldNode] Reached step limit during refresh; simulation "
+          "may be lagging behind real time.");
       mSimTimeBudget = 0.0;
     } else if (mSimTimeBudget < 0.0) {
       mSimTimeBudget = 0.0;

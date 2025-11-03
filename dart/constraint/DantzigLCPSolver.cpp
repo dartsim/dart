@@ -37,7 +37,7 @@
   #include <iostream>
 #endif
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
@@ -155,7 +155,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 #endif
 
   // Print LCP formulation
-  //  dtdbg << "Before solve:" << std::endl;
+  //  DART_DEBUG("Before solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
@@ -163,7 +163,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   lcpsolver::SolveLCP<double>(n, A, x, b, w, 0, lo, hi, findex, false);
 
   // Print LCP formulation
-  //  dtdbg << "After solve:" << std::endl;
+  //  DART_DEBUG("After solve:");
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 

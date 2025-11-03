@@ -32,7 +32,6 @@
 
 #include "dart/common/FreeListAllocator.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
@@ -74,10 +73,10 @@ FreeListAllocator::~FreeListAllocator()
       currBlock = next;
     }
 
-    dterr
-        << "Forcefully deallocated memory " << mTotalAllocatedSize
-        << " of byte(s) that is not deallocated before destructing this memory "
-        << "allocator.\n";
+    DART_ERROR(
+        "Forcefully deallocated memory {} of byte(s) that is not deallocated "
+        "before destructing this memory allocator.",
+        mTotalAllocatedSize);
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
 

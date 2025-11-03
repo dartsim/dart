@@ -32,7 +32,7 @@
 
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -93,9 +93,10 @@ void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (_cfm < 1e-9) {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
-           << "] is lower than 1e-9. "
-           << "It is set to 1e-9." << std::endl;
+    DART_WARN(
+        "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
+        "to 1e-9.",
+        _cfm);
     mConstraintForceMixing = 1e-9;
   }
 

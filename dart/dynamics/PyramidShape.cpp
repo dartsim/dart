@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/PyramidShape.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
@@ -148,8 +148,9 @@ void PyramidShape::updateVolume() const
 Eigen::Matrix3d PyramidShape::computeInertia(double /*mass*/) const
 {
   // TODO(JS): Not implemented
-  dterr << "[PyramidShape] Moment of inertia computation is not implemented. "
-        << "Returning identity.\n";
+  DART_ERROR(
+      "[PyramidShape] Moment of inertia computation is not implemented. "
+      "Returning identity.");
 
   return Eigen::Matrix3d::Identity();
 }

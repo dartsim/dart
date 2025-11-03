@@ -34,7 +34,7 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -64,8 +64,7 @@ bool CollisionDetector::raycast(
     const RaycastOption& /*option*/,
     RaycastResult* /*result*/)
 {
-  dtwarn << "[CollisionDetector] Raycast is not supported by '" << getType()
-         << "'\n";
+  DART_WARN("[CollisionDetector] Raycast is not supported by '{}'", getType());
   return false;
 }
 

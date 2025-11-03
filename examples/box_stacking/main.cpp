@@ -345,7 +345,7 @@ protected:
           = std::make_unique<constraint::BoxedLcpConstraintSolver>(lcpSolver);
       mWorld->setConstraintSolver(std::move(solver));
     } else {
-      dtwarn << "Unsupported boxed-LCP solver selected: " << solverType << "\n";
+      DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);
     }
 
     mSolverType = solverType;

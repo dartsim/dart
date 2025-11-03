@@ -40,7 +40,7 @@
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -151,9 +151,10 @@ static bool checkGroupValidity(
     BulletCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
-    dterr << "[BulletCollisionDetector::collide] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
+    DART_ERROR(
+        "[BulletCollisionDetector::collide] Attempting to check collision for "
+        "a collision group that is created from a different collision detector "
+        "instance.");
 
     return false;
   }
@@ -305,9 +306,9 @@ double BulletCollisionDetector::distance(
 {
   static bool warned = false;
   if (!warned) {
-    dtwarn
-        << "[BulletCollisionDetector::distance] This collision detector does "
-        << "not support (signed) distance queries. Returning 0.0.\n";
+    DART_WARN(
+        "[BulletCollisionDetector::distance] This collision detector does not "
+        "support (signed) distance queries. Returning 0.0.");
     warned = true;
   }
 
@@ -323,9 +324,9 @@ double BulletCollisionDetector::distance(
 {
   static bool warned = false;
   if (!warned) {
-    dtwarn
-        << "[BulletCollisionDetector::distance] This collision detector does "
-        << "not support (signed) distance queries. Returning.\n";
+    DART_WARN(
+        "[BulletCollisionDetector::distance] This collision detector does not "
+        "support (signed) distance queries. Returning.");
     warned = true;
   }
 
@@ -578,10 +579,11 @@ BulletCollisionDetector::createBulletCollisionShape(
   } else if (shape->is<HeightmapShaped>()) {
     assert(dynamic_cast<const HeightmapShaped*>(shape.get()));
 
-    dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
-          << "Bullet does not support double height fields (shape type ["
-          << shape->getType() << "]). Creating a sphere with 0.1 radius "
-          << "instead.\n";
+    DART_ERROR(
+        "[BulletCollisionDetector::createBulletCollisionShape] Bullet does not "
+        "support double height fields (shape type [{}]). Creating a sphere "
+        "with 0.1 radius instead.",
+        shape->getType());
 
     return std::make_unique<BulletCollisionShape>(
         std::make_unique<btSphereShape>(0.1));
@@ -590,10 +592,11 @@ BulletCollisionDetector::createBulletCollisionShape(
     // const auto heightMap = static_cast<const HeightmapShaped*>(shape.get());
     // return createBulletCollisionShapeFromHeightmap(heightMap);
   } else {
-    dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
-          << "Attempting to create an unsupported shape type ["
-          << shape->getType() << "] Creating a sphere with 0.1 radius "
-          << "instead.\n";
+    DART_ERROR(
+        "[BulletCollisionDetector::createBulletCollisionShape] Attempting to "
+        "create an unsupported shape type [{}] Creating a sphere with 0.1 "
+        "radius instead.",
+        shape->getType());
 
     return std::make_unique<BulletCollisionShape>(
         std::make_unique<btSphereShape>(0.1));
@@ -951,7 +954,7 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   // determine which data type (float or double) is to be used for the field
   PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<typename HeightmapShapeT::S, double>::value) {
-    dterr << "Bullet does not support DOUBLE as heightmap field yet.\n";
+    DART_ERROR("Bullet does not support DOUBLE as heightmap field yet.");
     return nullptr;
     // take this back in as soon as it is supported
     // scalarType = PHY_DOUBLE;
@@ -991,10 +994,16 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   btVector3 min;
   btVector3 max;
   heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
-  dtdbg << "DART Bullet heightfield AABB: min = {" << min.x() << ", " << min.y()
-        << ", " << min.z() << "}, max = {" << max.x() << ", " << max.y() << ", "
-        << max.z() << "}"
-        << " (will be translated by z=" << trans.z() << ")" << std::endl;
+  DART_DEBUG(
+      "DART Bullet heightfield AABB: min = {{}, {}, {}}, max = {{}, {}, {}} "
+      "(will be translated by z={})",
+      min.x(),
+      min.y(),
+      min.z(),
+      max.x(),
+      max.y(),
+      max.z(),
+      trans.z());
 
   return std::make_unique<BulletCollisionShape>(
       std::move(heightFieldShape), relativeShapeTransform);

@@ -32,8 +32,8 @@
 
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Filesystem.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -310,9 +310,11 @@ void MeshShapeNode::extractData(bool firstTime)
                   meshPath.parent_path() / relativeImagePath, ec);
 
           if (ec) {
-            dtwarn << "[MeshShapeNode] Failed to resolve an file path to a "
-                   << "texture image from (base: `" << meshPath.parent_path()
-                   << "', relative: '" << relativeImagePath << "').\n";
+            DART_WARN(
+                "[MeshShapeNode] Failed to resolve an file path to a texture "
+                "image from (base: `{}', relative: '{}').",
+                meshPath.parent_path(),
+                relativeImagePath);
             textureImageArray.emplace_back("");
           } else {
             textureImageArray.emplace_back(absoluteImagePath.string());
@@ -362,11 +364,16 @@ void MeshShapeNode::extractData(bool firstTime)
     return mMaterials[index];
 
   if (!mMaterials.empty()) {
-    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-           << index << ", but materials only go up to " << index - 1 << "\n";
+    DART_WARN(
+        "[MeshShapeNode::getMaterial] Attempting to access material #{}, but "
+        "materials only go up to {}",
+        index,
+        index - 1);
   } else {
-    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-           << index << ", but there are no materials available\n";
+    DART_WARN(
+        "[MeshShapeNode::getMaterial] Attempting to access material #{}, but "
+        "there are no materials available",
+        index);
   }
 
   return nullptr;
@@ -386,13 +393,16 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
     return {};
 
   if (!mTextureImageArrays.empty()) {
-    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
-           << "texture image set #" << index << ", but materials only go up to "
-           << index - 1 << "\n";
+    DART_WARN(
+        "[MeshShapeNode::getTextureImageSet] Attempting to access texture "
+        "image set #{}, but materials only go up to {}",
+        index,
+        index - 1);
   } else {
-    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
-           << "texture image set #" << index
-           << ", but there are no materials available\n";
+    DART_WARN(
+        "[MeshShapeNode::getTextureImageSet] Attempting to access texture "
+        "image set #{}, but there are no materials available",
+        index);
   }
 
   return std::vector<std::string>();
@@ -907,8 +917,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
       ::osg::ref_ptr<::osg::Image> image
           = osgDB::readRefImageFile(imagePaths[i]);
       if (!image) {
-        dtwarn << "[MeshShapeNode] Failed to load texture image '"
-               << imagePaths[i] << "'\n";
+        DART_WARN(
+            "[MeshShapeNode] Failed to load texture image '{}'", imagePaths[i]);
         continue;
       }
       ::osg::ref_ptr<::osg::Texture2D> texture

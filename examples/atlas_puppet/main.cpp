@@ -63,11 +63,13 @@ public:
     int dofs = mIdeal.size();
     if (mLower.size() != dofs || mWeights.size() != dofs
         || mUpper.size() != dofs) {
-      dterr << "[RelaxedPose::RelaxedPose] Dimension mismatch:\n"
-            << "  ideal:   " << mIdeal.size() << "\n"
-            << "  lower:   " << mLower.size() << "\n"
-            << "  upper:   " << mUpper.size() << "\n"
-            << "  weights: " << mWeights.size() << "\n";
+      DART_ERROR(
+          "[RelaxedPose::RelaxedPose] Dimension mismatch:\\n  ideal:   {}\\n  "
+          "lower:   {}\\n  upper:   {}\\n  weights: {}",
+          mIdeal.size(),
+          mLower.size(),
+          mUpper.size(),
+          mWeights.size());
     }
     mResultVector.setZero(dofs);
   }

@@ -32,7 +32,7 @@
 
 #include "dart/optimizer/GradientDescentSolver.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Problem.hpp"
 
@@ -112,8 +112,9 @@ bool GradientDescentSolver::solve()
 
   std::shared_ptr<Problem> problem = mProperties.mProblem;
   if (nullptr == problem) {
-    dtwarn << "[GradientDescentSolver::solve] Attempting to solve a nullptr "
-           << "problem! We will return false.\n";
+    DART_WARN(
+        "[GradientDescentSolver::solve] Attempting to solve a nullptr problem! "
+        "We will return false.");
     return false;
   }
 
@@ -447,9 +448,11 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     return;
 
   if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
-    dterr << "[GradientDescentSolver::clampToBoundary] Mismatch between "
-          << "configuration size [" << _x.size() << "] and the dimension of "
-          << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
+    DART_ERROR(
+        "[GradientDescentSolver::clampToBoundary] Mismatch between "
+        "configuration size [{}] and the dimension of the Problem [{}]",
+        _x.size(),
+        mProperties.mProblem->getDimension());
     assert(false);
     return;
   }

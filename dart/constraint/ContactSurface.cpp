@@ -37,6 +37,7 @@
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 
+#include <fmt/ostream.h>
 #include <utility>
 
 namespace dart {
@@ -61,7 +62,7 @@ void ContactSurfaceHandler::setParent(ContactSurfaceHandlerPtr parent)
   if (parent.get() != this)
     this->mParent = std::move(parent);
   else
-    dtwarn << "Cannot assign self as parent handler.";
+    DART_WARN("Cannot assign self as parent handler.");
 }
 
 //==============================================================================
@@ -199,11 +200,11 @@ double DefaultContactSurfaceHandler::computeFrictionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract "
-           << "friction coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract friction coefficient from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_FRICTION_COEFF);
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
@@ -219,11 +220,11 @@ double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract "
-           << "primary friction coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract primary friction coefficient "
+        "from a ShapeNode that doesn't have DynamicAspect. The default value "
+        "({}) will be used instead.",
+        DART_DEFAULT_FRICTION_COEFF);
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
@@ -239,11 +240,11 @@ double DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract "
-           << "secondary friction coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract secondary friction coefficient "
+        "from a ShapeNode that doesn't have DynamicAspect. The default value "
+        "({}) will be used instead.",
+        DART_DEFAULT_FRICTION_COEFF);
     return DART_DEFAULT_FRICTION_COEFF;
   }
 
@@ -259,10 +260,11 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract slip compliance "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_SLIP_COMPLIANCE << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract slip compliance from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
@@ -282,11 +284,11 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract "
-           << "secondary slip compliance "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_SLIP_COMPLIANCE << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract secondary slip compliance from "
+        "a ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_SLIP_COMPLIANCE);
     return DART_DEFAULT_SLIP_COMPLIANCE;
   }
 
@@ -306,10 +308,11 @@ Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract friction direction "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_DIR << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract friction direction from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        fmt::streamed(DART_DEFAULT_FRICTION_DIR.transpose()));
     return DART_DEFAULT_FRICTION_DIR;
   }
 
@@ -333,10 +336,11 @@ double DefaultContactSurfaceHandler::computeRestitutionCoefficient(
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
   if (dynamicAspect == nullptr) {
-    dtwarn << "[ContactConstraint] Attempt to extract restitution coefficient "
-           << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_RESTITUTION_COEFF << ") will be used "
-           << "instead.\n";
+    DART_WARN(
+        "[ContactConstraint] Attempt to extract restitution coefficient from a "
+        "ShapeNode that doesn't have DynamicAspect. The default value ({}) "
+        "will be used instead.",
+        DART_DEFAULT_RESTITUTION_COEFF);
     return DART_DEFAULT_RESTITUTION_COEFF;
   }
 

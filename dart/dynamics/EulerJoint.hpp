@@ -111,8 +111,10 @@ public:
       case AxisOrder::ZYX:
         return math::matrixToEulerZYX(_rotation);
       default:
-        dtwarn << "[EulerJoint::convertToPositions] Unsupported AxisOrder ("
-               << static_cast<int>(_ordering) << "), returning a zero vector\n";
+        DART_WARN(
+            "[EulerJoint::convertToPositions] Unsupported AxisOrder ({}), "
+            "returning a zero vector",
+            static_cast<int>(_ordering));
         return Eigen::Vector3d::Zero();
     }
   }

@@ -96,9 +96,12 @@ void FreeJoint::setTransformOf(
   FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
 
   if (nullptr == freeJoint) {
-    dtwarn << "[FreeJoint::setTransform] Invalid joint type. Setting transform "
-           << "is only allowed to FreeJoint. The joint type of given joint ["
-           << joint->getName() << "] is [" << joint->getType() << "].\n";
+    DART_WARN(
+        "[FreeJoint::setTransform] Invalid joint type. Setting transform is "
+        "only allowed to FreeJoint. The joint type of given joint [{}] is "
+        "[{}].",
+        joint->getName(),
+        joint->getType());
     return;
   }
 
@@ -230,8 +233,10 @@ void FreeJoint::setSpatialVelocity(
   assert(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == relativeTo) {
-    dtwarn << "[FreeJoint::setSpatialVelocity] Invalid reference frame "
-              "for newSpatialVelocity. It shouldn't be the child BodyNode.\n";
+    DART_WARN(
+        "{}",
+        "[FreeJoint::setSpatialVelocity] Invalid reference frame "
+        "for newSpatialVelocity. It shouldn't be the child BodyNode.\n");
     return;
   }
 
@@ -371,9 +376,9 @@ void FreeJoint::setSpatialAcceleration(
   assert(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == relativeTo) {
-    dtwarn << "[FreeJoint::setSpatialAcceleration] Invalid reference "
-           << "frame for newSpatialAcceleration. It shouldn't be the child "
-           << "BodyNode.\n";
+    DART_WARN(
+        "[FreeJoint::setSpatialAcceleration] Invalid reference frame for "
+        "newSpatialAcceleration. It shouldn't be the child BodyNode.");
     return;
   }
 

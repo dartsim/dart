@@ -33,7 +33,7 @@
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/HeightmapShape.hpp>
 
-#include <dart/common/Console.hpp>
+#include <dart/common/Logging.hpp>
 
 #include <algorithm>
 #include <limits>
@@ -98,12 +98,13 @@ void HeightmapShape<S>::setHeightField(
 {
   assert(heights.size() == width * depth);
   if ((width * depth) != heights.size()) {
-    dterr << "[HeightmapShape] Size of height field needs to be width*depth="
-          << width * depth << "\n";
+    DART_ERROR(
+        "[HeightmapShape] Size of height field needs to be width*depth={}",
+        width * depth);
     return;
   }
   if (heights.empty()) {
-    dtwarn << "Empty height field makes no sense.\n";
+    DART_WARN("Empty height field makes no sense.");
     return;
   }
 

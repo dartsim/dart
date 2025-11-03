@@ -32,7 +32,7 @@
 
 #include "dart/utils/CompositeResourceRetriever.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
 
 #include <iostream>
@@ -53,16 +53,19 @@ bool CompositeResourceRetriever::addSchemaRetriever(
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if (!_resourceRetriever) {
-    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
-             " nullptr ResourceRetriever; skipping this entry.\n";
+    DART_ERROR(
+        "{}",
+        "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
+        " nullptr ResourceRetriever; skipping this entry.\n");
     return false;
   }
 
   if (_schema.find("://") != std::string::npos) {
-    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Schema '"
-          << _schema
-          << "' contains '://'. Did you mistakenly include the"
-             " '://' in the input of this function?\n";
+    DART_ERROR(
+        "[CompositeResourceRetriever::addSchemaRetriever] Schema '{}{}",
+        _schema,
+        "' contains '://'. Did you mistakenly include the"
+        " '://' in the input of this function?\n");
     return false;
   }
 
@@ -92,9 +95,12 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
       return resource;
   }
 
-  dtwarn << "[CompositeResourceRetriever::retrieve] All ResourceRetrievers"
-            " registered for this schema failed to retrieve the URI '"
-         << _uri.toString() << "' (tried " << retrievers.size() << ").\n";
+  DART_WARN(
+      "{}{}' (tried {}).",
+      "[CompositeResourceRetriever::retrieve] All ResourceRetrievers"
+      " registered for this schema failed to retrieve the URI '",
+      _uri.toString(),
+      retrievers.size());
 
   return nullptr;
 }
@@ -130,12 +136,14 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
       std::end(mDefaultResourceRetrievers));
 
   if (retrievers.empty()) {
-    dtwarn << "[CompositeResourceRetriever::retrieve] There are no resource"
-              " retrievers registered for the schema '"
-           << schema
-           << "'"
-              " that is necessary to retrieve URI '"
-           << _uri.toString() << "'.\n";
+    DART_WARN(
+        "{}{}{}{}'.",
+        "[CompositeResourceRetriever::retrieve] There are no resource"
+        " retrievers registered for the schema '",
+        schema,
+        "'"
+        " that is necessary to retrieve URI '",
+        _uri.toString());
   }
 
   return retrievers;

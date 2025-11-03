@@ -1503,9 +1503,11 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
     }
   }
 
-  dterr << "[DARTCollisionDetector] Attempting to check for an "
-        << "unsupported shape pair: [" << shape1->getType() << "] - ["
-        << shape2->getType() << "]. Returning false.\n";
+  DART_ERROR(
+      "[DARTCollisionDetector] Attempting to check for an unsupported shape "
+      "pair: [{}] - [{}]. Returning false.",
+      shape1->getType(),
+      shape2->getType());
 
   return false;
 }

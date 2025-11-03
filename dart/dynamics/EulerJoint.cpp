@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/EulerJoint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 
@@ -159,8 +159,9 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
     case AxisOrder::ZYX:
       return math::eulerZYXToMatrix(_positions);
     default: {
-      dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
-            << static_cast<int>(_ordering) << ")\n";
+      DART_ERROR(
+          "[EulerJoint::convertToRotation] Invalid AxisOrder specified ({})",
+          static_cast<int>(_ordering));
       return Eigen::Matrix3d::Identity();
     }
   }
@@ -243,7 +244,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
       break;
     }
     default: {
-      dterr << "Undefined Euler axis order\n";
+      DART_ERROR("Undefined Euler axis order");
       break;
     }
   }
@@ -306,9 +307,10 @@ void EulerJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_z");
       break;
     default:
-      dterr << "Unsupported axis order in EulerJoint named '"
-            << Joint::mAspectProperties.mName << "' ("
-            << static_cast<int>(getAxisOrder()) << ")\n";
+      DART_ERROR(
+          "Unsupported axis order in EulerJoint named '{}' ({})",
+          Joint::mAspectProperties.mName,
+          static_cast<int>(getAxisOrder()));
   }
 
   if (affixes.size() == 3) {
@@ -393,7 +395,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
       break;
     }
     default: {
-      dterr << "Undefined Euler axis order\n";
+      DART_ERROR("Undefined Euler axis order");
       break;
     }
   }

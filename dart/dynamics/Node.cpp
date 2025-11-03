@@ -35,9 +35,10 @@
 #include "dart/dynamics/BodyNode.hpp"
 
 #define REPORT_INVALID_NODE(func)                                              \
-  dterr << "[Node::" #func "] This Node was not constructed correctly. It "    \
-        << "needs to specify a valid BodyNode pointer during construction. "   \
-        << "Please report this as a bug if it is not a custom node type!\n";   \
+  DART_ERROR(                                                                  \
+      "[Node::{}] A valid BodyNode pointer is required during construction. "  \
+      "Please report this as a bug if this is not a custom node type!",        \
+      #func);                                                                  \
   assert(false);
 
 namespace dart {

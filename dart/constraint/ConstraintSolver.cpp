@@ -38,7 +38,7 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -107,9 +107,10 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
   if (hasSkeleton(skeleton)) {
-    dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
-           << "skeleton '" << skeleton->getName()
-           << "', which already exists in the ConstraintSolver.\n";
+    DART_WARN(
+        "[ConstraintSolver::addSkeleton] Attempting to add skeleton '{}', "
+        "which already exists in the ConstraintSolver.",
+        skeleton->getName());
 
     return;
   }
@@ -140,9 +141,10 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
   if (!hasSkeleton(skeleton)) {
-    dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
-           << "skeleton '" << skeleton->getName()
-           << "', which doesn't exist in the ConstraintSolver.\n";
+    DART_WARN(
+        "[ConstraintSolver::removeSkeleton] Attempting to remove skeleton "
+        "'{}', which doesn't exist in the ConstraintSolver.",
+        skeleton->getName());
   }
 
   mCollisionGroup->unsubscribeFrom(skeleton.get());
@@ -171,8 +173,9 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
   assert(constraint);
 
   if (containConstraint(constraint)) {
-    dtwarn << "Constraint solver already contains constraint that you are "
-           << "trying to add." << std::endl;
+    DART_WARN(
+        "Constraint solver already contains constraint that you are trying to "
+        "add.");
     return;
   }
 
@@ -185,8 +188,9 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
   assert(constraint);
 
   if (!containConstraint(constraint)) {
-    dtwarn << "Constraint solver deos not contain constraint that you are "
-           << "trying to remove." << std::endl;
+    DART_WARN(
+        "Constraint solver deos not contain constraint that you are trying to "
+        "remove.");
     return;
   }
 
@@ -271,9 +275,10 @@ void ConstraintSolver::setCollisionDetector(
     const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
   if (!collisionDetector) {
-    dtwarn << "[ConstraintSolver::setCollisionDetector] Attempting to assign "
-           << "nullptr as the new collision detector to the constraint solver, "
-           << "which is not allowed. Ignoring.\n";
+    DART_WARN(
+        "[ConstraintSolver::setCollisionDetector] Attempting to assign nullptr "
+        "as the new collision detector to the constraint solver, which is not "
+        "allowed. Ignoring.");
     return;
   }
 
@@ -341,19 +346,19 @@ const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 //==============================================================================
 void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
 {
-  dtwarn << "[ConstraintSolver::setLCPSolver] This function is deprecated in "
-         << "DART 6.7. Please use "
-         << "BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
-         << "Doing nothing.";
+  DART_WARN(
+      "[ConstraintSolver::setLCPSolver] This function is deprecated in DART "
+      "6.7. Please use BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
+      "Doing nothing.");
 }
 
 //==============================================================================
 LCPSolver* ConstraintSolver::getLCPSolver() const
 {
-  dtwarn << "[ConstraintSolver::getLCPSolver] This function is deprecated in "
-         << "DART 6.7. Please use "
-         << "BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
-         << "Returning nullptr.";
+  DART_WARN(
+      "[ConstraintSolver::getLCPSolver] This function is deprecated in DART "
+      "6.7. Please use BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
+      "Returning nullptr.");
 
   return nullptr;
 }
@@ -425,8 +430,8 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
     mSkeletons.push_back(skeleton);
     return true;
   } else {
-    dtwarn << "Skeleton [" << skeleton->getName()
-           << "] is already in ConstraintSolver." << std::endl;
+    DART_WARN(
+        "Skeleton [{}] is already in ConstraintSolver.", skeleton->getName());
     return false;
   }
 }
@@ -448,7 +453,7 @@ bool ConstraintSolver::checkAndAddConstraint(
     mManualConstraints.push_back(constraint);
     return true;
   } else {
-    dtwarn << "Constraint is already in ConstraintSolver." << std::endl;
+    DART_WARN("Constraint is already in ConstraintSolver.");
     return false;
   }
 }
@@ -732,8 +737,9 @@ void ConstraintSolver::addContactSurfaceHandler(
 {
   // sanity check, do not add the same handler twice
   if (handler == mContactSurfaceHandler) {
-    dterr << "Adding the same contact surface handler for the second time, "
-          << "ignoring.\n";
+    DART_ERROR(
+        "Adding the same contact surface handler for the second time, "
+        "ignoring.");
     return;
   }
   handler->setParent(mContactSurfaceHandler);
@@ -761,8 +767,9 @@ bool ConstraintSolver::removeContactSurfaceHandler(
   }
 
   if (mContactSurfaceHandler == nullptr)
-    dterr << "No contact surface handler remained. This is an error. Add at "
-          << "least DefaultContactSurfaceHandler." << std::endl;
+    DART_ERROR(
+        "No contact surface handler remained. This is an error. Add at least "
+        "DefaultContactSurfaceHandler.");
 
   return found;
 }

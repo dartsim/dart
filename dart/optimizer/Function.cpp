@@ -32,7 +32,7 @@
 
 #include "dart/optimizer/Function.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 namespace dart {
 namespace optimizer {
@@ -65,8 +65,10 @@ const std::string& Function::getName() const
 void Function::evalGradient(
     const Eigen::VectorXd& /*_x*/, Eigen::Map<Eigen::VectorXd> /*_grad*/)
 {
-  dtwarn << "Gradient is not provided by function named [" << mName
-         << "]. Use gradient-free algorithm.\n";
+  DART_WARN(
+      "Gradient is not provided by function named [{}]. Use gradient-free "
+      "algorithm.",
+      mName);
 }
 
 //==============================================================================
@@ -81,8 +83,10 @@ void Function::evalHessian(
     const Eigen::VectorXd& /*_x*/,
     Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
 {
-  dterr << "Hessian is not provided by funciton named [" << mName
-        << "]. Use Hessian-free algorithm.\n";
+  DART_ERROR(
+      "Hessian is not provided by funciton named [{}]. Use Hessian-free "
+      "algorithm.",
+      mName);
 }
 
 //==============================================================================
@@ -131,9 +135,10 @@ void ModularFunction::clearCostFunction(bool _printWarning)
 {
   mCostFunction = [this, _printWarning](const Eigen::VectorXd&) {
     if (_printWarning) {
-      dterr
-          << "A cost function has not yet been assigned to the ModularFunction "
-          << "named [" << this->mName << "]. Returning 0.0\n";
+      DART_ERROR(
+          "A cost function has not yet been assigned to the ModularFunction "
+          "named [{}]. Returning 0.0",
+          this->mName);
     }
     return 0;
   };

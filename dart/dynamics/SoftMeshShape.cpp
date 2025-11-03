@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/SoftMeshShape.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
@@ -82,7 +82,7 @@ const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
 //==============================================================================
 Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
-  dtwarn << "[SoftMeshShape::computeInertia] Not implemented yet.\n";
+  DART_WARN("[SoftMeshShape::computeInertia] Not implemented yet.");
   // TODO(JS): Not implemented.
 
   return Eigen::Matrix3d::Zero();
@@ -91,7 +91,7 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 //==============================================================================
 ShapePtr SoftMeshShape::clone() const
 {
-  dtwarn << "[SoftMeshShape::clone] This should never be called.\n";
+  DART_WARN("[SoftMeshShape::clone] This should never be called.");
   return nullptr;
 }
 

@@ -98,14 +98,15 @@ bool BodyContactCondition::isSatisfied()
   if (mBodyNode->isColliding())
     DART_SUPPRESS_DEPRECATED_END
     {
-      //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
-      //          << std::endl;
+      //    DART_INFO("BodyNode [{}{}", mBodyNode->getName(), "] is in
+      //    contact."
+      //);
       return true;
     }
   else {
-    //    dtmsg << "Waiting for BodyNode [" << mBodyNode->getName()
-    //          << "] is in contact."
-    //          << std::endl;
+    //    DART_INFO("Waiting for BodyNode [{}{}", mBodyNode->getName()
+    //, "] is in contact."
+    //);
     return false;
   }
 }

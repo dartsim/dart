@@ -195,8 +195,9 @@ double OdeCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dterr << "[OdeCollisionDetector] Distance query is not supported. "
-        << "Returning -1.0 instead.\n";
+  DART_ERROR(
+      "[OdeCollisionDetector] Distance query is not supported. Returning -1.0 "
+      "instead.");
   return -1.0;
 }
 
@@ -207,8 +208,9 @@ double OdeCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dterr << "[OdeCollisionDetector] Distance query is not supported. "
-        << "Returning -1.0 instead.\n";
+  DART_ERROR(
+      "[OdeCollisionDetector] Distance query is not supported. Returning -1.0 "
+      "instead.");
   return -1.0;
 }
 

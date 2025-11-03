@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/Shape.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

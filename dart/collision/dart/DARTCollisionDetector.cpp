@@ -109,9 +109,10 @@ std::unique_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
 static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
-    dterr << "[DARTCollisionDetector::collide] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
+    DART_ERROR(
+        "[DARTCollisionDetector::collide] Attempting to check collision for a "
+        "collision group that is created from a different collision detector "
+        "instance.");
 
     return false;
   }
@@ -232,8 +233,9 @@ double DARTCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  DART_WARN(
+      "[DARTCollisionDetector::distance] This collision detector does not "
+      "support (signed) distance queries. Returning 0.0.");
 
   return 0.0;
 }
@@ -245,8 +247,9 @@ double DARTCollisionDetector::distance(
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
 {
-  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  DART_WARN(
+      "[DARTCollisionDetector::distance] This collision detector does not "
+      "support (signed) distance queries. Returning 0.0.");
 
   return 0.0;
 }
@@ -280,12 +283,12 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
       return;
   }
 
-  dterr << "[DARTCollisionDetector] Attempting to create shape type ["
-        << shapeType << "] that is not supported "
-        << "by DARTCollisionDetector. Currently, only BoxShape and "
-        << "EllipsoidShape (only when all the radii are equal) are "
-        << "supported. This shape will always get penetrated by other "
-        << "objects.\n";
+  DART_ERROR(
+      "[DARTCollisionDetector] Attempting to create shape type [{}] that is "
+      "not supported by DARTCollisionDetector. Currently, only BoxShape and "
+      "EllipsoidShape (only when all the radii are equal) are supported. This "
+      "shape will always get penetrated by other objects.",
+      shapeType);
 }
 
 //==============================================================================

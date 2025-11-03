@@ -34,7 +34,7 @@
 
 #if HAVE_OCTOMAP
 
-  #include "dart/common/Console.hpp"
+  #include "dart/common/Logging.hpp"
   #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -89,8 +89,9 @@ VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
   : Shape()
 {
   if (!octree) {
-    dtwarn << "[VoxelGridShape] Attempting to assign null octree. Creating an "
-           << "empty octree with resolution 0.01 instead.\n";
+    DART_WARN(
+        "[VoxelGridShape] Attempting to assign null octree. Creating an empty "
+        "octree with resolution 0.01 instead.");
     setOctree(std::make_shared<octomap::OcTree>(0.01));
     return;
   }
@@ -115,9 +116,9 @@ const std::string& VoxelGridShape::getStaticType()
 void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
 {
   if (!octree) {
-    dtwarn
-        << "[VoxelGridShape] Attempting to assign null octree. Ignoring this "
-        << "query.\n";
+    DART_WARN(
+        "[VoxelGridShape] Attempting to assign null octree. Ignoring this "
+        "query.");
     return;
   }
 

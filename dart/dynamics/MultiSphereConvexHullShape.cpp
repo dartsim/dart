@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/math/Helpers.hpp"
 

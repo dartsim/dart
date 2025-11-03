@@ -151,7 +151,7 @@ int main()
   auto world
       = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
   if (!world) {
-    dterr << "Failed to load world.\n";
+    DART_ERROR("Failed to load world.");
     return EXIT_FAILURE;
   }
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));

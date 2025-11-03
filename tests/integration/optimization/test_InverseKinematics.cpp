@@ -95,8 +95,9 @@ public:
   {
     std::shared_ptr<optimizer::Problem> problem = mProperties.mProblem;
     if (nullptr == problem) {
-      dtwarn << "[FailingSolver::solve] Attempting to solve a nullptr "
-             << "problem! We will return false.\n";
+      DART_WARN(
+          "[FailingSolver::solve] Attempting to solve a nullptr problem! We "
+          "will return false.");
       return false;
     }
 

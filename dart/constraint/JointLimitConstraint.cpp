@@ -32,7 +32,7 @@
 
 #include "dart/constraint/JointLimitConstraint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -89,9 +89,9 @@ void JointLimitConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range
   if (allowance < 0.0) {
-    dtwarn << "Error reduction parameter[" << allowance
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
+        allowance);
     mErrorAllowance = 0.0;
   }
 
@@ -109,13 +109,16 @@ void JointLimitConstraint::setErrorReductionParameter(double erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
   if (erp < 0.0) {
-    dtwarn << "Error reduction parameter[" << erp << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
+        erp);
     mErrorReductionParameter = 0.0;
   }
   if (erp > 1.0) {
-    dtwarn << "Error reduction parameter[" << erp << "] is greater than 1.0. "
-           << "It is set to 1.0." << std::endl;
+    DART_WARN(
+        "Error reduction parameter[{}] is greater than 1.0. It is set to "
+        "1.0.",
+        erp);
     mErrorReductionParameter = 1.0;
   }
 
@@ -133,9 +136,10 @@ void JointLimitConstraint::setMaxErrorReductionVelocity(double erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
   if (erv < 0.0) {
-    dtwarn << "Maximum error reduction velocity[" << erv
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
+    DART_WARN(
+        "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
+        "0.0.",
+        erv);
     mMaxErrorReductionVelocity = 0.0;
   }
 
@@ -153,9 +157,10 @@ void JointLimitConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (cfm < 1e-9) {
-    dtwarn << "Constraint force mixing parameter[" << cfm
-           << "] is lower than 1e-9. "
-           << "It is set to 1e-9." << std::endl;
+    DART_WARN(
+        "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
+        "to 1e-9.",
+        cfm);
     mConstraintForceMixing = 1e-9;
   }
 

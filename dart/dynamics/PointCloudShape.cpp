@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/PointCloudShape.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -186,16 +186,17 @@ void PointCloudShape::setOverallColor(const Eigen::Vector4d& color)
 Eigen::Vector4d PointCloudShape::getOverallColor() const
 {
   if (mColors.empty()) {
-    dtwarn << "[PointCloudShape] Attempt to get the overall color when the "
-           << "color array is empty. Returning (RGBA: [0.5, 0.5, 0.5, 0.5]) "
-           << "color\n";
+    DART_WARN(
+        "[PointCloudShape] Attempt to get the overall color when the color "
+        "array is empty. Returning (RGBA: [0.5, 0.5, 0.5, 0.5]) color");
     return Eigen::Vector4d(0.5, 0.5, 0.5, 0.5);
   }
 
   if (mColors.size() > 1) {
-    dtwarn << "[PointCloudShape] Attempting to get the overal color when the "
-           << "color array contains more than one color. This is potentially "
-           << "an error. Returning the first color in the color array.\n";
+    DART_WARN(
+        "[PointCloudShape] Attempting to get the overal color when the color "
+        "array contains more than one color. This is potentially an error. "
+        "Returning the first color in the color array.");
   }
 
   return mColors[0];

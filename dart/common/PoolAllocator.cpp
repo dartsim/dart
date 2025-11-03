@@ -32,7 +32,6 @@
 
 #include "dart/common/PoolAllocator.hpp"
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 

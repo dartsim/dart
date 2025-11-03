@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/PlanarJoint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -248,9 +248,10 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_2");
       break;
     default:
-      dterr << "Unsupported plane type in PlanarJoint named '"
-            << Joint::mAspectProperties.mName << "' ("
-            << static_cast<int>(mAspectProperties.mPlaneType) << ")\n";
+      DART_ERROR(
+          "Unsupported plane type in PlanarJoint named '{}' ({})",
+          Joint::mAspectProperties.mName,
+          static_cast<int>(mAspectProperties.mPlaneType));
   }
 
   if (affixes.size() == 2) {

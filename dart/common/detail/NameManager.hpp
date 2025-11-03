@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 #define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 
-#include <dart/common/Console.hpp>
+#include <dart/common/Logging.hpp>
 #include <dart/common/NameManager.hpp>
 
 #include <sstream>
@@ -100,9 +100,12 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
     newName = ss.str();
   } while (hasName(newName));
 
-  dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
-        << _name << "] is a duplicate, so it has been renamed to [" << newName
-        << "]\n";
+  DART_INFO(
+      "[NameManager::issueNewName] ({}) The name [{}] is a duplicate, so it "
+      "has been renamed to [{}]",
+      mManagerName,
+      _name,
+      newName);
 
   return newName;
 }
@@ -124,14 +127,16 @@ template <class T>
 bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 {
   if (_name.empty()) {
-    dtwarn << "[NameManager::addName] (" << mManagerName
-           << ") Empty name is not allowed!\n";
+    DART_WARN(
+        "[NameManager::addName] ({}) Empty name is not allowed!", mManagerName);
     return false;
   }
 
   if (hasName(_name)) {
-    dtwarn << "[NameManager::addName] (" << mManagerName << ") The name ["
-           << _name << "] already exists!\n";
+    DART_WARN(
+        "[NameManager::addName] ({}) The name [{}] already exists!",
+        mManagerName,
+        _name);
     return false;
   }
 
