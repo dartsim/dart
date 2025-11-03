@@ -30,24 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#pragma once
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-#include <string>
+namespace dartpy7 {
 
-namespace py = pybind11;
+void defRigidBody(nanobind::module_& m);
 
-PYBIND11_MODULE(dartpy7, m)
-{
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
-
-  m.attr("__version__") = std::string(dart7::version());
-
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
-
-  py::class_<dart7::World>(m, "World").def(py::init<>());
-}
+} // namespace dartpy7

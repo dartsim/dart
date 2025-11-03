@@ -30,24 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart7/version.hpp>
-#include <dart7/world.hpp>
+#include "logging_bind.hpp"
 
-#include <pybind11/pybind11.h>
+#include "dart7/common/logging.hpp"
 
-#include <string>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
-PYBIND11_MODULE(dartpy7, m)
+namespace dartpy7 {
+
+void defLogging(nb::module_& m)
 {
-  m.doc() = "Experimental bindings for the dart7 prototype library.";
+  DART7_DEBUG("Registering logging API");
 
-  m.attr("__version__") = std::string(dart7::version());
+  // Logging severity levels enum
+  nb::enum_<dart7::common::LogLevel>(m, "LogLevel", "Logging severity levels")
+      .value("Trace", dart7::common::LogLevel::Trace)
+      .value("Debug", dart7::common::LogLevel::Debug)
+      .value("Info", dart7::common::LogLevel::Info)
+      .value("Warn", dart7::common::LogLevel::Warn)
+      .value("Error", dart7::common::LogLevel::Error)
+      .value("Critical", dart7::common::LogLevel::Critical)
+      .value("Off", dart7::common::LogLevel::Off);
 
-  m.def("version_major", &dart7::versionMajor);
-  m.def("version_minor", &dart7::versionMinor);
-  m.def("version_patch", &dart7::versionPatch);
+  // Logging control functions
+  m.def(
+      "set_log_level",
+      &dart7::common::setLogLevel,
+      nb::arg("level"),
+      "Set the global logging level");
 
-  py::class_<dart7::World>(m, "World").def(py::init<>());
+  m.def(
+      "get_log_level",
+      &dart7::common::getLogLevel,
+      "Get the current logging level");
+
+  m.def(
+      "initialize_logging",
+      &dart7::common::initializeLogging,
+      "Initialize DART7 logging system");
 }
+
+} // namespace dartpy7
