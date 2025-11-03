@@ -31,6 +31,7 @@
  */
 
 #include <dart7/body/rigid_body.hpp>
+#include <dart7/common/constants.hpp>
 #include <dart7/comps/frame_types.hpp>
 #include <dart7/comps/joint.hpp>
 #include <dart7/comps/multi_body.hpp>
@@ -688,7 +689,7 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   auto parent = world.addFreeFrame("parent");
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
   offset.translate(Eigen::Vector3d(3.14, 2.71, 1.41));
-  offset.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d(1, 0, 0)));
+  offset.rotate(Eigen::AngleAxisd(dart7::pi / 4, Eigen::Vector3d(1, 0, 0)));
 
   auto fixed = world.addFixedFrame("fixed", parent, offset);
 

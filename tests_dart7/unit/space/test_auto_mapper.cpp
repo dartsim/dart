@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart7/common/constants.hpp"
 #include "dart7/comps/component_category.hpp"
 #include "dart7/space/auto_mapper.hpp"
 #include "dart7/space/state_space.hpp"
@@ -182,7 +183,7 @@ TEST(AutoMapper, IsometryField)
   Transform transform;
   transform.pose.translation() << 1.0, 2.0, 3.0;
   transform.pose.linear()
-      = Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ())
+      = Eigen::AngleAxisd(dart7::pi / 4.0, Eigen::Vector3d::UnitZ())
             .toRotationMatrix();
   registry.emplace<Transform>(entity, transform);
 

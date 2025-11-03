@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart7/common/constants.hpp"
 #include "dart7/space/state_space.hpp"
 
 #include <gtest/gtest.h>
@@ -122,7 +123,7 @@ TEST(StateSpace, GetVariableNames)
 TEST(StateSpace, GetBounds)
 {
   StateSpace space;
-  space.addVariable("pos", 2, -M_PI, M_PI);
+  space.addVariable("pos", 2, -dart7::pi, dart7::pi);
   space.addVariable("vel", 2, -10.0, 10.0);
 
   auto lowerBounds = space.getLowerBounds();
@@ -132,10 +133,10 @@ TEST(StateSpace, GetBounds)
   ASSERT_EQ(upperBounds.size(), 4);
 
   // First variable (pos)
-  EXPECT_DOUBLE_EQ(lowerBounds[0], -M_PI);
-  EXPECT_DOUBLE_EQ(lowerBounds[1], -M_PI);
-  EXPECT_DOUBLE_EQ(upperBounds[0], M_PI);
-  EXPECT_DOUBLE_EQ(upperBounds[1], M_PI);
+  EXPECT_DOUBLE_EQ(lowerBounds[0], -dart7::pi);
+  EXPECT_DOUBLE_EQ(lowerBounds[1], -dart7::pi);
+  EXPECT_DOUBLE_EQ(upperBounds[0], dart7::pi);
+  EXPECT_DOUBLE_EQ(upperBounds[1], dart7::pi);
 
   // Second variable (vel)
   EXPECT_DOUBLE_EQ(lowerBounds[2], -10.0);
