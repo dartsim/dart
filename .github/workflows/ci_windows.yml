@@ -58,8 +58,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           $env:DART_VERBOSE = "ON"
           $env:BUILD_TYPE = "${{ matrix.build_type }}"
-          $env:CTEST_EXCLUDE_REGEX = "test_plane_shape_collision"
-          pixi run test OFF
+          pixi run test-no-plane OFF
 
       - name: Install (dartpy disabled)
         run: |

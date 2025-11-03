@@ -225,6 +225,13 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
+test-no-plane = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        --exclude-regex "test_plane_shape_collision"
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
 test-dart7 = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -628,7 +635,7 @@ config = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7=ON \
+        -DDART_BUILD_DARTPY7={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
@@ -721,6 +728,14 @@ test = { cmd = """
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --build-config $BUILD_TYPE \
         --output-on-failure
+""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+
+test-no-plane = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --build-config $BUILD_TYPE \
+        --output-on-failure \
+        --exclude-regex "test_plane_shape_collision"
 """, depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 test-py = { cmd = """
