@@ -55,6 +55,24 @@ if(NOT pybind11_FOUND)
   return()
 endif()
 
+# Patch native_enum_data.h for pybind11 3.0.1 (see https://github.com/pybind/pybind11/pull/4854)
+set(DART_PYBIND11_NATIVE_ENUM_PATCH
+    "${CMAKE_SOURCE_DIR}/pybind11/detail/native_enum_data.h")
+if(EXISTS "${DART_PYBIND11_NATIVE_ENUM_PATCH}")
+  if(NOT pybind11_INCLUDE_DIRS)
+    get_target_property(pybind11_INCLUDE_DIRS pybind11::module
+                        INTERFACE_INCLUDE_DIRECTORIES)
+  endif()
+  foreach(pybind11_inc_dir IN LISTS pybind11_INCLUDE_DIRS)
+    if(EXISTS "${pybind11_inc_dir}/pybind11/detail/native_enum_data.h")
+      configure_file(
+        "${DART_PYBIND11_NATIVE_ENUM_PATCH}"
+        "${pybind11_inc_dir}/pybind11/detail/native_enum_data.h"
+        COPYONLY)
+    endif()
+  endforeach()
+endif()
+
 if(DART_BUILD_DARTPY)
   set(DART_DARTPY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy")
 
