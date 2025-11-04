@@ -111,6 +111,10 @@ set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 #===============================================================================
 # Build options
 #===============================================================================
+
+# DART 7.0 options
+option(DART7_VERBOSE "Show detailed DART7 dependency information" OFF)
+
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
@@ -163,7 +167,6 @@ dart_option(DART_USE_SYSTEM_IMGUI
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
-dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART7 "Build experimental DART7 library" OFF CATEGORY build)
@@ -460,6 +463,14 @@ add_subdirectory(dart)
 
 if(DART_BUILD_DART7)
   add_subdirectory(dart7)
+
+  if(MSVC)
+    add_subdirectory(tests_dart7)
+    add_subdirectory(examples_dart7)
+  else()
+    add_subdirectory(tests_dart7 EXCLUDE_FROM_ALL)
+    add_subdirectory(examples_dart7 EXCLUDE_FROM_ALL)
+  endif()
 endif()
 
 set(DART_IN_SOURCE_BUILD TRUE)

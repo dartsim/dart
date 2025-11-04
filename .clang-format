@@ -68,6 +68,10 @@ IncludeCategories:
   # DART library headers (with angle brackets) - ordered from high-level to low-level
   - Regex: '^<dart\/config\.hpp>$' # config first
     Priority: 10
+  - Regex: '^<dart7\/fwd\.hpp>$' # dart7 forward declarations first
+    Priority: 11
+  - Regex: '^<dart7\/.*\.h(pp)?>$' # other dart7 headers
+    Priority: 12
   - Regex: '^<dart\/test\/.*\.h(pp)?>$' # test utilities
     Priority: 20
   - Regex: '^<dart\/python\/.*\.h(pp)?>$' # bindings
@@ -98,24 +102,6 @@ IncludeCategories:
     Priority: 40
   - Regex: '^<dart\/external\/.*\.h(pp)?>$' # external dependencies
     Priority: 50
-
-  # DART7 experimental library headers (angle brackets)
-  - Regex: '^<dart7\/version\.hpp>$' # core version info
-    Priority: 60
-  - Regex: '^<dart7\/common\/.*\.h(pp)?>$' # common utilities
-    Priority: 61
-  - Regex: '^<dart7\/space\/.*\.h(pp)?>$' # state space utilities
-    Priority: 62
-  - Regex: '^<dart7\/frame\/.*\.h(pp)?>$' # frame subsystem
-    Priority: 63
-  - Regex: '^<dart7\/multi_body\/.*\.h(pp)?>$' # multibody subsystem
-    Priority: 64
-  - Regex: '^<dart7\/.*\.h(pp)?>$' # other dart7 headers
-    Priority: 70
-
-  # dartpy7 experimental bindings
-  - Regex: '^<dartpy7\/.*\.h(pp)?>$'
-    Priority: 80
 
   # 3rd-party headers
   - Regex: '^<.*\.h(pp)?>$'
