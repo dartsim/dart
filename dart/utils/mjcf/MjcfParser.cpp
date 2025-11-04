@@ -656,13 +656,12 @@ simulation::WorldPtr createWorld(
     skel->setName(skel->getRootBodyNode()->getName());
 
     // Skeleton name should be unique in the World.
-    if (world->hasSkeleton(skel->getName())) {
-      DART_WARN(
-          "[MjcfParser] World '{}' already contains skeleton has the same name "
-          "'{}', which is an error. Please report this error.",
-          world->getName(),
-          skel->getName());
-    }
+    DART_WARN_IF(
+        world->hasSkeleton(skel->getName()),
+        "[MjcfParser] World '{}' already contains skeleton has the same name "
+        "'{}', which is an error. Please report this error.",
+        world->getName(),
+        skel->getName());
 
     world->addSkeleton(skel);
   }

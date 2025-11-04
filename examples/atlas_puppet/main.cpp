@@ -61,16 +61,15 @@ public:
       mWeights(weights)
   {
     int dofs = mIdeal.size();
-    if (mLower.size() != dofs || mWeights.size() != dofs
-        || mUpper.size() != dofs) {
-      DART_ERROR(
-          "[RelaxedPose::RelaxedPose] Dimension mismatch:\\n  ideal:   {}\\n  "
-          "lower:   {}\\n  upper:   {}\\n  weights: {}",
-          mIdeal.size(),
-          mLower.size(),
-          mUpper.size(),
-          mWeights.size());
-    }
+    DART_ERROR_IF(
+        mLower.size() != dofs || mWeights.size() != dofs
+            || mUpper.size() != dofs,
+        "[RelaxedPose::RelaxedPose] Dimension mismatch:\\n  ideal:   {}\\n  "
+        "lower:   {}\\n  upper:   {}\\n  weights: {}",
+        mIdeal.size(),
+        mLower.size(),
+        mUpper.size(),
+        mWeights.size());
     mResultVector.setZero(dofs);
   }
 

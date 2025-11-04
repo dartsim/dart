@@ -254,8 +254,7 @@ static void checkFactorization(
 
   // compare A2 and A3
   Scalar diff = A2.maxDifference(A3);
-  if (diff > 1e-8)
-    DART_DEBUG("L*D*L' check, maximum difference = {:.6e}", diff);
+  DART_DEBUG_IF(diff > 1e-8, "L*D*L' check, maximum difference = {:.6e}", diff);
 }
 
 #endif

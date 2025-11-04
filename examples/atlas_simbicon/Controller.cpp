@@ -130,10 +130,11 @@ void Controller::changeStateMachine(
   mCurrentStateMachine = _stateMachine;
   mCurrentStateMachine->begin(_currentTime);
 
-  if (mVerbosity) {
-    DART_INFO(
-        "State machine transition: from [{}] to [{}].", prevName, nextName);
-  }
+  DART_INFO_IF(
+      mVerbosity,
+      "State machine transition: from [{}] to [{}].",
+      prevName,
+      nextName);
 }
 
 //==============================================================================
@@ -250,8 +251,7 @@ void Controller::harnessPelvis()
   mConstratinSolver->addConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = true;
 
-  if (mVerbosity)
-    DART_INFO("Pelvis is harnessed.");
+  DART_INFO_IF(mVerbosity, "Pelvis is harnessed.");
 }
 
 //==============================================================================
@@ -263,8 +263,7 @@ void Controller::unharnessPelvis()
   mConstratinSolver->removeConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = false;
 
-  if (mVerbosity)
-    DART_INFO("Pelvis is unharnessed.");
+  DART_INFO_IF(mVerbosity, "Pelvis is unharnessed.");
 }
 
 //==============================================================================
@@ -277,8 +276,7 @@ void Controller::harnessLeftFoot()
   mWeldJointConstraintLeftFoot = std::make_shared<WeldJointConstraint>(bd);
   mLeftFootHarnessOn = true;
 
-  if (mVerbosity)
-    DART_INFO("Left foot is harnessed.");
+  DART_INFO_IF(mVerbosity, "Left foot is harnessed.");
 }
 
 //==============================================================================
@@ -290,8 +288,7 @@ void Controller::unharnessLeftFoot()
   mConstratinSolver->removeConstraint(mWeldJointConstraintLeftFoot);
   mLeftFootHarnessOn = false;
 
-  if (mVerbosity)
-    DART_INFO("Left foot is unharnessed.");
+  DART_INFO_IF(mVerbosity, "Left foot is unharnessed.");
 }
 
 //==============================================================================
@@ -304,8 +301,7 @@ void Controller::harnessRightFoot()
   mWeldJointConstraintRightFoot = std::make_shared<WeldJointConstraint>(bd);
   mRightFootHarnessOn = true;
 
-  if (mVerbosity)
-    DART_INFO("Right foot is harnessed.");
+  DART_INFO_IF(mVerbosity, "Right foot is harnessed.");
 }
 
 //==============================================================================
@@ -317,8 +313,7 @@ void Controller::unharnessRightFoot()
   mConstratinSolver->removeConstraint(mWeldJointConstraintRightFoot);
   mRightFootHarnessOn = false;
 
-  if (mVerbosity)
-    DART_INFO("Right foot is unharnessed.");
+  DART_INFO_IF(mVerbosity, "Right foot is unharnessed.");
 }
 
 //==============================================================================
@@ -326,8 +321,7 @@ void Controller::resetRobot()
 {
   mAtlasRobot->setConfiguration(mInitialState);
 
-  if (mVerbosity)
-    DART_INFO("Robot is reset.");
+  DART_INFO_IF(mVerbosity, "Robot is reset.");
 }
 
 //==============================================================================

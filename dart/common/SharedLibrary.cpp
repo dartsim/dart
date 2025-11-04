@@ -83,12 +83,11 @@ SharedLibrary::SharedLibrary(
 {
   mInstance = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.c_str()));
 
-  if (!mInstance) {
-    DART_ERROR(
-        "[SharedLibrary::load] Failed to load dynamic library '{}': {}",
-        canonicalPath,
-        getLastError());
-  }
+  DART_ERROR_IF(
+      !mInstance,
+      "[SharedLibrary::load] Failed to load dynamic library '{}': {}",
+      canonicalPath,
+      getLastError());
 }
 
 //==============================================================================
@@ -97,12 +96,11 @@ SharedLibrary::~SharedLibrary()
   if (!isValid())
     return;
 
-  if (DYNLIB_UNLOAD(mInstance)) {
-    DART_ERROR(
-        "[SharedLibrary::~SharedLibrary] Failed to unload library '{}': {}",
-        mPath,
-        getLastError());
-  }
+  DART_ERROR_IF(
+      DYNLIB_UNLOAD(mInstance),
+      "[SharedLibrary::~SharedLibrary] Failed to unload library '{}': {}",
+      mPath,
+      getLastError());
 }
 
 //==============================================================================

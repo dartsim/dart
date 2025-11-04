@@ -125,9 +125,7 @@ char toChar(const std::string& str)
     return 0;
   }
 
-  if (str.size() != 1) {
-    DART_ERROR("");
-  }
+  DART_ERROR_IF(str.size() != 1, "");
 
   return str[0];
 }

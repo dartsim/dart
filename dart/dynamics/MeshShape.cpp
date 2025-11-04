@@ -605,8 +605,8 @@ const aiScene* MeshShape::loadMesh(
   // Finally, pre-transform the vertices. We can't do this as part of the
   // import process, because we may have changed mTransformation above.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
-  if (!scene)
-    DART_WARN("[MeshShape::loadMesh] Failed pre-transforming vertices.");
+  DART_WARN_IF(
+      !scene, "[MeshShape::loadMesh] Failed pre-transforming vertices.");
 
   aiReleasePropertyStore(propertyStore);
 

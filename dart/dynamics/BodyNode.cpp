@@ -480,14 +480,13 @@ void BodyNode::setCollidable(bool _isCollidable)
 //==============================================================================
 void checkMass(const BodyNode& bodyNode, const double mass)
 {
-  if (mass <= 0.0) {
-    DART_WARN(
-        "[BodyNode] A negative or zero mass [{}] is set to BodyNode [{}], "
-        "which can cause invalid physical behavior or segfault. Consider "
-        "setting positive value instead.",
-        mass,
-        bodyNode.getName());
-  }
+  DART_WARN_IF(
+      mass <= 0.0,
+      "[BodyNode] A negative or zero mass [{}] is set to BodyNode [{}], "
+      "which can cause invalid physical behavior or segfault. Consider "
+      "setting positive value instead.",
+      mass,
+      bodyNode.getName());
 }
 
 //==============================================================================

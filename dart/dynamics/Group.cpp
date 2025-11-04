@@ -85,14 +85,13 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   // Create an empty Group
   GroupPtr newGroup = create(cloneName, nullptr);
 
-  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u)) {
-    DART_WARN(
-        "[Group::cloneMetaSkeletonHelper] Attempting to clone a "
-        "ReferentialSkeleton that doesn't include any BodyNodes but including "
-        "some Joints or DegreeOfFreedoms. This will lead to dangling Joints or "
-        "DegreeOfFreedoms in the cloned ReferentialSkeleton because it only "
-        "holds the stong reference to the BodyNodes but not others.");
-  }
+  DART_WARN_IF(
+      getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u),
+      "[Group::cloneMetaSkeletonHelper] Attempting to clone a "
+      "ReferentialSkeleton that doesn't include any BodyNodes but including "
+      "some Joints or DegreeOfFreedoms. This will lead to dangling Joints or "
+      "DegreeOfFreedoms in the cloned ReferentialSkeleton because it only "
+      "holds the stong reference to the BodyNodes but not others.");
 
   // Array for Skeleton clones that will be collected durig cloning BodyNodes,
   // Joints, DegreeOfFreedoms.

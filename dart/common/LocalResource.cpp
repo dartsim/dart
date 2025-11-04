@@ -46,13 +46,12 @@ namespace common {
 LocalResource::LocalResource(const std::string& _path)
   : mFile(std::fopen(_path.c_str(), "rb"))
 {
-  if (!mFile) {
-    DART_WARN(
-        "[LocalResource::constructor] Failed opening file '{}' for reading: "
-        "{}",
-        _path,
-        std::strerror(errno));
-  }
+  DART_WARN_IF(
+      !mFile,
+      "[LocalResource::constructor] Failed opening file '{}' for reading: "
+      "{}",
+      _path,
+      std::strerror(errno));
 }
 
 //==============================================================================
@@ -61,11 +60,10 @@ LocalResource::~LocalResource()
   if (!mFile)
     return;
 
-  if (std::fclose(mFile) == EOF) {
-    DART_WARN(
-        "[LocalResource::destructor] Failed closing file: {}",
-        std::strerror(errno));
-  }
+  DART_WARN_IF(
+      std::fclose(mFile) == EOF,
+      "[LocalResource::destructor] Failed closing file: {}",
+      std::strerror(errno));
 }
 
 //==============================================================================
@@ -205,10 +203,10 @@ std::size_t LocalResource::read(
     return 0;
 
   const std::size_t result = std::fread(_buffer, _size, _count, mFile);
-  if (std::ferror(mFile)) {
-    DART_WARN(
-        "[LocalResource::read] Failed reading file: {}", std::strerror(errno));
-  }
+  DART_WARN_IF(
+      std::ferror(mFile),
+      "[LocalResource::read] Failed reading file: {}",
+      std::strerror(errno));
   return result;
 }
 

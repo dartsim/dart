@@ -310,14 +310,13 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   // for it. This is not officially specified in the URDF spec, but "world" is
   // practically treated as a keyword.
   if (root->name == "world") {
-    if (model->getRoot()->child_links.size() > 1) {
-      DART_WARN(
-          "[DartLoader::modelInterfaceToSkeleton] The world link has more than "
-          "one child links. This leads to creating a multi-tree robot. "
-          "Multi-tree robot is supported by DART, but not the URDF standard. "
-          "Please consider changing the robot model as a single tree "
-          "robot.");
-    }
+    DART_WARN_IF(
+        model->getRoot()->child_links.size() > 1,
+        "[DartLoader::modelInterfaceToSkeleton] The world link has more than "
+        "one child links. This leads to creating a multi-tree robot. "
+        "Multi-tree robot is supported by DART, but not the URDF standard. "
+        "Please consider changing the robot model as a single tree "
+        "robot.");
 
     for (std::size_t i = 0; i < root->child_links.size(); i++) {
       if (!createSkeletonRecursive(
@@ -363,11 +362,10 @@ bool DartLoader::createSkeletonRecursive(
 {
   assert(lk);
 
-  if (parentNode != nullptr && lk->name == "world") {
-    DART_WARN(
-        "[DartLoader] Link name 'world' is reserved for the inertial frame. "
-        "Consider changing the name to something else.");
-  }
+  DART_WARN_IF(
+      parentNode != nullptr && lk->name == "world",
+      "[DartLoader] Link name 'world' is reserved for the inertial frame. "
+      "Consider changing the name to something else.");
 
   dynamics::BodyNode::Properties properties;
   if (!createDartNodeProperties(

@@ -481,14 +481,13 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
               ? nullptr
               : skelClone->getBodyNode(originalParent->getName());
 
-    if ((nullptr != originalParent) && (nullptr == parentClone)) {
-      DART_ERROR(
-          "[Skeleton::clone] Failed to find a clone of BodyNode named [{}] "
-          "which is needed as the parent of the BodyNode named [{}] and should "
-          "already have been created. Please report this as a bug!",
-          originalParent->getName(),
-          getBodyNode(i)->getName());
-    }
+    DART_ERROR_IF(
+        (nullptr != originalParent) && (nullptr == parentClone),
+        "[Skeleton::clone] Failed to find a clone of BodyNode named [{}] "
+        "which is needed as the parent of the BodyNode named [{}] and should "
+        "already have been created. Please report this as a bug!",
+        originalParent->getName(),
+        getBodyNode(i)->getName());
 
     BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
 

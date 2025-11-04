@@ -140,12 +140,11 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!hasSkeleton(skeleton)) {
-    DART_WARN(
-        "[ConstraintSolver::removeSkeleton] Attempting to remove skeleton "
-        "'{}', which doesn't exist in the ConstraintSolver.",
-        skeleton->getName());
-  }
+  DART_WARN_IF(
+      !hasSkeleton(skeleton),
+      "[ConstraintSolver::removeSkeleton] Attempting to remove skeleton "
+      "'{}', which doesn't exist in the ConstraintSolver.",
+      skeleton->getName());
 
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
@@ -766,10 +765,10 @@ bool ConstraintSolver::removeContactSurfaceHandler(
     current = current->mParent;
   }
 
-  if (mContactSurfaceHandler == nullptr)
-    DART_ERROR(
-        "No contact surface handler remained. This is an error. Add at least "
-        "DefaultContactSurfaceHandler.");
+  DART_ERROR_IF(
+      mContactSurfaceHandler == nullptr,
+      "No contact surface handler remained. This is an error. Add at least "
+      "DefaultContactSurfaceHandler.");
 
   return found;
 }

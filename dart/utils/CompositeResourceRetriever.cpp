@@ -135,16 +135,15 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
       std::begin(mDefaultResourceRetrievers),
       std::end(mDefaultResourceRetrievers));
 
-  if (retrievers.empty()) {
-    DART_WARN(
-        "{}{}{}{}'.",
-        "[CompositeResourceRetriever::retrieve] There are no resource"
-        " retrievers registered for the schema '",
-        schema,
-        "'"
-        " that is necessary to retrieve URI '",
-        _uri.toString());
-  }
+  DART_WARN_IF(
+      retrievers.empty(),
+      "{}{}{}{}'.",
+      "[CompositeResourceRetriever::retrieve] There are no resource"
+      " retrievers registered for the schema '",
+      schema,
+      "'"
+      " that is necessary to retrieve URI '",
+      _uri.toString());
 
   return retrievers;
 }

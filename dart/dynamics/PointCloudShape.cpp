@@ -192,12 +192,11 @@ Eigen::Vector4d PointCloudShape::getOverallColor() const
     return Eigen::Vector4d(0.5, 0.5, 0.5, 0.5);
   }
 
-  if (mColors.size() > 1) {
-    DART_WARN(
-        "[PointCloudShape] Attempting to get the overal color when the color "
-        "array contains more than one color. This is potentially an error. "
-        "Returning the first color in the color array.");
-  }
+  DART_WARN_IF(
+      mColors.size() > 1,
+      "[PointCloudShape] Attempting to get the overal color when the color "
+      "array contains more than one color. This is potentially an error. "
+      "Returning the first color in the color array.");
 
   return mColors[0];
 }
