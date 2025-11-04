@@ -290,20 +290,17 @@ void JointConstraint::update()
       }
 
       const bool isServo = mJoint->getActuatorType() == dynamics::Joint::SERVO;
-      const double servoCommand = isServo
-                                  ? mJoint->getCommand(
-                                      static_cast<std::size_t>(i))
-                                  : 0.0;
-      const bool atLowerLimit = mJoint->areLimitsEnforced()
-                                && positions[i]
-                                       <= positionLowerLimits[i]
-                                              + mErrorAllowance;
-      const bool atUpperLimit = mJoint->areLimitsEnforced()
-                                && positions[i]
-                                       >= positionUpperLimits[i]
-                                              - mErrorAllowance;
+      const double servoCommand
+          = isServo ? mJoint->getCommand(static_cast<std::size_t>(i)) : 0.0;
+      const bool atLowerLimit
+          = mJoint->areLimitsEnforced()
+            && positions[i] <= positionLowerLimits[i] + mErrorAllowance;
+      const bool atUpperLimit
+          = mJoint->areLimitsEnforced()
+            && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       const bool servoHasFiniteLowerLimit
-          = isServo && velocityLowerLimits[i] != -static_cast<double>(dInfinity);
+          = isServo
+            && velocityLowerLimits[i] != -static_cast<double>(dInfinity);
       const bool servoHasFiniteUpperLimit
           = isServo && velocityUpperLimits[i] != static_cast<double>(dInfinity);
       const bool processServoVelocityLimits
