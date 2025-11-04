@@ -35,6 +35,8 @@
 
 #include <dart/common/Logging.hpp>
 
+#include <fmt/format.h>
+
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
 
