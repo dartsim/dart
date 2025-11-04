@@ -238,12 +238,11 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
   if (skelEle) {
     const bool result = readSkeletonElement(skelEle, newSkeleton, vskData);
 
-    if (!result) {
-      DART_WARN(
-          "[VskParser::readSkeleton] Failed to parse a <Segment> element from "
-          "file '{}'. Returning null pointer.",
-          fileUri.getPath());
-    }
+    DART_WARN_IF(
+        !result,
+        "[VskParser::readSkeleton] Failed to parse a <Segment> element from "
+        "file '{}'. Returning null pointer.",
+        fileUri.getPath());
   } else {
     DART_WARN(
         "[VskParser::readSkeleton] Failed to find <Skeleton> element under "
@@ -257,12 +256,11 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
   while (markerSet.next()) {
     const bool result = readMarkerSet(markerSet.get(), newSkeleton, vskData);
 
-    if (!result) {
-      DART_WARN(
-          "[VskParser::readSkeleton] Failed to parse a marker from file '{}'. "
-          "Ignoring the marker.",
-          fileUri.toString());
-    }
+    DART_WARN_IF(
+        !result,
+        "[VskParser::readSkeleton] Failed to parse a marker from file '{}'. "
+        "Ignoring the marker.",
+        fileUri.toString());
   }
   // TODO: Each Marker is belongs to a MarkerSet but DART doesn't store the
   // marker set information.

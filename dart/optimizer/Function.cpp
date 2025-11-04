@@ -134,12 +134,11 @@ void ModularFunction::setCostFunction(CostFunction _cost)
 void ModularFunction::clearCostFunction(bool _printWarning)
 {
   mCostFunction = [this, _printWarning](const Eigen::VectorXd&) {
-    if (_printWarning) {
-      DART_ERROR(
-          "A cost function has not yet been assigned to the ModularFunction "
-          "named [{}]. Returning 0.0",
-          this->mName);
-    }
+    DART_ERROR_IF(
+        _printWarning,
+        "A cost function has not yet been assigned to the ModularFunction "
+        "named [{}]. Returning 0.0",
+        this->mName);
     return 0;
   };
 }

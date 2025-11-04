@@ -729,12 +729,11 @@ simulation::WorldPtr readWorld(
             = collision::CollisionDetector::getFactory()->create(cdType);
       }
 
-      if (!collision_detector) {
-        DART_WARN(
-            "Unknown collision detector[{}]. Default collision "
-            "detector[fcl_mesh] will be loaded.",
-            cdType);
-      }
+      DART_WARN_IF(
+          !collision_detector,
+          "Unknown collision detector[{}]. Default collision "
+          "detector[fcl_mesh] will be loaded.",
+          cdType);
     }
 
     if (!collision_detector)
@@ -1507,20 +1506,20 @@ void readJoint(
       = parentWorld.inverse() * childWorld * childToJoint;
 
   joint.properties->mT_ParentBodyToJoint = parentToJoint;
-  if (!math::verifyTransform(joint.properties->mT_ParentBodyToJoint))
-    DART_ERROR(
-        "[readJoint] Invalid parent to Joint transform for Joint named "
-        "[{}]:\\n{}",
-        name,
-        joint.properties->mT_ParentBodyToJoint.matrix());
+  DART_ERROR_IF(
+      !math::verifyTransform(joint.properties->mT_ParentBodyToJoint),
+      "[readJoint] Invalid parent to Joint transform for Joint named "
+      "[{}]:\\n{}",
+      name,
+      joint.properties->mT_ParentBodyToJoint.matrix());
 
   joint.properties->mT_ChildBodyToJoint = childToJoint;
-  if (!math::verifyTransform(joint.properties->mT_ChildBodyToJoint))
-    DART_ERROR(
-        "[readJoint] Invalid child to Joint transform for Joint named "
-        "[{}]:\\n{}",
-        name,
-        joint.properties->mT_ChildBodyToJoint.matrix());
+  DART_ERROR_IF(
+      !math::verifyTransform(joint.properties->mT_ChildBodyToJoint),
+      "[readJoint] Invalid child to Joint transform for Joint named "
+      "[{}]:\\n{}",
+      name,
+      joint.properties->mT_ChildBodyToJoint.matrix());
 
   JointMap::iterator it = _joints.find(joint.childName);
   if (it != _joints.end()) {
@@ -1558,16 +1557,15 @@ void getDofAttributeIfItExists(
     const std::string& _jointName,
     std::size_t _index)
 {
-  if (_xmlElement->QueryDoubleAttribute(_attribute.c_str(), _value)
-      == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE) {
-    DART_ERROR(
-        "[getDofAttributeIfItExists] Invalid type for [{}] attribute of [{}] "
-        "element in the [{}] dof of Joint [{}].",
-        _attribute,
-        _element_type,
-        _index,
-        _jointName);
-  }
+  DART_ERROR_IF(
+      _xmlElement->QueryDoubleAttribute(_attribute.c_str(), _value)
+          == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE,
+      "[getDofAttributeIfItExists] Invalid type for [{}] attribute of [{}] "
+      "element in the [{}] dof of Joint [{}].",
+      _attribute,
+      _element_type,
+      _index,
+      _jointName);
 }
 
 //==============================================================================

@@ -396,11 +396,10 @@ Inertial Body::computeInertialFromGeoms(
   }
 
   // TODO(JS): Single geom assumed for now
-  if (geoms.size() > 1) {
-    DART_WARN(
-        "[MjcfParser] Unsupported number of <geom> in inferring <inertial>. We "
-        "use only the first <geom> for now.");
-  }
+  DART_WARN_IF(
+      geoms.size() > 1,
+      "[MjcfParser] Unsupported number of <geom> in inferring <inertial>. We "
+      "use only the first <geom> for now.");
 
   if (compiler.getCoordinate() == Coordinate::LOCAL) {
     inertial.setRelativeTransform(geoms[0].getRelativeTransform());

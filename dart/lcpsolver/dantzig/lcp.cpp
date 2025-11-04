@@ -473,9 +473,8 @@ bool dSolveLCP(
           // We shouldn't be overly aggressive about printing this warning,
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0.
-          if (s < REAL(-1e-6)) {
-            DART_WARN("LCP internal error, s <= 0 (s={:.4e})", s);
-          }
+          DART_WARN_IF(
+              s < REAL(-1e-6), "LCP internal error, s <= 0 (s={:.4e})", s);
 
           if (i < n) {
             SetZero(x + i, n - i);

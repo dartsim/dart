@@ -759,14 +759,13 @@ double FCLCollisionDetector::distance(
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
-  if (type == PRIMITIVE) {
-    DART_WARN(
-        "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use FCL's "
-        "primitive shape collision feature while it's not complete (at least "
-        "until 0.4.0) especially in use of dynamics simulation. It's "
-        "recommended to use mesh even for primitive shapes by settting "
-        "FCLCollisionDetector::setPrimitiveShapeType(MESH).");
-  }
+  DART_WARN_IF(
+      type == PRIMITIVE,
+      "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use FCL's "
+      "primitive shape collision feature while it's not complete (at least "
+      "until 0.4.0) especially in use of dynamics simulation. It's "
+      "recommended to use mesh even for primitive shapes by settting "
+      "FCLCollisionDetector::setPrimitiveShapeType(MESH).");
 
   mPrimitiveShapeType = type;
 }
@@ -782,15 +781,14 @@ FCLCollisionDetector::getPrimitiveShapeType() const
 void FCLCollisionDetector::setContactPointComputationMethod(
     FCLCollisionDetector::ContactPointComputationMethod method)
 {
-  if (method == FCL) {
-    DART_WARN(
-        "[FCLCollisionDetector::setContactPointComputationMethod] You chose to "
-        "use FCL's built in contact point computation whileit's buggy (see "
-        "https://github.com/flexible-collision-library/fcl/issues/106) at "
-        "least until 0.4.0. It's recommended to use DART's implementation for "
-        "the contact point computation by setting "
-        "FCLCollisionDetector::setContactPointComputationMethod(DART).");
-  }
+  DART_WARN_IF(
+      method == FCL,
+      "[FCLCollisionDetector::setContactPointComputationMethod] You chose to "
+      "use FCL's built in contact point computation whileit's buggy (see "
+      "https://github.com/flexible-collision-library/fcl/issues/106) at "
+      "least until 0.4.0. It's recommended to use DART's implementation for "
+      "the contact point computation by setting "
+      "FCLCollisionDetector::setContactPointComputationMethod(DART).");
 
   mContactPointComputationMethod = method;
 }

@@ -304,14 +304,13 @@ void checkForBodyNodes(
 {
   bool contains = refSkel->getIndexOf(skel->getBodyNode(name)) != INVALID_INDEX;
   EXPECT_TRUE(contains);
-  if (!contains) {
-    DART_INFO(
-        "The ReferentialSkeleton [{}] does NOT contain the BodyNode [{}] of "
-        "the Skeleton [{}]",
-        refSkel->getName(),
-        name,
-        skel->getName());
-  }
+  DART_INFO_IF(
+      !contains,
+      "The ReferentialSkeleton [{}] does NOT contain the BodyNode [{}] of "
+      "the Skeleton [{}]",
+      refSkel->getName(),
+      name,
+      skel->getName());
 
   ++count;
   checkForBodyNodes(count, refSkel, skel, args...);
@@ -331,14 +330,13 @@ std::size_t checkForBodyNodes(
   if (checkCount) {
     bool countValid = (count == refSkel->getNumBodyNodes());
     EXPECT_TRUE(countValid);
-    if (!countValid) {
-      DART_INFO(
-          "The number of BodyNodes checked for [{}] does not equal the number "
-          "[{}] in the ReferentialSkeleton [{}]",
-          count,
-          refSkel->getNumBodyNodes(),
-          refSkel->getName());
-    }
+    DART_INFO_IF(
+        !countValid,
+        "The number of BodyNodes checked for [{}] does not equal the number "
+        "[{}] in the ReferentialSkeleton [{}]",
+        count,
+        refSkel->getNumBodyNodes(),
+        refSkel->getName());
   }
 
   return count;

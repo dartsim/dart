@@ -135,11 +135,10 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "fitaabb")) {
     mFitAabb = getAttributeBool(element, "fitaabb");
   }
-  if (mFitAabb) {
-    DART_WARN(
-        "[MjcfParser] 'fitaabb' attribute is set to true, but DART does not "
-        "support this feature yet.");
-  }
+  DART_WARN_IF(
+      mFitAabb,
+      "[MjcfParser] 'fitaabb' attribute is set to true, but DART does not "
+      "support this feature yet.");
 
   // eulerseq
   if (hasAttribute(element, "eulerseq")) {

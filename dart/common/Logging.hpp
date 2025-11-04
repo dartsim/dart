@@ -50,38 +50,80 @@
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...) ::dart::common::trace(__VA_ARGS__)
+  #define DART_TRACE_IF(condition, ...)                                        \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_TRACE(__VA_ARGS__);                                               \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_TRACE(...) (void)0
+  #define DART_TRACE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_DEBUG
   #define DART_DEBUG(...) ::dart::common::debug(__VA_ARGS__)
+  #define DART_DEBUG_IF(condition, ...)                                        \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_DEBUG(__VA_ARGS__);                                               \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_DEBUG(...) (void)0
+  #define DART_DEBUG_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_INFO
   #define DART_INFO(...) ::dart::common::info(__VA_ARGS__)
+  #define DART_INFO_IF(condition, ...)                                         \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_INFO(__VA_ARGS__);                                                \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_INFO(...) (void)0
+  #define DART_INFO_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_WARN
   #define DART_WARN(...) ::dart::common::warn(__VA_ARGS__)
+  #define DART_WARN_IF(condition, ...)                                         \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_WARN(__VA_ARGS__);                                                \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_WARN(...) (void)0
+  #define DART_WARN_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_ERROR
   #define DART_ERROR(...) ::dart::common::error(__VA_ARGS__)
+  #define DART_ERROR_IF(condition, ...)                                        \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_ERROR(__VA_ARGS__);                                               \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_ERROR(...) (void)0
+  #define DART_ERROR_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_FATAL
   #define DART_FATAL(...) ::dart::common::fatal(__VA_ARGS__)
+  #define DART_FATAL_IF(condition, ...)                                        \
+    do {                                                                       \
+      if (condition) {                                                         \
+        DART_FATAL(__VA_ARGS__);                                               \
+      }                                                                        \
+    } while (false)
 #else
   #define DART_FATAL(...) (void)0
+  #define DART_FATAL_IF(condition, ...) ((void)(condition))
 #endif
 
 namespace dart::common {

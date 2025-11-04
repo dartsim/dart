@@ -156,9 +156,8 @@ void StateMachine::transiteTo(State* _state, double _currentTime)
   mCurrentState = _state;
   mCurrentState->begin(_currentTime);
 
-  if (mVerbosity) {
-    DART_INFO("Transition: [{}] --> [{}].", prevStateName, nextStateName);
-  }
+  DART_INFO_IF(
+      mVerbosity, "Transition: [{}] --> [{}].", prevStateName, nextStateName);
 }
 
 //==============================================================================

@@ -97,13 +97,12 @@ ShapeFrameNode::ShapeFrameNode(
 //==============================================================================
 dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 {
-  if (!mUtilized && checkUtilization) {
-    DART_WARN(
-        "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
-        "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
-        "implies that it's possible that the ShapeFrame already got "
-        "deleted.");
-  }
+  DART_WARN_IF(
+      !mUtilized && checkUtilization,
+      "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+      "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
+      "implies that it's possible that the ShapeFrame already got "
+      "deleted.");
 
   return mShapeFrame;
 }
@@ -112,13 +111,12 @@ dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
 const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
     bool checkUtilization) const
 {
-  if (!mUtilized && checkUtilization) {
-    DART_WARN(
-        "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
-        "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
-        "implies that it's possible that the ShapeFrame already got "
-        "deleted.");
-  }
+  DART_WARN_IF(
+      !mUtilized && checkUtilization,
+      "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
+      "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
+      "implies that it's possible that the ShapeFrame already got "
+      "deleted.");
 
   return mShapeFrame;
 }

@@ -353,13 +353,12 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           Base::mAspectProperties.mForceUpperLimits[index]);
       break;
     case Joint::PASSIVE:
-      if (0.0 != command) {
-        DART_WARN(
-            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-            "command for a PASSIVE joint [{}].",
-            command,
-            this->getName());
-      }
+      DART_WARN_IF(
+          0.0 != command,
+          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+          "command for a PASSIVE joint [{}].",
+          command,
+          this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
     case Joint::SERVO:
@@ -369,13 +368,12 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
     case Joint::MIMIC:
-      if (0.0 != command) {
-        DART_WARN(
-            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-            "command for a MIMIC joint [{}].",
-            command,
-            this->getName());
-      }
+      DART_WARN_IF(
+          0.0 != command,
+          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+          "command for a MIMIC joint [{}].",
+          command,
+          this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
     case Joint::ACCELERATION:
@@ -392,13 +390,12 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
-      if (0.0 != command) {
-        DART_WARN(
-            "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-            "command for a LOCKED joint [{}].",
-            command,
-            this->getName());
-      }
+      DART_WARN_IF(
+          0.0 != command,
+          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
+          "command for a LOCKED joint [{}].",
+          command,
+          this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
     default:
@@ -436,13 +433,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           Base::mAspectProperties.mForceUpperLimits);
       break;
     case Joint::PASSIVE:
-      if (!commands.isZero()) {
-        DART_WARN(
-            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-            "command for a PASSIVE joint [{}].",
-            detail::formatCommandVector(commands),
-            this->getName());
-      }
+      DART_WARN_IF(
+          !commands.isZero(),
+          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+          "command for a PASSIVE joint [{}].",
+          detail::formatCommandVector(commands),
+          this->getName());
       this->mAspectState.mCommands.setZero();
       break;
     case Joint::SERVO:
@@ -452,13 +448,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::MIMIC:
-      if (!commands.isZero()) {
-        DART_WARN(
-            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-            "command for a MIMIC joint [{}].",
-            detail::formatCommandVector(commands),
-            this->getName());
-      }
+      DART_WARN_IF(
+          !commands.isZero(),
+          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+          "command for a MIMIC joint [{}].",
+          detail::formatCommandVector(commands),
+          this->getName());
       this->mAspectState.mCommands.setZero();
       break;
     case Joint::ACCELERATION:
@@ -475,13 +470,12 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
-      if (!commands.isZero()) {
-        DART_WARN(
-            "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-            "command for a LOCKED joint [{}].",
-            detail::formatCommandVector(commands),
-            this->getName());
-      }
+      DART_WARN_IF(
+          !commands.isZero(),
+          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
+          "command for a LOCKED joint [{}].",
+          detail::formatCommandVector(commands),
+          this->getName());
       this->mAspectState.mCommands.setZero();
       break;
     default:

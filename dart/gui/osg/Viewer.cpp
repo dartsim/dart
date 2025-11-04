@@ -109,10 +109,10 @@ public:
 
     if (mViewer->mScreenCapture) {
       if (!mViewer->mScreenCapName.empty()) {
-        if (!::osgDB::writeImageFile(*mImage, mViewer->mScreenCapName))
-          DART_WARN(
-              "[SaveScreen::capture] Unable to save image to file named: {}",
-              mViewer->mScreenCapName);
+        DART_WARN_IF(
+            !::osgDB::writeImageFile(*mImage, mViewer->mScreenCapName),
+            "[SaveScreen::capture] Unable to save image to file named: {}",
+            mViewer->mScreenCapName);
 
         // Toggle off the screen capture after the image is grabbed (or the
         // attempt is made).
