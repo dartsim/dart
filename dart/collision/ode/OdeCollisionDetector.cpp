@@ -83,6 +83,11 @@ struct ContactHistoryItem
   CollObjPair pair;
   std::deque<Contact> history;
   ContactHistoryItem() = delete;
+  ContactHistoryItem(CollObjPair newPair, std::deque<Contact> newHistory)
+    : pair(std::move(newPair)), history(std::move(newHistory))
+  {
+    // Do nothing
+  }
 };
 
 // using ContactManifold = std::unordered_map<CollObjPair,
