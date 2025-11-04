@@ -1,9 +1,40 @@
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "dart/constraint/CouplerConstraint.hpp"
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
 
 #define DART_CFM 1e-9
 
@@ -54,10 +85,10 @@ void CouplerConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (cfm < 1e-9) {
-    dtwarn << "[CouplerConstraint::setConstraintForceMixing] "
-           << "Constraint force mixing parameter[" << cfm
-           << "] is lower than 1e-9. "
-           << "It is set to 1e-9.\n";
+    DART_WARN(
+        "[CouplerConstraint::setConstraintForceMixing] Constraint force "
+        "mixing parameter[{}] is lower than 1e-9. It is set to 1e-9.",
+        cfm);
     mConstraintForceMixing = 1e-9;
   }
 
@@ -258,6 +289,59 @@ void CouplerConstraint::applyImpulse(double* lambda)
 dynamics::SkeletonPtr CouplerConstraint::getRootSkeleton() const
 {
   return ConstraintBase::getRootSkeleton(mJoint->getSkeleton()->getSkeleton());
+}
+
+//==============================================================================
+void CouplerConstraint::uniteSkeletons()
+{
+  if (mJoint == nullptr || mBodyNode == nullptr)
+    return;
+
+  if (!mBodyNode->isReactive())
+    return;
+
+  auto dependentSkeleton = mJoint->getSkeleton();
+  if (!dependentSkeleton)
+    return;
+
+  auto dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
+
+  for (const auto& mimicProp : mMimicProps) {
+    if (mimicProp.mReferenceJoint == nullptr)
+      continue;
+
+    auto referenceBody = mimicProp.mReferenceJoint->getChildBodyNode();
+    if (referenceBody == nullptr || !referenceBody->isReactive())
+      continue;
+
+    auto referenceSkeletonConst = mimicProp.mReferenceJoint->getSkeleton();
+    if (!referenceSkeletonConst)
+      continue;
+
+    auto referenceSkeleton = std::const_pointer_cast<dynamics::Skeleton>(
+        referenceSkeletonConst);
+    if (!referenceSkeleton)
+      continue;
+
+    if (referenceSkeleton == dependentSkeleton)
+      continue;
+
+    auto referenceRoot = ConstraintBase::compressPath(referenceSkeleton);
+    dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
+
+    if (dependentRoot == referenceRoot)
+      continue;
+
+    if (dependentRoot->mUnionSize < referenceRoot->mUnionSize) {
+      dependentRoot->mUnionRootSkeleton = referenceRoot;
+      referenceRoot->mUnionSize += dependentRoot->mUnionSize;
+      dependentRoot = referenceRoot;
+      dependentSkeleton = referenceRoot;
+    } else {
+      referenceRoot->mUnionRootSkeleton = dependentRoot;
+      dependentRoot->mUnionSize += referenceRoot->mUnionSize;
+    }
+  }
 }
 
 //==============================================================================

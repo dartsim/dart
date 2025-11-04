@@ -45,6 +45,7 @@ class BoxedLcpSolver;
 class ConstrainedGroup;
 class ConstraintBase;
 class ConstraintSolver;
+class CouplerConstraint;
 class ContactConstraint;
 
 struct ContactSurfaceParams;
@@ -82,6 +83,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(ContactSurfaceHandler)
 DART_COMMON_DECLARE_SHARED_WEAK(SoftContactConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(JointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(CouplerConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
 
 DART_COMMON_DECLARE_SHARED_WEAK(LCPSolver)
