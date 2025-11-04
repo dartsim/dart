@@ -40,6 +40,47 @@
 #include <memory>
 #include <string>
 
+#define DART7_DETAIL_PP_CONCAT_IMPL(a, b) a##b
+#define DART7_DETAIL_PP_CONCAT(a, b) DART7_DETAIL_PP_CONCAT_IMPL(a, b)
+#if defined(__COUNTER__)
+  #define DART7_DETAIL_UNIQUE_NAME(prefix) \
+    DART7_DETAIL_PP_CONCAT(prefix, __COUNTER__)
+#else
+  #define DART7_DETAIL_UNIQUE_NAME(prefix) \
+    DART7_DETAIL_PP_CONCAT(prefix, __LINE__)
+#endif
+
+#define DART7_DETAIL_LOG_ONCE_IMPL(flag, log_call)                             \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      flag = true;                                                             \
+      log_call;                                                                \
+    }                                                                          \
+  } while (false)
+
+#define DART7_DETAIL_LOG_ONCE(log_call)                                        \
+  DART7_DETAIL_LOG_ONCE_IMPL(                                                  \
+      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_),                         \
+      log_call)
+
+#define DART7_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      if (condition_expr) {                                                    \
+        flag = true;                                                           \
+        log_call;                                                              \
+      }                                                                        \
+    }                                                                          \
+  } while (false)
+
+#define DART7_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                     \
+  DART7_DETAIL_LOG_ONCE_IF_IMPL(                                               \
+      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_),                         \
+      condition_expr,                                                          \
+      log_call)
+
 namespace dart7::common {
 
 /// Log level enum for easier Python/user API
@@ -172,42 +213,6 @@ public:
   }
 };
 
-/// Initialize DART7 logging with default settings
-inline void initializeLogging()
-{
-  // Check if logger already exists to make this function idempotent
-  auto existing_logger = spdlog::get("dart7");
-  if (existing_logger) {
-    Logger::setLogger(existing_logger);
-    return;
-  }
-
-  auto logger = spdlog::stdout_color_mt("dart7");
-  logger->set_level(spdlog::level::info);
-  logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-  Logger::setLogger(logger);
-#ifndef NDEBUG
-  detail::log(
-      LogLevel::Info,
-      __FILE__,
-      __LINE__,
-      __func__,
-      "DART7 logging initialized");
-#endif
-}
-
-/// Set log level (convenience function)
-inline void setLogLevel(LogLevel level)
-{
-  Logger::setLevel(level);
-}
-
-/// Get log level (convenience function)
-inline LogLevel getLogLevel()
-{
-  return Logger::getLevelEnum();
-}
-
 namespace detail {
 
 inline std::string makeContext(const char* file, int line, const char* function)
@@ -274,6 +279,42 @@ void log(
 }
 
 } // namespace detail
+
+/// Initialize DART7 logging with default settings
+inline void initializeLogging()
+{
+  // Check if logger already exists to make this function idempotent
+  auto existing_logger = spdlog::get("dart7");
+  if (existing_logger) {
+    Logger::setLogger(existing_logger);
+    return;
+  }
+
+  auto logger = spdlog::stdout_color_mt("dart7");
+  logger->set_level(spdlog::level::info);
+  logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+  Logger::setLogger(logger);
+#ifndef NDEBUG
+  detail::log(
+      LogLevel::Info,
+      __FILE__,
+      __LINE__,
+      __func__,
+      "DART7 logging initialized");
+#endif
+}
+
+/// Set log level (convenience function)
+inline void setLogLevel(LogLevel level)
+{
+  Logger::setLevel(level);
+}
+
+/// Get log level (convenience function)
+inline LogLevel getLogLevel()
+{
+  return Logger::getLevelEnum();
+}
 
 } // namespace dart7::common
 
@@ -348,21 +389,39 @@ void log(
     }                                                                          \
   } while (false)
 
-// Log once (useful for warnings in loops)
+// Log once helpers
+#define DART7_TRACE_ONCE(...)                                                  \
+  DART7_DETAIL_LOG_ONCE(DART7_TRACE(__VA_ARGS__))
+
+#define DART7_TRACE_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_TRACE(__VA_ARGS__))
+
+#define DART7_DEBUG_ONCE(...)                                                  \
+  DART7_DETAIL_LOG_ONCE(DART7_DEBUG(__VA_ARGS__))
+
+#define DART7_DEBUG_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_DEBUG(__VA_ARGS__))
+
+#define DART7_INFO_ONCE(...)                                                   \
+  DART7_DETAIL_LOG_ONCE(DART7_INFO(__VA_ARGS__))
+
+#define DART7_INFO_ONCE_IF(condition, ...)                                     \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_INFO(__VA_ARGS__))
+
 #define DART7_WARN_ONCE(...)                                                   \
-  do {                                                                         \
-    static bool _dart_logged_once = false;                                     \
-    if (!_dart_logged_once) {                                                  \
-      DART7_WARN(__VA_ARGS__);                                                 \
-      _dart_logged_once = true;                                                \
-    }                                                                          \
-  } while (false)
+  DART7_DETAIL_LOG_ONCE(DART7_WARN(__VA_ARGS__))
+
+#define DART7_WARN_ONCE_IF(condition, ...)                                     \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_WARN(__VA_ARGS__))
 
 #define DART7_ERROR_ONCE(...)                                                  \
-  do {                                                                         \
-    static bool _dart_logged_once = false;                                     \
-    if (!_dart_logged_once) {                                                  \
-      DART7_ERROR(__VA_ARGS__);                                                \
-      _dart_logged_once = true;                                                \
-    }                                                                          \
-  } while (false)
+  DART7_DETAIL_LOG_ONCE(DART7_ERROR(__VA_ARGS__))
+
+#define DART7_ERROR_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_ERROR(__VA_ARGS__))
+
+#define DART7_CRITICAL_ONCE(...)                                               \
+  DART7_DETAIL_LOG_ONCE(DART7_CRITICAL(__VA_ARGS__))
+
+#define DART7_CRITICAL_ONCE_IF(condition, ...)                                 \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_CRITICAL(__VA_ARGS__))

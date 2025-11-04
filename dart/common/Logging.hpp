@@ -37,10 +37,6 @@
 
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
-#include <cstdint>
-
-// clang-format off
-#define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
 #define DART_LOG_LEVEL_INFO  2
 #define DART_LOG_LEVEL_WARN  3
@@ -48,6 +44,47 @@
 #define DART_LOG_LEVEL_FATAL 5
 #define DART_LOG_LEVEL_OFF   6
 // clang-format on
+
+#define DART_DETAIL_PP_CONCAT_IMPL(a, b) a##b
+#define DART_DETAIL_PP_CONCAT(a, b) DART_DETAIL_PP_CONCAT_IMPL(a, b)
+#if defined(__COUNTER__)
+  #define DART_DETAIL_UNIQUE_NAME(prefix) \
+    DART_DETAIL_PP_CONCAT(prefix, __COUNTER__)
+#else
+  #define DART_DETAIL_UNIQUE_NAME(prefix) \
+    DART_DETAIL_PP_CONCAT(prefix, __LINE__)
+#endif
+
+#define DART_DETAIL_LOG_ONCE_IMPL(flag, log_call)                              \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      flag = true;                                                             \
+      log_call;                                                                \
+    }                                                                          \
+  } while (false)
+
+#define DART_DETAIL_LOG_ONCE(log_call)                                         \
+  DART_DETAIL_LOG_ONCE_IMPL(                                                   \
+      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_),                           \
+      log_call)
+
+#define DART_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)           \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      if (condition_expr) {                                                    \
+        flag = true;                                                           \
+        log_call;                                                              \
+      }                                                                        \
+    }                                                                          \
+  } while (false)
+
+#define DART_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                      \
+  DART_DETAIL_LOG_ONCE_IF_IMPL(                                                \
+      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_),                           \
+      condition_expr,                                                          \
+      log_call)
 
 // Default active log level
 #if !defined(DART_ACTIVE_LOG_LEVEL)
@@ -91,9 +128,15 @@ void log(
         DART_TRACE(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
+  #define DART_TRACE_ONCE(...)                                                 \
+    DART_DETAIL_LOG_ONCE(DART_TRACE(__VA_ARGS__))
+  #define DART_TRACE_ONCE_IF(condition, ...)                                   \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_TRACE(__VA_ARGS__))
 #else
   #define DART_TRACE(...) (void)0
   #define DART_TRACE_IF(condition, ...) ((void)(condition))
+  #define DART_TRACE_ONCE(...) (void)0
+  #define DART_TRACE_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_DEBUG
@@ -110,9 +153,15 @@ void log(
         DART_DEBUG(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
+  #define DART_DEBUG_ONCE(...)                                                 \
+    DART_DETAIL_LOG_ONCE(DART_DEBUG(__VA_ARGS__))
+  #define DART_DEBUG_ONCE_IF(condition, ...)                                   \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_DEBUG(__VA_ARGS__))
 #else
   #define DART_DEBUG(...) (void)0
   #define DART_DEBUG_IF(condition, ...) ((void)(condition))
+  #define DART_DEBUG_ONCE(...) (void)0
+  #define DART_DEBUG_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_INFO
@@ -129,9 +178,15 @@ void log(
         DART_INFO(__VA_ARGS__);                                                \
       }                                                                        \
     } while (false)
+  #define DART_INFO_ONCE(...)                                                  \
+    DART_DETAIL_LOG_ONCE(DART_INFO(__VA_ARGS__))
+  #define DART_INFO_ONCE_IF(condition, ...)                                    \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_INFO(__VA_ARGS__))
 #else
   #define DART_INFO(...) (void)0
   #define DART_INFO_IF(condition, ...) ((void)(condition))
+  #define DART_INFO_ONCE(...) (void)0
+  #define DART_INFO_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_WARN
@@ -148,9 +203,15 @@ void log(
         DART_WARN(__VA_ARGS__);                                                \
       }                                                                        \
     } while (false)
+  #define DART_WARN_ONCE(...)                                                  \
+    DART_DETAIL_LOG_ONCE(DART_WARN(__VA_ARGS__))
+  #define DART_WARN_ONCE_IF(condition, ...)                                    \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_WARN(__VA_ARGS__))
 #else
   #define DART_WARN(...) (void)0
   #define DART_WARN_IF(condition, ...) ((void)(condition))
+  #define DART_WARN_ONCE(...) (void)0
+  #define DART_WARN_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_ERROR
@@ -167,9 +228,15 @@ void log(
         DART_ERROR(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
+  #define DART_ERROR_ONCE(...)                                                 \
+    DART_DETAIL_LOG_ONCE(DART_ERROR(__VA_ARGS__))
+  #define DART_ERROR_ONCE_IF(condition, ...)                                   \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_ERROR(__VA_ARGS__))
 #else
   #define DART_ERROR(...) (void)0
   #define DART_ERROR_IF(condition, ...) ((void)(condition))
+  #define DART_ERROR_ONCE(...) (void)0
+  #define DART_ERROR_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_FATAL
@@ -186,9 +253,15 @@ void log(
         DART_FATAL(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
+  #define DART_FATAL_ONCE(...)                                                 \
+    DART_DETAIL_LOG_ONCE(DART_FATAL(__VA_ARGS__))
+  #define DART_FATAL_ONCE_IF(condition, ...)                                   \
+    DART_DETAIL_LOG_ONCE_IF(condition, DART_FATAL(__VA_ARGS__))
 #else
   #define DART_FATAL(...) (void)0
   #define DART_FATAL_IF(condition, ...) ((void)(condition))
+  #define DART_FATAL_ONCE(...) (void)0
+  #define DART_FATAL_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
 namespace dart::common {
