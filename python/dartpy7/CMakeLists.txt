@@ -37,4 +37,8 @@ target_link_libraries(dartpy7
     dart7::dart7
 )
 
+if(DART_PYBIND11_EXTRA_DEFINITIONS)
+  target_compile_definitions(dartpy7 PRIVATE ${DART_PYBIND11_EXTRA_DEFINITIONS})
+endif()
+
 set_target_properties(dartpy7 PROPERTIES OUTPUT_NAME "dartpy7")

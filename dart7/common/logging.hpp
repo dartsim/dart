@@ -32,11 +32,53 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <filesystem>
 #include <memory>
 #include <string>
+
+#define DART7_DETAIL_PP_CONCAT_IMPL(a, b) a##b
+#define DART7_DETAIL_PP_CONCAT(a, b) DART7_DETAIL_PP_CONCAT_IMPL(a, b)
+#if defined(__COUNTER__)
+  #define DART7_DETAIL_UNIQUE_NAME(prefix)                                     \
+    DART7_DETAIL_PP_CONCAT(prefix, __COUNTER__)
+#else
+  #define DART7_DETAIL_UNIQUE_NAME(prefix)                                     \
+    DART7_DETAIL_PP_CONCAT(prefix, __LINE__)
+#endif
+
+#define DART7_DETAIL_LOG_ONCE_IMPL(flag, log_call)                             \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      flag = true;                                                             \
+      log_call;                                                                \
+    }                                                                          \
+  } while (false)
+
+#define DART7_DETAIL_LOG_ONCE(log_call)                                        \
+  DART7_DETAIL_LOG_ONCE_IMPL(                                                  \
+      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_), log_call)
+
+#define DART7_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
+  do {                                                                         \
+    static bool flag = false;                                                  \
+    if (!flag) {                                                               \
+      if (condition_expr) {                                                    \
+        flag = true;                                                           \
+        log_call;                                                              \
+      }                                                                        \
+    }                                                                          \
+  } while (false)
+
+#define DART7_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                     \
+  DART7_DETAIL_LOG_ONCE_IF_IMPL(                                               \
+      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_),                         \
+      condition_expr,                                                          \
+      log_call)
 
 namespace dart7::common {
 
@@ -55,13 +97,46 @@ enum class LogLevel
 /// Convert LogLevel to spdlog level
 inline spdlog::level::level_enum toSpdlogLevel(LogLevel level)
 {
-  return static_cast<spdlog::level::level_enum>(static_cast<int>(level));
+  switch (level) {
+    case LogLevel::Trace:
+      return spdlog::level::trace;
+    case LogLevel::Debug:
+      return spdlog::level::debug;
+    case LogLevel::Info:
+      return spdlog::level::info;
+    case LogLevel::Warn:
+      return spdlog::level::warn;
+    case LogLevel::Error:
+      return spdlog::level::err;
+    case LogLevel::Critical:
+      return spdlog::level::critical;
+    case LogLevel::Off:
+      return spdlog::level::off;
+  }
+  return spdlog::level::info;
 }
 
 /// Convert spdlog level to LogLevel
 inline LogLevel fromSpdlogLevel(spdlog::level::level_enum level)
 {
-  return static_cast<LogLevel>(static_cast<int>(level));
+  switch (level) {
+    case spdlog::level::trace:
+      return LogLevel::Trace;
+    case spdlog::level::debug:
+      return LogLevel::Debug;
+    case spdlog::level::info:
+      return LogLevel::Info;
+    case spdlog::level::warn:
+      return LogLevel::Warn;
+    case spdlog::level::err:
+      return LogLevel::Error;
+    case spdlog::level::critical:
+      return LogLevel::Critical;
+    case spdlog::level::off:
+      return LogLevel::Off;
+    default:
+      return LogLevel::Info;
+  }
 }
 
 /// Strip source directory prefix from file path at compile time
@@ -82,6 +157,9 @@ constexpr const char* stripSourceDir(const char* path)
   if (*b == '\0' && *p == '/') {
     return p + 1;
   }
+#else
+  (void)path;
+  return "";
 #endif
   return path;
 }
@@ -134,6 +212,73 @@ public:
   }
 };
 
+namespace detail {
+
+inline std::string makeContext(const char* file, int line, const char* function)
+{
+#ifndef NDEBUG
+  std::string prefix;
+  bool has_component = false;
+  if (file != nullptr && *file != '\0') {
+    prefix += stripSourceDir(file);
+    has_component = true;
+  }
+  if (line > 0) {
+    if (has_component)
+      prefix += ':';
+    prefix += std::to_string(line);
+    has_component = true;
+  }
+  if (function != nullptr && *function != '\0') {
+    if (has_component)
+      prefix += "::";
+    prefix += function;
+    has_component = true;
+  }
+  if (has_component) {
+    prefix.insert(prefix.begin(), '[');
+    prefix.append("] ");
+    return prefix;
+  }
+#else
+  (void)file;
+  (void)line;
+  (void)function;
+#endif
+  return {};
+}
+
+template <typename Format, typename... Args>
+void log(
+    LogLevel level,
+    const char* file,
+    int line,
+    const char* function,
+    Format&& format,
+    Args&&... args)
+{
+  auto& logger = Logger::instance();
+#ifndef NDEBUG
+  std::string prefix = makeContext(file, line, function);
+  if (!prefix.empty()) {
+    auto message = fmt::format(
+        std::forward<Format>(format), std::forward<Args>(args)...);
+    logger->log(toSpdlogLevel(level), "{}{}", prefix, message);
+    return;
+  }
+#else
+  (void)file;
+  (void)line;
+  (void)function;
+#endif
+  logger->log(
+      toSpdlogLevel(level),
+      std::forward<Format>(format),
+      std::forward<Args>(args)...);
+}
+
+} // namespace detail
+
 /// Initialize DART7 logging with default settings
 inline void initializeLogging()
 {
@@ -148,6 +293,14 @@ inline void initializeLogging()
   logger->set_level(spdlog::level::info);
   logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
   Logger::setLogger(logger);
+#ifndef NDEBUG
+  detail::log(
+      LogLevel::Info,
+      __FILE__,
+      __LINE__,
+      __func__,
+      "DART7 logging initialized");
+#endif
 }
 
 /// Set log level (convenience function)
@@ -164,76 +317,105 @@ inline LogLevel getLogLevel()
 
 } // namespace dart7::common
 
-// Logging macros with source location (relative paths)
+// Logging macros with optional source context
 #define DART7_TRACE(...)                                                       \
-  SPDLOG_LOGGER_TRACE(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Trace,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_DEBUG(...)                                                       \
-  SPDLOG_LOGGER_DEBUG(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Debug,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_INFO(...)                                                        \
-  SPDLOG_LOGGER_INFO(::dart7::common::Logger::instance(), __VA_ARGS__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Info,                                         \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_WARN(...)                                                        \
-  SPDLOG_LOGGER_WARN(                                                          \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Warn,                                         \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_ERROR(...)                                                       \
-  SPDLOG_LOGGER_ERROR(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Error,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_CRITICAL(...)                                                    \
-  SPDLOG_LOGGER_CRITICAL(                                                      \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Critical,                                     \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 // Conditional logging
 #define DART7_INFO_IF(condition, ...)                                          \
-  if (condition) {                                                             \
-    DART7_INFO(__VA_ARGS__);                                                   \
-  }
+  do {                                                                         \
+    if (condition) {                                                           \
+      DART7_INFO(__VA_ARGS__);                                                 \
+    }                                                                          \
+  } while (false)
 
 #define DART7_WARN_IF(condition, ...)                                          \
-  if (condition) {                                                             \
-    DART7_WARN(__VA_ARGS__);                                                   \
-  }
+  do {                                                                         \
+    if (condition) {                                                           \
+      DART7_WARN(__VA_ARGS__);                                                 \
+    }                                                                          \
+  } while (false)
 
 #define DART7_ERROR_IF(condition, ...)                                         \
-  if (condition) {                                                             \
-    DART7_ERROR(__VA_ARGS__);                                                  \
-  }
-
-// Log once (useful for warnings in loops)
-#define DART7_WARN_ONCE(...)                                                   \
   do {                                                                         \
-    static bool _dart_logged_once = false;                                     \
-    if (!_dart_logged_once) {                                                  \
-      DART7_WARN(__VA_ARGS__);                                                 \
-      _dart_logged_once = true;                                                \
-    }                                                                          \
-  } while (false)
-
-#define DART7_ERROR_ONCE(...)                                                  \
-  do {                                                                         \
-    static bool _dart_logged_once = false;                                     \
-    if (!_dart_logged_once) {                                                  \
+    if (condition) {                                                           \
       DART7_ERROR(__VA_ARGS__);                                                \
-      _dart_logged_once = true;                                                \
     }                                                                          \
   } while (false)
+
+// Log once helpers
+#define DART7_TRACE_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_TRACE(__VA_ARGS__))
+
+#define DART7_TRACE_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_TRACE(__VA_ARGS__))
+
+#define DART7_DEBUG_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_DEBUG(__VA_ARGS__))
+
+#define DART7_DEBUG_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_DEBUG(__VA_ARGS__))
+
+#define DART7_INFO_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_INFO(__VA_ARGS__))
+
+#define DART7_INFO_ONCE_IF(condition, ...)                                     \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_INFO(__VA_ARGS__))
+
+#define DART7_WARN_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_WARN(__VA_ARGS__))
+
+#define DART7_WARN_ONCE_IF(condition, ...)                                     \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_WARN(__VA_ARGS__))
+
+#define DART7_ERROR_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_ERROR(__VA_ARGS__))
+
+#define DART7_ERROR_ONCE_IF(condition, ...)                                    \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_ERROR(__VA_ARGS__))
+
+#define DART7_CRITICAL_ONCE(...)                                               \
+  DART7_DETAIL_LOG_ONCE(DART7_CRITICAL(__VA_ARGS__))
+
+#define DART7_CRITICAL_ONCE_IF(condition, ...)                                 \
+  DART7_DETAIL_LOG_ONCE_IF(condition, DART7_CRITICAL(__VA_ARGS__))

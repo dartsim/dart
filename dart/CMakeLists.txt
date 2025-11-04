@@ -127,6 +127,7 @@ target_link_libraries(
     fcl
     assimp
 )
+target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)
