@@ -72,7 +72,8 @@ JointProperties::JointProperties(
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
     mIsPositionLimitEnforced(_isPositionLimitEnforced),
-    mActuatorType(_actuatorType)
+    mActuatorType(_actuatorType),
+    mUseCouplerConstraint(false)
 {
   mMimicDofProps.resize(6);
   // TODO: Dof 6, which is the max value at the moment, is used because
@@ -127,6 +128,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
+  setUseCouplerConstraint(properties.mUseCouplerConstraint);
   setMimicJointDofs(properties.mMimicDofProps);
 }
 
@@ -272,6 +274,18 @@ double Joint::getMimicOffset(std::size_t index) const
 const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 {
   return mAspectProperties.mMimicDofProps;
+}
+
+//==============================================================================
+void Joint::setUseCouplerConstraint(bool enable)
+{
+  mAspectProperties.mUseCouplerConstraint = enable;
+}
+
+//==============================================================================
+bool Joint::isUsingCouplerConstraint() const
+{
+  return mAspectProperties.mUseCouplerConstraint;
 }
 
 //==============================================================================

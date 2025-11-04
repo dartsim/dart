@@ -301,6 +301,9 @@ protected:
   /// Mimic motor constraints those are automatically created
   std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
 
+  /// Coupler constraints that are automatically created
+  std::vector<CouplerConstraintPtr> mCouplerConstraints;
+
   /// Joint Coulomb friction constraints those are automatically created
   std::vector<JointCoulombFrictionConstraintPtr>
       mJointCoulombFrictionConstraints;

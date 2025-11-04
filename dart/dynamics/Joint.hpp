@@ -176,6 +176,12 @@ public:
   /// joint.
   const std::vector<MimicDofProperties>& getMimicDofProperties() const;
 
+  /// Enable or disable the CouplerConstraint enforcement for this joint.
+  void setUseCouplerConstraint(bool enable);
+
+  /// Returns true if the CouplerConstraint enforcement is enabled.
+  bool isUsingCouplerConstraint() const;
+
   /// Return true if this joint is kinematic joint.
   ///
   /// Kinematic joint means the motion is prescribed by position or velocity or

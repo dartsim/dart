@@ -101,6 +101,9 @@ void Joint(py::module& m)
           "mActuatorType",
           &dart::dynamics::detail::JointProperties::mActuatorType)
       .def_readwrite(
+          "mUseCouplerConstraint",
+          &dart::dynamics::detail::JointProperties::mUseCouplerConstraint)
+      .def_readwrite(
           "mMimicDofProps",
           &dart::dynamics::detail::JointProperties::mMimicDofProps);
 
@@ -246,6 +249,17 @@ void Joint(py::module& m)
           +[](const dart::dynamics::Joint* self)
               -> dart::dynamics::Joint::ActuatorType {
             return self->getActuatorType();
+          })
+      .def(
+          "setUseCouplerConstraint",
+          +[](dart::dynamics::Joint* self, bool enable) -> void {
+            self->setUseCouplerConstraint(enable);
+          },
+          ::py::arg("enable"))
+      .def(
+          "isUsingCouplerConstraint",
+          +[](const dart::dynamics::Joint* self) -> bool {
+            return self->isUsingCouplerConstraint();
           })
       .def(
           "isKinematic",

@@ -131,6 +131,9 @@ struct JointProperties
   /// Actuator type
   ActuatorType mActuatorType;
 
+  /// True if the joint should enforce mimic coupling via constraint.
+  bool mUseCouplerConstraint;
+
   /// Vector of MimicDofProperties for each dependent DoF in the joint.
   std::vector<MimicDofProperties> mMimicDofProps;
 
