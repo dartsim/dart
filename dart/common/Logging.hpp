@@ -33,6 +33,12 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <cstdint>
+
+// clang-format off
+#define DART_LOG_LEVEL_TRACE 0
+#include <cstdint>
+
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
@@ -48,8 +54,37 @@
   #define DART_ACTIVE_LOG_LEVEL DART_LOG_LEVEL_INFO
 #endif
 
+namespace dart::common::detail {
+
+enum class LogLevel : std::uint8_t
+{
+  Trace,
+  Debug,
+  Info,
+  Warn,
+  Error,
+  Fatal,
+};
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const char* file,
+    int line,
+    const char* function,
+    const S& format_str,
+    Args&&... args);
+
+} // namespace dart::common::detail
+
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
-  #define DART_TRACE(...) ::dart::common::trace(__VA_ARGS__)
+  #define DART_TRACE(...)                                                      \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Trace,                               \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_TRACE_IF(condition, ...)                                        \
     do {                                                                       \
       if (condition) {                                                         \
@@ -62,7 +97,13 @@
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_DEBUG
-  #define DART_DEBUG(...) ::dart::common::debug(__VA_ARGS__)
+  #define DART_DEBUG(...)                                                      \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Debug,                               \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_DEBUG_IF(condition, ...)                                        \
     do {                                                                       \
       if (condition) {                                                         \
@@ -75,7 +116,13 @@
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_INFO
-  #define DART_INFO(...) ::dart::common::info(__VA_ARGS__)
+  #define DART_INFO(...)                                                       \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Info,                                \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_INFO_IF(condition, ...)                                         \
     do {                                                                       \
       if (condition) {                                                         \
@@ -88,7 +135,13 @@
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_WARN
-  #define DART_WARN(...) ::dart::common::warn(__VA_ARGS__)
+  #define DART_WARN(...)                                                       \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Warn,                                \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_WARN_IF(condition, ...)                                         \
     do {                                                                       \
       if (condition) {                                                         \
@@ -101,7 +154,13 @@
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_ERROR
-  #define DART_ERROR(...) ::dart::common::error(__VA_ARGS__)
+  #define DART_ERROR(...)                                                      \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Error,                               \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_ERROR_IF(condition, ...)                                        \
     do {                                                                       \
       if (condition) {                                                         \
@@ -114,7 +173,13 @@
 #endif
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_FATAL
-  #define DART_FATAL(...) ::dart::common::fatal(__VA_ARGS__)
+  #define DART_FATAL(...)                                                      \
+    ::dart::common::detail::log(                                               \
+        ::dart::common::detail::LogLevel::Fatal,                               \
+        __FILE__,                                                              \
+        __LINE__,                                                              \
+        __func__,                                                              \
+        __VA_ARGS__)
   #define DART_FATAL_IF(condition, ...)                                        \
     do {                                                                       \
       if (condition) {                                                         \

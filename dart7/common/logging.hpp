@@ -32,9 +32,11 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -55,13 +57,46 @@ enum class LogLevel
 /// Convert LogLevel to spdlog level
 inline spdlog::level::level_enum toSpdlogLevel(LogLevel level)
 {
-  return static_cast<spdlog::level::level_enum>(static_cast<int>(level));
+  switch (level) {
+    case LogLevel::Trace:
+      return spdlog::level::trace;
+    case LogLevel::Debug:
+      return spdlog::level::debug;
+    case LogLevel::Info:
+      return spdlog::level::info;
+    case LogLevel::Warn:
+      return spdlog::level::warn;
+    case LogLevel::Error:
+      return spdlog::level::err;
+    case LogLevel::Critical:
+      return spdlog::level::critical;
+    case LogLevel::Off:
+      return spdlog::level::off;
+  }
+  return spdlog::level::info;
 }
 
 /// Convert spdlog level to LogLevel
 inline LogLevel fromSpdlogLevel(spdlog::level::level_enum level)
 {
-  return static_cast<LogLevel>(static_cast<int>(level));
+  switch (level) {
+    case spdlog::level::trace:
+      return LogLevel::Trace;
+    case spdlog::level::debug:
+      return LogLevel::Debug;
+    case spdlog::level::info:
+      return LogLevel::Info;
+    case spdlog::level::warn:
+      return LogLevel::Warn;
+    case spdlog::level::err:
+      return LogLevel::Error;
+    case spdlog::level::critical:
+      return LogLevel::Critical;
+    case spdlog::level::off:
+      return LogLevel::Off;
+    default:
+      return LogLevel::Info;
+  }
 }
 
 /// Strip source directory prefix from file path at compile time
@@ -82,6 +117,9 @@ constexpr const char* stripSourceDir(const char* path)
   if (*b == '\0' && *p == '/') {
     return p + 1;
   }
+#else
+  (void)path;
+  return "";
 #endif
   return path;
 }
@@ -148,6 +186,14 @@ inline void initializeLogging()
   logger->set_level(spdlog::level::info);
   logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
   Logger::setLogger(logger);
+#ifndef NDEBUG
+  detail::log(
+      LogLevel::Info,
+      __FILE__,
+      __LINE__,
+      __func__,
+      "DART7 logging initialized");
+#endif
 }
 
 /// Set log level (convenience function)
@@ -162,62 +208,145 @@ inline LogLevel getLogLevel()
   return Logger::getLevelEnum();
 }
 
+namespace detail {
+
+inline std::string makeContext(const char* file, int line, const char* function)
+{
+#ifndef NDEBUG
+  std::string prefix;
+  bool has_component = false;
+  if (file != nullptr && *file != '\0') {
+    prefix += stripSourceDir(file);
+    has_component = true;
+  }
+  if (line > 0) {
+    if (has_component)
+      prefix += ':';
+    prefix += std::to_string(line);
+    has_component = true;
+  }
+  if (function != nullptr && *function != '\0') {
+    if (has_component)
+      prefix += "::";
+    prefix += function;
+    has_component = true;
+  }
+  if (has_component) {
+    prefix.insert(prefix.begin(), '[');
+    prefix.append("] ");
+    return prefix;
+  }
+#else
+  (void)file;
+  (void)line;
+  (void)function;
+#endif
+  return {};
+}
+
+template <typename Format, typename... Args>
+void log(
+    LogLevel level,
+    const char* file,
+    int line,
+    const char* function,
+    Format&& format,
+    Args&&... args)
+{
+  auto& logger = Logger::instance();
+#ifndef NDEBUG
+  std::string prefix = makeContext(file, line, function);
+  if (!prefix.empty()) {
+    auto message = fmt::format(
+        std::forward<Format>(format), std::forward<Args>(args)...);
+    logger->log(toSpdlogLevel(level), "{}{}", prefix, message);
+    return;
+  }
+#else
+  (void)file;
+  (void)line;
+  (void)function;
+#endif
+  logger->log(
+      toSpdlogLevel(level),
+      std::forward<Format>(format),
+      std::forward<Args>(args)...);
+}
+
+} // namespace detail
+
 } // namespace dart7::common
 
-// Logging macros with source location (relative paths)
+// Logging macros with optional source context
 #define DART7_TRACE(...)                                                       \
-  SPDLOG_LOGGER_TRACE(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Trace,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_DEBUG(...)                                                       \
-  SPDLOG_LOGGER_DEBUG(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Debug,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_INFO(...)                                                        \
-  SPDLOG_LOGGER_INFO(::dart7::common::Logger::instance(), __VA_ARGS__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Info,                                         \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_WARN(...)                                                        \
-  SPDLOG_LOGGER_WARN(                                                          \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Warn,                                         \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_ERROR(...)                                                       \
-  SPDLOG_LOGGER_ERROR(                                                         \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Error,                                        \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 #define DART7_CRITICAL(...)                                                    \
-  SPDLOG_LOGGER_CRITICAL(                                                      \
-      ::dart7::common::Logger::instance(),                                     \
-      "[{}:{}] " __VA_ARGS__,                                                  \
-      ::dart7::common::stripSourceDir(__FILE__),                               \
-      __LINE__)
+  ::dart7::common::detail::log(                                                \
+      ::dart7::common::LogLevel::Critical,                                     \
+      __FILE__,                                                                \
+      __LINE__,                                                                \
+      __func__,                                                                \
+      __VA_ARGS__)
 
 // Conditional logging
 #define DART7_INFO_IF(condition, ...)                                          \
-  if (condition) {                                                             \
-    DART7_INFO(__VA_ARGS__);                                                   \
-  }
+  do {                                                                         \
+    if (condition) {                                                           \
+      DART7_INFO(__VA_ARGS__);                                                 \
+    }                                                                          \
+  } while (false)
 
 #define DART7_WARN_IF(condition, ...)                                          \
-  if (condition) {                                                             \
-    DART7_WARN(__VA_ARGS__);                                                   \
-  }
+  do {                                                                         \
+    if (condition) {                                                           \
+      DART7_WARN(__VA_ARGS__);                                                 \
+    }                                                                          \
+  } while (false)
 
 #define DART7_ERROR_IF(condition, ...)                                         \
-  if (condition) {                                                             \
-    DART7_ERROR(__VA_ARGS__);                                                  \
-  }
+  do {                                                                         \
+    if (condition) {                                                           \
+      DART7_ERROR(__VA_ARGS__);                                                \
+    }                                                                          \
+  } while (false)
 
 // Log once (useful for warnings in loops)
 #define DART7_WARN_ONCE(...)                                                   \

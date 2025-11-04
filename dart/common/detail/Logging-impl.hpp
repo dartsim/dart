@@ -130,6 +130,9 @@ auto normalize(T&& arg)
   #include <string>
 #endif
 
+#include <filesystem>
+#include <string>
+
 namespace dart::common {
 
 #if !DART_HAVE_spdlog
@@ -163,88 +166,219 @@ void print(
 } // namespace detail
 #endif
 
+namespace detail {
+
+inline std::string makeLogPrefix(
+    const char* file, int line, const char* function)
+{
+#ifndef NDEBUG
+  std::string prefix;
+  bool has_component = false;
+  if (file != nullptr && *file != '\0') {
+    prefix += std::filesystem::path(file).filename().string();
+    has_component = true;
+  }
+  if (line > 0) {
+    if (has_component)
+      prefix += ':';
+    prefix += std::to_string(line);
+    has_component = true;
+  }
+  if (function != nullptr && *function != '\0') {
+    if (has_component)
+      prefix += "::";
+    prefix += function;
+    has_component = true;
+  }
+  if (has_component) {
+    prefix.insert(prefix.begin(), '[');
+    prefix.append("] ");
+    return prefix;
+  }
+#else
+  (void)file;
+  (void)line;
+  (void)function;
+#endif
+
+  return {};
+}
+
+#if DART_HAVE_spdlog
+inline constexpr spdlog::level::level_enum toSpdlogLevel(LogLevel level)
+{
+  switch (level) {
+    case LogLevel::Trace:
+      return spdlog::level::trace;
+    case LogLevel::Debug:
+      return spdlog::level::debug;
+    case LogLevel::Info:
+      return spdlog::level::info;
+    case LogLevel::Warn:
+      return spdlog::level::warn;
+    case LogLevel::Error:
+      return spdlog::level::err;
+    case LogLevel::Fatal:
+      return spdlog::level::critical;
+  }
+  return spdlog::level::info;
+}
+#endif
+
+inline constexpr int toAnsiColor(LogLevel level)
+{
+  switch (level) {
+    case LogLevel::Trace:
+      return 38;
+    case LogLevel::Debug:
+      return 36;
+    case LogLevel::Info:
+      return 32;
+    case LogLevel::Warn:
+      return 33;
+    case LogLevel::Error:
+      return 31;
+    case LogLevel::Fatal:
+      return 35;
+  }
+  return 37;
+}
+
+inline constexpr const char* toLabel(LogLevel level)
+{
+  switch (level) {
+    case LogLevel::Trace:
+      return "[trace]";
+    case LogLevel::Debug:
+      return "[debug]";
+    case LogLevel::Info:
+      return "[info]";
+    case LogLevel::Warn:
+      return "[warn]";
+    case LogLevel::Error:
+      return "[error]";
+    case LogLevel::Fatal:
+      return "[fatal]";
+  }
+  return "[info]";
+}
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const char* file,
+    int line,
+    const char* function,
+    const S& format_str,
+    Args&&... args)
+{
+  const std::string prefix = makeLogPrefix(file, line, function);
+  fmt::basic_string_view<char> fmt_view(format_str);
+  std::string final_format;
+  if (!prefix.empty()) {
+    final_format.reserve(prefix.size() + fmt_view.size());
+    final_format += prefix;
+    final_format.append(fmt_view.data(), fmt_view.size());
+  } else {
+    final_format.assign(fmt_view.data(), fmt_view.size());
+  }
+
+#if DART_HAVE_spdlog
+  spdlog::log(
+      toSpdlogLevel(level),
+      DART_SPDLOG_RUNTIME(final_format),
+      detail_log_arg::normalize(std::forward<Args>(args))...);
+#else
+  auto& stream = (level == LogLevel::Error || level == LogLevel::Fatal)
+                     ? std::cerr
+                     : std::cout;
+  detail::print(
+      stream,
+      toLabel(level),
+      final_format,
+      toAnsiColor(level),
+      std::forward<Args>(args)...);
+#endif
+}
+
+} // namespace detail
+
 //==============================================================================
 template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::trace(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Trace,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::debug(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Debug,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::info(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Info,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::warn(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Warn,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::error(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Error,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
 void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
-#if DART_HAVE_spdlog
-  spdlog::critical(
-      DART_SPDLOG_RUNTIME(format_str),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
-#else
-  detail::print(
-      std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);
-#endif
+  detail::log(
+      detail::LogLevel::Fatal,
+      nullptr,
+      0,
+      nullptr,
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 } // namespace dart::common
