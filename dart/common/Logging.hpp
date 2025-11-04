@@ -48,10 +48,10 @@
 #define DART_DETAIL_PP_CONCAT_IMPL(a, b) a##b
 #define DART_DETAIL_PP_CONCAT(a, b) DART_DETAIL_PP_CONCAT_IMPL(a, b)
 #if defined(__COUNTER__)
-  #define DART_DETAIL_UNIQUE_NAME(prefix) \
+  #define DART_DETAIL_UNIQUE_NAME(prefix)                                      \
     DART_DETAIL_PP_CONCAT(prefix, __COUNTER__)
 #else
-  #define DART_DETAIL_UNIQUE_NAME(prefix) \
+  #define DART_DETAIL_UNIQUE_NAME(prefix)                                      \
     DART_DETAIL_PP_CONCAT(prefix, __LINE__)
 #endif
 
@@ -66,8 +66,7 @@
 
 #define DART_DETAIL_LOG_ONCE(log_call)                                         \
   DART_DETAIL_LOG_ONCE_IMPL(                                                   \
-      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_),                           \
-      log_call)
+      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_), log_call)
 
 #define DART_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)           \
   do {                                                                         \
@@ -82,9 +81,7 @@
 
 #define DART_DETAIL_LOG_ONCE_IF(condition_expr, log_call)                      \
   DART_DETAIL_LOG_ONCE_IF_IMPL(                                                \
-      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_),                           \
-      condition_expr,                                                          \
-      log_call)
+      DART_DETAIL_UNIQUE_NAME(_dart_log_once_flag_), condition_expr, log_call)
 
 // Default active log level
 #if !defined(DART_ACTIVE_LOG_LEVEL)
@@ -128,8 +125,7 @@ void log(
         DART_TRACE(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
-  #define DART_TRACE_ONCE(...)                                                 \
-    DART_DETAIL_LOG_ONCE(DART_TRACE(__VA_ARGS__))
+  #define DART_TRACE_ONCE(...) DART_DETAIL_LOG_ONCE(DART_TRACE(__VA_ARGS__))
   #define DART_TRACE_ONCE_IF(condition, ...)                                   \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_TRACE(__VA_ARGS__))
 #else
@@ -153,8 +149,7 @@ void log(
         DART_DEBUG(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
-  #define DART_DEBUG_ONCE(...)                                                 \
-    DART_DETAIL_LOG_ONCE(DART_DEBUG(__VA_ARGS__))
+  #define DART_DEBUG_ONCE(...) DART_DETAIL_LOG_ONCE(DART_DEBUG(__VA_ARGS__))
   #define DART_DEBUG_ONCE_IF(condition, ...)                                   \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_DEBUG(__VA_ARGS__))
 #else
@@ -178,8 +173,7 @@ void log(
         DART_INFO(__VA_ARGS__);                                                \
       }                                                                        \
     } while (false)
-  #define DART_INFO_ONCE(...)                                                  \
-    DART_DETAIL_LOG_ONCE(DART_INFO(__VA_ARGS__))
+  #define DART_INFO_ONCE(...) DART_DETAIL_LOG_ONCE(DART_INFO(__VA_ARGS__))
   #define DART_INFO_ONCE_IF(condition, ...)                                    \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_INFO(__VA_ARGS__))
 #else
@@ -203,8 +197,7 @@ void log(
         DART_WARN(__VA_ARGS__);                                                \
       }                                                                        \
     } while (false)
-  #define DART_WARN_ONCE(...)                                                  \
-    DART_DETAIL_LOG_ONCE(DART_WARN(__VA_ARGS__))
+  #define DART_WARN_ONCE(...) DART_DETAIL_LOG_ONCE(DART_WARN(__VA_ARGS__))
   #define DART_WARN_ONCE_IF(condition, ...)                                    \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_WARN(__VA_ARGS__))
 #else
@@ -228,8 +221,7 @@ void log(
         DART_ERROR(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
-  #define DART_ERROR_ONCE(...)                                                 \
-    DART_DETAIL_LOG_ONCE(DART_ERROR(__VA_ARGS__))
+  #define DART_ERROR_ONCE(...) DART_DETAIL_LOG_ONCE(DART_ERROR(__VA_ARGS__))
   #define DART_ERROR_ONCE_IF(condition, ...)                                   \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_ERROR(__VA_ARGS__))
 #else
@@ -253,8 +245,7 @@ void log(
         DART_FATAL(__VA_ARGS__);                                               \
       }                                                                        \
     } while (false)
-  #define DART_FATAL_ONCE(...)                                                 \
-    DART_DETAIL_LOG_ONCE(DART_FATAL(__VA_ARGS__))
+  #define DART_FATAL_ONCE(...) DART_DETAIL_LOG_ONCE(DART_FATAL(__VA_ARGS__))
   #define DART_FATAL_ONCE_IF(condition, ...)                                   \
     DART_DETAIL_LOG_ONCE_IF(condition, DART_FATAL(__VA_ARGS__))
 #else

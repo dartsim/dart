@@ -43,10 +43,10 @@
 #define DART7_DETAIL_PP_CONCAT_IMPL(a, b) a##b
 #define DART7_DETAIL_PP_CONCAT(a, b) DART7_DETAIL_PP_CONCAT_IMPL(a, b)
 #if defined(__COUNTER__)
-  #define DART7_DETAIL_UNIQUE_NAME(prefix) \
+  #define DART7_DETAIL_UNIQUE_NAME(prefix)                                     \
     DART7_DETAIL_PP_CONCAT(prefix, __COUNTER__)
 #else
-  #define DART7_DETAIL_UNIQUE_NAME(prefix) \
+  #define DART7_DETAIL_UNIQUE_NAME(prefix)                                     \
     DART7_DETAIL_PP_CONCAT(prefix, __LINE__)
 #endif
 
@@ -61,8 +61,7 @@
 
 #define DART7_DETAIL_LOG_ONCE(log_call)                                        \
   DART7_DETAIL_LOG_ONCE_IMPL(                                                  \
-      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_),                         \
-      log_call)
+      DART7_DETAIL_UNIQUE_NAME(_dart7_log_once_flag_), log_call)
 
 #define DART7_DETAIL_LOG_ONCE_IF_IMPL(flag, condition_expr, log_call)          \
   do {                                                                         \
@@ -390,32 +389,27 @@ inline LogLevel getLogLevel()
   } while (false)
 
 // Log once helpers
-#define DART7_TRACE_ONCE(...)                                                  \
-  DART7_DETAIL_LOG_ONCE(DART7_TRACE(__VA_ARGS__))
+#define DART7_TRACE_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_TRACE(__VA_ARGS__))
 
 #define DART7_TRACE_ONCE_IF(condition, ...)                                    \
   DART7_DETAIL_LOG_ONCE_IF(condition, DART7_TRACE(__VA_ARGS__))
 
-#define DART7_DEBUG_ONCE(...)                                                  \
-  DART7_DETAIL_LOG_ONCE(DART7_DEBUG(__VA_ARGS__))
+#define DART7_DEBUG_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_DEBUG(__VA_ARGS__))
 
 #define DART7_DEBUG_ONCE_IF(condition, ...)                                    \
   DART7_DETAIL_LOG_ONCE_IF(condition, DART7_DEBUG(__VA_ARGS__))
 
-#define DART7_INFO_ONCE(...)                                                   \
-  DART7_DETAIL_LOG_ONCE(DART7_INFO(__VA_ARGS__))
+#define DART7_INFO_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_INFO(__VA_ARGS__))
 
 #define DART7_INFO_ONCE_IF(condition, ...)                                     \
   DART7_DETAIL_LOG_ONCE_IF(condition, DART7_INFO(__VA_ARGS__))
 
-#define DART7_WARN_ONCE(...)                                                   \
-  DART7_DETAIL_LOG_ONCE(DART7_WARN(__VA_ARGS__))
+#define DART7_WARN_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_WARN(__VA_ARGS__))
 
 #define DART7_WARN_ONCE_IF(condition, ...)                                     \
   DART7_DETAIL_LOG_ONCE_IF(condition, DART7_WARN(__VA_ARGS__))
 
-#define DART7_ERROR_ONCE(...)                                                  \
-  DART7_DETAIL_LOG_ONCE(DART7_ERROR(__VA_ARGS__))
+#define DART7_ERROR_ONCE(...) DART7_DETAIL_LOG_ONCE(DART7_ERROR(__VA_ARGS__))
 
 #define DART7_ERROR_ONCE_IF(condition, ...)                                    \
   DART7_DETAIL_LOG_ONCE_IF(condition, DART7_ERROR(__VA_ARGS__))
