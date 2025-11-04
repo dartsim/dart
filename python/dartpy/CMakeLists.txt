@@ -111,6 +111,12 @@ target_compile_definitions(${pybind_module}
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
 
+if(DART_PYBIND11_EXTRA_DEFINITIONS)
+  target_compile_definitions(${pybind_module}
+    PRIVATE ${DART_PYBIND11_EXTRA_DEFINITIONS}
+  )
+endif()
+
 # Pass DART_BUILD_GUI_OSG to Python bindings so they can conditionally compile OSG support
 if(DART_BUILD_GUI_OSG)
   target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
