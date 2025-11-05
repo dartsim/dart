@@ -30,47 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef DART_COUPLER_HEADLESS_DEFAULT
+#include <dart/gui/osg/RealTimeWorldNode.hpp>
+#include <dart/gui/osg/Viewer.hpp>
 
-  #include <iostream>
+#include <dart/simulation/World.hpp>
 
-  #include <cstdlib>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
-int main(int /*argc*/, char* /*argv*/[])
-{
-  std::cout << "Coupler constraint GUI example built in headless mode; "
-               "skipping viewer startup."
-            << std::endl;
-  return EXIT_SUCCESS;
-}
+#include <dart/math/Constants.hpp>
 
-#else
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <osgGA/GUIEventAdapter>
+#include <osgGA/GUIEventHandler>
 
-  #include <dart/gui/osg/RealTimeWorldNode.hpp>
-  #include <dart/gui/osg/Viewer.hpp>
+#include <iostream>
+#include <memory>
+#include <utility>
 
-  #include <dart/simulation/World.hpp>
-
-  #include <dart/dynamics/BodyNode.hpp>
-  #include <dart/dynamics/BoxShape.hpp>
-  #include <dart/dynamics/Inertia.hpp>
-  #include <dart/dynamics/RevoluteJoint.hpp>
-  #include <dart/dynamics/ShapeNode.hpp>
-  #include <dart/dynamics/Skeleton.hpp>
-
-  #include <dart/math/Constants.hpp>
-
-  #include <Eigen/Dense>
-  #include <Eigen/Geometry>
-  #include <osgGA/GUIEventAdapter>
-  #include <osgGA/GUIEventHandler>
-
-  #include <iostream>
-  #include <memory>
-  #include <utility>
-
-  #include <cassert>
-  #include <cstdlib>
+#include <cassert>
+#include <cstdlib>
 
 using dart::dynamics::BodyNode;
 using dart::dynamics::BodyNodePtr;
@@ -336,5 +320,3 @@ int main(int /*argc*/, char* /*argv*/[])
 
   return 0;
 }
-
-#endif // DART_COUPLER_HEADLESS_DEFAULT
