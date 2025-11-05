@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/InverseKinematics.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -507,7 +508,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   const Frame* referenceFrame = mTaskSpaceP.mReferenceFrame.get();
   if (referenceFrame == nullptr)
     referenceFrame = mIK->getTarget()->getParentFrame();
-  assert(referenceFrame != nullptr);
+  DART_ASSERT(referenceFrame != nullptr);
 
   // Use the target's transform with respect to its reference frame
   const Eigen::Isometry3d targetTf
@@ -637,7 +638,7 @@ void InverseKinematics::GradientMethod::evalGradient(
         mIK->getNode()->getSkeleton()->getName(),
         mIK->getNode()->getName(),
         mMethodName);
-    assert(false);
+    DART_ASSERT(false);
     mLastGradient.resize(_q.size());
     mLastGradient.setZero();
     _grad = mLastGradient;
@@ -1654,7 +1655,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[InverseKinematics::Objective::eval] Attempting to use an Objective "
         "function of an expired InverseKinematics module!");
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -1677,7 +1678,7 @@ void InverseKinematics::Objective::evalGradient(
     DART_ERROR(
         "[InverseKinematics::Objective::evalGradient] Attempting to use an "
         "Objective function of an expired InverseKinematics module!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1720,7 +1721,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[InverseKinematics::Constraint::eval] Attempting to use a Constraint "
         "function of an expired InverseKinematics module!");
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -1735,7 +1736,7 @@ void InverseKinematics::Constraint::evalGradient(
     DART_ERROR(
         "[InverseKinematics::Constraint::evalGradient] Attempting to use a "
         "Constraint function of an expired InverseKinematics module!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 

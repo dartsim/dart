@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -207,7 +209,7 @@ public:
           "[HuboArmIK::computeSolutions] Attempting to perform an IK on a limb "
           "that no longer exists [{}]!",
           getMethodName());
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
@@ -215,7 +217,7 @@ public:
       DART_ERROR(
           "[HuboArmIK::computeSolutions] Attempting to perform IK without a "
           "wrist!");
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
@@ -358,7 +360,7 @@ protected:
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
       DART_ERROR("[HuboArmIK::configure] base link is a nullptr");
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -367,7 +369,7 @@ protected:
     if (nullptr == pelvis) {
       DART_ERROR(
           "[HuboArmIK::configure] Could not find Hubo's pelvis (Body_TSY)");
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -383,7 +385,7 @@ protected:
             "[{}]",
             joint->getNumDofs(),
             joint->getName());
-        assert(false);
+        DART_ASSERT(false);
         return;
       }
 
@@ -489,7 +491,7 @@ public:
       DART_ERROR(
           "[HuboLegIK::computeSolutions] Attempting to perform IK on a limb "
           "that no longer exists!");
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
@@ -604,7 +606,7 @@ protected:
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
       DART_ERROR("[HuboLegIK::configure] base link is a nullptr");
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -613,7 +615,7 @@ protected:
     if (nullptr == pelvis) {
       DART_ERROR(
           "[HuboLegIK::configure] Could not find Hubo's pelvis (Body_TSY)");
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -629,7 +631,7 @@ protected:
             "[{}]",
             joint->getNumDofs(),
             joint->getName());
-        assert(false);
+        DART_ASSERT(false);
         return;
       }
 

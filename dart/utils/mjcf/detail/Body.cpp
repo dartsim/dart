@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Body.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
@@ -79,7 +80,7 @@ Errors Body::read(
   // Read <inertial>
   if (hasElement(element, "inertial")) {
     auto inertialElement = getElement(element, "inertial");
-    assert(inertialElement);
+    DART_ASSERT(inertialElement);
     mAttributes.mInertial = Inertial();
     const Errors inertialErrors = mAttributes.mInertial->read(inertialElement);
     errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
@@ -231,7 +232,7 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
-      assert(math::verifyTransform(mRelativeTransform));
+      DART_ASSERT(math::verifyTransform(mRelativeTransform));
     } else {
       mWorldTransform.translation() = *mAttributes.mPos;
       mWorldTransform.linear() = compileRotation(
@@ -245,21 +246,21 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
         mInertial.setRelativeTransform(
             mWorldTransform.inverse() * mInertial.getWorldTransform());
       }
-      assert(math::verifyTransform(mWorldTransform));
+      DART_ASSERT(math::verifyTransform(mWorldTransform));
     }
   } else {
     if (compiler.getCoordinate() == Coordinate::LOCAL) {
       mRelativeTransform = mInertial.getRelativeTransform();
-      assert(math::verifyTransform(mRelativeTransform));
+      DART_ASSERT(math::verifyTransform(mRelativeTransform));
     } else {
       mWorldTransform = mInertial.getWorldTransform();
       if (parent != nullptr) {
         mRelativeTransform
             = parent->getWorldTransform().inverse() * mWorldTransform;
-        assert(math::verifyTransform(mRelativeTransform));
+        DART_ASSERT(math::verifyTransform(mRelativeTransform));
       } else {
         mRelativeTransform = mWorldTransform;
-        assert(math::verifyTransform(mRelativeTransform));
+        DART_ASSERT(math::verifyTransform(mRelativeTransform));
       }
       mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
     }
@@ -357,7 +358,7 @@ const Site& Body::getSite(std::size_t index) const
 //==============================================================================
 void Body::setRelativeTransform(const Eigen::Isometry3d& tf)
 {
-  assert(math::verifyTransform(tf));
+  DART_ASSERT(math::verifyTransform(tf));
   mRelativeTransform = tf;
 }
 
@@ -370,7 +371,7 @@ const Eigen::Isometry3d& Body::getRelativeTransform() const
 //==============================================================================
 void Body::setWorldTransform(const Eigen::Isometry3d& tf)
 {
-  assert(math::verifyTransform(tf));
+  DART_ASSERT(math::verifyTransform(tf));
   mWorldTransform = tf;
 }
 
@@ -391,7 +392,7 @@ Inertial Body::computeInertialFromGeoms(
     DART_ERROR(
         "[MjcfParser] Faled to infer <inertial> because of no <geom> "
         "found.");
-    assert(false);
+    DART_ASSERT(false);
     return inertial;
   }
 

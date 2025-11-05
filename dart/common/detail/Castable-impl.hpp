@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_DETAIL_CASTABLE_HPP_
 #define DART_COMMON_DETAIL_CASTABLE_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/common/Castable.hpp>
 #include <dart/common/Metaprogramming.hpp>
 
@@ -77,7 +79,7 @@ template <typename Base>
 template <typename Derived>
 const Derived& Castable<Base>::asRef() const
 {
-  assert(is<Derived>());
+  DART_ASSERT(is<Derived>());
   return *as<Derived>();
 }
 
@@ -86,7 +88,7 @@ template <typename Base>
 template <typename Derived>
 Derived& Castable<Base>::asRef()
 {
-  assert(is<Derived>());
+  DART_ASSERT(is<Derived>());
   return *as<Derived>();
 }
 

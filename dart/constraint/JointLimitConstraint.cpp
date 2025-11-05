@@ -33,6 +33,7 @@
 #include "dart/constraint/JointLimitConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -62,8 +63,8 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* joint)
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
-  assert(joint);
-  assert(mBodyNode);
+  DART_ASSERT(joint);
+  DART_ASSERT(mBodyNode);
 
   mLifeTime.setZero();
 
@@ -276,7 +277,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
   const int dof = static_cast<int>(mJoint->getNumDofs());
   for (int i = 0; i < dof; ++i) {
     if (mIsPositionLimitViolated[i]) {
-      assert(lcp->w[index] == 0.0);
+      DART_ASSERT(lcp->w[index] == 0.0);
 
       double bouncingVel = -mViolation[i];
 
@@ -305,7 +306,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
       }
 #endif
 
-      assert(lcp->findex[index] == -1);
+      DART_ASSERT(lcp->findex[index] == -1);
 
       if (mLifeTime[i])
         lcp->x[index] = mOldX[i];
@@ -316,13 +317,13 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
     }
 
     if (mIsVelocityLimitViolated[i]) {
-      assert(lcp->w[index] == 0.0);
+      DART_ASSERT(lcp->w[index] == 0.0);
 
       lcp->b[index] = mNegativeVel[i];
       lcp->lo[index] = mLowerBound[i];
       lcp->hi[index] = mUpperBound[i];
 
-      assert(lcp->findex[index] == -1);
+      DART_ASSERT(lcp->findex[index] == -1);
 
       if (mLifeTime[i])
         lcp->x[index] = mOldX[i];
@@ -337,7 +338,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* lcp)
 //==============================================================================
 void JointLimitConstraint::applyUnitImpulse(std::size_t index)
 {
-  assert(index < mDim && "Invalid Index.");
+  DART_ASSERT(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -366,7 +367,7 @@ void JointLimitConstraint::applyUnitImpulse(std::size_t index)
 //==============================================================================
 void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
-  assert(delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
@@ -391,7 +392,7 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
-  assert(localIndex == mDim);
+  DART_ASSERT(localIndex == mDim);
 }
 
 //==============================================================================

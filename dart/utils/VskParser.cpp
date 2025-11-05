@@ -32,6 +32,8 @@
 
 #include "dart/utils/VskParser.hpp"
 
+#include "dart/common/Macros.hpp"
+
 // Standard Library
 #include <Eigen/Dense>
 
@@ -319,7 +321,7 @@ bool readSkeletonElement(
 double getParameter(
     const ParameterMap& ParameterMap, const std::string& paramNameOrValue)
 {
-  assert(!paramNameOrValue.empty());
+  DART_ASSERT(!paramNameOrValue.empty());
 
   int sign = 1;
   std::string paramNameOrValueWithoutSign = paramNameOrValue;
@@ -347,7 +349,7 @@ Eigen::Matrix<double, NumParams, 1> getParameters(
   std::vector<std::string> tokens;
   tokenize(paramNamesOrValues, tokens);
 
-  assert(tokens.size() == NumParams);
+  DART_ASSERT(tokens.size() == NumParams);
 
   Eigen::Matrix<double, NumParams, 1> result;
 
@@ -445,7 +447,7 @@ bool readSegment(
       jointProperties.get(),
       bodyNodeProperties);
   bodyNode = pair.second;
-  assert(bodyNode != nullptr);
+  DART_ASSERT(bodyNode != nullptr);
 
   if (hasAttribute(segment, "MASS")) {
     // Assign the given mass

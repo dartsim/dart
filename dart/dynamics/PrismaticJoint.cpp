@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/PrismaticJoint.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -144,7 +145,7 @@ PrismaticJoint::getRelativeJacobianStatic(
       Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
   // Verification
-  assert(!math::isNan(jacobian));
+  DART_ASSERT(!math::isNan(jacobian));
 
   return jacobian;
 }
@@ -182,7 +183,7 @@ void PrismaticJoint::updateRelativeTransform() const
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -196,7 +197,7 @@ void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of prismatic joint is always zero
-  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
+  DART_ASSERT(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
 } // namespace dynamics

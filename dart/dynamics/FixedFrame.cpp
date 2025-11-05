@@ -32,6 +32,8 @@
 
 #include "dart/dynamics/FixedFrame.hpp"
 
+#include "dart/common/Macros.hpp"
+
 namespace dart {
 namespace dynamics {
 
@@ -122,7 +124,7 @@ FixedFrame::FixedFrame(ConstructAbstractTag)
   DART_ERROR(
       "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
       "FixedFrame object. This is not allowed!");
-  assert(false);
+  DART_ASSERT(false);
 }
 
 } // namespace dynamics

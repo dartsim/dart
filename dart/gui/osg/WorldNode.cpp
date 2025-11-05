@@ -32,6 +32,7 @@
 
 #include "dart/gui/osg/WorldNode.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
@@ -348,7 +349,7 @@ void WorldNode::setShadowTechnique(
 ::osg::ref_ptr<osgShadow::ShadowTechnique>
 WorldNode::createDefaultShadowTechnique(const Viewer* viewer)
 {
-  assert(viewer);
+  DART_ASSERT(viewer);
 
   ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
   // increase the resolution of default shadow texture for higher quality

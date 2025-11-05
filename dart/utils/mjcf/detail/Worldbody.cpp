@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Compiler.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
@@ -51,7 +52,7 @@ Errors Worldbody::read(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  assert(currentDefault != nullptr);
+  DART_ASSERT(currentDefault != nullptr);
 
   Errors errors;
 

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/all.hpp>
@@ -67,7 +69,7 @@ public:
       mBodyForce(false)
   {
     // Make sure that the pendulum was found in the World
-    assert(mPendulum != nullptr);
+    DART_ASSERT(mPendulum != nullptr);
 
     mForceCountDown.resize(mPendulum->getNumDofs(), 0);
 
@@ -183,7 +185,8 @@ public:
       // attached. We should remove it in case this body is no longer
       // experiencing a force
       if (bn->getNumShapeNodesWith<VisualAspect>() == 3u) {
-        assert(bn->getShapeNodeWith<VisualAspect>(2)->getShape() == mArrow);
+        DART_ASSERT(
+            bn->getShapeNodeWith<VisualAspect>(2)->getShape() == mArrow);
         bn->getShapeNodeWith<VisualAspect>(2)->remove();
       }
 

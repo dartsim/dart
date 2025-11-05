@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/all.hpp>
@@ -66,7 +68,7 @@ public:
       mBodyForce(false)
   {
     // Find the Skeleton named "pendulum"
-    assert(mPendulum != nullptr);
+    DART_ASSERT(mPendulum != nullptr);
 
     mForceCountDown.resize(mPendulum->getNumDofs(), 0);
 

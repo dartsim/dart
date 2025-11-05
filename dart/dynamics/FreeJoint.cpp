@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/FreeJoint.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -194,7 +195,7 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 void FreeJoint::setTransform(
     const Eigen::Isometry3d& newTransform, const Frame* withRespectTo)
 {
-  assert(nullptr != withRespectTo);
+  DART_ASSERT(nullptr != withRespectTo);
 
   setRelativeTransform(
       withRespectTo->getTransform(getChildBodyNode()->getParentFrame())
@@ -213,7 +214,7 @@ void FreeJoint::setRelativeSpatialVelocity(
 void FreeJoint::setRelativeSpatialVelocity(
     const Eigen::Vector6d& newSpatialVelocity, const Frame* inCoordinatesOf)
 {
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialVelocity(newSpatialVelocity);
@@ -229,8 +230,8 @@ void FreeJoint::setSpatialVelocity(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == relativeTo) {
     DART_WARN(
@@ -278,8 +279,8 @@ void FreeJoint::setLinearVelocity(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialVelocity;
 
@@ -312,8 +313,8 @@ void FreeJoint::setAngularVelocity(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialVelocity;
 
@@ -355,7 +356,7 @@ void FreeJoint::setRelativeSpatialAcceleration(
 void FreeJoint::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& newSpatialAcceleration, const Frame* inCoordinatesOf)
 {
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == inCoordinatesOf) {
     setRelativeSpatialAcceleration(newSpatialAcceleration);
@@ -372,8 +373,8 @@ void FreeJoint::setSpatialAcceleration(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == relativeTo) {
     DART_WARN(
@@ -435,8 +436,8 @@ void FreeJoint::setLinearAcceleration(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialAcceleration;
 
@@ -473,8 +474,8 @@ void FreeJoint::setAngularAcceleration(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
-  assert(nullptr != relativeTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != relativeTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   Eigen::Vector6d targetSpatialAcceleration;
 
@@ -639,7 +640,7 @@ void FreeJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -653,7 +654,7 @@ void FreeJoint::updateRelativeJacobian(bool _mandatory) const
 //==============================================================================
 void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
-  assert(Eigen::Matrix6d::Zero() == mJacobianDeriv);
+  DART_ASSERT(Eigen::Matrix6d::Zero() == mJacobianDeriv);
 }
 
 //==============================================================================

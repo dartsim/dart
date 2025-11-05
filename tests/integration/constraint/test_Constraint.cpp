@@ -36,6 +36,7 @@
 
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -137,7 +138,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   sphereJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
   world->addSkeleton(sphereSkel);
   EXPECT_EQ(sphereSkel->getGravity(), world->getGravity());
-  assert(sphere);
+  DART_ASSERT(sphere);
 
   SkeletonPtr boxSkel
       = createBox(Vector3d(1.0, 1.0, 1.0), Vector3d(0.0, 1.0, 0.0));

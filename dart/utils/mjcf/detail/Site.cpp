@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Site.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Body.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -232,7 +233,7 @@ Errors Site::preprocess(const Compiler& compiler)
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   if (canUseFromTo(mData.mType, mData.mFromTo)) {
-    assert(mData.mFromTo);
+    DART_ASSERT(mData.mFromTo);
     const Eigen::Vector6d& fromto = *mData.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
     const Eigen::Vector3d to = fromto.tail<3>();

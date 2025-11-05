@@ -33,6 +33,7 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
 #include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
@@ -59,7 +60,7 @@ BulletCollisionObject::BulletCollisionObject(
     mBulletCollisionShape(bulletCollisionShape),
     mBulletCollisionObject(new btCollisionObject())
 {
-  assert(bulletCollisionShape);
+  DART_ASSERT(bulletCollisionShape);
 
   mBulletCollisionObject->setCollisionShape(
       mBulletCollisionShape->mCollisionShape.get());

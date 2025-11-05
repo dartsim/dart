@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/HierarchicalIK.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -396,7 +397,7 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[HierarchicalIK::Objective::eval] Attempting to use an Objective "
         "function of an expired HierarchicalIK module!");
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -421,7 +422,7 @@ void HierarchicalIK::Objective::evalGradient(
     DART_ERROR(
         "[HierarchicalIK::Objective::evalGradient] Attempting to use an "
         "Objective function of an expired HierarchicalIK module!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -470,7 +471,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[HierarchicalIK::Constraint::eval] Attempting to use a Constraint "
         "function of an expired HierarchicalIK module!");
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 
@@ -701,7 +702,7 @@ void CompositeIK::refreshIKHierarchy()
         = std::max(static_cast<int>(module->getHierarchyLevel()), highestLevel);
   }
 
-  assert(highestLevel >= 0);
+  DART_ASSERT(highestLevel >= 0);
 
   mHierarchy.resize(highestLevel + 1);
   for (auto& level : mHierarchy)

@@ -32,6 +32,8 @@
 
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>
@@ -91,7 +93,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   //  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
   for (std::size_t i = 1; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = _group->getConstraint(i - 1);
-    assert(constraint->getDimension() > 0);
+    DART_ASSERT(constraint->getDimension() > 0);
     offset[i] = offset[i - 1] + constraint->getDimension();
     //    std::cout << "offset[" << i << "]: " << offset[i] << std::endl;
   }
@@ -143,7 +145,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
     }
 
 #if DART_BUILD_MODE_DEBUG
-    assert(isSymmetric(
+    DART_ASSERT(isSymmetric(
         n, A, offset[i], offset[i] + constraint->getDimension() - 1));
 #endif
 
@@ -151,7 +153,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   }
 
 #if DART_BUILD_MODE_DEBUG
-  assert(isSymmetric(n, A));
+  DART_ASSERT(isSymmetric(n, A));
 #endif
 
   // Print LCP formulation

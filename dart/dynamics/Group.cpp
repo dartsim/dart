@@ -33,6 +33,7 @@
 #include "dart/dynamics/Group.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -109,27 +110,27 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
   // Add BodyNodes
   for (const BodyNodePtr& bodyNode : mBodyNodes) {
     SkeletonPtr skelClone = mapToSkeletonClones[bodyNode->getSkeleton().get()];
-    assert(skelClone);
+    DART_ASSERT(skelClone);
     BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
-    assert(bodyNodeClone);
+    DART_ASSERT(bodyNodeClone);
     newGroup->addBodyNode(bodyNodeClone);
   }
 
   // Add Joints
   for (const JointPtr& joint : mJoints) {
     SkeletonPtr skelClone = mapToSkeletonClones[joint->getSkeleton().get()];
-    assert(skelClone);
+    DART_ASSERT(skelClone);
     Joint* jointClone = skelClone->getJoint(joint->getName());
-    assert(jointClone);
+    DART_ASSERT(jointClone);
     newGroup->addJoint(jointClone, false);
   }
 
   // Add DegreeOfFreedoms
   for (const DegreeOfFreedomPtr& dof : mDofs) {
     SkeletonPtr skelClone = mapToSkeletonClones[dof->getSkeleton().get()];
-    assert(skelClone);
+    DART_ASSERT(skelClone);
     DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
-    assert(dofClone);
+    DART_ASSERT(dofClone);
     newGroup->addDof(dofClone, false);
   }
 
@@ -155,7 +156,7 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
         _index1,
         _index2,
         mBodyNodes.size());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -173,7 +174,7 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
         static_cast<const void*>(bn1),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -188,7 +189,7 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
         static_cast<const void*>(bn2),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -213,7 +214,7 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
         _index1,
         _index2,
         mDofs.size());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -231,7 +232,7 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
         static_cast<const void*>(dof1),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -246,7 +247,7 @@ void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
         static_cast<const void*>(dof2),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -272,7 +273,7 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
           "Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -293,7 +294,7 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
         static_cast<const void*>(_bn),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
   }
 
   return added;
@@ -320,7 +321,7 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
           "from the Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -341,7 +342,7 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
         static_cast<const void*>(_bn),
         getName(),
         static_cast<const void*>(this));
-    assert(false);
+    DART_ASSERT(false);
   }
 
   return removed;
@@ -368,7 +369,7 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
           "Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -383,7 +384,7 @@ bool Group::addBodyNode(BodyNode* _bn, bool _warning)
           static_cast<const void*>(_bn),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -414,7 +415,7 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
           "from the Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -429,7 +430,7 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
           static_cast<const void*>(_bn),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -460,7 +461,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
           "[{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -486,7 +487,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
           static_cast<const void*>(_joint),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     } else {
       DART_WARN(
           "[Group::addJoint] The Joint named [{}] ({}) is already in the Group "
@@ -495,7 +496,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
           static_cast<const void*>(_joint),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -523,7 +524,7 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
           "Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -552,7 +553,7 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
           static_cast<const void*>(_joint),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     } else {
       DART_WARN(
           "[Group::removeJoint] The Joint named [{}] ({}) was NOT in the Group "
@@ -561,7 +562,7 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
           static_cast<const void*>(_joint),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -589,7 +590,7 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
           "Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -613,7 +614,7 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
           static_cast<const void*>(_dof),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     } else {
       DART_WARN(
           "[Group::addDof] The DegreeOfFreedom named [{}] ({}) is already in "
@@ -622,7 +623,7 @@ bool Group::addDof(DegreeOfFreedom* _dof, bool _addJoint, bool _warning)
           static_cast<const void*>(_dof),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -650,7 +651,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
           "from the Group [{}] ({})",
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return false;
@@ -692,7 +693,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
           static_cast<const void*>(_dof),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     } else {
       DART_WARN(
           "[Group::removeDof] The DegreeOfFreedom named [{}] ({}) was NOT in "
@@ -701,7 +702,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
           static_cast<const void*>(_dof),
           getName(),
           static_cast<const void*>(this));
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 

@@ -31,6 +31,7 @@
  */
 
 #include "HumanArmJointLimitConstraint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
@@ -68,15 +69,15 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
     mIsMirror(isMirror),
     mAppliedImpulseIndex(0)
 {
-  assert(mShldJoint);
-  assert(mElbowJoint);
-  assert(mUArmNode);
-  assert(mLArmNode);
+  DART_ASSERT(mShldJoint);
+  DART_ASSERT(mElbowJoint);
+  DART_ASSERT(mUArmNode);
+  DART_ASSERT(mLArmNode);
 
-  assert(mShldJoint->getNumDofs() == 3);
-  assert(mElbowJoint->getNumDofs() == 1);
-  assert(mUArmNode->getSkeleton() == mLArmNode->getSkeleton());
-  assert(mElbowJoint->getParentBodyNode() == mUArmNode);
+  DART_ASSERT(mShldJoint->getNumDofs() == 3);
+  DART_ASSERT(mElbowJoint->getNumDofs() == 1);
+  DART_ASSERT(mUArmNode->getSkeleton() == mLArmNode->getSkeleton());
+  DART_ASSERT(mElbowJoint->getParentBodyNode() == mUArmNode);
 
   mLifeTime = 0;
   mActive = false;
@@ -284,11 +285,11 @@ void HumanArmJointLimitConstraint::getInformation(
     constraint::ConstraintInfo* lcp)
 {
   // if non-active, should not call getInfo()
-  assert(isActive());
+  DART_ASSERT(isActive());
 
   // assume caller will allocate enough space for _lcp variables
-  assert(lcp->w[0] == 0.0);
-  assert(lcp->findex[0] == -1);
+  DART_ASSERT(lcp->w[0] == 0.0);
+  DART_ASSERT(lcp->findex[0] == -1);
 
   double bouncingVel = -mViolation - mErrorAllowance;
   if (bouncingVel < 0.0) {
@@ -312,8 +313,8 @@ void HumanArmJointLimitConstraint::getInformation(
 void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t index)
 {
   // the dim of constraint = 1, valid _index can only be 0
-  assert(index < mDim && "Invalid Index.");
-  assert(isActive());
+  DART_ASSERT(index < mDim && "Invalid Index.");
+  DART_ASSERT(isActive());
 
   const dynamics::SkeletonPtr& skeleton = mShldJoint->getSkeleton();
   skeleton->clearConstraintImpulses();
@@ -340,7 +341,7 @@ void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t index)
 void HumanArmJointLimitConstraint::getVelocityChange(
     double* delVel, bool withCfm)
 {
-  assert(delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(delVel != nullptr && "Null pointer is not allowed.");
   delVel[0] = 0.0;
 
   if (mShldJoint->getSkeleton()->isImpulseApplied()) {
@@ -374,7 +375,7 @@ void HumanArmJointLimitConstraint::unexcite()
 //==============================================================================
 void HumanArmJointLimitConstraint::applyImpulse(double* lambda)
 {
-  assert(isActive());
+  DART_ASSERT(isActive());
 
   // the dim of constraint = 1
   auto con_force = lambda[0];

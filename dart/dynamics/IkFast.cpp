@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/IkFast.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -93,7 +94,7 @@ std::vector<bool> getFreeJointFlags(
   std::vector<bool> flags(numParams, false);
 
   for (int i = 0; i < numFreeParams; ++i) {
-    assert(freeParams[i] < numParams);
+    DART_ASSERT(freeParams[i] < numParams);
     flags[freeParams[i]] = true;
   }
 
@@ -124,7 +125,7 @@ void convertIkSolution(
   bool limitViolated = false;
 
   auto index = 0u;
-  assert(solutionValues.size());
+  DART_ASSERT(solutionValues.size());
   solution.mConfig.resize(dofIndices.size());
   for (auto i = 0u; i < solutionValues.size(); ++i) {
     const auto isFreeJoint = freeJointFlags[i];
@@ -259,7 +260,7 @@ auto IkFast::getDofs() const -> const std::vector<std::size_t>&
           "[IkFast::getDofs] This analytical IK was not able to configure "
           "properly, so it will not be able to compute solutions. Returning an "
           "empty list of dofs.");
-      assert(mDofs.empty());
+      DART_ASSERT(mDofs.empty());
     }
   }
 
@@ -464,7 +465,7 @@ bool wrapCyclicSolution(
   if (currentValue < lb) {
     const auto diff_lb = lb - solutionValue;
     const auto lb_ceil = solutionValue + std::ceil(diff_lb / pi2) * pi2;
-    assert(lb <= lb_ceil);
+    DART_ASSERT(lb <= lb_ceil);
     if (lb_ceil <= ub) {
       solutionValue = lb_ceil;
     } else {
@@ -473,7 +474,7 @@ bool wrapCyclicSolution(
   } else if (ub < currentValue) {
     const auto diff_ub = ub - solutionValue;
     const auto ub_floor = solutionValue + std::floor(diff_ub / pi2) * pi2;
-    assert(ub_floor <= ub);
+    DART_ASSERT(ub_floor <= ub);
     if (lb <= ub_floor) {
       solutionValue = ub_floor;
     } else {

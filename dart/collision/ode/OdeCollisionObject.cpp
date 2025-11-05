@@ -40,6 +40,7 @@
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
 #include "dart/collision/ode/detail/OdeSphere.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -82,7 +83,7 @@ OdeCollisionObject::OdeCollisionObject(
   mOdeGeom.reset(createOdeGeom(this, shapeFrame));
 
   const auto geomId = mOdeGeom->getOdeGeomId();
-  assert(geomId);
+  DART_ASSERT(geomId);
 
   if (mOdeGeom->isPlaceable()) {
     // if the geometry already has a pose, it is to be considered
@@ -93,7 +94,7 @@ OdeCollisionObject::OdeCollisionObject(
     dQuaternion geomRelRot;
     dGeomGetQuaternion(geomId, geomRelRot);
     const dReal* geomRelPos = dGeomGetPosition(geomId);
-    assert(geomRelPos);
+    DART_ASSERT(geomRelPos);
 
     // create the body
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
@@ -111,15 +112,15 @@ OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other)
 {
   // This should only be used for refreshing the collision objects, so the
   // detector and the shape frame should never need to change
-  assert(mCollisionDetector == other.mCollisionDetector);
-  assert(mShapeFrame == other.mShapeFrame);
+  DART_ASSERT(mCollisionDetector == other.mCollisionDetector);
+  DART_ASSERT(mShapeFrame == other.mShapeFrame);
 
   // We should never be assigning a collision object to itself
-  assert(this != &other);
+  DART_ASSERT(this != &other);
 
   // There should never be duplicate body IDs or geometries
-  assert(!mBodyId || mBodyId != other.mBodyId);
-  assert(mOdeGeom.get() != other.mOdeGeom.get());
+  DART_ASSERT(!mBodyId || mBodyId != other.mBodyId);
+  DART_ASSERT(mOdeGeom.get() != other.mOdeGeom.get());
 
   mOdeGeom = std::move(other.mOdeGeom);
   std::swap(mBodyId, other.mBodyId);
@@ -227,7 +228,7 @@ detail::OdeGeom* createOdeGeom(
   // TODO(JS): not implemented for EllipsoidShape, ConeShape, MultiSphereShape,
   // and SoftMeshShape.
 
-  assert(geom);
+  DART_ASSERT(geom);
   const auto geomId = geom->getOdeGeomId();
   dGeomSetData(geomId, collObj);
 

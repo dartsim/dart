@@ -55,6 +55,7 @@
 
 #pragma once
 
+#include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/dantzig/common.h"
 
 namespace dart::lcpsolver {

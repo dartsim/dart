@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/CapsuleShape.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
@@ -45,8 +46,8 @@ namespace dynamics {
 CapsuleShape::CapsuleShape(double radius, double height)
   : Shape(CAPSULE), mRadius(radius), mHeight(height)
 {
-  assert(0.0 < radius);
-  assert(0.0 < height);
+  DART_ASSERT(0.0 < radius);
+  DART_ASSERT(0.0 < height);
 }
 
 //==============================================================================
@@ -71,7 +72,7 @@ double CapsuleShape::getRadius() const
 //==============================================================================
 void CapsuleShape::setRadius(double radius)
 {
-  assert(0.0 < radius);
+  DART_ASSERT(0.0 < radius);
   mRadius = radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -88,7 +89,7 @@ double CapsuleShape::getHeight() const
 //==============================================================================
 void CapsuleShape::setHeight(double height)
 {
-  assert(0.0 < height);
+  DART_ASSERT(0.0 < height);
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

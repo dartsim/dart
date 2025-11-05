@@ -34,6 +34,7 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -384,7 +385,7 @@ simulation::WorldPtr readWorld(
     const common::Uri& baseUri,
     const Options& options)
 {
-  assert(worldElement != nullptr);
+  DART_ASSERT(worldElement != nullptr);
 
   // Create a world
   simulation::WorldPtr newWorld = simulation::World::create();
@@ -448,7 +449,7 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& baseUri,
     const Options& options)
 {
-  assert(skeletonElement != nullptr);
+  DART_ASSERT(skeletonElement != nullptr);
 
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
   dynamics::SkeletonPtr newSkeleton
@@ -596,7 +597,7 @@ NextResult getNextJointAndNodePair(
 dynamics::SkeletonPtr makeSkeleton(
     tinyxml2::XMLElement* _skeletonElement, Eigen::Isometry3d& skeletonFrame)
 {
-  assert(_skeletonElement != nullptr);
+  DART_ASSERT(_skeletonElement != nullptr);
 
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
@@ -715,7 +716,7 @@ SDFBodyNode readBodyNode(
     const common::Uri& /*baseUri*/,
     const common::ResourceRetrieverPtr& /*retriever*/)
 {
-  assert(bodyNodeElement != nullptr);
+  DART_ASSERT(bodyNodeElement != nullptr);
 
   dynamics::BodyNode::Properties properties;
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
@@ -809,7 +810,7 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
   // Otherwise, BodyNode is created.
 
   //----------------------------------------------------------------------------
-  assert(softBodyNodeElement != nullptr);
+  DART_ASSERT(softBodyNodeElement != nullptr);
 
   dynamics::SoftBodyNode::UniqueProperties softProperties;
 
@@ -890,7 +891,7 @@ dynamics::ShapePtr readShape(
   dynamics::ShapePtr newShape;
 
   // type
-  assert(hasElement(_shapelement, "geometry"));
+  DART_ASSERT(hasElement(_shapelement, "geometry"));
   tinyxml2::XMLElement* geometryElement = getElement(_shapelement, "geometry");
 
   if (hasElement(geometryElement, "sphere")) {
@@ -967,7 +968,7 @@ dynamics::ShapeNode* readShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  assert(bodyNode);
+  DART_ASSERT(bodyNode);
 
   auto shape = readShape(shapeNodeEle, baseUri, retriever);
   auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
@@ -1133,12 +1134,12 @@ SDFJoint readJoint(
     const BodyMap& _sdfBodyNodes,
     const Eigen::Isometry3d& _skeletonFrame)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   //--------------------------------------------------------------------------
   // Type attribute
   std::string type = getAttributeString(_jointElement, "type");
-  assert(!type.empty());
+  DART_ASSERT(!type.empty());
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -1160,7 +1161,7 @@ SDFJoint readJoint(
             "the parent of the Joint named [{}]",
             strParent,
             name);
-        assert(0);
+        DART_ASSERT(0);
       }
     }
   } else {
@@ -1168,7 +1169,7 @@ SDFJoint readJoint(
         "[SdfParser::readJoint] You must set parent link for the Joint "
         "[{}]!",
         name);
-    assert(0);
+    DART_ASSERT(0);
   }
 
   //--------------------------------------------------------------------------
@@ -1186,14 +1187,14 @@ SDFJoint readJoint(
           "the child of the Joint named [{}]",
           strChild,
           name);
-      assert(0);
+      DART_ASSERT(0);
     }
   } else {
     DART_ERROR(
         "[SdfParser::readJoint] You must set the child link for the Joint "
         "[{}]!",
         name);
-    assert(0);
+    DART_ASSERT(0);
   }
 
   SDFJoint newJoint;
@@ -1270,7 +1271,7 @@ static void reportMissingElement(
       elementName,
       objectType,
       objectName);
-  assert(0);
+  DART_ASSERT(0);
 }
 
 static void readAxisElement(
@@ -1367,7 +1368,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_revoluteJointElement != nullptr);
+  DART_ASSERT(_revoluteJointElement != nullptr);
 
   dynamics::RevoluteJoint::Properties newRevoluteJoint;
 
@@ -1400,7 +1401,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::PrismaticJoint::Properties newPrismaticJoint;
 
@@ -1432,7 +1433,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::ScrewJoint::Properties newScrewJoint;
 
@@ -1470,7 +1471,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::UniversalJoint::Properties newUniversalJoint;
 

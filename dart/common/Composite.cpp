@@ -33,6 +33,7 @@
 #include "dart/common/Composite.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <iostream>
 
@@ -195,7 +196,7 @@ void Composite::duplicateAspects(const Composite* fromComposite)
     DART_ERROR(
         "[Composite::duplicateAspects] You have asked to duplicate the Aspects "
         "of a nullptr, which is not allowed!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -237,7 +238,7 @@ void Composite::matchAspects(const Composite* otherComposite)
     DART_ERROR(
         "[Composite::matchAspects] You have asked to match the Aspects of a "
         "nullptr, which is not allowed!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 

@@ -67,7 +67,7 @@ bool ODELCPSolver::Solve(
     int err = Lemke(_A, _b, _x);
     return (err == 0);
   } else {
-    assert(_numDir >= 4);
+    DART_ASSERT(_numDir >= 4);
     DART_UNUSED(_numDir);
 
     double *A, *b, *x, *w, *lo, *hi;

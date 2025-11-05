@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/EllipsoidShape.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -78,9 +79,9 @@ const Eigen::Vector3d& EllipsoidShape::getSize() const
 //==============================================================================
 void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 {
-  assert(diameters[0] > 0.0);
-  assert(diameters[1] > 0.0);
-  assert(diameters[2] > 0.0);
+  DART_ASSERT(diameters[0] > 0.0);
+  DART_ASSERT(diameters[1] > 0.0);
+  DART_ASSERT(diameters[2] > 0.0);
 
   mDiameters = diameters;
 

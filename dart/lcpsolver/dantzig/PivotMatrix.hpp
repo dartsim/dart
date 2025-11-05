@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/dantzig/common.h"
 
 #include <Eigen/Core>

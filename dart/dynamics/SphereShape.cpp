@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/SphereShape.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -65,7 +66,7 @@ const std::string& SphereShape::getStaticType()
 //==============================================================================
 void SphereShape::setRadius(double radius)
 {
-  assert(radius > 0.0);
+  DART_ASSERT(radius > 0.0);
 
   mRadius = radius;
 

@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 
@@ -196,7 +197,7 @@ ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
 double DefaultContactSurfaceHandler::computeFrictionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -216,7 +217,7 @@ double DefaultContactSurfaceHandler::computeFrictionCoefficient(
 double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -236,7 +237,7 @@ double DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
 double DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -256,7 +257,7 @@ double DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
 double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -280,7 +281,7 @@ double DefaultContactSurfaceHandler::computePrimarySlipCompliance(
 double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -304,7 +305,7 @@ double DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
 Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -332,7 +333,7 @@ Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
 double DefaultContactSurfaceHandler::computeRestitutionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 

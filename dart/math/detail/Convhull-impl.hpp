@@ -66,6 +66,8 @@
 
 #pragma once
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/math/Constants.hpp>
 
 #include <Eigen/Core>
@@ -279,7 +281,7 @@ inline void convexHull3dBuild(
       minP = std::min(minP, perturbedVertices[i * (kSpatialDimension + 1) + j]);
     }
     axisAlignedExtents[j] = maxP - minP;
-    assert(axisAlignedExtents[j] > static_cast<S>(0.000000001));
+    DART_ASSERT(axisAlignedExtents[j] > static_cast<S>(0.000000001));
   }
 
   // Initialize simplex
@@ -689,7 +691,7 @@ inline void convexHull3dBuild(
               A[l * (kSpatialDimension + 1) + j] = perturbedVertices
                   [nonMatchingTriangles[index] * (kSpatialDimension + 1) + j];
           orientationDeterminant = convhull_internal::det4x4(A);
-          assert(
+          DART_ASSERT(
               orientationDeterminant
               > -std::numeric_limits<S>::epsilon() * static_cast<S>(100.0));
 #endif

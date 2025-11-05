@@ -42,6 +42,7 @@
 /// more details on custom type casters.
 
 #include <string>
+#include "dart/common/Macros.hpp"
 #include <utility>
 
 #include <Eigen/Dense>
@@ -79,7 +80,7 @@ struct type_caster_wrapped {
   // N.B. Do not use `PYBIND11_TYPE_CASTER(...)` so we can avoid casting
   // garbage values.
   operator Type&() {
-    assert(loaded_);
+    DART_ASSERT(loaded_);
     return value_;
   }
   template <typename T> using cast_op_type =

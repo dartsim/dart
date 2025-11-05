@@ -33,6 +33,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
@@ -42,7 +43,7 @@ namespace dynamics {
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
   : Shape(SOFT_MESH), mSoftBodyNode(_softBodyNode), mAssimpMesh(nullptr)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   // Build mesh here using soft body node
   // TODO(JS): Not implemented.
   _buildMesh();

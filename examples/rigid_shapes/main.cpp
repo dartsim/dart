@@ -36,6 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -218,7 +220,7 @@ public:
 int main()
 {
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   auto handler = new RigidShapesEventHandler(myWorld);
 

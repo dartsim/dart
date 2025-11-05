@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -125,7 +127,7 @@ int main(int /*argc*/, char* /*argv*/[])
 {
   // Create and initialize the world
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 

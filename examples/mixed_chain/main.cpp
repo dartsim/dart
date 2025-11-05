@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -136,7 +138,7 @@ int main()
   // Load the skeleton file
   dart::simulation::WorldPtr myWorld = dart::utils::SkelParser::readWorld(
       "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   // Set initial pose for the skeleton
   int dof = myWorld->getSkeleton(1)->getNumDofs();

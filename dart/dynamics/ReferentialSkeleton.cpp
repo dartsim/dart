@@ -33,6 +33,7 @@
 #include "dart/dynamics/ReferentialSkeleton.hpp"
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -197,7 +198,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
       DART_ERROR(
           "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           "BodyNode!");
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -213,7 +214,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
           _bn,
           getName(),
           this);
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -332,7 +333,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
       DART_ERROR(
           "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           "Joint!");
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -348,7 +349,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
           _joint,
           getName(),
           this);
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -402,7 +403,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
       DART_ERROR(
           "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           "DegreeOfFreedom!");
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -420,7 +421,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
           _dof,
           getName(),
           this);
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -438,7 +439,7 @@ std::size_t ReferentialSkeleton::getIndexOf(
           getName(),
           this,
           localIndex);
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -457,7 +458,7 @@ static bool isValidBodyNode(
         "[ReferentialSkeleton::{}] Invalid BodyNode pointer: nullptr. "
         "Returning zero Jacobian.",
         _fname);
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -947,7 +948,7 @@ double ReferentialSkeleton::computeKineticEnergy() const
   for (const BodyNode* bn : mRawBodyNodes)
     KE += bn->computeKineticEnergy();
 
-  assert(KE >= 0.0 && "Kinetic Energy should always be zero or greater");
+  DART_ASSERT(KE >= 0.0 && "Kinetic Energy should always be zero or greater");
   return KE;
 }
 
@@ -994,7 +995,7 @@ Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
     totalMass += bn->getMass();
   }
 
-  assert(totalMass != 0.0);
+  DART_ASSERT(totalMass != 0.0);
   return com / totalMass;
 }
 
@@ -1018,7 +1019,7 @@ PropertyType getCOMPropertyTemplate(
     totalMass += bn->getMass();
   }
 
-  assert(totalMass != 0.0);
+  DART_ASSERT(totalMass != 0.0);
   return result / totalMass;
 }
 
@@ -1092,7 +1093,7 @@ JacType getCOMJacobianTemplate(
     }
   }
 
-  assert(totalMass != 0.0);
+  DART_ASSERT(totalMass != 0.0);
   return J / totalMass;
 }
 
@@ -1245,7 +1246,7 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
 //==============================================================================
 void ReferentialSkeleton::unregisterComponent(BodyNode* _bn)
 {
-  assert(_bn);
+  DART_ASSERT(_bn);
   unregisterBodyNode(_bn, true);
   unregisterJoint(_bn);
 }
@@ -1258,7 +1259,7 @@ void ReferentialSkeleton::unregisterBodyNode(
     DART_ERROR(
         "[ReferentialSkeleton::unregisterBodyNode] Attempting to unregister a "
         "nullptr BodyNode. This is most likely a bug. Please report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1270,7 +1271,7 @@ void ReferentialSkeleton::unregisterBodyNode(
         "[ReferentialSkeleton::unregisterBodyNode] Attempting to unregister a "
         "BodyNode that is not referred to by this ReferentialSkeleton. This is "
         "most likely a bug. Please report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1308,7 +1309,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
         "[ReferentialSkeleton::unregisterJoint] Attempting to unregister a "
         "Joint from a nullptr BodyNode. This is most likely a bug. Please "
         "report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1327,7 +1328,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
         joint,
         _child->getName(),
         _child);
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1363,7 +1364,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
         "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
         "unregister a DegreeOfFreedom from a nullptr BodyNode. This is most "
         "likely a bug. Please report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1380,7 +1381,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
         _localIndex,
         _bn->getName(),
         _bn);
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1446,7 +1447,7 @@ void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
 {
   // We assume skel is not nullptr. If it's not, this function should be updated
   // to take that into account.
-  assert(skel);
+  DART_ASSERT(skel);
 
   if (hasSkeleton(skel))
     return;
@@ -1462,7 +1463,7 @@ void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
     DART_ERROR(
         "[ReferentialSkeleton::unregisterSkeleton] Attempting to unregister a "
         "nullptr Skeleton. This is most likely a bug. Please report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 

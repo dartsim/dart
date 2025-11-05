@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/Node.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
@@ -190,7 +192,7 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(
         typeid(NodeType).name(),
         treeIndex,
         mTreeNodeMaps.size());
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -214,7 +216,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
         typeid(NodeType).name(),
         treeIndex,
         mTreeNodeMaps.size());
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -227,7 +229,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
         typeid(NodeType).name(),
         nodeIndex,
         treeIndex);
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -239,7 +241,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
         nodeIndex,
         treeIndex,
         it->second.size());
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 

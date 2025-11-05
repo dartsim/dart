@@ -32,6 +32,8 @@
 
 #include "dart/dynamics/ShapeFrame.hpp"
 
+#include "dart/common/Macros.hpp"
+
 namespace dart {
 namespace dynamics {
 
@@ -276,7 +278,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   if (shape) {
     mConnectionForShapeVersionChange
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
-            assert(shape == this->mAspectProperties.mShape.get());
+            DART_ASSERT(shape == this->mAspectProperties.mShape.get());
             DART_UNUSED(shape);
             this->incrementVersion();
           });

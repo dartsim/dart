@@ -39,6 +39,7 @@
 #ifndef DART_UNITTESTS_DYNAMICS_HELPERS_HPP_
 #define DART_UNITTESTS_DYNAMICS_HELPERS_HPP_
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/all.hpp"
 #include "dart/math/Geometry.hpp"
 
@@ -264,7 +265,7 @@ SkeletonPtr createTwoLinkRobot(
 SkeletonPtr createNLinkRobot(
     int _n, Vector3d dim, TypeOfDOF type, bool finished = false)
 {
-  assert(_n > 0);
+  DART_ASSERT(_n > 0);
 
   SkeletonPtr robot = Skeleton::create();
   robot->disableSelfCollisionCheck();
@@ -347,7 +348,7 @@ SkeletonPtr createNLinkPendulum(
     const Vector3d& offset,
     bool finished = false)
 {
-  assert(numBodyNodes > 0);
+  DART_ASSERT(numBodyNodes > 0);
 
   SkeletonPtr robot = Skeleton::create();
   robot->disableSelfCollisionCheck();

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 
 namespace dart {
@@ -148,7 +149,7 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
 
   // Orthogonalize translational axes
   double dotProduct = mTransAxis1.dot(mTransAxis2);
-  assert(std::abs(dotProduct) < 1.0 - 1e-6);
+  DART_ASSERT(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)
     mTransAxis2 = (mTransAxis2 - dotProduct * mTransAxis1).normalized();
 
