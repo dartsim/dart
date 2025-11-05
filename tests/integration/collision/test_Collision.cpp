@@ -1747,10 +1747,12 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
   otherGroup->removeAllShapeFrames();
   result.clear();
 
-  // Recreate collision objects using BodyNodes to mimic the Python repro.
-  auto skeleton = Skeleton::create("reuse");
-  auto pair1 = skeleton->createJointAndBodyNodePair<FreeJoint>();
-  auto pair2 = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  // Recreate collision objects using BodyNodes (mirroring the Python repro).
+  auto skeleton1 = Skeleton::create("reuse1");
+  auto skeleton2 = Skeleton::create("reuse2");
+
+  auto pair1 = skeleton1->createJointAndBodyNodePair<FreeJoint>();
+  auto pair2 = skeleton2->createJointAndBodyNodePair<FreeJoint>();
   auto* joint1 = pair1.first;
   auto* body1 = pair1.second;
   auto* joint2 = pair2.first;
@@ -1760,32 +1762,42 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
   body1->createShapeNodeWith<CollisionAspect>(bodySphere);
   body2->createShapeNodeWith<CollisionAspect>(bodySphere);
 
-  joint1->setRelativeTransform(Eigen::Isometry3d::Identity());
-  joint2->setRelativeTransform(
-      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 0.4));
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d pose2 = Eigen::Isometry3d::Identity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 0.4);
+  joint1->setRelativeTransform(pose1);
+  joint2->setRelativeTransform(pose2);
+
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  // Collide within a single group using the new objects.
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  // Cross-group collision should also remain stable.
+  result.clear();
+  group->removeAllShapeFrames();
+  otherGroup->removeAllShapeFrames();
 
   group->addShapeFramesOf(body1);
   otherGroup->addShapeFramesOf(body2);
 
-  // Collide within a single group and across two groups. Either call used to
-  // segfault before clearing cached contact history.
-  EXPECT_TRUE(group->collide(option, &result));
-  EXPECT_GE(result.getNumContacts(), 1u);
-
-  result.clear();
   EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);
 
   // Move bodies apart to ensure history drops them cleanly.
-  joint2->setRelativeTransform(
-      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 3.0));
+  pose2.setIdentity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 3.0);
+  joint2->setRelativeTransform(pose2);
   result.clear();
   EXPECT_FALSE(group->collide(otherGroup.get(), option, &result));
   EXPECT_TRUE(result.getContacts().empty());
 
   // Move back into contact and verify we still collide without crashing.
-  joint2->setRelativeTransform(
-      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 0.25));
+  pose2.setIdentity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 0.25);
+  joint2->setRelativeTransform(pose2);
   result.clear();
   EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);

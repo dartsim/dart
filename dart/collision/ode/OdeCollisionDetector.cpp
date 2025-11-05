@@ -39,6 +39,8 @@
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -410,9 +412,31 @@ void reportContacts(
     return;
   }
 
+  if (!shouldUseContactHistory(b1, b2)) {
+    return;
+  }
+
   const auto pair = MakeNewPair(b1, b2);
   auto& pastContacsVec = FindPairInHist(pair);
   auto results_vec_copy = result.getContacts();
+
+  bool sliding = false;
+  constexpr double slidingThreshold = 1e-3;
+  for (const auto& curr_cont : results_vec_copy) {
+    const auto current_pair
+        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
+    if (current_pair != pair)
+      continue;
+
+    if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
+      sliding = true;
+      break;
+    }
+  }
+
+  if (sliding) {
+    return;
+  }
 
   for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
     if (missing <= 0)
@@ -467,6 +491,73 @@ Contact convertContact(
   }
 
   return contact;
+}
+
+double computeTangentialSpeed(const Contact& contact)
+{
+  const auto* frame1 = contact.collisionObject1
+      ? contact.collisionObject1->getShapeFrame()
+      : nullptr;
+  const auto* frame2 = contact.collisionObject2
+      ? contact.collisionObject2->getShapeFrame()
+      : nullptr;
+
+  const dynamics::BodyNode* bn1
+      = (frame1 && frame1->isShapeNode())
+            ? frame1->asShapeNode()->getBodyNodePtr()
+            : nullptr;
+  const dynamics::BodyNode* bn2
+      = (frame2 && frame2->isShapeNode())
+            ? frame2->asShapeNode()->getBodyNodePtr()
+            : nullptr;
+
+  const Eigen::Vector3d worldPoint = contact.point;
+
+  Eigen::Vector3d v1 = Eigen::Vector3d::Zero();
+  if (bn1) {
+    const Eigen::Vector3d localPoint
+        = bn1->getWorldTransform().inverse() * worldPoint;
+    v1 = bn1->getLinearVelocity(
+        localPoint, dynamics::Frame::World(), dynamics::Frame::World());
+  }
+
+  Eigen::Vector3d v2 = Eigen::Vector3d::Zero();
+  if (bn2) {
+    const Eigen::Vector3d localPoint
+        = bn2->getWorldTransform().inverse() * worldPoint;
+    v2 = bn2->getLinearVelocity(
+        localPoint, dynamics::Frame::World(), dynamics::Frame::World());
+  }
+
+  const Eigen::Vector3d rel = v1 - v2;
+  Eigen::Vector3d normal = contact.normal;
+  const double normalNorm = normal.norm();
+  if (normalNorm > 0.0) {
+    normal /= normalNorm;
+  } else {
+    normal.setZero();
+  }
+  const Eigen::Vector3d tangential = rel - rel.dot(normal) * normal;
+  return tangential.norm();
+}
+
+bool shouldUseContactHistory(
+    const CollisionObject* object1, const CollisionObject* object2)
+{
+  if (!object1 || !object2)
+    return false;
+
+  const auto shape1 = object1->getShape();
+  const auto shape2 = object2->getShape();
+
+  const bool hasCapsule
+      = (shape1
+         && dynamic_cast<const dynamics::CapsuleShape*>(shape1.get()) != nullptr)
+        || (shape2
+            && dynamic_cast<const dynamics::CapsuleShape*>(shape2.get())
+                   != nullptr);
+
+  return hasCapsule;
 }
 
 } // anonymous namespace
