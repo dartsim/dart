@@ -457,16 +457,11 @@ BulletCollisionDetector::claimBulletCollisionShape(
   ShapeInfo& info = iter->second;
 
   if (!inserted && currentVersion == info.mLastKnownVersion) {
-<<<<<<< HEAD
-    const auto& bulletCollShape = info.mShape.lock();
-    DART_ASSERT(bulletCollShape);
-
-    return bulletCollShape;
-=======
     const auto bulletCollShape = info.mShape.lock();
-    if (bulletCollShape)
+    if (bulletCollShape) {
+      DART_ASSERT(bulletCollShape);
       return bulletCollShape;
->>>>>>> e90949abef9 (Add ASan build mode and fix memory leaks)
+    }
   }
 
   auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
