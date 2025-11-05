@@ -145,6 +145,7 @@ TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
   auto world = simulation::World::create();
   const double timeStep = 0.01;
   world->setTimeStep(timeStep);
+  world->setGravity(Eigen::Vector3d::Zero());
 
   auto skeleton = Skeleton::create("free_joint_kinematic");
   auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
@@ -159,19 +160,22 @@ TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
 
   joint->setSpatialVelocity(desiredVel, Frame::World(), Frame::World());
 
+  const Eigen::Vector6d initialVel
+      = body->getSpatialVelocity(Frame::World(), Frame::World());
+  EXPECT_VECTOR_NEAR(desiredVel, initialVel, 1e-8);
+
+  const Eigen::Vector3d initialTranslation
+      = body->getWorldTransform().translation();
+
   const std::size_t numSteps = 5;
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();
 
-  const Eigen::Vector6d actualVel
-      = body->getSpatialVelocity(Frame::World(), Frame::World());
-  EXPECT_TRUE(equals(desiredVel, actualVel));
-
   const Eigen::Vector3d expectedTranslation
       = desiredVel.tail<3>() * timeStep * static_cast<double>(numSteps);
   const Eigen::Vector3d actualTranslation
-      = body->getWorldTransform().translation();
-  EXPECT_TRUE(equals(expectedTranslation, actualTranslation));
+      = body->getWorldTransform().translation() - initialTranslation;
+  EXPECT_VECTOR_NEAR(expectedTranslation, actualTranslation, 1e-6);
 }
 
 //==============================================================================
