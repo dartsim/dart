@@ -32,7 +32,6 @@
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
-#include "dart/common/Logging.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
@@ -209,11 +208,6 @@ bool OdeCollisionDetector::collide(
   data.contactGeoms = contactCollisions;
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
-
-  DART_LOG_DEBUG(
-      "OdeCollisionDetector::collide() result ptr = {} numContacts = {}",
-      static_cast<const void*>(result),
-      result ? result->getNumContacts() : 0);
 
   if (result) {
     for (auto& past_contact : pastContacts) {
