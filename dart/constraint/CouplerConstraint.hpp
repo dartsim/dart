@@ -34,7 +34,9 @@
 #define DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
+
 #include <dart/dynamics/MimicDofProperties.hpp>
+
 #include <vector>
 
 namespace dart {

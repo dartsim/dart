@@ -32,40 +32,45 @@
 
 #ifdef DART_COUPLER_HEADLESS_DEFAULT
 
-#include <cstdlib>
-#include <iostream>
+  #include <iostream>
+
+  #include <cstdlib>
 
 int main(int /*argc*/, char* /*argv*/[])
 {
   std::cout << "Coupler constraint GUI example built in headless mode; "
-               "skipping viewer startup." << std::endl;
+               "skipping viewer startup."
+            << std::endl;
   return EXIT_SUCCESS;
 }
 
 #else
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/gui/osg/RealTimeWorldNode.hpp>
-#include <dart/gui/osg/Viewer.hpp>
-#include <dart/math/Constants.hpp>
-#include <dart/simulation/World.hpp>
+  #include <dart/gui/osg/RealTimeWorldNode.hpp>
+  #include <dart/gui/osg/Viewer.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+  #include <dart/simulation/World.hpp>
 
-#include <osgGA/GUIEventAdapter>
-#include <osgGA/GUIEventHandler>
+  #include <dart/dynamics/BodyNode.hpp>
+  #include <dart/dynamics/BoxShape.hpp>
+  #include <dart/dynamics/Inertia.hpp>
+  #include <dart/dynamics/RevoluteJoint.hpp>
+  #include <dart/dynamics/ShapeNode.hpp>
+  #include <dart/dynamics/Skeleton.hpp>
 
-#include <cassert>
-#include <cstdlib>
-#include <iostream>
-#include <memory>
-#include <utility>
+  #include <dart/math/Constants.hpp>
+
+  #include <Eigen/Dense>
+  #include <Eigen/Geometry>
+  #include <osgGA/GUIEventAdapter>
+  #include <osgGA/GUIEventHandler>
+
+  #include <iostream>
+  #include <memory>
+  #include <utility>
+
+  #include <cassert>
+  #include <cstdlib>
 
 using dart::dynamics::BodyNode;
 using dart::dynamics::BodyNodePtr;
@@ -76,8 +81,7 @@ using dart::dynamics::SkeletonPtr;
 using dart::simulation::World;
 using dart::simulation::WorldPtr;
 
-namespace
-{
+namespace {
 
 SkeletonPtr createCoupledPendulum()
 {
@@ -122,7 +126,8 @@ SkeletonPtr createCoupledPendulum()
   followerJointProps.mName = "coupled_joint";
   followerJointProps.mAxis = Eigen::Vector3d::UnitZ();
   followerJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(0.3, 0.0, 0.0);
-  followerJointProps.mT_ChildBodyToJoint = Eigen::Translation3d(-0.15, 0.0, 0.0);
+  followerJointProps.mT_ChildBodyToJoint
+      = Eigen::Translation3d(-0.15, 0.0, 0.0);
 
   BodyNode::Properties followerBodyProps;
   followerBodyProps.mName = "coupled_body";
@@ -150,8 +155,7 @@ SkeletonPtr createCoupledPendulum()
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(coupledShape);
   coupledShapeNode->setRelativeTranslation(Eigen::Vector3d(0.15, 0.0, 0.0));
-  coupledShapeNode->getVisualAspect()->setColor(
-      Eigen::Vector3d(0.9, 0.4, 0.3));
+  coupledShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.9, 0.4, 0.3));
 
   // Provide a small initial offset so the constraint is active immediately
   referenceJoint->setPosition(0, 15.0 * dart::math::constantsd::pi() / 180.0);
@@ -252,9 +256,10 @@ public:
     switch (ea.getKey()) {
       case 'c':
         mController->toggleCoupler();
-        std::cout << (mController->isCouplerEnabled() ? "Coupler enabled"
-                                                       : "Coupler disabled")
-                  << std::endl;
+        std::cout
+            << (mController->isCouplerEnabled() ? "Coupler enabled"
+                                                : "Coupler disabled")
+            << std::endl;
         return true;
       case 'p':
         mController->triggerFollowerImpulse();
@@ -329,7 +334,7 @@ int main(int /*argc*/, char* /*argv*/[])
     return runResult;
   }
 
-return 0;
+  return 0;
 }
 
 #endif // DART_COUPLER_HEADLESS_DEFAULT
