@@ -131,8 +131,6 @@ void eraseHistoryForObject(const CollisionObject* object)
       pastContacts.end());
 }
 
-} // namespace
-
 struct OdeCollisionCallbackData
 {
   dContactGeom* contactGeoms;
