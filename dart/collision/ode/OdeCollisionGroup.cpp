@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/common/Macros.hpp"
+
+#include <memory>
 
 namespace dart {
 namespace collision {
@@ -101,8 +101,8 @@ void OdeCollisionGroup::addCollisionObjectsToEngine(
 //==============================================================================
 void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
-  if (auto detector
-      = std::static_pointer_cast<OdeCollisionDetector>(getCollisionDetector())) {
+  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
+          getCollisionDetector())) {
     detector->clearContactHistoryFor(object);
   }
 
@@ -116,8 +116,8 @@ void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 //==============================================================================
 void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  if (auto detector
-      = std::static_pointer_cast<OdeCollisionDetector>(getCollisionDetector())) {
+  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
+          getCollisionDetector())) {
     detector->clearContactHistory();
   }
 
