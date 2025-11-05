@@ -1749,8 +1749,12 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
 
   // Recreate collision objects using BodyNodes to mimic the Python repro.
   auto skeleton = Skeleton::create("reuse");
-  auto [joint1, body1] = skeleton->createFreeJointAndBodyNodePair(nullptr);
-  auto [joint2, body2] = skeleton->createFreeJointAndBodyNodePair(nullptr);
+  auto pair1 = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto pair2 = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint1 = pair1.first;
+  auto* body1 = pair1.second;
+  auto* joint2 = pair2.first;
+  auto* body2 = pair2.second;
 
   auto bodySphere = std::make_shared<SphereShape>(1.0);
   body1->createShapeNodeWith<CollisionAspect>(bodySphere);
