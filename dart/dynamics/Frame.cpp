@@ -547,9 +547,9 @@ Frame::Frame(ConstructAbstractTag)
   : Entity(Entity::ConstructAbstract), mAmWorld(false), mAmShapeFrame(false)
 {
   DART_ERROR(
-      "[Frame::constructor] You are calling a constructor for the Frame class "
-      "which is only meant to be used by pure abstract classes. If you are "
-      "seeing this, then there is a bug!");
+      "You are calling a constructor for the Frame class which is only meant "
+      "to be used by pure abstract classes. If you are seeing this, then there "
+      "is a bug!");
   DART_ASSERT(false);
 }
 
@@ -566,9 +566,8 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       // special/unique
       {
         DART_WARN(
-            "[Frame::changeParentFrame] Attempting to create a circular "
-            "kinematic dependency by making Frame '{}' a child of Frame '{}'. "
-            "This will not be allowed.",
+            "Attempting to create a circular kinematic dependency by making "
+            "Frame '{}' a child of Frame '{}'. This will not be allowed.",
             getName(),
             _newParentFrame->getName());
         return;
@@ -654,8 +653,8 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 const std::string& WorldFrame::setName(const std::string& name)
 {
   DART_ERROR(
-      "[WorldFrame::setName] attempting to change name of World frame to [{}], "
-      "but this is not allowed!",
+      "attempting to change name of World frame to [{}], but this is not "
+      "allowed!",
       name);
   static const std::string worldName = "World";
   return worldName;

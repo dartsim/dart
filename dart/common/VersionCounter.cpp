@@ -71,8 +71,8 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
   do {
     if (next == this) {
       DART_ERROR(
-          "[VersionCounter::setVersionDependentObject] Attempting to create a "
-          "circular version dependency with the following loop:");
+          "Attempting to create a circular version dependency with the "
+          "following loop:");
       next = dependent;
       while (next != this) {
         std::cerr << " -- " << next << "\n";

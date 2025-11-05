@@ -84,8 +84,8 @@ void Inertia::setParameter(Param _param, double _value)
     mCenterOfMass[_param - 4] = _value;
   } else {
     DART_WARN(
-        "[Inertia::setParameter] Attempting to set Param #{}, but inertial "
-        "parameters only go up to {}. Nothing will be set.",
+        "Attempting to set Param #{}, but inertial parameters only go up to "
+        "{}. Nothing will be set.",
         static_cast<int>(_param),
         static_cast<int>(I_YZ));
     return;
@@ -105,8 +105,8 @@ double Inertia::getParameter(Param _param) const
     return mMoment[_param - 4];
 
   DART_WARN(
-      "[Inertia::getParameter] Requested Param #{}, but inertial parameters "
-      "only go up to {}. Returning 0",
+      "Requested Param #{}, but inertial parameters only go up to {}. "
+      "Returning 0",
       static_cast<int>(_param),
       static_cast<int>(I_YZ));
 
@@ -144,8 +144,8 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 {
   DART_WARN_IF(
       !verifyMoment(_moment, true),
-      "[Inertia::setMoment] Passing in an invalid moment of inertia matrix. "
-      "Results might not by physically accurate or meaningful.");
+      "Passing in an invalid moment of inertia matrix. Results might not by "
+      "physically accurate or meaningful.");
 
   for (std::size_t i = 0; i < 3; ++i)
     mMoment[i] = _moment(i, i);
@@ -202,8 +202,8 @@ void Inertia::setSpatialTensor(
 {
   DART_WARN_IF(
       !verifySpatialTensor(_spatial, _printWarnings),
-      "[Inertia::setSpatialTensor] Passing in an invalid spatial inertia "
-      "tensor. Results might not be physically accurate or meaningful.");
+      "Passing in an invalid spatial inertia tensor. Results might not be "
+      "physically accurate or meaningful.");
 
   mSpatialTensor = _spatial;
   computeParameters();
@@ -225,8 +225,8 @@ bool Inertia::verifyMoment(
       valid = false;
       DART_WARN_IF(
           _printWarnings,
-          "[Inertia::verifyMoment] Invalid entry for ({},{}): {}. Value "
-          "should be positive and greater than zero.",
+          "Invalid entry for ({},{}): {}. Value should be positive and greater "
+          "than zero.",
           i,
           i,
           _moment(i, i));
@@ -239,8 +239,8 @@ bool Inertia::verifyMoment(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifyMoment] Values for entries ({},{}) and ({},{}) "
-            "differ by {} which is more than the permitted tolerance ({})",
+            "Values for entries ({},{}) and ({},{}) differ by {} which is more "
+            "than the permitted tolerance ({})",
             i,
             j,
             j,
@@ -266,9 +266,8 @@ bool Inertia::verifySpatialTensor(
       if (_printWarnings) {
         std::string component = i < 3 ? "moment of inertia diagonal" : "mass";
         DART_WARN(
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
-            "Value should be positive and greater than zero because it "
-            "corresponds to {}.",
+            "Invalid entry for ({},{}): {}. Value should be positive and "
+            "greater than zero because it corresponds to {}.",
             i,
             i,
             _spatial(i, i),
@@ -283,9 +282,8 @@ bool Inertia::verifySpatialTensor(
       if (std::abs(_spatial(i, j) - _spatial(j, i)) > _tolerance) {
         valid = false;
         DART_WARN(
-            "[Inertia::verifySpatialTensor] Values for entries ({},{}) and "
-            "({},{}) differ by {} which is more than the permitted tolerance "
-            "({})",
+            "Values for entries ({},{}) and ({},{}) differ by {} which is more "
+            "than the permitted tolerance ({})",
             i,
             j,
             j,
@@ -303,8 +301,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
-            "Value should be exactly zero.",
+            "Invalid entry for ({},{}): {}. Value should be exactly zero.",
             i,
             i,
             _spatial(i, j));
@@ -314,8 +311,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
-            "Value should be exactly zero.",
+            "Invalid entry for ({},{}): {}. Value should be exactly zero.",
             j,
             i,
             _spatial(j, i));
@@ -332,8 +328,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
-            "Value should be exactly zero.",
+            "Invalid entry for ({},{}): {}. Value should be exactly zero.",
             i1,
             i2,
             _spatial(i1, i2));
@@ -355,10 +350,9 @@ bool Inertia::verifySpatialTensor(
           valid = false;
           DART_WARN_IF(
               _printWarnings,
-              "[Inertia::verifySpatialTensor] Mismatch between entries "
-              "({},{}) and ({},{}). They should sum to zero, but instead "
-              "they sum to {} which is outside of the permitted tolerance "
-              "({}).",
+              "Mismatch between entries ({},{}) and ({},{}). They should sum "
+              "to zero, but instead they sum to {} which is outside of the "
+              "permitted tolerance ({}).",
               i1,
               j1,
               i2,
@@ -386,10 +380,9 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Values for  entries ({},{}) and "
-            "({},{}) differ by {} which is more than the permitted tolerance "
-            "({}). The bottom-left block should be the transpose of the "
-            "top-right block.",
+            "Values for  entries ({},{}) and ({},{}) differ by {} which is "
+            "more than the permitted tolerance ({}). The bottom-left block "
+            "should be the transpose of the top-right block.",
             i1,
             j1,
             i2,

@@ -103,8 +103,7 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
   } while (hasName(newName));
 
   DART_INFO(
-      "[NameManager::issueNewName] ({}) The name [{}] is a duplicate, so it "
-      "has been renamed to [{}]",
+      "({}) The name [{}] is a duplicate, so it has been renamed to [{}]",
       mManagerName,
       _name,
       newName);
@@ -129,16 +128,12 @@ template <class T>
 bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 {
   if (_name.empty()) {
-    DART_WARN(
-        "[NameManager::addName] ({}) Empty name is not allowed!", mManagerName);
+    DART_WARN("({}) Empty name is not allowed!", mManagerName);
     return false;
   }
 
   if (hasName(_name)) {
-    DART_WARN(
-        "[NameManager::addName] ({}) The name [{}] already exists!",
-        mManagerName,
-        _name);
+    DART_WARN("({}) The name [{}] already exists!", mManagerName, _name);
     return false;
   }
 

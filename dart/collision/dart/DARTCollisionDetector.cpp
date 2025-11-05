@@ -110,9 +110,8 @@ static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
     DART_ERROR(
-        "[DARTCollisionDetector::collide] Attempting to check collision for a "
-        "collision group that is created from a different collision detector "
-        "instance.");
+        "Attempting to check collision for a collision group that is created "
+        "from a different collision detector instance.");
 
     return false;
   }
@@ -234,8 +233,8 @@ double DARTCollisionDetector::distance(
     DistanceResult* /*result*/)
 {
   DART_WARN(
-      "[DARTCollisionDetector::distance] This collision detector does not "
-      "support (signed) distance queries. Returning 0.0.");
+      "This collision detector does not support (signed) distance queries. "
+      "Returning 0.0.");
 
   return 0.0;
 }
@@ -248,8 +247,8 @@ double DARTCollisionDetector::distance(
     DistanceResult* /*result*/)
 {
   DART_WARN(
-      "[DARTCollisionDetector::distance] This collision detector does not "
-      "support (signed) distance queries. Returning 0.0.");
+      "This collision detector does not support (signed) distance queries. "
+      "Returning 0.0.");
 
   return 0.0;
 }

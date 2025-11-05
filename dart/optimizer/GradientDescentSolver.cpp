@@ -113,9 +113,7 @@ bool GradientDescentSolver::solve()
 
   std::shared_ptr<Problem> problem = mProperties.mProblem;
   if (nullptr == problem) {
-    DART_WARN(
-        "[GradientDescentSolver::solve] Attempting to solve a nullptr problem! "
-        "We will return false.");
+    DART_WARN("Attempting to solve a nullptr problem! We will return false.");
     return false;
   }
 
@@ -450,8 +448,8 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 
   if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
     DART_ERROR(
-        "[GradientDescentSolver::clampToBoundary] Mismatch between "
-        "configuration size [{}] and the dimension of the Problem [{}]",
+        "Mismatch between configuration size [{}] and the dimension of the "
+        "Problem [{}]",
         _x.size(),
         mProperties.mProblem->getDimension());
     DART_ASSERT(false);

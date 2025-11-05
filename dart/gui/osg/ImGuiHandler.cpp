@@ -304,8 +304,8 @@ void ImGuiHandler::addWidget(
   if (hasWidget(widget)) {
     DART_WARN(
         "{}",
-        "[ImGuiHandler::addWidget] Attempting to add existing widget to the "
-        "viewer. Ignoring this action.");
+        "Attempting to add existing widget to the viewer. Ignoring this "
+        "action.");
     return;
   }
 
@@ -319,8 +319,8 @@ void ImGuiHandler::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
   if (!hasWidget(widget)) {
     DART_WARN(
         "{}",
-        "[ImGuiHandler::removeWidget] Attempting to remove not existing "
-        "widget from the viewer. Ignoring this action.\n");
+        "Attempting to remove not existing widget from the viewer. Ignoring "
+        "this action.\n");
     return;
   }
 

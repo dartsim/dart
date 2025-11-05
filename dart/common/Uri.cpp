@@ -160,8 +160,7 @@ auto UriComponent::get_value_or(reference_const_type _default) const
 //==============================================================================
 Uri::Uri(const std::string& _input)
 {
-  DART_WARN_IF(
-      !fromStringOrPath(_input), "[Uri::Uri] Failed parsing URI '{}'.", _input);
+  DART_WARN_IF(!fromStringOrPath(_input), "Failed parsing URI '{}'.", _input);
 
   // We don't need to clear since fromStringOrPath() does not set any component
   // on failure.
@@ -172,7 +171,7 @@ Uri::Uri(const char* _input)
 {
   DART_WARN_IF(
       !fromStringOrPath(std::string(_input)),
-      "[Uri::Uri] Failed parsing URI '{}'.",
+      "Failed parsing URI '{}'.",
       _input);
 
   // We don't need to clear since fromStringOrPath() does not set any component
@@ -291,7 +290,7 @@ bool Uri::fromRelativeUri(
 {
   Uri baseUri;
   if (!baseUri.fromString(_base)) {
-    DART_WARN("[Uri::fromRelativeUri] Failed parsing base URI '{}'.", _base);
+    DART_WARN("Failed parsing base URI '{}'.", _base);
     clear();
     return false;
   }
@@ -312,8 +311,7 @@ bool Uri::fromRelativeUri(
 {
   Uri relativeUri;
   if (!relativeUri.fromString(_relative)) {
-    DART_WARN(
-        "[Uri::fromRelativeUri] Failed parsing relative URI '{}'.", _relative);
+    DART_WARN("Failed parsing relative URI '{}'.", _relative);
     clear();
     return false;
   }
@@ -402,10 +400,7 @@ std::string Uri::toString() const
 Uri Uri::createFromString(const std::string& _input)
 {
   Uri uri;
-  DART_WARN_IF(
-      !uri.fromString(_input),
-      "[Uri::createFromString] Failed parsing URI '{}'.",
-      _input);
+  DART_WARN_IF(!uri.fromString(_input), "Failed parsing URI '{}'.", _input);
 
   // We don't need to clear uri since fromString() does not set any component
   // on failure.
@@ -418,9 +413,7 @@ Uri Uri::createFromPath(const std::string& _path)
 {
   Uri fileUri;
   DART_WARN_IF(
-      !fileUri.fromPath(_path),
-      "[Uri::createFromPath] Failed parsing local path '{}'.",
-      _path);
+      !fileUri.fromPath(_path), "Failed parsing local path '{}'.", _path);
 
   // We don't need to clear uri since fromString() does not set any component
   // on failure.
@@ -433,9 +426,7 @@ Uri Uri::createFromStringOrPath(const std::string& _input)
 {
   Uri uri;
   DART_WARN_IF(
-      !uri.fromStringOrPath(_input),
-      "[Uri::createFromString] Failed parsing URI '{}'.",
-      _input);
+      !uri.fromStringOrPath(_input), "Failed parsing URI '{}'.", _input);
 
   // We don't need to clear uri since fromString() does not set any component
   // on failure.
@@ -450,8 +441,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_base, _relative, _strict),
-      "[Uri::createFromRelativeUri] Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relative,
       _base);
 
@@ -468,8 +458,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_base, _relative, _strict),
-      "[Uri::createFromRelativeUri] Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relative,
       _base.toString());
 
@@ -486,8 +475,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict),
-      "[Uri::createFromRelativeUri] Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relativeUri.toString(),
       _baseUri.toString());
 

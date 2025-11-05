@@ -153,9 +153,8 @@ static bool checkGroupValidity(
 {
   if (cd != group->getCollisionDetector().get()) {
     DART_ERROR(
-        "[BulletCollisionDetector::collide] Attempting to check collision for "
-        "a collision group that is created from a different collision detector "
-        "instance.");
+        "Attempting to check collision for a collision group that is created "
+        "from a different collision detector instance.");
 
     return false;
   }
@@ -308,8 +307,8 @@ double BulletCollisionDetector::distance(
   static bool warned = false;
   if (!warned) {
     DART_WARN(
-        "[BulletCollisionDetector::distance] This collision detector does not "
-        "support (signed) distance queries. Returning 0.0.");
+        "This collision detector does not support (signed) distance queries. "
+        "Returning 0.0.");
     warned = true;
   }
 
@@ -326,8 +325,8 @@ double BulletCollisionDetector::distance(
   static bool warned = false;
   if (!warned) {
     DART_WARN(
-        "[BulletCollisionDetector::distance] This collision detector does not "
-        "support (signed) distance queries. Returning.");
+        "This collision detector does not support (signed) distance queries. "
+        "Returning.");
     warned = true;
   }
 
@@ -581,9 +580,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     DART_ASSERT(dynamic_cast<const HeightmapShaped*>(shape.get()));
 
     DART_ERROR(
-        "[BulletCollisionDetector::createBulletCollisionShape] Bullet does not "
-        "support double height fields (shape type [{}]). Creating a sphere "
-        "with 0.1 radius instead.",
+        "Bullet does not support double height fields (shape type [{}]). "
+        "Creating a sphere with 0.1 radius instead.",
         shape->getType());
 
     return std::make_unique<BulletCollisionShape>(
@@ -594,9 +592,8 @@ BulletCollisionDetector::createBulletCollisionShape(
     // return createBulletCollisionShapeFromHeightmap(heightMap);
   } else {
     DART_ERROR(
-        "[BulletCollisionDetector::createBulletCollisionShape] Attempting to "
-        "create an unsupported shape type [{}] Creating a sphere with 0.1 "
-        "radius instead.",
+        "Attempting to create an unsupported shape type [{}] Creating a sphere "
+        "with 0.1 radius instead.",
         shape->getType());
 
     return std::make_unique<BulletCollisionShape>(

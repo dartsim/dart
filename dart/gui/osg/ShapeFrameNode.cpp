@@ -101,8 +101,7 @@ dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(bool checkUtilization)
       !mUtilized && checkUtilization,
       "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
       "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
-      "implies that it's possible that the ShapeFrame already got "
-      "deleted.");
+      "implies that it's possible that the ShapeFrame already got deleted.");
 
   return mShapeFrame;
 }
@@ -115,8 +114,7 @@ const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame(
       !mUtilized && checkUtilization,
       "[ShapeFrameNode] Attempting to access ShapeFrame of unused "
       "ShapeFrameNode. This can be dangerous because unused ShapeFrameNode "
-      "implies that it's possible that the ShapeFrame already got "
-      "deleted.");
+      "implies that it's possible that the ShapeFrame already got deleted.");
 
   return mShapeFrame;
 }
@@ -190,9 +188,9 @@ static void warnAboutUnsuccessfulCast(
     const std::string& shapeType, const std::string& entityName)
 {
   DART_WARN(
-      "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '{}' claimed "
-      "to be a '{}' but it failed to be dynamically cast to that type. It will "
-      "not be added to the OSG tree, and therefore will not be rendered",
+      "A Shape in '{}' claimed to be a '{}' but it failed to be dynamically "
+      "cast to that type. It will not be added to the OSG tree, and therefore "
+      "will not be rendered",
       entityName,
       shapeType);
 }

@@ -206,10 +206,7 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
   try {
     openXMLFile(vskDocument, fileUri, options.retrieverOrNullptr);
   } catch (std::exception const& e) {
-    DART_WARN(
-        "[VskParser::readSkeleton] Failed to load file '{}': {}",
-        fileUri.toString(),
-        e.what());
+    DART_WARN("Failed to load file '{}': {}", fileUri.toString(), e.what());
     return nullptr;
   }
 
@@ -218,8 +215,8 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
       = vskDocument.FirstChildElement("KinematicModel");
   if (!kinematicModelEle) {
     DART_WARN(
-        "[VskParser::readSkeleton] This file '{}' doesn't include "
-        "'KinematicModel' tag. Returning null pointer instead.",
+        "This file '{}' doesn't include 'KinematicModel' tag. Returning null "
+        "pointer instead.",
         fileUri.toString());
     return nullptr;
   }
@@ -242,13 +239,13 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
 
     DART_WARN_IF(
         !result,
-        "[VskParser::readSkeleton] Failed to parse a <Segment> element from "
-        "file '{}'. Returning null pointer.",
+        "Failed to parse a <Segment> element from file '{}'. Returning null "
+        "pointer.",
         fileUri.getPath());
   } else {
     DART_WARN(
-        "[VskParser::readSkeleton] Failed to find <Skeleton> element under "
-        "<KinematicModel> element from file '{}'. Returning null pointer.",
+        "Failed to find <Skeleton> element under <KinematicModel> element from "
+        "file '{}'. Returning null pointer.",
         fileUri.getPath());
     return nullptr;
   }
@@ -260,8 +257,7 @@ dynamics::SkeletonPtr VskParser::readSkeleton(
 
     DART_WARN_IF(
         !result,
-        "[VskParser::readSkeleton] Failed to parse a marker from file '{}'. "
-        "Ignoring the marker.",
+        "Failed to parse a marker from file '{}'. Ignoring the marker.",
         fileUri.toString());
   }
   // TODO: Each Marker is belongs to a MarkerSet but DART doesn't store the
@@ -427,7 +423,7 @@ bool readSegment(
           jointType, jointEle, jointProperties, tfFromParent, vskData);
 
       if (!res) {
-        DART_WARN("[ParserVsk::readSegment] Failed to parse joint type.");
+        DART_WARN("Failed to parse joint type.");
         return false;
       }
 
@@ -513,8 +509,7 @@ bool readShape(
     shape.reset(new dynamics::EllipsoidShape(size));
   } else {
     DART_WARN(
-        "[VskParser::readShape] Attempting to add a shape with type '{}', "
-        "which is unsupported type.",
+        "Attempting to add a shape with type '{}', which is unsupported type.",
         type);
     return false;
   }
@@ -553,7 +548,7 @@ bool readJoint(
   } else if (jointType == "JointDummy") {
     return readJointDummy(jointEle, jointProperties, tfFromParent, vskData);
   } else {
-    DART_WARN("[ParserVsk::readSegment] Failed to parse joint type.");
+    DART_WARN("Failed to parse joint type.");
     return false;
   }
 }
@@ -745,9 +740,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
                 jointProperties),
             bodyNodeProperties);
   } else {
-    DART_WARN(
-        "[ParserVsk::readSegment] Attempting to parse unsupported joint "
-        "type.");
+    DART_WARN("Attempting to parse unsupported joint type.");
 
     return std::pair<dynamics::WeldJoint*, dynamics::BodyNode*>(
         nullptr, nullptr);
@@ -820,8 +813,8 @@ bool readMarker(
   dynamics::BodyNode* bodyNode = skel->getBodyNode(segment);
   if (!bodyNode) {
     DART_WARN(
-        "[VskParser::readMarker] Failed to create a Marker [{}: couldn't find "
-        "a BodyNode [{}] in aSkeleton [{}].",
+        "Failed to create a Marker [{}: couldn't find a BodyNode [{}] in "
+        "aSkeleton [{}].",
         name,
         segment,
         skel->getName());
@@ -941,10 +934,10 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
     if (totalMass <= 0.0 || totalMoi.diagonal().norm() <= 0.0) {
       DART_WARN(
-          "[VskParser::generateShapes] A BodyNode '{}' of Skelelton '{}' has "
-          "zero mass or zero inertia. Setting unit mass and unit inertia to "
-          "prevent segfaults during dynamic simulation. Set proper mass and "
-          "inertia properties for meaningful dynamic simulation.",
+          "A BodyNode '{}' of Skelelton '{}' has zero mass or zero inertia. "
+          "Setting unit mass and unit inertia to prevent segfaults during "
+          "dynamic simulation. Set proper mass and inertia properties for "
+          "meaningful dynamic simulation.",
           bodyNode->getName(),
           bodyNode->getSkeleton()->getName());
 

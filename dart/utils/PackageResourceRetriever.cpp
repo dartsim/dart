@@ -138,11 +138,9 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
   else {
     DART_WARN(
         "{}{}{}",
-        "[PackageResourceResolver::getPackagePaths] Unable to resolve"
-        "path to package '",
+        "Unable to resolvepath to package '",
         _packageName,
-        "'. Did you call"
-        " addPackageDirectory(~) for this package name?\n");
+        "'. Did you call addPackageDirectory(~) for this package name?\n");
     return empty_placeholder;
   }
 }
@@ -158,10 +156,7 @@ bool PackageResourceRetriever::resolvePackageUri(
 
   if (!_uri.mAuthority) {
     DART_WARN(
-        "{}{}'.",
-        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-        " package name from URI '",
-        _uri.toString());
+        "{}{}'.", "Failed extracting package name from URI '", _uri.toString());
     return false;
   }
   _packageName = *_uri.mAuthority;
@@ -169,8 +164,7 @@ bool PackageResourceRetriever::resolvePackageUri(
   if (!_uri.mPath) {
     DART_WARN(
         "{}{}'.",
-        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-        " relative path from URI '",
+        "Failed extracting relative path from URI '",
         _uri.toString());
     return false;
   }

@@ -220,8 +220,8 @@ bool checkDofMapValidity(
 
     if (!found) {
       DART_ERROR(
-          "[IkFast::configure] Failed to configure. An element of the given {} "
-          "'{}' is not a dependent dofs of Node '{}'.",
+          "Failed to configure. An element of the given {} '{}' is not a "
+          "dependent dofs of Node '{}'.",
           dofMapName,
           dof,
           ik->getNode()->getName());
@@ -257,9 +257,8 @@ auto IkFast::getDofs() const -> const std::vector<std::size_t>&
 
     if (!mConfigured) {
       DART_WARN(
-          "[IkFast::getDofs] This analytical IK was not able to configure "
-          "properly, so it will not be able to compute solutions. Returning an "
-          "empty list of dofs.");
+          "This analytical IK was not able to configure properly, so it will "
+          "not be able to compute solutions. Returning an empty list of dofs.");
       DART_ASSERT(mDofs.empty());
     }
   }
@@ -358,8 +357,8 @@ void IkFast::configure() const
 
   if (static_cast<std::size_t>(ikFastNumNonFreeJoints) != mDofs.size()) {
     DART_ERROR(
-        "[IkFast::configure] Failed to configure. Received a joint map of size "
-        "'{}' but the actual dofs IkFast is '{}'.",
+        "Failed to configure. Received a joint map of size '{}' but the actual "
+        "dofs IkFast is '{}'.",
         mDofs.size(),
         ikFastNumNonFreeJoints);
     return;
@@ -367,8 +366,8 @@ void IkFast::configure() const
 
   if (static_cast<std::size_t>(ikFastNumFreeJoints) != mFreeDofs.size()) {
     DART_ERROR(
-        "[IkFast::configure] Failed to configure. Received a free joint map of "
-        "size '{}' but the actual dofs IkFast is '{}'.",
+        "Failed to configure. Received a free joint map of size '{}' but the "
+        "actual dofs IkFast is '{}'.",
         mDofs.size(),
         ikFastNumFreeJoints);
     return;
@@ -396,9 +395,9 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 
     if (!mConfigured) {
       DART_WARN(
-          "[IkFast::computeSolutions] This analytical IK was not able to "
-          "configure properly, so it will not be able to compute solutions. "
-          "Returning an empty list of solutions.");
+          "This analytical IK was not able to configure properly, so it will "
+          "not be able to compute solutions. Returning an empty list of "
+          "solutions.");
       return mSolutions;
     }
   }
@@ -438,9 +437,8 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
       = getNumJoints2() - getNumFreeParameters2();
   if (static_cast<std::size_t>(parameters.size()) != ikFastNumNonFreeJoints) {
     DART_WARN(
-        "[IkFast::computeFk] The dimension of given joint positions doesn't "
-        "agree with the number of joints of this IkFast solver. Returning "
-        "identity.");
+        "The dimension of given joint positions doesn't agree with the number "
+        "of joints of this IkFast solver. Returning identity.");
     return Eigen::Isometry3d::Identity();
   }
 

@@ -390,8 +390,7 @@ Inertial Body::computeInertialFromGeoms(
   // TODO(JS): Handle this error properly instead of seg-faulting
   if (geoms.empty()) {
     DART_ERROR(
-        "[MjcfParser] Faled to infer <inertial> because of no <geom> "
-        "found.");
+        "[MjcfParser] Faled to infer <inertial> because of no <geom> found.");
     DART_ASSERT(false);
     return inertial;
   }

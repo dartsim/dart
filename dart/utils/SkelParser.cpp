@@ -1517,8 +1517,7 @@ void readJoint(
   joint.properties->mT_ChildBodyToJoint = childToJoint;
   DART_ERROR_IF(
       !math::verifyTransform(joint.properties->mT_ChildBodyToJoint),
-      "[readJoint] Invalid child to Joint transform for Joint named "
-      "[{}]:\\n{}",
+      "[readJoint] Invalid child to Joint transform for Joint named [{}]:\\n{}",
       name,
       joint.properties->mT_ChildBodyToJoint.matrix());
 
@@ -2046,8 +2045,7 @@ JointPropPtr readScrewJoint(
     }
   } else {
     DART_ERROR(
-        "[readScrewJoint] Screw Joint named [{}] is missing axis "
-        "information!",
+        "[readScrewJoint] Screw Joint named [{}] is missing axis information!",
         _name);
     DART_ASSERT(0);
   }

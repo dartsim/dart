@@ -49,7 +49,7 @@
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
     DART_ERROR(                                                                \
-        "[GenericJoint::{}] The size of {} [{}] does not match the number of " \
+        "The size of {} [{}] does not match the number of "                    \
         "DOFs [{}] for Joint named [{}].",                                     \
         #func,                                                                 \
         #arg,                                                                  \
@@ -62,7 +62,7 @@
 #define GenericJoint_REPORT_OUT_OF_RANGE(func, index)                          \
   {                                                                            \
     DART_ERROR(                                                                \
-        "[GenericJoint::{}] The index [{}] is out of range for Joint named "   \
+        "The index [{}] is out of range for Joint named "                      \
         "[{}] which has {} DOFs.",                                             \
         #func,                                                                 \
         (index),                                                               \
@@ -74,7 +74,7 @@
 #define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func)                         \
   {                                                                            \
     DART_ERROR(                                                                \
-        "[GenericJoint::{}] Unsupported actuator type ({}) for Joint [{}].",   \
+        "Unsupported actuator type ({}) for Joint [{}].",                      \
         #func,                                                                 \
         static_cast<int>(Joint::mAspectProperties.mActuatorType),              \
         this->getName());                                                      \
@@ -248,9 +248,8 @@ const std::string& GenericJoint<ConfigSpaceT>::setDofName(
 {
   if (NumDofs <= index) {
     DART_ERROR(
-        "[GenericJoint::setDofName] Attempting to set the name of DOF index "
-        "{}, which is out of bounds for the Joint [{}]. We will set the name "
-        "of DOF index 0 instead.",
+        "Attempting to set the name of DOF index {}, which is out of bounds "
+        "for the Joint [{}]. We will set the name of DOF index 0 instead.",
         index,
         this->getName());
     DART_ASSERT(false);
@@ -304,8 +303,8 @@ const std::string& GenericJoint<ConfigSpaceT>::getDofName(size_t index) const
 {
   if (NumDofs <= index) {
     DART_ERROR(
-        "[GenericJoint::getDofName] Requested name of DOF index [{}] in Joint "
-        "[{}], but that is out of bounds (max {}). Returning name of DOF 0.",
+        "Requested name of DOF index [{}] in Joint [{}], but that is out of "
+        "bounds (max {}). Returning name of DOF 0.",
         index,
         this->getName(),
         NumDofs - 1);
@@ -357,8 +356,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     case Joint::PASSIVE:
       DART_WARN_IF(
           0.0 != command,
-          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-          "command for a PASSIVE joint [{}].",
+          "Attempting to set a non-zero ({}) command for a PASSIVE joint [{}].",
           command,
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
@@ -372,8 +370,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     case Joint::MIMIC:
       DART_WARN_IF(
           0.0 != command,
-          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-          "command for a MIMIC joint [{}].",
+          "Attempting to set a non-zero ({}) command for a MIMIC joint [{}].",
           command,
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
@@ -394,8 +391,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     case Joint::LOCKED:
       DART_WARN_IF(
           0.0 != command,
-          "[GenericJoint::setCommand] Attempting to set a non-zero ({}) "
-          "command for a LOCKED joint [{}].",
+          "Attempting to set a non-zero ({}) command for a LOCKED joint [{}].",
           command,
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
@@ -437,8 +433,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     case Joint::PASSIVE:
       DART_WARN_IF(
           !commands.isZero(),
-          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-          "command for a PASSIVE joint [{}].",
+          "Attempting to set a non-zero ({}) command for a PASSIVE joint [{}].",
           detail::formatCommandVector(commands),
           this->getName());
       this->mAspectState.mCommands.setZero();
@@ -452,8 +447,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     case Joint::MIMIC:
       DART_WARN_IF(
           !commands.isZero(),
-          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-          "command for a MIMIC joint [{}].",
+          "Attempting to set a non-zero ({}) command for a MIMIC joint [{}].",
           detail::formatCommandVector(commands),
           this->getName());
       this->mAspectState.mCommands.setZero();
@@ -474,8 +468,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     case Joint::LOCKED:
       DART_WARN_IF(
           !commands.isZero(),
-          "[GenericJoint::setCommands] Attempting to set a non-zero ({}) "
-          "command for a LOCKED joint [{}].",
+          "Attempting to set a non-zero ({}) command for a LOCKED joint [{}].",
           detail::formatCommandVector(commands),
           this->getName());
       this->mAspectState.mCommands.setZero();
@@ -1375,8 +1368,8 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionDifferences(
   if (static_cast<size_t>(q1.size()) != getNumDofs()
       || static_cast<size_t>(q2.size()) != getNumDofs()) {
     DART_ERROR(
-        "[GenericJoint::getPositionsDifference] q1's size [{}] or q2's size "
-        "[{}] must both equal the dof [{}] for Joint [{}].",
+        "q1's size [{}] or q2's size [{}] must both equal the dof [{}] for "
+        "Joint [{}].",
         q1.size(),
         q2.size(),
         this->getNumDofs(),
