@@ -1760,8 +1760,9 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
   body1->createShapeNodeWith<CollisionAspect>(bodySphere);
   body2->createShapeNodeWith<CollisionAspect>(bodySphere);
 
-  joint1->setTranslation(Eigen::Vector3d::Zero());
-  joint2->setTranslation(Eigen::Vector3d::UnitX() * 0.4);
+  joint1->setRelativeTransform(Eigen::Isometry3d::Identity());
+  joint2->setRelativeTransform(
+      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 0.4));
 
   group->addShapeFramesOf(body1);
   otherGroup->addShapeFramesOf(body2);
@@ -1776,13 +1777,15 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
   EXPECT_GE(result.getNumContacts(), 1u);
 
   // Move bodies apart to ensure history drops them cleanly.
-  joint2->setTranslation(Eigen::Vector3d::UnitX() * 3.0);
+  joint2->setRelativeTransform(
+      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 3.0));
   result.clear();
   EXPECT_FALSE(group->collide(otherGroup.get(), option, &result));
   EXPECT_TRUE(result.getContacts().empty());
 
   // Move back into contact and verify we still collide without crashing.
-  joint2->setTranslation(Eigen::Vector3d::UnitX() * 0.25);
+  joint2->setRelativeTransform(
+      Eigen::Translation3d(Eigen::Vector3d::UnitX() * 0.25));
   result.clear();
   EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);
