@@ -40,6 +40,7 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -143,7 +144,7 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  assert(mConstraintSolver);
+  DART_ASSERT(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
@@ -341,7 +342,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 //==============================================================================
 void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
-  assert(
+  DART_ASSERT(
       _skeleton != nullptr
       && "Attempted to remove nullptr Skeleton from world");
 
@@ -455,7 +456,8 @@ std::size_t World::getNumSimpleFrames() const
 //==============================================================================
 std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
-  assert(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
+  DART_ASSERT(
+      _frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
   if (nullptr == _frame) {
     DART_WARN(
@@ -490,7 +492,7 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 //==============================================================================
 void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
-  assert(
+  DART_ASSERT(
       _frame != nullptr
       && "Attempted to remove nullptr SimpleFrame from world");
 
@@ -631,7 +633,7 @@ void World::handleSkeletonNameChange(
         "[World::handleSkeletonNameChange] Received a name change callback for "
         "a nullptr Skeleton. This is most likely a bug. Please report "
         "this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -648,7 +650,7 @@ void World::handleSkeletonNameChange(
         "Please report this!",
         _skeleton->getName(),
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
   dynamics::SkeletonPtr sharedSkel = it->second;
@@ -669,7 +671,7 @@ void World::handleSkeletonNameChange(
         sharedSkel->getName(),
         sharedSkel,
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 }
@@ -685,7 +687,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
     DART_ERROR(
         "[World::handleFrameNameChange] Received a callback for a nullptr "
         "enity. This is most likely a bug. Please report this!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -702,7 +704,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
         "Please report this!",
         frame->getName(),
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
   dynamics::SimpleFramePtr sharedFrame = it->second;
@@ -720,7 +722,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
         frame->getName(),
         frame,
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 }

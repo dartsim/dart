@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -74,7 +76,7 @@ public:
     mVoxelGridVisualAspect = voxelGridFrame->getVisualAspect();
     mVoxelGridVisualAspect->show();
 
-    assert(mVoxelGridShape);
+    DART_ASSERT(mVoxelGridShape);
   }
 
   void setPointSamplingMode(PointSamplingMode mode)
@@ -127,7 +129,7 @@ public:
     sensorPos[2] = 0.5 + 0.25 * std::sin(time * 2.0);
     time += dt;
     auto sensorFrame = mWorld->getSimpleFrame("sensor");
-    assert(sensorFrame);
+    DART_ASSERT(sensorFrame);
     sensorFrame->setTranslation(sensorPos);
 
     // Update point cloud
@@ -135,7 +137,7 @@ public:
 
     // Update point cloud colors
     auto colors = generatePointCloudColors(pointCloud);
-    assert(pointCloud.size() == colors.size());
+    DART_ASSERT(pointCloud.size() == colors.size());
     mPointCloudShape->setColors(colors);
 
     // Update voxel
@@ -179,7 +181,7 @@ protected:
     pointCloud.reserve(numPoints);
 
     const auto numBodies = mRobot->getNumBodyNodes();
-    assert(numBodies > 0);
+    DART_ASSERT(numBodies > 0);
     while (true) {
       const auto bodyIndex
           = math::Random::uniform<std::size_t>(0, numBodies - 1);
@@ -194,14 +196,14 @@ protected:
       auto shapeNode
           = body->getShapeNodeWith<dynamics::VisualAspect>(shapeIndex);
       auto shape = shapeNode->getShape();
-      assert(shape);
+      DART_ASSERT(shape);
 
       if (!shape->is<dynamics::MeshShape>())
         continue;
       auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
 
       auto assimpScene = mesh->getMesh();
-      assert(assimpScene);
+      DART_ASSERT(assimpScene);
 
       if (assimpScene->mNumMeshes < 1)
         continue;
@@ -488,7 +490,7 @@ public:
       }
 
       if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None)) {
-        assert(mGrid);
+        DART_ASSERT(mGrid);
         ImGui::Text("Grid");
 
         bool display = mGrid->isDisplayed();

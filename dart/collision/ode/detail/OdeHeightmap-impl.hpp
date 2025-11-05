@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/collision/ode/detail/OdeHeightmap.hpp>
 
 #include <dart/dynamics/HeightmapShape.hpp>
@@ -53,8 +55,8 @@ void setOdeHeightfieldDetails(
     const Eigen::Matrix<S, 3, 1>& scale,
     typename std::enable_if<std::is_same<float, S>::value>::type* = 0)
 {
-  assert(width >= 2);
-  assert(height >= 2);
+  DART_ASSERT(width >= 2);
+  DART_ASSERT(height >= 2);
   if ((width < 2) || (height < 2)) {
     DART_WARN(
         "Cannot create height field of dimensions {}x{}, needs to be at least "
@@ -88,8 +90,8 @@ void setOdeHeightfieldDetails(
     const Eigen::Matrix<S, 3, 1>& scale,
     typename std::enable_if<std::is_same<double, S>::value>::type* = 0)
 {
-  assert(width >= 2);
-  assert(height >= 2);
+  DART_ASSERT(width >= 2);
+  DART_ASSERT(height >= 2);
   if ((width < 2) || (height < 2)) {
     DART_WARN(
         "Cannot create height field of dimensions {}x{}, needs to be at least "
@@ -120,7 +122,7 @@ OdeHeightmap<S>::OdeHeightmap(
     const dynamics::HeightmapShape<S>* heightMap)
   : OdeGeom(parent)
 {
-  assert(heightMap);
+  DART_ASSERT(heightMap);
 
   // get the heightmap parameters
   const auto& scale = heightMap->getScale();

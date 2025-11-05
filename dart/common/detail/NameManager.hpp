@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 #define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/common/Logging.hpp>
 #include <dart/common/NameManager.hpp>
 
@@ -143,7 +145,7 @@ bool NameManager<T>::addName(const std::string& _name, const T& _obj)
   mMap.insert(std::pair<std::string, T>(_name, _obj));
   mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
 
-  assert(mReverseMap.size() == mMap.size());
+  DART_ASSERT(mReverseMap.size() == mMap.size());
 
   return true;
 }
@@ -152,7 +154,7 @@ bool NameManager<T>::addName(const std::string& _name, const T& _obj)
 template <class T>
 bool NameManager<T>::removeName(const std::string& _name)
 {
-  assert(mReverseMap.size() == mMap.size());
+  DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<std::string, T>::iterator it = mMap.find(_name);
 
@@ -174,7 +176,7 @@ bool NameManager<T>::removeName(const std::string& _name)
 template <class T>
 bool NameManager<T>::removeObject(const T& _obj)
 {
-  assert(mReverseMap.size() == mMap.size());
+  DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
 
@@ -243,7 +245,7 @@ T NameManager<T>::getObject(const std::string& _name) const
 template <class T>
 std::string NameManager<T>::getName(const T& _obj) const
 {
-  assert(mReverseMap.size() == mMap.size());
+  DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::const_iterator result
       = mReverseMap.find(_obj);
@@ -259,7 +261,7 @@ template <class T>
 std::string NameManager<T>::changeObjectName(
     const T& _obj, const std::string& _newName)
 {
-  assert(mReverseMap.size() == mMap.size());
+  DART_ASSERT(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
   if (rit == mReverseMap.end())

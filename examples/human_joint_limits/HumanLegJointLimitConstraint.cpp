@@ -31,6 +31,7 @@
  */
 
 #include "HumanLegJointLimitConstraint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
@@ -73,21 +74,21 @@ HumanLegJointLimitConstraint::HumanLegJointLimitConstraint(
     mIsMirror(isMirror),
     mAppliedImpulseIndex(0)
 {
-  assert(mHipJoint);
-  assert(mKneeJoint);
-  assert(mAnkleJoint);
-  assert(mThighNode);
-  assert(mLowerLegNode);
-  assert(mFootNode);
+  DART_ASSERT(mHipJoint);
+  DART_ASSERT(mKneeJoint);
+  DART_ASSERT(mAnkleJoint);
+  DART_ASSERT(mThighNode);
+  DART_ASSERT(mLowerLegNode);
+  DART_ASSERT(mFootNode);
 
-  assert(mHipJoint->getNumDofs() == 3);
-  assert(mKneeJoint->getNumDofs() == 1);
-  assert(mAnkleJoint->getNumDofs() == 2);
+  DART_ASSERT(mHipJoint->getNumDofs() == 3);
+  DART_ASSERT(mKneeJoint->getNumDofs() == 1);
+  DART_ASSERT(mAnkleJoint->getNumDofs() == 2);
 
-  assert(mThighNode->getSkeleton() == mLowerLegNode->getSkeleton());
-  assert(mLowerLegNode->getSkeleton() == mFootNode->getSkeleton());
-  assert(mKneeJoint->getParentBodyNode() == mThighNode);
-  assert(mAnkleJoint->getParentBodyNode() == mLowerLegNode);
+  DART_ASSERT(mThighNode->getSkeleton() == mLowerLegNode->getSkeleton());
+  DART_ASSERT(mLowerLegNode->getSkeleton() == mFootNode->getSkeleton());
+  DART_ASSERT(mKneeJoint->getParentBodyNode() == mThighNode);
+  DART_ASSERT(mAnkleJoint->getParentBodyNode() == mLowerLegNode);
 
   mLifeTime = 0;
   mActive = false;
@@ -293,11 +294,11 @@ void HumanLegJointLimitConstraint::getInformation(
     constraint::ConstraintInfo* lcp)
 {
   // if non-active, should not call getInfo()
-  assert(isActive());
+  DART_ASSERT(isActive());
 
   // assume caller will allocate enough space for _lcp variables
-  assert(lcp->w[0] == 0.0);
-  assert(lcp->findex[0] == -1);
+  DART_ASSERT(lcp->w[0] == 0.0);
+  DART_ASSERT(lcp->findex[0] == -1);
 
   double bouncingVel = -mViolation - mErrorAllowance;
   if (bouncingVel < 0.0) {
@@ -321,8 +322,8 @@ void HumanLegJointLimitConstraint::getInformation(
 void HumanLegJointLimitConstraint::applyUnitImpulse(std::size_t index)
 {
   // the dim of constraint = 1, valid _index can only be 0
-  assert(index < mDim && "Invalid Index.");
-  assert(isActive());
+  DART_ASSERT(index < mDim && "Invalid Index.");
+  DART_ASSERT(isActive());
 
   const dynamics::SkeletonPtr& skeleton = mHipJoint->getSkeleton();
   skeleton->clearConstraintImpulses();
@@ -355,7 +356,7 @@ void HumanLegJointLimitConstraint::applyUnitImpulse(std::size_t index)
 void HumanLegJointLimitConstraint::getVelocityChange(
     double* delVel, bool withCfm)
 {
-  assert(delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(delVel != nullptr && "Null pointer is not allowed.");
   delVel[0] = 0.0;
 
   if (mHipJoint->getSkeleton()->isImpulseApplied()) {
@@ -391,7 +392,7 @@ void HumanLegJointLimitConstraint::unexcite()
 //==============================================================================
 void HumanLegJointLimitConstraint::applyImpulse(double* lambda)
 {
-  assert(isActive());
+  DART_ASSERT(isActive());
 
   // the dim of constraint = 1
   auto con_force = lambda[0];

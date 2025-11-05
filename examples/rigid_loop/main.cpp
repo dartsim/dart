@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -77,7 +79,7 @@ int main()
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   // create and initialize the world
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

@@ -33,6 +33,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -145,7 +146,7 @@ RevoluteJoint::getRelativeJacobianStatic(
       Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
   // Verification
-  assert(!math::isNan(jacobian));
+  DART_ASSERT(!math::isNan(jacobian));
 
   return jacobian;
 }
@@ -183,7 +184,7 @@ void RevoluteJoint::updateRelativeTransform() const
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -197,7 +198,7 @@ void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
 void RevoluteJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of revolute joint is always zero
-  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
+  DART_ASSERT(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
 } // namespace dynamics

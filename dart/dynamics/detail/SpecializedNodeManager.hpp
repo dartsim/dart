@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 
 namespace dart {
@@ -234,7 +236,7 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
         typeid(SpecNode).name(),
         treeIndex,
         mTreeNodeMaps.size());
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -267,7 +269,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
         typeid(SpecNode).name(),
         treeIndex,
         mTreeNodeMaps.size());
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -281,7 +283,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
         nodeIndex,
         treeIndex,
         it->second.size());
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 

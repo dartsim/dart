@@ -33,6 +33,7 @@
 #include "dart/optimizer/nlopt/NloptSolver.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"
@@ -137,14 +138,14 @@ bool NloptSolver::solve()
           e.what(),
           nlopt::algorithm_name(mAlg),
           mAlg);
-      assert(false);
+      DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
           "[NloptSolver::solve] Encountered exception [{}] while adding an "
           "equality constraint to the Nlopt solver. This might be a bug in "
           "DART; please report this!",
           e.what());
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -161,14 +162,14 @@ bool NloptSolver::solve()
           e.what(),
           nlopt::algorithm_name(mAlg),
           mAlg);
-      assert(false);
+      DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
           "[NloptSolver::solve] Encountered exception [{}] while adding an "
           "inequality constraint to the Nlopt solver. This might be a bug in "
           "DART; please report this!",
           e.what());
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 

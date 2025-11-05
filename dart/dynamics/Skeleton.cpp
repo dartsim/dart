@@ -34,6 +34,7 @@
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -75,7 +76,7 @@
           #V,                                                                  \
           nonzero_size,                                                        \
           V.size());                                                           \
-      assert(false);                                                           \
+      DART_ASSERT(false);                                                      \
     } else if (nonzero_size == INVALID_INDEX)                                  \
       nonzero_size = V.size();                                                 \
   }
@@ -112,7 +113,7 @@ void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
         typeid(Data).name(),
         typeid(Object).name(),
         typeid(Owner).name());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -166,7 +167,7 @@ std::vector<Data> getAllMemberObjectData(const Owner* owner)
         typeid(Data).name(),
         typeid(Object).name(),
         typeid(Owner).name());
-    assert(false);
+    DART_ASSERT(false);
     return std::vector<Data>();
   }
 
@@ -555,7 +556,7 @@ MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
           #V,                                                                  \
           configuration.mIndices.size(),                                       \
           configuration.m##V.size());                                          \
-      assert(false);                                                           \
+      DART_ASSERT(false);                                                      \
     } else                                                                     \
       set##V(configuration.mIndices, configuration.m##V);                      \
   }
@@ -815,7 +816,7 @@ bool Skeleton::isMobile() const
 //==============================================================================
 void Skeleton::setTimeStep(double _timeStep)
 {
-  assert(_timeStep > 0.0);
+  DART_ASSERT(_timeStep > 0.0);
   mAspectProperties.mTimeStep = _timeStep;
 
   for (std::size_t i = 0; i < mTreeCache.size(); ++i)
@@ -877,14 +878,14 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
     DART_ERROR(
         "[Skeleton::getRootBodyNode] Requested a root BodyNode from a Skeleton "
         "with no BodyNodes!");
-    assert(false);
+    DART_ASSERT(false);
   } else {
     DART_ERROR(
         "[Skeleton::getRootBodyNode] Requested invalid root BodyNode index "
         "({})! Must be less than {}.",
         _treeIdx,
         mTreeCache.size());
-    assert(false);
+    DART_ASSERT(false);
   }
 
   return nullptr;
@@ -1038,7 +1039,7 @@ static std::size_t templatedGetIndexOf(
           _type,
           _skel->getName(),
           _skel);
-      assert(false);
+      DART_ASSERT(false);
     }
     return INVALID_INDEX;
   }
@@ -1053,7 +1054,7 @@ static std::size_t templatedGetIndexOf(
         _type,
         _obj->getName(),
         _obj);
-    assert(false);
+    DART_ASSERT(false);
   }
 
   return INVALID_INDEX;
@@ -1078,7 +1079,7 @@ const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
              ? (std::string("when the max tree index is (")
                 + std::to_string(count - 1) + ")\n")
              : std::string("when there are no trees in this Skeleton\n")));
-    assert(false);
+    DART_ASSERT(false);
   }
 
   return mTreeCache[_treeIdx].mBodyNodes;
@@ -1282,7 +1283,7 @@ bool Skeleton::checkIndexingConsistency() const
           i,
           bn->mIndexInSkeleton);
       consistent = false;
-      assert(false);
+      DART_ASSERT(false);
     }
 
     const BodyNode* nameEntryForBodyNode = getBodyNode(bn->getName());
@@ -1298,7 +1299,7 @@ bool Skeleton::checkIndexingConsistency() const
           nameEntryForBodyNode->getName(),
           nameEntryForBodyNode);
       consistent = false;
-      assert(false);
+      DART_ASSERT(false);
     }
 
     const Joint* joint = bn->getParentJoint();
@@ -1315,7 +1316,7 @@ bool Skeleton::checkIndexingConsistency() const
           nameEntryForJoint->getName(),
           nameEntryForJoint);
       consistent = false;
-      assert(false);
+      DART_ASSERT(false);
     }
 
     const BodyNode::NodeMap& nodeMap = bn->mNodeMap;
@@ -1335,7 +1336,7 @@ bool Skeleton::checkIndexingConsistency() const
               node->getBodyNodePtr()->getName(),
               node->getBodyNodePtr());
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
 
         if (node->mIndexInBodyNode != k) {
@@ -1350,7 +1351,7 @@ bool Skeleton::checkIndexingConsistency() const
               k,
               node->mIndexInBodyNode);
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
 
         // TODO(MXG): Consider checking Node names here
@@ -1373,7 +1374,7 @@ bool Skeleton::checkIndexingConsistency() const
           i,
           dof->getIndexInSkeleton());
       consistent = false;
-      assert(false);
+      DART_ASSERT(false);
     }
 
     const DegreeOfFreedom* nameEntryForDof = getDof(dof->getName());
@@ -1389,7 +1390,7 @@ bool Skeleton::checkIndexingConsistency() const
           nameEntryForDof->getName(),
           nameEntryForDof);
       consistent = false;
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -1412,7 +1413,7 @@ bool Skeleton::checkIndexingConsistency() const
               node->getSkeleton()->getName(),
               node->getSkeleton());
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
 
         if (node->mIndexInSkeleton != k) {
@@ -1427,7 +1428,7 @@ bool Skeleton::checkIndexingConsistency() const
               k,
               node->mIndexInSkeleton);
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
       }
     }
@@ -1448,7 +1449,7 @@ bool Skeleton::checkIndexingConsistency() const
             i,
             bn->mTreeIndex);
         consistent = false;
-        assert(false);
+        DART_ASSERT(false);
       }
 
       if (bn->mIndexInTree != j) {
@@ -1463,7 +1464,7 @@ bool Skeleton::checkIndexingConsistency() const
             j,
             bn->mIndexInTree);
         consistent = false;
-        assert(false);
+        DART_ASSERT(false);
       }
     }
 
@@ -1481,7 +1482,7 @@ bool Skeleton::checkIndexingConsistency() const
             i,
             dof->getTreeIndex());
         consistent = false;
-        assert(false);
+        DART_ASSERT(false);
       }
     }
   }
@@ -1497,7 +1498,7 @@ bool Skeleton::checkIndexingConsistency() const
         this,
         mTreeCache.size(),
         mTreeNodeMaps.size());
-    assert(false);
+    DART_ASSERT(false);
   }
 
   // Check each Node in the NodeMap of each Tree
@@ -1520,7 +1521,7 @@ bool Skeleton::checkIndexingConsistency() const
               i,
               node->getBodyNodePtr()->mTreeIndex);
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
 
         if (node->mIndexInTree != k) {
@@ -1535,7 +1536,7 @@ bool Skeleton::checkIndexingConsistency() const
               k,
               node->mIndexInTree);
           consistent = false;
-          assert(false);
+          DART_ASSERT(false);
         }
       }
     }
@@ -1673,7 +1674,7 @@ static bool isValidBodyNode(
         "[Skeleton::{}] Invalid BodyNode pointer: nullptr. Returning zero "
         "Jacobian.",
         _fname);
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -1689,7 +1690,7 @@ static bool isValidBodyNode(
         _node,
         _skeleton->getName(),
         _skeleton);
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -1706,7 +1707,7 @@ void assignJacobian(
   const auto& indices = _node->getDependentGenCoordIndices();
   for (const auto& index : indices) {
     // Each index should be less than the number of dofs of this Skeleton.
-    assert(index < _node->getSkeleton()->getNumDofs());
+    DART_ASSERT(index < _node->getSkeleton()->getNumDofs());
 
     _J.col(index) = _JBodyNode.col(localIndex++);
   }
@@ -2197,7 +2198,7 @@ void Skeleton::constructNewTree()
     std::vector<NodeMap::iterator>* nodeVec = nodeType.second;
     nodeVec->push_back(nodeMap.find(index));
 
-    assert(nodeVec->size() == mTreeCache.size());
+    DART_ASSERT(nodeVec->size() == mTreeCache.size());
   }
 }
 
@@ -2214,7 +2215,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
         "a bug!",
         _newBodyNode->getName(),
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 #endif // -------- Debug mode
@@ -2266,7 +2267,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
           getName(),
           i,
           mSkelCache.mBodyNodes[i]->mIndexInSkeleton);
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -2283,7 +2284,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
             getName(),
             i,
             bn->mTreeIndex);
-        assert(false);
+        DART_ASSERT(false);
       }
 
       if (bn->mIndexInTree != j) {
@@ -2295,7 +2296,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
             getName(),
             j,
             bn->mIndexInTree);
-        assert(false);
+        DART_ASSERT(false);
       }
     }
   }
@@ -2319,7 +2320,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
         mAspectProperties.mName,
         "]. Report "
         "this as a bug!\n");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -2353,13 +2354,13 @@ void Skeleton::registerNode(
   if (INVALID_INDEX == _index) {
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    assert(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
+    DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
 
     nodes.push_back(_newNode);
     _index = nodes.size() - 1;
   }
 
-  assert(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
+  DART_ASSERT(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
 }
 
 //==============================================================================
@@ -2427,7 +2428,7 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
   std::size_t index = _oldBodyNode->getIndexInSkeleton();
-  assert(mSkelCache.mBodyNodes[index] == _oldBodyNode);
+  DART_ASSERT(mSkelCache.mBodyNodes[index] == _oldBodyNode);
   mSkelCache.mBodyNodes.erase(mSkelCache.mBodyNodes.begin() + index);
   for (std::size_t i = index; i < mSkelCache.mBodyNodes.size(); ++i) {
     BodyNode* bn = mSkelCache.mBodyNodes[i];
@@ -2444,15 +2445,15 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     // root.
 
     std::size_t tree = _oldBodyNode->getTreeIndex();
-    assert(mTreeCache[tree].mBodyNodes.size() == 1);
-    assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
+    DART_ASSERT(mTreeCache[tree].mBodyNodes.size() == 1);
+    DART_ASSERT(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
 
     destructOldTree(tree);
     updateCacheDimensions(mSkelCache);
   } else {
     std::size_t tree = _oldBodyNode->getTreeIndex();
     std::size_t indexInTree = _oldBodyNode->getIndexInTree();
-    assert(mTreeCache[tree].mBodyNodes[indexInTree] == _oldBodyNode);
+    DART_ASSERT(mTreeCache[tree].mBodyNodes[indexInTree] == _oldBodyNode);
     mTreeCache[tree].mBodyNodes.erase(
         mTreeCache[tree].mBodyNodes.begin() + indexInTree);
 
@@ -2489,7 +2490,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
         "[Skeleton::unregisterJoint] Attempting to unregister nullptr Joint "
         "from Skeleton named [{}]. Report this as a bug!",
         getName());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -2533,14 +2534,14 @@ void Skeleton::unregisterNode(
 
   if (nodeMap.end() == it) {
     // If the Node was not in the map, then its index should be invalid
-    assert(INVALID_INDEX == _index);
+    DART_ASSERT(INVALID_INDEX == _index);
     return;
   }
 
   std::vector<Node*>& nodes = it->second;
 
   // This Node's index in the vector should be referring to this Node
-  assert(nodes[_index] == _oldNode);
+  DART_ASSERT(nodes[_index] == _oldNode);
   nodes.erase(nodes.begin() + _index);
 
   _index = INVALID_INDEX;
@@ -2553,7 +2554,7 @@ void Skeleton::unregisterNode(Node* _oldNode)
   unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
 
   NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
-  assert(mNodeMap.end() != node_it);
+  DART_ASSERT(mNodeMap.end() != node_it);
 
   const std::vector<Node*>& skelNodes = node_it->second;
   for (std::size_t i = indexInSkel; i < skelNodes.size(); ++i)
@@ -2565,7 +2566,7 @@ void Skeleton::unregisterNode(Node* _oldNode)
   unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree);
 
   node_it = treeNodeMap.find(typeid(*_oldNode));
-  assert(treeNodeMap.end() != node_it);
+  DART_ASSERT(treeNodeMap.end() != node_it);
 
   const std::vector<Node*>& treeNodes = node_it->second;
   for (std::size_t i = indexInTree; i < treeNodes.size(); ++i)
@@ -2593,7 +2594,7 @@ bool Skeleton::moveBodyNodeTree(
         "to move a nullptr BodyNode. Please report this as a bug!",
         getName(),
         this);
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -2607,7 +2608,7 @@ bool Skeleton::moveBodyNodeTree(
         _bodyNode->getName(),
         _bodyNode->getSkeleton()->getName(),
         _bodyNode->getSkeleton());
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -2859,7 +2860,7 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(cache.mM.cols()) == dof
       && static_cast<std::size_t>(cache.mM.rows()) == dof);
   if (dof == 0) {
@@ -2918,7 +2919,7 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
 void Skeleton::updateMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(mSkelCache.mM.cols()) == dof
       && static_cast<std::size_t>(mSkelCache.mM.rows()) == dof);
   if (dof == 0) {
@@ -2950,7 +2951,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(cache.mAugM.cols()) == dof
       && static_cast<std::size_t>(cache.mAugM.rows()) == dof);
   if (dof == 0) {
@@ -3010,7 +3011,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
 void Skeleton::updateAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(mSkelCache.mAugM.cols()) == dof
       && static_cast<std::size_t>(mSkelCache.mAugM.rows()) == dof);
   if (dof == 0) {
@@ -3042,7 +3043,7 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(cache.mInvM.cols()) == dof
       && static_cast<std::size_t>(cache.mInvM.rows()) == dof);
   if (dof == 0) {
@@ -3102,7 +3103,7 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
 void Skeleton::updateInvMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(mSkelCache.mInvM.cols()) == dof
       && static_cast<std::size_t>(mSkelCache.mInvM.rows()) == dof);
   if (dof == 0) {
@@ -3134,7 +3135,7 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
       && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
   if (dof == 0) {
@@ -3196,7 +3197,7 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
 void Skeleton::updateInvAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(mSkelCache.mInvAugM.cols()) == dof
       && static_cast<std::size_t>(mSkelCache.mInvAugM.rows()) == dof);
   if (dof == 0) {
@@ -3228,7 +3229,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(static_cast<std::size_t>(cache.mCvec.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(cache.mCvec.size()) == dof);
   if (dof == 0) {
     cache.mDirty.mCoriolisForces = false;
     return;
@@ -3256,7 +3257,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<std::size_t>(mSkelCache.mCvec.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCvec.size()) == dof);
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisForces = false;
     return;
@@ -3282,7 +3283,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(static_cast<std::size_t>(cache.mG.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(cache.mG.size()) == dof);
   if (dof == 0) {
     cache.mDirty.mGravityForces = false;
     return;
@@ -3304,7 +3305,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<std::size_t>(mSkelCache.mG.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mG.size()) == dof);
   if (dof == 0) {
     mSkelCache.mDirty.mGravityForces = false;
     return;
@@ -3330,7 +3331,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(static_cast<std::size_t>(cache.mCg.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(cache.mCg.size()) == dof);
   if (dof == 0) {
     cache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3358,7 +3359,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisAndGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<std::size_t>(mSkelCache.mCg.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCg.size()) == dof);
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3384,7 +3385,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  assert(static_cast<std::size_t>(cache.mFext.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(cache.mFext.size()) == dof);
   if (dof == 0) {
     cache.mDirty.mExternalForces = false;
     return;
@@ -3438,7 +3439,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 void Skeleton::updateExternalForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<std::size_t>(mSkelCache.mFext.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mFext.size()) == dof);
   if (dof == 0) {
     mSkelCache.mDirty.mExternalForces = false;
     return;
@@ -3463,7 +3464,7 @@ void Skeleton::updateExternalForces() const
 const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 {
   const std::size_t dof = cache.mDofs.size();
-  assert(static_cast<std::size_t>(cache.mFc.size()) == dof);
+  DART_ASSERT(static_cast<std::size_t>(cache.mFc.size()) == dof);
 
   // Body constraint impulses
   for (std::vector<BodyNode*>::reverse_iterator it = cache.mBodyNodes.rbegin();
@@ -3781,19 +3782,19 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   if (nullptr == _bodyNode) {
     DART_ERROR("[Skeleton::updateBiasImpulse] Passed in a nullptr!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
-  assert(getNumDofs() > 0);
+  DART_ASSERT(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
+  DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
 #if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(
+    DART_ASSERT(
         mSkelCache.mBodyNodes[i]->mConstraintImpulse
         == Eigen::Vector6d::Zero());
 #endif
@@ -3812,19 +3813,19 @@ void Skeleton::updateBiasImpulse(
 {
   if (nullptr == _bodyNode) {
     DART_ERROR("[Skeleton::updateBiasImpulse] Passed in a nullptr!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
-  assert(getNumDofs() > 0);
+  DART_ASSERT(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
+  DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
 #if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(
+    DART_ASSERT(
         mSkelCache.mBodyNodes[i]->mConstraintImpulse
         == Eigen::Vector6d::Zero());
 #endif
@@ -3853,27 +3854,27 @@ void Skeleton::updateBiasImpulse(
   if (nullptr == _bodyNode1) {
     DART_ERROR(
         "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode1!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
   if (nullptr == _bodyNode2) {
     DART_ERROR(
         "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode2!");
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
-  assert(getNumDofs() > 0);
+  DART_ASSERT(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode1->getSkeleton().get() == this);
-  assert(_bodyNode2->getSkeleton().get() == this);
+  DART_ASSERT(_bodyNode1->getSkeleton().get() == this);
+  DART_ASSERT(_bodyNode2->getSkeleton().get() == this);
 
 #if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(
+    DART_ASSERT(
         mSkelCache.mBodyNodes[i]->mConstraintImpulse
         == Eigen::Vector6d::Zero());
 #endif
@@ -3903,18 +3904,18 @@ void Skeleton::updateBiasImpulse(
     const Eigen::Vector3d& _imp)
 {
   // Assertions
-  assert(_softBodyNode != nullptr);
-  assert(getNumDofs() > 0);
+  DART_ASSERT(_softBodyNode != nullptr);
+  DART_ASSERT(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(
+  DART_ASSERT(
       std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
       != mSoftBodyNodes.end());
 
 #if DART_BUILD_MODE_DEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(
+    DART_ASSERT(
         mSkelCache.mBodyNodes[i]->mConstraintImpulse
         == Eigen::Vector6d::Zero());
 #endif
@@ -3987,7 +3988,7 @@ double Skeleton::computeKineticEnergy() const
   for (auto* bodyNode : mSkelCache.mBodyNodes)
     KE += bodyNode->computeKineticEnergy();
 
-  assert(KE >= 0.0 && "Kinetic energy should be positive value.");
+  DART_ASSERT(KE >= 0.0 && "Kinetic energy should be positive value.");
   return KE;
 }
 
@@ -4034,7 +4035,7 @@ Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
     com += bodyNode->getMass() * bodyNode->getCOM(_withRespectTo);
   }
 
-  assert(mTotalMass != 0.0);
+  DART_ASSERT(mTotalMass != 0.0);
   return com / mTotalMass;
 }
 
@@ -4058,7 +4059,7 @@ PropertyType getCOMPropertyTemplate(
               * (bodyNode->*getPropertyFn)(_relativeTo, _inCoordinatesOf);
   }
 
-  assert(_skel->getMass() != 0.0);
+  DART_ASSERT(_skel->getMass() != 0.0);
   return result / _skel->getMass();
 }
 
@@ -4132,7 +4133,7 @@ JacType getCOMJacobianTemplate(
     }
   }
 
-  assert(_skel->getMass() != 0.0);
+  DART_ASSERT(_skel->getMass() != 0.0);
   return J / _skel->getMass();
 }
 

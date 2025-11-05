@@ -70,7 +70,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mTimeStep(timeStep),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
 {
-  assert(timeStep > 0.0);
+  DART_ASSERT(timeStep > 0.0);
 
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
@@ -102,7 +102,7 @@ ConstraintSolver::ConstraintSolver()
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 {
-  assert(
+  DART_ASSERT(
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
@@ -136,7 +136,7 @@ const std::vector<SkeletonPtr>& ConstraintSolver::getSkeletons() const
 //==============================================================================
 void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 {
-  assert(
+  DART_ASSERT(
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
@@ -169,7 +169,7 @@ void ConstraintSolver::removeAllSkeletons()
 //==============================================================================
 void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 {
-  assert(constraint);
+  DART_ASSERT(constraint);
 
   if (containConstraint(constraint)) {
     DART_WARN(
@@ -184,7 +184,7 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 //==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
-  assert(constraint);
+  DART_ASSERT(constraint);
 
   if (!containConstraint(constraint)) {
     DART_WARN(
@@ -251,7 +251,7 @@ void ConstraintSolver::clearLastCollisionResult()
 //==============================================================================
 void ConstraintSolver::setTimeStep(double _timeStep)
 {
-  assert(_timeStep > 0.0 && "Time step should be positive value.");
+  DART_ASSERT(_timeStep > 0.0 && "Time step should be positive value.");
   mTimeStep = _timeStep;
 }
 
@@ -709,8 +709,8 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
   auto* shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
   auto* shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
-  assert(shapeNode1);
-  assert(shapeNode2);
+  DART_ASSERT(shapeNode1);
+  DART_ASSERT(shapeNode2);
 
   auto* bodyNode1 = shapeNode1->getBodyNodePtr().get();
   auto* bodyNode2 = shapeNode2->getBodyNodePtr().get();

@@ -41,6 +41,7 @@
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -117,7 +118,7 @@ std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 //==============================================================================
 BulletCollisionDetector::~BulletCollisionDetector()
 {
-  assert(mShapeMap.empty());
+  DART_ASSERT(mShapeMap.empty());
 }
 
 //==============================================================================
@@ -165,10 +166,10 @@ static bool checkGroupValidity(
 //==============================================================================
 static bool isCollision(btCollisionWorld* world)
 {
-  assert(world);
+  DART_ASSERT(world);
 
   auto dispatcher = world->getDispatcher();
-  assert(dispatcher);
+  DART_ASSERT(dispatcher);
 
   const auto numManifolds = dispatcher->getNumManifolds();
 
@@ -185,11 +186,11 @@ static bool isCollision(btCollisionWorld* world)
 //==============================================================================
 void filterOutCollisions(btCollisionWorld* world)
 {
-  assert(world);
+  DART_ASSERT(world);
 
   auto dispatcher
       = static_cast<detail::BulletCollisionDispatcher*>(world->getDispatcher());
-  assert(dispatcher);
+  DART_ASSERT(dispatcher);
 
   const auto filter = dispatcher->getFilter();
   if (!filter)
@@ -431,7 +432,7 @@ BulletCollisionDetector::claimBulletCollisionShape(
 
   if (!inserted && currentVersion == info.mLastKnownVersion) {
     const auto& bulletCollShape = info.mShape.lock();
-    assert(bulletCollShape);
+    DART_ASSERT(bulletCollShape);
 
     return bulletCollShape;
   }
@@ -577,7 +578,7 @@ BulletCollisionDetector::createBulletCollisionShape(
   } else if (const auto heightMap = shape->as<HeightmapShapef>()) {
     return createBulletCollisionShapeFromHeightmap(heightMap);
   } else if (shape->is<HeightmapShaped>()) {
-    assert(dynamic_cast<const HeightmapShaped*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const HeightmapShaped*>(shape.get()));
 
     DART_ERROR(
         "[BulletCollisionDetector::createBulletCollisionShape] Bullet does not "
@@ -629,8 +630,8 @@ Contact convertContact(
     BulletCollisionObject* collObj1,
     BulletCollisionObject* collObj2)
 {
-  assert(collObj1);
-  assert(collObj2);
+  DART_ASSERT(collObj1);
+  DART_ASSERT(collObj2);
 
   Contact contact;
 
@@ -649,11 +650,11 @@ void reportContacts(
     const CollisionOption& option,
     CollisionResult& result)
 {
-  assert(world);
+  DART_ASSERT(world);
 
   auto dispatcher
       = static_cast<detail::BulletCollisionDispatcher*>(world->getDispatcher());
-  assert(dispatcher);
+  DART_ASSERT(dispatcher);
 
   const auto numManifolds = dispatcher->getNumManifolds();
 
@@ -699,11 +700,11 @@ RayHit convertRayHit(
     btScalar closestHitFraction)
 {
   RayHit rayHit;
-  assert(btCollObj);
+  DART_ASSERT(btCollObj);
   const auto* userPointer = btCollObj->getUserPointer();
-  assert(userPointer);
+  DART_ASSERT(userPointer);
   const auto* collObj = static_cast<const BulletCollisionObject*>(userPointer);
-  assert(collObj);
+  DART_ASSERT(collObj);
   rayHit.mCollisionObject = collObj;
   rayHit.mPoint = convertVector3(hitPointWorld);
   rayHit.mNormal = convertVector3(hitNormalWorld);
@@ -719,7 +720,7 @@ void reportRayHits(
     RaycastResult& result)
 {
   // This function shouldn't be called if callback has not ray hit.
-  assert(callback.hasHit());
+  DART_ASSERT(callback.hasHit());
 
   const auto rayHit = convertRayHit(
       callback.m_collisionObject,

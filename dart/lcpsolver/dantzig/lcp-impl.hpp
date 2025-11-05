@@ -56,6 +56,7 @@
 #ifndef DART_LCPSOLVER_DANTZIG_LCP_IMPL_HPP_
 #define DART_LCPSOLVER_DANTZIG_LCP_IMPL_HPP_
 
+#include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/dantzig/PivotMatrix.hpp"
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/misc.h"

@@ -33,6 +33,7 @@
 #include "dart/common/Uri.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <regex>
 #include <sstream>
@@ -122,14 +123,14 @@ void UriComponent::reset()
 //==============================================================================
 auto UriComponent::get() -> reference_type
 {
-  assert(mExists);
+  DART_ASSERT(mExists);
   return mValue;
 }
 
 //==============================================================================
 auto UriComponent::get() const -> reference_const_type
 {
-  assert(mExists);
+  DART_ASSERT(mExists);
   return mValue;
 }
 
@@ -207,27 +208,27 @@ bool Uri::fromString(const std::string& _input)
   if (!regex_match(_input, matches, uriRegex))
     return false;
 
-  assert(matches.size() > schemeIndex);
+  DART_ASSERT(matches.size() > schemeIndex);
   const std::ssub_match& schemeMatch = matches[schemeIndex];
   if (schemeMatch.matched)
     mScheme = schemeMatch;
 
-  assert(matches.size() > authorityIndex);
+  DART_ASSERT(matches.size() > authorityIndex);
   const std::ssub_match& authorityMatch = matches[authorityIndex];
   if (authorityMatch.matched)
     mAuthority = authorityMatch;
 
-  assert(matches.size() > pathIndex);
+  DART_ASSERT(matches.size() > pathIndex);
   const std::ssub_match& pathMatch = matches[pathIndex];
   if (pathMatch.matched)
     mPath = pathMatch;
 
-  assert(matches.size() > queryIndex);
+  DART_ASSERT(matches.size() > queryIndex);
   const std::ssub_match& queryMatch = matches[queryIndex];
   if (queryMatch.matched)
     mQuery = queryMatch;
 
-  assert(matches.size() > fragmentIndex);
+  DART_ASSERT(matches.size() > fragmentIndex);
   const std::ssub_match& fragmentMatch = matches[fragmentIndex];
   if (fragmentMatch.matched)
     mFragment = fragmentMatch;
@@ -330,8 +331,8 @@ bool Uri::fromRelativeUri(const Uri& _base, const char* _relative, bool _strict)
 bool Uri::fromRelativeUri(
     const Uri& _base, const Uri& _relative, bool /*_strict*/)
 {
-  assert(_base.mPath && "The path component is always defined.");
-  assert(_relative.mPath && "The path component is always defined.");
+  DART_ASSERT(_base.mPath && "The path component is always defined.");
+  DART_ASSERT(_relative.mPath && "The path component is always defined.");
 
   // TODO If (!_strict && _relative.mScheme == _base.mScheme), then we need to
   // enable backwards compatability.
@@ -563,8 +564,8 @@ std::string Uri::getFilesystemPath() const
 //==============================================================================
 std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
 {
-  assert(_base.mPath && "The path component is always defined.");
-  assert(_relative.mPath && "The path component is always defined.");
+  DART_ASSERT(_base.mPath && "The path component is always defined.");
+  DART_ASSERT(_relative.mPath && "The path component is always defined.");
 
   // This directly implements the logic from Section 5.2.3. of RFC 3986.
   if (_base.mAuthority && _base.mPath->empty())

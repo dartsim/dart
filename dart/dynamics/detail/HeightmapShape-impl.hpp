@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/HeightmapShape.hpp>
 
@@ -72,9 +74,9 @@ const std::string& HeightmapShape<S>::getStaticType()
 template <typename S>
 void HeightmapShape<S>::setScale(const Vector3& scale)
 {
-  assert(scale[0] > 0.0);
-  assert(scale[1] > 0.0);
-  assert(scale[2] > 0.0);
+  DART_ASSERT(scale[0] > 0.0);
+  DART_ASSERT(scale[1] > 0.0);
+  DART_ASSERT(scale[2] > 0.0);
   mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -96,7 +98,7 @@ void HeightmapShape<S>::setHeightField(
     const std::size_t& depth,
     const std::vector<S>& heights)
 {
-  assert(heights.size() == width * depth);
+  DART_ASSERT(heights.size() == width * depth);
   if ((width * depth) != heights.size()) {
     DART_ERROR(
         "[HeightmapShape] Size of height field needs to be width*depth={}",

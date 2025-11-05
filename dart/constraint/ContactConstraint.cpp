@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
@@ -99,7 +100,7 @@ ContactConstraint::ContactConstraint(
     mIsBounceOn(false),
     mActive(false)
 {
-  assert(
+  DART_ASSERT(
       contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
 
   //----------------------------------------------
@@ -135,8 +136,8 @@ ContactConstraint::ContactConstraint(
   mContactSurfaceMotionVelocity
       = contactSurfaceParams.mContactSurfaceMotionVelocity;
 
-  assert(mBodyNodeA->getSkeleton());
-  assert(mBodyNodeB->getSkeleton());
+  DART_ASSERT(mBodyNodeA->getSkeleton());
+  DART_ASSERT(mBodyNodeB->getSkeleton());
   mIsSelfCollision = (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton());
 
   // Compute local contact Jacobians expressed in body frame
@@ -163,9 +164,9 @@ ContactConstraint::ContactConstraint(
     // TODO(JS): Assumed that the number of tangent basis is 2.
     const TangentBasisMatrix D = getTangentBasisMatrixODE(ct.normal);
 
-    assert(std::abs(ct.normal.dot(D.col(0))) < DART_EPSILON);
-    assert(std::abs(ct.normal.dot(D.col(1))) < DART_EPSILON);
-    assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+    DART_ASSERT(std::abs(ct.normal.dot(D.col(0))) < DART_EPSILON);
+    DART_ASSERT(std::abs(ct.normal.dot(D.col(1))) < DART_EPSILON);
+    DART_ASSERT(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
     // Jacobian for normal contact
     bodyDirectionA.noalias()
@@ -205,8 +206,8 @@ ContactConstraint::ContactConstraint(
     mSpatialNormalA.col(2).tail<3>() = bodyDirectionA;
     mSpatialNormalB.col(2).tail<3>() = bodyDirectionB;
 
-    assert(!dart::math::isNan(mSpatialNormalA));
-    assert(!dart::math::isNan(mSpatialNormalB));
+    DART_ASSERT(!dart::math::isNan(mSpatialNormalA));
+    DART_ASSERT(!dart::math::isNan(mSpatialNormalB));
   } else {
     // Set the dimension of this constraint.
     mDim = 1;
@@ -370,14 +371,14 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn) {
     // Bias term, w, should be zero
-    assert(info->w[0] == 0.0);
-    assert(info->w[1] == 0.0);
-    assert(info->w[2] == 0.0);
+    DART_ASSERT(info->w[0] == 0.0);
+    DART_ASSERT(info->w[1] == 0.0);
+    DART_ASSERT(info->w[2] == 0.0);
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
     info->hi[0] = static_cast<double>(dInfinity);
-    assert(info->findex[0] == -1);
+    DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
     info->lo[1] = -mPrimaryFrictionCoeff;
@@ -439,7 +440,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
     info->hi[0] = static_cast<double>(dInfinity);
-    assert(info->findex[0] == -1);
+    DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------
     // Bouncing
@@ -481,9 +482,9 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 //==============================================================================
 void ContactConstraint::applyUnitImpulse(std::size_t index)
 {
-  assert(index < mDim && "Invalid Index.");
+  DART_ASSERT(index < mDim && "Invalid Index.");
   // assert(isActive());
-  assert(mBodyNodeA->isReactive() || mBodyNodeB->isReactive());
+  DART_ASSERT(mBodyNodeA->isReactive() || mBodyNodeB->isReactive());
 
   dynamics::Skeleton* skelA = mBodyNodeA->getSkeleton().get();
   dynamics::Skeleton* skelB = mBodyNodeB->getSkeleton().get();
@@ -513,7 +514,7 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
       // Both bodies are not reactive
       else {
         // This case should not be happened
-        assert(0);
+        DART_ASSERT(0);
       }
     }
 
@@ -540,7 +541,7 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
 //==============================================================================
 void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 {
-  assert(vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(vel != nullptr && "Null pointer is not allowed.");
 
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
@@ -596,9 +597,9 @@ void ContactConstraint::applyImpulse(double* lambda)
   // Friction case
   //----------------------------------------------------------------------------
   if (mIsFrictionOn) {
-    assert(!math::isNan(lambda[0]));
-    assert(!math::isNan(lambda[1]));
-    assert(!math::isNan(lambda[2]));
+    DART_ASSERT(!math::isNan(lambda[0]));
+    DART_ASSERT(!math::isNan(lambda[1]));
+    DART_ASSERT(!math::isNan(lambda[2]));
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
@@ -647,7 +648,7 @@ void ContactConstraint::applyImpulse(double* lambda)
 //==============================================================================
 void ContactConstraint::getRelVelocity(double* relVel)
 {
-  assert(relVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(relVel != nullptr && "Null pointer is not allowed.");
 
   Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
@@ -716,7 +717,7 @@ double ContactConstraint::computeRestitutionCoefficient(
 //==============================================================================
 dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
 {
-  assert(isActive());
+  DART_ASSERT(isActive());
 
   if (mBodyNodeA->isReactive())
     return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
@@ -769,16 +770,16 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
         // zero-length, which shouldn't the case because ConstraintSolver
         // shouldn't create a ContactConstraint for a contact with zero-length
         // normal.
-        assert(
+        DART_ASSERT(
             tangent.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
       }
     }
   }
 
-  assert(tangent.norm() > 1e-06);
+  DART_ASSERT(tangent.norm() > 1e-06);
   tangent.normalize();
 
-  assert(!dart::math::isNan(tangent));
+  DART_ASSERT(!dart::math::isNan(tangent));
 
   TangentBasisMatrix T;
 

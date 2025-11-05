@@ -33,6 +33,7 @@
 #include "dart/dynamics/Joint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -562,7 +563,7 @@ double Joint::getPotentialEnergy() const
 //==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
-  assert(math::verifyTransform(_T));
+  DART_ASSERT(math::verifyTransform(_T));
   mAspectProperties.mT_ParentBodyToJoint = _T;
   notifyPositionUpdated();
 }
@@ -570,7 +571,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 //==============================================================================
 void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
-  assert(math::verifyTransform(_T));
+  DART_ASSERT(math::verifyTransform(_T));
   mAspectProperties.mT_ChildBodyToJoint = _T;
   updateRelativeJacobian();
   notifyPositionUpdated();

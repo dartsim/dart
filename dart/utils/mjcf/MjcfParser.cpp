@@ -33,6 +33,7 @@
 #include "dart/utils/mjcf/MjcfParser.hpp"
 
 #include "dart/collision/all.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/all.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/all.hpp"
@@ -449,9 +450,9 @@ dynamics::ShapePtr createShape(
     }
     case detail::GeomType::MESH: {
       const detail::Mesh* mjcfMesh = mjcfAsset.getMesh(geom.getMesh());
-      assert(mjcfMesh);
+      DART_ASSERT(mjcfMesh);
       shape = mjcfMesh->getMeshShape();
-      assert(shape);
+      DART_ASSERT(shape);
       break;
     }
     default: {
@@ -591,8 +592,8 @@ bool populateSkeletonRecurse(
     return false;
   }
 
-  assert(bodyNode != nullptr);
-  assert(joint != nullptr);
+  DART_ASSERT(bodyNode != nullptr);
+  DART_ASSERT(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
   if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))

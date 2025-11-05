@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Geom.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -189,7 +190,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   if (canUseFromTo(mType, mAttributes.mFromTo)) {
-    assert(mAttributes.mFromTo);
+    DART_ASSERT(mAttributes.mFromTo);
     const Eigen::Vector6d& fromto = *mAttributes.mFromTo;
     const Eigen::Vector3d from = fromto.head<3>();
     const Eigen::Vector3d to = fromto.tail<3>();

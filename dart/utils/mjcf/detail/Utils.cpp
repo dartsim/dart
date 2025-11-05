@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Utils.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
@@ -110,7 +111,7 @@ Eigen::Matrix3d compileRotation(
       angle = math::toRadian(angle);
     }
     rot = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
-    assert(math::verifyRotation(rot));
+    DART_ASSERT(math::verifyRotation(rot));
   } else if (euler) {
     Eigen::Vector3d angles = *euler;
     if (compiler.getAngle() == Angle::DEGREE) {
@@ -121,10 +122,10 @@ Eigen::Matrix3d compileRotation(
 
     if (compiler.getEulerSeq() == "xyz") {
       rot = math::eulerXYZToMatrix(angles);
-      assert(math::verifyRotation(rot));
+      DART_ASSERT(math::verifyRotation(rot));
     } else if (compiler.getEulerSeq() == "zyx") {
       rot = math::eulerZYXToMatrix(angles);
-      assert(math::verifyRotation(rot));
+      DART_ASSERT(math::verifyRotation(rot));
     } else {
       DART_ERROR(
           "[MjcfParser] Unsupported Euler angle sequence: '{}'. Please report "
@@ -136,15 +137,15 @@ Eigen::Matrix3d compileRotation(
     rot.col(0) = (*xyAxes).head<3>().normalized();                    // X axis
     rot.col(1) = (*xyAxes).tail<3>().normalized();                    // Y axis
     rot.col(2).noalias() = rot.col(0).cross(rot.col(1)).normalized(); // Z axis
-    assert(math::verifyRotation(rot));
+    DART_ASSERT(math::verifyRotation(rot));
   } else if (zAxis) {
     rot = Eigen::Quaterniond::FromTwoVectors(
               Eigen::Vector3d::UnitZ(), zAxis->normalized())
               .toRotationMatrix();
-    assert(math::verifyRotation(rot));
+    DART_ASSERT(math::verifyRotation(rot));
   } else {
     rot = quat.normalized().toRotationMatrix();
-    assert(math::verifyRotation(rot));
+    DART_ASSERT(math::verifyRotation(rot));
   }
 
   return rot;

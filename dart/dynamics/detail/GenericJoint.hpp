@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
@@ -54,7 +56,7 @@
         (arg).size(),                                                          \
         this->getNumDofs(),                                                    \
         this->getName());                                                      \
-    assert(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_REPORT_OUT_OF_RANGE(func, index)                          \
@@ -66,7 +68,7 @@
         (index),                                                               \
         this->getName(),                                                       \
         this->getNumDofs());                                                   \
-    assert(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func)                         \
@@ -76,7 +78,7 @@
         #func,                                                                 \
         static_cast<int>(Joint::mAspectProperties.mActuatorType),              \
         this->getName());                                                      \
-    assert(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_SET_IF_DIFFERENT(mField, value)                           \
@@ -251,7 +253,7 @@ const std::string& GenericJoint<ConfigSpaceT>::setDofName(
         "of DOF index 0 instead.",
         index,
         this->getName());
-    assert(false);
+    DART_ASSERT(false);
     index = 0u;
   }
 
@@ -307,7 +309,7 @@ const std::string& GenericJoint<ConfigSpaceT>::getDofName(size_t index) const
         index,
         this->getName(),
         NumDofs - 1);
-    assert(false);
+    DART_ASSERT(false);
     return Base::mAspectProperties.mDofNames[0];
   }
 
@@ -399,7 +401,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       this->mAspectState.mCommands[index] = 0.0;
       break;
     default:
-      assert(false);
+      DART_ASSERT(false);
       break;
   }
 }
@@ -479,7 +481,7 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       this->mAspectState.mCommands.setZero();
       break;
     default:
-      assert(false);
+      DART_ASSERT(false);
       break;
   }
 }
@@ -1379,7 +1381,7 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionDifferences(
         q2.size(),
         this->getNumDofs(),
         this->getName());
-    assert(false);
+    DART_ASSERT(false);
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
@@ -1405,7 +1407,7 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     return;
   }
 
-  assert(k >= 0.0);
+  DART_ASSERT(k >= 0.0);
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
 }
@@ -1455,7 +1457,7 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     return;
   }
 
-  assert(d >= 0.0);
+  DART_ASSERT(d >= 0.0);
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
 }
@@ -1482,7 +1484,7 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     return;
   }
 
-  assert(friction >= 0.0);
+  DART_ASSERT(friction >= 0.0);
 
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
 }
@@ -1601,7 +1603,7 @@ void GenericJoint<ConfigSpaceT>::registerDofs()
 template <class ConfigSpaceT>
 Eigen::Vector6d GenericJoint<ConfigSpaceT>::getBodyConstraintWrench() const
 {
-  assert(this->mChildBodyNode);
+  DART_ASSERT(this->mChildBodyNode);
   return this->mChildBodyNode->getBodyForce()
          - this->getRelativeJacobianStatic() * this->mAspectState.mForces;
 }
@@ -1639,7 +1641,7 @@ void GenericJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
   vel.noalias() += getRelativeJacobianStatic() * getVelocitiesStatic();
 
   // Verification
-  assert(!math::isNan(vel));
+  DART_ASSERT(!math::isNan(vel));
 }
 
 //==============================================================================
@@ -1653,7 +1655,7 @@ void GenericJoint<ConfigSpaceT>::setPartialAccelerationTo(
             childVelocity, getRelativeJacobianStatic() * getVelocitiesStatic())
         + getRelativeJacobianTimeDerivStatic() * getVelocitiesStatic();
   // Verification
-  assert(!math::isNan(partialAcceleration));
+  DART_ASSERT(!math::isNan(partialAcceleration));
 }
 
 //==============================================================================
@@ -1664,7 +1666,7 @@ void GenericJoint<ConfigSpaceT>::addAccelerationTo(Eigen::Vector6d& acc)
   acc.noalias() += getRelativeJacobianStatic() * getAccelerationsStatic();
 
   // Verification
-  assert(!math::isNan(acc));
+  DART_ASSERT(!math::isNan(acc));
 }
 
 //==============================================================================
@@ -1676,7 +1678,7 @@ void GenericJoint<ConfigSpaceT>::addVelocityChangeTo(
   velocityChange.noalias() += getRelativeJacobianStatic() * mVelocityChanges;
 
   // Verification
-  assert(!math::isNan(velocityChange));
+  DART_ASSERT(!math::isNan(velocityChange));
 }
 
 //==============================================================================
@@ -1731,7 +1733,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
-  assert(!math::isNan(PI));
+  DART_ASSERT(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1782,7 +1784,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
-  assert(!math::isNan(PI));
+  DART_ASSERT(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
@@ -1837,7 +1839,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
   mInvProjArtInertia = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  assert(!math::isNan(mInvProjArtInertia));
+  DART_ASSERT(!math::isNan(mInvProjArtInertia));
 }
 
 //==============================================================================
@@ -1889,7 +1891,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
   mInvProjArtInertiaImplicit = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  assert(!math::isNan(mInvProjArtInertiaImplicit));
+  DART_ASSERT(!math::isNan(mInvProjArtInertiaImplicit));
 }
 
 //==============================================================================
@@ -1951,7 +1953,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
   //    getInvProjArtInertiaImplicit() * mTotalForce;
 
   // Verification
-  assert(!math::isNan(beta));
+  DART_ASSERT(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -1980,7 +1982,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
   //    getInvProjArtInertiaImplicit() * mTotalForce;
 
   // Verification
-  assert(!math::isNan(beta));
+  DART_ASSERT(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2027,7 +2029,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
                                      * getInvProjArtInertia() * mTotalImpulse;
 
   // Verification
-  assert(!math::isNan(beta));
+  DART_ASSERT(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2052,7 +2054,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateTotalForce(
     const Eigen::Vector6d& bodyForce, double timeStep)
 {
-  assert(timeStep > 0.0);
+  DART_ASSERT(timeStep > 0.0);
 
   switch (Joint::mAspectProperties.mActuatorType) {
     case Joint::FORCE:
@@ -2198,7 +2200,7 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
                * math::AdInvT(this->getRelativeTransform(), spatialAcc)));
 
   // Verification
-  assert(!math::isNan(getAccelerationsStatic()));
+  DART_ASSERT(!math::isNan(getAccelerationsStatic()));
 }
 
 //==============================================================================
@@ -2246,7 +2248,7 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
                  * math::AdInvT(this->getRelativeTransform(), velocityChange));
 
   // Verification
-  assert(!math::isNan(mVelocityChanges));
+  DART_ASSERT(!math::isNan(mVelocityChanges));
 }
 
 //==============================================================================
@@ -2401,7 +2403,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
                     * getInvProjArtInertia() * mInvM_a;
 
   // Verification
-  assert(!math::isNan(beta));
+  DART_ASSERT(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2421,7 +2423,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
                     * getInvProjArtInertiaImplicit() * mInvM_a;
 
   // Verification
-  assert(!math::isNan(beta));
+  DART_ASSERT(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
@@ -2454,7 +2456,7 @@ void GenericJoint<ConfigSpaceT>::getInvMassMatrixSegment(
                  * math::AdInvT(this->getRelativeTransform(), spatialAcc));
 
   // Verification
-  assert(!math::isNan(mInvMassMatrixSegment));
+  DART_ASSERT(!math::isNan(mInvMassMatrixSegment));
 
   // Index
   size_t iStart = mDofs[0]->mIndexInTree;
@@ -2479,7 +2481,7 @@ void GenericJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
                  * math::AdInvT(this->getRelativeTransform(), spatialAcc));
 
   // Verification
-  assert(!math::isNan(mInvMassMatrixSegment));
+  DART_ASSERT(!math::isNan(mInvMassMatrixSegment));
 
   // Index
   size_t iStart = mDofs[0]->mIndexInTree;

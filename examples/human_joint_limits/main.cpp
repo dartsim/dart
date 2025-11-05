@@ -31,6 +31,7 @@
  */
 
 #include "HumanArmJointLimitConstraint.hpp"
+#include "dart/common/Macros.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
 #include <dart/gui/osg/all.hpp>
@@ -125,7 +126,7 @@ int main()
 {
   WorldPtr world = SkelParser::readWorld(
       DART_DATA_PATH "/skel/kima/kima_human_edited.skel");
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
 
   auto skel = world->getSkeleton("human");
   for (auto joint : skel->getJoints()) {

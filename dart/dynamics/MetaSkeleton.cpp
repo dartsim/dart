@@ -33,6 +33,7 @@
 #include "dart/dynamics/MetaSkeleton.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
@@ -94,7 +95,7 @@ static bool checkIndexArrayAgreement(
         _values.size(),
         skel->getName(),
         static_cast<const void*>(skel));
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -127,7 +128,7 @@ static void setValuesFromVector(
           _indices[i],
           i,
           _vname);
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 }
@@ -152,7 +153,7 @@ static void setAllValuesFromVector(
         skel->getName(),
         static_cast<const void*>(skel),
         skel->getNumDofs());
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -170,7 +171,7 @@ static void setAllValuesFromVector(
           i,
           skel->getName(),
           static_cast<const void*>(skel));
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 }
@@ -212,7 +213,7 @@ static Eigen::VectorXd getValuesFromVector(
             static_cast<const void*>(skel),
             skel->getNumDofs());
       }
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -240,7 +241,7 @@ static Eigen::VectorXd getValuesFromAllDofs(
           _fname,
           i);
       values[i] = 0.0;
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -285,7 +286,7 @@ static void setValueFromIndex(
           _index,
           skel->getName(),
           static_cast<const void*>(skel));
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -302,7 +303,7 @@ static void setValueFromIndex(
         _index,
         skel->getName(),
         static_cast<const void*>(skel));
-    assert(false);
+    DART_ASSERT(false);
   }
 }
 
@@ -329,7 +330,7 @@ static double getValueFromIndex(
           _index,
           skel->getName(),
           static_cast<const void*>(skel));
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 
@@ -347,7 +348,7 @@ static double getValueFromIndex(
       _index,
       skel->getName(),
       static_cast<const void*>(skel));
-  assert(false);
+  DART_ASSERT(false);
   return 0.0;
 }
 

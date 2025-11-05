@@ -33,6 +33,7 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -54,8 +55,8 @@ JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
     mBodyNode(_joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
-  assert(_joint);
-  assert(mBodyNode);
+  DART_ASSERT(_joint);
+  DART_ASSERT(mBodyNode);
 
   mLifeTime[0] = 0;
   mLifeTime[1] = 0;
@@ -156,13 +157,13 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
     if (mActive[i] == false)
       continue;
 
-    assert(_lcp->w[index] == 0.0);
+    DART_ASSERT(_lcp->w[index] == 0.0);
 
     _lcp->b[index] = mNegativeVel[i];
     _lcp->lo[index] = mLowerBound[i];
     _lcp->hi[index] = mUpperBound[i];
 
-    assert(_lcp->findex[index] == -1);
+    DART_ASSERT(_lcp->findex[index] == -1);
 
     if (mLifeTime[i])
       _lcp->x[index] = mOldX[i];
@@ -176,7 +177,7 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 //==============================================================================
 void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
 {
-  assert(_index < mDim && "Invalid Index.");
+  DART_ASSERT(_index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -204,7 +205,7 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
 void JointCoulombFrictionConstraint::getVelocityChange(
     double* _delVel, bool _withCfm)
 {
-  assert(_delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(_delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
@@ -227,7 +228,7 @@ void JointCoulombFrictionConstraint::getVelocityChange(
         += _delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
-  assert(localIndex == mDim);
+  DART_ASSERT(localIndex == mDim);
 }
 
 //==============================================================================

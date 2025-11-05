@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -218,7 +220,7 @@ public:
 
         auto shape = std::dynamic_pointer_cast<dynamics::HeightmapShapef>(
             mTerrain->getShape());
-        assert(shape);
+        DART_ASSERT(shape);
 
         int xResolution = static_cast<int>(mXResolution);
         if (ImGui::InputInt("X Resolution", &xResolution, 5, 10)) {
@@ -421,7 +423,7 @@ int main()
   auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, 0.f, 0.1f);
   world->addSimpleFrame(terrain);
 
-  assert(world->getNumSimpleFrames() == 1u);
+  DART_ASSERT(world->getNumSimpleFrames() == 1u);
 
   // Create an instance of our customized WorldNode
   ::osg::ref_ptr<HeightmapWorld> node = new HeightmapWorld(world);

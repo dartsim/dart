@@ -33,6 +33,7 @@
 #include "dart/constraint/JointConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -62,8 +63,8 @@ JointConstraint::JointConstraint(dynamics::Joint* joint)
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
-  assert(joint);
-  assert(mBodyNode);
+  DART_ASSERT(joint);
+  DART_ASSERT(mBodyNode);
   mLifeTime.setZero();
   mActive.setConstant(false);
 }
@@ -207,8 +208,8 @@ void JointConstraint::update()
   mActive.setConstant(false);
 
   for (int i = 0; i < dof; ++i) {
-    assert(positionLowerLimits[i] <= positionUpperLimits[i]);
-    assert(velocityLowerLimits[i] <= velocityUpperLimits[i]);
+    DART_ASSERT(positionLowerLimits[i] <= positionUpperLimits[i]);
+    DART_ASSERT(velocityLowerLimits[i] <= velocityUpperLimits[i]);
 
     // Velocity limits due to position limits
     const double vel_to_pos_lb
@@ -240,7 +241,7 @@ void JointConstraint::update()
 
         const double C1 = mErrorAllowance * A1;
         double bouncing_vel = -std::min(B1, C1) / timeStep;
-        assert(bouncing_vel >= 0);
+        DART_ASSERT(bouncing_vel >= 0);
         bouncing_vel = std::min(bouncing_vel, mMaxErrorReductionVelocity);
 
         mDesiredVelocityChange[i] = bouncing_vel - velocities[i];
@@ -277,7 +278,7 @@ void JointConstraint::update()
 
         const double C2 = mErrorAllowance * A2;
         double bouncing_vel = -std::max(B2, C2) / timeStep;
-        assert(bouncing_vel <= 0);
+        DART_ASSERT(bouncing_vel <= 0);
         bouncing_vel = std::max(bouncing_vel, -mMaxErrorReductionVelocity);
 
         mDesiredVelocityChange[i] = bouncing_vel - velocities[i];
@@ -418,7 +419,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
           "Invalid {}-th slack variable. Expected: 0.0. Actual: {}.",
           index,
           lcp->w[index]);
-      assert(false);
+      DART_ASSERT(false);
     }
 #endif
 
@@ -433,7 +434,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
           "Invalid {}-th friction index. Expected: -1. Actual: {}.",
           index,
           lcp->findex[index]);
-      assert(false);
+      DART_ASSERT(false);
     }
 #endif
 
@@ -449,7 +450,7 @@ void JointConstraint::getInformation(ConstraintInfo* lcp)
 //==============================================================================
 void JointConstraint::applyUnitImpulse(std::size_t index)
 {
-  assert(index < mDim && "Invalid Index.");
+  DART_ASSERT(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -477,7 +478,7 @@ void JointConstraint::applyUnitImpulse(std::size_t index)
 //==============================================================================
 void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
-  assert(delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
@@ -501,7 +502,7 @@ void JointConstraint::getVelocityChange(double* delVel, bool withCfm)
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
-  assert(localIndex == mDim);
+  DART_ASSERT(localIndex == mDim);
 }
 
 //==============================================================================

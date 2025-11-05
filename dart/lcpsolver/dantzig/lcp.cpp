@@ -154,6 +154,7 @@ rows/columns and manipulate C.
 
 #include "dart/lcpsolver/dantzig/lcp.h"
 
+#include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/misc.h"
 

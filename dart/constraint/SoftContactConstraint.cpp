@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -195,12 +196,12 @@ SoftContactConstraint::SoftContactConstraint(
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
+      DART_ASSERT(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
+      DART_ASSERT(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
       //      if (D.col(0).dot(D.col(1)) > 0.0)
       //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1))
       //        << std::endl;
-      assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+      DART_ASSERT(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
       //      std::cout << "D: " << std::endl << D << std::endl;
 
@@ -423,7 +424,7 @@ const Eigen::Vector3d& SoftContactConstraint::getFrictionDirection1() const
 //==============================================================================
 void SoftContactConstraint::update()
 {
-  assert(mSoftBodyNode1 || mSoftBodyNode2);
+  DART_ASSERT(mSoftBodyNode1 || mSoftBodyNode2);
 
   // One of body node is soft body node and soft body node is always active
   mActive = true;
@@ -442,14 +443,14 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
     std::size_t index = 0;
     for (std::size_t i = 0; i < mContacts.size(); ++i) {
       // Bias term, w, should be zero
-      assert(_info->w[index] == 0.0);
-      assert(_info->w[index + 1] == 0.0);
-      assert(_info->w[index + 2] == 0.0);
+      DART_ASSERT(_info->w[index] == 0.0);
+      DART_ASSERT(_info->w[index + 1] == 0.0);
+      DART_ASSERT(_info->w[index + 2] == 0.0);
 
       // Upper and lower bounds of normal impulsive force
       _info->lo[index] = 0.0;
       _info->hi[index] = dInfinity;
-      assert(_info->findex[index] == -1);
+      DART_ASSERT(_info->findex[index] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
       _info->lo[index + 1] = -mFrictionCoeff;
@@ -524,7 +525,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       // Upper and lower bounds of normal impulsive force
       _info->lo[i] = 0.0;
       _info->hi[i] = dInfinity;
-      assert(_info->findex[i] == -1);
+      DART_ASSERT(_info->findex[i] == -1);
 
       //------------------------------------------------------------------------
       // Bouncing
@@ -574,9 +575,9 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 //==============================================================================
 void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
 {
-  assert(_idx < mDim && "Invalid Index.");
-  assert(isActive());
-  assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
+  DART_ASSERT(_idx < mDim && "Invalid Index.");
+  DART_ASSERT(isActive());
+  DART_ASSERT(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
@@ -641,7 +642,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
 //==============================================================================
 void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
   for (std::size_t i = 0; i < mDim; ++i) {
     _vel[i] = 0.0;
@@ -716,7 +717,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       //      _lambda[_idx + 1] << std::endl; std::cout << "imp3: " <<
       //      mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
 
-      assert(!math::isNan(_lambda[index]));
+      DART_ASSERT(!math::isNan(_lambda[index]));
 
       // Store contact impulse (force) toward the normal w.r.t. world frame
       mContacts[i]->force = mContacts[i]->normal * _lambda[index] / mTimeStep;
@@ -741,7 +742,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
-      assert(!math::isNan(_lambda[index]));
+      DART_ASSERT(!math::isNan(_lambda[index]));
 
       // Add contact impulse (force) toward the tangential w.r.t. world frame
       Eigen::MatrixXd D = getTangentBasisMatrixODE(mContacts[i]->normal);
@@ -767,7 +768,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
-      assert(!math::isNan(_lambda[index]));
+      DART_ASSERT(!math::isNan(_lambda[index]));
 
       // Add contact impulse (force) toward the tangential w.r.t. world frame
       mContacts[i]->force += D.col(1) * _lambda[index] / mTimeStep;
@@ -826,7 +827,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 void SoftContactConstraint::getRelVelocity(double* _vel)
 {
-  assert(_vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
   for (std::size_t i = 0; i < mDim; ++i) {
     _vel[i] = 0.0;
@@ -855,7 +856,7 @@ bool SoftContactConstraint::isActive() const
 double SoftContactConstraint::computeFrictionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 
@@ -875,7 +876,7 @@ double SoftContactConstraint::computeFrictionCoefficient(
 double SoftContactConstraint::computeRestitutionCoefficient(
     const dynamics::ShapeNode* shapeNode)
 {
-  assert(shapeNode);
+  DART_ASSERT(shapeNode);
 
   auto dynamicAspect = shapeNode->getDynamicsAspect();
 

@@ -32,6 +32,7 @@
 
 #include "dart/constraint/BalanceConstraint.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -71,7 +72,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
         "function associated to a HierarchicalIK that no longer exists!");
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 
@@ -81,7 +82,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
     DART_ERROR(
         "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
         "function on a Skeleton which no longer exists!");
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 

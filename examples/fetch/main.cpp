@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -154,13 +156,13 @@ int main()
   // Create a world from ant.xml
   auto world = utils::MjcfParser::readWorld(
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
-  assert(world);
+  DART_ASSERT(world);
   world->getConstraintSolver()->setCollisionDetector(
       collision::BulletCollisionDetector::create());
 
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");
-  assert(robot);
+  DART_ASSERT(robot);
   robot->getJoint(0)->setActuatorType(dynamics::Joint::ActuatorType::LOCKED);
   robot->eachDof(
       [](dynamics::DegreeOfFreedom* dof) { dof->setSpringStiffness(1e+3); });
@@ -182,20 +184,20 @@ int main()
 
   // Get object and set initial object transform
   auto object = world->getSkeleton("object0");
-  assert(object);
+  DART_ASSERT(object);
   object->setPosition(3, 1.25);
   object->setPosition(4, 0.53);
   object->setPosition(5, 0.40);
 
   // Get mocap object
   auto mocap = world->getSkeleton("robot0:mocap");
-  assert(mocap);
+  DART_ASSERT(mocap);
 
   // Reset the relative transform constraint of mocap object and fetch's EE
   auto weldJointConstraint
       = std::dynamic_pointer_cast<constraint::WeldJointConstraint>(
           world->getConstraintSolver()->getConstraint(0));
-  assert(weldJointConstraint);
+  DART_ASSERT(weldJointConstraint);
   weldJointConstraint->setRelativeTransform(Eigen::Isometry3d::Identity());
 
   // Create interactive frame to control the EE of Fetch
