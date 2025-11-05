@@ -32,22 +32,25 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include <Eigen/Geometry>
+#include <dart/simulation/World.hpp>
 
-#include <functional>
-#include <tuple>
+#include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
-#include <dart/constraint/ConstraintSolver.hpp>
+
 #include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-#include <dart/math/Constants.hpp>
-#include <dart/simulation/World.hpp>
 
+#include <dart/math/Constants.hpp>
+
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <functional>
+#include <tuple>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -74,8 +77,7 @@ void runCapsuleGroundContactTest(const DetectorFactory& factory)
   auto skeleton = Skeleton::create("capsule");
   FreeJoint* joint;
   BodyNode* bodyNode;
-  std::tie(joint, bodyNode)
-      = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  std::tie(joint, bodyNode) = skeleton->createJointAndBodyNodePair<FreeJoint>();
 
   Eigen::Isometry3d placement
       = Eigen::Translation3d(0, 0, 0.5)
@@ -83,11 +85,11 @@ void runCapsuleGroundContactTest(const DetectorFactory& factory)
             dart::math::constantsd::half_pi(), Eigen::Vector3d::UnitY());
   joint->setRelativeTransform(placement);
 
-  auto capsuleShape = std::make_shared<CapsuleShape>(
-      kCapsuleRadius, kCapsuleHeight);
-  auto* capsuleNode = bodyNode->createShapeNodeWith<
-      CollisionAspect,
-      DynamicsAspect>(capsuleShape);
+  auto capsuleShape
+      = std::make_shared<CapsuleShape>(kCapsuleRadius, kCapsuleHeight);
+  auto* capsuleNode
+      = bodyNode->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          capsuleShape);
 
   dart::dynamics::Inertia inertia;
   inertia.setMass(1.0);

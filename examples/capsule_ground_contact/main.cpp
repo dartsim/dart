@@ -87,7 +87,8 @@ std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
   BodyNode::Properties body;
   body.mName = "capsule_body";
 
-  auto result = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, body);
+  auto result
+      = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, body);
 
   auto shape = std::make_shared<CapsuleShape>(kCapsuleRadius, kCapsuleHeight);
   auto shapeNode = result.second->createShapeNodeWith<
@@ -108,9 +109,7 @@ class CapsuleEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
   CapsuleEventHandler(
-      const WorldPtr& world,
-      FreeJoint* capsuleJoint,
-      BodyNode* capsuleBody)
+      const WorldPtr& world, FreeJoint* capsuleJoint, BodyNode* capsuleBody)
     : mWorld(world),
       mJoint(capsuleJoint),
       mBody(capsuleBody),
@@ -126,8 +125,7 @@ public:
   }
 
   bool handle(
-      const ::osgGA::GUIEventAdapter& ea,
-      ::osgGA::GUIActionAdapter&) override
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN) {
       return false;
