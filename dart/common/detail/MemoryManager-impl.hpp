@@ -35,6 +35,9 @@
 
 #include <dart/common/MemoryManager.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace dart::common {
 
 //==============================================================================
@@ -42,20 +45,22 @@ template <typename T, typename... Args>
 T* MemoryManager::construct(Type type, Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(type, sizeof(T));
-  if (!object) {
+  void* storage = allocate(type, sizeof(T));
+  if (!storage) {
     return nullptr;
   }
+
+  auto* object = static_cast<T*>(storage);
 
   // Call constructor. Return nullptr if failed.
   try {
-    new (object) T(std::forward<Args>(args)...);
+    std::construct_at(object, std::forward<Args>(args)...);
   } catch (...) {
-    deallocate(type, object, sizeof(T));
+    deallocate(type, storage, sizeof(T));
     return nullptr;
   }
 
-  return reinterpret_cast<T*>(object);
+  return object;
 }
 
 //==============================================================================
@@ -79,7 +84,7 @@ void MemoryManager::destroy(Type type, T* object) noexcept
   if (!object) {
     return;
   }
-  object->~T();
+  std::destroy_at(object);
   deallocate(type, object, sizeof(T));
 }
 

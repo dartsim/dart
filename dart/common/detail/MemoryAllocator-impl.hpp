@@ -35,6 +35,9 @@
 
 #include <dart/common/MemoryAllocator.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace dart::common {
 
 //==============================================================================
@@ -49,36 +52,37 @@ template <typename T, typename... Args>
 T* MemoryAllocator::construct(Args&&... args) noexcept
 {
   // Allocate new memory for a new object (without calling the constructor)
-  void* object = allocate(sizeof(T));
-  if (!object) {
+  void* storage = allocate(sizeof(T));
+  if (!storage) {
     return nullptr;
   }
+
+  auto* object = static_cast<T*>(storage);
 
   // Call constructor. Return nullptr if failed.
   try {
-    new (object) T(std::forward<Args>(args)...);
+    std::construct_at(object, std::forward<Args>(args)...);
   } catch (...) {
-    deallocate(object, sizeof(T));
+    deallocate(storage, sizeof(T));
     return nullptr;
   }
 
-  return reinterpret_cast<T*>(object);
+  return object;
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* MemoryAllocator::constructAt(void* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  return std::construct_at(
+      static_cast<T*>(pointer), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  return std::construct_at(pointer, std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -88,7 +92,7 @@ void MemoryAllocator::destroy(T* object) noexcept
   if (!object) {
     return;
   }
-  object->~T();
+  std::destroy_at(object);
   deallocate(object, sizeof(T));
 }
 
