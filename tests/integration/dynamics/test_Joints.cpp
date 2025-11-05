@@ -168,8 +168,14 @@ TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
       = body->getWorldTransform().translation();
 
   const std::size_t numSteps = 5;
-  for (std::size_t i = 0; i < numSteps; ++i)
+  for (std::size_t i = 0; i < numSteps; ++i) {
+    joint->setSpatialVelocity(desiredVel, Frame::World(), Frame::World());
     world->step();
+  }
+
+  const Eigen::Vector6d actualVel
+      = body->getSpatialVelocity(Frame::World(), Frame::World());
+  EXPECT_VECTOR_NEAR(desiredVel, actualVel, 1e-8);
 
   const Eigen::Vector3d expectedTranslation
       = desiredVel.tail<3>() * timeStep * static_cast<double>(numSteps);
