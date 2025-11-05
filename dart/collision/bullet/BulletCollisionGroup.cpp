@@ -36,19 +36,22 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
-#include <LinearMath/btAlignedAllocator.h>
+#if !defined(_WIN32)
+  #include <LinearMath/btAlignedAllocator.h>
 
-#include <atomic>
-#include <mutex>
-#include <new>
-#include <unordered_set>
-#include <vector>
+  #include <atomic>
+  #include <mutex>
+  #include <new>
+  #include <unordered_set>
+  #include <vector>
 
-#include <cstdlib>
+  #include <cstdlib>
+#endif
 
 namespace dart {
 namespace collision {
 
+#if !defined(_WIN32)
 namespace {
 
 using BulletAllocSet = std::unordered_set<void*>;
@@ -85,15 +88,15 @@ void dartBulletFreeImpl(void* ptr)
       shouldFree = false;
   }
 
-#if defined(_MSC_VER)
+  #if defined(_MSC_VER)
   if (!shouldFree)
     return;
   _aligned_free(ptr);
-#else
+  #else
   if (!shouldFree)
     return;
   std::free(ptr);
-#endif
+  #endif
 }
 
 void dartBulletFree(void* ptr)
@@ -104,14 +107,14 @@ void dartBulletFree(void* ptr)
 void* dartBulletAlloc(size_t size, std::size_t alignment)
 {
   void* mem = nullptr;
-#if defined(_MSC_VER)
+  #if defined(_MSC_VER)
   mem = _aligned_malloc(size, alignment);
   if (!mem)
     throw std::bad_alloc();
-#else
+  #else
   if (posix_memalign(&mem, std::max<int>(alignment, 16), size) != 0)
     throw std::bad_alloc();
-#endif
+  #endif
   {
     std::lock_guard<std::mutex> lock(getAllocMutex());
     getOutstandingAllocs().insert(mem);
@@ -150,12 +153,18 @@ void ensureBulletAllocator()
   });
 }
 
-const bool bulletAllocatorReady = []() {
-  ensureBulletAllocator();
-  return true;
-}();
+} // namespace
+#else
+namespace {
+
+void ensureBulletAllocator()
+{
+  // Windows builds use the default Bullet allocator. The custom allocator
+  // backed by _aligned_malloc/_aligned_free introduces instability on MSVC.
+}
 
 } // namespace
+#endif
 
 //==============================================================================
 BulletCollisionGroup::BulletCollisionGroup(
@@ -170,6 +179,7 @@ BulletCollisionGroup::BulletCollisionGroup(
         mBulletProadphaseAlg.get(),
         mBulletCollisionConfiguration.get()))
 {
+  ensureBulletAllocator();
   // Do nothing
 }
 
@@ -221,8 +231,8 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
 
   mBulletCollisionWorld->removeCollisionObject(btObject);
 
-  if (auto* dbvt
-      = dynamic_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get())) {
+  if (mBulletProadphaseAlg) {
+    auto* dbvt = static_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get());
     dbvt->resetPool(mBulletDispatcher.get());
   }
 
@@ -235,8 +245,8 @@ void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
   for (const auto& info : mObjectInfoList)
     removeCollisionObjectFromEngine(info->mObject.get());
 
-  if (auto* dbvt
-      = dynamic_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get())) {
+  if (mBulletProadphaseAlg) {
+    auto* dbvt = static_cast<btDbvtBroadphase*>(mBulletProadphaseAlg.get());
     dbvt->resetPool(mBulletDispatcher.get());
   }
 
