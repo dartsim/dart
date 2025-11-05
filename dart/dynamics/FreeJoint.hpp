@@ -202,7 +202,8 @@ public:
   /// BodyNode.
   /// \param[in] newSpatialVelocity Desired spatial velocity of the child
   /// BodyNode. The reference frame of "newSpatialVelocity" is the child
-  /// BodyNode.
+  /// BodyNode. This updates generalized velocities via `setVelocities()` so
+  /// VELOCITY actuator commands stay synchronized.
   void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
 
   /// Set the spatial velocity of the child BodyNode relative to the parent
@@ -256,7 +257,8 @@ public:
   /// BodyNode.
   /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
   /// child BodyNode. The reference frame of "newSpatialAcceleration" is the
-  /// child BodyNode.
+  /// child BodyNode. This updates generalized accelerations via
+  /// `setAccelerations()` so ACCELERATION actuator commands stay synchronized.
   void setRelativeSpatialAcceleration(
       const Eigen::Vector6d& newSpatialAcceleration);
 

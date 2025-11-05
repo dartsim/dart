@@ -140,6 +140,41 @@ void JOINTS::randomizeRefFrames()
 }
 
 //==============================================================================
+TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
+{
+  auto world = simulation::World::create();
+  const double timeStep = 0.01;
+  world->setTimeStep(timeStep);
+
+  auto skeleton = Skeleton::create("free_joint_kinematic");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  joint->setActuatorType(Joint::VELOCITY);
+  world->addSkeleton(skeleton);
+
+  Eigen::Vector6d desiredVel = Eigen::Vector6d::Zero();
+  desiredVel.tail<3>() << 0.3, -0.1, 0.2;
+
+  joint->setSpatialVelocity(desiredVel, Frame::World(), Frame::World());
+
+  const std::size_t numSteps = 5;
+  for (std::size_t i = 0; i < numSteps; ++i)
+    world->step();
+
+  const Eigen::Vector6d actualVel
+      = body->getSpatialVelocity(Frame::World(), Frame::World());
+  EXPECT_TRUE(equals(desiredVel, actualVel));
+
+  const Eigen::Vector3d expectedTranslation
+      = desiredVel.tail<3>() * timeStep * static_cast<double>(numSteps);
+  const Eigen::Vector3d actualTranslation
+      = body->getWorldTransform().translation();
+  EXPECT_TRUE(equals(expectedTranslation, actualTranslation));
+}
+
+//==============================================================================
 template <typename JointType>
 void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 {
