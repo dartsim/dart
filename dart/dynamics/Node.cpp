@@ -37,7 +37,7 @@
 
 #define REPORT_INVALID_NODE(func)                                              \
   DART_ERROR(                                                                  \
-      "[Node::{}] A valid BodyNode pointer is required during construction. "  \
+      "A valid BodyNode pointer is required during construction. "             \
       "Please report this as a bug if this is not a custom node type!",        \
       #func);                                                                  \
   DART_ASSERT(false);

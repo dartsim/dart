@@ -84,7 +84,7 @@ void Inertia::setParameter(Param _param, double _value)
     mCenterOfMass[_param - 4] = _value;
   } else {
     DART_WARN(
-        "[Inertia::setParameter] Attempting to set Param #{}, but inertial "
+        "Attempting to set Param #{}, but inertial "
         "parameters only go up to {}. Nothing will be set.",
         static_cast<int>(_param),
         static_cast<int>(I_YZ));
@@ -105,7 +105,7 @@ double Inertia::getParameter(Param _param) const
     return mMoment[_param - 4];
 
   DART_WARN(
-      "[Inertia::getParameter] Requested Param #{}, but inertial parameters "
+      "Requested Param #{}, but inertial parameters "
       "only go up to {}. Returning 0",
       static_cast<int>(_param),
       static_cast<int>(I_YZ));
@@ -144,7 +144,7 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 {
   DART_WARN_IF(
       !verifyMoment(_moment, true),
-      "[Inertia::setMoment] Passing in an invalid moment of inertia matrix. "
+      "Passing in an invalid moment of inertia matrix. "
       "Results might not by physically accurate or meaningful.");
 
   for (std::size_t i = 0; i < 3; ++i)
@@ -202,7 +202,7 @@ void Inertia::setSpatialTensor(
 {
   DART_WARN_IF(
       !verifySpatialTensor(_spatial, _printWarnings),
-      "[Inertia::setSpatialTensor] Passing in an invalid spatial inertia "
+      "Passing in an invalid spatial inertia "
       "tensor. Results might not be physically accurate or meaningful.");
 
   mSpatialTensor = _spatial;
@@ -225,7 +225,7 @@ bool Inertia::verifyMoment(
       valid = false;
       DART_WARN_IF(
           _printWarnings,
-          "[Inertia::verifyMoment] Invalid entry for ({},{}): {}. Value "
+          "Invalid entry for ({},{}): {}. Value "
           "should be positive and greater than zero.",
           i,
           i,
@@ -239,7 +239,7 @@ bool Inertia::verifyMoment(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifyMoment] Values for entries ({},{}) and ({},{}) "
+            "Values for entries ({},{}) and ({},{}) "
             "differ by {} which is more than the permitted tolerance ({})",
             i,
             j,
@@ -266,7 +266,7 @@ bool Inertia::verifySpatialTensor(
       if (_printWarnings) {
         std::string component = i < 3 ? "moment of inertia diagonal" : "mass";
         DART_WARN(
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
+            "Invalid entry for ({},{}): {}. "
             "Value should be positive and greater than zero because it "
             "corresponds to {}.",
             i,
@@ -283,7 +283,7 @@ bool Inertia::verifySpatialTensor(
       if (std::abs(_spatial(i, j) - _spatial(j, i)) > _tolerance) {
         valid = false;
         DART_WARN(
-            "[Inertia::verifySpatialTensor] Values for entries ({},{}) and "
+            "Values for entries ({},{}) and "
             "({},{}) differ by {} which is more than the permitted tolerance "
             "({})",
             i,
@@ -303,7 +303,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
+            "Invalid entry for ({},{}): {}. "
             "Value should be exactly zero.",
             i,
             i,
@@ -314,7 +314,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
+            "Invalid entry for ({},{}): {}. "
             "Value should be exactly zero.",
             j,
             i,
@@ -332,7 +332,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Invalid entry for ({},{}): {}. "
+            "Invalid entry for ({},{}): {}. "
             "Value should be exactly zero.",
             i1,
             i2,
@@ -355,7 +355,7 @@ bool Inertia::verifySpatialTensor(
           valid = false;
           DART_WARN_IF(
               _printWarnings,
-              "[Inertia::verifySpatialTensor] Mismatch between entries "
+              "Mismatch between entries "
               "({},{}) and ({},{}). They should sum to zero, but instead "
               "they sum to {} which is outside of the permitted tolerance "
               "({}).",
@@ -386,7 +386,7 @@ bool Inertia::verifySpatialTensor(
         valid = false;
         DART_WARN_IF(
             _printWarnings,
-            "[Inertia::verifySpatialTensor] Values for  entries ({},{}) and "
+            "Values for  entries ({},{}) and "
             "({},{}) differ by {} which is more than the permitted tolerance "
             "({}). The bottom-left block should be the transpose of the "
             "top-right block.",

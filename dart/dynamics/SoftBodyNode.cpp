@@ -80,14 +80,14 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
   if (i1 >= mPointProps.size() || i2 >= mPointProps.size()) {
     if (mPointProps.size() == 0)
       DART_WARN(
-          "[SoftBodyNode::Properties::addConnection] Attempting to add a "
+          "Attempting to add a "
           "connection between indices {} and {}, but there are currently no "
           "entries in mPointProps!",
           i1,
           i2);
     else
       DART_WARN(
-          "[SoftBodyNode::Properties::addConnection] Attempting to add a "
+          "Attempting to add a "
           "connection between indices {} and {}, but the entries in "
           "mPointProps only go up to {}!",
           i1,
@@ -330,7 +330,7 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
       softShape->_buildMesh();
   } else {
     DART_WARN(
-        "[SoftBodyNode::configurePointMasses] The ShapeNode containing the "
+        "The ShapeNode containing the "
         "SoftMeshShape for the SoftBodyNode named [{}] ({}) has been removed. "
         "The soft body features for this SoftBodyNode cannot be used unless "
         "you recreate the SoftMeshShape.",
@@ -1399,7 +1399,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   for (int i = 0; i < 3; ++i) {
     if (frags[i] <= 2) {
       DART_WARN(
-          "[SoftBodyNodeHelper::makeBoxProperties] Invalid argument for "
+          "Invalid argument for "
           "_frags. The number of vertices assigned to soft box edge #{} is {}, "
           "but it must be greater than or equal to 3. We will set it to 3.",
           i,

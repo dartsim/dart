@@ -92,7 +92,7 @@ bool IpoptSolver::solve()
   // Intialize the IpoptApplication and process the options
   Ipopt::ApplicationReturnStatus init_status = mIpoptApp->Initialize();
   if (init_status != Ipopt::Solve_Succeeded) {
-    DART_ERROR("[IpoptSolver::solve] Error during ipopt initialization.");
+    DART_ERROR("Error during ipopt initialization.");
     DART_ASSERT(false);
     return false;
   }
@@ -407,7 +407,7 @@ bool DartTNLP::eval_h(
     Ipopt::Number* _values)
 {
   // TODO(JS): Not implemented yet.
-  DART_ERROR("[DartTNLP::eval_h] Not implemented yet.");
+  DART_ERROR("Not implemented yet.");
 
   return TNLP::eval_h(
       _n,

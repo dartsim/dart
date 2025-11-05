@@ -161,8 +161,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
       return math::eulerZYXToMatrix(_positions);
     default: {
       DART_ERROR(
-          "[EulerJoint::convertToRotation] Invalid AxisOrder specified ({})",
-          static_cast<int>(_ordering));
+          "Invalid AxisOrder specified ({})", static_cast<int>(_ordering));
       return Eigen::Matrix3d::Identity();
     }
   }

@@ -132,7 +132,7 @@ bool NloptSolver::solve()
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
       DART_ERROR(
-          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "Encountered exception [{}] while adding an "
           "equality constraint to an Nlopt solver. Check whether your "
           "algorithm [{}] ({}) supports equality constraints!",
           e.what(),
@@ -141,7 +141,7 @@ bool NloptSolver::solve()
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
-          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "Encountered exception [{}] while adding an "
           "equality constraint to the Nlopt solver. This might be a bug in "
           "DART; please report this!",
           e.what());
@@ -156,7 +156,7 @@ bool NloptSolver::solve()
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
       DART_ERROR(
-          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "Encountered exception [{}] while adding an "
           "inequality constraint to an Nlopt solver. Check whether your "
           "algorithm [{}] ({}) supports inequality constraints!",
           e.what(),
@@ -165,7 +165,7 @@ bool NloptSolver::solve()
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
-          "[NloptSolver::solve] Encountered exception [{}] while adding an "
+          "Encountered exception [{}] while adding an "
           "inequality constraint to the Nlopt solver. This might be a bug in "
           "DART; please report this!",
           e.what());

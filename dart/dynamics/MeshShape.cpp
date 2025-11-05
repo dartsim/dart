@@ -578,7 +578,7 @@ const aiScene* MeshShape::loadMesh(
   // If succeeded, store the importer in the scene to keep it alive. This is
   // necessary because the importer owns the memory that it allocates.
   if (!scene) {
-    DART_WARN("[MeshShape::loadMesh] Failed loading mesh '{}'.", _uri);
+    DART_WARN("Failed loading mesh '{}'.", _uri);
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
@@ -605,8 +605,7 @@ const aiScene* MeshShape::loadMesh(
   // Finally, pre-transform the vertices. We can't do this as part of the
   // import process, because we may have changed mTransformation above.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
-  DART_WARN_IF(
-      !scene, "[MeshShape::loadMesh] Failed pre-transforming vertices.");
+  DART_WARN_IF(!scene, "Failed pre-transforming vertices.");
 
   aiReleasePropertyStore(propertyStore);
 

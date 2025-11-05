@@ -83,7 +83,7 @@ const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
 //==============================================================================
 Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
-  DART_WARN("[SoftMeshShape::computeInertia] Not implemented yet.");
+  DART_WARN("Not implemented yet.");
   // TODO(JS): Not implemented.
 
   return Eigen::Matrix3d::Zero();
@@ -92,7 +92,7 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 //==============================================================================
 ShapePtr SoftMeshShape::clone() const
 {
-  DART_WARN("[SoftMeshShape::clone] This should never be called.");
+  DART_WARN("This should never be called.");
   return nullptr;
 }
 

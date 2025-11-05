@@ -102,14 +102,14 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 {
   if (!lcpSolver) {
     DART_WARN(
-        "[BoxedLcpConstraintSolver::setBoxedLcpSolver] nullptr for boxed LCP "
+        "nullptr for boxed LCP "
         "solver is not allowed.");
     return;
   }
 
   DART_WARN_IF(
       lcpSolver == mSecondaryBoxedLcpSolver,
-      "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set a "
+      "Attempting to set a "
       "primary LCP solver that is the same with the secondary LCP solver, "
       "which is discouraged. Ignoring this request.");
 
@@ -128,7 +128,7 @@ void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
 {
   DART_WARN_IF(
       lcpSolver == mBoxedLcpSolver,
-      "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set the "
+      "Attempting to set the "
       "secondary LCP solver that is identical to the primary LCP solver, "
       "which is redundant. Please use different solvers or set the secondary "
       "LCP solver to nullptr.");

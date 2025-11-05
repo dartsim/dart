@@ -122,7 +122,7 @@ FixedFrame::FixedFrame() : FixedFrame(ConstructAbstract)
 FixedFrame::FixedFrame(ConstructAbstractTag)
 {
   DART_ERROR(
-      "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
+      "Attempting to construct a pure abstract "
       "FixedFrame object. This is not allowed!");
   DART_ASSERT(false);
 }

@@ -198,7 +198,7 @@ InteractiveTool* InteractiveFrame::getTool(
 {
   if (InteractiveTool::NUM_TYPES <= tool) {
     DART_WARN(
-        "[InteractiveFrame::getTool] Attempting to access tool #{}, but tools "
+        "Attempting to access tool #{}, but tools "
         "only go up to {}",
         tool,
         InteractiveTool::NUM_TYPES);
@@ -207,7 +207,7 @@ InteractiveTool* InteractiveFrame::getTool(
 
   if (3 <= coordinate) {
     DART_WARN(
-        "[InteractiveFrame::getTool] Attempting to access a tool with "
+        "Attempting to access a tool with "
         "coordinate #{}, but tool coordinates only go up to 3",
         coordinate);
     return nullptr;

@@ -514,7 +514,7 @@ bool Joint::checkSanity(bool _printWarnings) const
         || getPositionUpperLimit(i) < getInitialPosition(i)) {
       if (_printWarnings) {
         DART_WARN(
-            "[Joint::checkSanity] Initial position of index {} [{}] in Joint "
+            "Initial position of index {} [{}] in Joint "
             "[{}] is outside of its position limits\\n -- Initial Position: "
             "{}\\n -- Limits: [{}, {}]",
             i,
@@ -534,7 +534,7 @@ bool Joint::checkSanity(bool _printWarnings) const
         || getVelocityUpperLimit(i) < getInitialVelocity(i)) {
       if (_printWarnings) {
         DART_WARN(
-            "[Joint::checkSanity] Initial velocity of index {} [{}] is Joint "
+            "Initial velocity of index {} [{}] is Joint "
             "[{}] is outside of its velocity limits\\n -- Initial Velocity: "
             "{}\\n -- Limits: [{}, {}]",
             i,

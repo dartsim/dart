@@ -190,7 +190,7 @@ static void warnAboutUnsuccessfulCast(
     const std::string& shapeType, const std::string& entityName)
 {
   DART_WARN(
-      "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '{}' claimed "
+      "A Shape in '{}' claimed "
       "to be a '{}' but it failed to be dynamically cast to that type. It will "
       "not be added to the OSG tree, and therefore will not be rendered",
       entityName,

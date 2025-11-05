@@ -180,7 +180,7 @@ bool DartResourceRetriever::resolveDataUri(
   if (!uri.mPath) {
     DART_WARN(
         "{}{}'.",
-        "[DartResourceRetriever::resolveDataUri] Failed extracting"
+        "Failed extracting"
         " relative path from URI '",
         uri.toString());
     return false;

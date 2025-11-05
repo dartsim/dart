@@ -83,7 +83,7 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
   if (pMode != std::string("r") && pMode != std::string("rb")
       && pMode != std::string("rt")) {
     DART_WARN(
-        "[AssimpInputResourceRetrieverAdaptor::Open] Unsupported mode '{}'. "
+        "Unsupported mode '{}'. "
         "Only 'r', 'rb', and 'rt' are supported.",
         pMode);
     return nullptr;
@@ -133,7 +133,7 @@ std::size_t AssimpInputResourceAdaptor::Write(
 {
   DART_WARN(
       "{}",
-      "[AssimpInputResourceAdaptor::Write] Write is not implemented."
+      "Write is not implemented."
       " This is a read-only stream.\n");
   return 0;
 }
@@ -160,7 +160,7 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
     default:
       DART_WARN(
           "{}",
-          "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
+          "Invalid origin. Expected"
           " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n");
       return aiReturn_FAILURE;
   }
@@ -188,7 +188,7 @@ void AssimpInputResourceAdaptor::Flush()
 {
   DART_WARN(
       "{}",
-      "[AssimpInputResourceAdaptor::Flush] Flush is not implemented."
+      "Flush is not implemented."
       " This is a read-only stream.\n");
 }
 

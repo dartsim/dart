@@ -301,7 +301,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   if (nullptr == _skeleton) {
     DART_WARN(
-        "[World::addSkeleton] Attempting to add a nullptr Skeleton to the "
+        "Attempting to add a nullptr Skeleton to the "
         "world!");
     return "";
   }
@@ -310,8 +310,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton)
       != mSkeletons.end()) {
     DART_WARN(
-        "[World::addSkeleton] Skeleton named [{}] is already in the world.",
-        _skeleton->getName());
+        "Skeleton named [{}] is already in the world.", _skeleton->getName());
     return _skeleton->getName();
   }
 
@@ -348,7 +347,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   if (nullptr == _skeleton) {
     DART_WARN(
-        "[World::removeSkeleton] Attempting to remove a nullptr Skeleton from "
+        "Attempting to remove a nullptr Skeleton from "
         "the world!");
     return;
   }
@@ -363,9 +362,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // If i is equal to the number of skeletons, then _skeleton is not in
   // mSkeleton. We do nothing.
   if (index == mSkeletons.size()) {
-    DART_WARN(
-        "[World::removeSkeleton] Skeleton [{}] is not in the world.",
-        _skeleton->getName());
+    DART_WARN("Skeleton [{}] is not in the world.", _skeleton->getName());
     return;
   }
 
@@ -461,7 +458,7 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   if (nullptr == _frame) {
     DART_WARN(
-        "[World::addFrame] Attempting to add a nullptr SimpleFrame to the "
+        "Attempting to add a nullptr SimpleFrame to the "
         "world!");
     return "";
   }
@@ -469,8 +466,7 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   if (find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame)
       != mSimpleFrames.end()) {
     DART_WARN(
-        "[World::addFrame] SimpleFrame named [{}] is already in the world.",
-        _frame->getName());
+        "SimpleFrame named [{}] is already in the world.", _frame->getName());
     return _frame->getName();
   }
 
@@ -500,9 +496,7 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
       = find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame);
 
   if (it == mSimpleFrames.end()) {
-    DART_WARN(
-        "[World::removeFrame] Frame named [{}] is not in the world.",
-        _frame->getName());
+    DART_WARN("Frame named [{}] is not in the world.", _frame->getName());
     return;
   }
 
@@ -572,7 +566,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
   if (!solver) {
     DART_WARN(
-        "[World::setConstraintSolver] nullptr for constraint solver is not "
+        "nullptr for constraint solver is not "
         "allowed. Doing nothing.");
     return;
   }
@@ -630,7 +624,7 @@ void World::handleSkeletonNameChange(
 {
   if (nullptr == _skeleton) {
     DART_ERROR(
-        "[World::handleSkeletonNameChange] Received a name change callback for "
+        "Received a name change callback for "
         "a nullptr Skeleton. This is most likely a bug. Please report "
         "this!");
     DART_ASSERT(false);
@@ -645,7 +639,7 @@ void World::handleSkeletonNameChange(
       = mMapForSkeletons.find(_skeleton);
   if (it == mMapForSkeletons.end()) {
     DART_ERROR(
-        "[World::handleSkeletonNameChange] Could not find Skeleton named [{}] "
+        "Could not find Skeleton named [{}] "
         "in the shared_ptr map of World [{}]. This is most likely a bug. "
         "Please report this!",
         _skeleton->getName(),
@@ -665,7 +659,7 @@ void World::handleSkeletonNameChange(
     sharedSkel->setName(issuedName);
   } else if (issuedName.empty()) {
     DART_ERROR(
-        "[World::handleSkeletonNameChange] Skeleton named [{}] ({}) does not "
+        "Skeleton named [{}] ({}) does not "
         "exist in the NameManager of World [{}]. This is most likely a bug. "
         "Please report this!",
         sharedSkel->getName(),
@@ -685,7 +679,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 
   if (nullptr == frame) {
     DART_ERROR(
-        "[World::handleFrameNameChange] Received a callback for a nullptr "
+        "Received a callback for a nullptr "
         "enity. This is most likely a bug. Please report this!");
     DART_ASSERT(false);
     return;
@@ -699,7 +693,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
       = mSimpleFrameToShared.find(frame);
   if (it == mSimpleFrameToShared.end()) {
     DART_ERROR(
-        "[World::handleFrameNameChange] Could not find SimpleFrame named [{}] "
+        "Could not find SimpleFrame named [{}] "
         "in the shared_ptr map of World [{}]. This is most likely a bug. "
         "Please report this!",
         frame->getName(),
@@ -716,7 +710,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
     sharedFrame->setName(issuedName);
   } else if (issuedName.empty()) {
     DART_ERROR(
-        "[World::handleFrameNameChange] SimpleFrame named [{}] ({}) does not "
+        "SimpleFrame named [{}] ({}) does not "
         "exist in the NameManager of World [{}]. This is most likely a bug. "
         "Please report this!",
         frame->getName(),

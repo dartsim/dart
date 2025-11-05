@@ -194,7 +194,7 @@ void Composite::duplicateAspects(const Composite* fromComposite)
 {
   if (nullptr == fromComposite) {
     DART_ERROR(
-        "[Composite::duplicateAspects] You have asked to duplicate the Aspects "
+        "You have asked to duplicate the Aspects "
         "of a nullptr, which is not allowed!");
     DART_ASSERT(false);
     return;
@@ -236,7 +236,7 @@ void Composite::matchAspects(const Composite* otherComposite)
 {
   if (nullptr == otherComposite) {
     DART_ERROR(
-        "[Composite::matchAspects] You have asked to match the Aspects of a "
+        "You have asked to match the Aspects of a "
         "nullptr, which is not allowed!");
     DART_ASSERT(false);
     return;

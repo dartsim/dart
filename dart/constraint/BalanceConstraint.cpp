@@ -70,7 +70,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
 
   if (nullptr == ik) {
     DART_ERROR(
-        "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
+        "Attempting to call a BalanceConstraint "
         "function associated to a HierarchicalIK that no longer exists!");
     DART_ASSERT(false);
     return 0.0;
@@ -80,7 +80,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
 
   if (nullptr == skel) {
     DART_ERROR(
-        "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
+        "Attempting to call a BalanceConstraint "
         "function on a Skeleton which no longer exists!");
     DART_ASSERT(false);
     return 0.0;
@@ -276,7 +276,7 @@ void BalanceConstraint::evalGradient(
 
         if (!ee->getSupport() || !ee->getSupport()->isActive()) {
           DART_WARN(
-              "[BalanceConstraint::evalGradient] The EndEffector named [{}] "
+              "The EndEffector named [{}] "
               "was identified as the closest supporting EndEffector, but it "
               "does not appear to be a supporting EndEffector at all. This is "
               "most likely a bug, please report it!",

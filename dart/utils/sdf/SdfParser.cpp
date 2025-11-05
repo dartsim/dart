@@ -287,10 +287,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   try {
     openXMLFile(sdfFile, uri, retriever);
   } catch (std::exception const& e) {
-    DART_WARN(
-        "[SdfParser::readSdfFile] Loading file [{}] failed: {}",
-        uri.toString(),
-        e.what());
+    DART_WARN("Loading file [{}] failed: {}", uri.toString(), e.what());
     return nullptr;
   }
 
@@ -337,10 +334,7 @@ dynamics::SkeletonPtr readSkeleton(
   try {
     openXMLFile(_dartFile, uri, retriever);
   } catch (std::exception const& e) {
-    DART_WARN(
-        "[SdfParser::readSkeleton] Loading file [{}] failed: {}",
-        uri.toString(),
-        e.what());
+    DART_WARN("Loading file [{}] failed: {}", uri.toString(), e.what());
     return nullptr;
   }
 
@@ -541,8 +535,7 @@ bool createPair(
     pair = createJointAndNodePair<dynamics::SoftBodyNode>(
         skeleton, parent, newJoint, newBody);
   } else {
-    DART_ERROR(
-        "[SdfParser::createPair] Unsupported Link type: {}", newBody.type);
+    DART_ERROR("Unsupported Link type: {}", newBody.type);
     return false;
   }
 
@@ -580,7 +573,7 @@ NextResult getNextJointAndNodePair(
     if (check_parent_body == sdfBodyNodes.end()) {
       // The Body does not exist in the file
       DART_ERROR(
-          "[SdfParser::getNextJointAndNodePair] Could not find Link named [{}] "
+          "Could not find Link named [{}] "
           "requested as parent of Joint [{}]. We will now quit parsing.",
           parentBodyName,
           parentJointName);
@@ -675,7 +668,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 
   DART_ERROR(
       "{}{}. Please report this as a bug! We will now quit parsing.",
-      "[SdfParser::createJointAndNodePair] Unsupported Joint type "
+      "Unsupported Joint type "
       "encountered: ",
       type);
   return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
@@ -697,7 +690,7 @@ BodyMap readAllBodyNodes(
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if (it != sdfBodyNodes.end()) {
       DART_WARN(
-          "[SdfParser::readAllBodyNodes] Duplicate name in file: {}\\nEvery "
+          "Duplicate name in file: {}\\nEvery "
           "Link must have a unique name!",
           body.properties->mName);
       continue;
@@ -931,7 +924,7 @@ dynamics::ShapePtr readShape(
     if (!hasElement(meshEle, "uri")) {
       // TODO(MXG): Figure out how to report the file name and line number of
       DART_WARN(
-          "[SdfParser::readShape] Mesh is missing a URI, which is required in "
+          "Mesh is missing a URI, which is required in "
           "order to load it");
       return nullptr;
     }
@@ -948,8 +941,7 @@ dynamics::ShapePtr readShape(
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, model, meshUri, _retriever);
     else {
-      DART_WARN(
-          "[SdfParser::readShape] Failed to load mesh model [{}].", meshUri);
+      DART_WARN("Failed to load mesh model [{}].", meshUri);
       return nullptr;
     }
   } else {
@@ -997,9 +989,7 @@ void readMaterial(
       Eigen::Vector4d color4d = color;
       visualAspect->setColor(color4d);
     } else {
-      DART_ERROR(
-          "[SdfParse::readMaterial] Unsupported color vector size: {}",
-          color.size());
+      DART_ERROR("Unsupported color vector size: {}", color.size());
     }
   }
 }
@@ -1104,7 +1094,7 @@ JointMap readAllJoints(
 
     if (joint.childName.empty()) {
       DART_ERROR(
-          "[SdfParser::readAllJoints] Joint named [{}] does not have a valid "
+          "Joint named [{}] does not have a valid "
           "child Link, so it will not be added to the Skeleton",
           joint.properties->mName);
       continue;
@@ -1113,7 +1103,7 @@ JointMap readAllJoints(
     JointMap::iterator it = sdfJoints.find(joint.childName);
     if (it != sdfJoints.end()) {
       DART_ERROR(
-          "[SdfParser::readAllJoints] Joint named [{}] is claiming Link [{}] "
+          "Joint named [{}] is claiming Link [{}] "
           "as its child, but that is already claimed by Joint [{}]. Joint [{}] "
           "will be discarded",
           joint.properties->mName,
@@ -1157,7 +1147,7 @@ SDFJoint readJoint(
 
       if (parent_it == _sdfBodyNodes.end()) {
         DART_ERROR(
-            "[SdfParser::readJoint] Cannot find a Link named [{}] requested as "
+            "Cannot find a Link named [{}] requested as "
             "the parent of the Joint named [{}]",
             strParent,
             name);
@@ -1166,7 +1156,7 @@ SDFJoint readJoint(
     }
   } else {
     DART_ERROR(
-        "[SdfParser::readJoint] You must set parent link for the Joint "
+        "You must set parent link for the Joint "
         "[{}]!",
         name);
     DART_ASSERT(0);
@@ -1183,7 +1173,7 @@ SDFJoint readJoint(
 
     if (child_it == _sdfBodyNodes.end()) {
       DART_ERROR(
-          "[SdfParser::readJoint] Cannot find a Link named [{}] requested as "
+          "Cannot find a Link named [{}] requested as "
           "the child of the Joint named [{}]",
           strChild,
           name);
@@ -1191,7 +1181,7 @@ SDFJoint readJoint(
     }
   } else {
     DART_ERROR(
-        "[SdfParser::readJoint] You must set the child link for the Joint "
+        "You must set the child link for the Joint "
         "[{}]!",
         name);
     DART_ASSERT(0);
@@ -1266,7 +1256,7 @@ static void reportMissingElement(
     const std::string& objectName)
 {
   DART_ERROR(
-      "[SdfParser::{}] Missing element {} for {} named {}",
+      "Missing element {} for {} named {}",
       functionName,
       elementName,
       objectType,

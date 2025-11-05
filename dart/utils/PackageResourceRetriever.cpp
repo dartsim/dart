@@ -138,7 +138,7 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
   else {
     DART_WARN(
         "{}{}{}",
-        "[PackageResourceResolver::getPackagePaths] Unable to resolve"
+        "Unable to resolve"
         "path to package '",
         _packageName,
         "'. Did you call"
@@ -159,7 +159,7 @@ bool PackageResourceRetriever::resolvePackageUri(
   if (!_uri.mAuthority) {
     DART_WARN(
         "{}{}'.",
-        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+        "Failed extracting"
         " package name from URI '",
         _uri.toString());
     return false;
@@ -169,7 +169,7 @@ bool PackageResourceRetriever::resolvePackageUri(
   if (!_uri.mPath) {
     DART_WARN(
         "{}{}'.",
-        "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+        "Failed extracting"
         " relative path from URI '",
         _uri.toString());
     return false;

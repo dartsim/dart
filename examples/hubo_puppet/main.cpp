@@ -62,7 +62,7 @@ public:
     DART_ERROR_IF(
         mLower.size() != dofs || mWeights.size() != dofs
             || mUpper.size() != dofs,
-        "[RelaxedPose::RelaxedPose] Dimension mismatch:\\n  ideal:   {}\\n  "
+        "Dimension mismatch:\\n  ideal:   {}\\n  "
         "lower:   {}\\n  upper:   {}\\n  weights: {}",
         mIdeal.size(),
         mLower.size(),
@@ -196,7 +196,7 @@ public:
 
       if (!configured) {
         DART_WARN(
-            "[HuboArmIK::computeSolutions] This analytical IK was not able to "
+            "This analytical IK was not able to "
             "configure properly, so it will not be able to compute "
             "solutions");
         return mSolutions;
@@ -206,7 +206,7 @@ public:
     const BodyNodePtr& base = mBaseLink.lock();
     if (nullptr == base) {
       DART_ERROR(
-          "[HuboArmIK::computeSolutions] Attempting to perform an IK on a limb "
+          "Attempting to perform an IK on a limb "
           "that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
@@ -215,7 +215,7 @@ public:
 
     if (nullptr == mWristEnd) {
       DART_ERROR(
-          "[HuboArmIK::computeSolutions] Attempting to perform IK without a "
+          "Attempting to perform IK without a "
           "wrist!");
       DART_ASSERT(false);
       return mSolutions;
@@ -359,7 +359,7 @@ protected:
 
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
-      DART_ERROR("[HuboArmIK::configure] base link is a nullptr");
+      DART_ERROR("base link is a nullptr");
       DART_ASSERT(false);
       return;
     }
@@ -367,8 +367,7 @@ protected:
     const SkeletonPtr& skel = base->getSkeleton();
     const BodyNodePtr& pelvis = skel->getBodyNode("Body_TSY");
     if (nullptr == pelvis) {
-      DART_ERROR(
-          "[HuboArmIK::configure] Could not find Hubo's pelvis (Body_TSY)");
+      DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
       DART_ASSERT(false);
       return;
     }
@@ -381,7 +380,7 @@ protected:
       Joint* joint = bn->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
-            "[HuboArmIK::configure] Invalid number of DOFs ({}) in the Joint "
+            "Invalid number of DOFs ({}) in the Joint "
             "[{}]",
             joint->getNumDofs(),
             joint->getName());
@@ -479,7 +478,7 @@ public:
 
       if (!configured) {
         DART_WARN(
-            "[HuboLegIK::computeSolutions] This analytical IK was not able to "
+            "This analytical IK was not able to "
             "configure properly, so it will not be able to compute "
             "solutions");
         return mSolutions;
@@ -489,7 +488,7 @@ public:
     const BodyNodePtr& base = mBaseLink.lock();
     if (nullptr == base) {
       DART_ERROR(
-          "[HuboLegIK::computeSolutions] Attempting to perform IK on a limb "
+          "Attempting to perform IK on a limb "
           "that no longer exists!");
       DART_ASSERT(false);
       return mSolutions;
@@ -605,7 +604,7 @@ protected:
 
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
-      DART_ERROR("[HuboLegIK::configure] base link is a nullptr");
+      DART_ERROR("base link is a nullptr");
       DART_ASSERT(false);
       return;
     }
@@ -613,8 +612,7 @@ protected:
     const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
     BodyNode* pelvis = skel->getBodyNode("Body_TSY");
     if (nullptr == pelvis) {
-      DART_ERROR(
-          "[HuboLegIK::configure] Could not find Hubo's pelvis (Body_TSY)");
+      DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
       DART_ASSERT(false);
       return;
     }
@@ -627,7 +625,7 @@ protected:
       Joint* joint = bn->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
-            "[HuboLegIK::configure] Invalid number of DOFs ({}) in the Joint "
+            "Invalid number of DOFs ({}) in the Joint "
             "[{}]",
             joint->getNumDofs(),
             joint->getName());

@@ -47,7 +47,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
 {
   if (_thickness <= 0.0f) {
     DART_WARN(
-        "[LineSegmentShape::LineSegmentShape] Attempting to set non-positive "
+        "Attempting to set non-positive "
         "thickness. We set the thickness to 1.0f instead.");
     mThickness = 1.0f;
   }
@@ -62,7 +62,7 @@ LineSegmentShape::LineSegmentShape(
 {
   if (_thickness <= 0.0f) {
     DART_WARN(
-        "[LineSegmentShape::LineSegmentShape] Attempting to set non-positive "
+        "Attempting to set non-positive "
         "thickness. We set the thickness to 1.0f instead.");
     mThickness = 1.0f;
   }
@@ -90,7 +90,7 @@ void LineSegmentShape::setThickness(float _thickness)
 {
   if (_thickness <= 0.0f) {
     DART_WARN(
-        "[LineSegmentShape::setThickness] Attempting to set non-positive "
+        "Attempting to set non-positive "
         "thickness. We set the thickness to 1.0f instead.");
     mThickness = 1.0f;
     return;
@@ -126,19 +126,15 @@ std::size_t LineSegmentShape::addVertex(
   if (_parent > mVertices.size()) {
     if (mVertices.size() == 0)
       DART_WARN(
-          "{}Attempting to add a vertex to be a child of vertex #{}, but no "
+          "Attempting to add a vertex to be a child of vertex #{}, but no "
           "vertices exist yet. No connection will be created for the new "
           "vertex yet.",
-          "[LineSegmentShape::addVertex(const Eigen::Vector3d&, "
-          "std::size_t)] ",
           _parent);
     else
       DART_WARN(
-          "{}Attempting to add a vertex to be a child of vertex #{}, but the "
+          "Attempting to add a vertex to be a child of vertex #{}, but the "
           "vertex indices only go up to {}. No connection will be created for "
           "the new vertex yet.",
-          "[LineSegmentShape::addVertex(const Eigen::Vector3d&, "
-          "std::size_t)] ",
           _parent,
           mVertices.size() - 1);
   } else {
@@ -154,13 +150,13 @@ void LineSegmentShape::removeVertex(std::size_t _idx)
   if (_idx >= mVertices.size()) {
     if (mVertices.size() == 0)
       DART_WARN(
-          "[LineSegmentShape::removeVertex] Attempting to remove vertex #{}, "
+          "Attempting to remove vertex #{}, "
           "but this LineSegmentShape contains no vertices. No vertex will be "
           "removed.",
           _idx);
     else
       DART_WARN(
-          "[LineSegmentShape::removeVertex] Attempting to remove vertex #{}, "
+          "Attempting to remove vertex #{}, "
           "but vertex indices only go up to #{}. No vertex will be removed.",
           _idx,
           mVertices.size() - 1);
@@ -177,12 +173,12 @@ void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
   if (_idx >= mVertices.size()) {
     if (mVertices.size() == 0)
       DART_WARN(
-          "[LineSegmentShape::setVertex] Attempting to set vertex #{}, but no "
+          "Attempting to set vertex #{}, but no "
           "vertices exist in this LineSegmentShape yet.",
           _idx);
     else
       DART_WARN(
-          "[LineSegmentShape::setVertex] Attempting to set vertex #{}, but the "
+          "Attempting to set vertex #{}, but the "
           "vertices of this LineSegmentShape only go up to #{}.",
           _idx,
           mVertices.size() - 1);
@@ -200,12 +196,12 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
 
   if (mVertices.empty()) {
     DART_WARN(
-        "[LineSegmentShape::getVertex] Requested vertex #{}, but no vertices "
+        "Requested vertex #{}, but no vertices "
         "currently exist in this LineSegmentShape",
         _idx);
   } else {
     DART_WARN(
-        "[LineSegmentShape::getVertex] Requested vertex #{}, but vertex "
+        "Requested vertex #{}, but vertex "
         "indices currently only go up to {}",
         _idx,
         mVertices.size() - 1);
@@ -226,7 +222,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
   if (_idx1 >= mVertices.size() || _idx2 >= mVertices.size()) {
     if (mVertices.size() == 0)
       DART_WARN(
-          "[LineSegmentShape::createConnection] Attempted to create a "
+          "Attempted to create a "
           "connection between vertex #{} and vertex #{}, but no vertices exist "
           "for this LineSegmentShape yet. No connection will be made for these "
           "non-existent vertices.",
@@ -234,7 +230,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
           _idx2);
     else
       DART_WARN(
-          "[LineSegmentShape::createConnection] Attempted to create a "
+          "Attempted to create a "
           "connection between vertex #{} and vertex #{}, but the vertices only "
           "go up to #{}. No connection will be made for these non-existent "
           "vertices.",
@@ -273,14 +269,14 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
     if (mConnections.size() == 0)
 
       DART_WARN(
-          "[LineSegmentShape::removeConnection(std::size_t)] Attempting to "
+          "Attempting to "
           "remove connection #{}, but no connections exist yet. No connection "
           "will be removed.",
           _connectionIdx);
     else
 
       DART_WARN(
-          "[LineSegmentShape::removeConnection(std::size_t)] Attempting to "
+          "Attempting to "
           "remove connection #{}, but connection indices only go up to #{}. No "
           "connection will be removed.",
           _connectionIdx,

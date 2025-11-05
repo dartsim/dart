@@ -55,14 +55,14 @@ bool CompositeResourceRetriever::addSchemaRetriever(
   if (!_resourceRetriever) {
     DART_ERROR(
         "{}",
-        "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
+        "Receieved"
         " nullptr ResourceRetriever; skipping this entry.\n");
     return false;
   }
 
   if (_schema.find("://") != std::string::npos) {
     DART_ERROR(
-        "[CompositeResourceRetriever::addSchemaRetriever] Schema '{}{}",
+        "Schema '{}{}",
         _schema,
         "' contains '://'. Did you mistakenly include the"
         " '://' in the input of this function?\n");
@@ -97,7 +97,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 
   DART_WARN(
       "{}{}' (tried {}).",
-      "[CompositeResourceRetriever::retrieve] All ResourceRetrievers"
+      "All ResourceRetrievers"
       " registered for this schema failed to retrieve the URI '",
       _uri.toString(),
       retrievers.size());
@@ -138,7 +138,7 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
   DART_WARN_IF(
       retrievers.empty(),
       "{}{}{}{}'.",
-      "[CompositeResourceRetriever::retrieve] There are no resource"
+      "There are no resource"
       " retrievers registered for the schema '",
       schema,
       "'"

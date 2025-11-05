@@ -54,7 +54,7 @@ static bool checkIndexArrayValidity(
     if (_indices[i] >= dofs) {
       if (dofs > 0) {
         DART_ERROR(
-            "[Skeleton::{}] Invalid entry ({}) in _indices array: {}. Value "
+            "Invalid entry ({}) in _indices array: {}. Value "
             "must be less than {} for the Skeleton named [{}] ({})",
             _fname,
             i,
@@ -64,7 +64,7 @@ static bool checkIndexArrayValidity(
             static_cast<const void*>(skel));
       } else {
         DART_ERROR(
-            "[Skeleton::{}] The Skeleton named [{}] ({}) is empty, but "
+            "The Skeleton named [{}] ({}) is empty, but "
             "_indices has entries in it. Nothing will be set!",
             _fname,
             skel->getName(),
@@ -87,7 +87,7 @@ static bool checkIndexArrayAgreement(
 {
   if (static_cast<int>(_indices.size()) != _values.size()) {
     DART_ERROR(
-        "[Skeleton::{}] Mismatch between _indices size ({}) and {} size ({}) "
+        "Mismatch between _indices size ({}) and {} size ({}) "
         "for Skeleton named [{}] ({}). Nothing will be set!",
         _fname,
         _indices.size(),
@@ -120,7 +120,7 @@ static void setValuesFromVector(
       (dof->*setValue)(_values[i]);
     } else {
       DART_ERROR(
-          "[MetaSkeleton::{}] DegreeOfFreedom #{} (entry #{} in {}) has "
+          "DegreeOfFreedom #{} (entry #{} in {}) has "
           "expired! ReferentialSkeletons should call update() after structural "
           "changes have been made to the BodyNodes they refer to. Nothing will "
           "be set for this specific DegreeOfFreedom.",
@@ -144,7 +144,7 @@ static void setAllValuesFromVector(
   std::size_t nDofs = skel->getNumDofs();
   if (_values.size() != static_cast<int>(skel->getNumDofs())) {
     DART_ERROR(
-        "[MetaSkeleton::{}] Invalid number of entries ({}) in {} for "
+        "Invalid number of entries ({}) in {} for "
         "MetaSkeleton named [{}] ({}). Must be equal to ({}). Nothing will be "
         "set!",
         _fname,
@@ -163,7 +163,7 @@ static void setAllValuesFromVector(
       (dof->*setValue)(_values[i]);
     } else {
       DART_ERROR(
-          "[MetaSkeleton::{}] DegreeOfFreedom #{} in the MetaSkeleton named "
+          "DegreeOfFreedom #{} in the MetaSkeleton named "
           "[{}] ({}) has expired! ReferentialSkeletons should call update() "
           "after structural changes have been made to the BodyNodes they refer "
           "to. Nothing will be set for this specific DegreeOfFreedom.",
@@ -193,7 +193,7 @@ static Eigen::VectorXd getValuesFromVector(
       values[i] = 0.0;
       if (i < skel->getNumDofs()) {
         DART_ERROR(
-            "[MetaSkeleton::{}] Requesting value for DegreeOfFreedom #{} "
+            "Requesting value for DegreeOfFreedom #{} "
             "(entry #{} in _indices), but this index has expired! "
             "ReferentialSkeletons should call update() after structural "
             "changes have been made to the BodyNodes they refer to. The return "
@@ -203,7 +203,7 @@ static Eigen::VectorXd getValuesFromVector(
             i);
       } else {
         DART_ERROR(
-            "[MetaSkeleton::{}] Requesting out of bounds DegreeOfFreedom #{} "
+            "Requesting out of bounds DegreeOfFreedom #{} "
             "(entry #{} in _indices) for MetaSkeleton named [{}] ({}). The max "
             "index is ({}). The return value for this entry will be zero.",
             _fname,
@@ -234,7 +234,7 @@ static Eigen::VectorXd getValuesFromAllDofs(
       values[i] = (skel->getDof(i)->*getValue)();
     } else {
       DART_ERROR(
-          "[MetaSkeleton::{}] DegreeOfFreedom #{} has expired! "
+          "DegreeOfFreedom #{} has expired! "
           "ReferentialSkeletons should call update() after structural changes "
           "have been made to the BodyNodes they refer to. The return value for "
           "this entry will be zero.",
@@ -271,7 +271,7 @@ static void setValueFromIndex(
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
       DART_ERROR(
-          "[MetaSkeleton::{}] Out of bounds index ({}) for MetaSkeleton named "
+          "Out of bounds index ({}) for MetaSkeleton named "
           "[{}] ({}). Must be less than {}!",
           _fname,
           _index,
@@ -280,7 +280,7 @@ static void setValueFromIndex(
           skel->getNumDofs());
     else
       DART_ERROR(
-          "[MetaSkeleton::{}] Index ({}) cannot be used on MetaSkeleton [{}] "
+          "Index ({}) cannot be used on MetaSkeleton [{}] "
           "({}) because it is empty!",
           _fname,
           _index,
@@ -295,7 +295,7 @@ static void setValueFromIndex(
     (dof->*setValue)(_value);
   } else {
     DART_ERROR(
-        "[MetaSkeleton::{}] DegreeOfFreedom #{} in the MetaSkeleton named [{}] "
+        "DegreeOfFreedom #{} in the MetaSkeleton named [{}] "
         "({}) has expired! ReferentialSkeletons should call update() after "
         "structural changes have been made to the BodyNodes they refer to. "
         "Nothing will be set!",
@@ -315,7 +315,7 @@ static double getValueFromIndex(
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
       DART_ERROR(
-          "[MetaSkeleton::{}] Out of bounds index ({}) for MetaSkeleton named "
+          "Out of bounds index ({}) for MetaSkeleton named "
           "[{}] ({}). Must be less than {}! The return value will be zero.",
           _fname,
           _index,
@@ -324,7 +324,7 @@ static double getValueFromIndex(
           skel->getNumDofs());
     else
       DART_ERROR(
-          "[MetaSkeleton::{}] Index ({}) cannot be requested for MetaSkeleton "
+          "Index ({}) cannot be requested for MetaSkeleton "
           "[{}] ({}) because it is empty! The return value will be zero.",
           _fname,
           _index,
@@ -340,7 +340,7 @@ static double getValueFromIndex(
   }
 
   DART_ERROR(
-      "[MetaSkeleton::{}] DegreeOfFreedom #{}in the MetaSkeleton named [{}] "
+      "DegreeOfFreedom #{}in the MetaSkeleton named [{}] "
       "({}) has expired! ReferentialSkeletons should call update() after "
       "structural changes have been made to the BodyNodes they refer to. The "
       "return value will be zero.",

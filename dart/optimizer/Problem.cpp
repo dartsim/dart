@@ -95,7 +95,7 @@ void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 
   if (_initGuess.size() != static_cast<int>(mDimension)) {
     DART_ERROR(
-        "[Problem::setInitialGuess] Attempting to set the initial guess of a "
+        "Attempting to set the initial guess of a "
         "Problem of dimension [{}] to a vector of dimension [{}]. This initial "
         "guess will not be used!",
         mDimension,
@@ -119,7 +119,7 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
     mSeeds.push_back(_seed);
   } else {
     DART_WARN(
-        "[Problem::addSeed] Attempting to add a seed of dimension [{}] a "
+        "Attempting to add a seed of dimension [{}] a "
         "Problem of dimension [{}]. The seed will not be added.",
         _seed.size(),
         mDimension);
@@ -134,12 +134,12 @@ Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 
   if (mSeeds.size() == 0)
     DART_WARN(
-        "[Problem::getSeed] Requested seed at index [{}], but there are "
+        "Requested seed at index [{}], but there are "
         "currently no seeds. Returning the problem's initial guess instead.",
         _index);
   else
     DART_WARN(
-        "[Problem::getSeed] Requested seed at index [{}], but the current max "
+        "Requested seed at index [{}], but the current max "
         "index is [{}]. Returning the Problem's initial guess instead.",
         _index,
         mSeeds.size() - 1);

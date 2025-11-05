@@ -64,7 +64,7 @@ public:
     DART_ERROR_IF(
         mLower.size() != dofs || mWeights.size() != dofs
             || mUpper.size() != dofs,
-        "[RelaxedPose::RelaxedPose] Dimension mismatch:\\n  ideal:   {}\\n  "
+        "Dimension mismatch:\\n  ideal:   {}\\n  "
         "lower:   {}\\n  upper:   {}\\n  weights: {}",
         mIdeal.size(),
         mLower.size(),

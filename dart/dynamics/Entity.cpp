@@ -225,7 +225,7 @@ Entity::Entity(ConstructAbstractTag)
     mAmQuiet(false)
 {
   DART_ERROR(
-      "[Entity::Entity] Your class implementation is calling the Entity "
+      "Your class implementation is calling the Entity "
       "constructor that is meant to be reserved for abstract classes!");
   DART_ASSERT(false);
 }

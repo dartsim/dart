@@ -98,9 +98,7 @@ public:
         if (::osgDB::writeImageFile(*mImage, str.str())) {
           ++mViewer->mImageSequenceNum;
         } else {
-          DART_WARN(
-              "[SaveScreen::record] Unable to save image to file named: {}",
-              str.str());
+          DART_WARN("Unable to save image to file named: {}", str.str());
 
           // Toggle off recording if the file cannot be saved.
           mViewer->mRecording = false;
@@ -112,7 +110,7 @@ public:
       if (!mViewer->mScreenCapName.empty()) {
         DART_WARN_IF(
             !::osgDB::writeImageFile(*mImage, mViewer->mScreenCapName),
-            "[SaveScreen::capture] Unable to save image to file named: {}",
+            "Unable to save image to file named: {}",
             mViewer->mScreenCapName);
 
         // Toggle off the screen capture after the image is grabbed (or the
@@ -240,12 +238,12 @@ void Viewer::captureScreen(const std::string& filename)
 {
   if (filename.empty()) {
     DART_WARN(
-        "[Viewer::captureScreen] Passed in empty filename for screen capture. "
+        "Passed in empty filename for screen capture. "
         "This is not allowed!");
     return;
   }
 
-  DART_INFO("[Viewer::captureScreen] Saving image to file: {}", filename);
+  DART_INFO("Saving image to file: {}", filename);
 
   mScreenCapName = filename;
   mScreenCapture = true;
@@ -260,7 +258,7 @@ void Viewer::record(
 {
   if (directory.empty()) {
     DART_WARN(
-        "[Viewer::record] Passed in empty directory name for screen recording. "
+        "Passed in empty directory name for screen recording. "
         "This is not allowed!");
     return;
   }
@@ -276,7 +274,7 @@ void Viewer::record(
   mRecording = true;
 
   DART_INFO(
-      "[Viewer::record] Recording screen image sequence to directory [{}] with "
+      "Recording screen image sequence to directory [{}] with "
       "a prefix of [{}] starting from sequence number [{}]",
       mImageDirectory,
       mImagePrefix,
@@ -291,7 +289,7 @@ void Viewer::pauseRecording()
 
   mRecording = false;
   DART_INFO(
-      "[Viewer::pauseRecording] Screen recording is paused at image sequence "
+      "Screen recording is paused at image sequence "
       "number [{}]",
       mImageSequenceNum);
 }
@@ -851,7 +849,7 @@ void Viewer::setVerticalFieldOfView(const double fov)
 
   if (!camera) {
     DART_WARN(
-        "[Viewer::setMasterCameraFieldOfView] This viewer doesn't have any "
+        "This viewer doesn't have any "
         "cameras. Ignoring this request.");
     return;
   }
@@ -861,7 +859,7 @@ void Viewer::setVerticalFieldOfView(const double fov)
 
   if (!result) {
     DART_WARN(
-        "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical field "
+        "Attemping to set vertical field "
         "of view while the camera isn't perspective view. Ignoring this "
         "request.");
     return;
@@ -882,7 +880,7 @@ double Viewer::getVerticalFieldOfView() const
 
   if (!camera) {
     DART_WARN(
-        "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have any "
+        "This viewer doesn't have any "
         "cameras. Returning 0.0.");
     return 0.0;
   }
@@ -892,7 +890,7 @@ double Viewer::getVerticalFieldOfView() const
 
   if (!result) {
     DART_WARN(
-        "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
+        "Vertical field of view is "
         "requested while the camera isn't perspective view. Returning 0.0.");
     return 0.0;
   }

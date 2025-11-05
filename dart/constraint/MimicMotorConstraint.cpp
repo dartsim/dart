@@ -102,7 +102,7 @@ void MimicMotorConstraint::setConstraintForceMixing(double cfm)
   // Clamp constraint force mixing parameter if it is out of the range
   if (cfm < 1e-9) {
     DART_WARN(
-        "[MimicMotorConstraint::setConstraintForceMixing] Constraint force "
+        "Constraint force "
         "mixing parameter[{}] is lower than 1e-9. It is set to 1e-9.",
         cfm);
     mConstraintForceMixing = 1e-9;

@@ -632,7 +632,7 @@ static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
     DART_ERROR(
-        "[FCLCollisionDetector::collide] Attempting to check collision for a "
+        "Attempting to check collision for a "
         "collision group that is created from a different collision detector "
         "instance.");
 
@@ -762,7 +762,7 @@ void FCLCollisionDetector::setPrimitiveShapeType(
 {
   DART_WARN_IF(
       type == PRIMITIVE,
-      "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use FCL's "
+      "You chose to use FCL's "
       "primitive shape collision feature while it's not complete (at least "
       "until 0.4.0) especially in use of dynamics simulation. It's "
       "recommended to use mesh even for primitive shapes by settting "
@@ -784,7 +784,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
 {
   DART_WARN_IF(
       method == FCL,
-      "[FCLCollisionDetector::setContactPointComputationMethod] You chose to "
+      "You chose to "
       "use FCL's built in contact point computation whileit's buggy (see "
       "https://github.com/flexible-collision-library/fcl/issues/106) at "
       "least until 0.4.0. It's recommended to use DART's implementation for "
@@ -1002,7 +1002,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = new fcl::OcTree(octree);
   #else
     DART_ERROR(
-        "[FCLCollisionDetector::createFCLCollisionGeometry] Attempting to "
+        "Attempting to "
         "create an collision geometry for VoxelGridShape, but the installed "
         "FCL isn't built with Octomap support. Creating a sphere with 0.1 "
         "radius instead.");
@@ -1013,7 +1013,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 #endif // HAVE_OCTOMAP
   else {
     DART_ERROR(
-        "[FCLCollisionDetector::createFCLCollisionGeometry] Attempting to "
+        "Attempting to "
         "create an unsupported shape type [{}]. Creating a sphere with 0.1 "
         "radius instead.",
         shapeType);

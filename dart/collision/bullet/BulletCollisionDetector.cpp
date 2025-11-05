@@ -153,7 +153,7 @@ static bool checkGroupValidity(
 {
   if (cd != group->getCollisionDetector().get()) {
     DART_ERROR(
-        "[BulletCollisionDetector::collide] Attempting to check collision for "
+        "Attempting to check collision for "
         "a collision group that is created from a different collision detector "
         "instance.");
 
@@ -308,7 +308,7 @@ double BulletCollisionDetector::distance(
   static bool warned = false;
   if (!warned) {
     DART_WARN(
-        "[BulletCollisionDetector::distance] This collision detector does not "
+        "This collision detector does not "
         "support (signed) distance queries. Returning 0.0.");
     warned = true;
   }
@@ -326,7 +326,7 @@ double BulletCollisionDetector::distance(
   static bool warned = false;
   if (!warned) {
     DART_WARN(
-        "[BulletCollisionDetector::distance] This collision detector does not "
+        "This collision detector does not "
         "support (signed) distance queries. Returning.");
     warned = true;
   }
@@ -581,7 +581,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     DART_ASSERT(dynamic_cast<const HeightmapShaped*>(shape.get()));
 
     DART_ERROR(
-        "[BulletCollisionDetector::createBulletCollisionShape] Bullet does not "
+        "Bullet does not "
         "support double height fields (shape type [{}]). Creating a sphere "
         "with 0.1 radius instead.",
         shape->getType());
@@ -594,7 +594,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     // return createBulletCollisionShapeFromHeightmap(heightMap);
   } else {
     DART_ERROR(
-        "[BulletCollisionDetector::createBulletCollisionShape] Attempting to "
+        "Attempting to "
         "create an unsupported shape type [{}] Creating a sphere with 0.1 "
         "radius instead.",
         shape->getType());

@@ -112,7 +112,7 @@ public:
         return math::matrixToEulerZYX(_rotation);
       default:
         DART_WARN(
-            "[EulerJoint::convertToPositions] Unsupported AxisOrder ({}), "
+            "Unsupported AxisOrder ({}), "
             "returning a zero vector",
             static_cast<int>(_ordering));
         return Eigen::Vector3d::Zero();

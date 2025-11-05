@@ -59,7 +59,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   const bool exists = std::ifstream(path).good();
   if (!exists) {
     DART_WARN(
-        "[SharedLibraryManager::load] Failed to load the shared library '{}'. "
+        "Failed to load the shared library '{}'. "
         "The file doesn't exist. Returning nullptr.",
         path.c_str());
     return nullptr;

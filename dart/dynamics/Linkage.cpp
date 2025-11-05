@@ -505,7 +505,7 @@ LinkagePtr Linkage::cloneLinkage(const std::string& cloneName) const
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode) {
     DART_WARN(
-        "[Linkage::cloneMetaSkeleton] Failed to clone because the start node "
+        "Failed to clone because the start node "
         "of the criteria in this Linkage is not valid anymore. Returning "
         "nullptr.");
     return nullptr;

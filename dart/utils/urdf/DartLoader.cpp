@@ -136,9 +136,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(const common::Uri& uri)
   // Use urdfdom to load the URDF file.
   const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
   if (!urdfInterface) {
-    DART_WARN(
-        "[DartLoader::readSkeleton] Failed loading URDF file '{}'.",
-        uri.toString());
+    DART_WARN("Failed loading URDF file '{}'.", uri.toString());
     return nullptr;
   }
 
@@ -172,14 +170,14 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 {
   if (urdfString.empty()) {
     DART_WARN(
-        "[DartLoader::parseSkeletonString] A blank string cannot be parsed "
+        "A blank string cannot be parsed "
         "into a Skeleton. Returning a nullptr");
     return nullptr;
   }
 
   ModelInterfacePtr urdfInterface = urdf::parseURDF(urdfString);
   if (!urdfInterface) {
-    DART_WARN("[DartLoader::parseSkeletonString] Failed loading URDF.");
+    DART_WARN("Failed loading URDF.");
     return nullptr;
   }
 
@@ -251,7 +249,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
   if (urdfString.empty()) {
     DART_WARN(
-        "[DartLoader::parseWorldString] A blank string cannot be parsed into a "
+        "A blank string cannot be parsed into a "
         "World. Returning a nullptr");
     return nullptr;
   }
@@ -260,7 +258,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
       = urdf_parsing::parseWorldURDF(urdfString, baseUri, resourceRetriever);
 
   if (!worldInterface) {
-    DART_WARN("[DartLoader::parseWorldString] Failed loading URDF.");
+    DART_WARN("Failed loading URDF.");
     return nullptr;
   }
 
@@ -273,7 +271,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
     if (!skeleton) {
       DART_WARN(
-          "[DartLoader::parseWorldString] Robot {} was not correctly "
+          "Robot {} was not correctly "
           "parsed!",
           worldInterface->models[i].model->getName());
       continue;
@@ -313,7 +311,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   if (root->name == "world") {
     DART_WARN_IF(
         model->getRoot()->child_links.size() > 1,
-        "[DartLoader::modelInterfaceToSkeleton] The world link has more than "
+        "The world link has more than "
         "one child links. This leads to creating a multi-tree robot. "
         "Multi-tree robot is supported by DART, but not the URDF standard. "
         "Please consider changing the robot model as a single tree "
@@ -621,9 +619,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       break;
     }
     default: {
-      DART_ERROR(
-          "[DartLoader::createDartJoint] Unsupported joint type ({})",
-          _jt->type);
+      DART_ERROR("Unsupported joint type ({})", _jt->type);
       return nullptr;
     }
   }
@@ -775,7 +771,7 @@ dynamics::ShapePtr DartLoader::createShape(
     common::Uri relativeUri, absoluteUri;
     if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename)) {
       DART_WARN(
-          "[DartLoader::createShape] Failed resolving mesh URI '{}' relative "
+          "Failed resolving mesh URI '{}' relative "
           "to '{}'.",
           mesh->filename,
           _baseUri.toString());
@@ -796,7 +792,7 @@ dynamics::ShapePtr DartLoader::createShape(
   // Unknown geometry type
   else {
     DART_WARN(
-        "[DartLoader::createShape] Unknown URDF Shape type (we only know of "
+        "Unknown URDF Shape type (we only know of "
         "Sphere, Box, Cylinder, and Mesh). We are returning a nullptr.");
     return nullptr;
   }

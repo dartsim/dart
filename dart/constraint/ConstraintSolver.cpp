@@ -108,7 +108,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 
   if (hasSkeleton(skeleton)) {
     DART_WARN(
-        "[ConstraintSolver::addSkeleton] Attempting to add skeleton '{}', "
+        "Attempting to add skeleton '{}', "
         "which already exists in the ConstraintSolver.",
         skeleton->getName());
 
@@ -142,7 +142,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 
   DART_WARN_IF(
       !hasSkeleton(skeleton),
-      "[ConstraintSolver::removeSkeleton] Attempting to remove skeleton "
+      "Attempting to remove skeleton "
       "'{}', which doesn't exist in the ConstraintSolver.",
       skeleton->getName());
 
@@ -275,7 +275,7 @@ void ConstraintSolver::setCollisionDetector(
 {
   if (!collisionDetector) {
     DART_WARN(
-        "[ConstraintSolver::setCollisionDetector] Attempting to assign nullptr "
+        "Attempting to assign nullptr "
         "as the new collision detector to the constraint solver, which is not "
         "allowed. Ignoring.");
     return;
@@ -346,7 +346,7 @@ const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
 {
   DART_WARN(
-      "[ConstraintSolver::setLCPSolver] This function is deprecated in DART "
+      "This function is deprecated in DART "
       "6.7. Please use BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
       "Doing nothing.");
 }
@@ -355,7 +355,7 @@ void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
 LCPSolver* ConstraintSolver::getLCPSolver() const
 {
   DART_WARN(
-      "[ConstraintSolver::getLCPSolver] This function is deprecated in DART "
+      "This function is deprecated in DART "
       "6.7. Please use BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
       "Returning nullptr.");
 

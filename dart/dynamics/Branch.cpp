@@ -72,7 +72,7 @@ Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
   if (!startBodyNode) {
     DART_WARN(
-        "[Chain::Criteria::convert] Failed in conversion because the start "
+        "Failed in conversion because the start "
         "node of the input criteria is not valid anymore. Using the returning "
         "Criteria will lead to creating an empty Branch.");
     return Branch::Criteria(nullptr);
@@ -103,7 +103,7 @@ BranchPtr Branch::cloneBranch(const std::string& cloneName) const
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode) {
     DART_WARN(
-        "[Branch::cloneMetaSkeleton] Failed to clone because the start node of "
+        "Failed to clone because the start node of "
         "the criteria in this Branch is not valid anymore. Returning "
         "nullptr.");
     return nullptr;

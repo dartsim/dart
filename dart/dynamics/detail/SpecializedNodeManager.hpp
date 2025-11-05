@@ -231,7 +231,7 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
 
   if (treeIndex >= mTreeNodeMaps.size()) {
     DART_ERROR(
-        "[Skeleton::getNumNodes<{}>] Requested tree index ({}), but there are "
+        "Requested tree index ({}), but there are "
         "only ({}) trees available",
         typeid(SpecNode).name(),
         treeIndex,
@@ -264,7 +264,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 
   if (treeIndex >= mTreeNodeMaps.size()) {
     DART_ERROR(
-        "[Skeleton::getNode<{}>] Requested tree index ({}), but there are only "
+        "Requested tree index ({}), but there are only "
         "({}) trees available",
         typeid(SpecNode).name(),
         treeIndex,
@@ -277,7 +277,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 
   if (nodeIndex >= it->second.size()) {
     DART_ERROR(
-        "[Skeleton::getNode<{}>] Requested index ({}) within tree ({}), but "
+        "Requested index ({}) within tree ({}), but "
         "there are only ({}) Nodes of the requested type within that tree",
         typeid(SpecNode).name(),
         nodeIndex,
