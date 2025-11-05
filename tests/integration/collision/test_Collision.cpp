@@ -1715,6 +1715,76 @@ TEST_F(Collision, Factory)
 #endif
 }
 
+#if HAVE_ODE
+//==============================================================================
+TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto otherGroup = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  CollisionResult result;
+
+  // Initial collision using SimpleFrames to populate the cache.
+  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World(), "f1");
+  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World(), "f2");
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  simpleFrame1->setShape(sphere);
+  simpleFrame2->setShape(sphere);
+  simpleFrame2->setTranslation(Eigen::Vector3d::UnitX() * 0.5);
+
+  group->addShapeFrame(simpleFrame1.get());
+  group->addShapeFrame(simpleFrame2.get());
+
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_FALSE(result.getContacts().empty());
+
+  group->removeAllShapeFrames();
+  otherGroup->removeAllShapeFrames();
+  result.clear();
+
+  // Recreate collision objects using BodyNodes to mimic the Python repro.
+  auto skeleton = Skeleton::create("reuse");
+  auto [joint1, body1] = skeleton->createFreeJointAndBodyNodePair(nullptr);
+  auto [joint2, body2] = skeleton->createFreeJointAndBodyNodePair(nullptr);
+
+  auto bodySphere = std::make_shared<SphereShape>(1.0);
+  body1->createShapeNodeWith<CollisionAspect>(bodySphere);
+  body2->createShapeNodeWith<CollisionAspect>(bodySphere);
+
+  joint1->setTranslation(Eigen::Vector3d::Zero());
+  joint2->setTranslation(Eigen::Vector3d::UnitX() * 0.4);
+
+  group->addShapeFramesOf(body1);
+  otherGroup->addShapeFramesOf(body2);
+
+  // Collide within a single group and across two groups. Either call used to
+  // segfault before clearing cached contact history.
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  // Move bodies apart to ensure history drops them cleanly.
+  joint2->setTranslation(Eigen::Vector3d::UnitX() * 3.0);
+  result.clear();
+  EXPECT_FALSE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_TRUE(result.getContacts().empty());
+
+  // Move back into contact and verify we still collide without crashing.
+  joint2->setTranslation(Eigen::Vector3d::UnitX() * 0.25);
+  result.clear();
+  EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+}
+#endif // HAVE_ODE
+
 //==============================================================================
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 TEST_F(Collision, VoxelGrid)

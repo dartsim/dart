@@ -51,6 +51,7 @@
 
 #include <ode/ode.h>
 
+#include <algorithm>
 #include <deque>
 #include <functional>
 #include <unordered_map>
@@ -91,9 +92,8 @@ struct ContactHistoryItem
   }
 };
 
-// using ContactManifold = std::unordered_map<CollObjPair,
-// std::deque<Contact>,obj_pair_hash>;
-namespace {
+// using ContactManifold = std::unordered_map<CollObjPair, std::deque<Contact>,
+// obj_pair_hash>;
 std::vector<ContactHistoryItem> pastContacts;
 
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
@@ -116,6 +116,21 @@ std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
 
   return pastContacts.back().history;
 }
+void eraseHistoryForObject(const CollisionObject* object)
+{
+  if (!object)
+    return;
+
+  pastContacts.erase(
+      std::remove_if(
+          pastContacts.begin(),
+          pastContacts.end(),
+          [object](const ContactHistoryItem& item) {
+            return item.pair.first == object || item.pair.second == object;
+          }),
+      pastContacts.end());
+}
+
 } // namespace
 
 struct OdeCollisionCallbackData
@@ -315,6 +330,18 @@ void OdeCollisionDetector::refreshCollisionObject(CollisionObject* object)
 dWorldID OdeCollisionDetector::getOdeWorldId() const
 {
   return mWorldId;
+}
+
+//==============================================================================
+void OdeCollisionDetector::clearContactHistoryFor(const CollisionObject* object)
+{
+  eraseHistoryForObject(object);
+}
+
+//==============================================================================
+void OdeCollisionDetector::clearContactHistory()
+{
+  pastContacts.clear();
 }
 
 namespace {
