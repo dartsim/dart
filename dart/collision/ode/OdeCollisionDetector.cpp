@@ -32,6 +32,7 @@
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
+#include "dart/common/Logging.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
@@ -52,6 +53,7 @@
 #include <ode/ode.h>
 
 #include <deque>
+#include <functional>
 #include <unordered_map>
 #include <utility>
 
@@ -97,7 +99,10 @@ std::vector<ContactHistoryItem> pastContacts;
 
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
 {
-  return std::make_pair(std::min(o1, o2), std::max(o1, o2));
+  if (std::less<CollisionObject*>()(o2, o1)) {
+    std::swap(o1, o2);
+  }
+  return std::make_pair(o1, o2);
 }
 
 std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
@@ -205,18 +210,25 @@ bool OdeCollisionDetector::collide(
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
-  for (auto& past_contact : pastContacts) {
-    bool clear = true;
-    for (const auto& curr_result : result->getContacts()) {
-      auto current_pair = MakeNewPair(
-          curr_result.collisionObject1, curr_result.collisionObject2);
-      if (past_contact.pair == current_pair) {
-        clear = false;
-        break;
+  DART_LOG_DEBUG(
+      "OdeCollisionDetector::collide() result ptr = {} numContacts = {}",
+      static_cast<const void*>(result),
+      result ? result->getNumContacts() : 0);
+
+  if (result) {
+    for (auto& past_contact : pastContacts) {
+      bool clear = true;
+      for (const auto& curr_result : result->getContacts()) {
+        auto current_pair = MakeNewPair(
+            curr_result.collisionObject1, curr_result.collisionObject2);
+        if (past_contact.pair == current_pair) {
+          clear = false;
+          break;
+        }
       }
-    }
-    if (clear) {
-      past_contact.history.clear();
+      if (clear) {
+        past_contact.history.clear();
+      }
     }
   }
 
