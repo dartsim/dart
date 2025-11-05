@@ -205,8 +205,10 @@ void FreeJoint::setTransform(
 void FreeJoint::setRelativeSpatialVelocity(
     const Eigen::Vector6d& newSpatialVelocity)
 {
-  setVelocitiesStatic(
-      getRelativeJacobianStatic().inverse() * newSpatialVelocity);
+  const Eigen::Vector6d jointVelocities
+      = getRelativeJacobianStatic().inverse() * newSpatialVelocity;
+  Eigen::VectorXd velocityVector = jointVelocities;
+  setVelocities(velocityVector);
 }
 
 //==============================================================================
@@ -347,8 +349,10 @@ void FreeJoint::setRelativeSpatialAcceleration(
   const Eigen::Matrix6d& J = getRelativeJacobianStatic();
   const Eigen::Matrix6d& dJ = getRelativeJacobianTimeDerivStatic();
 
-  setAccelerationsStatic(
-      J.inverse() * (newSpatialAcceleration - dJ * getVelocitiesStatic()));
+  const Eigen::Vector6d jointAccelerations
+      = J.inverse() * (newSpatialAcceleration - dJ * getVelocitiesStatic());
+  Eigen::VectorXd accelerationVector = jointAccelerations;
+  setAccelerations(accelerationVector);
 }
 
 //==============================================================================
