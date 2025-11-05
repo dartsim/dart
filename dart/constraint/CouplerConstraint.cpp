@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/CouplerConstraint.hpp"
+
 #include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -189,19 +190,24 @@ void CouplerConstraint::applyUnitImpulse(std::size_t index)
       mJoint->setConstraintImpulse(i, impulse);
 
       // Using const_cast to remove constness for methods that modify state
-      const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)->setConstraintImpulse(
-          mimicProp.mReferenceDofIndex, -impulse * mimicProp.mMultiplier);
+      const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)
+          ->setConstraintImpulse(
+              mimicProp.mReferenceDofIndex, -impulse * mimicProp.mMultiplier);
 
       skeleton->updateBiasImpulse(mBodyNode);
-      const_cast<dynamics::Skeleton*>(mimicProp.mReferenceJoint->getSkeleton().get())
-          ->updateBiasImpulse(const_cast<dynamics::BodyNode*>(mimicProp.mReferenceJoint->getChildBodyNode()));
+      const_cast<dynamics::Skeleton*>(
+          mimicProp.mReferenceJoint->getSkeleton().get())
+          ->updateBiasImpulse(const_cast<dynamics::BodyNode*>(
+              mimicProp.mReferenceJoint->getChildBodyNode()));
 
       skeleton->updateVelocityChange();
-      const_cast<dynamics::Skeleton*>(mimicProp.mReferenceJoint->getSkeleton().get())
+      const_cast<dynamics::Skeleton*>(
+          mimicProp.mReferenceJoint->getSkeleton().get())
           ->updateVelocityChange();
 
       mJoint->setConstraintImpulse(i, 0.0);
-      const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)->setConstraintImpulse(mimicProp.mReferenceDofIndex, 0.0);
+      const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)
+          ->setConstraintImpulse(mimicProp.mReferenceDofIndex, 0.0);
     }
 
     ++localIndex;
@@ -241,9 +247,9 @@ void CouplerConstraint::getVelocityChange(double* delVel, bool withCfm)
 void CouplerConstraint::excite()
 {
   mJoint->getSkeleton()->setImpulseApplied(true);
-  for (const auto& mimicProp : mMimicProps)
-  {
-    const_cast<dynamics::Skeleton*>(mimicProp.mReferenceJoint->getSkeleton().get())
+  for (const auto& mimicProp : mMimicProps) {
+    const_cast<dynamics::Skeleton*>(
+        mimicProp.mReferenceJoint->getSkeleton().get())
         ->setImpulseApplied(true);
   }
 }
@@ -252,9 +258,9 @@ void CouplerConstraint::excite()
 void CouplerConstraint::unexcite()
 {
   mJoint->getSkeleton()->setImpulseApplied(false);
-  for (const auto& mimicProp : mMimicProps)
-  {
-    const_cast<dynamics::Skeleton*>(mimicProp.mReferenceJoint->getSkeleton().get())
+  for (const auto& mimicProp : mMimicProps) {
+    const_cast<dynamics::Skeleton*>(
+        mimicProp.mReferenceJoint->getSkeleton().get())
         ->setImpulseApplied(false);
   }
 }
@@ -274,10 +280,12 @@ void CouplerConstraint::applyImpulse(double* lambda)
     auto& mimicProp = mMimicProps[i];
 
     // Using const_cast to remove constness for methods that modify state
-    const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)->setConstraintImpulse(
-        mimicProp.mReferenceDofIndex,
-        mimicProp.mReferenceJoint->getConstraintImpulse(mimicProp.mReferenceDofIndex)
-        - lambda[localIndex] * mimicProp.mMultiplier);
+    const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint)
+        ->setConstraintImpulse(
+            mimicProp.mReferenceDofIndex,
+            mimicProp.mReferenceJoint->getConstraintImpulse(
+                mimicProp.mReferenceDofIndex)
+                - lambda[localIndex] * mimicProp.mMultiplier);
 
     mOldX[i] = lambda[localIndex];
 
@@ -318,8 +326,8 @@ void CouplerConstraint::uniteSkeletons()
     if (!referenceSkeletonConst)
       continue;
 
-    auto referenceSkeleton = std::const_pointer_cast<dynamics::Skeleton>(
-        referenceSkeletonConst);
+    auto referenceSkeleton
+        = std::const_pointer_cast<dynamics::Skeleton>(referenceSkeletonConst);
     if (!referenceSkeleton)
       continue;
 
