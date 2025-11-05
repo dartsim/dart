@@ -18,6 +18,14 @@
 
 **DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
 
+### Release & Branch Strategy
+
+- `main` (preparing DART 7.0.0): Python-first API on top of a refreshed C++ architecture; legacy DART 6 APIs remain available for the transition and begin deprecation starting with 7.1.
+- `release-6.16`: maintenance line for the established DART 6 API, focused on build fixes, critical issues, and exceptional urgent work.
+- `release-6.15`: frozen and retained for historical reference only.
+
+We balance maintenance of the stable DART 6 interface with a clean, Python-centric redesign. DART 7 ships both APIs while we complete the transition; from DART 8 onward only the new interface will continue. Contributions that keep the legacy API healthy are welcome when they maintain backward compatibility and avoid performance regressions. Backward compatibility is best-effort and monitored by building and testing against gz-physics via `pixi run -e gazebo test-gz`. Algorithmic behavior aligns with DART 6, with multi-core performance improvements expected; GPU work is not currently planned.
+
 ### Documentation Principles
 
 **This documentation prioritizes the codebase as the source of truth:**

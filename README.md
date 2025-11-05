@@ -65,6 +65,16 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 | Doc, Coverage, Linter | [![Documentation Status](https://readthedocs.org/projects/dart/badge/?version=latest)](https://dart.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&utm_medium=referral&utm_content=dartsim/dart&utm_campaign=Badge_Grade) |
 | Packages              | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/dartsim/badges/version.svg)](https://anaconda.org/conda-forge/dartsim) [![PyPI Version](https://img.shields.io/pypi/v/dartpy)](https://pypi.org/project/dartpy/) [All Distributions →](https://repology.org/project/dart-sim/versions)                                                                                                                                                                                                         |
 
+## Release & Branch Strategy
+
+We're modernizing DART while keeping current users supported.
+
+- `main` (targeting 7.0.0): new Python-first API built on a refreshed C++ architecture; legacy DART 6 APIs remain available for the transition and are slated for removal beginning with 7.1.
+- `release-6.16`: maintenance line for the established DART 6 API; expect build fixes, critical bugs, and exceptional urgent work only.
+- `release-6.15`: frozen for historical reference with no further updates planned.
+
+DART 6 remains the stable interface for teams that rely on it today. Starting with DART 7, we co-develop the Pythonic API alongside the legacy surface; by DART 8 only the new interface continues forward. Contributions that help keep the legacy API viable are welcome when they stay backward compatible and avoid performance regressions for other users. Backward compatibility is best-effort and validated by building and testing against gz-physics (`pixi run -e gazebo test-gz`). The algorithmic stack aligns with DART 6, with potential multi-core gains from the new architecture; GPU support is not currently planned.
+
 ## Citation
 
 If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500) [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]
