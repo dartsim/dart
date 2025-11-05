@@ -179,10 +179,7 @@ bool DartResourceRetriever::resolveDataUri(
 
   if (!uri.mPath) {
     DART_WARN(
-        "{}{}'.",
-        "Failed extracting"
-        " relative path from URI '",
-        uri.toString());
+        "{}{}'.", "Failed extracting relative path from URI '", uri.toString());
     return false;
   }
   relativePath = uri.mPath.get_value_or("");

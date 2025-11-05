@@ -170,8 +170,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 {
   if (urdfString.empty()) {
     DART_WARN(
-        "A blank string cannot be parsed "
-        "into a Skeleton. Returning a nullptr");
+        "A blank string cannot be parsed into a Skeleton. Returning a nullptr");
     return nullptr;
   }
 
@@ -249,8 +248,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
   if (urdfString.empty()) {
     DART_WARN(
-        "A blank string cannot be parsed into a "
-        "World. Returning a nullptr");
+        "A blank string cannot be parsed into a World. Returning a nullptr");
     return nullptr;
   }
 
@@ -271,8 +269,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
     if (!skeleton) {
       DART_WARN(
-          "Robot {} was not correctly "
-          "parsed!",
+          "Robot {} was not correctly parsed!",
           worldInterface->models[i].model->getName());
       continue;
     }
@@ -311,11 +308,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   if (root->name == "world") {
     DART_WARN_IF(
         model->getRoot()->child_links.size() > 1,
-        "The world link has more than "
-        "one child links. This leads to creating a multi-tree robot. "
-        "Multi-tree robot is supported by DART, but not the URDF standard. "
-        "Please consider changing the robot model as a single tree "
-        "robot.");
+        "The world link has more than one child links. This leads to creating "
+        "a multi-tree robot. Multi-tree robot is supported by DART, but not "
+        "the URDF standard. Please consider changing the robot model as a "
+        "single tree robot.");
 
     for (std::size_t i = 0; i < root->child_links.size(); i++) {
       if (!createSkeletonRecursive(
@@ -771,8 +767,7 @@ dynamics::ShapePtr DartLoader::createShape(
     common::Uri relativeUri, absoluteUri;
     if (!absoluteUri.fromRelativeUri(_baseUri, mesh->filename)) {
       DART_WARN(
-          "Failed resolving mesh URI '{}' relative "
-          "to '{}'.",
+          "Failed resolving mesh URI '{}' relative to '{}'.",
           mesh->filename,
           _baseUri.toString());
       return nullptr;
@@ -792,8 +787,8 @@ dynamics::ShapePtr DartLoader::createShape(
   // Unknown geometry type
   else {
     DART_WARN(
-        "Unknown URDF Shape type (we only know of "
-        "Sphere, Box, Cylinder, and Mesh). We are returning a nullptr.");
+        "Unknown URDF Shape type (we only know of Sphere, Box, Cylinder, and "
+        "Mesh). We are returning a nullptr.");
     return nullptr;
   }
 

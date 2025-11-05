@@ -187,8 +187,7 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(
 {
   if (treeIndex >= mTreeNodeMaps.size()) {
     DART_ERROR(
-        "Requested tree index ({}), but there are "
-        "only ({}) trees available",
+        "Requested tree index ({}), but there are only ({}) trees available",
         typeid(NodeType).name(),
         treeIndex,
         mTreeNodeMaps.size());
@@ -211,8 +210,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
 {
   if (treeIndex >= mTreeNodeMaps.size()) {
     DART_ERROR(
-        "Requested tree index ({}), but there are only "
-        "({}) trees available",
+        "Requested tree index ({}), but there are only ({}) trees available",
         typeid(NodeType).name(),
         treeIndex,
         mTreeNodeMaps.size());
@@ -224,8 +222,8 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
   if (nodeMap.end() == it) {
     DART_ERROR(
-        "Requested index ({}) within tree ({}), but "
-        "there are no Nodes of the requested type in this tree",
+        "Requested index ({}) within tree ({}), but there are no Nodes of the "
+        "requested type in this tree",
         typeid(NodeType).name(),
         nodeIndex,
         treeIndex);
@@ -235,8 +233,8 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
 
   if (nodeIndex >= it->second.size()) {
     DART_ERROR(
-        "Requested index ({}) within tree ({}), but "
-        "there are only ({}) Nodes of the requested type within that tree",
+        "Requested index ({}) within tree ({}), but there are only ({}) Nodes "
+        "of the requested type within that tree",
         typeid(NodeType).name(),
         nodeIndex,
         treeIndex,

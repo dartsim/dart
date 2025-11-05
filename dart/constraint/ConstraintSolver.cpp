@@ -108,8 +108,8 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 
   if (hasSkeleton(skeleton)) {
     DART_WARN(
-        "Attempting to add skeleton '{}', "
-        "which already exists in the ConstraintSolver.",
+        "Attempting to add skeleton '{}', which already exists in the "
+        "ConstraintSolver.",
         skeleton->getName());
 
     return;
@@ -142,8 +142,8 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 
   DART_WARN_IF(
       !hasSkeleton(skeleton),
-      "Attempting to remove skeleton "
-      "'{}', which doesn't exist in the ConstraintSolver.",
+      "Attempting to remove skeleton '{}', which doesn't exist in the "
+      "ConstraintSolver.",
       skeleton->getName());
 
   mCollisionGroup->unsubscribeFrom(skeleton.get());
@@ -275,9 +275,8 @@ void ConstraintSolver::setCollisionDetector(
 {
   if (!collisionDetector) {
     DART_WARN(
-        "Attempting to assign nullptr "
-        "as the new collision detector to the constraint solver, which is not "
-        "allowed. Ignoring.");
+        "Attempting to assign nullptr as the new collision detector to the "
+        "constraint solver, which is not allowed. Ignoring.");
     return;
   }
 
@@ -346,18 +345,17 @@ const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
 {
   DART_WARN(
-      "This function is deprecated in DART "
-      "6.7. Please use BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
-      "Doing nothing.");
+      "This function is deprecated in DART 6.7. Please use "
+      "BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. Doing nothing.");
 }
 
 //==============================================================================
 LCPSolver* ConstraintSolver::getLCPSolver() const
 {
   DART_WARN(
-      "This function is deprecated in DART "
-      "6.7. Please use BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
-      "Returning nullptr.");
+      "This function is deprecated in DART 6.7. Please use "
+      "BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. Returning "
+      "nullptr.");
 
   return nullptr;
 }

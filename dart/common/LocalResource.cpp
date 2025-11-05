@@ -48,8 +48,7 @@ LocalResource::LocalResource(const std::string& _path)
 {
   DART_WARN_IF(
       !mFile,
-      "Failed opening file '{}' for reading: "
-      "{}",
+      "Failed opening file '{}' for reading: {}",
       _path,
       std::strerror(errno));
 }
@@ -82,8 +81,7 @@ std::size_t LocalResource::getSize()
   if (offset == -1L) {
     DART_WARN(
         "{}{}",
-        "Unable to compute file size: Failed"
-        " getting current offset: ",
+        "Unable to compute file size: Failed getting current offset: ",
         std::strerror(errno));
     return 0;
   }
@@ -93,8 +91,7 @@ std::size_t LocalResource::getSize()
   if (std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile)) {
     DART_WARN(
         "{}{}",
-        "Unable to compute file size: Failed"
-        " seeking to the end of the file: ",
+        "Unable to compute file size: Failed seeking to the end of the file: ",
         std::strerror(errno));
     return 0;
   }
@@ -103,8 +100,7 @@ std::size_t LocalResource::getSize()
   if (size == -1L) {
     DART_WARN(
         "{}{}",
-        "Unable to compute file size: Failed"
-        " getting end of file offset: ",
+        "Unable to compute file size: Failed getting end of file offset: ",
         std::strerror(errno));
     return 0;
   }
@@ -116,16 +112,15 @@ std::size_t LocalResource::getSize()
   else if (size == std::numeric_limits<long>::max()) {
     DART_WARN(
         "{}",
-        "Unable to compute file size: Computed"
-        " file size of LONG_MAX. Is this a directory?\n");
+        "Unable to compute file size: Computed file size of LONG_MAX. Is this "
+        "a directory?\n");
     return 0;
   }
 
   if (std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile)) {
     DART_WARN(
         "{}{}",
-        "Unable to compute file size: Failed"
-        " restoring offset: ",
+        "Unable to compute file size: Failed restoring offset: ",
         std::strerror(errno));
     return 0;
   }
@@ -151,8 +146,8 @@ std::size_t LocalResource::tell()
   else if (offset == std::numeric_limits<long>::max()) {
     DART_WARN(
         "{}",
-        "Failed getting current offset: ftell"
-        " returned LONG_MAX. Is this a directory?\n");
+        "Failed getting current offset: ftell returned LONG_MAX. Is this a "
+        "directory?\n");
     return -1L;
   }
 
@@ -180,8 +175,8 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
     default:
       DART_WARN(
           "{}",
-          "Invalid origin. Expected"
-          " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n");
+          "Invalid origin. Expected SEEKTYPE_CUR, SEEKTYPE_END, or "
+          "SEEKTYPE_SET.\n");
       return false;
   }
 

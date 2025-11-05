@@ -132,18 +132,17 @@ bool NloptSolver::solve()
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
       DART_ERROR(
-          "Encountered exception [{}] while adding an "
-          "equality constraint to an Nlopt solver. Check whether your "
-          "algorithm [{}] ({}) supports equality constraints!",
+          "Encountered exception [{}] while adding an equality constraint to "
+          "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
+          "equality constraints!",
           e.what(),
           nlopt::algorithm_name(mAlg),
           mAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
-          "Encountered exception [{}] while adding an "
-          "equality constraint to the Nlopt solver. This might be a bug in "
-          "DART; please report this!",
+          "Encountered exception [{}] while adding an equality constraint to "
+          "the Nlopt solver. This might be a bug in DART; please report this!",
           e.what());
       DART_ASSERT(false);
     }
@@ -156,18 +155,17 @@ bool NloptSolver::solve()
           NloptSolver::_nlopt_func, fn.get(), mProperties.mTolerance);
     } catch (const std::invalid_argument& e) {
       DART_ERROR(
-          "Encountered exception [{}] while adding an "
-          "inequality constraint to an Nlopt solver. Check whether your "
-          "algorithm [{}] ({}) supports inequality constraints!",
+          "Encountered exception [{}] while adding an inequality constraint to "
+          "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
+          "inequality constraints!",
           e.what(),
           nlopt::algorithm_name(mAlg),
           mAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
-          "Encountered exception [{}] while adding an "
-          "inequality constraint to the Nlopt solver. This might be a bug in "
-          "DART; please report this!",
+          "Encountered exception [{}] while adding an inequality constraint to "
+          "the Nlopt solver. This might be a bug in DART; please report this!",
           e.what());
       DART_ASSERT(false);
     }

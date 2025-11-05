@@ -441,8 +441,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_base, _relative, _strict),
-      "Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relative,
       _base);
 
@@ -459,8 +458,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_base, _relative, _strict),
-      "Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relative,
       _base.toString());
 
@@ -477,8 +475,7 @@ Uri Uri::createFromRelativeUri(
   Uri mergedUri;
   DART_WARN_IF(
       !mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict),
-      "Failed merging URI '{}' with base URI "
-      "'{}'.",
+      "Failed merging URI '{}' with base URI '{}'.",
       _relativeUri.toString(),
       _baseUri.toString());
 

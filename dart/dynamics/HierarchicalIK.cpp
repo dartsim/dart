@@ -67,18 +67,16 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 {
   if (nullptr == mSolver) [[unlikely]] {
     DART_WARN(
-        "The Solver for a HierarchicalIK module "
-        "associated with [{}] is a nullptr. You must reset the module's Solver "
-        "before you can use it.",
+        "The Solver for a HierarchicalIK module associated with [{}] is a "
+        "nullptr. You must reset the module's Solver before you can use it.",
         mSkeleton.lock()->getName());
     return false;
   }
 
   if (nullptr == mProblem) [[unlikely]] {
     DART_WARN(
-        "The Problem for a HierarchicalIK "
-        "module associated with [{}] is a nullptr. You must reset the module's "
-        "Problem before you can use it.",
+        "The Problem for a HierarchicalIK module associated with [{}] is a "
+        "nullptr. You must reset the module's Problem before you can use it.",
         mSkeleton.lock()->getName());
     return false;
   }
@@ -87,8 +85,8 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 
   if (nullptr == skel) [[unlikely]] {
     DART_WARN(
-        "Calling a HierarchicalIK module which "
-        "is associated with a Skeleton that no longer exists.");
+        "Calling a HierarchicalIK module which is associated with a Skeleton "
+        "that no longer exists.");
     return false;
   }
 
@@ -395,8 +393,8 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
 
   if (nullptr == hik) {
     DART_ERROR(
-        "Attempting to use an Objective "
-        "function of an expired HierarchicalIK module!");
+        "Attempting to use an Objective function of an expired HierarchicalIK "
+        "module!");
     DART_ASSERT(false);
     return 0;
   }
@@ -420,8 +418,8 @@ void HierarchicalIK::Objective::evalGradient(
 
   if (nullptr == hik) {
     DART_ERROR(
-        "Attempting to use an "
-        "Objective function of an expired HierarchicalIK module!");
+        "Attempting to use an Objective function of an expired HierarchicalIK "
+        "module!");
     DART_ASSERT(false);
     return;
   }
@@ -469,8 +467,8 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
   if (nullptr == hik) {
     DART_ERROR(
-        "Attempting to use a Constraint "
-        "function of an expired HierarchicalIK module!");
+        "Attempting to use a Constraint function of an expired HierarchicalIK "
+        "module!");
     DART_ASSERT(false);
     return 0.0;
   }

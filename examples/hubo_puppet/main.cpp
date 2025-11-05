@@ -62,8 +62,8 @@ public:
     DART_ERROR_IF(
         mLower.size() != dofs || mWeights.size() != dofs
             || mUpper.size() != dofs,
-        "Dimension mismatch:\\n  ideal:   {}\\n  "
-        "lower:   {}\\n  upper:   {}\\n  weights: {}",
+        "Dimension mismatch:\\n  ideal:   {}\\n  lower:   {}\\n  upper:   "
+        "{}\\n  weights: {}",
         mIdeal.size(),
         mLower.size(),
         mUpper.size(),
@@ -196,9 +196,8 @@ public:
 
       if (!configured) {
         DART_WARN(
-            "This analytical IK was not able to "
-            "configure properly, so it will not be able to compute "
-            "solutions");
+            "This analytical IK was not able to configure properly, so it will "
+            "not be able to compute solutions");
         return mSolutions;
       }
     }
@@ -206,17 +205,14 @@ public:
     const BodyNodePtr& base = mBaseLink.lock();
     if (nullptr == base) {
       DART_ERROR(
-          "Attempting to perform an IK on a limb "
-          "that no longer exists [{}]!",
+          "Attempting to perform an IK on a limb that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
       return mSolutions;
     }
 
     if (nullptr == mWristEnd) {
-      DART_ERROR(
-          "Attempting to perform IK without a "
-          "wrist!");
+      DART_ERROR("Attempting to perform IK without a wrist!");
       DART_ASSERT(false);
       return mSolutions;
     }
@@ -380,8 +376,7 @@ protected:
       Joint* joint = bn->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
-            "Invalid number of DOFs ({}) in the Joint "
-            "[{}]",
+            "Invalid number of DOFs ({}) in the Joint [{}]",
             joint->getNumDofs(),
             joint->getName());
         DART_ASSERT(false);
@@ -478,18 +473,15 @@ public:
 
       if (!configured) {
         DART_WARN(
-            "This analytical IK was not able to "
-            "configure properly, so it will not be able to compute "
-            "solutions");
+            "This analytical IK was not able to configure properly, so it will "
+            "not be able to compute solutions");
         return mSolutions;
       }
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
     if (nullptr == base) {
-      DART_ERROR(
-          "Attempting to perform IK on a limb "
-          "that no longer exists!");
+      DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
       DART_ASSERT(false);
       return mSolutions;
     }
@@ -625,8 +617,7 @@ protected:
       Joint* joint = bn->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
-            "Invalid number of DOFs ({}) in the Joint "
-            "[{}]",
+            "Invalid number of DOFs ({}) in the Joint [{}]",
             joint->getNumDofs(),
             joint->getName());
         DART_ASSERT(false);

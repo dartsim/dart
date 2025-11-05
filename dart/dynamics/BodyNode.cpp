@@ -376,8 +376,8 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
 {
   if (nullptr == otherBodyNode) {
     DART_ERROR(
-        "You have asked to duplicate the Nodes of a "
-        "nullptr, which is not allowed!");
+        "You have asked to duplicate the Nodes of a nullptr, which is not "
+        "allowed!");
     DART_ASSERT(false);
     return;
   }
@@ -394,8 +394,8 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 {
   if (nullptr == otherBodyNode) {
     DART_ERROR(
-        "You have asked to match the Nodes of a "
-        "nullptr, which is not allowed!");
+        "You have asked to match the Nodes of a nullptr, which is not "
+        "allowed!");
     DART_ASSERT(false);
     return;
   }
@@ -483,9 +483,9 @@ void checkMass(const BodyNode& bodyNode, const double mass)
 {
   DART_WARN_IF(
       mass <= 0.0,
-      "[BodyNode] A negative or zero mass [{}] is set to BodyNode [{}], "
-      "which can cause invalid physical behavior or segfault. Consider "
-      "setting positive value instead.",
+      "[BodyNode] A negative or zero mass [{}] is set to BodyNode [{}], which "
+      "can cause invalid physical behavior or segfault. Consider setting "
+      "positive value instead.",
       mass,
       bodyNode.getName());
 }
@@ -734,8 +734,8 @@ static bool checkSkeletonNodeAgreement(
 {
   if (nullptr == _newSkeleton) {
     DART_ERROR(
-        "Attempting to {} a BodyNode tree starting from [{}] in "
-        "the Skeleton named [{}] into a nullptr Skeleton.",
+        "Attempting to {} a BodyNode tree starting from [{}] in the Skeleton "
+        "named [{}] into a nullptr Skeleton.",
         _function,
         _operation,
         _bodyNode->getName(),
@@ -745,10 +745,10 @@ static bool checkSkeletonNodeAgreement(
 
   if (_newParent && _newSkeleton != _newParent->getSkeleton()) {
     DART_ERROR(
-        "Mismatch between the specified Skeleton [{}] ({}) and "
-        "the specified new parent BodyNode [{}] whose actual Skeleton is named "
-        "[{}] ({}) while attempting to {} the BodyNode [{}] from the Skeleton "
-        "named [{}] ({}).",
+        "Mismatch between the specified Skeleton [{}] ({}) and the specified "
+        "new parent BodyNode [{}] whose actual Skeleton is named [{}] ({}) "
+        "while attempting to {} the BodyNode [{}] from the Skeleton named [{}] "
+        "({}).",
         _function,
         _newSkeleton->getName(),
         _newSkeleton,
@@ -886,8 +886,8 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body)
       != mChildBodyNodes.end()) {
     DART_WARN(
-        "Attempting to add a BodyNode '{}' as a "
-        "child BodyNode of '{}', which is already its parent.",
+        "Attempting to add a BodyNode '{}' as a child BodyNode of '{}', which "
+        "is already its parent.",
         _body->getName(),
         getName());
     return;
@@ -1347,8 +1347,7 @@ BodyNode* BodyNode::clone(
 Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 {
   DART_ERROR(
-      "This function should never be called! Please "
-      "report this as an error!");
+      "This function should never be called! Please report this as an error!");
   DART_ASSERT(false);
   return nullptr;
 }
@@ -1457,8 +1456,8 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   if (mNonBodyNodeEntities.find(_newChildEntity)
       != mNonBodyNodeEntities.end()) {
     DART_WARN(
-        "Attempting to add an Entity [{}] as a "
-        "child Entity of [{}], which is already its parent.",
+        "Attempting to add an Entity [{}] as a child Entity of [{}], which is "
+        "already its parent.",
         _newChildEntity->getName(),
         getName());
     return;

@@ -53,9 +53,8 @@ ConstraintBase::~ConstraintBase()
 const std::string& ConstraintBase::getType() const
 {
   DART_ERROR(
-      "This function is for backward compatibility, "
-      "but must not be called. Please override this function in the concrete "
-      "constraint class.");
+      "This function is for backward compatibility, but must not be called. "
+      "Please override this function in the concrete constraint class.");
 
   static const std::string type = "ConstraintBase";
   return type;

@@ -300,9 +300,8 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
 
   if (!frame->isShapeFrame()) {
     DART_WARN(
-        "Frame named [{}] ({}) claims to be "
-        "a ShapeFrame, but failed to be converted. Please report this as a "
-        "bug!",
+        "Frame named [{}] ({}) claims to be a ShapeFrame, but failed to be "
+        "converted. Please report this as a bug!",
         frame->getName(),
         frame);
     return;

@@ -98,9 +98,8 @@ void FreeJoint::setTransformOf(
 
   if (nullptr == freeJoint) {
     DART_WARN(
-        "Invalid joint type. Setting transform is "
-        "only allowed to FreeJoint. The joint type of given joint [{}] is "
-        "[{}].",
+        "Invalid joint type. Setting transform is only allowed to FreeJoint. "
+        "The joint type of given joint [{}] is [{}].",
         joint->getName(),
         joint->getType());
     return;
@@ -236,8 +235,8 @@ void FreeJoint::setSpatialVelocity(
   if (getChildBodyNode() == relativeTo) {
     DART_WARN(
         "{}",
-        "Invalid reference frame "
-        "for newSpatialVelocity. It shouldn't be the child BodyNode.\n");
+        "Invalid reference frame for newSpatialVelocity. It shouldn't be the "
+        "child BodyNode.\n");
     return;
   }
 
@@ -378,8 +377,8 @@ void FreeJoint::setSpatialAcceleration(
 
   if (getChildBodyNode() == relativeTo) {
     DART_WARN(
-        "Invalid reference frame for "
-        "newSpatialAcceleration. It shouldn't be the child BodyNode.");
+        "Invalid reference frame for newSpatialAcceleration. It shouldn't be "
+        "the child BodyNode.");
     return;
   }
 

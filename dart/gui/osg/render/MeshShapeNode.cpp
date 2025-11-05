@@ -366,14 +366,13 @@ void MeshShapeNode::extractData(bool firstTime)
 
   if (!mMaterials.empty()) {
     DART_WARN(
-        "Attempting to access material #{}, but "
-        "materials only go up to {}",
+        "Attempting to access material #{}, but materials only go up to {}",
         index,
         index - 1);
   } else {
     DART_WARN(
-        "Attempting to access material #{}, but "
-        "there are no materials available",
+        "Attempting to access material #{}, but there are no materials "
+        "available",
         index);
   }
 
@@ -395,14 +394,14 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
 
   if (!mTextureImageArrays.empty()) {
     DART_WARN(
-        "Attempting to access texture "
-        "image set #{}, but materials only go up to {}",
+        "Attempting to access texture image set #{}, but materials only go up "
+        "to {}",
         index,
         index - 1);
   } else {
     DART_WARN(
-        "Attempting to access texture "
-        "image set #{}, but there are no materials available",
+        "Attempting to access texture image set #{}, but there are no "
+        "materials available",
         index);
   }
 

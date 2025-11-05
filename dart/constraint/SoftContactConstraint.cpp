@@ -352,8 +352,7 @@ void SoftContactConstraint::setErrorReductionParameter(double _erp)
   }
   if (_erp > 1.0) {
     DART_WARN(
-        "Error reduction parameter[{}] is greater than 1.0. It is set to "
-        "1.0.",
+        "Error reduction parameter[{}] is greater than 1.0. It is set to 1.0.",
         _erp);
     mErrorReductionParameter = 1.0;
   }

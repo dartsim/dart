@@ -88,8 +88,7 @@ void JointConstraint::setErrorAllowance(double allowance)
   // Clamp error reduction parameter if it is out of the range
   if (allowance < 0.0) {
     DART_WARN(
-        "Error reduction parameter [{}] is lower than 0.0. It is set to "
-        "0.0.",
+        "Error reduction parameter [{}] is lower than 0.0. It is set to 0.0.",
         allowance);
     mErrorAllowance = 0.0;
   }
@@ -109,15 +108,13 @@ void JointConstraint::setErrorReductionParameter(double erp)
   // Clamp error reduction parameter if it is out of the range [0, 1]
   if (erp < 0.0) {
     DART_WARN(
-        "Error reduction parameter [{}] is lower than 0.0. It is set to "
-        "0.0.",
+        "Error reduction parameter [{}] is lower than 0.0. It is set to 0.0.",
         erp);
     mErrorReductionParameter = 0.0;
   }
   if (erp > 1.0) {
     DART_WARN(
-        "Error reduction parameter [{}] is greater than 1.0. It is set to "
-        "1.0.",
+        "Error reduction parameter [{}] is greater than 1.0. It is set to 1.0.",
         erp);
     mErrorReductionParameter = 1.0;
   }

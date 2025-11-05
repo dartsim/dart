@@ -306,8 +306,8 @@ void checkForBodyNodes(
   EXPECT_TRUE(contains);
   DART_INFO_IF(
       !contains,
-      "The ReferentialSkeleton [{}] does NOT contain the BodyNode [{}] of "
-      "the Skeleton [{}]",
+      "The ReferentialSkeleton [{}] does NOT contain the BodyNode [{}] of the "
+      "Skeleton [{}]",
       refSkel->getName(),
       name,
       skel->getName());

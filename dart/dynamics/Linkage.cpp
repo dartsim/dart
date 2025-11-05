@@ -505,9 +505,8 @@ LinkagePtr Linkage::cloneLinkage(const std::string& cloneName) const
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode) {
     DART_WARN(
-        "Failed to clone because the start node "
-        "of the criteria in this Linkage is not valid anymore. Returning "
-        "nullptr.");
+        "Failed to clone because the start node of the criteria in this "
+        "Linkage is not valid anymore. Returning nullptr.");
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();

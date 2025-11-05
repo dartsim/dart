@@ -573,8 +573,8 @@ NextResult getNextJointAndNodePair(
     if (check_parent_body == sdfBodyNodes.end()) {
       // The Body does not exist in the file
       DART_ERROR(
-          "Could not find Link named [{}] "
-          "requested as parent of Joint [{}]. We will now quit parsing.",
+          "Could not find Link named [{}] requested as parent of Joint [{}]. "
+          "We will now quit parsing.",
           parentBodyName,
           parentJointName);
       return BREAK;
@@ -668,8 +668,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 
   DART_ERROR(
       "{}{}. Please report this as a bug! We will now quit parsing.",
-      "Unsupported Joint type "
-      "encountered: ",
+      "Unsupported Joint type encountered: ",
       type);
   return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
 }
@@ -690,8 +689,7 @@ BodyMap readAllBodyNodes(
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if (it != sdfBodyNodes.end()) {
       DART_WARN(
-          "Duplicate name in file: {}\\nEvery "
-          "Link must have a unique name!",
+          "Duplicate name in file: {}\\nEvery Link must have a unique name!",
           body.properties->mName);
       continue;
     }
@@ -923,9 +921,7 @@ dynamics::ShapePtr readShape(
     // TODO(JS): We assume that uri is just file name for the mesh
     if (!hasElement(meshEle, "uri")) {
       // TODO(MXG): Figure out how to report the file name and line number of
-      DART_WARN(
-          "Mesh is missing a URI, which is required in "
-          "order to load it");
+      DART_WARN("Mesh is missing a URI, which is required in order to load it");
       return nullptr;
     }
     std::string uri = getValueString(meshEle, "uri");
@@ -1094,8 +1090,8 @@ JointMap readAllJoints(
 
     if (joint.childName.empty()) {
       DART_ERROR(
-          "Joint named [{}] does not have a valid "
-          "child Link, so it will not be added to the Skeleton",
+          "Joint named [{}] does not have a valid child Link, so it will not "
+          "be added to the Skeleton",
           joint.properties->mName);
       continue;
     }
@@ -1103,9 +1099,8 @@ JointMap readAllJoints(
     JointMap::iterator it = sdfJoints.find(joint.childName);
     if (it != sdfJoints.end()) {
       DART_ERROR(
-          "Joint named [{}] is claiming Link [{}] "
-          "as its child, but that is already claimed by Joint [{}]. Joint [{}] "
-          "will be discarded",
+          "Joint named [{}] is claiming Link [{}] as its child, but that is "
+          "already claimed by Joint [{}]. Joint [{}] will be discarded",
           joint.properties->mName,
           joint.childName,
           it->second.properties->mName,
@@ -1147,18 +1142,15 @@ SDFJoint readJoint(
 
       if (parent_it == _sdfBodyNodes.end()) {
         DART_ERROR(
-            "Cannot find a Link named [{}] requested as "
-            "the parent of the Joint named [{}]",
+            "Cannot find a Link named [{}] requested as the parent of the "
+            "Joint named [{}]",
             strParent,
             name);
         DART_ASSERT(0);
       }
     }
   } else {
-    DART_ERROR(
-        "You must set parent link for the Joint "
-        "[{}]!",
-        name);
+    DART_ERROR("You must set parent link for the Joint [{}]!", name);
     DART_ASSERT(0);
   }
 
@@ -1173,17 +1165,14 @@ SDFJoint readJoint(
 
     if (child_it == _sdfBodyNodes.end()) {
       DART_ERROR(
-          "Cannot find a Link named [{}] requested as "
-          "the child of the Joint named [{}]",
+          "Cannot find a Link named [{}] requested as the child of the Joint "
+          "named [{}]",
           strChild,
           name);
       DART_ASSERT(0);
     }
   } else {
-    DART_ERROR(
-        "You must set the child link for the Joint "
-        "[{}]!",
-        name);
+    DART_ERROR("You must set the child link for the Joint [{}]!", name);
     DART_ASSERT(0);
   }
 

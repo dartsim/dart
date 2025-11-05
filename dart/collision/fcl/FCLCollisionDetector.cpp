@@ -632,9 +632,8 @@ static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get()) {
     DART_ERROR(
-        "Attempting to check collision for a "
-        "collision group that is created from a different collision detector "
-        "instance.");
+        "Attempting to check collision for a collision group that is created "
+        "from a different collision detector instance.");
 
     return false;
   }
@@ -762,11 +761,10 @@ void FCLCollisionDetector::setPrimitiveShapeType(
 {
   DART_WARN_IF(
       type == PRIMITIVE,
-      "You chose to use FCL's "
-      "primitive shape collision feature while it's not complete (at least "
-      "until 0.4.0) especially in use of dynamics simulation. It's "
-      "recommended to use mesh even for primitive shapes by settting "
-      "FCLCollisionDetector::setPrimitiveShapeType(MESH).");
+      "You chose to use FCL's primitive shape collision feature while it's not "
+      "complete (at least until 0.4.0) especially in use of dynamics "
+      "simulation. It's recommended to use mesh even for primitive shapes by "
+      "settting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
 
   mPrimitiveShapeType = type;
 }
@@ -784,11 +782,11 @@ void FCLCollisionDetector::setContactPointComputationMethod(
 {
   DART_WARN_IF(
       method == FCL,
-      "You chose to "
-      "use FCL's built in contact point computation whileit's buggy (see "
-      "https://github.com/flexible-collision-library/fcl/issues/106) at "
-      "least until 0.4.0. It's recommended to use DART's implementation for "
-      "the contact point computation by setting "
+      "You chose to use FCL's built in contact point computation whileit's "
+      "buggy (see "
+      "https://github.com/flexible-collision-library/fcl/issues/106) at least "
+      "until 0.4.0. It's recommended to use DART's implementation for the "
+      "contact point computation by setting "
       "FCLCollisionDetector::setContactPointComputationMethod(DART).");
 
   mContactPointComputationMethod = method;
@@ -1002,10 +1000,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = new fcl::OcTree(octree);
   #else
     DART_ERROR(
-        "Attempting to "
-        "create an collision geometry for VoxelGridShape, but the installed "
-        "FCL isn't built with Octomap support. Creating a sphere with 0.1 "
-        "radius instead.");
+        "Attempting to create an collision geometry for VoxelGridShape, but "
+        "the installed FCL isn't built with Octomap support. Creating a sphere "
+        "with 0.1 radius instead.");
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   #endif // FCL_HAVE_OCTOMAP
@@ -1013,9 +1010,8 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 #endif // HAVE_OCTOMAP
   else {
     DART_ERROR(
-        "Attempting to "
-        "create an unsupported shape type [{}]. Creating a sphere with 0.1 "
-        "radius instead.",
+        "Attempting to create an unsupported shape type [{}]. Creating a "
+        "sphere with 0.1 radius instead.",
         shapeType);
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);

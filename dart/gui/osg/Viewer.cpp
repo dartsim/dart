@@ -238,8 +238,7 @@ void Viewer::captureScreen(const std::string& filename)
 {
   if (filename.empty()) {
     DART_WARN(
-        "Passed in empty filename for screen capture. "
-        "This is not allowed!");
+        "Passed in empty filename for screen capture. This is not allowed!");
     return;
   }
 
@@ -258,8 +257,8 @@ void Viewer::record(
 {
   if (directory.empty()) {
     DART_WARN(
-        "Passed in empty directory name for screen recording. "
-        "This is not allowed!");
+        "Passed in empty directory name for screen recording. This is not "
+        "allowed!");
     return;
   }
 
@@ -274,8 +273,8 @@ void Viewer::record(
   mRecording = true;
 
   DART_INFO(
-      "Recording screen image sequence to directory [{}] with "
-      "a prefix of [{}] starting from sequence number [{}]",
+      "Recording screen image sequence to directory [{}] with a prefix of [{}] "
+      "starting from sequence number [{}]",
       mImageDirectory,
       mImagePrefix,
       mImageSequenceNum);
@@ -289,8 +288,7 @@ void Viewer::pauseRecording()
 
   mRecording = false;
   DART_INFO(
-      "Screen recording is paused at image sequence "
-      "number [{}]",
+      "Screen recording is paused at image sequence number [{}]",
       mImageSequenceNum);
 }
 
@@ -848,9 +846,7 @@ void Viewer::setVerticalFieldOfView(const double fov)
   auto* camera = getCamera();
 
   if (!camera) {
-    DART_WARN(
-        "This viewer doesn't have any "
-        "cameras. Ignoring this request.");
+    DART_WARN("This viewer doesn't have any cameras. Ignoring this request.");
     return;
   }
 
@@ -859,9 +855,8 @@ void Viewer::setVerticalFieldOfView(const double fov)
 
   if (!result) {
     DART_WARN(
-        "Attemping to set vertical field "
-        "of view while the camera isn't perspective view. Ignoring this "
-        "request.");
+        "Attemping to set vertical field of view while the camera isn't "
+        "perspective view. Ignoring this request.");
     return;
   }
 
@@ -879,9 +874,7 @@ double Viewer::getVerticalFieldOfView() const
   const auto* camera = getCamera();
 
   if (!camera) {
-    DART_WARN(
-        "This viewer doesn't have any "
-        "cameras. Returning 0.0.");
+    DART_WARN("This viewer doesn't have any cameras. Returning 0.0.");
     return 0.0;
   }
 
@@ -890,8 +883,8 @@ double Viewer::getVerticalFieldOfView() const
 
   if (!result) {
     DART_WARN(
-        "Vertical field of view is "
-        "requested while the camera isn't perspective view. Returning 0.0.");
+        "Vertical field of view is requested while the camera isn't "
+        "perspective view. Returning 0.0.");
     return 0.0;
   }
 

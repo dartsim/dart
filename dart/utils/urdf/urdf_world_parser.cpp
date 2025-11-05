@@ -102,8 +102,7 @@ std::shared_ptr<World> parseWorldURDF(
   if (result != tinyxml2::XML_SUCCESS) {
     DART_WARN(
         "{}{}.",
-        "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
-        " code ",
+        "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error code ",
         result);
     return nullptr;
   }
@@ -112,8 +111,8 @@ std::shared_ptr<World> parseWorldURDF(
   if (!world_xml) {
     DART_WARN(
         "{}",
-        "[parseWorldURDF] ERROR: Could not find a <world> element in "
-        "XML, exiting and not loading! \n");
+        "[parseWorldURDF] ERROR: Could not find a <world> element in XML, "
+        "exiting and not loading! \n");
     return nullptr;
   }
 
@@ -122,8 +121,8 @@ std::shared_ptr<World> parseWorldURDF(
   if (!name) {
     DART_WARN(
         "{}",
-        "[parseWorldURDF] ERROR: World does not have a name tag "
-        "specified. Exiting and not loading! \n");
+        "[parseWorldURDF] ERROR: World does not have a name tag specified. "
+        "Exiting and not loading! \n");
     return nullptr;
   }
 

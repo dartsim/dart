@@ -103,8 +103,7 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
   } while (hasName(newName));
 
   DART_INFO(
-      "({}) The name [{}] is a duplicate, so it "
-      "has been renamed to [{}]",
+      "({}) The name [{}] is a duplicate, so it has been renamed to [{}]",
       mManagerName,
       _name,
       newName);

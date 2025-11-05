@@ -64,8 +64,8 @@ public:
     DART_ERROR_IF(
         mLower.size() != dofs || mWeights.size() != dofs
             || mUpper.size() != dofs,
-        "Dimension mismatch:\\n  ideal:   {}\\n  "
-        "lower:   {}\\n  upper:   {}\\n  weights: {}",
+        "Dimension mismatch:\\n  ideal:   {}\\n  lower:   {}\\n  upper:   "
+        "{}\\n  weights: {}",
         mIdeal.size(),
         mLower.size(),
         mUpper.size(),

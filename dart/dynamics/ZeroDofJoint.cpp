@@ -64,8 +64,8 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 {
   DART_ERROR(
-      "Attempting to get a DegreeOfFreedom from a "
-      "ZeroDofJoint. This is not allowed!");
+      "Attempting to get a DegreeOfFreedom from a ZeroDofJoint. This is not "
+      "allowed!");
   DART_ASSERT(false);
   return nullptr;
 }
@@ -74,8 +74,8 @@ DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 const DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t) const
 {
   DART_ERROR(
-      "Attempting to get a DegreeOfFreedom from a "
-      "ZeroDofJoint. This is not allowed!");
+      "Attempting to get a DegreeOfFreedom from a ZeroDofJoint. This is not "
+      "allowed!");
   DART_ASSERT(false);
   return nullptr;
 }
@@ -114,10 +114,7 @@ std::size_t ZeroDofJoint::getNumDofs() const
 //==============================================================================
 std::size_t ZeroDofJoint::getIndexInSkeleton(std::size_t _index) const
 {
-  DART_ERROR(
-      "This function should never be called "
-      "({})!",
-      _index);
+  DART_ERROR("This function should never be called ({})!", _index);
   DART_ASSERT(false);
 
   return 0;

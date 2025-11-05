@@ -128,9 +128,9 @@ void CollisionResult::addObject(CollisionObject* object)
 {
   if (!object) {
     DART_ERROR(
-        "Attempting to add a collision with a "
-        "nullptr object to a CollisionResult instance. This is not allowed. "
-        "Please report this as a bug!");
+        "Attempting to add a collision with a nullptr object to a "
+        "CollisionResult instance. This is not allowed. Please report this as "
+        "a bug!");
     DART_ASSERT(false);
     return;
   }
