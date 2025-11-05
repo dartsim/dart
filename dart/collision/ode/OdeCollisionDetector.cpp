@@ -95,7 +95,6 @@ struct ContactHistoryItem
 namespace {
 std::vector<ContactHistoryItem> pastContacts;
 
-
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
 {
   return std::make_pair(std::min(o1, o2), std::max(o1, o2));
@@ -113,7 +112,7 @@ std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
 
   return pastContacts.back().history;
 }
-}
+} // namespace
 
 struct OdeCollisionCallbackData
 {
