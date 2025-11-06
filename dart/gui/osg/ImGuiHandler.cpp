@@ -37,6 +37,7 @@
  */
 
 #include "dart/gui/osg/ImGuiHandler.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
@@ -356,8 +357,8 @@ bool ImGuiHandler::handle(
 #else
       const ConvertedKey specialKey = convertFromOSGKey(key);
       if (specialKey != ConvertedKey_None) {
-        assert(specialKey < 512 && "ImGui KeysDown is an array of 512");
-        assert(
+        DART_ASSERT(specialKey < 512 && "ImGui KeysDown is an array of 512");
+        DART_ASSERT(
             specialKey > 256
             && "ASCII stop at 127, but we use the range [257, 511]");
 
@@ -390,8 +391,8 @@ bool ImGuiHandler::handle(
 #else
       const ConvertedKey specialKey = convertFromOSGKey(key);
       if (specialKey != ConvertedKey_None) {
-        assert(specialKey < 512 && "ImGui KeysDown is an array of 512");
-        assert(
+        DART_ASSERT(specialKey < 512 && "ImGui KeysDown is an array of 512");
+        DART_ASSERT(
             specialKey > 256
             && "ASCII stop at 127, but we use the range [257, 511]");
 
@@ -497,7 +498,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
       = mTime > 0.0 ? static_cast<float>(currentTime - mTime) : 1.0f / 60.0f;
   io.DeltaTime = std::max(io.DeltaTime, std::numeric_limits<float>::min());
   mTime = currentTime;
-  assert(mTime >= 0.0);
+  DART_ASSERT(mTime >= 0.0);
 
   for (auto i = 0u; i < mMousePressed.size(); ++i)
     io.MouseDown[i] = mMousePressed[i];

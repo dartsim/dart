@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/dynamics/Node.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
@@ -187,7 +188,7 @@ std::size_t BasicNodeManagerForSkeleton::getNumNodes(
     dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -208,7 +209,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -218,7 +219,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are no Nodes of the requested type in this tree\n";
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -227,7 +228,7 @@ NodeType* BasicNodeManagerForSkeleton::getNode(
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are only (" << it->second.size() << ") Nodes of the "
           << "requested type within that tree\n";
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 

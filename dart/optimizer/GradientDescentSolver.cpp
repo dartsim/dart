@@ -31,6 +31,7 @@
  */
 
 #include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
@@ -128,7 +129,7 @@ bool GradientDescentSolver::solve()
   }
 
   Eigen::VectorXd x = problem->getInitialGuess();
-  assert(x.size() == static_cast<int>(dim));
+  DART_ASSERT(x.size() == static_cast<int>(dim));
 
   Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
@@ -450,12 +451,12 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     dterr << "[GradientDescentSolver::clampToBoundary] Mismatch between "
           << "configuration size [" << _x.size() << "] and the dimension of "
           << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
-  assert(mProperties.mProblem->getLowerBounds().size() == _x.size());
-  assert(mProperties.mProblem->getUpperBounds().size() == _x.size());
+  DART_ASSERT(mProperties.mProblem->getLowerBounds().size() == _x.size());
+  DART_ASSERT(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
   for (int i = 0; i < _x.size(); ++i) {
     _x[i] = math::clip(

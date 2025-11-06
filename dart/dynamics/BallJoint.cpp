@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/BallJoint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
@@ -156,7 +157,7 @@ void BallJoint::updateRelativeTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mR
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -171,7 +172,7 @@ void BallJoint::updateRelativeJacobian(bool _mandatory) const
 //==============================================================================
 void BallJoint::updateRelativeJacobianTimeDeriv() const
 {
-  assert(Eigen::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
+  DART_ASSERT(Eigen::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
 }
 
 //==============================================================================

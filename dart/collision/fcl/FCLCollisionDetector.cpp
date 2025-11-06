@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -535,7 +536,7 @@ template <class BV>
 {
   // Create FCL mesh from Assimp mesh
 
-  assert(_mesh);
+  DART_ASSERT(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
   for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
@@ -561,7 +562,7 @@ template <class BV>
 {
   // Create FCL mesh from Assimp mesh
 
-  assert(_mesh);
+  DART_ASSERT(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
@@ -597,7 +598,7 @@ std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
 //==============================================================================
 FCLCollisionDetector::~FCLCollisionDetector()
 {
-  assert(mShapeMap.empty());
+  DART_ASSERT(mShapeMap.empty());
 }
 
 //==============================================================================
@@ -662,7 +663,7 @@ bool FCLCollisionDetector::collide(
       option, result, mPrimitiveShapeType, mContactPointComputationMethod);
 
   const auto* collMgr = casted->getFCLCollisionManager();
-  assert(collMgr);
+  DART_ASSERT(collMgr);
   collMgr->collide(&collData, collisionCallback);
 
   return collData.isCollision();
@@ -842,7 +843,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 
   if (!inserted && currentVersion == info.mLastKnownVersion) {
     const auto& fclCollGeom = info.mShape;
-    assert(fclCollGeom.lock());
+    DART_ASSERT(fclCollGeom.lock());
     // Ensure all the collision geometry in the map should be alive pointers.
 
     return fclCollGeom.lock();
@@ -881,7 +882,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   const auto& shapeType = shape->getType();
 
   if (SphereShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const SphereShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const SphereShape*>(shape.get()));
 
     auto* sphere = static_cast<const SphereShape*>(shape.get());
     const auto radius = sphere->getRadius();
@@ -892,7 +893,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = createEllipsoid<fcl::OBBRSS>(
           radius * 2.0, radius * 2.0, radius * 2.0);
   } else if (BoxShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const BoxShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const BoxShape*>(shape.get()));
 
     auto box = static_cast<const BoxShape*>(shape.get());
     const Eigen::Vector3d& size = box->getSize();
@@ -902,7 +903,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
       geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
   } else if (EllipsoidShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
@@ -914,7 +915,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
           radii[0] * 2.0, radii[1] * 2.0, radii[2] * 2.0);
     }
   } else if (CylinderShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const CylinderShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const CylinderShape*>(shape.get()));
 
     const auto cylinder = static_cast<const CylinderShape*>(shape.get());
     const auto radius = cylinder->getRadius();
@@ -930,7 +931,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
   } else if (ConeShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const ConeShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const ConeShape*>(shape.get()));
 
     const auto cone = std::static_pointer_cast<const ConeShape>(shape);
     const auto radius = cone->getRadius();
@@ -954,14 +955,14 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = fclMesh;
     }
   } else if (PyramidShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const PyramidShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const PyramidShape*>(shape.get()));
 
     const auto pyramid = std::static_pointer_cast<const PyramidShape>(shape);
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   } else if (PlaneShape::getStaticType() == shapeType) {
     if (FCLCollisionDetector::PRIMITIVE == type) {
-      assert(dynamic_cast<const PlaneShape*>(shape.get()));
+      DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
       auto plane = static_cast<const PlaneShape*>(shape.get());
       const Eigen::Vector3d normal = plane->getNormal();
       const double offset = plane->getOffset();
@@ -975,7 +976,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
           << "the size is [1000 0 1000].\n";
     }
   } else if (MeshShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const MeshShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const Eigen::Vector3d& scale = shapeMesh->getScale();
@@ -983,7 +984,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
   } else if (SoftMeshShape::getStaticType() == shapeType) {
-    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
     auto aiMesh = softMeshShape->getAssimpMesh();
@@ -993,7 +994,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
   #if FCL_HAVE_OCTOMAP
-    assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
+    DART_ASSERT(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
     auto octree = octreeShape->getOctree();
@@ -1026,8 +1027,8 @@ FCLCollisionDetector::FCLCollisionGeometryDeleter::FCLCollisionGeometryDeleter(
     FCLCollisionDetector* cd, const dynamics::ConstShapePtr& shape)
   : mFCLCollisionDetector(cd), mShape(shape)
 {
-  assert(cd);
-  assert(shape);
+  DART_ASSERT(cd);
+  DART_ASSERT(shape);
 }
 
 //==============================================================================
@@ -1063,8 +1064,8 @@ bool collisionCallback(
   if (filter) {
     auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
     auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    assert(collisionObject1);
-    assert(collisionObject2);
+    DART_ASSERT(collisionObject1);
+    DART_ASSERT(collisionObject2);
 
     if (filter->ignoresCollision(collisionObject2, collisionObject1))
       return collData->done;
@@ -1123,8 +1124,8 @@ bool distanceCallback(
   if (filter) {
     auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
     auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    assert(collisionObject1);
-    assert(collisionObject2);
+    DART_ASSERT(collisionObject1);
+    DART_ASSERT(collisionObject2);
 
     if (!filter->needDistance(collisionObject2, collisionObject1))
       return distData->done;

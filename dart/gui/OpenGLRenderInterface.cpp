@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -259,7 +260,7 @@ void OpenGLRenderInterface::drawMultiSphereConvexHull(
   const auto& meshVertices = convexHull->getVertices();
   const auto& meshNormals = convexHull->getVertexNormals();
   const auto& meshTriangles = convexHull->getTriangles();
-  assert(meshVertices.size() == meshNormals.size());
+  DART_ASSERT(meshVertices.size() == meshNormals.size());
 
   // Draw the triangles of the convex hull
   glBegin(GL_TRIANGLES);
@@ -730,7 +731,7 @@ void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh)
     glBegin(GL_TRIANGLES);
 
     const auto& face = &mesh->mFaces[i];
-    assert(3u == face->mNumIndices);
+    DART_ASSERT(3u == face->mNumIndices);
 
     for (auto j = 0u; j < 3; ++j) {
       auto index = face->mIndices[j];
@@ -797,7 +798,7 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
     return;
 
   if (shape->getType() == dynamics::MeshShape::getStaticType()) {
-    assert(dynamic_cast<dynamics::MeshShape*>(shape));
+    DART_ASSERT(dynamic_cast<dynamics::MeshShape*>(shape));
 
     auto* mesh = static_cast<dynamics::MeshShape*>(shape);
     mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));

@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -75,7 +76,7 @@ void FCLCollisionObject::updateEngineData()
 
   // Update soft-body's vertices
   if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
-    assert(dynamic_cast<const SoftMeshShape*>(shape));
+    DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
     const aiMesh* mesh = softMeshShape->getAssimpMesh();
@@ -84,7 +85,7 @@ void FCLCollisionObject::updateEngineData()
 
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
-    assert(
+    DART_ASSERT(
         dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
     auto bvhModel
         = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);

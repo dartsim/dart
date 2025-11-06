@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Branch.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 
@@ -109,7 +110,7 @@ BranchPtr Branch::cloneBranch(const std::string& cloneName) const
 
   // Create a Criteria
   Criteria newCriteria = Criteria::convert(mCriteria);
-  assert(newCriteria.mStart.lock());
+  DART_ASSERT(newCriteria.mStart.lock());
   newCriteria.mStart
       = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());
 

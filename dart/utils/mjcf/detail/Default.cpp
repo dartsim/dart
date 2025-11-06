@@ -31,6 +31,7 @@
  */
 
 #include "dart/utils/mjcf/detail/Default.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -143,7 +144,7 @@ const Default* Defaults::getDefault(const std::string& className) const
 //==============================================================================
 const Default* Defaults::getRootDefault() const
 {
-  assert(hasDefault(mRootClassName));
+  DART_ASSERT(hasDefault(mRootClassName));
   return getDefault(mRootClassName);
 }
 

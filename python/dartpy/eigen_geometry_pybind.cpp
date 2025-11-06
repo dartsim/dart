@@ -33,6 +33,7 @@
 //
 
 #include "eigen_geometry_pybind.h"
+#include "dart/common/Macros.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -74,11 +75,11 @@ void CheckRotMat(const Eigen::Matrix<T, 3, 3>& R)
             .abs()
             .maxCoeff();
   DART_UNUSED(identity_error);
-  assert(
+  DART_ASSERT(
       identity_error < kCheckTolerance && "Rotation matrix is not orthonormal");
   const T det_error = fabs(R.determinant() - 1);
   DART_UNUSED(det_error);
-  assert(
+  DART_ASSERT(
       det_error < kCheckTolerance
       && "Rotation matrix violates right-hand rule");
 }
@@ -93,7 +94,7 @@ void CheckIsometry(const Eigen::Transform<T, 3, Eigen::Isometry>& X)
       = (X.matrix().bottomRows(1) - bottom_expected).array().abs().maxCoeff();
 
   DART_UNUSED(bottom_error);
-  assert(
+  DART_ASSERT(
       bottom_error < kCheckTolerance
       && "Homogeneous matrix is improperly scaled.");
 }
@@ -103,7 +104,7 @@ void CheckQuaternion(const Eigen::Quaternion<T>& q)
 {
   const T norm_error = fabs(q.coeffs().norm() - 1);
   DART_UNUSED(norm_error);
-  assert(norm_error < kCheckTolerance && "Quaternion is not normalized");
+  DART_ASSERT(norm_error < kCheckTolerance && "Quaternion is not normalized");
 }
 
 template <typename T>
@@ -111,7 +112,7 @@ void CheckAngleAxis(const Eigen::AngleAxis<T>& value)
 {
   const T norm_error = fabs(value.axis().norm() - 1);
   DART_UNUSED(norm_error);
-  assert(norm_error < kCheckTolerance && "Axis is not normalized");
+  DART_ASSERT(norm_error < kCheckTolerance && "Axis is not normalized");
 }
 
 } // namespace

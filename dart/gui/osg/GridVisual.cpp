@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/GridVisual.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -157,7 +158,7 @@ bool GridVisual::isDisplayed() const
 //==============================================================================
 void GridVisual::setMajorLineColor(const Eigen::Vector4d& color)
 {
-  assert(mMajorLineColor->size() == 1);
+  DART_ASSERT(mMajorLineColor->size() == 1);
   mMajorLineColor->at(0) = ::osg::Vec4(
       static_cast<float>(color[0]),
       static_cast<float>(color[1]),
@@ -176,7 +177,7 @@ Eigen::Vector4d GridVisual::getMajorLineColor() const
 //==============================================================================
 void GridVisual::setMinorLineColor(const Eigen::Vector4d& color)
 {
-  assert(mMinorLineColor->size() == 1);
+  DART_ASSERT(mMinorLineColor->size() == 1);
   mMinorLineColor->at(0) = ::osg::Vec4(
       static_cast<float>(color[0]),
       static_cast<float>(color[1]),
@@ -260,9 +261,9 @@ void setVertices(
     GridVisual::PlaneType planeType,
     const Eigen::Vector3d& offset)
 {
-  assert(axisLineVertices);
-  assert(majorLineVertices);
-  assert(minorLineVertices);
+  DART_ASSERT(axisLineVertices);
+  DART_ASSERT(majorLineVertices);
+  DART_ASSERT(minorLineVertices);
 
   int axis1 = 0;
   int axis2 = 1;

@@ -31,6 +31,7 @@
  */
 
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
@@ -71,7 +72,7 @@ Errors MujocoModel::read(
   // Read <compiler>
   if (hasElement(element, "compiler")) {
     auto compilerElement = getElement(element, "compiler");
-    assert(compilerElement);
+    DART_ASSERT(compilerElement);
     const auto compilerErrors = mCompiler.read(compilerElement);
     errors.insert(errors.end(), compilerErrors.begin(), compilerErrors.end());
   }
@@ -81,7 +82,7 @@ Errors MujocoModel::read(
   // Read <option>
   if (hasElement(element, "option")) {
     auto optionElement = getElement(element, "option");
-    assert(optionElement);
+    DART_ASSERT(optionElement);
     const auto optionErrors = mOption.read(optionElement);
     errors.insert(errors.end(), optionErrors.begin(), optionErrors.end());
   }
@@ -89,7 +90,7 @@ Errors MujocoModel::read(
   // Read <size>
   if (hasElement(element, "size")) {
     auto sizeElement = getElement(element, "size");
-    assert(sizeElement);
+    DART_ASSERT(sizeElement);
     const auto sizeErrors = mSize.read(sizeElement);
     errors.insert(errors.end(), sizeErrors.begin(), sizeErrors.end());
   }
@@ -97,7 +98,7 @@ Errors MujocoModel::read(
   // Read <asset>
   if (hasElement(element, "asset")) {
     auto assetElement = getElement(element, "asset");
-    assert(assetElement);
+    DART_ASSERT(assetElement);
     const auto assetErrors = mAsset.read(assetElement);
     errors.insert(errors.end(), assetErrors.begin(), assetErrors.end());
   }
@@ -105,7 +106,7 @@ Errors MujocoModel::read(
   // Read <default>
   if (hasElement(element, "default")) {
     auto defaultElement = getElement(element, "default");
-    assert(defaultElement);
+    DART_ASSERT(defaultElement);
     const auto defaultErrors = mDefaults.read(defaultElement, nullptr);
     errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
   }
@@ -113,7 +114,7 @@ Errors MujocoModel::read(
   // Read <worldbody>
   if (hasElement(element, "worldbody")) {
     auto worldnodeElement = getElement(element, "worldbody");
-    assert(worldnodeElement);
+    DART_ASSERT(worldnodeElement);
     mWorldbody = Worldbody();
     const auto worldbodyErrors = mWorldbody.read(
         worldnodeElement,
@@ -160,7 +161,7 @@ Errors MujocoModel::read(
   // Read <equality>
   if (hasElement(element, "equality")) {
     auto equalityElement = getElement(element, "equality");
-    assert(equalityElement);
+    DART_ASSERT(equalityElement);
     const auto equalityErrors = mEquality.read(equalityElement, mDefaults);
     errors.insert(errors.end(), equalityErrors.begin(), equalityErrors.end());
   }

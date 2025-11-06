@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/ServoMotorConstraint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -54,8 +55,8 @@ ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
-  assert(joint);
-  assert(mBodyNode);
+  DART_ASSERT(joint);
+  DART_ASSERT(mBodyNode);
 
   mLifeTime[0] = 0;
   mLifeTime[1] = 0;
@@ -156,13 +157,13 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
     if (mActive[i] == false)
       continue;
 
-    assert(lcp->w[index] == 0.0);
+    DART_ASSERT(lcp->w[index] == 0.0);
 
     lcp->b[index] = mNegativeVelocityError[i];
     lcp->lo[index] = mLowerBound[i];
     lcp->hi[index] = mUpperBound[i];
 
-    assert(lcp->findex[index] == -1);
+    DART_ASSERT(lcp->findex[index] == -1);
 
     if (mLifeTime[i])
       lcp->x[index] = mOldX[i];
@@ -176,7 +177,7 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 //==============================================================================
 void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
 {
-  assert(index < mDim && "Invalid Index.");
+  DART_ASSERT(index < mDim && "Invalid Index.");
 
   std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -203,7 +204,7 @@ void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
 //==============================================================================
 void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
-  assert(delVel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(delVel != nullptr && "Null pointer is not allowed.");
 
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
@@ -226,7 +227,7 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
-  assert(localIndex == mDim);
+  DART_ASSERT(localIndex == mDim);
 }
 
 //==============================================================================

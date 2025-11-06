@@ -35,6 +35,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <gtest/gtest.h>
 
@@ -741,7 +742,7 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   followers.push_back(&DR);
   followers.push_back(&RR);
 
-  assert(targets.size() == followers.size());
+  DART_ASSERT(targets.size() == followers.size());
 
   randomize_target_values(targets, spatial_targets);
   set_relative_values(targets, followers, spatial_followers);

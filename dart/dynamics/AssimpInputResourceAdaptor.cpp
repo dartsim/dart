@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 
@@ -108,7 +109,7 @@ AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
     const common::ResourcePtr& _resource)
   : mResource(_resource)
 {
-  assert(_resource);
+  DART_ASSERT(_resource);
 }
 
 //==============================================================================

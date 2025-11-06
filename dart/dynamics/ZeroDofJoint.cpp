@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/ZeroDofJoint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -64,7 +65,7 @@ DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 {
   dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
         << "ZeroDofJoint. This is not allowed!\n";
-  assert(false);
+  DART_ASSERT(false);
   return nullptr;
 }
 
@@ -73,7 +74,7 @@ const DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t) const
 {
   dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
         << "ZeroDofJoint. This is not allowed!\n";
-  assert(false);
+  DART_ASSERT(false);
   return nullptr;
 }
 
@@ -113,7 +114,7 @@ std::size_t ZeroDofJoint::getIndexInSkeleton(std::size_t _index) const
 {
   dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
         << "called (" << _index << ")!\n";
-  assert(false);
+  DART_ASSERT(false);
 
   return 0;
 }
@@ -123,7 +124,7 @@ std::size_t ZeroDofJoint::getIndexInTree(std::size_t _index) const
 {
   dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
         << "called (" << _index << ")!\n";
-  assert(false);
+  DART_ASSERT(false);
 
   return 0;
 }
@@ -689,7 +690,7 @@ void ZeroDofJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
 {
-  assert(mChildBodyNode);
+  DART_ASSERT(mChildBodyNode);
   return mChildBodyNode->getBodyForce();
 }
 

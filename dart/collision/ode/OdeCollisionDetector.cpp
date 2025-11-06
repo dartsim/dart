@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
@@ -217,13 +218,13 @@ OdeCollisionDetector::OdeCollisionDetector()
 {
   // Initialize ODE. dInitODE is deprecated.
   const auto initialized = dInitODE2(0);
-  assert(initialized);
+  DART_ASSERT(initialized);
   DART_UNUSED(initialized);
 
   dAllocateODEDataForThread(dAllocateMaskAll);
 
   mWorldId = dWorldCreate();
-  assert(mWorldId);
+  DART_ASSERT(mWorldId);
 }
 
 //==============================================================================
@@ -255,8 +256,8 @@ namespace {
 //==============================================================================
 void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 {
-  assert(!dGeomIsSpace(o1));
-  assert(!dGeomIsSpace(o2));
+  DART_ASSERT(!dGeomIsSpace(o1));
+  DART_ASSERT(!dGeomIsSpace(o2));
 
   auto cdData = static_cast<OdeCollisionCallbackData*>(data);
 
@@ -273,8 +274,8 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   auto collObj1 = static_cast<OdeCollisionObject*>(geomData1);
   auto collObj2 = static_cast<OdeCollisionObject*>(geomData2);
-  assert(collObj1);
-  assert(collObj2);
+  DART_ASSERT(collObj1);
+  DART_ASSERT(collObj2);
 
   if (filter && filter->ignoresCollision(collObj1, collObj2))
     return;

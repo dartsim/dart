@@ -40,6 +40,7 @@
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -690,7 +691,7 @@ void compareBodyNodeFkToJacobianRelative(
   using math::Jacobian;
   using math::LinearJacobian;
 
-  assert(bn->getSkeleton() == relativeTo->getSkeleton());
+  DART_ASSERT(bn->getSkeleton() == relativeTo->getSkeleton());
   auto skel = bn->getSkeleton();
 
   VectorXd dq = skel->getVelocities();
@@ -786,7 +787,7 @@ void compareBodyNodeFkToJacobianRelative(
   using math::Jacobian;
   using math::LinearJacobian;
 
-  assert(bn->getSkeleton() == relativeTo->getSkeleton());
+  DART_ASSERT(bn->getSkeleton() == relativeTo->getSkeleton());
   auto skel = bn->getSkeleton();
 
   VectorXd dq = skel->getVelocities();
@@ -879,13 +880,13 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
 
   //------------------------------ Tests ---------------------------------------
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
+    DART_ASSERT(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nTestItr; ++j) {
@@ -1053,14 +1054,14 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
   //------------------------------ Tests ---------------------------------------
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
+    DART_ASSERT(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j) {
@@ -1142,7 +1143,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
@@ -1229,14 +1230,14 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(uri);
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
   //------------------------------ Tests ---------------------------------------
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != nullptr);
+    DART_ASSERT(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j) {
@@ -2160,7 +2161,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
           EXPECT_NEAR(constraintVector1(l), constraintVector2(index), 1e-6);
           index++;
         }
-        assert(static_cast<std::size_t>(bodyJacobian.cols()) == index);
+        DART_ASSERT(static_cast<std::size_t>(bodyJacobian.cols()) == index);
       }
     }
   }

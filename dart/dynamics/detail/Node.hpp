@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_NODE_HPP_
 #define DART_DYNAMICS_DETAIL_NODE_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/dynamics/Node.hpp>
 
 #include <dart/common/StlHelpers.hpp>
@@ -299,7 +300,7 @@ public:                                                                        \
           << "). "                                                             \
           << "The number of trees in this Skeleton is: " << treeIts.size()     \
           << "\n";                                                             \
-    assert(false);                                                             \
+    DART_ASSERT(false);                                                             \
     return 0;                                                                  \
   }
 

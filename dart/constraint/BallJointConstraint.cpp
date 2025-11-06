@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 #include "dart/constraint/BallJointConstraint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -105,7 +106,7 @@ const std::string& BallJointConstraint::getStaticType()
 void BallJointConstraint::update()
 {
   // mBodyNode1 should not be null pointer ever
-  assert(mBodyNode1);
+  DART_ASSERT(mBodyNode1);
 
   // Update Jacobian for body2
   if (mBodyNode2) {
@@ -135,13 +136,13 @@ void BallJointConstraint::update()
 //==============================================================================
 void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  assert(_lcp->w[0] == 0.0);
-  assert(_lcp->w[1] == 0.0);
-  assert(_lcp->w[2] == 0.0);
+  DART_ASSERT(_lcp->w[0] == 0.0);
+  DART_ASSERT(_lcp->w[1] == 0.0);
+  DART_ASSERT(_lcp->w[2] == 0.0);
 
-  assert(_lcp->findex[0] == -1);
-  assert(_lcp->findex[1] == -1);
-  assert(_lcp->findex[2] == -1);
+  DART_ASSERT(_lcp->findex[0] == -1);
+  DART_ASSERT(_lcp->findex[1] == -1);
+  DART_ASSERT(_lcp->findex[2] == -1);
 
   _lcp->lo[0] = -dInfinity;
   _lcp->lo[1] = -dInfinity;
@@ -172,11 +173,11 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
 //==============================================================================
 void BallJointConstraint::applyUnitImpulse(std::size_t _index)
 {
-  assert(_index < mDim && "Invalid Index.");
-  assert(isActive());
+  DART_ASSERT(_index < mDim && "Invalid Index.");
+  DART_ASSERT(isActive());
 
   if (mBodyNode2) {
-    assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
+    DART_ASSERT(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
     // Self collision case
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
@@ -198,7 +199,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
           mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, -mJacobian2.row(_index));
         } else {
-          assert(0);
+          DART_ASSERT(0);
         }
       }
       mBodyNode1->getSkeleton()->updateVelocityChange();
@@ -220,7 +221,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
       }
     }
   } else {
-    assert(mBodyNode1->isReactive());
+    DART_ASSERT(mBodyNode1->isReactive());
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
@@ -234,7 +235,7 @@ void BallJointConstraint::applyUnitImpulse(std::size_t _index)
 //==============================================================================
 void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
   for (std::size_t i = 0; i < mDim; ++i)
     _vel[i] = 0.0;
@@ -318,11 +319,11 @@ dynamics::SkeletonPtr BallJointConstraint::getRootSkeleton() const
     if (mBodyNode2->isReactive()) {
       return ConstraintBase::getRootSkeleton(mBodyNode2->getSkeleton());
     } else {
-      assert(0);
+      DART_ASSERT(0);
       return nullptr;
     }
   } else {
-    assert(0);
+    DART_ASSERT(0);
     return nullptr;
   }
 }

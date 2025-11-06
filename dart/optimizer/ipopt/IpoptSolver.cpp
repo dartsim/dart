@@ -52,7 +52,7 @@ IpoptSolver::IpoptSolver(const Solver::Properties& _properties)
 //==============================================================================
 IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem) : Solver(_problem)
 {
-  assert(_problem);
+  DART_ASSERT(_problem);
 
   // Create a new instance of nlp (use a SmartPtr, not raw)
   mNlp = new DartTNLP(this);
@@ -93,7 +93,7 @@ bool IpoptSolver::solve()
   Ipopt::ApplicationReturnStatus init_status = mIpoptApp->Initialize();
   if (init_status != Ipopt::Solve_Succeeded) {
     dterr << "[IpoptSolver::solve] Error during ipopt initialization.\n";
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -146,7 +146,7 @@ IpoptSolver::IpoptSolver(
 //==============================================================================
 DartTNLP::DartTNLP(IpoptSolver* _solver) : Ipopt::TNLP(), mSolver(_solver)
 {
-  assert(_solver && "Null pointer is not allowed.");
+  DART_ASSERT(_solver && "Null pointer is not allowed.");
 }
 
 //==============================================================================
@@ -196,8 +196,8 @@ bool DartTNLP::get_bounds_info(
 
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
-  assert(static_cast<std::size_t>(n) == problem->getDimension());
-  assert(
+  DART_ASSERT(static_cast<std::size_t>(n) == problem->getDimension());
+  DART_ASSERT(
       static_cast<std::size_t>(m)
       == problem->getNumEqConstraints() + problem->getNumIneqConstraints());
   DART_UNUSED(m);
@@ -309,7 +309,7 @@ bool DartTNLP::eval_g(
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(_m)
       == problem->getNumEqConstraints() + problem->getNumIneqConstraints());
   DART_UNUSED(_m);

@@ -31,6 +31,7 @@
  */
 
 #include "dart/dart.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <gtest/gtest.h>
 
@@ -306,7 +307,7 @@ void frameChangeCallback(
     const Frame* _oldParentFrame,
     const Frame* _newParentFrame)
 {
-  assert(_entity);
+  DART_ASSERT(_entity);
 
   std::string oldFrameName
       = _oldParentFrame == nullptr ? "(empty)" : _oldParentFrame->getName();
@@ -326,7 +327,7 @@ void nameChangedCallback(
     const std::string& oldName,
     const std::string& newName)
 {
-  assert(entity);
+  DART_ASSERT(entity);
 
   std::cout << "[" << entity->getName() << "]: Name changed: '" << oldName
             << "' --> '" << newName << "'.\n";

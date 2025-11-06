@@ -31,6 +31,7 @@
  */
 
 #include "dart/utils/FileInfoDof.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -167,7 +168,7 @@ void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
 //==============================================================================
 double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const
 {
-  assert(_frame < mNumFrames);
+  DART_ASSERT(_frame < mNumFrames);
   return mDofs.at(_frame)[_id];
 }
 

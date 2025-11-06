@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/SupportPolygonVisual.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -305,7 +306,7 @@ void SupportPolygonVisual::refresh()
         mass += bn->getMass();
       }
 
-      assert(mass != 0.0);
+      DART_ASSERT(mass != 0.0);
       com = com / mass;
     }
 

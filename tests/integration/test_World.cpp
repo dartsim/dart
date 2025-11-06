@@ -37,6 +37,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/SkelParser.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <gtest/gtest.h>
 
@@ -335,7 +336,7 @@ simulation::WorldPtr createWorld()
   // Create and initialize the world
   simulation::WorldPtr world
       = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
 
   // Create and initialize the world
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));

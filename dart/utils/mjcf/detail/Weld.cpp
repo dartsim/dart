@@ -31,6 +31,7 @@
  */
 
 #include "dart/utils/mjcf/detail/Weld.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/utils/XmlHelpers.hpp"
 
@@ -109,7 +110,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   } else {
     currentDefault = defaults.getRootDefault();
   }
-  assert(currentDefault != nullptr);
+  DART_ASSERT(currentDefault != nullptr);
 
   mAttributes = currentDefault->getWeldAttributes();
 

@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/gui.hpp>
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/utils.hpp>
 
@@ -296,7 +297,7 @@ SkeletonPtr loadBiped()
 {
   // Create the world with a skeleton
   WorldPtr world = SkelParser::readWorld("dart://sample/skel/biped.skel");
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");
 

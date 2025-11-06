@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -92,7 +93,7 @@ CollisionDetector::CollisionObjectManager::CollisionObjectManager(
     CollisionDetector* cd)
   : mCollisionDetector(cd)
 {
-  assert(cd);
+  DART_ASSERT(cd);
 }
 
 //==============================================================================
@@ -128,7 +129,7 @@ CollisionDetector::ManagerForUnsharableCollisionObjects::
         ManagerForUnsharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
-  assert(mgr);
+  DART_ASSERT(mgr);
 }
 
 //==============================================================================
@@ -153,7 +154,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::
 CollisionDetector::ManagerForSharableCollisionObjects::
     ~ManagerForSharableCollisionObjects()
 {
-  assert(mCollisionObjectMap.empty());
+  DART_ASSERT(mCollisionObjectMap.empty());
 }
 
 //==============================================================================
@@ -166,7 +167,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
   const auto found = mCollisionObjectMap.end() != search;
   if (found) {
     const auto& collObj = search->second;
-    assert(collObj.lock());
+    DART_ASSERT(collObj.lock());
     // Ensure all the collision objects in the map are valid pointers
 
     return collObj.lock();
@@ -186,7 +187,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::CollisionObjectDeleter::
     CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
-  assert(mgr);
+  DART_ASSERT(mgr);
 }
 
 //==============================================================================

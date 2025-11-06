@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/collision/CollisionGroup.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
@@ -67,7 +68,7 @@ template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
     const CollisionGroup* otherGroup, const Others*... others)
 {
-  assert(otherGroup);
+  DART_ASSERT(otherGroup);
 
   if (otherGroup && this != otherGroup) {
     for (const auto& info : otherGroup->mObjectInfoList)
@@ -82,7 +83,7 @@ template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  assert(bodyNode);
+  DART_ASSERT(bodyNode);
 
   bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
       [this](const dynamics::ShapeNode* shapeNode) {
@@ -97,7 +98,7 @@ template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
     const dynamics::MetaSkeleton* skel, const Others*... others)
 {
-  assert(skel);
+  DART_ASSERT(skel);
 
   auto numBodyNodes = skel->getNumBodyNodes();
   for (auto i = 0u; i < numBodyNodes; ++i)
@@ -185,7 +186,7 @@ template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const CollisionGroup* otherGroup, const Others*... others)
 {
-  assert(otherGroup);
+  DART_ASSERT(otherGroup);
 
   if (otherGroup) {
     if (this == otherGroup) {
@@ -205,7 +206,7 @@ template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  assert(bodyNode);
+  DART_ASSERT(bodyNode);
 
   bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
       [&](const dynamics::ShapeNode* shapeNode) {
@@ -220,7 +221,7 @@ template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const dynamics::MetaSkeleton* skel, const Others*... others)
 {
-  assert(skel);
+  DART_ASSERT(skel);
 
   auto numBodyNodes = skel->getNumBodyNodes();
   for (auto i = 0u; i < numBodyNodes; ++i)

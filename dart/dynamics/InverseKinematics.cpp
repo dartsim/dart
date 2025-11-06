@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -502,7 +503,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   const Frame* referenceFrame = mTaskSpaceP.mReferenceFrame.get();
   if (referenceFrame == nullptr)
     referenceFrame = mIK->getTarget()->getParentFrame();
-  assert(referenceFrame != nullptr);
+  DART_ASSERT(referenceFrame != nullptr);
 
   // Use the target's transform with respect to its reference frame
   const Eigen::Isometry3d targetTf
@@ -629,7 +630,7 @@ void InverseKinematics::GradientMethod::evalGradient(
           << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
           << "\nBody name: " << mIK->getNode()->getName()
           << "\nMethod name: " << mMethodName << "\n";
-    assert(false);
+    DART_ASSERT(false);
     mLastGradient.resize(_q.size());
     mLastGradient.setZero();
     _grad = mLastGradient;
@@ -1641,7 +1642,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
           << "Objective function of an expired InverseKinematics module!\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -1663,7 +1664,7 @@ void InverseKinematics::Objective::evalGradient(
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
           << "an Objective function of an expired InverseKinematics module!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -1705,7 +1706,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
           << "Constraint function of an expired InverseKinematics module!\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -1719,7 +1720,7 @@ void InverseKinematics::Constraint::evalGradient(
   if (nullptr == mIK) {
     dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
           << "a Constraint function of an expired InverseKinematics module!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 

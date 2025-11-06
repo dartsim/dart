@@ -31,6 +31,7 @@
  */
 
 #include "StateMachine.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "State.hpp"
 
@@ -80,8 +81,8 @@ const std::string& StateMachine::getName() const
 //==============================================================================
 void StateMachine::addState(State* _state)
 {
-  assert(_state != nullptr && "Invalid state");
-  assert(!_containState(_state) && "_state shouldn't be in mStates");
+  DART_ASSERT(_state != nullptr && "Invalid state");
+  DART_ASSERT(!_containState(_state) && "_state shouldn't be in mStates");
 
   mStates.push_back(_state);
 }
@@ -89,8 +90,8 @@ void StateMachine::addState(State* _state)
 //==============================================================================
 void StateMachine::setInitialState(State* _state)
 {
-  assert(_state != nullptr);
-  assert(_containState(_state));
+  DART_ASSERT(_state != nullptr);
+  DART_ASSERT(_containState(_state));
 
   mCurrentState = _state;
 }
@@ -108,7 +109,7 @@ void StateMachine::begin(double _currentTime)
 //==============================================================================
 void StateMachine::computeControlForce(double _dt)
 {
-  assert(mCurrentState != nullptr && "Invaild current state.");
+  DART_ASSERT(mCurrentState != nullptr && "Invaild current state.");
 
   // Check transition is needed from current state
   if (mCurrentState->isTerminalConditionSatisfied())
@@ -144,7 +145,7 @@ void StateMachine::transiteToNextState(double _currentTime)
 //==============================================================================
 void StateMachine::transiteTo(State* _state, double _currentTime)
 {
-  assert(_containState(_state) && "_state should be in mStates");
+  DART_ASSERT(_containState(_state) && "_state should be in mStates");
 
   string prevStateName = mCurrentState->getName();
   string nextStateName = _state->getName();
@@ -168,7 +169,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
   // _state should be in mStates
   State* state = _findState(_stateName);
 
-  assert(state != nullptr && "Invaild state.");
+  DART_ASSERT(state != nullptr && "Invaild state.");
 
   transiteTo(state, _currentTime);
 }
@@ -176,7 +177,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
 //==============================================================================
 void StateMachine::transiteTo(std::size_t _idx, double _currentTime)
 {
-  assert(_idx <= mStates.size() && "Invalid index of State.");
+  DART_ASSERT(_idx <= mStates.size() && "Invalid index of State.");
 
   transiteTo(mStates[_idx], _currentTime);
 }

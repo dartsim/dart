@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/osg/osg.hpp>
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
@@ -204,14 +205,14 @@ public:
     if (nullptr == base) {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform an IK on a "
             << "limb that no longer exists [" << getMethodName() << "]!\n";
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
     if (nullptr == mWristEnd) {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform IK without "
             << "a wrist!\n";
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
@@ -354,7 +355,7 @@ protected:
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
       dterr << "[HuboArmIK::configure] base link is a nullptr\n";
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -363,7 +364,7 @@ protected:
     if (nullptr == pelvis) {
       dterr << "[HuboArmIK::configure] Could not find Hubo's pelvis "
             << "(Body_TSY)\n";
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -377,7 +378,7 @@ protected:
         dterr << "[HuboArmIK::configure] Invalid number of DOFs ("
               << joint->getNumDofs() << ") in the Joint [" << joint->getName()
               << "]\n";
-        assert(false);
+        DART_ASSERT(false);
         return;
       }
 
@@ -482,7 +483,7 @@ public:
     if (nullptr == base) {
       dterr << "[HuboLegIK::computeSolutions] Attempting to perform IK on a "
             << "limb that no longer exists!\n";
-      assert(false);
+      DART_ASSERT(false);
       return mSolutions;
     }
 
@@ -597,7 +598,7 @@ protected:
     BodyNode* base = mBaseLink.lock();
     if (nullptr == base) {
       dterr << "[HuboLegIK::configure] base link is a nullptr\n";
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -606,7 +607,7 @@ protected:
     if (nullptr == pelvis) {
       dterr << "[HuboLegIK::configure] Could not find Hubo's pelvis "
             << "(Body_TSY)\n";
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 
@@ -620,7 +621,7 @@ protected:
         dterr << "[HuboLegIK::configure] Invalid number of DOFs ("
               << joint->getNumDofs() << ") in the Joint [" << joint->getName()
               << "]\n";
-        assert(false);
+        DART_ASSERT(false);
         return;
       }
 

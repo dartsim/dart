@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Frame.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -119,8 +120,8 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 Eigen::Isometry3d Frame::getTransform(
     const Frame* withRespectTo, const Frame* inCoordinatesOf) const
 {
-  assert(nullptr != withRespectTo);
-  assert(nullptr != inCoordinatesOf);
+  DART_ASSERT(nullptr != withRespectTo);
+  DART_ASSERT(nullptr != inCoordinatesOf);
 
   if (withRespectTo == inCoordinatesOf)
     return getTransform(withRespectTo);
@@ -548,7 +549,7 @@ Frame::Frame(ConstructAbstractTag)
   dterr << "[Frame::constructor] You are calling a constructor for the Frame "
         << "class which is only meant to be used by pure abstract classes. If "
         << "you are seeing this, then there is a bug!\n";
-  assert(false);
+  DART_ASSERT(false);
 }
 
 //==============================================================================

@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -98,16 +99,16 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
 //==============================================================================
 void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
 {
-  assert(_newFace[0] != _newFace[1]);
-  assert(_newFace[1] != _newFace[2]);
-  assert(_newFace[2] != _newFace[0]);
-  assert(
+  DART_ASSERT(_newFace[0] != _newFace[1]);
+  DART_ASSERT(_newFace[1] != _newFace[2]);
+  DART_ASSERT(_newFace[2] != _newFace[0]);
+  DART_ASSERT(
       0 <= _newFace[0]
       && static_cast<std::size_t>(_newFace[0]) < mPointProps.size());
-  assert(
+  DART_ASSERT(
       0 <= _newFace[1]
       && static_cast<std::size_t>(_newFace[1]) < mPointProps.size());
-  assert(
+  DART_ASSERT(
       0 <= _newFace[2]
       && static_cast<std::size_t>(_newFace[2]) < mPointProps.size());
   mFaces.push_back(_newFace);
@@ -226,7 +227,7 @@ std::size_t SoftBodyNode::getNumPointMasses() const
 //==============================================================================
 PointMass* SoftBodyNode::getPointMass(std::size_t _idx)
 {
-  assert(_idx < mPointMasses.size());
+  DART_ASSERT(_idx < mPointMasses.size());
   if (_idx < mPointMasses.size())
     return mPointMasses[_idx];
 
@@ -349,14 +350,14 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
   //  //----------------------------------------------------------------------------
   //  // Visualization shape
   //  //----------------------------------------------------------------------------
-  //  assert(mSoftVisualShape == nullptr);
+  //  DART_ASSERT(mSoftVisualShape == nullptr);
   //  mSoftVisualShape = new SoftMeshShape(this);
   //  BodyNode::addVisualizationShape(mSoftVisualShape);
 
   //  //----------------------------------------------------------------------------
   //  // Collision shape
   //  //----------------------------------------------------------------------------
-  //  assert(mSoftCollShape == nullptr);
+  //  DART_ASSERT(mSoftCollShape == nullptr);
   //  mSoftCollShape = new SoftMeshShape(this);
   //  BodyNode::addCollisionShape(mSoftCollShape);
 }
@@ -410,7 +411,7 @@ double SoftBodyNode::getMass() const
 //==============================================================================
 void SoftBodyNode::setVertexSpringStiffness(double _kv)
 {
-  assert(0.0 <= _kv);
+  DART_ASSERT(0.0 <= _kv);
 
   if (_kv == mAspectProperties.mKv)
     return;
@@ -428,7 +429,7 @@ double SoftBodyNode::getVertexSpringStiffness() const
 //==============================================================================
 void SoftBodyNode::setEdgeSpringStiffness(double _ke)
 {
-  assert(0.0 <= _ke);
+  DART_ASSERT(0.0 <= _ke);
 
   if (_ke == mAspectProperties.mKe)
     return;
@@ -446,7 +447,7 @@ double SoftBodyNode::getEdgeSpringStiffness() const
 //==============================================================================
 void SoftBodyNode::setDampingCoefficient(double _damp)
 {
-  assert(_damp >= 0.0);
+  DART_ASSERT(_damp >= 0.0);
 
   if (_damp == mAspectProperties.mDampCoeff)
     return;
@@ -484,9 +485,9 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 //==============================================================================
 void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 {
-  assert(_idx1 != _idx2);
-  assert(_idx1 < mPointMasses.size());
-  assert(_idx2 < mPointMasses.size());
+  DART_ASSERT(_idx1 != _idx2);
+  DART_ASSERT(_idx1 < mPointMasses.size());
+  DART_ASSERT(_idx2 < mPointMasses.size());
   mPointMasses[_idx1]->addConnectedPointMass(mPointMasses[_idx2]);
   mPointMasses[_idx2]->addConnectedPointMass(mPointMasses[_idx1]);
   // Version incremented in addConnectedPointMass
@@ -502,7 +503,7 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 //==============================================================================
 const Eigen::Vector3i& SoftBodyNode::getFace(std::size_t _idx) const
 {
-  assert(_idx < mAspectProperties.mFaces.size());
+  DART_ASSERT(_idx < mAspectProperties.mFaces.size());
   return mAspectProperties.mFaces[_idx];
 }
 
@@ -597,7 +598,7 @@ void SoftBodyNode::updateTransmittedForceID(
     mF -= BodyNode::mAspectState.mFext;
 
   // Verification
-  assert(!math::isNan(mF));
+  DART_ASSERT(!math::isNan(mF));
 
   // Gravity force
   mF -= mFgravity;
@@ -609,7 +610,7 @@ void SoftBodyNode::updateTransmittedForceID(
   //
   for (const auto& childBodyNode : mChildBodyNodes) {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != nullptr);
+    DART_ASSERT(childJoint != nullptr);
 
     mF += math::dAdInvT(
         childJoint->getRelativeTransform(), childBodyNode->getBodyForce());
@@ -620,7 +621,7 @@ void SoftBodyNode::updateTransmittedForceID(
   }
 
   // Verification
-  assert(!math::isNan(mF));
+  DART_ASSERT(!math::isNan(mF));
 }
 
 //==============================================================================
@@ -657,7 +658,7 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   for (auto& pointMass : mPointMasses)
     pointMass->updateArtInertiaFD(_timeStep);
 
-  assert(mParentJoint != nullptr);
+  DART_ASSERT(mParentJoint != nullptr);
 
   // Set spatial inertia to the articulated body inertia
   mArtInertia = mI;
@@ -680,16 +681,16 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   }
 
   // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
+  DART_ASSERT(!math::isNan(mArtInertia));
+  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
 
   // Update parent joint's inverse of projected articulated body inertia
   mParentJoint->updateInvProjArtInertia(mArtInertia);
   mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
 
   // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
+  DART_ASSERT(!math::isNan(mArtInertia));
+  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
 }
 
 //==============================================================================
@@ -720,7 +721,7 @@ void SoftBodyNode::updateBiasForce(
   mBiasForce = -math::dad(V, mI * V) - BodyNode::mAspectState.mFext - mFgravity;
 
   // Verifycation
-  assert(!math::isNan(mBiasForce));
+  DART_ASSERT(!math::isNan(mBiasForce));
 
   // And add child bias force
   for (const auto& childBodyNode : mChildBodyNodes) {
@@ -741,7 +742,7 @@ void SoftBodyNode::updateBiasForce(
   }
 
   // Verifycation
-  assert(!math::isNan(mBiasForce));
+  DART_ASSERT(!math::isNan(mBiasForce));
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
@@ -796,7 +797,7 @@ void SoftBodyNode::updateBiasImpulse()
   }
 
   // Verification
-  assert(!math::isNan(mBiasImpulse));
+  DART_ASSERT(!math::isNan(mBiasImpulse));
 
   // Update parent joint's total force
   mParentJoint->updateTotalImpulse(mBiasImpulse);
@@ -853,7 +854,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   //  mM_F.noalias() = mI * mM_dV;
 
   //  // Verification
-  //  assert(!math::isNan(mM_F));
+  //  DART_ASSERT(!math::isNan(mM_F));
 
   //  //
   //  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
@@ -872,7 +873,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   //  }
 
   //  // Verification
-  //  assert(!math::isNan(mM_F));
+  //  DART_ASSERT(!math::isNan(mM_F));
 
   //  //
   //  int dof = mParentJoint->getNumDofs();
@@ -898,7 +899,7 @@ void SoftBodyNode::aggregateAugMassMatrix(
 
   //----------------------- SoftBodyNode Part ----------------------------------
   mM_F.noalias() = mI * mM_dV;
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end();
@@ -912,7 +913,7 @@ void SoftBodyNode::aggregateAugMassMatrix(
     mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
     mM_F.tail<3>() += (*it)->mM_F;
   }
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0) {
@@ -961,7 +962,7 @@ void SoftBodyNode::updateInvMassMatrix()
   }
 
   // Verification
-  assert(!math::isNan(mInvM_c));
+  DART_ASSERT(!math::isNan(mInvM_c));
 
   // Update parent joint's total force for inverse mass matrix
   mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
@@ -999,7 +1000,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
   /// mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta; /  }
 
   //  // Verification
-  //  assert(!math::isNan(mInvM_c));
+  //  DART_ASSERT(!math::isNan(mInvM_c));
 
   //  // Update parent joint's total force for inverse mass matrix
   //  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
@@ -1365,7 +1366,7 @@ void SoftBodyNodeHelper::setBox(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeBoxProperties(
       _size,
       _localTransform,
@@ -1406,7 +1407,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Point masses
   //----------------------------------------------------------------------------
   // Number of point masses
-  assert(frags[0] > 1 && frags[1] > 1 && frags[2] > 1);
+  DART_ASSERT(frags[0] > 1 && frags[1] > 1 && frags[2] > 1);
 
   std::size_t nCorners = 8;
   std::size_t nVerticesAtEdgeX = frags[0] - 2;
@@ -2417,7 +2418,7 @@ void SoftBodyNodeHelper::setBox(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeBoxProperties(
       _size,
       _localTransform,
@@ -2470,7 +2471,7 @@ void SoftBodyNodeHelper::setSinglePointMass(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeSinglePointMassProperties(
       _totalMass, _vertexStiffness, _edgeStiffness, _dampingCoeff));
 }
@@ -2654,7 +2655,7 @@ void SoftBodyNodeHelper::setEllipsoid(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeEllipsoidProperties(
       _size,
       _nSlices,
@@ -2990,7 +2991,7 @@ void SoftBodyNodeHelper::setCylinder(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  assert(_softBodyNode != nullptr);
+  DART_ASSERT(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeCylinderProperties(
       _radius,
       _height,

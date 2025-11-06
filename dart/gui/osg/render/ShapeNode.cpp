@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
@@ -51,7 +52,7 @@ ShapeNode::ShapeNode(
 {
   mShapeFrame = mParentShapeFrameNode->getShapeFrame();
   mVisualAspect = mShapeFrame->getVisualAspect();
-  assert(mVisualAspect);
+  DART_ASSERT(mVisualAspect);
 }
 
 //==============================================================================

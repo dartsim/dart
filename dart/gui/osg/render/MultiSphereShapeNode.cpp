@@ -31,6 +31,7 @@
  */
 
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -225,7 +226,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     const auto& meshVertices = convexHull->getVertices();
     const auto& meshNormals = convexHull->getVertexNormals();
     const auto& meshTriangles = convexHull->getTriangles();
-    assert(meshVertices.size() == meshNormals.size());
+    DART_ASSERT(meshVertices.size() == meshNormals.size());
 
     // Convert the convex hull to OSG data types
     mVertices->resize(meshVertices.size());

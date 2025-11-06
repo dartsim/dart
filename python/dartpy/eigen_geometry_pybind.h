@@ -43,6 +43,7 @@
 
 #include <string>
 #include <utility>
+#include "dart/common/Macros.hpp"
 
 #include <Eigen/Dense>
 #include "pybind11/eigen.h"
@@ -79,7 +80,7 @@ struct type_caster_wrapped {
   // N.B. Do not use `PYBIND11_TYPE_CASTER(...)` so we can avoid casting
   // garbage values.
   operator Type&() {
-    assert(loaded_);
+    DART_ASSERT(loaded_);
     return value_;
   }
   template <typename T> using cast_op_type =

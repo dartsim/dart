@@ -31,6 +31,7 @@
  */
 
 #include "AtlasSimbiconWorldNode.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <osgShadow/ShadowMap>
 
@@ -42,8 +43,8 @@ AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     mExternalForce(Eigen::Vector3d::Zero()),
     mForceDuration(0.0)
 {
-  assert(world);
-  assert(atlas);
+  DART_ASSERT(world);
+  DART_ASSERT(atlas);
 
   mController.reset(new Controller(atlas, world->getConstraintSolver()));
 }

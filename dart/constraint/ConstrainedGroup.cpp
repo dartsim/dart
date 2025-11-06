@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
@@ -52,11 +53,11 @@ ConstrainedGroup::~ConstrainedGroup() {}
 //==============================================================================
 void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
-  assert(_constraint != nullptr && "Attempted to add nullptr.");
-  assert(
+  DART_ASSERT(_constraint != nullptr && "Attempted to add nullptr.");
+  DART_ASSERT(
       !containConstraint(_constraint)
       && "Attempted to add a duplicate constraint.");
-  assert(_constraint->isActive());
+  DART_ASSERT(_constraint->isActive());
 
   mConstraints.push_back(_constraint);
 }
@@ -70,22 +71,22 @@ std::size_t ConstrainedGroup::getNumConstraints() const
 //==============================================================================
 ConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index)
 {
-  assert(_index < mConstraints.size());
+  DART_ASSERT(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
 ConstConstraintBasePtr ConstrainedGroup::getConstraint(std::size_t _index) const
 {
-  assert(_index < mConstraints.size());
+  DART_ASSERT(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
 void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 {
-  assert(_constraint != nullptr && "Attempted to add nullptr.");
-  assert(
+  DART_ASSERT(_constraint != nullptr && "Attempted to add nullptr.");
+  DART_ASSERT(
       containConstraint(_constraint)
       && "Attempted to remove not existing constraint.");
 

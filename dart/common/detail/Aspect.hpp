@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_ASPECT_HPP_
 #define DART_COMMON_DETAIL_ASPECT_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/common/Aspect.hpp>
 #include <dart/common/Console.hpp>
 #include <dart/common/Macros.hpp>
@@ -78,7 +79,7 @@ template <class CompositeType>
 void CompositeTrackingAspect<CompositeType>::setComposite(
     Composite* newComposite)
 {
-  assert(nullptr == mComposite);
+  DART_ASSERT(nullptr == mComposite);
 
   mComposite = dynamic_cast<CompositeType*>(newComposite);
   // Note: Derived classes should be responsible for handling the case in which
@@ -92,7 +93,7 @@ void CompositeTrackingAspect<CompositeType>::loseComposite(
     Composite* oldComposite)
 {
   DART_UNUSED(oldComposite);
-  assert(oldComposite == mComposite);
+  DART_ASSERT(oldComposite == mComposite);
   mComposite = nullptr;
 }
 

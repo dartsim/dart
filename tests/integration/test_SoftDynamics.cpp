@@ -38,6 +38,7 @@
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -372,7 +373,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       vector<double> oldKe(nSoftBodyNodes, 0.0);
       vector<double> oldD(nSoftBodyNodes, 0.0);
       for (int k = 0; k < nSoftBodyNodes; ++k) {
-        assert(softSkel != nullptr);
+        DART_ASSERT(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         oldKv[k] = sbn->getVertexSpringStiffness();
         oldKe[k] = sbn->getEdgeSpringStiffness();
@@ -383,7 +384,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       softSkel->clearExternalForces();
       softSkel->setAccelerations(VectorXd::Zero(dof));
       for (int k = 0; k < nSoftBodyNodes; ++k) {
-        assert(softSkel != nullptr);
+        DART_ASSERT(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         sbn->setVertexSpringStiffness(0.0);
         sbn->setEdgeSpringStiffness(0.0);

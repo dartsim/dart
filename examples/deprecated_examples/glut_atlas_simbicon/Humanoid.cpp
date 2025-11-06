@@ -31,6 +31,7 @@
  */
 
 #include "Humanoid.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "State.hpp"
 
@@ -107,9 +108,9 @@ AtlasRobot::~AtlasRobot()
   mLeftThigh = mSkeleton->getBodyNode("l_uleg");
   mRightThigh = mSkeleton->getBodyNode("r_uleg");
 
-  assert(mPelvis != nullptr);
-  assert(mLeftFoot != nullptr);
-  assert(mRightFoot != nullptr);
-  assert(mLeftThigh != nullptr);
-  assert(mRightThigh != nullptr);
+  DART_ASSERT(mPelvis != nullptr);
+  DART_ASSERT(mLeftFoot != nullptr);
+  DART_ASSERT(mRightFoot != nullptr);
+  DART_ASSERT(mLeftThigh != nullptr);
+  DART_ASSERT(mRightThigh != nullptr);
 }

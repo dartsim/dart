@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -57,7 +58,7 @@ std::size_t CollisionResult::getNumContacts() const
 //==============================================================================
 Contact& CollisionResult::getContact(std::size_t index)
 {
-  assert(index < mContacts.size());
+  DART_ASSERT(index < mContacts.size());
 
   return mContacts[index];
 }
@@ -65,7 +66,7 @@ Contact& CollisionResult::getContact(std::size_t index)
 //==============================================================================
 const Contact& CollisionResult::getContact(std::size_t index) const
 {
-  assert(index < mContacts.size());
+  DART_ASSERT(index < mContacts.size());
 
   return mContacts[index];
 }
@@ -129,7 +130,7 @@ void CollisionResult::addObject(CollisionObject* object)
     dterr << "[CollisionResult::addObject] Attempting to add a collision with "
           << "a nullptr object to a CollisionResult instance. This is not "
           << "allowed. Please report this as a bug!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 

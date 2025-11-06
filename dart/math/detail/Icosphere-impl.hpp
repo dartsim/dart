@@ -32,6 +32,7 @@
 
 #include <dart/math/Constants.hpp>
 #include <dart/math/Icosphere.hpp>
+#include "dart/common/Macros.hpp"
 
 #include <array>
 
@@ -105,7 +106,7 @@ Icosphere<S>::Icosphere(S radius, std::size_t subdivisions)
   static_assert(
       std::is_floating_point<S>::value,
       "Scalar must be a floating point type.");
-  assert(radius > 0);
+  DART_ASSERT(radius > 0);
 
   build();
 }

@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
 #include <dart/math/Constants.hpp>
@@ -52,7 +53,7 @@ template <class BV>
     const aiScene* _mesh,
     const dart::collision::fcl::Transform3& _transform)
 {
-  assert(_mesh);
+  DART_ASSERT(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 

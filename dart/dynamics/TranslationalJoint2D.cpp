@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/TranslationalJoint2D.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -228,7 +229,7 @@ void TranslationalJoint2D::updateRelativeTransform() const
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -240,8 +241,8 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
           * mAspectProperties.getTranslationalAxes();
 
     // Verification
-    assert(mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));
-    assert(!math::isNan(mJacobian.bottomRows<3>()));
+    DART_ASSERT(mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));
+    DART_ASSERT(!math::isNan(mJacobian.bottomRows<3>()));
   }
 }
 
@@ -249,7 +250,7 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
 void TranslationalJoint2D::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
-  assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 2>::Zero()));
+  DART_ASSERT(mJacobianDeriv == (Eigen::Matrix<double, 6, 2>::Zero()));
 }
 
 } // namespace dynamics

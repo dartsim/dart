@@ -31,6 +31,7 @@
  */
 
 #include "dart/utils/SkelParser.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -509,7 +510,7 @@ dynamics::ShapeNode* readShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  assert(bodyNode);
+  DART_ASSERT(bodyNode);
 
   auto shape = readShape(shapeNodeEle, bodyNode->getName(), baseUri, retriever);
   auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
@@ -676,7 +677,7 @@ simulation::WorldPtr readWorld(
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  assert(_worldElement != nullptr);
+  DART_ASSERT(_worldElement != nullptr);
 
   // Create a world
   simulation::WorldPtr newWorld = simulation::World::create();
@@ -928,7 +929,7 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  assert(_skeletonElement != nullptr);
+  DART_ASSERT(_skeletonElement != nullptr);
 
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
@@ -1044,7 +1045,7 @@ SkelBodyNode readBodyNode(
     const common::Uri& /*_baseUri*/,
     const common::ResourceRetrieverPtr& /*_retriever*/)
 {
-  assert(_bodyNodeElement != nullptr);
+  DART_ASSERT(_bodyNodeElement != nullptr);
 
   BodyPropPtr newBodyNode(new dynamics::BodyNode::Properties);
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
@@ -1134,7 +1135,7 @@ SkelBodyNode readSoftBodyNode(
   // Otherwise, BodyNode is created.
 
   //----------------------------------------------------------------------------
-  assert(_softBodyNodeElement != nullptr);
+  DART_ASSERT(_softBodyNodeElement != nullptr);
 
   SkelBodyNode standardBodyNode = readBodyNode(
       _softBodyNodeElement, _skeletonFrame, _baseUri, _retriever);
@@ -1232,7 +1233,7 @@ dynamics::ShapePtr readShape(
   dynamics::ShapePtr newShape;
 
   // Geometry
-  assert(hasElement(vizEle, "geometry"));
+  DART_ASSERT(hasElement(vizEle, "geometry"));
   tinyxml2::XMLElement* geometryEle = getElement(vizEle, "geometry");
 
   if (hasElement(geometryEle, "sphere")) {
@@ -1319,7 +1320,7 @@ dynamics::ShapePtr readShape(
   } else {
     dterr << "[readShape] Unknown visualization shape in BodyNode "
           << "named [" << bodyName << "]\n";
-    assert(0);
+    DART_ASSERT(0);
     return nullptr;
   }
 
@@ -1353,7 +1354,7 @@ void readJoint(
     IndexToJoint& _order,
     JointToIndex& _lookup)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -1364,7 +1365,7 @@ void readJoint(
   //--------------------------------------------------------------------------
   // Type attribute
   joint.type = getAttributeString(_jointElement, "type");
-  assert(!joint.type.empty());
+  DART_ASSERT(!joint.type.empty());
   if (joint.type == std::string("weld"))
     joint.properties = readWeldJoint(_jointElement, joint, name);
   else if (joint.type == std::string("prismatic"))
@@ -1393,7 +1394,7 @@ void readJoint(
           << "discarded.\n";
     return;
   }
-  assert(joint.properties != nullptr);
+  DART_ASSERT(joint.properties != nullptr);
 
   joint.properties->mName = name;
 
@@ -1430,7 +1431,7 @@ void readJoint(
   } else {
     dterr << "[readJoint] Joint named [" << name << "] is missing "
           << "a parent BodyNode!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   // Use an empty string (rather than "world") to indicate that the joint has no
@@ -1454,7 +1455,7 @@ void readJoint(
   } else {
     dterr << "[readJoint] Joint named [" << name << "] is missing "
           << "a child BodyNode!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   if (child == _bodyNodes.end()) {
@@ -1780,8 +1781,8 @@ void readJointDynamicsAndLimit(
   // the dof tag instead, because all functionality of these tags have been
   // moved to the dof tag
 
-  assert(_jointElement != nullptr);
-  assert(_numAxis <= 6);
+  DART_ASSERT(_jointElement != nullptr);
+  DART_ASSERT(_numAxis <= 6);
 
   std::string axisName = "axis";
 
@@ -1869,7 +1870,7 @@ JointPropPtr readRevoluteJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::RevoluteJoint::Properties properties;
 
@@ -1884,7 +1885,7 @@ JointPropPtr readRevoluteJoint(
   } else {
     dterr << "[readRevoluteJoint] Revolute Joint named [" << _name
           << "] is missing axis information!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
@@ -1922,7 +1923,7 @@ JointPropPtr readPrismaticJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::PrismaticJoint::Properties properties;
 
@@ -1937,7 +1938,7 @@ JointPropPtr readPrismaticJoint(
   } else {
     dterr << "[readPrismaticJoint] Prismatic Joint named [" << _name
           << "] is missing axis information!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
@@ -1975,7 +1976,7 @@ JointPropPtr readScrewJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::ScrewJoint::Properties properties;
 
@@ -1996,7 +1997,7 @@ JointPropPtr readScrewJoint(
   } else {
     dterr << "[readScrewJoint] Screw Joint named [" << _name
           << "] is missing axis information!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
@@ -2034,7 +2035,7 @@ JointPropPtr readUniversalJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::UniversalJoint::Properties properties;
 
@@ -2049,7 +2050,7 @@ JointPropPtr readUniversalJoint(
   } else {
     dterr << "[readUniversalJoint] Universal Joint named [" << _name
           << "] is missing axis information!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   //--------------------------------------------------------------------------
@@ -2063,7 +2064,7 @@ JointPropPtr readUniversalJoint(
   } else {
     dterr << "[readUniversalJoint] Universal Joint named [" << _name
           << "] is missing axis2 information!\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   readJointDynamicsAndLimit(_jointElement, properties, _joint, _name, 2);
@@ -2095,7 +2096,7 @@ JointPropPtr readBallJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::BallJoint::Properties properties;
 
@@ -2126,7 +2127,7 @@ JointPropPtr readEulerJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::EulerJoint::Properties properties;
 
@@ -2140,7 +2141,7 @@ JointPropPtr readEulerJoint(
   } else {
     dterr << "[readEulerJoint] Undefined Euler axis order for "
           << "Euler Joint named [" << _name << "]\n";
-    assert(0);
+    DART_ASSERT(0);
   }
 
   //--------------------------------------------------------------------------
@@ -2174,7 +2175,7 @@ JointPropPtr readTranslationalJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::TranslationalJoint::Properties properties;
 
@@ -2209,7 +2210,7 @@ JointPropPtr readTranslationalJoint2D(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::TranslationalJoint2D::Properties properties;
 
@@ -2281,7 +2282,7 @@ JointPropPtr readPlanarJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::PlanarJoint::Properties properties;
 
@@ -2353,7 +2354,7 @@ JointPropPtr readFreeJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != nullptr);
+  DART_ASSERT(_jointElement != nullptr);
 
   dynamics::FreeJoint::Properties properties;
 

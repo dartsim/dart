@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/BalanceConstraint.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -70,7 +71,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   if (nullptr == ik) {
     dterr << "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
           << "function associated to a HierarchicalIK that no longer exists!\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 
@@ -79,7 +80,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   if (nullptr == skel) {
     dterr << "[BalanceConstraint::eval] Attempting to call a BalanceConstraint "
           << "function on a Skeleton which no longer exists!\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 

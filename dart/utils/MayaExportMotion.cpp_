@@ -31,6 +31,7 @@
 #include "MayaExportMotion.h"
 #include "MayaExportSkeleton.h"
 #include "math/UtilsRotation.h"
+#include "dart/common/Macros.hpp"
 
 #include "kinematics/Skeleton.h"
 #include "kinematics/FileInfoDof.h"
@@ -454,7 +455,7 @@ namespace utils {
             }
 
 
-            assert(MayaExportSkeleton::mRotOrder==dart_math::XYZ);	// else change the euler angle order
+            DART_ASSERT(MayaExportSkeleton::mRotOrder==dart_math::XYZ);	// else change the euler angle order
             // X rotation
             outFile0<<"anim rotate.rotateX rotateX "<<bodyname.c_str()<<" "<<level<<" "<<numChildJoints<<" "<<dofNum++<<endl;
             outFile0<<"animData {\n";

@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 #define DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 
+#include "dart/common/Macros.hpp"
 #include <dart/common/Aspect.hpp>
 #include <dart/common/StlHelpers.hpp>
 
@@ -176,7 +177,7 @@ public:
             << "a Composite, but it also does not have a temporary State "
             << "available. This should not happen! Please report this as a "
             << "bug!\n";
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return *mTemporaryState;
@@ -212,7 +213,7 @@ protected:
   /// Pass the temporary State of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
-    assert(nullptr == this->getComposite());
+    DART_ASSERT(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
     if (mTemporaryState)
@@ -346,7 +347,7 @@ public:
             << "is not in a Composite, but it also does not have temporary "
             << "Properties available. This should not happen! Please report "
             << "this as a bug!\n";
-      assert(false);
+      DART_ASSERT(false);
     }
 
     return *mTemporaryProperties;
@@ -383,7 +384,7 @@ protected:
   /// Pass the temporary Properties of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
-    assert(nullptr == this->getComposite());
+    DART_ASSERT(nullptr == this->getComposite());
 
     Base::setComposite(newComposite);
     if (mTemporaryProperties)

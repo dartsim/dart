@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <cmath>
 
@@ -40,9 +41,9 @@ namespace dynamics {
 //==============================================================================
 BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size)
 {
-  assert(_size[0] > 0.0);
-  assert(_size[1] > 0.0);
-  assert(_size[2] > 0.0);
+  DART_ASSERT(_size[0] > 0.0);
+  DART_ASSERT(_size[1] > 0.0);
+  DART_ASSERT(_size[2] > 0.0);
 }
 
 //==============================================================================
@@ -86,9 +87,9 @@ Eigen::Matrix3d BoxShape::computeInertia(
 //==============================================================================
 void BoxShape::setSize(const Eigen::Vector3d& _size)
 {
-  assert(_size[0] > 0.0);
-  assert(_size[1] > 0.0);
-  assert(_size[2] > 0.0);
+  DART_ASSERT(_size[0] > 0.0);
+  DART_ASSERT(_size[1] > 0.0);
+  DART_ASSERT(_size[2] > 0.0);
   mSize = _size;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

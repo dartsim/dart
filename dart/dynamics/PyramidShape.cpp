@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/PyramidShape.hpp"
+#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -49,9 +50,9 @@ PyramidShape::PyramidShape(double baseWidth, double baseDepth, double height)
     mBaseDepth(baseDepth),
     mHeight(height)
 {
-  assert(0.0 < baseWidth);
-  assert(0.0 < baseDepth);
-  assert(0.0 < height);
+  DART_ASSERT(0.0 < baseWidth);
+  DART_ASSERT(0.0 < baseDepth);
+  DART_ASSERT(0.0 < height);
 }
 
 //==============================================================================
@@ -76,7 +77,7 @@ double PyramidShape::getBaseWidth() const
 //==============================================================================
 void PyramidShape::setBaseWidth(double width)
 {
-  assert(0.0 < width);
+  DART_ASSERT(0.0 < width);
   mBaseWidth = width;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -93,7 +94,7 @@ double PyramidShape::getBaseDepth() const
 //==============================================================================
 void PyramidShape::setBaseDepth(double depth)
 {
-  assert(0.0 < depth);
+  DART_ASSERT(0.0 < depth);
   mBaseDepth = depth;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -110,7 +111,7 @@ double PyramidShape::getHeight() const
 //==============================================================================
 void PyramidShape::setHeight(double height)
 {
-  assert(0.0 < height);
+  DART_ASSERT(0.0 < height);
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
