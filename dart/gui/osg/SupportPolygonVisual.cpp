@@ -31,8 +31,8 @@
  */
 
 #include "dart/gui/osg/SupportPolygonVisual.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"

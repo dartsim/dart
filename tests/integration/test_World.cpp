@@ -32,12 +32,12 @@
 
 #include "TestHelpers.hpp"
 #include "dart/collision/collision.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/SkelParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include <gtest/gtest.h>
 

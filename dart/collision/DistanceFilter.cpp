@@ -31,9 +31,9 @@
  */
 
 #include "dart/collision/DistanceFilter.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {

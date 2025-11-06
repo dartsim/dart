@@ -31,8 +31,8 @@
  */
 
 #include "dart/utils/mjcf/detail/Utils.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"

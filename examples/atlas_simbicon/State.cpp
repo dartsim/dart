@@ -31,9 +31,9 @@
  */
 
 #include "State.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "TerminalCondition.hpp"
+#include "dart/common/Macros.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
@@ -633,7 +633,8 @@ double State::getDerivativeGain(int _idx) const
 //==============================================================================
 void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
 {
-  DART_ASSERT(static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
 
   mSagitalCd[_index] = _val;
 }
@@ -641,7 +642,8 @@ void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
 {
-  DART_ASSERT(static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
 
   mSagitalCv[_index] = _val;
 }
@@ -649,7 +651,8 @@ void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 {
-  DART_ASSERT(static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
 
   mCoronalCd[_index] = _val;
 }
@@ -657,7 +660,8 @@ void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMVelocity(std::size_t _index, double _val)
 {
-  DART_ASSERT(static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
 
   mCoronalCv[_index] = _val;
 }

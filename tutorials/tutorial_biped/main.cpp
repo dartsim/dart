@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
 #include "dart/common/Macros.hpp"
+
+#include <dart/gui/gui.hpp>
 
 #include <dart/utils/utils.hpp>
 

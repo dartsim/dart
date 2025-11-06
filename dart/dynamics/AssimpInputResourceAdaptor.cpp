@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <assimp/IOStream.hpp>
 

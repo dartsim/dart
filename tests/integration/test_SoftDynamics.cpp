@@ -31,6 +31,7 @@
  */
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -38,7 +39,6 @@
 #include "dart/math/Constants.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

@@ -31,9 +31,9 @@
  */
 
 #include "dart/utils/mjcf/MjcfParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/collision.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/constraint.hpp"

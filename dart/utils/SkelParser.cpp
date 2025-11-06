@@ -31,12 +31,12 @@
  */
 
 #include "dart/utils/SkelParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"

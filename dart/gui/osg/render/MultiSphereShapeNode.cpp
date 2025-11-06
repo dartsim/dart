@@ -31,8 +31,8 @@
  */
 
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"

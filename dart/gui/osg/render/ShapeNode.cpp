@@ -31,8 +31,8 @@
  */
 
 #include "dart/gui/osg/render/ShapeNode.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 

@@ -31,9 +31,9 @@
  */
 
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {

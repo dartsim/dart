@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
 #include "dart/common/Macros.hpp"
+
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>

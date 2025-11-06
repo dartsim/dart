@@ -31,8 +31,8 @@
  */
 
 #include "dart/constraint/BalanceConstraint.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 

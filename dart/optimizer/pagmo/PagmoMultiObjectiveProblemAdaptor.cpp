@@ -31,8 +31,8 @@
  */
 
 #include "dart/optimizer/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/optimizer/pagmo/PagmoUtils.hpp"
 
 namespace dart {

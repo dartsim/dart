@@ -31,12 +31,12 @@
  */
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"

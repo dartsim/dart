@@ -37,10 +37,10 @@
  */
 
 #include "dart/simulation/World.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -447,7 +447,8 @@ std::size_t World::getNumSimpleFrames() const
 //==============================================================================
 std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
-  DART_ASSERT(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
+  DART_ASSERT(
+      _frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
   if (nullptr == _frame) {
     dtwarn << "[World::addFrame] Attempting to add a nullptr SimpleFrame to "

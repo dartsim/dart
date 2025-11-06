@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/Linkage.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 
 #include <algorithm>

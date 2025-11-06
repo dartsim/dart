@@ -31,9 +31,9 @@
  */
 
 #include "Humanoid.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "State.hpp"
+#include "dart/common/Macros.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \

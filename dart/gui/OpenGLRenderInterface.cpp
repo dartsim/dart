@@ -31,9 +31,9 @@
  */
 
 #include "dart/gui/OpenGLRenderInterface.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"

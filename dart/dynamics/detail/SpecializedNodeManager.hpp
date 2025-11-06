@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 
 namespace dart {

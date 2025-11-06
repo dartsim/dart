@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/ode/detail/OdeHeightmap.hpp>
 #include "dart/common/Macros.hpp"
+
+#include <dart/collision/ode/detail/OdeHeightmap.hpp>
 
 #include <dart/dynamics/HeightmapShape.hpp>
 

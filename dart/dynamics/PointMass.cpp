@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/PointMass.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Geometry.hpp"
@@ -673,8 +673,9 @@ const SoftBodyNode* PointMass::getParentSoftBodyNode() const
 //==============================================================================
 // int PointMass::getDependentGenCoord(int _arrayIndex) const
 //{
-//  DART_ASSERT(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
-//  return mDependentGenCoordIndices[_arrayIndex];
+//  DART_ASSERT(0 <= _arrayIndex && _arrayIndex <
+//  mDependentGenCoordIndices.size()); return
+//  mDependentGenCoordIndices[_arrayIndex];
 //}
 
 //==============================================================================

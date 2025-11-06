@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/Branch.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {

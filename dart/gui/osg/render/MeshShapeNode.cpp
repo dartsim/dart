@@ -31,10 +31,10 @@
  */
 
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Filesystem.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"

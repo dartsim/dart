@@ -31,9 +31,9 @@
  */
 
 #include "dart/optimizer/Population.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Random.hpp"
 
 namespace dart {

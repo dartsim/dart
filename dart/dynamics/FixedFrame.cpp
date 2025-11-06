@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/FixedFrame.hpp"
+
 #include "dart/common/Macros.hpp"
 
 namespace dart {

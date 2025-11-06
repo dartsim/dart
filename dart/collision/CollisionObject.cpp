@@ -31,9 +31,9 @@
  */
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {

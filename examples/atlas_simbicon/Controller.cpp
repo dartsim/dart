@@ -31,11 +31,11 @@
  */
 
 #include "Controller.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "State.hpp"
 #include "StateMachine.hpp"
 #include "TerminalCondition.hpp"
+#include "dart/common/Macros.hpp"
 
 using namespace std;
 
@@ -151,7 +151,8 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 //==============================================================================
 void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
 {
-  DART_ASSERT(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
+  DART_ASSERT(
+      _idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
   changeStateMachine(mStateMachines[_idx], _currentTime);
 }

@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/DantzigLCPSolver.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #if DART_BUILD_MODE_DEBUG

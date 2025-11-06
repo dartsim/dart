@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/UniversalJoint.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 

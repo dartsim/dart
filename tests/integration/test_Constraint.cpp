@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
@@ -40,7 +41,6 @@
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

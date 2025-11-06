@@ -31,9 +31,9 @@
  */
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 

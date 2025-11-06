@@ -31,9 +31,9 @@
  */
 
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart {
 namespace collision {

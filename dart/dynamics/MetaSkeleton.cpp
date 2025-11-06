@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/MetaSkeleton.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"

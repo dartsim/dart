@@ -31,10 +31,10 @@
  */
 
 #include "dart/constraint/ContactSurface.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 

@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {

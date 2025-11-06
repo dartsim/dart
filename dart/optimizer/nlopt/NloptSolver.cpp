@@ -31,9 +31,9 @@
  */
 
 #include "dart/optimizer/nlopt/NloptSolver.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"

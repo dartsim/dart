@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/LCPSolver.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #include <cassert>

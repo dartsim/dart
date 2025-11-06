@@ -31,8 +31,8 @@
  */
 
 #include "dart/utils/mjcf/detail/Weld.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 namespace dart {

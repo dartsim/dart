@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/common/Console.hpp>
 #include <dart/common/NameManager.hpp>
 

@@ -31,7 +31,6 @@
  */
 
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -41,6 +40,7 @@
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"

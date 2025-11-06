@@ -31,8 +31,8 @@
  */
 
 #include "dart/gui/osg/Viewer.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"

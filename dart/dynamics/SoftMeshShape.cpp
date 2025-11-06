@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 

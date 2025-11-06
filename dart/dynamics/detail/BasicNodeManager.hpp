@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/Node.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>

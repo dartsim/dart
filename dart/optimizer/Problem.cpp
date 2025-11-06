@@ -31,9 +31,9 @@
  */
 
 #include "dart/optimizer/Problem.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
 
@@ -167,7 +167,8 @@ void Problem::clearAllSeeds()
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  DART_ASSERT(static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -180,7 +181,8 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  DART_ASSERT(static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = _ub;
 }
 

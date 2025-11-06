@@ -31,9 +31,9 @@
  */
 
 #include "dart/common/Uri.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <regex>
 #include <sstream>

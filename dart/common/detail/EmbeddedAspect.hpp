@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/common/Aspect.hpp>
 #include <dart/common/StlHelpers.hpp>
 

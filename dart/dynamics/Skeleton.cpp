@@ -31,10 +31,10 @@
  */
 
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -73,7 +73,7 @@
       dterr << "[Skeleton::Configuration] Mismatch in size of vector [" << #V  \
             << "] (expected " << nonzero_size << " | found " << V.size()       \
             << "\n";                                                           \
-      DART_ASSERT(false);                                                           \
+      DART_ASSERT(false);                                                      \
     } else if (nonzero_size == INVALID_INDEX)                                  \
       nonzero_size = V.size();                                                 \
   }
@@ -540,7 +540,7 @@ MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
       dterr << "[Skeleton::setConfiguration] Mismatch in size of vector ["     \
             << #V << "] (expected " << configuration.mIndices.size()           \
             << " | found " << configuration.m##V.size() << "\n";               \
-      DART_ASSERT(false);                                                           \
+      DART_ASSERT(false);                                                      \
     } else                                                                     \
       set##V(configuration.mIndices, configuration.m##V);                      \
   }

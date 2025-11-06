@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/CylinderShape.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>

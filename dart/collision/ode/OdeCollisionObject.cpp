@@ -31,7 +31,6 @@
  */
 
 #include "dart/collision/ode/OdeCollisionObject.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/collision/ode/detail/OdeBox.hpp"
@@ -41,6 +40,7 @@
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
 #include "dart/collision/ode/detail/OdeSphere.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"

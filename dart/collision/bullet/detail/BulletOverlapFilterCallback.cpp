@@ -31,11 +31,11 @@
  */
 
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart {
 namespace collision {

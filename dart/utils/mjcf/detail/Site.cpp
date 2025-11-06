@@ -31,8 +31,8 @@
  */
 
 #include "dart/utils/mjcf/detail/Site.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Body.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"

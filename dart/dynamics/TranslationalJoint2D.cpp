@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/TranslationalJoint2D.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -241,7 +241,8 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
           * mAspectProperties.getTranslationalAxes();
 
     // Verification
-    DART_ASSERT(mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));
+    DART_ASSERT(
+        mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));
     DART_ASSERT(!math::isNan(mJacobian.bottomRows<3>()));
   }
 }

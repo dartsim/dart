@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/Frame.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {

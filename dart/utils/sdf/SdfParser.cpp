@@ -31,10 +31,10 @@
  */
 
 #include "dart/utils/sdf/SdfParser.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/BallJoint.hpp"

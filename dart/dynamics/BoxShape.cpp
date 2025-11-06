@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/BoxShape.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #include <cmath>

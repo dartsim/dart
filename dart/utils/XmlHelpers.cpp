@@ -31,10 +31,10 @@
  */
 
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <fmt/format.h>

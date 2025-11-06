@@ -31,8 +31,8 @@
  */
 
 #include "dart/dynamics/InverseKinematics.hpp"
-#include "dart/common/Macros.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"

@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/math/Constants.hpp>
 #include <dart/math/Icosphere.hpp>
-#include "dart/common/Macros.hpp"
 
 #include <array>
 

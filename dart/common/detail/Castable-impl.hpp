@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_CASTABLE_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/common/Castable.hpp>
 #include <dart/common/Metaprogramming.hpp>
 

@@ -31,6 +31,7 @@
  */
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #include <cassert>

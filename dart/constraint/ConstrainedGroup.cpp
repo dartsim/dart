@@ -31,9 +31,9 @@
  */
 
 #include "dart/constraint/ConstrainedGroup.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 

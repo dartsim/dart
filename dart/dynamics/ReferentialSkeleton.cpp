@@ -31,9 +31,9 @@
  */
 
 #include "dart/dynamics/ReferentialSkeleton.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"

@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/osg/Utils.hpp>

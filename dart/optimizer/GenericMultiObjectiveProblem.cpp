@@ -31,9 +31,9 @@
  */
 
 #include "dart/optimizer/GenericMultiObjectiveProblem.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
 

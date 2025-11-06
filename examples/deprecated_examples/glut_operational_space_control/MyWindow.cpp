@@ -31,6 +31,7 @@
  */
 
 #include "MyWindow.hpp"
+
 #include "dart/common/Macros.hpp"
 
 #include <iostream>

@@ -34,13 +34,14 @@
 #define DART_COMMON_DETAIL_COMPOSITE_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/common/Composite.hpp>
 
 #define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(Func, T, ReturnType)            \
   if (requiresAspect<T>()) {                                                   \
     dterr << "[Composite::" #Func << "] Illegal request to remove required "   \
           << "Aspect [" << typeid(T).name() << "]!\n";                         \
-    DART_ASSERT(false);                                                             \
+    DART_ASSERT(false);                                                        \
     return ReturnType;                                                         \
   }
 

@@ -37,9 +37,9 @@
  */
 
 #include "dart/gui/osg/ImGuiHandler.hpp"
-#include "dart/common/Macros.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 #include "dart/gui/osg/IncludeImGui.hpp"
 

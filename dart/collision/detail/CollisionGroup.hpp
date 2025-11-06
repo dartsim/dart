@@ -34,6 +34,7 @@
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/collision/CollisionGroup.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>

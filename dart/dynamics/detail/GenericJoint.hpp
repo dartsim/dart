@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
 #include "dart/common/Macros.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
@@ -49,7 +50,7 @@
           << #arg " [" << arg.size() << "] and the number of "                 \
           << "DOFs [" << getNumDofs() << "] for Joint named ["                 \
           << this->getName() << "].\n";                                        \
-    DART_ASSERT(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_REPORT_OUT_OF_RANGE(func, index)                          \
@@ -57,7 +58,7 @@
     dterr << "[GenericJoint::" << #func << "] The index [" << index            \
           << "] is out of range for Joint named [" << this->getName()          \
           << "] which has " << this->getNumDofs() << " DOFs.\n";               \
-    DART_ASSERT(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(func)                         \
@@ -65,7 +66,7 @@
     dterr << "[GenericJoint::" #func "] Unsupported actuator type ("           \
           << Joint::mAspectProperties.mActuatorType << ") for Joint ["         \
           << this->getName() << "].\n";                                        \
-    DART_ASSERT(false);                                                             \
+    DART_ASSERT(false);                                                        \
   }
 
 #define GenericJoint_SET_IF_DIFFERENT(mField, value)                           \
