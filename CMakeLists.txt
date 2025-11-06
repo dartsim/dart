@@ -57,6 +57,12 @@ include(dart_defs)
 # - CONFIG_INSTALL_DIR
 initialize_component_helpers(${PROJECT_NAME})
 
+if(BUILD_SHARED_LIBS)
+  set(DART_BUILD_SHARED_VALUE 1)
+else()
+  set(DART_BUILD_SHARED_VALUE 0)
+endif()
+
 #===============================================================================
 # Project settings
 #===============================================================================

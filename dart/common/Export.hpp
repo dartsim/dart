@@ -30,36 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
-#define DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#pragma once
 
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Platform.hpp>
 
-#include <dart/Export.hpp>
+#ifndef DART_SYMBOL_EXPORT
+  #if DART_OS_WINDOWS
+    #define DART_SYMBOL_EXPORT __declspec(dllexport)
+  #elif defined(__GNUC__) && (__GNUC__ >= 4)
+    #define DART_SYMBOL_EXPORT __attribute__((visibility("default")))
+  #else
+    #define DART_SYMBOL_EXPORT
+  #endif
+#endif
 
-namespace dart {
-namespace common {
+#ifndef DART_SYMBOL_IMPORT
+  #if DART_OS_WINDOWS
+    #define DART_SYMBOL_IMPORT __declspec(dllimport)
+  #elif defined(__GNUC__) && (__GNUC__ >= 4)
+    #define DART_SYMBOL_IMPORT __attribute__((visibility("default")))
+  #else
+    #define DART_SYMBOL_IMPORT
+  #endif
+#endif
 
-/// LocalResourceRetriever provides access to local resources specified by
-/// file:// URIs by wrapping the standard C and C++ file manipulation routines.
-class DART_API LocalResourceRetriever : public virtual ResourceRetriever
-{
-public:
-  virtual ~LocalResourceRetriever() = default;
+#ifndef DART_SYMBOL_LOCAL
+  #if DART_OS_WINDOWS
+    #define DART_SYMBOL_LOCAL
+  #elif defined(__GNUC__) && (__GNUC__ >= 4)
+    #define DART_SYMBOL_LOCAL __attribute__((visibility("hidden")))
+  #else
+    #define DART_SYMBOL_LOCAL
+  #endif
+#endif
 
-  // Documentation inherited.
-  bool exists(const Uri& _uri) override;
+#ifndef DART_BUILD_SHARED
+  #define DART_BUILD_SHARED 0
+#endif
 
-  // Documentation inherited.
-  ResourcePtr retrieve(const Uri& _uri) override;
+#ifndef DART_DLL_EXPORT
+  #if DART_BUILD_SHARED
+    #define DART_DLL_EXPORT DART_SYMBOL_EXPORT
+    #define DART_DLL_IMPORT DART_SYMBOL_IMPORT
+    #define DART_DLL_LOCAL DART_SYMBOL_LOCAL
+  #else
+    #define DART_DLL_EXPORT
+    #define DART_DLL_IMPORT
+    #define DART_DLL_LOCAL
+  #endif
+#endif
 
-  // Documentation inherited.
-  std::string getFilePath(const Uri& uri) override;
-};
+#ifndef DART_DLL_IMPORT
+  #define DART_DLL_IMPORT
+#endif
 
-using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
-
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#ifndef DART_DLL_LOCAL
+  #define DART_DLL_LOCAL
+#endif
