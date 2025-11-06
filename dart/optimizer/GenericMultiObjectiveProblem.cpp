@@ -40,6 +40,8 @@
 #include <limits>
 #include <numeric>
 
+#include <cassert>
+
 namespace dart {
 namespace optimizer {
 
