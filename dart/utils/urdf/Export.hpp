@@ -30,36 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
-#define DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#pragma once
 
-#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Export.hpp>
 
-#include <dart/Export.hpp>
+#ifndef DART_UTILS_URDF_API
+  #if defined(DART_BUILDING_DART_UTILS_URDF)
+    #define DART_UTILS_URDF_API DART_DLL_EXPORT
+  #else
+    #define DART_UTILS_URDF_API DART_DLL_IMPORT
+  #endif
+#endif
 
-namespace dart {
-namespace common {
-
-/// LocalResourceRetriever provides access to local resources specified by
-/// file:// URIs by wrapping the standard C and C++ file manipulation routines.
-class DART_API LocalResourceRetriever : public virtual ResourceRetriever
-{
-public:
-  virtual ~LocalResourceRetriever() = default;
-
-  // Documentation inherited.
-  bool exists(const Uri& _uri) override;
-
-  // Documentation inherited.
-  ResourcePtr retrieve(const Uri& _uri) override;
-
-  // Documentation inherited.
-  std::string getFilePath(const Uri& uri) override;
-};
-
-using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
-
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#ifndef DART_UTILS_URDF_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_UTILS_URDF_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_UTILS_URDF_LOCAL
+  #endif
+#endif

@@ -34,6 +34,7 @@
 
 // clang-format off
 #include <dart/config.hpp>
+#include <dart/Export.hpp>
 #include <dart/common/All.hpp>
 #include <dart/math/All.hpp>
 #include <dart/integration/All.hpp>
