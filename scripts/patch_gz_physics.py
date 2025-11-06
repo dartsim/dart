@@ -7,9 +7,9 @@ Note: DART 7.0 will have API breaking changes. This patch may need updates when
 gz-physics officially supports DART 7.x or when breaking changes are finalized.
 """
 
+import re
 import sys
 from pathlib import Path
-import re
 
 
 def patch_gz_physics_cmake(
@@ -73,13 +73,7 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
         True if the overload is present or successfully added, False otherwise.
     """
 
-    internal_header = (
-        gtest_root
-        / "include"
-        / "gtest"
-        / "internal"
-        / "gtest-internal.h"
-    )
+    internal_header = gtest_root / "include" / "gtest" / "internal" / "gtest-internal.h"
     public_header = gtest_root / "include" / "gtest" / "gtest.h"
     source_file = gtest_root / "src" / "gtest.cc"
 
@@ -88,37 +82,32 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
             print(f"Error: Expected gtest file missing: {path}", file=sys.stderr)
             return False
 
-    # Update internal header declaration with inline shim
+    # Update internal header declaration to ensure the overload is declared
     internal_text = internal_header.read_text()
-    inline_block = (
+    declaration_block = (
         "#if GTEST_HAS_STD_STRING\n"
-        "inline TestInfo* MakeAndRegisterTestInfo(\n"
+        "GTEST_API_ TestInfo* MakeAndRegisterTestInfo(\n"
         "    std::string test_suite_name, const char* name, const char* type_param,\n"
         "    const char* value_param, CodeLocation code_location,\n"
         "    TypeId fixture_class_id, SetUpTestSuiteFunc set_up_tc,\n"
-        "    TearDownTestSuiteFunc tear_down_tc, TestFactoryBase* factory) {\n"
-        "  return MakeAndRegisterTestInfo(test_suite_name.c_str(), name, type_param,\n"
-        "                                 value_param, code_location, fixture_class_id,\n"
-        "                                 set_up_tc, tear_down_tc, factory);\n"
-        "}\n"
+        "    TearDownTestSuiteFunc tear_down_tc, TestFactoryBase* factory);\n"
         "#endif  // GTEST_HAS_STD_STRING\n"
     )
     inline_pattern = re.compile(
         r"#if GTEST_HAS_STD_STRING\n"
-        r"GTEST_API_\s+TestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
-        r"\s*std::string\s+test_suite_name,.*?\);\n"
-        r"#endif\s+//\s+GTEST_HAS_STD_STRING\n",
+        r"(?:inline\s+)?TestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
+        r"\s*std::string\s+test_suite_name,.*?\n#endif  // GTEST_HAS_STD_STRING\n",
         re.DOTALL,
     )
     if inline_pattern.search(internal_text):
-        internal_text = inline_pattern.sub(inline_block + "\n", internal_text)
+        internal_text = inline_pattern.sub(declaration_block + "\n", internal_text)
         internal_header.write_text(internal_text)
         print(
-            f"✓ Replaced std::string overload declaration with inline shim in {internal_header}"
+            f"✓ Replaced std::string overload inline body with declaration in {internal_header}"
         )
-    elif inline_block in internal_text:
+    elif declaration_block in internal_text:
         print(
-            f"✓ std::string inline shim already present in {internal_header}"
+            f"✓ std::string overload declaration already present in {internal_header}"
         )
     else:
         insertion_point = internal_text.find(
@@ -142,17 +131,18 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
         internal_text = (
             internal_text[:insert_offset]
             + "\n"
-            + inline_block
+            + declaration_block
             + internal_text[insert_offset:]
         )
         internal_header.write_text(internal_text)
-        print(
-            f"✓ Added std::string inline shim to {internal_header}"
-        )
+        print(f"✓ Added std::string overload declaration to {internal_header}")
 
     # Update public header friend declaration
     public_text = public_header.read_text()
-    if "friend TestInfo* internal::MakeAndRegisterTestInfo(\n      std::string test_suite_name" not in public_text:
+    if (
+        "friend TestInfo* internal::MakeAndRegisterTestInfo(\n      std::string test_suite_name"
+        not in public_text
+    ):
         pattern = re.compile(
             r"(friend\s+TestInfo\*\s+internal::MakeAndRegisterTestInfo\(\s*\n"
             r"\s*const char\*\s+test_suite_name,.*?internal::TestFactoryBase\*\s+factory\);\n)",
@@ -199,6 +189,54 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
         print(
             f"✓ No standalone std::string overload definition present in {source_file}"
         )
+
+    # Ensure an out-of-line definition exists in gtest.cc
+    definition_pattern = re.compile(
+        r"\nTestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
+        r"\s*std::string\s+test_suite_name, const char\*\s+name, const char\*\s+type_param,\n"
+        r"\s*const char\*\s+value_param, CodeLocation\s+code_location,\n"
+        r"\s*TypeId\s+fixture_class_id, SetUpTestSuiteFunc\s+set_up_tc,\n"
+        r"\s*TearDownTestSuiteFunc\s+tear_down_tc, TestFactoryBase\*\s+factory\)\s*\{\n"
+        r"\s*return MakeAndRegisterTestInfo\(test_suite_name\.c_str\(\), name, type_param,\n"
+        r"\s*                                 value_param, code_location, fixture_class_id,\n"
+        r"\s*                                 set_up_tc, tear_down_tc, factory\);\n"
+        r"\}\n",
+        re.DOTALL,
+    )
+    if not definition_pattern.search(source_text):
+        anchor_pattern = re.compile(
+            r"TestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
+            r"\s*const char\*\s+test_suite_name, const char\*\s+name, const char\*\s+type_param,\n"
+            r"\s*const char\*\s+value_param, CodeLocation\s+code_location,\n"
+            r"\s*TypeId\s+fixture_class_id, SetUpTestSuiteFunc\s+set_up_tc,\n"
+            r"\s*TearDownTestSuiteFunc\s+tear_down_tc, TestFactoryBase\*\s+factory\)\s*\{\n"
+            r".*?\n\}\n",
+            re.DOTALL,
+        )
+        match = anchor_pattern.search(source_text)
+        if not match:
+            print(
+                f"Error: Could not locate anchor in {source_file} for std::string overload definition",
+                file=sys.stderr,
+            )
+            return False
+        insertion = (
+            "\nTestInfo* MakeAndRegisterTestInfo(\n"
+            "    std::string test_suite_name, const char* name, const char* type_param,\n"
+            "    const char* value_param, CodeLocation code_location,\n"
+            "    TypeId fixture_class_id, SetUpTestSuiteFunc set_up_tc,\n"
+            "    TearDownTestSuiteFunc tear_down_tc, TestFactoryBase* factory) {\n"
+            "  return MakeAndRegisterTestInfo(test_suite_name.c_str(), name, type_param,\n"
+            "                                 value_param, code_location, fixture_class_id,\n"
+            "                                 set_up_tc, tear_down_tc, factory);\n"
+            "}\n"
+        )
+        insert_pos = match.end()
+        source_text = source_text[:insert_pos] + insertion + source_text[insert_pos:]
+        source_file.write_text(source_text)
+        print(f"✓ Added std::string overload definition to {source_file}")
+    else:
+        print(f"✓ std::string overload definition already present in {source_file}")
 
     return True
 

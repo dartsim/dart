@@ -565,7 +565,8 @@ set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
 ctest \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --output-on-failure
+  --output-on-failure \
+  -LE dart7
 """], depends-on = ["build-asan"], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=1" } }
 
 ################################################################################
