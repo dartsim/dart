@@ -175,7 +175,9 @@ def run_lint_tests() -> bool:
     print_header("LINTING (Auto-fixing)")
 
     # Run all linting tasks (C++, Python, YAML)
-    result, _ = run_command("pixi run lint", "Auto-fix formatting (all languages)")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run lint", "Auto-fix formatting (all languages)"
+    )
 
     return result
 
@@ -187,12 +189,16 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command("pixi run build", "Build Release")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run build", "Build Release"
+    )
     success = success and result
 
     if not skip_debug:
         # Build Debug (for better error messages)
-        result, _ = run_command("pixi run build-debug", "Build Debug")
+        result, _ = run_command(
+            "BUILD_TYPE=Debug pixi run build-debug", "Build Debug"
+        )
         success = success and result
 
     return success
@@ -205,7 +211,9 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command("pixi run test", "C++ unit tests")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run test", "C++ unit tests"
+    )
     success = success and result
 
     return success
@@ -215,7 +223,9 @@ def run_dart7_tests() -> bool:
     """Run dart7-specific tests (ctest filtered to dart7 labels)."""
     print_header("DART7 TESTS")
 
-    result, _ = run_command("pixi run test-dart7", "dart7 C++ tests")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run test-dart7", "dart7 C++ tests"
+    )
     return result
 
 
@@ -224,7 +234,9 @@ def run_python_tests() -> bool:
     print_header("PYTHON TESTS")
 
     # Check if Python bindings are enabled
-    result, _ = run_command("pixi run test-py", "Python tests")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run test-py", "Python tests"
+    )
 
     return result
 
@@ -233,7 +245,9 @@ def run_dartpy7_tests() -> bool:
     """Run dartpy7 smoke test."""
     print_header("DARTPY7 SMOKE TEST")
 
-    result, _ = run_command("pixi run test-dartpy7", "dartpy7 smoke test")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run test-dartpy7", "dartpy7 smoke test"
+    )
     return result
 
 
@@ -241,7 +255,9 @@ def run_docs_tests() -> bool:
     """Run documentation build tests"""
     print_header("DOCUMENTATION")
 
-    result, _ = run_command("pixi run docs-build", "Documentation build")
+    result, _ = run_command(
+        "BUILD_TYPE=Release pixi run docs-build", "Documentation build"
+    )
 
     return result
 
