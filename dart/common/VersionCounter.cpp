@@ -33,6 +33,7 @@
 #include "dart/common/VersionCounter.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <iostream>
 
@@ -78,7 +79,7 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
         next = next->mDependent;
       }
       std::cerr << " -- " << this << "\n";
-      assert(false);
+      DART_ASSERT(false);
       return;
     }
 

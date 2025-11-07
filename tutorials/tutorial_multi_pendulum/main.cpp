@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/gui.hpp>
 
 #include <dart/dart.hpp>
@@ -67,7 +69,7 @@ public:
     mPendulum = world->getSkeleton("pendulum");
 
     // Make sure that the pendulum was found in the World
-    assert(mPendulum != nullptr);
+    DART_ASSERT(mPendulum != nullptr);
 
     mForceCountDown.resize(mPendulum->getNumDofs(), 0);
 

@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 
 namespace dart {
@@ -231,7 +233,7 @@ std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
     dterr << "[Skeleton::getNumNodes<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0;
   }
 
@@ -261,7 +263,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
     dterr << "[Skeleton::getNode<" << typeid(SpecNode).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
           << mTreeNodeMaps.size() << ") trees available\n";
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 
@@ -272,7 +274,7 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
           << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
           << "), but there are only (" << it->second.size() << ") Nodes of the "
           << "requested type within that tree\n";
-    assert(false);
+    DART_ASSERT(false);
     return nullptr;
   }
 

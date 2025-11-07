@@ -32,6 +32,8 @@
 
 #include "MyWindow.hpp"
 
+#include "dart/common/Macros.hpp"
+
 MyWindow::MyWindow() : SimWindow()
 {
   mBackWheelVelocity = 0.0;
@@ -45,7 +47,7 @@ MyWindow::~MyWindow() {}
 void MyWindow::timeStepping()
 {
   dart::dynamics::SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
-  assert(vehicle != 0);
+  DART_ASSERT(vehicle != 0);
 
   std::size_t dof = vehicle->getNumDofs();
 

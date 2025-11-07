@@ -32,6 +32,7 @@
 
 #include "dart/optimizer/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/optimizer/pagmo/PagmoUtils.hpp"
 
 namespace dart {
@@ -42,7 +43,7 @@ PagmoMultiObjectiveProblemAdaptor::PagmoMultiObjectiveProblemAdaptor(
     std::shared_ptr<MultiObjectiveProblem> problem)
   : mProb(std::move(problem))
 {
-  assert(mProb);
+  DART_ASSERT(mProb);
 }
 
 //==============================================================================
@@ -51,7 +52,7 @@ pagmo::vector_double PagmoMultiObjectiveProblemAdaptor::fitness(
 {
   const Eigen::VectorXd val = PagmoTypes::convertVector(x);
 
-  assert(mProb.get());
+  DART_ASSERT(mProb.get());
   return PagmoTypes::convertVector(mProb->evaluateFitness(val));
 }
 

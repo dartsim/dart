@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/Chain.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 
 namespace dart {
@@ -177,8 +178,8 @@ ChainPtr Chain::cloneChain(const std::string& cloneName) const
 
   // Create a Criteria
   Criteria newCriteria = Criteria::convert(mCriteria);
-  assert(newCriteria.mStart.lock());
-  assert(newCriteria.mTarget.lock());
+  DART_ASSERT(newCriteria.mStart.lock());
+  DART_ASSERT(newCriteria.mTarget.lock());
   newCriteria.mStart
       = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());
   newCriteria.mTarget

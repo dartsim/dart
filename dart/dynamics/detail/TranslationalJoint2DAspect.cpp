@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 
 namespace dart {
@@ -151,7 +152,7 @@ void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
 
   // Orthogonalize translational axes
   const double dotProduct = mTransAxes.col(0).dot(mTransAxes.col(1));
-  assert(std::abs(dotProduct) < 1.0 - 1e-6);
+  DART_ASSERT(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)
     mTransAxes.col(1)
         = (mTransAxes.col(1) - dotProduct * mTransAxes.col(0)).normalized();
@@ -172,7 +173,7 @@ void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
 
   // Orthogonalize translational axes
   const double dotProduct = mTransAxes.col(0).dot(mTransAxes.col(1));
-  assert(std::abs(dotProduct) < 1.0 - 1e-6);
+  DART_ASSERT(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)
     mTransAxes.col(1)
         = (mTransAxes.col(1) - dotProduct * mTransAxes.col(0)).normalized();

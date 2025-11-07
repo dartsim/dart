@@ -31,6 +31,7 @@
  */
 
 #include "MyWindow.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -40,7 +41,7 @@ int main(int argc, char* argv[])
 {
   // create and initialize the world
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
 
   // load skeletons
   dart::utils::DartLoader dl;

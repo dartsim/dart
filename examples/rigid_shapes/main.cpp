@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
@@ -44,7 +46,7 @@ int main()
 {
   // Create world by reading a skel file
   auto world = utils::SkelParser::readWorld("dart://sample/skel/shapes.skel");
-  assert(world != NULL);
+  DART_ASSERT(world != NULL);
 
   // Use bullet collision detector for capsule and multi-sphere-convex-hull
   // shapes

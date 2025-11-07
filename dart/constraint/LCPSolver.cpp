@@ -32,6 +32,8 @@
 
 #include "dart/constraint/LCPSolver.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #include <cassert>
 
 namespace dart {
@@ -40,7 +42,7 @@ namespace constraint {
 //==============================================================================
 void LCPSolver::setTimeStep(double _timeStep)
 {
-  assert(_timeStep > 0.0);
+  DART_ASSERT(_timeStep > 0.0);
   mTimeStep = _timeStep;
 }
 

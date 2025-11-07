@@ -32,6 +32,7 @@
 
 #include "dart/gui/osg/Viewer.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
@@ -465,7 +466,7 @@ const ::osg::Group* Viewer::getLightGroup() const
 const ::osg::ref_ptr<::osg::LightSource>& Viewer::getLightSource(
     std::size_t index) const
 {
-  assert(index < 2);
+  DART_ASSERT(index < 2);
   if (index == 0)
     return mLightSource1;
   return mLightSource2;

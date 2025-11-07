@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Inertial.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 
@@ -164,7 +165,7 @@ Errors Inertial::compile(const Compiler& compiler)
     mDiagonalInertia = *mData.mDiagInertia;
     mOffDiagonalInertia.setZero();
   } else {
-    assert(mData.mFullInertia);
+    DART_ASSERT(mData.mFullInertia);
     mDiagonalInertia = mData.mFullInertia->head<3>();
     mOffDiagonalInertia = mData.mFullInertia->tail<3>();
   }

@@ -33,6 +33,7 @@
 #include "dart/math/Geometry.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
@@ -504,7 +505,7 @@ Eigen::Matrix3d expMapJacDot(
 
 Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _q, int _qi)
 {
-  assert(_qi >= 0 && _qi <= 2);
+  DART_ASSERT(_qi >= 0 && _qi <= 2);
 
   Eigen::Vector3d qdot = Eigen::Vector3d::Zero();
   qdot[_qi] = 1.0;
@@ -1509,7 +1510,7 @@ Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v)
 Eigen::Matrix3d computeRotation(
     const Eigen::Vector3d& axis, const AxisType axisType)
 {
-  assert(axis != Eigen::Vector3d::Zero());
+  DART_ASSERT(axis != Eigen::Vector3d::Zero());
 
   // First axis
   const Eigen::Vector3d axis0 = axis.normalized();
@@ -1530,7 +1531,7 @@ Eigen::Matrix3d computeRotation(
   result.col(++index % 3) = axis1;
   result.col(++index % 3) = axis2;
 
-  assert(verifyRotation(result));
+  DART_ASSERT(verifyRotation(result));
 
   return result;
 }
@@ -1547,7 +1548,7 @@ Eigen::Isometry3d computeTransform(
   result.translation() = translation;
 
   // Verification
-  assert(verifyTransform(result));
+  DART_ASSERT(verifyTransform(result));
 
   return result;
 }
@@ -1678,7 +1679,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
   }
 
   // A negative area means we have a bug in the code
-  assert(area >= 0.0);
+  DART_ASSERT(area >= 0.0);
 
   if (area == 0.0)
     return c;

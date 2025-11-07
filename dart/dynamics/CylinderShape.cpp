@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/CylinderShape.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <cmath>
@@ -43,8 +44,8 @@ namespace dynamics {
 CylinderShape::CylinderShape(double _radius, double _height)
   : Shape(CYLINDER), mRadius(_radius), mHeight(_height)
 {
-  assert(0.0 < _radius);
-  assert(0.0 < _height);
+  DART_ASSERT(0.0 < _radius);
+  DART_ASSERT(0.0 < _height);
 }
 
 //==============================================================================
@@ -69,7 +70,7 @@ double CylinderShape::getRadius() const
 //==============================================================================
 void CylinderShape::setRadius(double _radius)
 {
-  assert(0.0 < _radius);
+  DART_ASSERT(0.0 < _radius);
   mRadius = _radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -86,7 +87,7 @@ double CylinderShape::getHeight() const
 //==============================================================================
 void CylinderShape::setHeight(double _height)
 {
-  assert(0.0 < _height);
+  DART_ASSERT(0.0 < _height);
   mHeight = _height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

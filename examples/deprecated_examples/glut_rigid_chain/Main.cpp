@@ -31,6 +31,7 @@
  */
 
 #include "MyWindow.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/utils.hpp>
 
@@ -41,7 +42,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   // create and initialize the world
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

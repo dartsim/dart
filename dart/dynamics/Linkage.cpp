@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/Linkage.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 
 #include <algorithm>
@@ -469,10 +470,10 @@ Linkage::Criteria::Target createTargetFromClone(
     Skeleton& skelClone, const Linkage::Criteria::Target& target)
 {
   BodyNodePtr bodyNodePtr = target.mNode.lock();
-  assert(bodyNodePtr);
+  DART_ASSERT(bodyNodePtr);
   BodyNode* bodyNodeClone = skelClone.getBodyNode(bodyNodePtr->getName());
-  assert(bodyNodeClone);
-  assert(bodyNodeClone != bodyNodePtr.get());
+  DART_ASSERT(bodyNodeClone);
+  DART_ASSERT(bodyNodeClone != bodyNodePtr.get());
 
   return Linkage::Criteria::Target(
       bodyNodeClone, target.mPolicy, target.mPolicy);
@@ -483,10 +484,10 @@ Linkage::Criteria::Terminal createTerminalFromClone(
     Skeleton& skelClone, const Linkage::Criteria::Terminal& terminal)
 {
   BodyNodePtr bodyNodePtr = terminal.mTerminal.lock();
-  assert(bodyNodePtr);
+  DART_ASSERT(bodyNodePtr);
   BodyNode* bodyNodeClone = skelClone.getBodyNode(bodyNodePtr->getName());
-  assert(bodyNodeClone);
-  assert(bodyNodeClone != bodyNodePtr.get());
+  DART_ASSERT(bodyNodeClone);
+  DART_ASSERT(bodyNodeClone != bodyNodePtr.get());
 
   return Linkage::Criteria::Terminal(bodyNodeClone, terminal.mInclusive);
 }
@@ -509,7 +510,7 @@ LinkagePtr Linkage::cloneLinkage(const std::string& cloneName) const
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();
-  assert(skelClone != bodyNode->getSkeleton());
+  DART_ASSERT(skelClone != bodyNode->getSkeleton());
 
   // Create a Criteria
   Criteria newCriteria;

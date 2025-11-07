@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/BodyAttributes.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Size.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -135,7 +136,7 @@ Errors appendBodyAttributes(
   // Read <inertial>
   if (hasElement(element, "inertial")) {
     auto inertialElement = getElement(element, "inertial");
-    assert(inertialElement);
+    DART_ASSERT(inertialElement);
     attributes.mInertial = Inertial();
     const Errors inertialErrors = attributes.mInertial->read(inertialElement);
     errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());

@@ -33,6 +33,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -376,7 +377,7 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
   if (nullptr == otherBodyNode) {
     dterr << "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes "
           << "of a nullptr, which is not allowed!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -393,7 +394,7 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
   if (nullptr == otherBodyNode) {
     dterr << "[BodyNode::matchNodes] You have asked to match the Nodes of a "
           << "nullptr, which is not allowed!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -661,7 +662,7 @@ void BodyNode::setFrictionCoeff(double coeff)
   if (mAspectProperties.mFrictionCoeff == coeff)
     return;
 
-  assert(
+  DART_ASSERT(
       0.0 <= coeff && "Coefficient of friction should be non-negative value.");
   mAspectProperties.mFrictionCoeff = coeff;
 
@@ -688,7 +689,7 @@ void BodyNode::setRestitutionCoeff(double coeff)
   if (coeff == mAspectProperties.mRestitutionCoeff)
     return;
 
-  assert(
+  DART_ASSERT(
       0.0 <= coeff && coeff <= 1.0
       && "Coefficient of restitution should be in range of [0, 1].");
   mAspectProperties.mRestitutionCoeff = coeff;
@@ -869,7 +870,7 @@ const BodyNode* BodyNode::getParentBodyNode() const
 //==============================================================================
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
-  assert(_body != nullptr);
+  DART_ASSERT(_body != nullptr);
 
   if (std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body)
       != mChildBodyNodes.end()) {
@@ -1026,7 +1027,7 @@ std::size_t BodyNode::getNumDependentGenCoords() const
 //==============================================================================
 std::size_t BodyNode::getDependentGenCoordIndex(std::size_t _arrayIndex) const
 {
-  assert(_arrayIndex < mDependentGenCoordIndices.size());
+  DART_ASSERT(_arrayIndex < mDependentGenCoordIndices.size());
 
   return mDependentGenCoordIndices[_arrayIndex];
 }
@@ -1334,7 +1335,7 @@ Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 {
   dterr << "[BodyNode::cloneNode] This function should never be called! Please "
         << "report this as an error!\n";
-  assert(false);
+  DART_ASSERT(false);
   return nullptr;
 }
 
@@ -1342,7 +1343,7 @@ Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
-  assert(_skeleton);
+  DART_ASSERT(_skeleton);
   if (mReferenceCount > 0) {
     mReferenceSkeleton = mSkeleton.lock();
   }
@@ -1388,7 +1389,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
   for (std::size_t i = 0; i < nDepGenCoordIndices; ++i) {
     for (std::size_t j = i + 1; j < nDepGenCoordIndices; ++j) {
-      assert(
+      DART_ASSERT(
           mDependentGenCoordIndices[i] != mDependentGenCoordIndices[j]
           && "Duplicated index is found in mDependentGenCoordIndices.");
     }
@@ -1611,7 +1612,7 @@ void BodyNode::updateTransform()
 {
   // Calling getWorldTransform will update the transform if an update is needed
   getWorldTransform();
-  assert(math::verifyTransform(mWorldTransform));
+  DART_ASSERT(math::verifyTransform(mWorldTransform));
 }
 
 //==============================================================================
@@ -1619,7 +1620,7 @@ void BodyNode::updateVelocity()
 {
   // Calling getSpatialVelocity will update the velocity if an update is needed
   getSpatialVelocity();
-  assert(!math::isNan(mVelocity));
+  DART_ASSERT(!math::isNan(mVelocity));
 }
 
 //==============================================================================
@@ -1637,7 +1638,7 @@ void BodyNode::updateAccelerationID()
   // Note: auto-updating has replaced this function
   getSpatialAcceleration();
   // Verification
-  assert(!math::isNan(mAcceleration));
+  DART_ASSERT(!math::isNan(mAcceleration));
 }
 
 //==============================================================================
@@ -1660,7 +1661,7 @@ void BodyNode::updateTransmittedForceID(
     mF -= mAspectState.mFext;
 
   // Verification
-  assert(!math::isNan(mF));
+  DART_ASSERT(!math::isNan(mF));
 
   // Gravity force
   mF -= mFgravity;
@@ -1672,14 +1673,14 @@ void BodyNode::updateTransmittedForceID(
   //
   for (const auto& childBodyNode : mChildBodyNodes) {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != nullptr);
+    DART_ASSERT(childJoint != nullptr);
 
     mF += math::dAdInvT(
         childJoint->getRelativeTransform(), childBodyNode->getBodyForce());
   }
 
   // Verification
-  assert(!math::isNan(mF));
+  DART_ASSERT(!math::isNan(mF));
 }
 
 //==============================================================================
@@ -1699,16 +1700,16 @@ void BodyNode::updateArtInertia(double _timeStep) const
   }
 
   // Verification
-  //  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
+  //  DART_ASSERT(!math::isNan(mArtInertia));
+  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
 
   // Update parent joint's inverse of projected articulated body inertia
   mParentJoint->updateInvProjArtInertia(mArtInertia);
   mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
 
   // Verification
-  //  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
+  //  DART_ASSERT(!math::isNan(mArtInertia));
+  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
 }
 
 //==============================================================================
@@ -1728,7 +1729,7 @@ void BodyNode::updateBiasForce(
   mBiasForce = -math::dad(V, mI * V) - mAspectState.mFext - mFgravity;
 
   // Verification
-  assert(!math::isNan(mBiasForce));
+  DART_ASSERT(!math::isNan(mBiasForce));
 
   // And add child bias force
   for (const auto& childBodyNode : mChildBodyNodes) {
@@ -1742,7 +1743,7 @@ void BodyNode::updateBiasForce(
   }
 
   // Verification
-  assert(!math::isNan(mBiasForce));
+  DART_ASSERT(!math::isNan(mBiasForce));
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
@@ -1768,7 +1769,7 @@ void BodyNode::updateBiasImpulse()
   }
 
   // Verification
-  assert(!math::isNan(mBiasImpulse));
+  DART_ASSERT(!math::isNan(mBiasImpulse));
 
   // Update parent joint's total force
   mParentJoint->updateTotalImpulse(mBiasImpulse);
@@ -1780,7 +1781,7 @@ void BodyNode::updateTransmittedForceFD()
   mF = mBiasForce;
   mF.noalias() += getArticulatedInertiaImplicit() * getSpatialAcceleration();
 
-  assert(!math::isNan(mF));
+  DART_ASSERT(!math::isNan(mF));
 }
 
 //==============================================================================
@@ -1789,7 +1790,7 @@ void BodyNode::updateTransmittedImpulse()
   mImpF = mBiasImpulse;
   mImpF.noalias() += getArticulatedInertia() * mDelV;
 
-  assert(!math::isNan(mImpF));
+  DART_ASSERT(!math::isNan(mImpF));
 }
 
 //==============================================================================
@@ -1807,7 +1808,7 @@ void BodyNode::updateAccelerationFD()
   }
 
   // Verify the spatial acceleration of this body
-  assert(!math::isNan(mAcceleration));
+  DART_ASSERT(!math::isNan(mAcceleration));
 }
 
 //==============================================================================
@@ -1834,14 +1835,14 @@ void BodyNode::updateVelocityChangeFD()
   mParentJoint->addVelocityChangeTo(mDelV);
 
   // Verify the spatial velocity change of this body
-  assert(!math::isNan(mDelV));
+  DART_ASSERT(!math::isNan(mDelV));
 }
 
 //==============================================================================
 void BodyNode::updateJointForceID(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  assert(mParentJoint != nullptr);
+  DART_ASSERT(mParentJoint != nullptr);
   mParentJoint->updateForceID(
       mF, _timeStep, _withDampingForces, _withSpringForces);
 }
@@ -1850,7 +1851,7 @@ void BodyNode::updateJointForceID(
 void BodyNode::updateJointForceFD(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  assert(mParentJoint != nullptr);
+  DART_ASSERT(mParentJoint != nullptr);
   mParentJoint->updateForceFD(
       mF, _timeStep, _withDampingForces, _withSpringForces);
 }
@@ -1858,7 +1859,7 @@ void BodyNode::updateJointForceFD(
 //==============================================================================
 void BodyNode::updateJointImpulseFD()
 {
-  assert(mParentJoint != nullptr);
+  DART_ASSERT(mParentJoint != nullptr);
   mParentJoint->updateImpulseFD(mF);
 }
 
@@ -1947,14 +1948,14 @@ const Eigen::Vector6d& BodyNode::getBodyForce() const
 //==============================================================================
 void BodyNode::setConstraintImpulse(const Eigen::Vector6d& _constImp)
 {
-  assert(!math::isNan(_constImp));
+  DART_ASSERT(!math::isNan(_constImp));
   mConstraintImpulse = _constImp;
 }
 
 //==============================================================================
 void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
 {
-  assert(!math::isNan(_constImp));
+  DART_ASSERT(!math::isNan(_constImp));
   mConstraintImpulse += _constImp;
 }
 
@@ -2165,12 +2166,12 @@ void BodyNode::updateMassMatrix()
   if (dof > 0) {
     mM_dV.noalias() += mParentJoint->getRelativeJacobian()
                        * mParentJoint->getAccelerations();
-    assert(!math::isNan(mM_dV));
+    DART_ASSERT(!math::isNan(mM_dV));
   }
   if (mParentBodyNode)
     mM_dV += math::AdInvT(
         mParentJoint->getRelativeTransform(), mParentBodyNode->mM_dV);
-  assert(!math::isNan(mM_dV));
+  DART_ASSERT(!math::isNan(mM_dV));
 }
 
 //==============================================================================
@@ -2181,7 +2182,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   mM_F.noalias() = mI * mM_dV;
 
   // Verification
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
@@ -2192,7 +2193,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   }
 
   // Verification
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   //
   std::size_t dof = mParentJoint->getNumDofs();
@@ -2214,7 +2215,7 @@ void BodyNode::aggregateAugMassMatrix(
   mM_F.noalias() = mI * mM_dV;
 
   // Verification
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
@@ -2225,7 +2226,7 @@ void BodyNode::aggregateAugMassMatrix(
   }
 
   // Verification
-  assert(!math::isNan(mM_F));
+  DART_ASSERT(!math::isNan(mM_F));
 
   //
   std::size_t dof = mParentJoint->getNumDofs();
@@ -2261,7 +2262,7 @@ void BodyNode::updateInvMassMatrix()
   }
 
   // Verification
-  assert(!math::isNan(mInvM_c));
+  DART_ASSERT(!math::isNan(mInvM_c));
 
   // Update parent joint's total force for inverse mass matrix
   mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
@@ -2282,7 +2283,7 @@ void BodyNode::updateInvAugMassMatrix()
   }
 
   // Verification
-  assert(!math::isNan(mInvM_c));
+  DART_ASSERT(!math::isNan(mInvM_c));
 
   // Update parent joint's total force for inverse mass matrix
   mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
@@ -2363,17 +2364,17 @@ void BodyNode::updateBodyJacobian() const
     return;
 
   const std::size_t localDof = mParentJoint->getNumDofs();
-  assert(getNumDependentGenCoords() >= localDof);
+  DART_ASSERT(getNumDependentGenCoords() >= localDof);
   const std::size_t ascendantDof = getNumDependentGenCoords() - localDof;
 
   // Parent Jacobian
   if (mParentBodyNode) {
-    assert(
+    DART_ASSERT(
         static_cast<std::size_t>(mParentBodyNode->getJacobian().cols())
             + mParentJoint->getNumDofs()
         == static_cast<std::size_t>(mBodyJacobian.cols()));
 
-    assert(mParentJoint);
+    DART_ASSERT(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) = math::AdInvTJac(
         mParentJoint->getRelativeTransform(), mParentBodyNode->getJacobian());
   }
@@ -2414,14 +2415,14 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
     return;
 
   const auto numLocalDOFs = mParentJoint->getNumDofs();
-  assert(getNumDependentGenCoords() >= numLocalDOFs);
+  DART_ASSERT(getNumDependentGenCoords() >= numLocalDOFs);
   const auto numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
   // Parent Jacobian: Ad(T(i, parent(i)), dJ_parent(i))
   if (mParentBodyNode) {
     const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
-    assert(
+    DART_ASSERT(
         static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
         == static_cast<std::size_t>(mBodyJacobianSpatialDeriv.cols()));
 
@@ -2463,7 +2464,7 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
     return;
 
   const std::size_t numLocalDOFs = mParentJoint->getNumDofs();
-  assert(getNumDependentGenCoords() >= numLocalDOFs);
+  DART_ASSERT(getNumDependentGenCoords() >= numLocalDOFs);
   const std::size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
   if (mParentBodyNode) {
@@ -2479,7 +2480,7 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
            - mParentBodyNode->getWorldTransform().translation())
               .eval();
 
-    assert(
+    DART_ASSERT(
         static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
         == static_cast<std::size_t>(mWorldJacobianClassicDeriv.cols()));
 

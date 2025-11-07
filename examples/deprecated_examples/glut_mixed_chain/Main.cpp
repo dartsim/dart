@@ -37,6 +37,7 @@
  */
 
 #include "MyWindow.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/utils.hpp>
 
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld = dart::utils::SkelParser::readWorld(
       "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);

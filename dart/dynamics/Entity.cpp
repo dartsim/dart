@@ -33,6 +33,7 @@
 #include "dart/dynamics/Entity.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -225,7 +226,7 @@ Entity::Entity(ConstructAbstractTag)
 {
   dterr << "[Entity::Entity] Your class implementation is calling the Entity "
         << "constructor that is meant to be reserved for abstract classes!\n";
-  assert(false);
+  DART_ASSERT(false);
 }
 
 //==============================================================================

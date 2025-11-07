@@ -35,6 +35,7 @@
 #include "State.hpp"
 #include "StateMachine.hpp"
 #include "TerminalCondition.hpp"
+#include "dart/common/Macros.hpp"
 
 using namespace std;
 
@@ -112,7 +113,7 @@ StateMachine* Controller::getCurrentState()
 void Controller::changeStateMachine(
     StateMachine* _stateMachine, double _currentTime)
 {
-  assert(
+  DART_ASSERT(
       _containStateMachine(_stateMachine)
       && "_stateMachine should be in mStateMachines");
 
@@ -142,7 +143,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
   // _state should be in mStates
   StateMachine* stateMachine = _findStateMachine(_name);
 
-  assert(stateMachine != nullptr && "Invaild state machine.");
+  DART_ASSERT(stateMachine != nullptr && "Invaild state machine.");
 
   changeStateMachine(stateMachine, _currentTime);
 }
@@ -150,7 +151,8 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 //==============================================================================
 void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
 {
-  assert(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
+  DART_ASSERT(
+      _idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
   changeStateMachine(mStateMachines[_idx], _currentTime);
 }
