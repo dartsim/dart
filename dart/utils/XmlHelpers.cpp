@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <fmt/format.h>
@@ -139,7 +140,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
   Eigen::Vector2d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 2);
+  DART_ASSERT(pieces.size() == 2);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -162,7 +163,7 @@ Eigen::Vector2i toVector2i(const std::string& str)
   Eigen::Vector2i ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 2);
+  DART_ASSERT(pieces.size() == 2);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -185,7 +186,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
   Eigen::Vector3d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 3);
+  DART_ASSERT(pieces.size() == 3);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -208,7 +209,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
   Eigen::Vector3i ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 3);
+  DART_ASSERT(pieces.size() == 3);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -231,7 +232,7 @@ Eigen::Vector4d toVector4d(const std::string& str)
   Eigen::Vector4d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 4);
+  DART_ASSERT(pieces.size() == 4);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -254,7 +255,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
   Eigen::Vector6d ret;
 
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 6);
+  DART_ASSERT(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -275,7 +276,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
 Eigen::VectorXd toVectorXd(const std::string& str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() > 0);
+  DART_ASSERT(pieces.size() > 0);
 
   Eigen::VectorXd ret(pieces.size());
 
@@ -300,7 +301,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 6);
+  DART_ASSERT(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -325,7 +326,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  assert(pieces.size() == 6);
+  DART_ASSERT(pieces.size() == 6);
 
   for (std::size_t i = 0; i < pieces.size(); ++i) {
     if (pieces[i] != "") {
@@ -351,8 +352,8 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 std::string getValueString(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -363,8 +364,8 @@ std::string getValueString(
 bool getValueBool(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -375,7 +376,7 @@ bool getValueBool(
   else {
     std::cerr << "value [" << str << "] is not a valid boolean type. "
               << "Returning false." << std::endl;
-    assert(0);
+    DART_ASSERT(0);
     return false;
   }
 }
@@ -384,8 +385,8 @@ bool getValueBool(
 int getValueInt(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -396,8 +397,8 @@ int getValueInt(
 unsigned int getValueUInt(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -408,8 +409,8 @@ unsigned int getValueUInt(
 float getValueFloat(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -420,8 +421,8 @@ float getValueFloat(
 double getValueDouble(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -432,8 +433,8 @@ double getValueDouble(
 char getValueChar(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -444,8 +445,8 @@ char getValueChar(
 Eigen::Vector2d getValueVector2d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -456,8 +457,8 @@ Eigen::Vector2d getValueVector2d(
 Eigen::Vector3d getValueVector3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -468,8 +469,8 @@ Eigen::Vector3d getValueVector3d(
 Eigen::Vector3i getValueVector3i(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -480,8 +481,8 @@ Eigen::Vector3i getValueVector3i(
 Eigen::Vector6d getValueVector6d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -492,8 +493,8 @@ Eigen::Vector6d getValueVector6d(
 Eigen::VectorXd getValueVectorXd(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -504,8 +505,8 @@ Eigen::VectorXd getValueVectorXd(
 Eigen::Vector3d getValueVec3(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -516,8 +517,8 @@ Eigen::Vector3d getValueVec3(
 Eigen::Isometry3d getValueIsometry3d(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -528,8 +529,8 @@ Eigen::Isometry3d getValueIsometry3d(
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
@@ -540,8 +541,8 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
 bool hasElement(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(parentElement != nullptr);
-  assert(!name.empty());
+  DART_ASSERT(parentElement != nullptr);
+  DART_ASSERT(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str()) == nullptr ? false
                                                                    : true;
@@ -551,7 +552,7 @@ bool hasElement(
 const tinyxml2::XMLElement* getElement(
     const tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(!name.empty());
+  DART_ASSERT(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str());
 }
@@ -560,7 +561,7 @@ const tinyxml2::XMLElement* getElement(
 tinyxml2::XMLElement* getElement(
     tinyxml2::XMLElement* parentElement, const std::string& name)
 {
-  assert(!name.empty());
+  DART_ASSERT(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str());
 }

@@ -33,6 +33,7 @@
 #include "dart/optimizer/GenericMultiObjectiveProblem.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
 
@@ -103,7 +104,7 @@ void GenericMultiObjectiveProblem::setObjectiveFunctions(
 //==============================================================================
 void GenericMultiObjectiveProblem::addObjectiveFunction(FunctionPtr objective)
 {
-  assert(objective && "nullptr pointer is not allowed.");
+  DART_ASSERT(objective && "nullptr pointer is not allowed.");
   mObjectiveFunctions.emplace_back(std::move(objective));
   mObjectiveDimension = mObjectiveFunctions.size();
 }
@@ -118,7 +119,7 @@ GenericMultiObjectiveProblem::getObjectiveFunctions() const
 //==============================================================================
 void GenericMultiObjectiveProblem::addEqConstraintFunction(FunctionPtr eqConst)
 {
-  assert(eqConst);
+  DART_ASSERT(eqConst);
   mEqConstraintFunctions.push_back(eqConst);
   mEqConstraintDimension = mEqConstraintFunctions.size();
 }
@@ -127,7 +128,7 @@ void GenericMultiObjectiveProblem::addEqConstraintFunction(FunctionPtr eqConst)
 void GenericMultiObjectiveProblem::addIneqConstraintFunction(
     FunctionPtr ineqConst)
 {
-  assert(ineqConst);
+  DART_ASSERT(ineqConst);
   mIneqConstraintFunctions.push_back(ineqConst);
   mIneqConstraintDimension = mIneqConstraintFunctions.size();
 }
@@ -136,7 +137,7 @@ void GenericMultiObjectiveProblem::addIneqConstraintFunction(
 FunctionPtr GenericMultiObjectiveProblem::getEqConstraintFunction(
     std::size_t index) const
 {
-  assert(index < mEqConstraintFunctions.size());
+  DART_ASSERT(index < mEqConstraintFunctions.size());
   return getVectorObjectIfAvailable<FunctionPtr>(index, mEqConstraintFunctions);
 }
 
@@ -144,7 +145,7 @@ FunctionPtr GenericMultiObjectiveProblem::getEqConstraintFunction(
 FunctionPtr GenericMultiObjectiveProblem::getIneqConstraintFunction(
     std::size_t index) const
 {
-  assert(index < mIneqConstraintFunctions.size());
+  DART_ASSERT(index < mIneqConstraintFunctions.size());
   return getVectorObjectIfAvailable<FunctionPtr>(
       index, mIneqConstraintFunctions);
 }

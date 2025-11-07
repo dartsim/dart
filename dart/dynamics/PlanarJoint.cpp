@@ -33,6 +33,7 @@
 #include "dart/dynamics/PlanarJoint.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -204,7 +205,7 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
       = math::AdTJac(Joint::mAspectProperties.mT_ChildBodyToJoint, J.col(2));
 
   // Verification
-  assert(!math::isNan(J));
+  DART_ASSERT(!math::isNan(J));
 
   return J;
 }
@@ -272,7 +273,7 @@ void PlanarJoint::updateRelativeTransform() const
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -307,9 +308,9 @@ void PlanarJoint::updateRelativeJacobianTimeDeriv() const
                   mAspectProperties.mRotAxis * -getPositionsStatic()[2]),
           J.col(1)));
 
-  assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
-  assert(!math::isNan(mJacobianDeriv.col(0)));
-  assert(!math::isNan(mJacobianDeriv.col(1)));
+  DART_ASSERT(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
+  DART_ASSERT(!math::isNan(mJacobianDeriv.col(0)));
+  DART_ASSERT(!math::isNan(mJacobianDeriv.col(1)));
 }
 
 } // namespace dynamics

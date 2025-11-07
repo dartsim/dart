@@ -6,6 +6,7 @@
   Date		06/19/2011
 */
 
+#include "dart/common/Macros.hpp"
 #include <iostream>
 #include "SnoptInterface.h"
 
@@ -488,7 +489,7 @@ void  SnoptInterface::snoptObj(int *mode, int *nn_obj, double *x,
                                double *ru, int *lenru) {
 
     SnoptInterface *s = SnoptInterface::mRef;
-    assert(s != NULL);
+    DART_ASSERT(s != NULL);
 
     s->update(SnoptInterface::Obj, *mode, x);
 
@@ -507,7 +508,7 @@ void SnoptInterface::snoptJac(int *mode, int *nn_con, int *nn_jac, int *ne_jac,
                               int *iu, int *leniu,
                               double *ru, int *lenru) {
     SnoptInterface *s = SnoptInterface::mRef;
-    assert(s != NULL);
+    DART_ASSERT(s != NULL);
     if(s->mNumConstr == 0){
         f_con[0] = 0.0;
         return;

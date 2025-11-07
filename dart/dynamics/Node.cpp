@@ -32,13 +32,14 @@
 
 #include "dart/dynamics/Node.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 #define REPORT_INVALID_NODE(func)                                              \
   dterr << "[Node::" #func "] This Node was not constructed correctly. It "    \
         << "needs to specify a valid BodyNode pointer during construction. "   \
         << "Please report this as a bug if it is not a custom node type!\n";   \
-  assert(false);
+  DART_ASSERT(false);
 
 namespace dart {
 namespace dynamics {
@@ -209,11 +210,11 @@ void Node::attach()
   if (INVALID_INDEX == mIndexInBodyNode) {
     // If the Node was not in the map, then its destructor should not be in the
     // set
-    assert(destructors.find(destructor) == destructors.end());
+    DART_ASSERT(destructors.find(destructor) == destructors.end());
 
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+    DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
 
     nodes.push_back(this);
     mIndexInBodyNode = nodes.size() - 1;
@@ -221,8 +222,8 @@ void Node::attach()
     destructors.insert(destructor);
   }
 
-  assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
-  assert(destructors.find(destructor) != destructors.end());
+  DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+  DART_ASSERT(destructors.find(destructor) != destructors.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if (skel)
@@ -254,23 +255,23 @@ void Node::stageForRemoval()
 
   if (mBodyNode->mNodeMap.end() == it) {
     // If the Node was not in the map, then its index should be invalid
-    assert(INVALID_INDEX == mIndexInBodyNode);
+    DART_ASSERT(INVALID_INDEX == mIndexInBodyNode);
 
     // If the Node was not in the map, then its destructor should not be in the
     // set
-    assert(destructors.find(destructor) == destructors.end());
+    DART_ASSERT(destructors.find(destructor) == destructors.end());
     return;
   }
 
   BodyNode::NodeDestructorSet::iterator destructor_iter
       = destructors.find(destructor);
   // This Node's destructor should be in the set of destructors
-  assert(destructors.end() != destructor_iter);
+  DART_ASSERT(destructors.end() != destructor_iter);
 
   std::vector<Node*>& nodes = it->second;
 
   // This Node's index in the vector should be referring to this Node
-  assert(nodes[mIndexInBodyNode] == this);
+  DART_ASSERT(nodes[mIndexInBodyNode] == this);
   nodes.erase(nodes.begin() + mIndexInBodyNode);
   destructors.erase(destructor_iter);
 
@@ -278,7 +279,7 @@ void Node::stageForRemoval()
   for (std::size_t i = mIndexInBodyNode; i < nodes.size(); ++i)
     nodes[i]->mIndexInBodyNode = i;
 
-  assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+  DART_ASSERT(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if (skel)

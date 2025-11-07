@@ -33,6 +33,7 @@
 #include "dart/optimizer/MultiObjectiveSolver.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/optimizer/MultiObjectiveProblem.hpp"
 
 #include <fstream>
@@ -124,7 +125,7 @@ void MultiObjectiveSolver::setNumPopulations(std::size_t size)
 //==============================================================================
 std::size_t MultiObjectiveSolver::getNumPopulations() const
 {
-  //  assert(mPopulations.size() == mProperties.mNumPopulations);
+  //  DART_ASSERT(mPopulations.size() == mProperties.mNumPopulations);
   return mProperties.mNumPopulations;
 }
 

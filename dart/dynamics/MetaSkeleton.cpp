@@ -33,6 +33,7 @@
 #include "dart/dynamics/MetaSkeleton.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
@@ -82,7 +83,7 @@ static bool checkIndexArrayAgreement(
           << _indices.size() << ") and " << _vname << " size ("
           << _values.size() << ") for Skeleton named [" << skel->getName()
           << "] (" << skel << "). Nothing will be set!\n";
-    assert(false);
+    DART_ASSERT(false);
     return false;
   }
 
@@ -111,7 +112,7 @@ static void setValuesFromVector(
             << "expired! ReferentialSkeletons should call update() after "
             << "structural changes have been made to the BodyNodes they refer "
             << "to. Nothing will be set for this specific DegreeOfFreedom.\n";
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 }
@@ -130,7 +131,7 @@ static void setAllValuesFromVector(
           << _values.size() << ") in " << _vname << " for MetaSkeleton named ["
           << skel->getName() << "] (" << skel << "). Must be equal to ("
           << skel->getNumDofs() << "). Nothing will be set!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -145,7 +146,7 @@ static void setAllValuesFromVector(
             << "update() after structural changes have been made to the "
             << "BodyNodes they refer to. Nothing will be set for this specific "
             << "DegreeOfFreedom.\n";
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 }
@@ -179,7 +180,7 @@ static Eigen::VectorXd getValuesFromVector(
               << "] (" << skel << "). The max index is (" << skel->getNumDofs()
               << "). The return value for this entry will be zero.\n";
       }
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -204,7 +205,7 @@ static Eigen::VectorXd getValuesFromAllDofs(
             << "structural changes have been made to the BodyNodes they refer "
             << "to. The return value for this entry will be zero.\n";
       values[i] = 0.0;
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -241,7 +242,7 @@ static void setValueFromIndex(
       dterr << "[MetaSkeleton::" << _fname << "] Index (" << _index
             << ") cannot be used on MetaSkeleton [" << skel->getName() << "] ("
             << skel << ") because it is empty!\n";
-    assert(false);
+    DART_ASSERT(false);
     return;
   }
 
@@ -254,7 +255,7 @@ static void setValueFromIndex(
           << ") has expired! ReferentialSkeletons should call update() after "
           << "structural changes have been made to the BodyNodes they refer "
           << "to. Nothing will be set!\n";
-    assert(false);
+    DART_ASSERT(false);
   }
 }
 
@@ -275,7 +276,7 @@ static double getValueFromIndex(
             << "be requested for MetaSkeleton [" << skel->getName() << "] ("
             << skel << ") because it is empty! "
             << "The return value will be zero.\n";
-    assert(false);
+    DART_ASSERT(false);
     return 0.0;
   }
 
@@ -289,7 +290,7 @@ static double getValueFromIndex(
         << ") has expired! ReferentialSkeletons should call update() after "
         << "structural changes have been made to the BodyNodes they refer to. "
         << "The return value will be zero.\n";
-  assert(false);
+  DART_ASSERT(false);
   return 0.0;
 }
 

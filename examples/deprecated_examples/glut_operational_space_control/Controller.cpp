@@ -32,13 +32,15 @@
 
 #include "Controller.hpp"
 
+#include "dart/common/Macros.hpp"
+
 //==============================================================================
 Controller::Controller(
     dart::dynamics::SkeletonPtr _robot, dart::dynamics::BodyNode* _endEffector)
   : mRobot(_robot), mEndEffector(_endEffector)
 {
-  assert(_robot != nullptr);
-  assert(_endEffector != nullptr);
+  DART_ASSERT(_robot != nullptr);
+  DART_ASSERT(_endEffector != nullptr);
 
   int dof = mRobot->getNumDofs();
 

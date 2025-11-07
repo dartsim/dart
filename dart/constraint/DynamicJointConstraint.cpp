@@ -33,6 +33,7 @@
 #include "dart/constraint/DynamicJointConstraint.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <cassert>
 
@@ -53,7 +54,7 @@ double DynamicJointConstraint::mConstraintForceMixing = DART_CFM;
 DynamicJointConstraint::DynamicJointConstraint(dynamics::BodyNode* body)
   : ConstraintBase(), mBodyNode1(body), mBodyNode2(nullptr)
 {
-  assert(body);
+  DART_ASSERT(body);
 }
 
 //==============================================================================
@@ -61,8 +62,8 @@ DynamicJointConstraint::DynamicJointConstraint(
     dynamics::BodyNode* body1, dynamics::BodyNode* body2)
   : ConstraintBase(), mBodyNode1(body1), mBodyNode2(body2)
 {
-  assert(body1);
-  assert(body2);
+  DART_ASSERT(body1);
+  DART_ASSERT(body2);
 }
 
 //==============================================================================

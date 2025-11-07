@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart {
 namespace collision {
@@ -61,7 +62,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
   if (done)
     return false;
 
-  assert(
+  DART_ASSERT(
       (proxy0 != nullptr && proxy1 != nullptr)
       && "Bullet broadphase overlapping pair proxies are nullptr");
 

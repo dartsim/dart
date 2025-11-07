@@ -32,6 +32,7 @@
 
 #include "TestHelpers.hpp"
 #include "dart/collision/collision.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -335,7 +336,7 @@ simulation::WorldPtr createWorld()
   // Create and initialize the world
   simulation::WorldPtr world
       = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(world != nullptr);
+  DART_ASSERT(world != nullptr);
 
   // Create and initialize the world
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));

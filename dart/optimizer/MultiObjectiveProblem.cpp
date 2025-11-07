@@ -33,6 +33,7 @@
 #include "dart/optimizer/MultiObjectiveProblem.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
 
@@ -107,7 +108,8 @@ std::size_t MultiObjectiveProblem::getIntegerDimension() const
 //==============================================================================
 void MultiObjectiveProblem::setLowerBounds(const Eigen::VectorXd& lb)
 {
-  assert(static_cast<std::size_t>(lb.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = lb;
 }
 
@@ -120,7 +122,8 @@ const Eigen::VectorXd& MultiObjectiveProblem::getLowerBounds() const
 //==============================================================================
 void MultiObjectiveProblem::setUpperBounds(const Eigen::VectorXd& ub)
 {
-  assert(static_cast<std::size_t>(ub.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = ub;
 }
 

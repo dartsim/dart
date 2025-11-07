@@ -33,6 +33,7 @@
 #include "dart/optimizer/Problem.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/optimizer/Function.hpp"
 
@@ -90,7 +91,7 @@ std::size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(_initGuess.size()) == mDimension
       && "Invalid size.");
 
@@ -168,7 +169,8 @@ void Problem::clearAllSeeds()
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  assert(static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -181,7 +183,8 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  assert(static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(
+      static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = _ub;
 }
 
@@ -194,7 +197,7 @@ const Eigen::VectorXd& Problem::getUpperBounds() const
 //==============================================================================
 void Problem::setObjective(FunctionPtr _obj)
 {
-  assert(_obj && "nullptr pointer is not allowed.");
+  DART_ASSERT(_obj && "nullptr pointer is not allowed.");
   mObjective = _obj;
 }
 
@@ -207,14 +210,14 @@ FunctionPtr Problem::getObjective() const
 //==============================================================================
 void Problem::addEqConstraint(FunctionPtr _eqConst)
 {
-  assert(_eqConst);
+  DART_ASSERT(_eqConst);
   mEqConstraints.push_back(_eqConst);
 }
 
 //==============================================================================
 void Problem::addIneqConstraint(FunctionPtr _ineqConst)
 {
-  assert(_ineqConst);
+  DART_ASSERT(_ineqConst);
   mIneqConstraints.push_back(_ineqConst);
 }
 
@@ -233,14 +236,14 @@ std::size_t Problem::getNumIneqConstraints() const
 //==============================================================================
 FunctionPtr Problem::getEqConstraint(std::size_t _idx) const
 {
-  assert(_idx < mEqConstraints.size());
+  DART_ASSERT(_idx < mEqConstraints.size());
   return getVectorObjectIfAvailable<FunctionPtr>(_idx, mEqConstraints);
 }
 
 //==============================================================================
 FunctionPtr Problem::getIneqConstraint(std::size_t _idx) const
 {
-  assert(_idx < mIneqConstraints.size());
+  DART_ASSERT(_idx < mIneqConstraints.size());
   return getVectorObjectIfAvailable<FunctionPtr>(_idx, mIneqConstraints);
 }
 
@@ -291,7 +294,7 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  assert(
+  DART_ASSERT(
       static_cast<std::size_t>(_optParam.size()) == mDimension
       && "Invalid size.");
   mOptimalSolution = _optParam;

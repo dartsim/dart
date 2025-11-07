@@ -33,6 +33,7 @@
 #include "dart/collision/CollisionObject.hpp"
 
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
@@ -74,8 +75,8 @@ CollisionObject::CollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
   : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame)
 {
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
+  DART_ASSERT(mCollisionDetector);
+  DART_ASSERT(mShapeFrame);
 }
 
 } // namespace collision

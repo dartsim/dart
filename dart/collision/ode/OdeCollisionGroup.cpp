@@ -33,6 +33,7 @@
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 
 #include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 
 namespace dart {
 namespace collision {
@@ -52,7 +53,7 @@ OdeCollisionGroup::OdeCollisionGroup(
   // Source:
   // https://www.ode-wiki.org/wiki/index.php?title=Manual:_Collision_Detection#Space_functions
   mSpaceId = dHashSpaceCreate(0);
-  assert(mSpaceId);
+  DART_ASSERT(mSpaceId);
   dHashSpaceSetLevels(mSpaceId, -2, 8);
 }
 

@@ -32,13 +32,15 @@
 
 #include "MyWindow.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #include <iostream>
 
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
   : SimWindow(), mController(_controller), mCircleTask(false)
 {
-  assert(_controller != nullptr);
+  DART_ASSERT(_controller != nullptr);
 
   // Set the initial target positon to the initial position of the end effector
   mTargetPosition = mController->getEndEffector()->getTransform().translation();

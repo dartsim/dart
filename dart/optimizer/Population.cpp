@@ -33,6 +33,7 @@
 #include "dart/optimizer/Population.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/math/Random.hpp"
 
 #include <cassert>
@@ -79,7 +80,7 @@ Population::Population(
   // MultiObjectiveProblem and clone it once MultiObjectiveProblem::clone()
   // is added.
 
-  assert(mProblem);
+  DART_ASSERT(mProblem);
 
   const int xSize = static_cast<int>(mProblem->getSolutionDimension());
   const int fSize = static_cast<int>(mProblem->getFitnessDimension());
@@ -157,7 +158,7 @@ void Population::set(
 //==============================================================================
 std::size_t Population::getSize() const
 {
-  assert(mPopulation.cols() == mFitness.cols());
+  DART_ASSERT(mPopulation.cols() == mFitness.cols());
   return static_cast<std::size_t>(mPopulation.cols());
 }
 

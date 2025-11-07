@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -46,7 +47,7 @@ namespace collision {
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
   : mCollisionDetector(collisionDetector), mUpdateAutomatically(true)
 {
-  assert(mCollisionDetector);
+  DART_ASSERT(mCollisionDetector);
 }
 
 //==============================================================================
@@ -184,7 +185,7 @@ std::size_t CollisionGroup::getNumShapeFrames() const
 const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
     std::size_t index) const
 {
-  assert(index < mObjectInfoList.size());
+  DART_ASSERT(index < mObjectInfoList.size());
   if (index < mObjectInfoList.size())
     return mObjectInfoList[index]->mFrame;
 

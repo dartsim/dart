@@ -33,6 +33,7 @@
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/SharedLibrary.hpp"
 
 #include <fstream>
@@ -87,7 +88,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
     return nullptr;
 
   mSharedLibraries[canonicalPath] = newLib;
-  assert(canonicalPath == newLib->getCanonicalPath());
+  DART_ASSERT(canonicalPath == newLib->getCanonicalPath());
 
   return newLib;
 }

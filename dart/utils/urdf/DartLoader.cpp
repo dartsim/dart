@@ -32,6 +32,7 @@
 
 #include "dart/utils/urdf/DartLoader.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -356,7 +357,7 @@ bool DartLoader::createSkeletonRecursive(
     const common::ResourceRetrieverPtr& resourceRetriever,
     const Options& options)
 {
-  assert(lk);
+  DART_ASSERT(lk);
 
   if (parentNode != nullptr && lk->name == "world") {
     dtwarn << "[DartLoader] Link name 'world' is reserved for the inertial "

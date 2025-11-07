@@ -33,6 +33,7 @@
 #include "State.hpp"
 
 #include "TerminalCondition.hpp"
+#include "dart/common/Macros.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
@@ -83,12 +84,12 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   mRightThigh = mSkeleton->getBodyNode("r_uleg");
   mStanceFoot = nullptr;
 
-  assert(mPelvis != nullptr);
-  assert(mLeftFoot != nullptr);
-  assert(mRightFoot != nullptr);
-  assert(mLeftThigh != nullptr);
-  assert(mRightThigh != nullptr);
-  //  assert(mStanceFoot != nullptr);
+  DART_ASSERT(mPelvis != nullptr);
+  DART_ASSERT(mLeftFoot != nullptr);
+  DART_ASSERT(mRightFoot != nullptr);
+  DART_ASSERT(mLeftThigh != nullptr);
+  DART_ASSERT(mRightThigh != nullptr);
+  //  DART_ASSERT(mStanceFoot != nullptr);
 
   mCoronalLeftHip = mSkeleton->getDof("l_leg_hpx")->getIndexInSkeleton();  // 10
   mCoronalRightHip = mSkeleton->getDof("r_leg_hpx")->getIndexInSkeleton(); // 11
@@ -120,7 +121,7 @@ void State::setNextState(State* _nextState)
 //==============================================================================
 void State::setTerminalCondition(TerminalCondition* _condition)
 {
-  assert(_condition != nullptr);
+  DART_ASSERT(_condition != nullptr);
 
   mTerminalCondition = _condition;
 }
@@ -136,7 +137,7 @@ void State::begin(double _currentTime)
 //==============================================================================
 void State::computeControlForce(double _timestep)
 {
-  assert(mNextState != nullptr && "Next state should be set.");
+  DART_ASSERT(mNextState != nullptr && "Next state should be set.");
 
   int dof = mSkeleton->getNumDofs();
   VectorXd q = mSkeleton->getPositions();
@@ -198,7 +199,7 @@ void State::computeControlForce(double _timestep)
 //==============================================================================
 bool State::isTerminalConditionSatisfied() const
 {
-  assert(mTerminalCondition != nullptr && "Invalid terminal condition.");
+  DART_ASSERT(mTerminalCondition != nullptr && "Invalid terminal condition.");
 
   return mTerminalCondition->isSatisfied();
 }
@@ -523,7 +524,7 @@ void State::setDesiredJointPosition(const string& _jointName, double _val)
 //==============================================================================
 double State::getDesiredJointPosition(int _idx) const
 {
-  assert(
+  DART_ASSERT(
       0 <= _idx && _idx <= mDesiredJointPositions.size()
       && "Invalid joint index.");
 
@@ -536,7 +537,7 @@ double State::getDesiredJointPosition(const string& _jointName) const
   // TODO(JS)
   NOT_YET(State::getDesiredJointPosition());
 
-  assert(mSkeleton->getJoint(_jointName) != nullptr);
+  DART_ASSERT(mSkeleton->getJoint(_jointName) != nullptr);
 
   return mDesiredJointPositions[mJointMap.at(_jointName)];
 }
@@ -568,7 +569,7 @@ void State::setDesiredPelvisGlobalAngleOnCoronal(double _val)
 //==============================================================================
 void State::setProportionalGain(int _idx, double _val)
 {
-  assert(0 <= _idx && _idx <= mKp.size() && "Invalid joint index.");
+  DART_ASSERT(0 <= _idx && _idx <= mKp.size() && "Invalid joint index.");
 
   mKd[_idx] = _val;
 }
@@ -583,7 +584,7 @@ void State::setProportionalGain(const string& /*_jointName*/, double /*_val*/)
 //==============================================================================
 double State::getProportionalGain(int _idx) const
 {
-  assert(0 <= _idx && _idx <= mKp.size() && "Invalid joint index.");
+  DART_ASSERT(0 <= _idx && _idx <= mKp.size() && "Invalid joint index.");
 
   return mKp[_idx];
 }
@@ -594,7 +595,7 @@ double State::getProportionalGain(const string& _jointName) const
   // TODO(JS)
   NOT_YET(State::getProportionalGain());
 
-  assert(mSkeleton->getJoint(_jointName) != nullptr);
+  DART_ASSERT(mSkeleton->getJoint(_jointName) != nullptr);
 
   return mKp[mJointMap.at(_jointName)];
 }
@@ -602,7 +603,7 @@ double State::getProportionalGain(const string& _jointName) const
 //==============================================================================
 void State::setDerivativeGain(int _idx, double _val)
 {
-  assert(0 <= _idx && _idx <= mKd.size() && "Invalid joint index.");
+  DART_ASSERT(0 <= _idx && _idx <= mKd.size() && "Invalid joint index.");
 
   mKd[_idx] = _val;
 }
@@ -617,7 +618,7 @@ void State::setDerivativeGain(const string& /*_jointName*/, double /*_val*/)
 //==============================================================================
 double State::getDerivativeGain(int _idx) const
 {
-  assert(0 <= _idx && _idx <= mKd.size() && "Invalid joint index.");
+  DART_ASSERT(0 <= _idx && _idx <= mKd.size() && "Invalid joint index.");
 
   return mKd[_idx];
 }
@@ -632,7 +633,8 @@ double State::getDerivativeGain(int _idx) const
 //==============================================================================
 void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
 {
-  assert(static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
 
   mSagitalCd[_index] = _val;
 }
@@ -640,7 +642,8 @@ void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
 {
-  assert(static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
 
   mSagitalCv[_index] = _val;
 }
@@ -648,7 +651,8 @@ void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 {
-  assert(static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
 
   mCoronalCd[_index] = _val;
 }
@@ -656,7 +660,8 @@ void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMVelocity(std::size_t _index, double _val)
 {
-  assert(static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
+  DART_ASSERT(
+      static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
 
   mCoronalCv[_index] = _val;
 }

@@ -33,6 +33,7 @@
 #include "dart/collision/DistanceFilter.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
@@ -81,7 +82,7 @@ bool BodyNodeDistanceFilter::areAdjacentBodies(
 {
   if ((bodyNode1->getParentBodyNode() == bodyNode2)
       || (bodyNode2->getParentBodyNode() == bodyNode1)) {
-    assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    DART_ASSERT(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
     return true;
   }
 

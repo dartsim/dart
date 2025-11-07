@@ -33,6 +33,7 @@
 #include "dart/dynamics/EulerJoint.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 
@@ -252,7 +253,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   J.col(1) = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, J1);
   J.col(2) = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, J2);
 
-  assert(!math::isNan(J));
+  DART_ASSERT(!math::isNan(J));
 
 #if DART_BUILD_MODE_DEBUG
   Eigen::MatrixXd JTJ = J.transpose() * J;
@@ -326,7 +327,7 @@ void EulerJoint::updateRelativeTransform() const
        * convertToTransform(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
-  assert(math::verifyTransform(mT));
+  DART_ASSERT(math::verifyTransform(mT));
 }
 
 //==============================================================================
@@ -405,7 +406,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
   mJacobianDeriv.col(2)
       = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, dJ2);
 
-  assert(!math::isNan(mJacobianDeriv));
+  DART_ASSERT(!math::isNan(mJacobianDeriv));
 }
 
 } // namespace dynamics

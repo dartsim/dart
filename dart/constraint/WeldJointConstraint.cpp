@@ -32,6 +32,7 @@
 
 #include "dart/constraint/WeldJointConstraint.hpp"
 
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/external/odelcpsolver/lcp.h"
@@ -68,7 +69,7 @@ WeldJointConstraint::WeldJointConstraint(
     mAppliedImpulseIndex(0)
 {
   // The bodies should be different bodies.
-  assert(_body1 != _body2);
+  DART_ASSERT(_body1 != _body2);
 
   mDim = 6;
 
@@ -115,7 +116,7 @@ const std::string& WeldJointConstraint::getStaticType()
 void WeldJointConstraint::update()
 {
   // mBodyNode1 should not be null pointer ever
-  assert(mBodyNode1);
+  DART_ASSERT(mBodyNode1);
 
   // Update Jacobian for body2
   if (mBodyNode2) {
@@ -142,21 +143,21 @@ void WeldJointConstraint::update()
 //==============================================================================
 void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  assert(isActive());
+  DART_ASSERT(isActive());
 
-  assert(_lcp->w[0] == 0.0);
-  assert(_lcp->w[1] == 0.0);
-  assert(_lcp->w[2] == 0.0);
-  assert(_lcp->w[3] == 0.0);
-  assert(_lcp->w[4] == 0.0);
-  assert(_lcp->w[5] == 0.0);
+  DART_ASSERT(_lcp->w[0] == 0.0);
+  DART_ASSERT(_lcp->w[1] == 0.0);
+  DART_ASSERT(_lcp->w[2] == 0.0);
+  DART_ASSERT(_lcp->w[3] == 0.0);
+  DART_ASSERT(_lcp->w[4] == 0.0);
+  DART_ASSERT(_lcp->w[5] == 0.0);
 
-  assert(_lcp->findex[0] == -1);
-  assert(_lcp->findex[1] == -1);
-  assert(_lcp->findex[2] == -1);
-  assert(_lcp->findex[3] == -1);
-  assert(_lcp->findex[4] == -1);
-  assert(_lcp->findex[5] == -1);
+  DART_ASSERT(_lcp->findex[0] == -1);
+  DART_ASSERT(_lcp->findex[1] == -1);
+  DART_ASSERT(_lcp->findex[2] == -1);
+  DART_ASSERT(_lcp->findex[3] == -1);
+  DART_ASSERT(_lcp->findex[4] == -1);
+  DART_ASSERT(_lcp->findex[5] == -1);
 
   _lcp->lo[0] = -dInfinity;
   _lcp->lo[1] = -dInfinity;
@@ -196,11 +197,11 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 //==============================================================================
 void WeldJointConstraint::applyUnitImpulse(std::size_t _index)
 {
-  assert(_index < mDim && "Invalid Index.");
-  assert(isActive());
+  DART_ASSERT(_index < mDim && "Invalid Index.");
+  DART_ASSERT(isActive());
 
   if (mBodyNode2) {
-    assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
+    DART_ASSERT(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
     // Weld joint between two bodies in one skeleton
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
@@ -222,7 +223,7 @@ void WeldJointConstraint::applyUnitImpulse(std::size_t _index)
           mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, -mJacobian2.row(_index));
         } else {
-          assert(0);
+          DART_ASSERT(0);
         }
       }
 
@@ -245,7 +246,7 @@ void WeldJointConstraint::applyUnitImpulse(std::size_t _index)
       }
     }
   } else {
-    assert(mBodyNode1->isReactive());
+    DART_ASSERT(mBodyNode1->isReactive());
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
@@ -259,8 +260,8 @@ void WeldJointConstraint::applyUnitImpulse(std::size_t _index)
 //==============================================================================
 void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != nullptr && "Null pointer is not allowed.");
-  assert(isActive());
+  DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(isActive());
 
   Eigen::Vector6d velChange = Eigen::Vector6d::Zero();
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
@@ -341,11 +342,11 @@ dynamics::SkeletonPtr WeldJointConstraint::getRootSkeleton() const
       return ConstraintBase::getRootSkeleton(
           mBodyNode2->getSkeleton()->getSkeleton());
     } else {
-      assert(0);
+      DART_ASSERT(0);
       return nullptr;
     }
   } else {
-    assert(0);
+    DART_ASSERT(0);
     return nullptr;
   }
 }

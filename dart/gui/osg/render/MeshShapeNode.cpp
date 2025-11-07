@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Filesystem.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -238,7 +239,7 @@ void MeshShapeNode::extractData(bool firstTime)
 
     for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
       aiMaterial* aiMat = scene->mMaterials[i];
-      assert(aiMat);
+      DART_ASSERT(aiMat);
 
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
 

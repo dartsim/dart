@@ -32,6 +32,8 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
+#include "dart/common/Macros.hpp"
+
 #include <cassert>
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
@@ -169,7 +171,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i) {
     const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
-    assert(constraint->getDimension() > 0);
+    DART_ASSERT(constraint->getDimension() > 0);
     mOffset[i] = mOffset[i - 1] + constraint->getDimension();
   }
 
@@ -237,7 +239,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     }
   }
 
-  assert(isSymmetric(n, mA.data()));
+  DART_ASSERT(isSymmetric(n, mA.data()));
 
   // Print LCP formulation
   //  dtdbg << "Before solve:" << std::endl;
@@ -257,7 +259,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mFIndexBackup = mFIndex;
   }
   const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
-  assert(mBoxedLcpSolver);
+  DART_ASSERT(mBoxedLcpSolver);
   bool success = mBoxedLcpSolver->solve(
       n,
       mA.data(),

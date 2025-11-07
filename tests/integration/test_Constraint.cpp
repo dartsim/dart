@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
@@ -132,7 +133,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   sphereJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
   world->addSkeleton(sphereSkel);
   EXPECT_EQ(sphereSkel->getGravity(), world->getGravity());
-  assert(sphere);
+  DART_ASSERT(sphere);
 
   SkeletonPtr boxSkel
       = createBox(Vector3d(1.0, 1.0, 1.0), Vector3d(0.0, 1.0, 0.0));
@@ -142,7 +143,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   boxJoint->setVelocity(5, Random::uniform(-2.0, 2.0)); // z-axis
   //  world->addSkeleton(boxSkel);
   //  EXPECT_EQ(boxSkel->getGravity(), world->getGravity());
-  //  assert(box);
+  //  DART_ASSERT(box);
 
   SkeletonPtr groundSkel = createGround(
       Vector3d(10000.0, 0.1, 10000.0), Vector3d(0.0, -0.05, 0.0));
@@ -150,7 +151,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // BodyNode* ground = groundSkel->getBodyNode(0);
   world->addSkeleton(groundSkel);
   EXPECT_EQ(groundSkel->getGravity(), world->getGravity());
-  // assert(ground);
+  // DART_ASSERT(ground);
 
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 

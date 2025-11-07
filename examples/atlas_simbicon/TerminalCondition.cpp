@@ -33,6 +33,7 @@
 #include "TerminalCondition.hpp"
 
 #include "State.hpp"
+#include "dart/common/Macros.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
@@ -46,7 +47,7 @@ using namespace dart::constraint;
 //==============================================================================
 TerminalCondition::TerminalCondition(State* _state) : mState(_state)
 {
-  assert(_state != nullptr);
+  DART_ASSERT(_state != nullptr);
 }
 
 //==============================================================================
@@ -74,8 +75,8 @@ bool TimerCondition::isSatisfied()
 BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
   : TerminalCondition(_state), mBodyNode(_body)
 {
-  assert(_state != nullptr);
-  assert(_body != nullptr);
+  DART_ASSERT(_state != nullptr);
+  DART_ASSERT(_body != nullptr);
 }
 
 //==============================================================================

@@ -37,6 +37,7 @@
  */
 
 #include "MyWindow.hpp"
+#include "dart/common/Macros.hpp"
 
 #include <dart/utils/utils.hpp>
 
@@ -52,7 +53,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld("dart://sample/skel/shapes.skel");
-  assert(myWorld != NULL);
+  DART_ASSERT(myWorld != NULL);
 
   // create a window and link it to the world
   MyWindow window;

@@ -33,6 +33,8 @@
 #ifndef DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_HEIGHTMAPSHAPENODE_HPP_
 
+#include "dart/common/Macros.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/osg/Utils.hpp>
@@ -450,8 +452,8 @@ void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
   // the heightmap could be updated in the version up. So we always update the
   // heightmap.
   {
-    assert(mElements);
-    assert(mNormals);
+    DART_ASSERT(mElements);
+    DART_ASSERT(mNormals);
     setVertices<S>(
         heightmap,
         *mVertices,

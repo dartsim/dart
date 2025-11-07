@@ -33,6 +33,7 @@
 #include "dart/optimizer/nlopt/NloptSolver.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"
@@ -134,12 +135,12 @@ bool NloptSolver::solve()
             << "] while adding an equality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports equality constraints!\n";
-      assert(false);
+      DART_ASSERT(false);
     } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
@@ -153,12 +154,12 @@ bool NloptSolver::solve()
             << "] while adding an inequality constraint to an Nlopt solver. "
             << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
             << "] (" << mAlg << ") supports inequality constraints!\n";
-      assert(false);
+      DART_ASSERT(false);
     } catch (const std::exception& e) {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to the Nlopt solver. "
             << "This might be a bug in DART; please report this!\n";
-      assert(false);
+      DART_ASSERT(false);
     }
   }
 
