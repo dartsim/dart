@@ -14,7 +14,6 @@ namespace dart {
 namespace optimizer {
 namespace snopt {
 #include <string.h>
-#include <cassert>
 //#include <FL/Fl.H>
 
 SnoptInterface* SnoptInterface::mRef = NULL;

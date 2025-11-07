@@ -35,7 +35,6 @@
 #include "eigen_geometry_pybind.h"
 #include "dart/common/Macros.hpp"
 
-#include <cassert>
 #include <cmath>
 
 #include <dart/common/common.hpp>

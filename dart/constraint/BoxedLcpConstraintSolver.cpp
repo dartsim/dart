@@ -34,7 +34,6 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <cassert>
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>

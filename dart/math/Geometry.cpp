@@ -41,7 +41,6 @@
 #include <iostream>
 #include <vector>
 
-#include <cassert>
 #include <cmath>
 
 #define DART_EPSILON 1e-6
