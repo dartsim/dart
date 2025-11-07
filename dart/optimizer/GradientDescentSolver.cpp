@@ -39,8 +39,6 @@
 
 #include <iostream>
 
-#include <cassert>
-
 namespace dart {
 namespace optimizer {
 

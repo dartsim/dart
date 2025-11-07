@@ -36,8 +36,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/math/Random.hpp"
 
-#include <cassert>
-
 namespace dart {
 namespace optimizer {
 

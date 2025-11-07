@@ -40,8 +40,6 @@
 #include <algorithm>
 #include <limits>
 
-#include <cassert>
-
 namespace dart {
 namespace optimizer {
 
