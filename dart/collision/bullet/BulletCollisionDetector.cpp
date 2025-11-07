@@ -119,6 +119,7 @@ std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 BulletCollisionDetector::~BulletCollisionDetector()
 {
   DART_ASSERT(mShapeMap.empty());
+  mShapeMap.clear();
 }
 
 //==============================================================================
@@ -277,25 +278,34 @@ bool BulletCollisionDetector::collide(
     return false;
 
   // Create a new collision group, merging the two groups into
-  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
-  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
+  auto groupForFiltering
+      = std::make_unique<BulletCollisionGroup>(shared_from_this());
+  auto bulletCollisionWorld = groupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new detail::BulletOverlapFilterCallback(
-      option.collisionFilter, group1, group2);
-  bulletPairCache->setOverlapFilterCallback(filterCallback);
+  std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
+      new detail::BulletOverlapFilterCallback(
+          option.collisionFilter, group1, group2));
+  bulletPairCache->setOverlapFilterCallback(filterCallback.get());
 
-  mGroupForFiltering->addShapeFramesOf(group1, group2);
-  mGroupForFiltering->updateEngineData();
+  groupForFiltering->addShapeFramesOf(group1, group2);
+  groupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
+  bool hasCollision = false;
   if (result) {
     reportContacts(bulletCollisionWorld, option, *result);
-
-    return result->isCollision();
+    hasCollision = result->isCollision();
   } else {
-    return isCollision(bulletCollisionWorld);
+    hasCollision = isCollision(bulletCollisionWorld);
   }
+
+  bulletPairCache->setOverlapFilterCallback(nullptr);
+  filterCallback.reset();
+
+  groupForFiltering->removeAllShapeFrames();
+
+  return hasCollision;
 }
 
 //==============================================================================
@@ -395,10 +405,15 @@ BulletCollisionDetector::BulletCollisionDetector() : CollisionDetector()
 std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape());
+  const auto shape = shapeFrame->getShape();
+  assert(
+      shape
+      && "ShapeFrame must hold a valid Shape when creating a CollisionObject");
+
+  auto bulletCollShape = claimBulletCollisionShape(shape);
 
   return std::unique_ptr<BulletCollisionObject>(
-      new BulletCollisionObject(this, shapeFrame, bulletCollShape));
+      new BulletCollisionObject(this, shapeFrame, shape, bulletCollShape));
 }
 
 //==============================================================================
@@ -406,7 +421,14 @@ void BulletCollisionDetector::refreshCollisionObject(CollisionObject* object)
 {
   BulletCollisionObject* bullet = static_cast<BulletCollisionObject*>(object);
 
-  bullet->mBulletCollisionShape = claimBulletCollisionShape(bullet->getShape());
+  const auto shape = bullet->getShapeFrame()->getShape();
+  assert(
+      shape
+      && "ShapeFrame must hold a valid Shape when refreshing a "
+         "CollisionObject");
+
+  bullet->setCachedShape(shape);
+  bullet->mBulletCollisionShape = claimBulletCollisionShape(shape);
   bullet->mBulletCollisionObject->setCollisionShape(
       bullet->mBulletCollisionShape->mCollisionShape.get());
 }
@@ -415,7 +437,9 @@ void BulletCollisionDetector::refreshCollisionObject(CollisionObject* object)
 void BulletCollisionDetector::notifyCollisionObjectDestroying(
     CollisionObject* object)
 {
-  reclaimBulletCollisionShape(object->getShape());
+  auto* bullet = static_cast<BulletCollisionObject*>(object);
+  reclaimBulletCollisionShape(bullet->getCachedShape().get());
+  bullet->setCachedShape(nullptr);
 }
 
 //==============================================================================
@@ -423,22 +447,26 @@ std::shared_ptr<BulletCollisionShape>
 BulletCollisionDetector::claimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  const std::size_t currentVersion = shape->getVersion();
+  if (!shape)
+    return nullptr;
 
-  const auto search = mShapeMap.insert(std::make_pair(shape, ShapeInfo()));
-  const bool inserted = search.second;
-  ShapeInfo& info = search.first->second;
+  const std::size_t currentVersion = shape->getVersion();
+  const auto rawShape = shape.get();
+
+  auto [iter, inserted] = mShapeMap.try_emplace(rawShape, ShapeInfo());
+  ShapeInfo& info = iter->second;
 
   if (!inserted && currentVersion == info.mLastKnownVersion) {
-    const auto& bulletCollShape = info.mShape.lock();
-    DART_ASSERT(bulletCollShape);
-
-    return bulletCollShape;
+    const auto bulletCollShape = info.mShape.lock();
+    if (bulletCollShape) {
+      DART_ASSERT(bulletCollShape);
+      return bulletCollShape;
+    }
   }
 
   auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
       createBulletCollisionShape(shape).release(),
-      BulletCollisionShapeDeleter(this, shape));
+      BulletCollisionShapeDeleter(this, rawShape));
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 
@@ -447,15 +475,20 @@ BulletCollisionDetector::claimBulletCollisionShape(
 
 //==============================================================================
 void BulletCollisionDetector::reclaimBulletCollisionShape(
-    const dynamics::ConstShapePtr& shape)
+    const dynamics::Shape* shape)
 {
+  if (!shape)
+    return;
+
   const auto& search = mShapeMap.find(shape);
   if (search == mShapeMap.end())
     return;
 
-  const auto& bulletShape = search->second.mShape.lock();
-  if (!bulletShape || bulletShape.use_count() <= 2)
-    mShapeMap.erase(search);
+  const auto bulletShape = search->second.mShape.lock();
+  if (bulletShape && bulletShape.use_count() > 1)
+    return;
+
+  mShapeMap.erase(search);
 }
 
 //==============================================================================
@@ -604,7 +637,7 @@ BulletCollisionDetector::createBulletCollisionShape(
 //==============================================================================
 BulletCollisionDetector::BulletCollisionShapeDeleter ::
     BulletCollisionShapeDeleter(
-        BulletCollisionDetector* cd, const dynamics::ConstShapePtr& shape)
+        BulletCollisionDetector* cd, const dynamics::Shape* shape)
   : mBulletCollisionDetector(cd), mShape(shape)
 {
   // Do nothing

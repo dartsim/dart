@@ -96,6 +96,7 @@ public:
 protected:
   // Sets up the test fixture.
   void SetUp() override;
+  void TearDown() override;
 
   std::vector<SimpleFrame*> frames;
 };
@@ -110,6 +111,15 @@ void JOINTS::SetUp()
   frames.push_back(new SimpleFrame(frames.back(), "refFrame4"));
   frames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
   frames.push_back(new SimpleFrame(frames.back(), "refFrame6"));
+}
+
+//==============================================================================
+void JOINTS::TearDown()
+{
+  for (SimpleFrame* frame : frames) {
+    delete frame;
+  }
+  frames.clear();
 }
 
 //==============================================================================

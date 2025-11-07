@@ -45,9 +45,17 @@ namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
-  : mCollisionDetector(collisionDetector), mUpdateAutomatically(true)
+  : mCollisionDetector(collisionDetector),
+    mUpdateAutomatically(true),
+    mObserver(this)
 {
   DART_ASSERT(mCollisionDetector);
+}
+
+//==============================================================================
+CollisionGroup::ShapeFrameObserver::ShapeFrameObserver(CollisionGroup* group)
+  : mGroup(group)
+{
 }
 
 //==============================================================================
@@ -349,8 +357,17 @@ void CollisionGroup::ShapeFrameObserver::removeAllShapeFrames()
 void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
     const common::Subject* subject)
 {
-  mDeletedFrames.insert(mMap[subject]);
-  mMap.erase(subject);
+  auto it = mMap.find(subject);
+  if (it == mMap.end())
+    return;
+
+  const dynamics::ShapeFrame* frame = it->second;
+  mMap.erase(it);
+
+  if (mGroup)
+    mGroup->handleShapeFrameDestruction(frame);
+  else
+    mDeletedFrames.insert(frame);
 }
 
 //==============================================================================
@@ -616,6 +633,17 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
   }
 
   return false;
+}
+
+//==============================================================================
+void CollisionGroup::handleShapeFrameDestruction(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!shapeFrame)
+    return;
+
+  mObserver.mDeletedFrames.insert(shapeFrame);
+  removeDeletedShapeFrames();
 }
 
 } // namespace collision

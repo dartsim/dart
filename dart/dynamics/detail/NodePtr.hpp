@@ -117,12 +117,14 @@ public:
     if (nullptr == _ptr) {
       mBodyNodePtr = nullptr;
       mDestructor = nullptr;
+      mSkeleton.reset();
       mNode = nullptr;
       return;
     }
 
     mBodyNodePtr = _ptr->getBodyNodePtr();
     mDestructor = _ptr->mDestructor.lock();
+    mSkeleton = _ptr->getSkeleton();
     mNode = _ptr;
   }
 
@@ -137,6 +139,10 @@ protected:
   /// Hold onto a BodyNodePtr to the Node's associated BodyNode to make sure
   /// that the BodyNode stays alive.
   TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+
+  /// Keep the owning Skeleton alive for the lifetime of this pointer so that
+  /// the BodyNode (and therefore the Node) cannot be destroyed prematurely.
+  std::shared_ptr<const Skeleton> mSkeleton;
 };
 
 /// TemplateWeakNodePtr is a templated class that enables users to create a weak

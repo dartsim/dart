@@ -61,6 +61,26 @@ using namespace dynamics;
 using namespace simulation;
 using namespace utils;
 
+namespace {
+
+SkeletonPtr createSphereSkeletonForOwnershipTest()
+{
+  auto skeleton = Skeleton::create("ShapeNodePtrSphere");
+  FreeJoint::Properties jointProperties;
+  BodyNode::Properties bodyProperties(BodyNode::AspectProperties("link"));
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+
+  auto shape = std::make_shared<EllipsoidShape>(Eigen::Vector3d::Constant(2.0));
+  pair.second
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
+
+  return skeleton;
+}
+
+} // namespace
+
 class Collision : public testing::Test
 {
 public:
@@ -301,6 +321,46 @@ TEST_F(Collision, FCL_BOX_BOX)
 }
 
 //==============================================================================
+TEST_F(Collision, ShapeNodePtrKeepsSkeletonAlive)
+{
+  std::weak_ptr<Skeleton> weakSkeleton;
+  ShapeNodePtr shapeNodeCopy;
+
+  {
+    auto skeleton = createSphereSkeletonForOwnershipTest();
+    weakSkeleton = skeleton;
+    auto* body = skeleton->getBodyNode(0);
+    ASSERT_NE(body, nullptr);
+
+    ShapeNodePtr shapeNode = body->getShapeNode(0);
+    ASSERT_NE(shapeNode.get(), nullptr);
+
+    shapeNodeCopy = shapeNode;
+
+    skeleton.reset();
+
+    ASSERT_NE(shapeNode.get(), nullptr);
+    EXPECT_EQ(shapeNode.get(), shapeNodeCopy.get());
+    EXPECT_EQ(shapeNode->getBodyNodePtr()->getName(), "link");
+
+    auto ellipsoid
+        = std::dynamic_pointer_cast<EllipsoidShape>(shapeNodeCopy->getShape());
+    ASSERT_NE(ellipsoid, nullptr);
+
+    const Eigen::Vector3d newDiameters = Eigen::Vector3d::Constant(1.5);
+    ellipsoid->setDiameters(newDiameters);
+    EXPECT_TRUE(ellipsoid->getDiameters().isApprox(newDiameters, 1e-12));
+
+    EXPECT_FALSE(weakSkeleton.expired());
+  }
+
+  EXPECT_NE(shapeNodeCopy.get(), nullptr);
+
+  shapeNodeCopy = nullptr;
+  EXPECT_TRUE(weakSkeleton.expired());
+}
+
+//==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
@@ -372,6 +432,12 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
   EXPECT_FALSE(group1->collide(group23.get()));
+
+  group23->removeAllShapeFrames();
+  groupAll->removeAllShapeFrames();
+  group3->removeAllShapeFrames();
+  group2->removeAllShapeFrames();
+  group1->removeAllShapeFrames();
 }
 
 //==============================================================================
@@ -1481,6 +1547,13 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   const collision::CollisionResult& result2 = world->getLastCollisionResult();
   EXPECT_TRUE(result2.inCollision(boxBodyNode1));
   EXPECT_TRUE(result2.inCollision(boxBodyNode2));
+
+  skeletonGroup1->removeAllShapeFrames();
+  skeletonGroup2->removeAllShapeFrames();
+  bodyNodeGroup1->removeAllShapeFrames();
+  bodyNodeGroup2->removeAllShapeFrames();
+  shapeNodeGroup1->removeAllShapeFrames();
+  shapeNodeGroup2->removeAllShapeFrames();
 }
 
 //==============================================================================

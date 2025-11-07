@@ -53,11 +53,18 @@ public:
   /// Return Bullet collision object
   const btCollisionObject* getBulletCollisionObject() const;
 
+  /// Return the cached shape pointer used for resource management.
+  const dynamics::ConstShapePtr& getCachedShape() const;
+
+  /// Update the cached shape pointer used for resource management.
+  void setCachedShape(const dynamics::ConstShapePtr& shape);
+
 protected:
   /// Constructor
   BulletCollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
+      const dynamics::ConstShapePtr& shape,
       const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape);
 
   // Documentation inherited
@@ -67,6 +74,11 @@ protected:
   /// Bullet collision object
   std::shared_ptr<BulletCollisionShape> mBulletCollisionShape;
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
+
+  /// Cached reference to the Shape belonging to mShapeFrame. This keeps the
+  /// Shape alive long enough for cleanup callbacks that may run after the
+  /// owning ShapeFrame is destroyed.
+  dynamics::ConstShapePtr mCachedShape;
 };
 
 } // namespace collision

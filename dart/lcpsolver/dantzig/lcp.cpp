@@ -158,6 +158,7 @@ rows/columns and manipulate C.
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/misc.h"
 
+#include <memory>
 #include <vector>
 
 //***************************************************************************
@@ -193,67 +194,63 @@ bool dSolveLCP(
   // if all the variables are unbounded then we can just factor, solve,
   // and return
   if (nub >= n) {
-    int nskip = padding(n);
-    dReal* d = new dReal[n];
-    SetZero(d, n);
+    const int nskip = padding(n);
+    auto d = std::make_unique<dReal[]>(n);
+    SetZero(d.get(), n);
 
+    std::unique_ptr<dReal[]> A_storage;
     dReal* A_work = nullptr;
 
-    // Only copy if padding is needed (n != nskip)
     if (n != nskip) {
-      A_work = new dReal[n * nskip];
+      A_storage.reset(new dReal[n * nskip]);
       for (int i = 0; i < n; ++i) {
-        memcpy(&A_work[i * nskip], &A[i * nskip], n * sizeof(dReal));
+        memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(dReal));
       }
+      A_work = A_storage.get();
     } else {
-      // No padding needed - use input array directly
       A_work = A;
     }
 
-    dFactorLDLT(A_work, d, n, nskip);
-    dSolveLDLT(A_work, d, b, n, nskip);
+    dFactorLDLT(A_work, d.get(), n, nskip);
+    dSolveLDLT(A_work, d.get(), b, n, nskip);
     memcpy(x, b, n * sizeof(dReal));
 
-    // Only delete if we allocated
-    if (n != nskip) {
-      delete[] A_work;
-    }
-    delete[] d;
     return true;
   }
 
   const int nskip = padding(n);
 
+  std::unique_ptr<dReal[]> A_storage;
   dReal* A_work = nullptr;
-  bool allocated_A = false;
 
-  // Only copy if padding is needed (n != nskip)
   if (n != nskip) {
-    A_work = new dReal[n * nskip];
+    A_storage.reset(new dReal[n * nskip]);
     for (int i = 0; i < n; ++i) {
-      memcpy(&A_work[i * nskip], &A[i * nskip], n * sizeof(dReal));
+      memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(dReal));
     }
-    allocated_A = true;
+    A_work = A_storage.get();
   } else {
-    // No padding needed - use input array directly
     A_work = A;
   }
 
   // Create PivotMatrix from work array
   PivotMatrix<dReal> A_pivot(n, n, A_work, nskip);
 
-  dReal* L = new dReal[(n * nskip)];
-  dReal* d = new dReal[(n)];
-  dReal* w = outer_w ? outer_w : (new dReal[n]);
-  dReal* delta_w = new dReal[(n)];
-  dReal* delta_x = new dReal[(n)];
-  dReal* Dell = new dReal[(n)];
-  dReal* ell = new dReal[(n)];
-  int* p = new int[n];
-  int* C = new int[n];
-
-  // for i in N, state[i] is 0 if x(i)==lo(i) or 1 if x(i)==hi(i)
-  bool* state = new bool[n];
+  auto L = std::make_unique<dReal[]>(n * nskip);
+  auto d = std::make_unique<dReal[]>(n);
+  std::unique_ptr<dReal[]> wStorage;
+  dReal* w = outer_w;
+  if (!w) {
+    wStorage.reset(new dReal[n]);
+    w = wStorage.get();
+  }
+  auto delta_w = std::make_unique<dReal[]>(n);
+  auto delta_x = std::make_unique<dReal[]>(n);
+  auto Dell = std::make_unique<dReal[]>(n);
+  auto ell = std::make_unique<dReal[]>(n);
+  auto p = std::make_unique<int[]>(n);
+  auto C = std::make_unique<int[]>(n);
+  auto state = std::make_unique<bool[]>(n);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
@@ -267,15 +264,15 @@ bool dSolveLCP(
       w,
       lo,
       hi,
-      L,
-      d,
-      Dell,
-      ell,
-      delta_w,
-      state,
+      L.get(),
+      d.get(),
+      Dell.get(),
+      ell.get(),
+      delta_w.get(),
+      state.get(),
       findex,
-      p,
-      C);
+      p.get(),
+      C.get());
   int adj_nub = lcp.getNub();
 
   // loop over all indexes adj_nub..n-1. for index i, if x(i),w(i) satisfy the
@@ -349,7 +346,7 @@ bool dSolveLCP(
       // and similarly that hi > 0. this means that the line segment
       // corresponding to set C is at least finite in extent, and we are on it.
       // NOTE: we must call lcp.solve1() before lcp.transfer_i_to_C()
-      lcp.solve1(delta_x, i, 0, 1);
+      lcp.solve1(delta_x.get(), i, 0, 1);
 
       lcp.transfer_i_to_C(i);
     } else {
@@ -367,15 +364,15 @@ bool dSolveLCP(
         }
 
         // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
-        lcp.solve1(delta_x, i, dir);
+        lcp.solve1(delta_x.get(), i, dir);
 
         // note that delta_x[i] = dirf, but we wont bother to set it
 
         // compute: delta_w = A*delta_x ... note we only care about
         // delta_w(N) and delta_w(i), the rest is ignored
-        lcp.pN_equals_ANC_times_qC(delta_w, delta_x);
-        lcp.pN_plusequals_ANi(delta_w, i, dir);
-        delta_w[i] = lcp.AiC_times_qC(i, delta_x) + lcp.Aii(i) * dirf;
+        lcp.pN_equals_ANC_times_qC(delta_w.get(), delta_x.get());
+        lcp.pN_plusequals_ANi(delta_w.get(), i, dir);
+        delta_w[i] = lcp.AiC_times_qC(i, delta_x.get()) + lcp.Aii(i) * dirf;
 
         // find largest step we can take (size=s), either to drive x(i),w(i)
         // to the valid LCP region or to drive an already-valid variable
@@ -455,19 +452,6 @@ bool dSolveLCP(
         // our fingers and exit with the current solution.
         if (s <= REAL(0.0)) {
           if (earlyTermination) {
-            if (!outer_w)
-              delete[] w;
-            delete[] L;
-            delete[] d;
-            delete[] delta_w;
-            delete[] delta_x;
-            delete[] Dell;
-            delete[] ell;
-            delete[] p;
-            delete[] C;
-
-            delete[] state;
-
             return false;
           }
 
@@ -486,11 +470,11 @@ bool dSolveLCP(
         }
 
         // apply x = x + s * delta_x
-        lcp.pC_plusequals_s_times_qC(x, s, delta_x);
+        lcp.pC_plusequals_s_times_qC(x, s, delta_x.get());
         x[i] += s * dirf;
 
         // apply w = w + s * delta_w
-        lcp.pN_plusequals_s_times_qN(w, s, delta_w);
+        lcp.pN_plusequals_s_times_qN(w, s, delta_w.get());
         w[i] += s * delta_w[i];
 
         // void *tmpbuf;
@@ -537,23 +521,6 @@ bool dSolveLCP(
   } // for (int i=adj_nub; i<n; ++i)
 
   lcp.unpermute();
-
-  // Only delete if we allocated
-  if (allocated_A) {
-    delete[] A_work;
-  }
-  if (!outer_w)
-    delete[] w;
-  delete[] L;
-  delete[] d;
-  delete[] delta_w;
-  delete[] delta_x;
-  delete[] Dell;
-  delete[] ell;
-  delete[] p;
-  delete[] C;
-
-  delete[] state;
 
   return true;
 }
