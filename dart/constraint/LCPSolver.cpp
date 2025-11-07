@@ -34,7 +34,6 @@
 
 #include "dart/common/Macros.hpp"
 
-
 namespace dart {
 namespace constraint {
 

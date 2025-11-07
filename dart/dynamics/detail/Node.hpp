@@ -39,7 +39,6 @@
 
 #include <dart/common/StlHelpers.hpp>
 
-
 namespace dart {
 namespace dynamics {
 

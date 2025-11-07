@@ -40,7 +40,6 @@
 
 #include <sstream>
 
-
 namespace dart {
 namespace common {
 

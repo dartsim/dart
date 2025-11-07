@@ -38,7 +38,6 @@
 
 #include <fstream>
 
-
 namespace dart {
 namespace common {
 namespace detail {

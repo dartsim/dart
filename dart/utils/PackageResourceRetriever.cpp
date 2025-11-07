@@ -39,7 +39,6 @@
 #include <iostream>
 #include <sstream>
 
-
 namespace dart {
 namespace utils {
 

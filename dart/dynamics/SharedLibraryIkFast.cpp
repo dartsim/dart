@@ -38,7 +38,6 @@
 
 #include <sstream>
 
-
 namespace dart {
 namespace dynamics {
 

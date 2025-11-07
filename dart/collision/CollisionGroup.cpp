@@ -38,7 +38,6 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-
 namespace dart {
 namespace collision {
 

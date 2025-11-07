@@ -39,7 +39,6 @@
 
 #include <iostream>
 
-
 namespace dart {
 namespace dynamics {
 

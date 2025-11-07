@@ -37,7 +37,6 @@
 #include <iostream>
 #include <string>
 
-
 namespace dart {
 namespace common {
 
