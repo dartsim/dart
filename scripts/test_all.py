@@ -189,16 +189,12 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command(
-        "BUILD_TYPE=Release pixi run build", "Build Release"
-    )
+    result, _ = run_command("BUILD_TYPE=Release pixi run build", "Build Release")
     success = success and result
 
     if not skip_debug:
         # Build Debug (for better error messages)
-        result, _ = run_command(
-            "BUILD_TYPE=Debug pixi run build-debug", "Build Debug"
-        )
+        result, _ = run_command("BUILD_TYPE=Debug pixi run build-debug", "Build Debug")
         success = success and result
 
     return success
@@ -211,9 +207,7 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command(
-        "BUILD_TYPE=Release pixi run test", "C++ unit tests"
-    )
+    result, _ = run_command("BUILD_TYPE=Release pixi run test", "C++ unit tests")
     success = success and result
 
     return success
@@ -223,9 +217,7 @@ def run_dart7_tests() -> bool:
     """Run dart7-specific tests (ctest filtered to dart7 labels)."""
     print_header("DART7 TESTS")
 
-    result, _ = run_command(
-        "BUILD_TYPE=Release pixi run test-dart7", "dart7 C++ tests"
-    )
+    result, _ = run_command("BUILD_TYPE=Release pixi run test-dart7", "dart7 C++ tests")
     return result
 
 
@@ -234,9 +226,7 @@ def run_python_tests() -> bool:
     print_header("PYTHON TESTS")
 
     # Check if Python bindings are enabled
-    result, _ = run_command(
-        "BUILD_TYPE=Release pixi run test-py", "Python tests"
-    )
+    result, _ = run_command("BUILD_TYPE=Release pixi run test-py", "Python tests")
 
     return result
 
