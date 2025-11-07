@@ -76,11 +76,35 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
     internal_header = gtest_root / "include" / "gtest" / "internal" / "gtest-internal.h"
     public_header = gtest_root / "include" / "gtest" / "gtest.h"
     source_file = gtest_root / "src" / "gtest.cc"
+    port_header = gtest_root / "include" / "gtest" / "internal" / "gtest-port.h"
 
-    for path in (internal_header, public_header, source_file):
+    for path in (internal_header, public_header, source_file, port_header):
         if not path.exists():
             print(f"Error: Expected gtest file missing: {path}", file=sys.stderr)
             return False
+
+    # Ensure GTEST_HAS_STD_STRING is defined so the shim is always compiled
+    port_text = port_header.read_text()
+    if "define GTEST_HAS_STD_STRING" not in port_text:
+        guard = "#define GOOGLETEST_INCLUDE_GTEST_INTERNAL_GTEST_PORT_H_\n"
+        insert_loc = port_text.find(guard)
+        if insert_loc == -1:
+            print(
+                f"Error: Failed to locate header guard in {port_header}",
+                file=sys.stderr,
+            )
+            return False
+        insert_pos = insert_loc + len(guard)
+        insertion = (
+            "\n#ifndef GTEST_HAS_STD_STRING\n"
+            "#define GTEST_HAS_STD_STRING 1\n"
+            "#endif  // GTEST_HAS_STD_STRING\n"
+        )
+        port_text = port_text[:insert_pos] + "\n" + insertion + port_text[insert_pos:]
+        port_header.write_text(port_text)
+        print(f"✓ Defined GTEST_HAS_STD_STRING in {port_header}")
+    else:
+        print(f"✓ GTEST_HAS_STD_STRING already defined in {port_header}")
 
     # Update internal header declaration to ensure the overload is declared
     internal_text = internal_header.read_text()
@@ -173,7 +197,7 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
     else:
         print(f"✓ std::string friend declaration already present in {public_header}")
 
-    # Remove legacy source definition (now provided inline)
+    # Remove legacy source definition (handled in shim source)
     source_text = source_file.read_text()
     source_inline_pattern = re.compile(
         r"\n#if GTEST_HAS_STD_STRING\n"
@@ -190,53 +214,61 @@ def inject_make_and_register_overload(gtest_root: Path) -> bool:
             f"✓ No standalone std::string overload definition present in {source_file}"
         )
 
-    # Ensure an out-of-line definition exists in gtest.cc
-    definition_pattern = re.compile(
-        r"\nTestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
-        r"\s*std::string\s+test_suite_name, const char\*\s+name, const char\*\s+type_param,\n"
-        r"\s*const char\*\s+value_param, CodeLocation\s+code_location,\n"
-        r"\s*TypeId\s+fixture_class_id, SetUpTestSuiteFunc\s+set_up_tc,\n"
-        r"\s*TearDownTestSuiteFunc\s+tear_down_tc, TestFactoryBase\*\s+factory\)\s*\{\n"
-        r"\s*return MakeAndRegisterTestInfo\(test_suite_name\.c_str\(\), name, type_param,\n"
-        r"\s*                                 value_param, code_location, fixture_class_id,\n"
-        r"\s*                                 set_up_tc, tear_down_tc, factory\);\n"
-        r"\}\n",
-        re.DOTALL,
-    )
-    if not definition_pattern.search(source_text):
-        anchor_pattern = re.compile(
-            r"TestInfo\*\s+MakeAndRegisterTestInfo\(\s*\n"
-            r"\s*const char\*\s+test_suite_name, const char\*\s+name, const char\*\s+type_param,\n"
-            r"\s*const char\*\s+value_param, CodeLocation\s+code_location,\n"
-            r"\s*TypeId\s+fixture_class_id, SetUpTestSuiteFunc\s+set_up_tc,\n"
-            r"\s*TearDownTestSuiteFunc\s+tear_down_tc, TestFactoryBase\*\s+factory\)\s*\{\n"
-            r".*?\n\}\n",
-            re.DOTALL,
+    # Ensure shim source exists and is added to the build
+    shim_source = gtest_root / "src" / "dart_make_and_register_shim.cc"
+    shim_contents = """\
+#include "gtest/gtest.h"
+
+namespace testing {
+namespace internal {
+
+TestInfo* MakeAndRegisterTestInfo(
+    std::string test_suite_name, const char* name, const char* type_param,
+    const char* value_param, CodeLocation code_location,
+    TypeId fixture_class_id, SetUpTestSuiteFunc set_up_tc,
+    TearDownTestSuiteFunc tear_down_tc, TestFactoryBase* factory) {
+  return MakeAndRegisterTestInfo(test_suite_name.c_str(), name, type_param,
+                                 value_param, code_location, fixture_class_id,
+                                 set_up_tc, tear_down_tc, factory);
+}
+
+}  // namespace internal
+}  // namespace testing
+"""
+    if not shim_source.exists():
+        shim_source.write_text(shim_contents)
+        print(f"✓ Added gtest shim source {shim_source}")
+    else:
+        existing = shim_source.read_text()
+        if existing != shim_contents:
+            shim_source.write_text(shim_contents)
+            print(f"✓ Updated gtest shim source {shim_source}")
+        else:
+            print(f"✓ gtest shim source already present at {shim_source}")
+
+    cmake_file = gtest_root / "CMakeLists.txt"
+    cmake_text = cmake_file.read_text()
+    shim_entry = "${CMAKE_CURRENT_SOURCE_DIR}/src/dart_make_and_register_shim.cc"
+    if shim_entry not in cmake_text:
+        pattern = (
+            "add_library(gtest STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/gtest-all.cc)"
         )
-        match = anchor_pattern.search(source_text)
-        if not match:
+        replacement = (
+            "add_library(gtest STATIC\n"
+            "  ${CMAKE_CURRENT_SOURCE_DIR}/src/gtest-all.cc\n"
+            "  ${CMAKE_CURRENT_SOURCE_DIR}/src/dart_make_and_register_shim.cc\n"
+            ")"
+        )
+        if pattern not in cmake_text:
             print(
-                f"Error: Could not locate anchor in {source_file} for std::string overload definition",
+                f"Error: Failed to update {cmake_file} with shim source",
                 file=sys.stderr,
             )
             return False
-        insertion = (
-            "\nTestInfo* MakeAndRegisterTestInfo(\n"
-            "    std::string test_suite_name, const char* name, const char* type_param,\n"
-            "    const char* value_param, CodeLocation code_location,\n"
-            "    TypeId fixture_class_id, SetUpTestSuiteFunc set_up_tc,\n"
-            "    TearDownTestSuiteFunc tear_down_tc, TestFactoryBase* factory) {\n"
-            "  return MakeAndRegisterTestInfo(test_suite_name.c_str(), name, type_param,\n"
-            "                                 value_param, code_location, fixture_class_id,\n"
-            "                                 set_up_tc, tear_down_tc, factory);\n"
-            "}\n"
-        )
-        insert_pos = match.end()
-        source_text = source_text[:insert_pos] + insertion + source_text[insert_pos:]
-        source_file.write_text(source_text)
-        print(f"✓ Added std::string overload definition to {source_file}")
+        cmake_file.write_text(cmake_text.replace(pattern, replacement, 1))
+        print(f"✓ Added shim source to {cmake_file}")
     else:
-        print(f"✓ std::string overload definition already present in {source_file}")
+        print(f"✓ Shim source already referenced in {cmake_file}")
 
     return True
 
