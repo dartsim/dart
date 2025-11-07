@@ -47,7 +47,7 @@ dart_add_test("unit" test_ScrewJoint dynamics/test_ScrewJoint.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
-  dart_add_test("unit" test_create_shape_node_api dynamics/test_create_shape_node_api.cpp)
+  dart_add_test("unit" test_create_shape_node_api dynamics/test_CreateShapeNodeApi.cpp)
 endif()
 
 # ==============================================================================
