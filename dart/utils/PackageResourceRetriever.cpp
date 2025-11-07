@@ -39,6 +39,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <cassert>
+
 namespace dart {
 namespace utils {
 

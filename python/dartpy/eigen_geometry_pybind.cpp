@@ -33,13 +33,14 @@
 //
 
 #include "eigen_geometry_pybind.h"
-#include "dart/common/Macros.hpp"
 
-#include <cmath>
+#include "dart/common/Macros.hpp"
+#include "pybind11/pybind11.h"
 
 #include <dart/common/common.hpp>
 
-#include "pybind11/pybind11.h"
+#include <cassert>
+#include <cmath>
 
 using std::fabs;
 

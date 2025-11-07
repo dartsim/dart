@@ -39,6 +39,8 @@
 
 #include <iostream>
 
+#include <cassert>
+
 namespace dart {
 namespace dynamics {
 

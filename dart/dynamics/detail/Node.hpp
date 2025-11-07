@@ -39,6 +39,8 @@
 
 #include <dart/common/StlHelpers.hpp>
 
+#include <cassert>
+
 namespace dart {
 namespace dynamics {
 

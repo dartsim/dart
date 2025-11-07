@@ -37,6 +37,8 @@
 #include <iostream>
 #include <string>
 
+#include <cassert>
+
 namespace dart {
 namespace common {
 

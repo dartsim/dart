@@ -34,6 +34,8 @@
 
 #include "dart/utils/C3D.hpp"
 
+#include <cassert>
+
 namespace dart {
 namespace utils {
 

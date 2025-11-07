@@ -39,6 +39,8 @@
 #include <dart/common/Console.hpp>
 #include <dart/common/Macros.hpp>
 
+#include <cassert>
+
 namespace dart {
 namespace common {
 

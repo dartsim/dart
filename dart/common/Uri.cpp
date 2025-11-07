@@ -38,6 +38,8 @@
 #include <regex>
 #include <sstream>
 
+#include <cassert>
+
 static bool startsWith(const std::string& _target, const std::string& _prefix)
 {
   return _target.substr(0, _prefix.size()) == _prefix;

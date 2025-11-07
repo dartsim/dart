@@ -38,6 +38,8 @@
 
 #include <sstream>
 
+#include <cassert>
+
 namespace dart {
 namespace dynamics {
 

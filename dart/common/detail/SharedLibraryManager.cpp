@@ -38,6 +38,8 @@
 
 #include <fstream>
 
+#include <cassert>
+
 namespace dart {
 namespace common {
 namespace detail {
