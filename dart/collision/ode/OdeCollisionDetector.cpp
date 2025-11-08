@@ -39,15 +39,15 @@
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/Frame.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
@@ -79,6 +79,11 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+double computeTangentialSpeed(const Contact& contact);
+
+bool shouldUseContactHistory(
+    const CollisionObject* object1, const CollisionObject* object2);
 
 using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
 
@@ -496,20 +501,18 @@ Contact convertContact(
 double computeTangentialSpeed(const Contact& contact)
 {
   const auto* frame1 = contact.collisionObject1
-      ? contact.collisionObject1->getShapeFrame()
-      : nullptr;
+                           ? contact.collisionObject1->getShapeFrame()
+                           : nullptr;
   const auto* frame2 = contact.collisionObject2
-      ? contact.collisionObject2->getShapeFrame()
-      : nullptr;
+                           ? contact.collisionObject2->getShapeFrame()
+                           : nullptr;
 
-  const dynamics::BodyNode* bn1
-      = (frame1 && frame1->isShapeNode())
-            ? frame1->asShapeNode()->getBodyNodePtr()
-            : nullptr;
-  const dynamics::BodyNode* bn2
-      = (frame2 && frame2->isShapeNode())
-            ? frame2->asShapeNode()->getBodyNodePtr()
-            : nullptr;
+  const dynamics::BodyNode* bn1 = (frame1 && frame1->isShapeNode())
+                                      ? frame1->asShapeNode()->getBodyNodePtr()
+                                      : nullptr;
+  const dynamics::BodyNode* bn2 = (frame2 && frame2->isShapeNode())
+                                      ? frame2->asShapeNode()->getBodyNodePtr()
+                                      : nullptr;
 
   const Eigen::Vector3d worldPoint = contact.point;
 
@@ -552,7 +555,8 @@ bool shouldUseContactHistory(
 
   const bool hasCapsule
       = (shape1
-         && dynamic_cast<const dynamics::CapsuleShape*>(shape1.get()) != nullptr)
+         && dynamic_cast<const dynamics::CapsuleShape*>(shape1.get())
+                != nullptr)
         || (shape2
             && dynamic_cast<const dynamics::CapsuleShape*>(shape2.get())
                    != nullptr);
