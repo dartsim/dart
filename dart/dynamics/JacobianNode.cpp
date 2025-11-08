@@ -97,12 +97,6 @@ JacobianNode::JacobianNode(BodyNode* bn)
 }
 
 //==============================================================================
-void JacobianNode::notifyJacobianUpdate()
-{
-  dirtyJacobian();
-}
-
-//==============================================================================
 void JacobianNode::dirtyJacobian()
 {
   // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
@@ -115,12 +109,6 @@ void JacobianNode::dirtyJacobian()
 
   for (JacobianNode* child : mChildJacobianNodes)
     child->dirtyJacobian();
-}
-
-//==============================================================================
-void JacobianNode::notifyJacobianDerivUpdate()
-{
-  dirtyJacobianDeriv();
 }
 
 //==============================================================================

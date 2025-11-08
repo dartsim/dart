@@ -1140,20 +1140,12 @@ void Skeleton(py::module& m)
           "clearInternalForces",
           +[](dart::dynamics::Skeleton* self)
               -> void { return self->clearInternalForces(); })
-      //      .def("notifyArticulatedInertiaUpdate",
-      //      +[](dart::dynamics::Skeleton *self, std::size_t _treeIdx) -> void
-      //      { return self->notifyArticulatedInertiaUpdate(_treeIdx); },
-      //      ::py::arg("treeIdx"))
       .def(
           "dirtyArticulatedInertia",
           +[](dart::dynamics::Skeleton* self, std::size_t _treeIdx) -> void {
             return self->dirtyArticulatedInertia(_treeIdx);
           },
           ::py::arg("treeIdx"))
-      //      .def("notifySupportUpdate", +[](dart::dynamics::Skeleton *self,
-      //      std::size_t _treeIdx) -> void { return
-      //      self->notifySupportUpdate(_treeIdx); },
-      //      ::py::arg("treeIdx"))
       .def(
           "dirtySupportPolygon",
           +[](dart::dynamics::Skeleton* self, std::size_t _treeIdx) -> void {

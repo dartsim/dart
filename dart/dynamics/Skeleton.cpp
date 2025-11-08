@@ -3714,12 +3714,6 @@ void Skeleton::clearInternalForces()
 }
 
 //==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
-{
-  dirtyArticulatedInertia(_treeIdx);
-}
-
-//==============================================================================
 void Skeleton::dirtyArticulatedInertia(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mArticulatedInertia);
@@ -3730,12 +3724,6 @@ void Skeleton::dirtyArticulatedInertia(std::size_t _treeIdx)
   SET_FLAG(_treeIdx, mCoriolisForces);
   SET_FLAG(_treeIdx, mGravityForces);
   SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
-}
-
-//==============================================================================
-void Skeleton::notifySupportUpdate(std::size_t _treeIdx)
-{
-  dirtySupportPolygon(_treeIdx);
 }
 
 //==============================================================================

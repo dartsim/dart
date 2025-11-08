@@ -75,15 +75,6 @@ using aligned_map = std::map<
     _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
-// Deprecated in favor of dart::common::make_aligned_shared
-template <typename _Tp, typename... _Args>
-DART_DEPRECATED(6.2)
-std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
-{
-  return ::dart::common::make_aligned_shared<_Tp, _Args...>(
-      std::forward<_Args>(__args)...);
-}
-
 } // namespace Eigen
 
 namespace dart {

@@ -675,12 +675,6 @@ void Joint::updateArticulatedInertia() const
 //}
 
 //==============================================================================
-void Joint::notifyPositionUpdate()
-{
-  notifyPositionUpdated();
-}
-
-//==============================================================================
 void Joint::notifyPositionUpdated()
 {
   if (mChildBodyNode) {
@@ -707,12 +701,6 @@ void Joint::notifyPositionUpdated()
 }
 
 //==============================================================================
-void Joint::notifyVelocityUpdate()
-{
-  notifyVelocityUpdated();
-}
-
-//==============================================================================
 void Joint::notifyVelocityUpdated()
 {
   if (mChildBodyNode) {
@@ -724,12 +712,6 @@ void Joint::notifyVelocityUpdated()
 
   mNeedSpatialVelocityUpdate = true;
   mNeedSpatialAccelerationUpdate = true;
-}
-
-//==============================================================================
-void Joint::notifyAccelerationUpdate()
-{
-  notifyAccelerationUpdated();
 }
 
 //==============================================================================
