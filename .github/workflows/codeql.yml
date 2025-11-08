@@ -24,8 +24,18 @@ concurrency:
 
 jobs:
   analyze:
-    name: CodeQL
+    name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: cpp
+            build-mode: manual
+            run-build: true
+          - language: python
+            build-mode: none
+            run-build: false
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -44,16 +54,18 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: cpp, python
-          build-mode: manual
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix['build-mode'] }}
 
       - name: Configure (CMake)
+        if: matrix.run-build == 'true'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
           pixi run config
 
       - name: Build
+        if: matrix.run-build == 'true'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
