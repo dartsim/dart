@@ -145,39 +145,40 @@ void ODELCPSolver::transferToODEFormulation(
     int _numDir,
     int _numContacts)
 {
-  int numOtherConstrs = _A.rows() - _numContacts * (2 + _numDir);
-  int n = _numContacts * 3 + numOtherConstrs;
+  const Eigen::Index numContacts = static_cast<Eigen::Index>(_numContacts);
+  const Eigen::Index numDir = static_cast<Eigen::Index>(_numDir);
+  const Eigen::Index numOtherConstrs = _A.rows() - numContacts * (2 + numDir);
+  const Eigen::Index n = numContacts * 3 + numOtherConstrs;
   Eigen::MatrixXd AIntermediate = Eigen::MatrixXd::Zero(n, _A.cols());
   *_AOut = Eigen::MatrixXd::Zero(n, n);
   *_bOut = Eigen::VectorXd::Zero(n);
-  int offset = _numDir / 4;
-  for (int i = 0; i < _numContacts; ++i) {
+  const Eigen::Index offset = numDir / 4;
+  for (Eigen::Index i = 0; i < numContacts; ++i) {
     AIntermediate.row(i) = _A.row(i);
     (*_bOut)[i] = _b[i];
 
-    AIntermediate.row(_numContacts + i * 2 + 0)
-        = _A.row(_numContacts + i * _numDir + 0);
-    AIntermediate.row(_numContacts + i * 2 + 1)
-        = _A.row(_numContacts + i * _numDir + offset);
-    (*_bOut)[_numContacts + i * 2 + 0] = _b[_numContacts + i * _numDir + 0];
-    (*_bOut)[_numContacts + i * 2 + 1]
-        = _b[_numContacts + i * _numDir + offset];
+    AIntermediate.row(numContacts + i * 2 + 0)
+        = _A.row(numContacts + i * numDir + 0);
+    AIntermediate.row(numContacts + i * 2 + 1)
+        = _A.row(numContacts + i * numDir + offset);
+    (*_bOut)[numContacts + i * 2 + 0] = _b[numContacts + i * numDir + 0];
+    (*_bOut)[numContacts + i * 2 + 1] = _b[numContacts + i * numDir + offset];
   }
-  for (int i = 0; i < numOtherConstrs; i++) {
-    AIntermediate.row(_numContacts * 3 + i)
-        = _A.row(_numContacts * (_numDir + 2) + i);
-    (*_bOut)[_numContacts * 3 + i] = _b[_numContacts * (_numDir + 2) + i];
+  for (Eigen::Index i = 0; i < numOtherConstrs; ++i) {
+    AIntermediate.row(numContacts * 3 + i)
+        = _A.row(numContacts * (numDir + 2) + i);
+    (*_bOut)[numContacts * 3 + i] = _b[numContacts * (numDir + 2) + i];
   }
-  for (int i = 0; i < _numContacts; ++i) {
+  for (Eigen::Index i = 0; i < numContacts; ++i) {
     _AOut->col(i) = AIntermediate.col(i);
-    _AOut->col(_numContacts + i * 2 + 0)
-        = AIntermediate.col(_numContacts + i * _numDir + 0);
-    _AOut->col(_numContacts + i * 2 + 1)
-        = AIntermediate.col(_numContacts + i * _numDir + offset);
+    _AOut->col(numContacts + i * 2 + 0)
+        = AIntermediate.col(numContacts + i * numDir + 0);
+    _AOut->col(numContacts + i * 2 + 1)
+        = AIntermediate.col(numContacts + i * numDir + offset);
   }
-  for (int i = 0; i < numOtherConstrs; i++)
-    _AOut->col(_numContacts * 3 + i)
-        = AIntermediate.col(_numContacts * (_numDir + 2) + i);
+  for (Eigen::Index i = 0; i < numOtherConstrs; ++i)
+    _AOut->col(numContacts * 3 + i)
+        = AIntermediate.col(numContacts * (numDir + 2) + i);
 }
 
 //==============================================================================
@@ -187,20 +188,20 @@ void ODELCPSolver::transferSolFromODEFormulation(
     int _numDir,
     int _numContacts)
 {
-  int numOtherConstrs = _x.size() - _numContacts * 3;
-  *_xOut
-      = Eigen::VectorXd::Zero(_numContacts * (2 + _numDir) + numOtherConstrs);
+  const Eigen::Index numContacts = static_cast<Eigen::Index>(_numContacts);
+  const Eigen::Index numDir = static_cast<Eigen::Index>(_numDir);
+  const Eigen::Index numOtherConstrs = _x.size() - numContacts * 3;
+  *_xOut = Eigen::VectorXd::Zero(numContacts * (2 + numDir) + numOtherConstrs);
 
-  _xOut->head(_numContacts) = _x.head(_numContacts);
+  _xOut->head(numContacts) = _x.head(numContacts);
 
-  int offset = _numDir / 4;
-  for (int i = 0; i < _numContacts; ++i) {
-    (*_xOut)[_numContacts + i * _numDir + 0] = _x[_numContacts + i * 2 + 0];
-    (*_xOut)[_numContacts + i * _numDir + offset]
-        = _x[_numContacts + i * 2 + 1];
+  const Eigen::Index offset = numDir / 4;
+  for (Eigen::Index i = 0; i < numContacts; ++i) {
+    (*_xOut)[numContacts + i * numDir + 0] = _x[numContacts + i * 2 + 0];
+    (*_xOut)[numContacts + i * numDir + offset] = _x[numContacts + i * 2 + 1];
   }
-  for (int i = 0; i < numOtherConstrs; i++)
-    (*_xOut)[_numContacts * (2 + _numDir) + i] = _x[_numContacts * 3 + i];
+  for (Eigen::Index i = 0; i < numOtherConstrs; ++i)
+    (*_xOut)[numContacts * (2 + numDir) + i] = _x[numContacts * 3 + i];
 }
 
 //==============================================================================

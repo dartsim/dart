@@ -1,0 +1,75 @@
+# https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-codeql
+
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+  schedule:
+    - cron: "0 6 * * 1" # Weekly on Mondays at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: cpp
+            build_mode: manual
+            run_build: true
+          - language: python
+            build_mode: none
+            run_build: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build_mode }}
+
+      - name: Configure (CMake)
+        if: matrix.run_build
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          pixi run config
+
+      - name: Build
+        if: matrix.run_build
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          pixi run build
+
+      - name: CodeQL Analyze
+        uses: github/codeql-action/analyze@v3
