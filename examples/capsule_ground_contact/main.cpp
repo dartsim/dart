@@ -32,6 +32,8 @@
 
 #include <dart/gui/osg/osg.hpp>
 
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
+
 #include <dart/all.hpp>
 
 using namespace dart;
@@ -46,14 +48,18 @@ constexpr double kCapsuleHeight = 0.6;
 
 Eigen::Isometry3d makeHorizontalPose()
 {
-  return Eigen::Translation3d(0, 0, kCapsuleRadius + 0.1)
-         * Eigen::AngleAxisd(
-             dart::math::constantsd::half_pi(), Eigen::Vector3d::UnitY());
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translate(Eigen::Vector3d(0, 0, kCapsuleRadius + 0.1));
+  pose.rotate(Eigen::AngleAxisd(
+      dart::math::constantsd::half_pi(), Eigen::Vector3d::UnitY()));
+  return pose;
 }
 
 Eigen::Isometry3d makeVerticalPose()
 {
-  return Eigen::Translation3d(0, 0, 0.5 * kCapsuleHeight + kCapsuleRadius);
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translate(Eigen::Vector3d(0, 0, 0.5 * kCapsuleHeight + kCapsuleRadius));
+  return pose;
 }
 
 SkeletonPtr makeGround()
@@ -66,8 +72,9 @@ SkeletonPtr makeGround()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(shape);
-  node->getVisualAspect()->setColor(Eigen::Vector3d::Constant(0.7));
-  node->getVisualAspect()->setCastShadows(false);
+  const Eigen::Vector3d groundColor = Eigen::Vector3d::Constant(0.7);
+  node->getVisualAspect()->setColor(groundColor);
+  node->getVisualAspect()->setShadowed(false);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translate(Eigen::Vector3d(0, 0, -0.05));
@@ -95,7 +102,8 @@ std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
       VisualAspect,
       CollisionAspect,
       DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.4, 0.8));
+  const Eigen::Vector3d capsuleColor(0.2, 0.4, 0.8);
+  shapeNode->getVisualAspect()->setColor(capsuleColor);
 
   Inertia inertia;
   inertia.setMass(1.0);
@@ -108,11 +116,9 @@ std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
 class CapsuleEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  CapsuleEventHandler(
-      const WorldPtr& world, FreeJoint* capsuleJoint, BodyNode* capsuleBody)
+  CapsuleEventHandler(const WorldPtr& world, FreeJoint* capsuleJoint)
     : mWorld(world),
       mJoint(capsuleJoint),
-      mBody(capsuleBody),
       mHorizontal(makeHorizontalPose()),
       mVertical(makeVerticalPose())
   {
@@ -141,7 +147,7 @@ public:
         resetPose(mVertical);
         return true;
       case ' ':
-        mBody->setVelocities(Eigen::Vector6d::Zero());
+        mJoint->setVelocities(Eigen::Vector6d::Zero());
         return true;
       default:
         return false;
@@ -153,12 +159,11 @@ private:
   {
     mWorld->reset();
     mJoint->setRelativeTransform(pose);
-    mBody->setVelocities(Eigen::Vector6d::Zero());
+    mJoint->setVelocities(Eigen::Vector6d::Zero());
   }
 
   WorldPtr mWorld;
   FreeJoint* mJoint;
-  BodyNode* mBody;
   Eigen::Isometry3d mHorizontal;
   Eigen::Isometry3d mVertical;
 };
@@ -180,8 +185,7 @@ int main()
 
   Viewer viewer;
   viewer.addWorldNode(worldNode);
-  viewer.addEventHandler(
-      new CapsuleEventHandler(world, capsule.first, capsule.second));
+  viewer.addEventHandler(new CapsuleEventHandler(world, capsule.first));
   viewer.setUpViewInWindow(100, 100, 1024, 768);
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.5, 2.5, 1.5),
