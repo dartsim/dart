@@ -35,9 +35,9 @@
 
 #include <dart/dynamics/Entity.hpp>
 
-#include <dart/Export.hpp>
-
 #include <dart/math/MathTypes.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Geometry>
 
