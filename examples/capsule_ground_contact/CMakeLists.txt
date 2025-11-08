@@ -4,8 +4,8 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components gui-osg)
-set(required_libraries dart dart-gui-osg)
+set(required_components gui-osg collision-ode)
+set(required_libraries dart dart-gui-osg dart-collision-ode)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
