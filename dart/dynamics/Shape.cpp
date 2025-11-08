@@ -108,12 +108,6 @@ std::size_t Shape::getID() const
 }
 
 //==============================================================================
-Shape::ShapeType Shape::getShapeType() const
-{
-  return mType;
-}
-
-//==============================================================================
 void Shape::setDataVariance(unsigned int _variance)
 {
   mVariance = _variance;

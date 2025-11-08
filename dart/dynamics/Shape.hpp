@@ -137,10 +137,6 @@ public:
   /// \brief
   std::size_t getID() const;
 
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  DART_DEPRECATED(6.1)
-  ShapeType getShapeType() const;
-
   /// Set the data variance of this shape. Use the DataVariance to indicate what
   /// kind of shape information might change during run time so that renderers
   /// can optimize reliably.
