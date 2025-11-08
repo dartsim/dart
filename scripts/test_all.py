@@ -14,9 +14,10 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 
 def supports_unicode() -> bool:
@@ -90,7 +91,10 @@ def print_warning(message: str):
 
 
 def run_command(
-    cmd: str, description: str, stream_output: bool = True
+    cmd: str,
+    description: str,
+    stream_output: bool = True,
+    env: Optional[Dict[str, str]] = None,
 ) -> Tuple[bool, str]:
     """
     Run a command and return success status and output.
@@ -107,6 +111,10 @@ def run_command(
     print(f"  Command: {cmd}")
     print()  # Add blank line for readability
 
+    env_vars = os.environ.copy()
+    if env:
+        env_vars.update(env)
+
     try:
         if stream_output:
             # Stream output in real-time
@@ -118,6 +126,7 @@ def run_command(
                 text=True,
                 bufsize=1,
                 universal_newlines=True,
+                env=env_vars,
             )
 
             output_lines = []
@@ -141,7 +150,12 @@ def run_command(
         else:
             # Capture output without streaming
             result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, check=False
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env_vars,
             )
 
             if result.returncode == 0:
@@ -176,7 +190,9 @@ def run_lint_tests() -> bool:
 
     # Run all linting tasks (C++, Python, YAML)
     result, _ = run_command(
-        "BUILD_TYPE=Release pixi run lint", "Auto-fix formatting (all languages)"
+        "pixi run lint",
+        "Auto-fix formatting (all languages)",
+        env={"BUILD_TYPE": "Release"},
     )
 
     return result
@@ -189,12 +205,16 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command("BUILD_TYPE=Release pixi run build", "Build Release")
+    result, _ = run_command(
+        "pixi run build", "Build Release", env={"BUILD_TYPE": "Release"}
+    )
     success = success and result
 
     if not skip_debug:
         # Build Debug (for better error messages)
-        result, _ = run_command("BUILD_TYPE=Debug pixi run build-debug", "Build Debug")
+        result, _ = run_command(
+            "pixi run build-debug", "Build Debug", env={"BUILD_TYPE": "Debug"}
+        )
         success = success and result
 
     return success
@@ -207,7 +227,9 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command("BUILD_TYPE=Release pixi run test", "C++ unit tests")
+    result, _ = run_command(
+        "pixi run test", "C++ unit tests", env={"BUILD_TYPE": "Release"}
+    )
     success = success and result
 
     return success
@@ -217,7 +239,9 @@ def run_dart7_tests() -> bool:
     """Run dart7-specific tests (ctest filtered to dart7 labels)."""
     print_header("DART7 TESTS")
 
-    result, _ = run_command("BUILD_TYPE=Release pixi run test-dart7", "dart7 C++ tests")
+    result, _ = run_command(
+        "pixi run test-dart7", "dart7 C++ tests", env={"BUILD_TYPE": "Release"}
+    )
     return result
 
 
@@ -226,7 +250,9 @@ def run_python_tests() -> bool:
     print_header("PYTHON TESTS")
 
     # Check if Python bindings are enabled
-    result, _ = run_command("BUILD_TYPE=Release pixi run test-py", "Python tests")
+    result, _ = run_command(
+        "pixi run test-py", "Python tests", env={"BUILD_TYPE": "Release"}
+    )
 
     return result
 
@@ -236,7 +262,7 @@ def run_dartpy7_tests() -> bool:
     print_header("DARTPY7 SMOKE TEST")
 
     result, _ = run_command(
-        "BUILD_TYPE=Release pixi run test-dartpy7", "dartpy7 smoke test"
+        "pixi run test-dartpy7", "dartpy7 smoke test", env={"BUILD_TYPE": "Release"}
     )
     return result
 
@@ -246,7 +272,7 @@ def run_docs_tests() -> bool:
     print_header("DOCUMENTATION")
 
     result, _ = run_command(
-        "BUILD_TYPE=Release pixi run docs-build", "Documentation build"
+        "pixi run docs-build", "Documentation build", env={"BUILD_TYPE": "Release"}
     )
 
     return result
