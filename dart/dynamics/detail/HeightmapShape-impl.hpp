@@ -213,10 +213,16 @@ template <typename S>
 void HeightmapShape<S>::computeBoundingBox(
     Eigen::Vector3d& min, Eigen::Vector3d& max) const
 {
-  const double dimX = getWidth() * mScale.x();
-  const double dimY = getDepth() * mScale.y();
-  const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
-  min = Eigen::Vector3d(-dimX * 0.5, -dimY * 0.5, mMinHeight * mScale.z());
+  const double dimX
+      = static_cast<double>(getWidth()) * static_cast<double>(mScale.x());
+  const double dimY
+      = static_cast<double>(getDepth()) * static_cast<double>(mScale.y());
+  const double dimZ = static_cast<double>(mMaxHeight - mMinHeight)
+                      * static_cast<double>(mScale.z());
+  min = Eigen::Vector3d(
+      -dimX * 0.5,
+      -dimY * 0.5,
+      static_cast<double>(mMinHeight) * static_cast<double>(mScale.z()));
   max = min + Eigen::Vector3d(dimX, dimY, dimZ);
 }
 
