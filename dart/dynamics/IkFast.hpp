@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_IKFAST_HPP_
 #define DART_DYNAMICS_IKFAST_HPP_
 
+#include <dart/Export.hpp>
+
 #include <array>
 
 #define IKFAST_HAS_LIBRARY
@@ -47,7 +49,7 @@ namespace dynamics {
 ///
 /// The detail of IkFast can be found here:
 /// http://openrave.org/docs/0.8.2/openravepy/ikfast/
-class IkFast : public InverseKinematics::Analytical
+class DART_API IkFast : public InverseKinematics::Analytical
 {
 public:
   /// Inverse kinematics types supported by IkFast

@@ -34,6 +34,7 @@
 #define DART_OPTIMIZER_PAGMO_PAGMOMULTIOBJECTIVESOLVER_HPP_
 
 #include <dart/optimizer/MultiObjectiveSolver.hpp>
+#include <dart/optimizer/pagmo/Export.hpp>
 
 #include <dart/common/Diagnostics.hpp>
 
@@ -50,7 +51,8 @@ namespace optimizer {
 
 class MultiObjectiveProblem;
 
-class PagmoMultiObjectiveSolver : public MultiObjectiveSolver
+class DART_OPTIMIZER_PAGMO_API PagmoMultiObjectiveSolver
+  : public MultiObjectiveSolver
 {
 public:
   /// Reference: https://esa.github.io/pagmo2/docs/algorithm_list.html
@@ -63,7 +65,7 @@ public:
     Global_NSGA2,
   };
 
-  struct UniqueProperties
+  struct DART_OPTIMIZER_PAGMO_API UniqueProperties
   {
     /// Algorithm to be used by the pagmo
     Algorithm mAlgorithm;
@@ -72,7 +74,8 @@ public:
     explicit UniqueProperties(Algorithm algorithm = Algorithm::Global_NSGA2);
   };
 
-  struct Properties : MultiObjectiveSolver::Properties, UniqueProperties
+  struct DART_OPTIMIZER_PAGMO_API Properties : MultiObjectiveSolver::Properties,
+                                               UniqueProperties
   {
     Properties(
         const MultiObjectiveSolver::Properties& solverProperties

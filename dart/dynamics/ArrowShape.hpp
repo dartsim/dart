@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class ArrowShape : public MeshShape
+class DART_API ArrowShape : public MeshShape
 {
 public:
   struct Properties

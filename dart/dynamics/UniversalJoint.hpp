@@ -35,11 +35,13 @@
 
 #include <dart/dynamics/detail/UniversalJointAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
 /// class UniversalJoint
-class UniversalJoint : public detail::UniversalJointBase
+class DART_API UniversalJoint : public detail::UniversalJointBase
 {
 public:
   friend class Skeleton;

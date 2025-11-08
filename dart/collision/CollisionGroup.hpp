@@ -45,6 +45,8 @@
 
 #include <dart/common/Observer.hpp>
 
+#include <dart/Export.hpp>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -52,7 +54,7 @@
 namespace dart {
 namespace collision {
 
-class CollisionGroup
+class DART_API CollisionGroup
 {
 public:
   /// Constructor

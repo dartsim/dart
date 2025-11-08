@@ -40,6 +40,8 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/ProxyAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -48,7 +50,7 @@ class Skeleton;
 namespace detail {
 
 //==============================================================================
-struct BodyNodeState
+struct DART_API BodyNodeState
 {
   /// External spatial force
   Eigen::Vector6d mFext;
@@ -62,7 +64,7 @@ struct BodyNodeState
 };
 
 //==============================================================================
-struct BodyNodeAspectProperties
+struct DART_API BodyNodeAspectProperties
 {
   /// Name of the Entity
   std::string mName;

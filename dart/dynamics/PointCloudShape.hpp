@@ -45,7 +45,7 @@ namespace dart {
 namespace dynamics {
 
 /// The PointCloudShape represents point cloud data.
-class PointCloudShape : public Shape
+class DART_API PointCloudShape : public Shape
 {
 public:
   enum ColorMode
