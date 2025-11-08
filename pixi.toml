@@ -60,7 +60,7 @@ clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
 config = { cmd = ["bash", "-lc", """
 set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-Release}
+BUILD_TYPE={{ build_type }}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
@@ -84,7 +84,10 @@ cmake \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE}
-"""], env = { DART_VERBOSE = "OFF" }, args = [{ arg = "dartpy", default = "ON" }] }
+"""], env = { DART_VERBOSE = "OFF" }, args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
 lint-cpp = { cmd = """
@@ -130,12 +133,14 @@ check-lint = { depends-on = ["check-lint-cpp", "check-lint-dart7", "check-lint-p
 
 build = { cmd = ["bash", "-lc", """
 set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-Release}
+BUILD_TYPE={{ build_type }}
 cmake \
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --parallel \
   --target all
-"""], depends-on = ["config"] }
+"""], depends-on = [{ task = "config", args = ["ON", "{{ build_type }}"] }], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
 build-debug = { cmd = ["bash", "-lc", """
 set -euo pipefail
@@ -174,17 +179,32 @@ cmake \
   -DDART_VERBOSE=${DART_VERBOSE}
 """], env = { DART_VERBOSE = "OFF" }, args = [{ arg = "dartpy", default = "ON" }] }
 
-build-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+build-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
-build-dart7-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart7_tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+build-dart7-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart7_tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 build-math-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -j --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh"], depends-on = ["config"] }
 
-build-py-dev = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy"], depends-on = ["config-py"] }
+build-py-dev = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy"], depends-on = [{ task = "config-py", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
-build-dartpy7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy7"], depends-on = ["config-py"] }
+build-dartpy7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy7"], depends-on = [{ task = "config-py", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
-config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART7=ON -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE}"], env = { DART_VERBOSE = "OFF" }, args = [{ arg = "dartpy", default = "ON" }] }
+config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART7=ON -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE}"], env = { DART_VERBOSE = "OFF" }, args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
@@ -206,12 +226,18 @@ py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"]
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
-test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
-], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
+    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 test-dart7 = { cmd = """
     ctest \
@@ -219,9 +245,12 @@ test-dart7 = { cmd = """
         --output-on-failure \
         -L dart7
 """, depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
-], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 test-math = { cmd = """
     ctest \
@@ -237,16 +266,23 @@ test-lcpsolver = { cmd = """
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy7 = { cmd = """
-    python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
-""", depends-on = ["build-dartpy7"], env = { BUILD_TYPE = "Release" } }
+test-dartpy7 = { cmd = ["bash", "-lc", """
+BUILD_TYPE={{ build_type }}
+python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
+"""], depends-on = [{ task = "build-dartpy7", args = ["ON", "{{ build_type }}"] }], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
-test-py = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --parallel \
-        --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+test-py = { cmd = ["bash", "-lc", """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
+    --parallel \
+    --target pytest
+"""], depends-on = [{ task = "config", args = ["ON", "{{ build_type }}"] }], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
 config-coverage = { cmd = """
     cmake \
@@ -704,11 +740,14 @@ check-lint-py = { cmd = """
 check-lint = { depends-on = ["check-lint-cpp", "check-lint-py", "check-lint-yaml"] }
 
 build = { cmd = """
+    BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel
-""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [{ task = "config", args = ["ON"] }], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
 build-debug = { cmd = """
     cmake \
@@ -719,28 +758,39 @@ build-debug = { cmd = """
 """, depends-on = ["config-debug"] }
 
 build-tests = { cmd = """
+    BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
         --target tests
-""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 build-dart7-tests = { cmd = """
+    BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
         --target dart7_tests
-""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 build-py-dev = { cmd = """
+    BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
         --target dartpy
-""", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config-py"], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
 config-py = { cmd = """
     cmake \
@@ -760,12 +810,18 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
 
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
-test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
-], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
+    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 test-dart7 = { cmd = """
     ctest \
@@ -774,17 +830,23 @@ test-dart7 = { cmd = """
         --output-on-failure \
         -L dart7
 """, depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}"] }
-], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
+    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+], args = [
+    { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
+] }
 
 test-py = { cmd = """
+    BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
         --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], args = [
+    { arg = "build_type", default = "Release" }
+] }
 
 test-all = { cmd = """
     python scripts/test_all.py

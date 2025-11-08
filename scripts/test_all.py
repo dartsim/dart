@@ -14,9 +14,10 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 
 def supports_unicode() -> bool:
@@ -46,6 +47,16 @@ class Symbols:
     WARNING = "\u26a0" if USE_UNICODE else "[WARN]"
     SPARKLES = "\u2728" if USE_UNICODE else ""
     ROCKET = "\U0001f680" if USE_UNICODE else ""
+
+
+PIXI_DEFAULT_DARTPY = "ON"
+
+
+def pixi_command(task: str, *args: str) -> str:
+    if args:
+        joined = " ".join(args)
+        return f"pixi run {task} {joined}"
+    return f"pixi run {task}"
 
 
 class Colors:
@@ -90,7 +101,10 @@ def print_warning(message: str):
 
 
 def run_command(
-    cmd: str, description: str, stream_output: bool = True
+    cmd: str,
+    description: str,
+    stream_output: bool = True,
+    env: Optional[Dict[str, str]] = None,
 ) -> Tuple[bool, str]:
     """
     Run a command and return success status and output.
@@ -107,6 +121,10 @@ def run_command(
     print(f"  Command: {cmd}")
     print()  # Add blank line for readability
 
+    env_vars = os.environ.copy()
+    if env:
+        env_vars.update(env)
+
     try:
         if stream_output:
             # Stream output in real-time
@@ -118,6 +136,7 @@ def run_command(
                 text=True,
                 bufsize=1,
                 universal_newlines=True,
+                env=env_vars,
             )
 
             output_lines = []
@@ -141,7 +160,12 @@ def run_command(
         else:
             # Capture output without streaming
             result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, check=False
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env_vars,
             )
 
             if result.returncode == 0:
@@ -175,7 +199,7 @@ def run_lint_tests() -> bool:
     print_header("LINTING (Auto-fixing)")
 
     # Run all linting tasks (C++, Python, YAML)
-    result, _ = run_command("pixi run lint", "Auto-fix formatting (all languages)")
+    result, _ = run_command(pixi_command("lint"), "Auto-fix formatting (all languages)")
 
     return result
 
@@ -187,12 +211,12 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command("pixi run build", "Build Release")
+    result, _ = run_command(pixi_command("build", "Release"), "Build Release")
     success = success and result
 
     if not skip_debug:
         # Build Debug (for better error messages)
-        result, _ = run_command("pixi run build-debug", "Build Debug")
+        result, _ = run_command(pixi_command("build-debug"), "Build Debug")
         success = success and result
 
     return success
@@ -205,7 +229,9 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command("pixi run test", "C++ unit tests")
+    result, _ = run_command(
+        pixi_command("test", PIXI_DEFAULT_DARTPY, "Release"), "C++ unit tests"
+    )
     success = success and result
 
     return success
@@ -215,7 +241,9 @@ def run_dart7_tests() -> bool:
     """Run dart7-specific tests (ctest filtered to dart7 labels)."""
     print_header("DART7 TESTS")
 
-    result, _ = run_command("pixi run test-dart7", "dart7 C++ tests")
+    result, _ = run_command(
+        pixi_command("test-dart7", PIXI_DEFAULT_DARTPY, "Release"), "dart7 C++ tests"
+    )
     return result
 
 
@@ -224,7 +252,7 @@ def run_python_tests() -> bool:
     print_header("PYTHON TESTS")
 
     # Check if Python bindings are enabled
-    result, _ = run_command("pixi run test-py", "Python tests")
+    result, _ = run_command(pixi_command("test-py", "Release"), "Python tests")
 
     return result
 
@@ -233,7 +261,9 @@ def run_dartpy7_tests() -> bool:
     """Run dartpy7 smoke test."""
     print_header("DARTPY7 SMOKE TEST")
 
-    result, _ = run_command("pixi run test-dartpy7", "dartpy7 smoke test")
+    result, _ = run_command(
+        pixi_command("test-dartpy7", "Release"), "dartpy7 smoke test"
+    )
     return result
 
 
@@ -241,7 +271,7 @@ def run_docs_tests() -> bool:
     """Run documentation build tests"""
     print_header("DOCUMENTATION")
 
-    result, _ = run_command("pixi run docs-build", "Documentation build")
+    result, _ = run_command(pixi_command("docs-build"), "Documentation build")
 
     return result
 
