@@ -41,6 +41,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -2533,21 +2534,22 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
       PointMass::Properties(Eigen::Vector3d(0.0, 0.0, 0.5 * _size(2)), mass));
 
   // middle
-  float drho = 1_pi / _nStacks;
-  float dtheta = 2_pi / _nSlices;
+  const double drho = 1_pi / static_cast<double>(_nStacks);
+  const double dtheta = 2_pi / static_cast<double>(_nSlices);
   for (std::size_t i = 1; i < _nStacks; i++) {
-    float rho = i * drho;
-    float srho = (sin(rho));
-    float crho = (cos(rho));
+    const double rho = static_cast<double>(i) * drho;
+    const double srho = std::sin(rho);
+    const double crho = std::cos(rho);
 
     for (std::size_t j = 0; j < _nSlices; j++) {
-      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
-      float stheta = (-sin(theta));
-      float ctheta = (cos(theta));
+      const double theta
+          = (j == _nSlices) ? 0.0 : static_cast<double>(j) * dtheta;
+      const double stheta = -std::sin(theta);
+      const double ctheta = std::cos(theta);
 
-      float x = 0.5 * srho * stheta;
-      float y = 0.5 * srho * ctheta;
-      float z = 0.5 * crho;
+      const double x = 0.5 * srho * stheta;
+      const double y = 0.5 * srho * ctheta;
+      const double z = 0.5 * crho;
 
       properties.addPointMass(PointMass::Properties(
           Eigen::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
@@ -2702,24 +2704,25 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   double mass = _totalMass / nTotalMasses;
 
   // Resting positions for each point mass
-  float dradius = _radius / static_cast<float>(_nRings);
-  float dtheta = 2_pi / static_cast<float>(_nSlices);
+  const double dradius = _radius / static_cast<double>(_nRings);
+  const double dtheta = 2_pi / static_cast<double>(_nSlices);
 
   // -- top
   properties.addPointMass(
       PointMass::Properties(Eigen::Vector3d(0.0, 0.0, 0.5 * _height), mass));
 
   for (std::size_t i = 1; i < _nRings; ++i) {
-    float z = 0.5;
-    float radius = i * dradius;
+    const double z = 0.5;
+    const double radius = static_cast<double>(i) * dradius;
 
     for (std::size_t j = 0; j < _nSlices; j++) {
-      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
-      float stheta = (-sin(theta));
-      float ctheta = (cos(theta));
+      const double theta
+          = (j == _nSlices) ? 0.0 : static_cast<double>(j) * dtheta;
+      const double stheta = -std::sin(theta);
+      const double ctheta = std::cos(theta);
 
-      float x = stheta;
-      float y = ctheta;
+      const double x = stheta;
+      const double y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
           Eigen::Vector3d(x * radius, y * radius, z * _height), mass));
@@ -2727,17 +2730,18 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   }
 
   // -- middle
-  float dz = -1.0 / static_cast<float>(_nStacks);
+  const double dz = -1.0 / static_cast<double>(_nStacks);
   for (std::size_t i = 0; i < _nStacks + 1; i++) {
-    float z = 0.5 + i * dz;
+    const double z = 0.5 + static_cast<double>(i) * dz;
 
     for (std::size_t j = 0; j < _nSlices; j++) {
-      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
-      float stheta = (-sin(theta));
-      float ctheta = (cos(theta));
+      const double theta
+          = (j == _nSlices) ? 0.0 : static_cast<double>(j) * dtheta;
+      const double stheta = -std::sin(theta);
+      const double ctheta = std::cos(theta);
 
-      float x = stheta;
-      float y = ctheta;
+      const double x = stheta;
+      const double y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
           Eigen::Vector3d(x * _radius, y * _radius, z * _height), mass));
@@ -2746,16 +2750,17 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // -- bottom
   for (std::size_t i = 1; i < _nRings; ++i) {
-    float z = -0.5;
-    float radius = _radius - i * dradius;
+    const double z = -0.5;
+    const double radius = _radius - static_cast<double>(i) * dradius;
 
     for (std::size_t j = 0; j < _nSlices; j++) {
-      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
-      float stheta = (-sin(theta));
-      float ctheta = (cos(theta));
+      const double theta
+          = (j == _nSlices) ? 0.0 : static_cast<double>(j) * dtheta;
+      const double stheta = -std::sin(theta);
+      const double ctheta = std::cos(theta);
 
-      float x = stheta;
-      float y = ctheta;
+      const double x = stheta;
+      const double y = ctheta;
 
       properties.addPointMass(PointMass::Properties(
           Eigen::Vector3d(x * radius, y * radius, z * _height), mass));

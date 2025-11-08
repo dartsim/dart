@@ -234,7 +234,7 @@ struct FCLDistanceCallbackData
 //==============================================================================
 // Create a cube mesh for collision detection
 template <class BV>
-::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createCube(double _sizeX, double _sizeY, double _sizeZ)
 {
   int faces[6][4]
       = {{0, 1, 2, 3},
@@ -243,7 +243,7 @@ template <class BV>
          {4, 5, 1, 0},
          {5, 6, 2, 1},
          {7, 4, 0, 3}};
-  float v[8][3];
+  double v[8][3];
 
   v[0][0] = v[1][0] = v[2][0] = v[3][0] = -_sizeX / 2;
   v[4][0] = v[5][0] = v[6][0] = v[7][0] = _sizeX / 2;
@@ -273,9 +273,9 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createEllipsoid(double _sizeX, double _sizeY, double _sizeZ)
 {
-  float v[59][3]
+  double v[59][3]
       = {{0, 0, 0},
          {0.135299, -0.461940, -0.135299},
          {0.000000, -0.461940, -0.191342},
@@ -393,14 +393,14 @@ template <class BV>
   const int CACHE_SIZE = 240;
 
   int i, j;
-  float sinCache[CACHE_SIZE];
-  float cosCache[CACHE_SIZE];
-  float angle;
-  float zBase;
-  float zLow, zHigh;
-  float sintemp, costemp;
-  float deltaRadius;
-  float radiusLow, radiusHigh;
+  double sinCache[CACHE_SIZE];
+  double cosCache[CACHE_SIZE];
+  double angle;
+  double zBase;
+  double zLow, zHigh;
+  double sintemp, costemp;
+  double deltaRadius;
+  double radiusLow, radiusHigh;
 
   if (_slices >= CACHE_SIZE)
     _slices = CACHE_SIZE - 1;
@@ -449,9 +449,12 @@ template <class BV>
     for (j = 0; j < _stacks; j++) {
       zLow = j * _height / _stacks + zBase;
       zHigh = (j + 1) * _height / _stacks + zBase;
-      radiusLow = _baseRadius - deltaRadius * (static_cast<float>(j) / _stacks);
-      radiusHigh
-          = _baseRadius - deltaRadius * (static_cast<float>(j + 1) / _stacks);
+      const double stackRatio
+          = static_cast<double>(j) / static_cast<double>(_stacks);
+      const double nextStackRatio
+          = static_cast<double>(j + 1) / static_cast<double>(_stacks);
+      radiusLow = _baseRadius - deltaRadius * stackRatio;
+      radiusHigh = _baseRadius - deltaRadius * nextStackRatio;
 
       p1 = fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
       p2 = fcl::Vector3(
@@ -532,7 +535,7 @@ template <typename BV>
 //==============================================================================
 template <class BV>
 ::fcl::BVHModel<BV>* createMesh(
-    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
+    double _scaleX, double _scaleY, double _scaleZ, const aiScene* _mesh)
 {
   // Create FCL mesh from Assimp mesh
 
