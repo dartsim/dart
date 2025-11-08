@@ -22,6 +22,7 @@
 
 * Core
   * Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias).
+  * Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
 
 ## DART 6
 
