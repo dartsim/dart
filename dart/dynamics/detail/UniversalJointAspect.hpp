@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -47,7 +49,7 @@ class UniversalJoint;
 namespace detail {
 
 //==============================================================================
-struct UniversalJointUniqueProperties
+struct DART_API UniversalJointUniqueProperties
 {
   std::array<Eigen::Vector3d, 2> mAxis;
 
@@ -59,8 +61,9 @@ struct UniversalJointUniqueProperties
 };
 
 //==============================================================================
-struct UniversalJointProperties : GenericJoint<math::R2Space>::Properties,
-                                  UniversalJointUniqueProperties
+struct DART_API UniversalJointProperties
+  : GenericJoint<math::R2Space>::Properties,
+    UniversalJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(UniversalJointProperties)
 

@@ -34,7 +34,9 @@
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
 #include <dart/dynamics/GenericJoint.hpp>
+#include <dart/common/Deprecated.hpp>
 
+#include <dart/Export.hpp>
 #include <Eigen/Dense>
 
 #include <string>
@@ -43,14 +45,14 @@ namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class FreeJoint : public GenericJoint<math::SE3Space>
+class DART_API FreeJoint : public GenericJoint<math::SE3Space>
 {
 public:
   friend class Skeleton;
 
   using Base = GenericJoint<math::SE3Space>;
 
-  struct Properties : Base::Properties
+  struct DART_API Properties : Base::Properties
   {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 

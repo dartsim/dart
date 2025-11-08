@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class EllipsoidShape : public Shape
+class DART_API EllipsoidShape : public Shape
 {
 public:
   /// \brief Constructor.

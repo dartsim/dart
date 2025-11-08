@@ -44,7 +44,7 @@ namespace dynamics {
 class SoftBodyNode;
 
 // TODO(JS): Implement
-class SoftMeshShape : public Shape
+class DART_API SoftMeshShape : public Shape
 {
 public:
   friend class SoftBodyNode;

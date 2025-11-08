@@ -211,7 +211,7 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command(pixi_command("build", "Release"), "Build Release")
+    result, _ = run_command(pixi_command("build"), "Build Release")
     success = success and result
 
     if not skip_debug:
@@ -229,9 +229,7 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command(
-        pixi_command("test", PIXI_DEFAULT_DARTPY, "Release"), "C++ unit tests"
-    )
+    result, _ = run_command(pixi_command("test", PIXI_DEFAULT_DARTPY), "C++ unit tests")
     success = success and result
 
     return success
@@ -252,7 +250,7 @@ def run_python_tests() -> bool:
     print_header("PYTHON TESTS")
 
     # Check if Python bindings are enabled
-    result, _ = run_command(pixi_command("test-py", "Release"), "Python tests")
+    result, _ = run_command(pixi_command("test-py"), "Python tests")
 
     return result
 

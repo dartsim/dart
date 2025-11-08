@@ -33,6 +33,8 @@
 #ifndef DART_OPTIMIZER_SOLVER_HPP_
 #define DART_OPTIMIZER_SOLVER_HPP_
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <iostream>
@@ -49,14 +51,14 @@ class Problem;
 /// problem types. This base class allows the different Solver implementations
 /// to be swapped out with each other quickly and easily to help with testing,
 /// benchmarking, and experimentation.
-class Solver
+class DART_API Solver
 {
 public:
   /// The Solver::Properties class contains Solver parameters that are common
   /// to all Solver types. Most (but not necessarily all) Solvers will make use
   /// of these parameters, and these parameters can be directly copied or
   /// transferred between all Solver types.
-  struct Properties
+  struct DART_API Properties
   {
     /// Nonlinear optimization Problem to be solved
     std::shared_ptr<Problem> mProblem;
