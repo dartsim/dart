@@ -44,10 +44,11 @@ dart_add_test("unit" test_ConstraintSolver constraint/test_ConstraintSolver.cpp)
 dart_add_test("unit" test_GenericJoints dynamics/test_GenericJoints.cpp)
 dart_add_test("unit" test_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" test_ScrewJoint dynamics/test_ScrewJoint.cpp)
+dart_add_test("unit" test_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
-  dart_add_test("unit" test_create_shape_node_api dynamics/test_create_shape_node_api.cpp)
+  dart_add_test("unit" test_create_shape_node_api dynamics/test_CreateShapeNodeApi.cpp)
 endif()
 
 # ==============================================================================

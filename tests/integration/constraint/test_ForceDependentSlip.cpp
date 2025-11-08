@@ -271,7 +271,7 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
       // There appears to be a bug in DART in obtaining the linear acceleration
       // of the body using (BodyNode::getLinearAcceleration), so we compute it
       // here via finite difference.
-      auto accel = (body2->getLinearVelocity() - lastVel) / dt;
+      Eigen::Vector3d accel = (body2->getLinearVelocity() - lastVel) / dt;
       EXPECT_NEAR(mass * accel.x() * slip, spinVel - linVel, 2e-4);
       EXPECT_NEAR(0.0, body2->getLinearVelocity().y(), 1e-4);
     }

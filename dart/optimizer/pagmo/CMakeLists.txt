@@ -21,6 +21,8 @@ set(component_name optimizer-pagmo)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
 target_link_libraries(${target_name} PUBLIC dart Pagmo::pagmo)
+target_compile_definitions(${target_name}
+  PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
 # Thread
 if(THREADS_HAVE_PTHREAD_ARG)

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/lcpsolver/dantzig/common.h"
 #include "dart/lcpsolver/dantzig/lcp.h"
 
 // Undefine assertion macros from dantzig to avoid conflicts with baseline
@@ -128,9 +129,10 @@ bool solutionsMatch(
 void testDantzigVsODE(dart::test::LCPProblem problem)
 {
   const int n = problem.dimension;
+  const int stride = dart::lcpsolver::padding(n);
 
   // Prepare data for ODE baseline
-  std::vector<dReal> A_ode(n * n);
+  std::vector<dReal> A_ode(stride * n, 0.0);
   std::vector<dReal> b_ode(n);
   std::vector<dReal> x_ode(n, 0.0);
   std::vector<dReal> w_ode(n, 0.0);
@@ -138,18 +140,21 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
   std::vector<dReal> hi_ode(n, 1e10);
 
   // Prepare data for Dantzig solver
-  std::vector<dReal> A_dantzig(n * n);
+  std::vector<dReal> A_dantzig(stride * n, 0.0);
   std::vector<dReal> b_dantzig(n);
   std::vector<dReal> x_dantzig(n, 0.0);
   std::vector<dReal> w_dantzig(n, 0.0);
   std::vector<dReal> lo_dantzig(n, 0.0); // Standard LCP: x >= 0
   std::vector<dReal> hi_dantzig(n, 1e10);
+  std::vector<dReal> A_dense(n * n, 0.0);
 
   // Copy data
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
-      A_ode[i * n + j] = problem.A(i, j);
-      A_dantzig[i * n + j] = problem.A(i, j);
+      const dReal value = problem.A(i, j);
+      A_dense[i * n + j] = value;
+      A_ode[i * stride + j] = value;
+      A_dantzig[i * stride + j] = value;
     }
     b_ode[i] = problem.b(i);
     b_dantzig[i] = problem.b(i);
@@ -187,10 +192,10 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
 
   if (success_ode && success_dantzig) {
     // Verify both solutions satisfy complementarity conditions
-    EXPECT_TRUE(verifyComplementarity(A_ode, x_ode, b_ode, w_ode, n))
+    EXPECT_TRUE(verifyComplementarity(A_dense, x_ode, b_ode, w_ode, n))
         << "ODE solution violates complementarity for " << problem.name;
     EXPECT_TRUE(
-        verifyComplementarity(A_dantzig, x_dantzig, b_dantzig, w_dantzig, n))
+        verifyComplementarity(A_dense, x_dantzig, b_dantzig, w_dantzig, n))
         << "Dantzig solution violates complementarity for " << problem.name;
 
     // Solutions should match (both should find the same solution)
