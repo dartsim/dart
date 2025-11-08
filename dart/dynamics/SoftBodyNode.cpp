@@ -41,10 +41,11 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Helpers.hpp"
 
-#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {

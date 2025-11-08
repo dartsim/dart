@@ -273,7 +273,8 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createEllipsoid(double _sizeX, double _sizeY, double _sizeZ)
+::fcl::BVHModel<BV>* createEllipsoid(
+    double _sizeX, double _sizeY, double _sizeZ)
 {
   double v[59][3]
       = {{0, 0, 0},
