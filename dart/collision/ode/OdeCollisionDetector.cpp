@@ -401,6 +401,12 @@ void reportContacts(
   if (0u == numContacts)
     return;
 
+  if (0u == option.maxNumContacts)
+    return;
+
+  if (result.getNumContacts() >= option.maxNumContacts)
+    return;
+
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts) {
@@ -408,12 +414,15 @@ void reportContacts(
     return;
   }
 
-  for (auto i = 0; i < numContacts; ++i) {
+  const auto available = option.maxNumContacts - result.getNumContacts();
+  const auto requested = static_cast<std::size_t>(numContacts);
+  const auto contactsToCopy = static_cast<int>(std::min(requested, available));
+
+  for (auto i = 0; i < contactsToCopy; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
 
-  auto missing = 3 - numContacts;
-  if (missing <= 0) {
+  if (result.getNumContacts() >= option.maxNumContacts) {
     return;
   }
 
@@ -427,11 +436,14 @@ void reportContacts(
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
+  std::size_t pairContactCount = 0u;
   for (const auto& curr_cont : results_vec_copy) {
     const auto current_pair
         = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
     if (current_pair != pair)
       continue;
+
+    ++pairContactCount;
 
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
@@ -443,9 +455,22 @@ void reportContacts(
     return;
   }
 
-  for (auto it = pastContacsVec.rbegin(); it != pastContacsVec.rend(); ++it) {
-    if (missing <= 0)
-      break;
+  const std::size_t pairTarget
+      = std::min<std::size_t>(3u, option.maxNumContacts);
+  if (pairContactCount >= pairTarget) {
+    return;
+  }
+
+  std::size_t missing = pairTarget - pairContactCount;
+  const auto globalRemaining = option.maxNumContacts - result.getNumContacts();
+  missing = std::min(missing, globalRemaining);
+  if (missing == 0u) {
+    return;
+  }
+
+  for (auto it = pastContacsVec.rbegin();
+       it != pastContacsVec.rend() && missing > 0u;
+       ++it) {
     auto past_cont = *it;
     for (const auto& curr_cont : results_vec_copy) {
       const auto res_pair
@@ -458,8 +483,11 @@ void reportContacts(
       if (dist_m < 0.01) {
         continue;
       } else {
-        --missing;
+        if (result.getNumContacts() >= option.maxNumContacts) {
+          return;
+        }
         result.addContact(past_cont);
+        --missing;
       }
     }
   }

@@ -52,17 +52,6 @@ set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 include(dart_defs)
 include(CompilerCache)
 
-# Ensure GL headers from Conda sysroot are visible when building inside pixi.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CONDA_PREFIX})
-  set(_conda_gl_sysroot "$ENV{CONDA_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/include")
-  if(EXISTS "${_conda_gl_sysroot}/GL/gl.h")
-    include_directories(BEFORE "${_conda_gl_sysroot}/GL")
-  endif()
-  if(EXISTS "${_conda_gl_sysroot}/KHR/khrplatform.h")
-    include_directories(BEFORE "${_conda_gl_sysroot}/KHR")
-  endif()
-endif()
-
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
 # - LIBRARY_INSTALL_DIR
