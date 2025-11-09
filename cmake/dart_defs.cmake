@@ -1320,6 +1320,30 @@ macro(dart_add_library _name)
           RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
       )
     endif()
+  else()
+    if(CMAKE_CONFIGURATION_TYPES)
+      foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+        string(TOUPPER "${_dart_config}" _dart_config_upper)
+        set_target_properties(
+          ${_name}
+          PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+        )
+      endforeach()
+    else()
+      set_target_properties(
+        ${_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      )
+    endif()
   endif()
 
   set_target_properties(
