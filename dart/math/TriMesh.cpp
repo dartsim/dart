@@ -35,7 +35,7 @@
 namespace dart {
 namespace math {
 
-template class TriMesh<double>;
+template class DART_API TriMesh<double>;
 
 } // namespace math
 } // namespace dart
