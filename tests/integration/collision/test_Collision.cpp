@@ -1802,6 +1802,38 @@ TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
   EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
   EXPECT_GE(result.getNumContacts(), 1u);
 }
+
+//==============================================================================
+TEST(Issue1654, OdeHonorsMaxNumContacts)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto capsuleFrame = std::make_shared<SimpleFrame>(Frame::World(), "capsule");
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+
+  auto capsuleShape = std::make_shared<CapsuleShape>(0.2, 0.6);
+  capsuleFrame->setShape(capsuleShape);
+  capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  auto planeShape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  planeFrame->setShape(planeShape);
+
+  group->addShapeFrame(capsuleFrame.get());
+  group->addShapeFrame(planeFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1u;
+  CollisionResult result;
+
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+}
 #endif // HAVE_ODE
 
 //==============================================================================
