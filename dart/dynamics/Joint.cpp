@@ -340,47 +340,6 @@ std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Joint::getLocalTransform() const
-{
-  return getRelativeTransform();
-}
-
-//==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
-{
-  return getRelativeSpatialVelocity();
-}
-
-//==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
-{
-  return getRelativeSpatialAcceleration();
-}
-
-//==============================================================================
-const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
-{
-  return getRelativePrimaryAcceleration();
-}
-
-//==============================================================================
-const math::Jacobian Joint::getLocalJacobian() const
-{
-  return getRelativeJacobian();
-}
-
-//==============================================================================
-math::Jacobian Joint::getLocalJacobian(const Eigen::VectorXd& positions) const
-{
-  return getRelativeJacobian(positions);
-}
-
-//==============================================================================
-const math::Jacobian Joint::getLocalJacobianTimeDeriv() const
-{
-  return getRelativeJacobianTimeDeriv();
-}
-
 //==============================================================================
 const Eigen::Isometry3d& Joint::getRelativeTransform() const
 {
@@ -605,41 +564,6 @@ DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 }
 
 //==============================================================================
-void Joint::updateLocalTransform() const
-{
-  updateRelativeTransform();
-}
-
-//==============================================================================
-void Joint::updateLocalSpatialVelocity() const
-{
-  updateRelativeSpatialVelocity();
-}
-
-//==============================================================================
-void Joint::updateLocalSpatialAcceleration() const
-{
-  updateRelativeSpatialAcceleration();
-}
-
-//==============================================================================
-void Joint::updateLocalPrimaryAcceleration() const
-{
-  updateRelativePrimaryAcceleration();
-}
-
-//==============================================================================
-void Joint::updateLocalJacobian(bool mandatory) const
-{
-  updateRelativeJacobian(mandatory);
-}
-
-//==============================================================================
-void Joint::updateLocalJacobianTimeDeriv() const
-{
-  updateRelativeJacobianTimeDeriv();
-}
-
 //==============================================================================
 void Joint::updateArticulatedInertia() const
 {

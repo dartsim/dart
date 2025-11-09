@@ -261,15 +261,6 @@ double ConstraintSolver::getTimeStep() const
   return mTimeStep;
 }
 
-//==============================================================================
-void ConstraintSolver::setCollisionDetector(
-    collision::CollisionDetector* collisionDetector)
-{
-  setCollisionDetector(
-      std::unique_ptr<collision::CollisionDetector>(collisionDetector));
-}
-
-//==============================================================================
 void ConstraintSolver::setCollisionDetector(
     const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
@@ -365,12 +356,8 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
-  for (auto& skeleton : mSkeletons) {
+  for (auto& skeleton : mSkeletons)
     skeleton->clearConstraintImpulses();
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    skeleton->clearCollidingBodies();
-    DART_SUPPRESS_DEPRECATED_END
-  }
 
   // Update constraints and collect active constraints
   updateConstraints();
@@ -519,17 +506,6 @@ void ConstraintSolver::updateConstraints()
       // zero-length normal is invalid.
       continue;
     }
-
-    // Set colliding bodies
-    auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
-        contact.collisionObject1->getShapeFrame());
-    auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
-        contact.collisionObject2->getShapeFrame());
-
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
-    shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
-    DART_SUPPRESS_DEPRECATED_END
 
     // If penetration depth is negative, then the collision isn't really
     // happening and the contact point should be ignored.

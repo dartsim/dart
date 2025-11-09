@@ -94,20 +94,11 @@ bool BodyContactCondition::isSatisfied()
     }
   }
 
-  // TODO(JS): Need more elegant condition check method
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  if (mBodyNode->isColliding())
-    DART_SUPPRESS_DEPRECATED_END
-    {
-      //    DART_INFO("BodyNode [{}{}", mBodyNode->getName(), "] is in
-      //    contact."
-      //);
-      return true;
-    }
-  else {
-    //    DART_INFO("Waiting for BodyNode [{}{}", mBodyNode->getName()
-    //, "] is in contact."
-    //);
+  auto* skeleton = mBodyNode->getSkeleton();
+  auto* world = skeleton ? skeleton->getWorld() : nullptr;
+  if (!world)
     return false;
-  }
+
+  const auto& result = world->getLastCollisionResult();
+  return result.inCollision(mBodyNode);
 }
