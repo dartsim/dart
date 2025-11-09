@@ -7,10 +7,14 @@
 file(GLOB baseline_ode_srcs "odelcpsolver/*.cpp")
 file(GLOB baseline_ode_hdrs "odelcpsolver/*.h")
 
-# Create a static library for the baseline ODE LCP solver
-# Always build this helper as a static library so Windows/MSVC tests can link
-# without relying on import libraries that are missing when BUILD_SHARED_LIBS=ON.
-add_library(dart-baseline-ode STATIC ${baseline_ode_srcs} ${baseline_ode_hdrs})
+# Build the baseline solver as a static library regardless of the global
+# BUILD_SHARED_LIBS setting so that the Windows tests can link against the
+# resulting .lib directly.
+set(_dart_prev_build_shared_libs ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+dart_add_library(dart-baseline-ode ${baseline_ode_srcs} ${baseline_ode_hdrs})
+set(BUILD_SHARED_LIBS ${_dart_prev_build_shared_libs})
+unset(_dart_prev_build_shared_libs)
 
 # Set include directories - use PROJECT_SOURCE_DIR so consumers can include as "tests/baseline/odelcpsolver/..."
 target_include_directories(dart-baseline-ode
