@@ -45,6 +45,7 @@ dart_add_test("unit" test_GenericJoints dynamics/test_GenericJoints.cpp)
 dart_add_test("unit" test_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" test_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" test_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
+dart_add_test("unit" test_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
