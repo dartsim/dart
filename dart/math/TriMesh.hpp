@@ -110,7 +110,7 @@ protected:
   Normals mTriangleNormals;
 };
 
-extern template class DART_API TriMesh<double>;
+extern template class TriMesh<double>;
 
 using TriMeshf = TriMesh<float>;
 using TriMeshd = TriMesh<double>;
