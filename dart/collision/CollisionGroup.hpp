@@ -61,6 +61,12 @@ public:
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
   // CollisionGroup also can be created from CollisionDetector::create()
 
+  CollisionGroup(const CollisionGroup&) = delete;
+  CollisionGroup& operator=(const CollisionGroup&) = delete;
+
+  CollisionGroup(CollisionGroup&&) noexcept = default;
+  CollisionGroup& operator=(CollisionGroup&&) noexcept = default;
+
   /// Destructor
   virtual ~CollisionGroup() = default;
 
