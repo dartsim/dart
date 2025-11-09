@@ -1288,6 +1288,40 @@ macro(dart_add_library _name)
     PRIVATE
       DART_BUILDING_${_dart_export_macro}
   )
+
+  set(_dart_use_global_output_dirs TRUE)
+  if(DEFINED DART_USE_GLOBAL_OUTPUT_DIRS)
+    if(NOT DART_USE_GLOBAL_OUTPUT_DIRS)
+      set(_dart_use_global_output_dirs FALSE)
+    endif()
+  endif()
+
+  if(_dart_use_global_output_dirs)
+    if(CMAKE_CONFIGURATION_TYPES)
+      foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+        string(TOUPPER "${_dart_config}" _dart_config_upper)
+        set_target_properties(
+          ${_name}
+          PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/lib/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/lib/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/bin/${_dart_config}"
+        )
+      endforeach()
+    else()
+      set_target_properties(
+        ${_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+          LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+          RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+      )
+    endif()
+  endif()
+
   set_target_properties(
     ${_name} PROPERTIES
     SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"

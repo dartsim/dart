@@ -30,6 +30,11 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
+# Tests build helper libraries (baseline solvers, integration fixtures, etc.)
+# keep their artifacts within their local build tree so the Visual Studio
+# project references that rely on relative paths continue to work.
+set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
+
 # Set up GoogleTest
 if(DART_USE_SYSTEM_GOOGLETEST)
   find_package(GTest MODULE REQUIRED)
