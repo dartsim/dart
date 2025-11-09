@@ -45,15 +45,10 @@ jobs:
         with:
           cache: true
 
-      - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
-        with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
+          config-file: ./.github/codeql/config.yml
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build_mode }}
 

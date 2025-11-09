@@ -1,0 +1,27 @@
+# https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-codeql-code-scanning-in-your-ci-system#specifying-paths-to-scan
+#
+# Limit CodeQL analysis to first-party sources and ignore vendored or generated
+# content that lives under build artifacts or virtual environments.
+
+name: dart-codeql-config
+
+paths:
+  - "dart/**"
+  - "dart7/**"
+  - "python/**"
+  - "tests/**"
+  - "tests_dart7/**"
+  - "examples/**"
+  - "examples_dart7/**"
+  - "tutorials/**"
+  - "docs/**"
+
+paths-ignore:
+  - ".git/**"
+  - ".github/**"
+  - ".pixi/**"
+  - "build/**"
+  - "dist/**"
+  - ".cache/**"
+  - "**/third-party/**"
+  - "**/external/**"
