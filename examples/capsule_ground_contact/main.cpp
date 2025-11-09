@@ -84,9 +84,18 @@ SkeletonPtr makeGround()
   return ground;
 }
 
-std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
+struct CapsuleSkeleton
 {
-  auto skeleton = Skeleton::create("capsule");
+  SkeletonPtr skeleton;
+  FreeJoint* joint;
+  BodyNode* body;
+};
+
+CapsuleSkeleton makeCapsuleSkeleton()
+{
+  CapsuleSkeleton capsule;
+  capsule.skeleton = Skeleton::create("capsule");
+
   FreeJoint::Properties joint;
   joint.mName = "capsule_joint";
   joint.mT_ParentBodyToJoint = makeHorizontalPose();
@@ -94,8 +103,8 @@ std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
   BodyNode::Properties body;
   body.mName = "capsule_body";
 
-  auto result
-      = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, body);
+  auto result = capsule.skeleton->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, joint, body);
 
   auto shape = std::make_shared<CapsuleShape>(kCapsuleRadius, kCapsuleHeight);
   auto shapeNode = result.second->createShapeNodeWith<
@@ -110,7 +119,10 @@ std::pair<FreeJoint*, BodyNode*> makeCapsuleSkeleton()
   inertia.setMoment(shape->computeInertia(inertia.getMass()));
   result.second->setInertia(inertia);
 
-  return result;
+  capsule.joint = result.first;
+  capsule.body = result.second;
+
+  return capsule;
 }
 
 class CapsuleEventHandler : public ::osgGA::GUIEventHandler
@@ -179,13 +191,13 @@ int main()
 
   world->addSkeleton(makeGround());
   auto capsule = makeCapsuleSkeleton();
-  world->addSkeleton(capsule.first->getSkeleton());
+  world->addSkeleton(capsule.skeleton);
 
   osg::ref_ptr<RealTimeWorldNode> worldNode = new RealTimeWorldNode(world);
 
   Viewer viewer;
   viewer.addWorldNode(worldNode);
-  viewer.addEventHandler(new CapsuleEventHandler(world, capsule.first));
+  viewer.addEventHandler(new CapsuleEventHandler(world, capsule.joint));
   viewer.setUpViewInWindow(100, 100, 1024, 768);
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.5, 2.5, 1.5),
