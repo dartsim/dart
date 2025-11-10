@@ -83,7 +83,7 @@
     #error Could not find system header "<filesystem>" or "<experimental/filesystem>"
   #endif
 
-  // We priously determined that we need the exprimental version
+  // We previously determined that we need the experimental version
   #if DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
     // Include it
     #include <experimental/filesystem>

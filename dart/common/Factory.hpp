@@ -129,11 +129,11 @@ public:
   using SingletonFactory = Singleton<FactoryType>;
   using Creator = typename FactoryType::Creator;
 
-  /// Constructor. Interanlly, this constructor registers Derived class with
+  /// Constructor. Internally, this constructor registers Derived class with
   /// the key and the default creator function.
   FactoryRegistrar(const KeyT& key, Creator creator);
 
-  /// Constructor. Interanlly, this constructor registers Derived class with
+  /// Constructor. Internally, this constructor registers Derived class with
   /// the key and the default creator function.
   explicit FactoryRegistrar(const KeyT& key);
 };

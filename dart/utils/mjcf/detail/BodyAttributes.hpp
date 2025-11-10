@@ -38,11 +38,10 @@
 
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/common/Optional.hpp>
-
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
+#include <optional>
 #include <string>
 
 namespace dart {
