@@ -42,8 +42,12 @@
 namespace dart {
 namespace constraint {
 
-/// Coupler constraint that couples the motions of two joints by applying
-/// equal and opposite impulses based on MimicDofProperties.
+/// CouplerConstraint enforces the mimic relationship between two joints by
+/// applying equal-and-opposite impulses based on MimicDofProperties. Unlike
+/// MimicMotorConstraint, which behaves like a servo that only drives the
+/// dependent joint, CouplerConstraint is bilateral: both the reference and
+/// dependent joints participate in the constraint solve, so any impulse on one
+/// joint is reflected on the other joint.
 class CouplerConstraint : public ConstraintBase
 {
 public:
