@@ -66,23 +66,6 @@ public:
   /// Virtual destructor
   virtual ~HierarchicalIK() = default;
 
-  /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint positions. If you pass in false for \c applySolution, then
-  /// the joint positions will be return to their original positions after the
-  /// problem is solved.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(bool applySolution = true);
-
-  /// Same as solve(bool), but the positions vector will be filled with the
-  /// solved positions.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() or
-  /// findSolution() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(Eigen::VectorXd& positions, bool applySolution = true);
-
   /// Finds a solution of the IK problem without applying the solution.
   ///
   /// \param[out] positions The solution of the IK problem. If the solver failed
