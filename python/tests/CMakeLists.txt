@@ -58,16 +58,9 @@ file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
-  # On Windows with multi-config generators, the .pyd file is in a config subdirectory
-  if(MSVC OR XCODE)
-    set(DARTPY_PYTHONPATH "${DART_DARTPY_BUILD_DIR}/$<CONFIG>")
-  else()
-    set(DARTPY_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")
-  endif()
-
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DARTPY_PYTHONPATH} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DARTPY_PYTHONPATH}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHON_BUILD_DIR} ${Python3_EXECUTABLE} -m pytest [sources]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHON_BUILD_DIR}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy
@@ -90,8 +83,8 @@ function(dartpy_add_test test_name) # ARGN for source file
     set(source "${test_name}.py")
   endif()
   add_custom_target(${test_name}
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${Python3_EXECUTABLE} ${source}"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${Python3_EXECUTABLE} ${source}
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHON_BUILD_DIR} ${Python3_EXECUTABLE} ${source}"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${DART_PYTHON_BUILD_DIR} ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
     DEPENDS dartpy
