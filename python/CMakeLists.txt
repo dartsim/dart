@@ -36,7 +36,8 @@ if(NOT pybind11_FOUND)
   return()
 endif()
 
-set(DART_DARTPY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/dartpy")
+set(DART_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy")
 
 add_subdirectory(dartpy)
 add_subdirectory(tests)
