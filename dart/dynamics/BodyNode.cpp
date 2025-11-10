@@ -48,8 +48,28 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+Eigen::Matrix4d seMatrixFromSpatialVector(const Eigen::Vector6d& spatial)
+{
+  Eigen::Matrix4d result = Eigen::Matrix4d::Zero();
+  result.topLeftCorner<3, 3>() = math::makeSkewSymmetric(spatial.head<3>());
+  result.topRightCorner<3, 1>() = spatial.tail<3>();
+  return result;
+}
+
+double finiteDifferenceStep(double value)
+{
+  const double eps = std::sqrt(Eigen::NumTraits<double>::epsilon());
+  return eps * std::max(1.0, std::abs(value));
+}
+
+} // namespace
 
 //==============================================================================
 template <
@@ -1112,6 +1132,48 @@ const Eigen::Isometry3d& BodyNode::getRelativeTransform() const
 }
 
 //==============================================================================
+const Eigen::Matrix4d& BodyNode::getWorldTransformDerivative(
+    std::size_t dofIndex) const
+{
+  if (dofIndex >= getNumDependentGenCoords()) {
+    static const Eigen::Matrix4d zero = Eigen::Matrix4d::Zero();
+    DART_ERROR(
+        "[BodyNode::getWorldTransformDerivative] Index [{}] is out of range "
+        "for BodyNode [{}] with [{}] dependent DOFs.",
+        dofIndex,
+        getName(),
+        getNumDependentGenCoords());
+    assert(false);
+    return zero;
+  }
+
+  updateTransformDerivatives();
+  return mWorldTransformDerivatives[dofIndex];
+}
+
+//==============================================================================
+const Eigen::Matrix4d& BodyNode::getWorldTransformSecondDerivative(
+    std::size_t firstDofIndex, std::size_t secondDofIndex) const
+{
+  const std::size_t dofCount = getNumDependentGenCoords();
+  if (firstDofIndex >= dofCount || secondDofIndex >= dofCount) {
+    static const Eigen::Matrix4d zero = Eigen::Matrix4d::Zero();
+    DART_ERROR(
+        "[BodyNode::getWorldTransformSecondDerivative] Indices ({}, {}) are "
+        "out of range for BodyNode [{}] with [{}] dependent DOFs.",
+        firstDofIndex,
+        secondDofIndex,
+        getName(),
+        dofCount);
+    assert(false);
+    return zero;
+  }
+
+  updateTransformSecondDerivatives();
+  return mWorldTransformSecondDerivatives[firstDofIndex][secondDofIndex];
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getRelativeSpatialVelocity() const
 {
   return mParentJoint->getRelativeSpatialVelocity();
@@ -1280,6 +1342,8 @@ BodyNode::BodyNode(
     mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
+    mAreTransformDerivativesDirty(true),
+    mAreTransformSecondDerivativesDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
@@ -1490,6 +1554,9 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 void BodyNode::dirtyTransform()
 {
   dirtyVelocity(); // Global Velocity depends on the Global Transform
+
+  mAreTransformDerivativesDirty = true;
+  mAreTransformSecondDerivativesDirty = true;
 
   if (mNeedTransformUpdate)
     return;
@@ -2492,6 +2559,185 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
         - (T.linear() * J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
+}
+
+//==============================================================================
+void BodyNode::updateTransformDerivatives() const
+{
+  if (!mAreTransformDerivativesDirty)
+    return;
+
+  if (nullptr == mParentJoint) {
+    mRelativeTransformDerivatives.clear();
+    mWorldTransformDerivatives.clear();
+    mAreTransformDerivativesDirty = false;
+    return;
+  }
+
+  getWorldTransform();
+
+  const std::size_t totalDofs = getNumDependentGenCoords();
+  const std::size_t localDofs = mParentJoint->getNumDofs();
+  const std::size_t parentDofs = totalDofs - localDofs;
+
+  mRelativeTransformDerivatives.resize(localDofs);
+  for (std::size_t i = 0; i < localDofs; ++i)
+    mRelativeTransformDerivatives[i].setZero();
+
+  mWorldTransformDerivatives.resize(totalDofs);
+  for (std::size_t i = 0; i < totalDofs; ++i)
+    mWorldTransformDerivatives[i].setZero();
+
+  const Eigen::Matrix4d relativeTransformMatrix
+      = mParentJoint->getRelativeTransform().matrix();
+
+  if (localDofs > 0) {
+    const math::Jacobian localJacobian = mParentJoint->getRelativeJacobian();
+    for (std::size_t i = 0; i < localDofs; ++i) {
+      const Eigen::Matrix4d seBody
+          = seMatrixFromSpatialVector(localJacobian.col(i));
+      mRelativeTransformDerivatives[i] = relativeTransformMatrix * seBody;
+    }
+  }
+
+  if (mParentBodyNode) {
+    mParentBodyNode->updateTransformDerivatives();
+
+    const auto& parentDerivatives = mParentBodyNode->mWorldTransformDerivatives;
+    assert(parentDerivatives.size() == parentDofs);
+
+    for (std::size_t i = 0; i < parentDofs; ++i)
+      mWorldTransformDerivatives[i]
+          = parentDerivatives[i] * relativeTransformMatrix;
+  }
+
+  const Eigen::Matrix4d parentWorldMatrix
+      = mParentBodyNode ? mParentBodyNode->getWorldTransform().matrix()
+                        : Eigen::Matrix4d::Identity();
+
+  for (std::size_t i = 0; i < localDofs; ++i)
+    mWorldTransformDerivatives[parentDofs + i]
+        = parentWorldMatrix * mRelativeTransformDerivatives[i];
+
+  mAreTransformDerivativesDirty = false;
+  mAreTransformSecondDerivativesDirty = true;
+}
+
+//==============================================================================
+void BodyNode::updateTransformSecondDerivatives() const
+{
+  if (!mAreTransformSecondDerivativesDirty)
+    return;
+
+  updateTransformDerivatives();
+
+  if (nullptr == mParentJoint) {
+    mRelativeTransformSecondDerivatives.clear();
+    mWorldTransformSecondDerivatives.clear();
+    mAreTransformSecondDerivativesDirty = false;
+    return;
+  }
+
+  const std::size_t totalDofs = getNumDependentGenCoords();
+  const std::size_t localDofs = mParentJoint->getNumDofs();
+  const std::size_t parentDofs = totalDofs - localDofs;
+
+  mRelativeTransformSecondDerivatives.resize(localDofs);
+  for (std::size_t i = 0; i < localDofs; ++i) {
+    mRelativeTransformSecondDerivatives[i].resize(localDofs);
+    for (std::size_t j = 0; j < localDofs; ++j)
+      mRelativeTransformSecondDerivatives[i][j].setZero();
+  }
+
+  mWorldTransformSecondDerivatives.resize(totalDofs);
+  for (std::size_t i = 0; i < totalDofs; ++i) {
+    mWorldTransformSecondDerivatives[i].resize(totalDofs);
+    for (std::size_t j = 0; j < totalDofs; ++j)
+      mWorldTransformSecondDerivatives[i][j].setZero();
+  }
+
+  const Eigen::Matrix4d relativeTransformMatrix
+      = mParentJoint->getRelativeTransform().matrix();
+
+  std::vector<math::Jacobian, Eigen::aligned_allocator<math::Jacobian>>
+      localJacobianDerivs(localDofs);
+  std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>
+      localSeMatrices(localDofs, Eigen::Matrix4d::Zero());
+
+  if (localDofs > 0) {
+    const math::Jacobian localJacobian = mParentJoint->getRelativeJacobian();
+    for (std::size_t i = 0; i < localDofs; ++i)
+      localSeMatrices[i] = seMatrixFromSpatialVector(localJacobian.col(i));
+
+    Eigen::VectorXd positions = mParentJoint->getPositions();
+    for (std::size_t i = 0; i < localDofs; ++i) {
+      Eigen::VectorXd posPlus = positions;
+      Eigen::VectorXd posMinus = positions;
+      const double step = finiteDifferenceStep(positions[i]);
+      posPlus[i] += step;
+      posMinus[i] -= step;
+
+      const math::Jacobian jacPlus = mParentJoint->getRelativeJacobian(posPlus);
+      const math::Jacobian jacMinus
+          = mParentJoint->getRelativeJacobian(posMinus);
+
+      localJacobianDerivs[i] = (jacPlus - jacMinus) / (2.0 * step);
+    }
+
+    for (std::size_t i = 0; i < localDofs; ++i) {
+      for (std::size_t j = 0; j < localDofs; ++j) {
+        const Eigen::Matrix4d dSe
+            = seMatrixFromSpatialVector(localJacobianDerivs[j].col(i));
+        mRelativeTransformSecondDerivatives[i][j]
+            = mRelativeTransformDerivatives[j] * localSeMatrices[i]
+              + relativeTransformMatrix * dSe;
+      }
+    }
+  }
+
+  if (mParentBodyNode) {
+    mParentBodyNode->updateTransformSecondDerivatives();
+
+    const auto& parentDerivatives = mParentBodyNode->mWorldTransformDerivatives;
+    const auto& parentSecond
+        = mParentBodyNode->mWorldTransformSecondDerivatives;
+
+    assert(parentSecond.size() == parentDofs);
+    assert(parentDerivatives.size() == parentDofs);
+
+    const Eigen::Matrix4d parentWorldMatrix
+        = mParentBodyNode->getWorldTransform().matrix();
+
+    for (std::size_t i = 0; i < parentDofs; ++i) {
+      for (std::size_t j = 0; j < parentDofs; ++j)
+        mWorldTransformSecondDerivatives[i][j]
+            = parentSecond[i][j] * relativeTransformMatrix;
+    }
+
+    for (std::size_t i = 0; i < parentDofs; ++i) {
+      for (std::size_t j = 0; j < localDofs; ++j) {
+        const Eigen::Matrix4d value
+            = parentDerivatives[i] * mRelativeTransformDerivatives[j];
+        mWorldTransformSecondDerivatives[i][parentDofs + j] = value;
+        mWorldTransformSecondDerivatives[parentDofs + j][i] = value;
+      }
+    }
+
+    for (std::size_t i = 0; i < localDofs; ++i) {
+      for (std::size_t j = 0; j < localDofs; ++j) {
+        mWorldTransformSecondDerivatives[parentDofs + i][parentDofs + j]
+            = parentWorldMatrix * mRelativeTransformSecondDerivatives[i][j];
+      }
+    }
+  } else {
+    for (std::size_t i = 0; i < localDofs; ++i) {
+      for (std::size_t j = 0; j < localDofs; ++j)
+        mWorldTransformSecondDerivatives[i][j]
+            = mRelativeTransformSecondDerivatives[i][j];
+    }
+  }
+
+  mAreTransformSecondDerivativesDirty = false;
 }
 
 } // namespace dynamics
