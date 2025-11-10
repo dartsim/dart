@@ -446,18 +446,6 @@ Skeleton::~Skeleton()
 }
 
 //==============================================================================
-SkeletonPtr Skeleton::clone() const
-{
-  return cloneSkeleton(getName());
-}
-
-//==============================================================================
-SkeletonPtr Skeleton::clone(const std::string& cloneName) const
-{
-  return cloneSkeleton(cloneName);
-}
-
-//==============================================================================
 SkeletonPtr Skeleton::cloneSkeleton() const
 {
   return cloneSkeleton(getName());

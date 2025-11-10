@@ -175,20 +175,6 @@ public:
   /// Remove copy operator
   Skeleton& operator=(const Skeleton& _other) = delete;
 
-  /// Create an identical clone of this Skeleton.
-  /// \deprecated Deprecated in DART 6.7. Please use cloneSkeleton() instead.
-  DART_DEPRECATED(6.7)
-  SkeletonPtr clone() const;
-  // TODO: In DART 7, change this function to override MetaSkeleton::clone()
-  // that returns MetaSkeletonPtr
-
-  /// Create an identical clone of this Skeleton, except that it has a new name.
-  /// \deprecated Deprecated in DART 6.7. Please use cloneSkeleton() instead.
-  DART_DEPRECATED(6.7)
-  SkeletonPtr clone(const std::string& cloneName) const;
-  // TODO: In DART 7, change this function to override MetaSkeleton::clone()
-  // that returns MetaSkeletonPtr
-
   /// Creates and returns a clone of this Skeleton.
   SkeletonPtr cloneSkeleton() const;
 
