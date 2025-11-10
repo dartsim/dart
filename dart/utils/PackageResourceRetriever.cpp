@@ -77,8 +77,15 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
     return false;
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
+    const std::string resolvedUri = packagePath + relativePath;
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    if (!fileUri.fromStringOrPath(resolvedUri)) {
+      DART_WARN(
+          "Failed to parse resolved URI '{}' for package '{}'.",
+          resolvedUri,
+          packageName);
+      continue;
+    }
 
     if (mLocalRetriever->exists(fileUri))
       return true;
@@ -95,8 +102,15 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
     return nullptr;
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
+    const std::string resolvedUri = packagePath + relativePath;
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    if (!fileUri.fromStringOrPath(resolvedUri)) {
+      DART_WARN(
+          "Failed to parse resolved URI '{}' for package '{}'.",
+          resolvedUri,
+          packageName);
+      continue;
+    }
 
     if (const auto resource = mLocalRetriever->retrieve(fileUri))
       return resource;
@@ -112,8 +126,15 @@ std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
     return "";
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
+    const std::string resolvedUri = packagePath + relativePath;
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    if (!fileUri.fromStringOrPath(resolvedUri)) {
+      DART_WARN(
+          "Failed to parse resolved URI '{}' for package '{}'.",
+          resolvedUri,
+          packageName);
+      continue;
+    }
 
     const auto path = mLocalRetriever->getFilePath(fileUri);
 
