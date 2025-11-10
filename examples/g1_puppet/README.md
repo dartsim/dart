@@ -37,3 +37,6 @@ values:
 
 Use the mouse to drag individual body nodes. The example runs in kinematic mode
 so you can quickly inspect the downloaded model without setting up controllers.
+Note that a graphical desktop session is required—when run from a headless
+shell (no `DISPLAY` or `WAYLAND_DISPLAY`) the executable will print a warning
+and exit because a GUI window cannot be created.
