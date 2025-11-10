@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 #define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/common/Filesystem.hpp>
 #include <dart/common/Singleton.hpp>
 
@@ -59,40 +58,10 @@ public:
   /// Windows).
   /// \return Pointer to the shared library upon success. Otherwise, returns
   /// nullptr.
-  /// \deprecated Deprecated in 6.10. Please use load(const std::string&)
-  /// instead.
-  DART_DEPRECATED(6.10)
-  std::shared_ptr<SharedLibrary> load(const common::filesystem::path& path);
-
-  /// Loads the shared library with the specified path.
-  ///
-  /// \param[in] path The path to the shared library. If the path doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
-  /// \return Pointer to the shared library upon success. Otherwise, returns
-  /// nullptr.
   std::shared_ptr<SharedLibrary> load(const std::string& path);
 
 protected:
   friend class Singleton<SharedLibraryManager>;
-
-protected:
-  struct FileSystemHash
-  {
-    size_t operator()(const ::dart::common::filesystem::path& p) const
-    {
-      return ::dart::common::filesystem::hash_value(p);
-    }
-  };
-
-  /// Map from library path to the library instances.
-  std::unordered_map<
-      common::filesystem::path,
-      std::weak_ptr<SharedLibrary>,
-      FileSystemHash>
-      mLibraries;
-  // TODO(JS): Remove this in DART 7.
 
   /// Map from library path to the library instances.
   std::unordered_map<std::string, std::weak_ptr<SharedLibrary>>
