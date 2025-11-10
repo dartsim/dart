@@ -295,7 +295,7 @@ SkeletonPtr loadG1(
 
   if (auto* freeJoint = dynamic_cast<FreeJoint*>(robot->getJoint(0))) {
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation().z() = 1.0;
+    tf.translation().z() = 0.75;
     FreeJoint::setTransformOf(freeJoint, tf);
   }
 
@@ -355,7 +355,7 @@ int main(int argc, char* argv[])
   viewer.setUpViewInWindow(0, 0, 1280, 960);
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(3.0, 1.6, 1.4),
-      ::osg::Vec3(0.0, 0.0, 1.1),
+      ::osg::Vec3(0.0, 0.0, 1.0),
       ::osg::Vec3(0.0, 0.0, 1.0));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
