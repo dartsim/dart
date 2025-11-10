@@ -119,6 +119,7 @@ MakeCloneable<Base, Mixin>& MakeCloneable<Base, Mixin>::operator=(
     MakeCloneable&& other)
 {
   static_cast<Mixin&>(*this) = std::move(static_cast<Mixin&&>(other));
+  return *this;
 }
 
 //==============================================================================
