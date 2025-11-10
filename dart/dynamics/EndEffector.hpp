@@ -41,6 +41,8 @@
 #include <dart/common/AspectWithVersion.hpp>
 #include <dart/common/SpecializedForAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -49,7 +51,8 @@ class Skeleton;
 class EndEffector;
 
 //==============================================================================
-class Support final : public common::AspectWithStateAndVersionedProperties<
+class DART_API Support final
+    : public common::AspectWithStateAndVersionedProperties<
                           Support,
                           detail::SupportStateData,
                           detail::SupportPropertiesData,
@@ -75,7 +78,7 @@ public:
 };
 
 //==============================================================================
-class EndEffector final : public common::EmbedPropertiesOnTopOf<
+class DART_API EndEffector final : public common::EmbedPropertiesOnTopOf<
                               EndEffector,
                               detail::EndEffectorProperties,
                               detail::EndEffectorCompositeBase>

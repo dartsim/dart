@@ -36,6 +36,8 @@
 #include <dart/utils/mjcf/detail/Error.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <Eigen/Core>
 #include <tinyxml2.h>
 
@@ -44,7 +46,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Option final
+class DART_UTILS_API Option final
 {
 public:
   Option() = default;

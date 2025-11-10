@@ -35,13 +35,15 @@
 
 #include <dart/dynamics/Linkage.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
 /// Branch is a specialized type of Linkage that represents a complete subtree
 /// of a Skeleton. The Branch will start at a specific BodyNode and will include
 /// every BodyNode that descends from it, all the way to the leaves.
-class Branch : public Linkage
+class DART_API Branch : public Linkage
 {
 public:
   struct Criteria
