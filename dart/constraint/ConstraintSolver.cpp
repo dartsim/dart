@@ -333,25 +333,6 @@ const collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 }
 
 //==============================================================================
-void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
-{
-  DART_WARN(
-      "This function is deprecated in DART 6.7. Please use "
-      "BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. Doing nothing.");
-}
-
-//==============================================================================
-LCPSolver* ConstraintSolver::getLCPSolver() const
-{
-  DART_WARN(
-      "This function is deprecated in DART 6.7. Please use "
-      "BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. Returning "
-      "nullptr.");
-
-  return nullptr;
-}
-
-//==============================================================================
 void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
