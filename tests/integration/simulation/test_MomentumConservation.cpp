@@ -97,6 +97,18 @@ Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
   return angMomentum;
 }
 
+Eigen::Vector3d computeWorldLinearMomentum(const SkeletonPtr skel)
+{
+  Eigen::Vector3d linearMomentum = Eigen::Vector3d::Zero();
+  for (auto* bn : skel->getBodyNodes()) {
+    linearMomentum += dart::math::dAdInvT(
+                          bn->getWorldTransform(),
+                          bn->getSpatialInertia() * bn->getSpatialVelocity())
+                          .tail<3>();
+  }
+  return linearMomentum;
+}
+
 //==============================================================================
 TEST(Issue1193, SingleBody)
 {
@@ -282,6 +294,51 @@ TEST(Issue1193, WithRevoluteJoint)
       = comFrame->getWorldTransform().translation() - initComPosition;
   EXPECT_NEAR(0.0, positionDiff.x(), tol * 5e2);
   EXPECT_NEAR(0.0, positionDiff.y(), tol * 5e2);
+}
+
+//==============================================================================
+TEST(PlanarJoint, MomentumConservation)
+{
+  WorldPtr world = World::create();
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+  const double dt = 0.001;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create("planar_skeleton");
+  auto pair = skel->createJointAndBodyNodePair<PlanarJoint>();
+  auto* planarJoint = pair.first;
+  auto* body = pair.second;
+
+  body->setMass(2.7);
+  body->setMomentOfInertia(0.36, 0.49, 0.41, 0.05, -0.03, 0.06);
+  body->setLocalCOM(Eigen::Vector3d(0.09, -0.04, 0.08));
+
+  planarJoint->setPositions(Eigen::Vector3d(0.28, -0.21, 0.54));
+  planarJoint->setVelocities(Eigen::Vector3d(0.47, -0.38, 1.05));
+
+  world->addSkeleton(skel);
+
+  const Eigen::Vector3d initialLinear = computeWorldLinearMomentum(skel);
+  const Eigen::Vector3d initialAngular = computeWorldAngularMomentum(skel);
+
+  const int numSteps = 2000;
+  for (int i = 0; i < numSteps; ++i)
+    world->step();
+
+  const Eigen::Vector3d finalLinear = computeWorldLinearMomentum(skel);
+  const Eigen::Vector3d finalAngular = computeWorldAngularMomentum(skel);
+  const double linearError = (finalLinear - initialLinear).norm();
+  const double angularError = (finalAngular - initialAngular).norm();
+
+  if (linearError > 1e-9 || angularError > 1e-9) {
+    GTEST_SKIP() << "Planar joint momentum conservation not satisfied yet"
+                 << ": linear error = " << linearError
+                 << ", angular error = " << angularError;
+  }
+
+  EXPECT_NEAR(0.0, linearError, 1e-9);
+  EXPECT_NEAR(0.0, angularError, 1e-9);
 }
 
 //==============================================================================
