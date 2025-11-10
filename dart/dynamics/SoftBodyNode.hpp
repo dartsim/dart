@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/detail/SoftBodyNodeAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -331,7 +333,7 @@ private:
   void updateInertiaWithPointMass();
 };
 
-class SoftBodyNodeHelper
+class DART_API SoftBodyNodeHelper
 {
 public:
   /// Create a Properties struct for a box-shaped SoftBodyNode with 8
