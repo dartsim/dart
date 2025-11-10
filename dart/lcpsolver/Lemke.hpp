@@ -35,15 +35,17 @@
 
 #include <Eigen/Dense>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace lcpsolver {
 
 /// \brief
-int Lemke(
+int DART_API Lemke(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
 /// \brief
-bool validate(
+bool DART_API validate(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);

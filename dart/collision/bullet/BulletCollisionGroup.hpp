@@ -35,11 +35,12 @@
 
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
+#include <dart/collision/bullet/Export.hpp>
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionGroup : public CollisionGroup
+class DART_COLLISION_BULLET_API BulletCollisionGroup : public CollisionGroup
 {
 public:
   friend class BulletCollisionDetector;
