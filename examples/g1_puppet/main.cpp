@@ -33,6 +33,10 @@ namespace {
 
 const double kSupportVisualElevation = 0.02;
 
+// TODO(JS): Bring the remaining Atlas/Hubo teleoperation features (teleop
+// world node, posture optimizer, support toggles, keyboard controls, etc.)
+// to this example so G1 maintains feature parity.
+
 struct IkHandle
 {
   dart::dynamics::EndEffector* effector = nullptr;
@@ -355,7 +359,7 @@ int main(int argc, char* argv[])
   viewer.setUpViewInWindow(0, 0, 1280, 960);
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(3.0, 1.6, 1.4),
-      ::osg::Vec3(0.0, 0.0, 1.0),
+      ::osg::Vec3(0.0, 0.0, 0.75),
       ::osg::Vec3(0.0, 0.0, 1.0));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
