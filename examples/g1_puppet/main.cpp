@@ -1,3 +1,4 @@
+#include <dart/gui/osg/SupportPolygonVisual.hpp>
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/CompositeResourceRetriever.hpp>
@@ -16,8 +17,6 @@
 #include <dart/common/LocalResourceRetriever.hpp>
 
 #include <dart/all.hpp>
-
-#include <dart/gui/osg/SupportPolygonVisual.hpp>
 
 #include <iostream>
 #include <memory>
@@ -237,13 +236,11 @@ std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
     int key;
   };
 
-  const std::vector<Config> configs = {
-      {"left_rubber_hand", Eigen::Vector3d(0.0, 0.0, 0.0), '1'},
-      {"right_rubber_hand", Eigen::Vector3d(0.0, 0.0, 0.0), '2'},
-      {"left_ankle_roll_link", Eigen::Vector3d(0.0, 0.0, 0.0), '3'},
-      {"right_ankle_roll_link", Eigen::Vector3d(0.0, 0.0, 0.0), '4'},
-      {"left_knee_link", Eigen::Vector3d(0.0, 0.0, 0.2), '5'},
-      {"right_knee_link", Eigen::Vector3d(0.0, 0.0, 0.2), '6'}};
+  const std::vector<Config> configs
+      = {{"left_rubber_hand", Eigen::Vector3d(0.0, 0.0, 0.0), '1'},
+         {"right_rubber_hand", Eigen::Vector3d(0.0, 0.0, 0.0), '2'},
+         {"left_ankle_roll_link", Eigen::Vector3d(0.0, 0.0, 0.0), '3'},
+         {"right_ankle_roll_link", Eigen::Vector3d(0.0, 0.0, 0.0), '4'}};
 
   std::vector<std::shared_ptr<IkHandle>> handles;
   handles.reserve(configs.size());
@@ -348,8 +345,8 @@ int main(int argc, char* argv[])
   grid->setMinorLineStepSize(0.1);
   grid->setOffset(Eigen::Vector3d::Zero());
   viewer.addAttachment(grid);
-  viewer.addAttachment(new dart::gui::osg::SupportPolygonVisual(
-      g1, kSupportVisualElevation));
+  viewer.addAttachment(
+      new dart::gui::osg::SupportPolygonVisual(g1, kSupportVisualElevation));
 
   enableDragAndDrop(viewer, g1);
 
@@ -364,8 +361,8 @@ int main(int argc, char* argv[])
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   std::cout << "Use the mouse to drag body nodes.\n"
-            << "Press keys 1-6 to toggle IK targets (hands, feet, elbows). "
-               "Close the viewer window to exit."
+            << "Press keys 1-4 to toggle IK targets (hands and feet). Close "
+               "the viewer window to exit."
             << std::endl;
 
   return viewer.run();
