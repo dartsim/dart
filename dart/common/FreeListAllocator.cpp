@@ -150,7 +150,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
     curr = curr->mNext;
   }
 
-  // If failed to find an avaliable memory block, allocate a new memory block
+  // If failed to find an available memory block, allocate a new memory block
   if (curr == nullptr) {
     // Allocate a sufficient size
     if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {

@@ -36,10 +36,10 @@
 #include <dart/utils/mjcf/detail/Error.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
 
-#include <dart/common/Optional.hpp>
-
 #include <Eigen/Core>
 #include <tinyxml2.h>
+
+#include <optional>
 
 namespace dart {
 namespace utils {

@@ -38,10 +38,10 @@
 
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/common/Optional.hpp>
-
 #include <Eigen/Core>
 #include <tinyxml2.h>
+
+#include <optional>
 
 namespace dart {
 namespace utils {

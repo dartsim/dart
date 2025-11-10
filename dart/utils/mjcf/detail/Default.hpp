@@ -39,10 +39,9 @@
 #include <dart/utils/mjcf/detail/MeshAttributes.hpp>
 #include <dart/utils/mjcf/detail/WeldAttributes.hpp>
 
-#include <dart/common/Optional.hpp>
-
 #include <tinyxml2.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
