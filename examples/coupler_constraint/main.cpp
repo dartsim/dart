@@ -30,6 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/osg/GridVisual.hpp>
+#include <dart/gui/osg/ImGuiHandler.hpp>
+#include <dart/gui/osg/ImGuiViewer.hpp>
+#include <dart/gui/osg/ImGuiWidget.hpp>
 #include <dart/gui/osg/RealTimeWorldNode.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
@@ -38,20 +42,25 @@
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/LineSegmentShape.hpp>
 #include <dart/dynamics/RevoluteJoint.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/math/Constants.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <imgui.h>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <cassert>
 #include <cstdlib>
@@ -67,19 +76,38 @@ using dart::simulation::WorldPtr;
 
 namespace {
 
-SkeletonPtr createCoupledPendulum()
+struct MimicAssembly
 {
-  SkeletonPtr skeleton = Skeleton::create("coupled_pendulum");
+  dart::dynamics::SkeletonPtr skeleton;
+  dart::dynamics::Joint* referenceJoint;
+  dart::dynamics::Joint* followerJoint;
+  dart::dynamics::BodyNode* referenceBody;
+  dart::dynamics::BodyNode* followerBody;
+};
+
+MimicAssembly createMimicAssembly(
+    const std::string& label,
+    const Eigen::Vector3d& baseOffset,
+    bool useCouplerConstraint,
+    const Eigen::Vector3d& referenceColor,
+    const Eigen::Vector3d& followerColor)
+{
+  SkeletonPtr skeleton = Skeleton::create(label + "_rig");
+
+  const std::string referenceJointName = label + "_reference_joint";
+  const std::string referenceBodyName = label + "_reference_body";
+  const std::string followerJointName = label + "_follower_joint";
+  const std::string followerBodyName = label + "_follower_body";
 
   // Reference link (root)
   RevoluteJoint::Properties rootJointProps;
-  rootJointProps.mName = "reference_joint";
+  rootJointProps.mName = referenceJointName;
   rootJointProps.mAxis = Eigen::Vector3d::UnitZ();
-  rootJointProps.mT_ParentBodyToJoint = Eigen::Isometry3d::Identity();
+  rootJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(baseOffset);
   rootJointProps.mT_ChildBodyToJoint = Eigen::Translation3d(-0.15, 0.0, 0.0);
 
   BodyNode::Properties rootBodyProps;
-  rootBodyProps.mName = "reference_body";
+  rootBodyProps.mName = referenceBodyName;
   dart::dynamics::Inertia rootInertia;
   rootInertia.setMass(1.0);
   rootInertia.setMoment(0.01, 0.01, 0.02, 0.0, 0.0, 0.0);
@@ -90,7 +118,7 @@ SkeletonPtr createCoupledPendulum()
   auto* referenceJoint = rootPair.first;
   auto* referenceBody = rootPair.second;
 
-  referenceJoint->setActuatorType(Joint::FORCE);
+  referenceJoint->setActuatorType(Joint::PASSIVE);
   referenceJoint->setForceLowerLimit(0, -50.0);
   referenceJoint->setForceUpperLimit(0, 50.0);
   referenceJoint->setDampingCoefficient(0, 0.01);
@@ -102,19 +130,18 @@ SkeletonPtr createCoupledPendulum()
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(referenceShape);
   referenceShapeNode->setRelativeTranslation(Eigen::Vector3d(0.15, 0.0, 0.0));
-  referenceShapeNode->getVisualAspect()->setColor(
-      Eigen::Vector3d(0.3, 0.6, 0.9));
+  referenceShapeNode->getVisualAspect()->setColor(referenceColor);
 
-  // Coupled link (follower)
+  // Dependent link (follower)
   RevoluteJoint::Properties followerJointProps;
-  followerJointProps.mName = "coupled_joint";
+  followerJointProps.mName = followerJointName;
   followerJointProps.mAxis = Eigen::Vector3d::UnitZ();
   followerJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(0.3, 0.0, 0.0);
   followerJointProps.mT_ChildBodyToJoint
       = Eigen::Translation3d(-0.15, 0.0, 0.0);
 
   BodyNode::Properties followerBodyProps;
-  followerBodyProps.mName = "coupled_body";
+  followerBodyProps.mName = followerBodyName;
   dart::dynamics::Inertia followerInertia;
   followerInertia.setMass(1.0);
   followerInertia.setMoment(0.01, 0.01, 0.02, 0.0, 0.0, 0.0);
@@ -122,89 +149,276 @@ SkeletonPtr createCoupledPendulum()
 
   auto followerPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
       referenceBody, followerJointProps, followerBodyProps);
-  auto* coupledJoint = followerPair.first;
-  auto* coupledBody = followerPair.second;
+  auto* followerJoint = followerPair.first;
+  auto* followerBody = followerPair.second;
 
-  coupledJoint->setActuatorType(Joint::MIMIC);
-  coupledJoint->setMimicJoint(referenceJoint, -1.0, 0.0);
-  coupledJoint->setUseCouplerConstraint(true);
-  coupledJoint->setForceLowerLimit(0, -50.0);
-  coupledJoint->setForceUpperLimit(0, 50.0);
-  coupledJoint->setDampingCoefficient(0, 0.01);
+  followerJoint->setActuatorType(Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, -1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(useCouplerConstraint);
+  followerJoint->setForceLowerLimit(0, -50.0);
+  followerJoint->setForceUpperLimit(0, 50.0);
+  followerJoint->setDampingCoefficient(0, 0.01);
 
-  auto coupledShape = std::make_shared<dart::dynamics::BoxShape>(
+  auto followerShape = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(0.3, 0.04, 0.04));
-  auto coupledShapeNode = coupledBody->createShapeNodeWith<
+  auto followerShapeNode = followerBody->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(coupledShape);
-  coupledShapeNode->setRelativeTranslation(Eigen::Vector3d(0.15, 0.0, 0.0));
-  coupledShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.9, 0.4, 0.3));
+      dart::dynamics::DynamicsAspect>(followerShape);
+  followerShapeNode->setRelativeTranslation(Eigen::Vector3d(0.15, 0.0, 0.0));
+  followerShapeNode->getVisualAspect()->setColor(followerColor);
 
-  // Provide a small initial offset so the constraint is active immediately
   referenceJoint->setPosition(0, 15.0 * dart::math::constantsd::pi() / 180.0);
-  coupledJoint->setPosition(0, -15.0 * dart::math::constantsd::pi() / 180.0);
+  followerJoint->setPosition(0, -15.0 * dart::math::constantsd::pi() / 180.0);
 
-  return skeleton;
+  return {skeleton, referenceJoint, followerJoint, referenceBody, followerBody};
 }
 
 class CouplerController
 {
 public:
-  explicit CouplerController(SkeletonPtr skeleton)
-    : mSkeleton(std::move(skeleton)),
-      mInitialPositions(mSkeleton->getPositions()),
-      mTorqueSteps(0),
-      mCouplerEnabled(true)
+  struct PairRegistration
   {
-    assert(mSkeleton);
+    std::string label;
+    bool usesCoupler;
+    dart::dynamics::SkeletonPtr skeleton;
+    dart::dynamics::Joint* referenceJoint;
+    dart::dynamics::Joint* followerJoint;
+    dart::dynamics::BodyNode* referenceBody;
+    dart::dynamics::BodyNode* followerBody;
+    dart::dynamics::SimpleFramePtr linkFrame;
+    dart::dynamics::LineSegmentShapePtr linkShape;
+    dart::dynamics::VisualAspect* linkVisual;
+  };
+
+  struct PairStatus
+  {
+    std::string label;
+    bool usesCoupler;
+    bool couplerEnabled;
+    double referencePosition;
+    double followerPosition;
+    double desiredFollowerPosition;
+    double positionError;
+    bool torquePulseActive;
+    int remainingTorqueSteps;
+    int stepsUntilNextPulse;
+  };
+
+  void addPair(PairRegistration registration)
+  {
+    PairData pair;
+    pair.label = registration.label;
+    pair.usesCoupler = registration.usesCoupler;
+    pair.couplerEnabled
+        = registration.usesCoupler
+              ? registration.followerJoint->isUsingCouplerConstraint()
+              : false;
+    pair.skeleton = std::move(registration.skeleton);
+    pair.referenceJoint = registration.referenceJoint;
+    pair.followerJoint = registration.followerJoint;
+    pair.referenceBody = registration.referenceBody;
+    pair.followerBody = registration.followerBody;
+    pair.linkFrame = std::move(registration.linkFrame);
+    pair.linkShape = std::move(registration.linkShape);
+    pair.linkVisual = registration.linkVisual;
+    pair.initialPositions = pair.skeleton->getPositions();
+
+    mPairs.push_back(std::move(pair));
+    refreshPairVisual(mPairs.back());
   }
 
   void update()
   {
-    // Clear any commands on the reference joint so it responds purely to
-    // incoming constraint impulses.
-    auto* referenceJoint = mSkeleton->getJoint("reference_joint");
-    referenceJoint->setForce(0, 0.0);
+    for (auto& pair : mPairs) {
+      if (pair.referenceJoint)
+        pair.referenceJoint->setForce(0, 0.0);
+      applyTorqueToFollower(pair);
+      refreshPairVisual(pair);
+    }
 
-    if (mTorqueSteps > 0) {
-      auto* coupledBody = mSkeleton->getBodyNode("coupled_body");
-      coupledBody->addExtTorque(Eigen::Vector3d(0.0, 0.0, mTorqueMagnitude));
-      --mTorqueSteps;
+    if (mAutoPulseEnabled) {
+      ++mAutoPulseCounter;
+      if (mAutoPulseCounter >= mAutoPulseIntervalSteps) {
+        triggerFollowerImpulse(false);
+        mAutoPulseCounter = 0;
+      }
     }
   }
 
-  void triggerFollowerImpulse()
+  void triggerFollowerImpulse(bool announce = true)
   {
-    mTorqueSteps = 240;
+    for (auto& pair : mPairs)
+      pair.torqueStepsRemaining = mPulseDurationSteps;
+
+    if (announce) {
+      std::cout << "Applied torque pulse to both follower links" << std::endl;
+    }
   }
 
   void toggleCoupler()
   {
-    mCouplerEnabled = !mCouplerEnabled;
-    auto* coupledJoint = mSkeleton->getJoint("coupled_joint");
-    coupledJoint->setUseCouplerConstraint(mCouplerEnabled);
+    for (auto& pair : mPairs) {
+      if (!pair.usesCoupler)
+        continue;
+      pair.couplerEnabled = !pair.couplerEnabled;
+      pair.followerJoint->setUseCouplerConstraint(pair.couplerEnabled);
+      std::cout << pair.label
+                << (pair.couplerEnabled ? ": coupler enabled"
+                                        : ": coupler disabled")
+                << std::endl;
+    }
   }
 
-  bool isCouplerEnabled() const
+  void toggleAutoPulse()
   {
-    return mCouplerEnabled;
+    enableAutoPulse(!mAutoPulseEnabled);
+  }
+
+  void enableAutoPulse(bool enable)
+  {
+    mAutoPulseEnabled = enable;
+    mAutoPulseCounter = 0;
+    std::cout
+        << (mAutoPulseEnabled ? "Auto pulse enabled" : "Auto pulse disabled")
+        << std::endl;
+  }
+
+  bool isAutoPulseEnabled() const
+  {
+    return mAutoPulseEnabled;
+  }
+
+  int getStepsUntilNextPulse() const
+  {
+    if (!mAutoPulseEnabled)
+      return 0;
+    return std::max(0, mAutoPulseIntervalSteps - mAutoPulseCounter);
   }
 
   void reset()
   {
-    mSkeleton->setPositions(mInitialPositions);
-    mSkeleton->setVelocities(Eigen::VectorXd::Zero(mSkeleton->getNumDofs()));
-    mSkeleton->clearExternalForces();
-    mTorqueSteps = 0;
+    for (auto& pair : mPairs) {
+      if (!pair.skeleton)
+        continue;
+      pair.skeleton->setPositions(pair.initialPositions);
+      pair.skeleton->setVelocities(
+          Eigen::VectorXd::Zero(pair.skeleton->getNumDofs()));
+      pair.skeleton->clearExternalForces();
+      pair.torqueStepsRemaining = 0;
+      refreshPairVisual(pair);
+    }
+    mAutoPulseCounter = 0;
+  }
+
+  std::vector<PairStatus> getStatuses() const
+  {
+    std::vector<PairStatus> result;
+    result.reserve(mPairs.size());
+
+    for (const auto& pair : mPairs) {
+      PairStatus status;
+      status.label = pair.label;
+      status.usesCoupler = pair.usesCoupler;
+      status.couplerEnabled = pair.couplerEnabled;
+      status.referencePosition
+          = pair.referenceJoint ? pair.referenceJoint->getPosition(0) : 0.0;
+      status.followerPosition
+          = pair.followerJoint ? pair.followerJoint->getPosition(0) : 0.0;
+      status.desiredFollowerPosition
+          = pair.followerJoint ? computeDesiredFollowerPosition(pair) : 0.0;
+      status.positionError
+          = status.followerPosition - status.desiredFollowerPosition;
+      status.torquePulseActive = pair.torqueStepsRemaining > 0;
+      status.remainingTorqueSteps = pair.torqueStepsRemaining;
+      status.stepsUntilNextPulse = getStepsUntilNextPulse();
+
+      result.push_back(status);
+    }
+
+    return result;
   }
 
 private:
-  SkeletonPtr mSkeleton;
-  Eigen::VectorXd mInitialPositions;
-  int mTorqueSteps;
-  double mTorqueMagnitude{4.0};
-  bool mCouplerEnabled;
+  struct PairData
+  {
+    std::string label;
+    bool usesCoupler{false};
+    bool couplerEnabled{false};
+    dart::dynamics::SkeletonPtr skeleton;
+    dart::dynamics::Joint* referenceJoint{nullptr};
+    dart::dynamics::Joint* followerJoint{nullptr};
+    dart::dynamics::BodyNode* referenceBody{nullptr};
+    dart::dynamics::BodyNode* followerBody{nullptr};
+    dart::dynamics::SimpleFramePtr linkFrame;
+    dart::dynamics::LineSegmentShapePtr linkShape;
+    dart::dynamics::VisualAspect* linkVisual{nullptr};
+    Eigen::VectorXd initialPositions;
+    int torqueStepsRemaining{0};
+  };
+
+  double computeDesiredFollowerPosition(const PairData& pair) const
+  {
+    if (pair.followerJoint == nullptr)
+      return 0.0;
+
+    const auto& props = pair.followerJoint->getMimicDofProperties()[0];
+    const auto* refJoint = props.mReferenceJoint;
+    if (refJoint == nullptr)
+      return 0.0;
+
+    return refJoint->getPosition(props.mReferenceDofIndex) * props.mMultiplier
+           + props.mOffset;
+  }
+
+  void refreshPairVisual(PairData& pair)
+  {
+    if (!pair.linkShape || !pair.referenceBody || !pair.followerBody)
+      return;
+
+    pair.linkShape->setVertex(
+        0, pair.referenceBody->getTransform().translation());
+    pair.linkShape->setVertex(
+        1, pair.followerBody->getTransform().translation());
+
+    if (!pair.linkVisual)
+      return;
+
+    const double desired = computeDesiredFollowerPosition(pair);
+    const double actual
+        = pair.followerJoint ? pair.followerJoint->getPosition(0) : 0.0;
+    const double error = actual - desired;
+    const double severity = std::min(1.0, std::abs(error) * 8.0);
+
+    Eigen::Vector3d color;
+    if (pair.usesCoupler) {
+      const Eigen::Vector3d good(0.6, 0.95, 0.4);
+      const Eigen::Vector3d bad(1.0, 0.6, 0.2);
+      color = good + severity * (bad - good);
+    } else {
+      const Eigen::Vector3d base(0.7, 0.7, 0.85);
+      const Eigen::Vector3d alert(1.0, 0.4, 0.3);
+      color = base + severity * (alert - base);
+    }
+    pair.linkVisual->setColor(color);
+  }
+
+  void applyTorqueToFollower(PairData& pair)
+  {
+    if (pair.torqueStepsRemaining <= 0 || pair.followerBody == nullptr)
+      return;
+
+    pair.followerBody->addExtTorque(
+        Eigen::Vector3d(0.0, 0.0, mTorqueMagnitude));
+    --pair.torqueStepsRemaining;
+  }
+
+  std::vector<PairData> mPairs;
+  bool mAutoPulseEnabled{false};
+  int mAutoPulseIntervalSteps{1200};
+  int mAutoPulseCounter{0};
+  int mPulseDurationSteps{240};
+  double mTorqueMagnitude{50.0};
 };
 
 class CouplerWorldNode : public dart::gui::osg::RealTimeWorldNode
@@ -240,18 +454,17 @@ public:
     switch (ea.getKey()) {
       case 'c':
         mController->toggleCoupler();
-        std::cout
-            << (mController->isCouplerEnabled() ? "Coupler enabled"
-                                                : "Coupler disabled")
-            << std::endl;
         return true;
       case 'p':
         mController->triggerFollowerImpulse();
-        std::cout << "Applied torque pulse to the follower link" << std::endl;
         return true;
       case 'r':
         mController->reset();
-        std::cout << "Reset configuration" << std::endl;
+        std::cout << "Reset both mimic pairs to their initial configuration"
+                  << std::endl;
+        return true;
+      case 'a':
+        mController->toggleAutoPulse();
         return true;
       default:
         return false;
@@ -259,6 +472,88 @@ public:
   }
 
 private:
+  CouplerController* mController;
+};
+
+class CouplerOverlay : public dart::gui::osg::ImGuiWidget
+{
+public:
+  CouplerOverlay(
+      dart::gui::osg::ImGuiViewer* viewer, CouplerController* controller)
+    : mViewer(viewer), mController(controller)
+  {
+  }
+
+  void render() override
+  {
+    if (mViewer == nullptr || mController == nullptr)
+      return;
+
+    ImGui::SetNextWindowPos(ImVec2(12, 12));
+    ImGui::SetNextWindowSize(ImVec2(360, 280), ImGuiCond_Once);
+    ImGui::SetNextWindowBgAlpha(0.55f);
+
+    if (!ImGui::Begin(
+            "Coupler Constraint",
+            nullptr,
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::End();
+      return;
+    }
+
+    const double radToDeg = 180.0 / dart::math::constantsd::pi();
+    const auto statuses = mController->getStatuses();
+
+    ImGui::TextWrapped(
+        "Left: bilateral CouplerConstraint (red/blue). Right: mimic motor "
+        "(purple/teal). Both receive the same follower torque input.");
+    ImGui::Separator();
+
+    ImGui::Text(
+        "Automatic pulses: %s",
+        mController->isAutoPulseEnabled() ? "enabled" : "disabled");
+    if (mController->isAutoPulseEnabled()) {
+      ImGui::Text(
+          "Next pulse in %d steps", mController->getStepsUntilNextPulse());
+    } else {
+      ImGui::TextUnformatted("Press 'p' to inject a pulse.");
+    }
+
+    for (const auto& status : statuses) {
+      ImGui::Separator();
+      ImGui::TextColored(
+          status.usesCoupler ? ImVec4(0.8f, 1.0f, 0.6f, 1.0f)
+                             : ImVec4(0.9f, 0.7f, 1.0f, 1.0f),
+          "%s",
+          status.label.c_str());
+      ImGui::Text(
+          "Constraint: %s",
+          status.usesCoupler ? "Coupler (bilateral)" : "Mimic motor (servo)");
+      ImGui::Text("Reference: %6.2f deg", status.referencePosition * radToDeg);
+      ImGui::Text("Follower:  %6.2f deg", status.followerPosition * radToDeg);
+      ImGui::Text(
+          "Desired:   %6.2f deg", status.desiredFollowerPosition * radToDeg);
+      ImGui::TextColored(
+          std::abs(status.positionError) < 1e-3
+              ? ImVec4(0.8f, 1.0f, 0.6f, 1.0f)
+              : ImVec4(1.0f, 0.6f, 0.3f, 1.0f),
+          "Error:     %+6.3f deg",
+          status.positionError * radToDeg);
+      if (status.torquePulseActive) {
+        ImGui::Text(
+            "Pulse active (%d steps remain)", status.remainingTorqueSteps);
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Controls", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::TextWrapped("%s", mViewer->getInstructions().c_str());
+    }
+
+    ImGui::End();
+  }
+
+private:
+  dart::gui::osg::ImGuiViewer* mViewer;
   CouplerController* mController;
 };
 
@@ -270,48 +565,139 @@ int main(int /*argc*/, char* /*argv*/[])
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(1e-3);
 
-  SkeletonPtr skeleton = createCoupledPendulum();
-  world->addSkeleton(skeleton);
+  auto couplerAssembly = createMimicAssembly(
+      "coupler",
+      Eigen::Vector3d(-0.45, 0.0, 0.0),
+      true,
+      Eigen::Vector3d(0.85, 0.35, 0.25),
+      Eigen::Vector3d(0.25, 0.58, 0.92));
+  auto motorAssembly = createMimicAssembly(
+      "motor",
+      Eigen::Vector3d(0.45, 0.0, 0.0),
+      false,
+      Eigen::Vector3d(0.68, 0.32, 0.70),
+      Eigen::Vector3d(0.25, 0.75, 0.70));
 
-  auto controller = std::make_unique<CouplerController>(skeleton);
+  world->addSkeleton(couplerAssembly.skeleton);
+  world->addSkeleton(motorAssembly.skeleton);
 
-  auto* worldNode = new CouplerWorldNode(world, controller.get());
-  auto* handler = new CouplerEventHandler(controller.get());
+  std::cout
+      << "Coupler constraint demo:\n"
+      << "  • Left pair uses the bilateral CouplerConstraint (red/blue).\n"
+      << "  • Right pair uses the legacy MimicMotorConstraint (purple/teal).\n"
+      << "Both followers receive the same external torque so you can observe "
+      << "how the bilateral constraint reacts on the reference joint.\n"
+      << "Press 'p' to inject a torque pulse, 'c' to disable/enable the "
+         "coupler on the left pair, and 'a' to toggle periodic pulses.\n"
+      << std::endl;
 
-  dart::gui::osg::Viewer viewer;
+  auto controller = std::make_unique<CouplerController>();
+
+  auto couplerFrame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "coupler_visual");
+  auto couplerLine = std::make_shared<dart::dynamics::LineSegmentShape>(0.06f);
+  couplerLine->addVertex(Eigen::Vector3d::Zero());
+  couplerLine->addVertex(Eigen::Vector3d::Zero());
+  couplerLine->addConnection(0, 1);
+  couplerFrame->setShape(couplerLine);
+  auto couplerVisual = couplerFrame->createVisualAspect();
+  couplerVisual->setColor(Eigen::Vector3d(0.95, 0.95, 0.2));
+  world->addSimpleFrame(couplerFrame);
+
+  auto motorFrame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "motor_visual");
+  auto motorLine = std::make_shared<dart::dynamics::LineSegmentShape>(0.04f);
+  motorLine->addVertex(Eigen::Vector3d::Zero());
+  motorLine->addVertex(Eigen::Vector3d::Zero());
+  motorLine->addConnection(0, 1);
+  motorFrame->setShape(motorLine);
+  auto motorVisual = motorFrame->createVisualAspect();
+  motorVisual->setColor(Eigen::Vector3d(0.75, 0.75, 0.9));
+  world->addSimpleFrame(motorFrame);
+
+  controller->addPair({
+      .label = "Coupler pair (left)",
+      .usesCoupler = true,
+      .skeleton = couplerAssembly.skeleton,
+      .referenceJoint = couplerAssembly.referenceJoint,
+      .followerJoint = couplerAssembly.followerJoint,
+      .referenceBody = couplerAssembly.referenceBody,
+      .followerBody = couplerAssembly.followerBody,
+      .linkFrame = couplerFrame,
+      .linkShape = couplerLine,
+      .linkVisual = couplerVisual,
+  });
+
+  controller->addPair({
+      .label = "Mimic motor pair (right)",
+      .usesCoupler = false,
+      .skeleton = motorAssembly.skeleton,
+      .referenceJoint = motorAssembly.referenceJoint,
+      .followerJoint = motorAssembly.followerJoint,
+      .referenceBody = motorAssembly.referenceBody,
+      .followerBody = motorAssembly.followerBody,
+      .linkFrame = motorFrame,
+      .linkShape = motorLine,
+      .linkVisual = motorVisual,
+  });
+
+  controller->enableAutoPulse(true);
+  controller->triggerFollowerImpulse(false);
+
+  ::osg::ref_ptr<CouplerWorldNode> worldNode
+      = new CouplerWorldNode(world, controller.get());
+  ::osg::ref_ptr<CouplerEventHandler> handler
+      = new CouplerEventHandler(controller.get());
+
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
     return EXIT_FAILURE;
   }
-  viewer.addWorldNode(worldNode);
-  viewer.addEventHandler(handler);
+  viewer->addWorldNode(worldNode);
+  viewer->addEventHandler(handler);
 
-  viewer.addInstructionText("space: toggle simulation");
-  viewer.addInstructionText("'p': apply torque pulse to the follower link");
-  viewer.addInstructionText("'c': toggle the coupler constraint");
-  viewer.addInstructionText("'r': reset configuration");
-  std::cout << viewer.getInstructions() << std::endl;
+  viewer->addInstructionText("space: toggle simulation (auto-starts)\n");
+  viewer->addInstructionText("'p': apply torque pulse to both followers\n");
+  viewer->addInstructionText("'c': toggle the coupler on the left pair\n");
+  viewer->addInstructionText("'r': reset both pairs\n");
+  viewer->addInstructionText("'a': toggle automatic torque pulses\n");
+  std::cout << viewer->getInstructions() << std::endl;
 
-  viewer.setUpViewInWindow(0, 0, 960, 720);
-  viewer.getCameraManipulator()->setHomePosition(
+  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
+      new dart::gui::osg::GridVisual());
+  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  grid->setNumCells(25);
+  grid->setMinorLineStepSize(0.05);
+  viewer->addAttachment(grid);
+
+  viewer->setUpViewInWindow(0, 0, 960, 720);
+  viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(1.5f, 1.5f, 1.2f),
       ::osg::Vec3(0.4f, 0.0f, 0.2f),
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer->setCameraManipulator(viewer->getCameraManipulator());
 
-  if (!viewer.isRealized())
-    viewer.realize();
+  viewer->simulate(true);
+
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<CouplerOverlay>(viewer.get(), controller.get()));
+
+  if (!viewer->isRealized())
+    viewer->realize();
 
   osg::ref_ptr<osg::GraphicsContext> gc
-      = viewer.getCamera() ? viewer.getCamera()->getGraphicsContext() : nullptr;
-  if (!viewer.isRealized() || !gc || !gc->valid()) {
+      = viewer->getCamera() ? viewer->getCamera()->getGraphicsContext()
+                            : nullptr;
+  if (!viewer->isRealized() || !gc || !gc->valid()) {
     std::cerr << "Failed to create an OSG window. "
               << "Ensure DISPLAY is set or use a virtual framebuffer.\n";
     return EXIT_FAILURE;
   }
 
-  const int runResult = viewer.run();
+  const int runResult = viewer->run();
   if (runResult != 0) {
     std::cerr << "OSG viewer exited early (status " << runResult
               << "). Ensure a valid OpenGL context is available.\n";
@@ -320,3 +706,4 @@ int main(int /*argc*/, char* /*argv*/[])
 
   return 0;
 }
+#include <cmath>

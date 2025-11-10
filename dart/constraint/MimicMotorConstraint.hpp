@@ -48,7 +48,11 @@ class Joint;
 
 namespace constraint {
 
-/// Servo motor constraint
+/// MimicMotorConstraint behaves like a servo motor: it drives only the
+/// dependent joint toward the reference joint's trajectory by applying
+/// impulses locally. The reference joint does not receive an equal and
+/// opposite impulse. Use CouplerConstraint instead when you need a bilateral
+/// constraint that reacts on both joints.
 class MimicMotorConstraint : public ConstraintBase
 {
 public:
