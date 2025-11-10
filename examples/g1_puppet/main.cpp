@@ -35,7 +35,6 @@ struct Options
       = "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
         "master/robots/g1_description";
   std::string robotUri = "package://g1_description/g1_29dof.urdf";
-  bool interactive = true;
 };
 
 void printUsage(const char* executable)
