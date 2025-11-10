@@ -40,6 +40,8 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <Eigen/Core>
 #include <tinyxml2.h>
 
@@ -48,7 +50,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Compiler final
+class DART_UTILS_API Compiler final
 {
 public:
   Compiler() = default;
