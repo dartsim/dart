@@ -106,7 +106,7 @@ void NloptSolver(py::module& m)
           "getAlgorithm",
           +[](const dart::optimizer::NloptSolver* self)
               -> dart::optimizer::NloptSolver::Algorithm {
-            return self->getAlgorithm2();
+            return self->getAlgorithm();
           });
 
   auto attr = m.attr("NloptSolver");

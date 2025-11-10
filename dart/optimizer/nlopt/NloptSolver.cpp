@@ -47,23 +47,8 @@ namespace optimizer {
 
 //==============================================================================
 NloptSolver::NloptSolver(
-    const Solver::Properties& properties, nlopt::algorithm alg)
-  : NloptSolver(properties, convertAlgorithm(alg))
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(
     const Solver::Properties& properties, NloptSolver::Algorithm alg)
   : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0)
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg)
-  : NloptSolver(std::move(problem), convertAlgorithm(alg))
 {
   // Do nothing
 }
@@ -201,14 +186,14 @@ std::string NloptSolver::getType() const
 //==============================================================================
 std::shared_ptr<Solver> NloptSolver::clone() const
 {
-  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm2());
+  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm());
 }
 
 //==============================================================================
 void NloptSolver::copy(const NloptSolver& other)
 {
   setProperties(other.getSolverProperties());
-  setAlgorithm(other.getAlgorithm2());
+  setAlgorithm(other.getAlgorithm());
 }
 
 //==============================================================================
@@ -219,25 +204,13 @@ NloptSolver& NloptSolver::operator=(const NloptSolver& other)
 }
 
 //==============================================================================
-void NloptSolver::setAlgorithm(nlopt::algorithm alg)
-{
-  setAlgorithm(convertAlgorithm(alg));
-}
-
-//==============================================================================
 void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
 {
   mAlg = convertAlgorithm(alg);
 }
 
 //==============================================================================
-nlopt::algorithm NloptSolver::getAlgorithm() const
-{
-  return convertAlgorithm(getAlgorithm2());
-}
-
-//==============================================================================
-NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
+NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 {
   return convertAlgorithm(mAlg);
 }
@@ -246,11 +219,6 @@ NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
 #define NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(alg_name)                          \
   case alg_name:                                                               \
     return nlopt::algorithm::alg_name;
-
-//==============================================================================
-#define NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(alg_name)                          \
-  case nlopt::algorithm::alg_name:                                             \
-    return alg_name;
 
 //==============================================================================
 nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
@@ -307,64 +275,6 @@ nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
           "nlopt::algorithm::LN_COBYLA instead. ",
           algorithm);
       return nlopt::algorithm::LN_COBYLA;
-  }
-}
-
-//==============================================================================
-NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
-{
-  switch (algorithm) {
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L_RAND)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_NOSCAL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L_NOSCAL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_DIRECT_L_RAND_NOSCAL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_ORIG_DIRECT)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_ORIG_DIRECT_L)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GD_STOGO)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GD_STOGO_RAND)
-#if !NLOPT_VERSION_GE(2, 9, 0)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_LBFGS_NOCEDAL)
-#endif
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_LBFGS)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_PRAXIS)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_VAR1)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_VAR2)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_TNEWTON)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_TNEWTON_RESTART)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_TNEWTON_PRECOND)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_TNEWTON_PRECOND_RESTART)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_CRS2_LM)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_MLSL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GD_MLSL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_MLSL_LDS)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GD_MLSL_LDS)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_MMA)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_COBYLA)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_NEWUOA)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_NEWUOA_BOUND)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_NELDERMEAD)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_SBPLX)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_AUGLAG)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_AUGLAG)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_AUGLAG_EQ)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_AUGLAG_EQ)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LN_BOBYQA)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_ISRES)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(AUGLAG)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(AUGLAG_EQ)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(G_MLSL)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(G_MLSL_LDS)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_SLSQP)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(LD_CCSAQ)
-    NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(GN_ESCH)
-    default:
-      DART_WARN(
-          "[NloptSolver] Attempt to convert unsupported algorithm '{}'. Use "
-          "NloptSolver::Algorithm::LN_COBYLA instead. ",
-          algorithm);
-      return LN_COBYLA;
   }
 }
 
