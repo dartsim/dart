@@ -21,8 +21,6 @@
 #include <memory>
 #include <string>
 
-#include <cstdlib>
-
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -163,16 +161,6 @@ void enableDragAndDrop(dart::gui::osg::Viewer& viewer, const SkeletonPtr& robot)
     viewer.enableDragAndDrop(robot->getBodyNode(i), false, false);
 }
 
-bool hasDisplayServer()
-{
-#ifdef _WIN32
-  return true;
-#else
-  return std::getenv("DISPLAY") != nullptr
-         || std::getenv("WAYLAND_DISPLAY") != nullptr;
-#endif
-}
-
 } // namespace
 
 int main(int argc, char* argv[])
@@ -196,13 +184,6 @@ int main(int argc, char* argv[])
   std::cout << "Loaded G1 robot from '" << options.robotUri << "'.\n"
             << "Package root for '" << options.packageName << "' set to '"
             << options.packageUri << "'.\n";
-
-  if (!hasDisplayServer()) {
-    std::cerr << "Unable to open the GUI window because no display server is "
-                 "available (DISPLAY/WAYLAND_DISPLAY unset). Please run this "
-                 "example from a graphical desktop session.\n";
-    return 1;
-  }
 
   auto worldNode = new dart::gui::osg::WorldNode(world);
   dart::gui::osg::Viewer viewer;
