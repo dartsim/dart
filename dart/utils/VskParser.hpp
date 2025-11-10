@@ -40,6 +40,8 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
+#include <dart/utils/Export.hpp>
+
 namespace dart {
 namespace utils {
 
@@ -48,7 +50,7 @@ namespace VskParser {
 /// that can be used in kinematics or dynamics simulation. VSK file format
 /// itself doesn't provide essential properties for it such as body's shape,
 /// mass, and inertia.
-struct Options
+struct DART_UTILS_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr retrieverOrNullptr;
@@ -97,7 +99,7 @@ struct Options
 };
 
 /// Read Skeleton from VSK file
-dynamics::SkeletonPtr readSkeleton(
+dynamics::SkeletonPtr DART_UTILS_API readSkeleton(
     const common::Uri& fileUri, Options options = Options());
 
 } // namespace VskParser

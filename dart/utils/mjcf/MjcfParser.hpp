@@ -38,13 +38,15 @@
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <string>
 
 namespace dart {
 namespace utils {
 namespace MjcfParser {
 
-struct Options
+struct DART_UTILS_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr mRetriever;
@@ -70,7 +72,7 @@ struct Options
 ///
 /// \warning This MJCF model parser is experimental and not complete
 /// implementation of the spec.
-simulation::WorldPtr readWorld(
+simulation::WorldPtr DART_UTILS_API readWorld(
     const common::Uri& uri, const Options& options = Options());
 
 } // namespace MjcfParser

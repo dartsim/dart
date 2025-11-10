@@ -35,6 +35,8 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <unordered_map>
 #include <vector>
 
@@ -61,7 +63,7 @@ namespace utils {
 ///    `/usr/local/share/doc/dart/data/` on Linux).
 /// 3) environment variable, `DART_DATA_PATH`: Path to the data directory
 ///    specified by the user.
-class DartResourceRetriever : public common::ResourceRetriever
+class DART_UTILS_API DartResourceRetriever : public common::ResourceRetriever
 {
 public:
   template <typename... Args>

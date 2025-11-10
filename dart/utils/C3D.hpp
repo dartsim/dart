@@ -35,6 +35,8 @@
 
 #include <dart/math/MathTypes.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <vector>
@@ -88,13 +90,13 @@ typedef struct c3d_frame_t
 float convertDecToFloat(char _bytes[4]);
 void convertFloatToDec(float _f, char* _bytes);
 
-bool loadC3DFile(
+bool DART_UTILS_API loadC3DFile(
     const char* _fileName,
     std::vector<std::vector<Eigen::Vector3d>>& _pointData,
     int* _nFrame,
     int* _nMarker,
     double* _freq);
-bool saveC3DFile(
+bool DART_UTILS_API saveC3DFile(
     const char* _fileName,
     std::vector<std::vector<Eigen::Vector3d>>& _pointData,
     int _nFrame,
