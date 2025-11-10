@@ -72,8 +72,13 @@ bool TimerCondition::isSatisfied()
 }
 
 //==============================================================================
-BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
-  : TerminalCondition(_state), mBodyNode(_body)
+BodyContactCondition::BodyContactCondition(
+    State* _state,
+    BodyNode* _body,
+    dart::constraint::ConstraintSolver* constraintSolver)
+  : TerminalCondition(_state),
+    mBodyNode(_body),
+    mConstraintSolver(constraintSolver)
 {
   DART_ASSERT(_state != nullptr);
   DART_ASSERT(_body != nullptr);
@@ -94,11 +99,9 @@ bool BodyContactCondition::isSatisfied()
     }
   }
 
-  auto* skeleton = mBodyNode->getSkeleton();
-  auto* world = skeleton ? skeleton->getWorld() : nullptr;
-  if (!world)
+  if (!mConstraintSolver)
     return false;
 
-  const auto& result = world->getLastCollisionResult();
+  const auto& result = mConstraintSolver->getLastCollisionResult();
   return result.inCollision(mBodyNode);
 }

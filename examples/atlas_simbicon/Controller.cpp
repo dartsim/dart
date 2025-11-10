@@ -422,9 +422,11 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   State* state3 = new State(mAtlasRobot, "3");
 
   TerminalCondition* cond0 = new TimerCondition(state0, 0.3);
-  TerminalCondition* cond1 = new BodyContactCondition(state1, _getRightFoot());
+  TerminalCondition* cond1
+      = new BodyContactCondition(state1, _getRightFoot(), mConstratinSolver);
   TerminalCondition* cond2 = new TimerCondition(state2, 0.3);
-  TerminalCondition* cond3 = new BodyContactCondition(state3, _getLeftFoot());
+  TerminalCondition* cond3
+      = new BodyContactCondition(state3, _getLeftFoot(), mConstratinSolver);
 
   state0->setTerminalCondition(cond0);
   state1->setTerminalCondition(cond1);
@@ -629,9 +631,11 @@ StateMachine* Controller::_createWalkingStateMachine()
   State* state3 = new State(mAtlasRobot, "3");
 
   TerminalCondition* cond0 = new TimerCondition(state0, 0.3);
-  TerminalCondition* cond1 = new BodyContactCondition(state1, _getRightFoot());
+  TerminalCondition* cond1
+      = new BodyContactCondition(state1, _getRightFoot(), mConstratinSolver);
   TerminalCondition* cond2 = new TimerCondition(state2, 0.3);
-  TerminalCondition* cond3 = new BodyContactCondition(state3, _getLeftFoot());
+  TerminalCondition* cond3
+      = new BodyContactCondition(state3, _getLeftFoot(), mConstratinSolver);
 
   state0->setTerminalCondition(cond0);
   state1->setTerminalCondition(cond1);
