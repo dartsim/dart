@@ -132,15 +132,6 @@ tinyxml2::XMLElement* getElement(
 
 bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
-// Please use getAttributeString() instead.
-DART_DEPRECATED(6.0)
-std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
-
-// Please use getAttributeDouble() instead.
-DART_DEPRECATED(6.0)
-void getAttribute(
-    tinyxml2::XMLElement* element, const char* const name, double* d);
-
 std::string getAttributeString(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 bool getAttributeBool(

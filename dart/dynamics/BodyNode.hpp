@@ -735,18 +735,6 @@ public:
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
 
-  /// Set whether this body node is colliding with other objects. Note that
-  /// this status is set by the constraint solver during dynamics simulation but
-  /// not by collision detector.
-  /// \param[in] _isColliding True if this body node is colliding.
-  DART_DEPRECATED(6.0)
-  void setColliding(bool _isColliding);
-
-  /// Return whether this body node is set to be colliding with other objects.
-  /// \return True if this body node is colliding.
-  DART_DEPRECATED(6.0)
-  bool isColliding();
-
   /// Add applying linear Cartesian forces to this node
   ///
   /// A force is defined by a point of application and a force vector. The
@@ -1099,10 +1087,6 @@ protected:
 
   /// Counts the number of nodes globally.
   static std::size_t msBodyNodeCount;
-
-  /// Whether the node is currently in collision with another node.
-  /// \deprecated DART_DEPRECATED(6.0) See #670 for more detail.
-  bool mIsColliding;
 
   //--------------------------------------------------------------------------
   // Structural Properties

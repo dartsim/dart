@@ -72,8 +72,13 @@ bool TimerCondition::isSatisfied()
 }
 
 //==============================================================================
-BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
-  : TerminalCondition(_state), mBodyNode(_body)
+BodyContactCondition::BodyContactCondition(
+    State* _state,
+    BodyNode* _body,
+    dart::constraint::ConstraintSolver* constraintSolver)
+  : TerminalCondition(_state),
+    mBodyNode(_body),
+    mConstraintSolver(constraintSolver)
 {
   DART_ASSERT(_state != nullptr);
   DART_ASSERT(_body != nullptr);
@@ -94,20 +99,9 @@ bool BodyContactCondition::isSatisfied()
     }
   }
 
-  // TODO(JS): Need more elegant condition check method
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  if (mBodyNode->isColliding())
-    DART_SUPPRESS_DEPRECATED_END
-    {
-      //    DART_INFO("BodyNode [{}{}", mBodyNode->getName(), "] is in
-      //    contact."
-      //);
-      return true;
-    }
-  else {
-    //    DART_INFO("Waiting for BodyNode [{}{}", mBodyNode->getName()
-    //, "] is in contact."
-    //);
+  if (!mConstraintSolver)
     return false;
-  }
+
+  const auto& result = mConstraintSolver->getLastCollisionResult();
+  return result.inCollision(mBodyNode);
 }

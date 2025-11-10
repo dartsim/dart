@@ -649,11 +649,6 @@ void Skeleton::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-const Skeleton::AspectProperties& Skeleton::getSkeletonProperties() const
-{
-  return mAspectProperties;
-}
-
 //==============================================================================
 const std::string& Skeleton::setName(const std::string& _name)
 {
@@ -725,20 +720,6 @@ void Skeleton::updateNameManagerNames()
         std::string("Skeleton::") + mgr.first.name() + " | "
         + mAspectProperties.mName);
   }
-}
-
-//==============================================================================
-void Skeleton::enableSelfCollision(bool enableAdjacentBodyCheck)
-{
-  enableSelfCollisionCheck();
-  setAdjacentBodyCheck(enableAdjacentBodyCheck);
-}
-
-//==============================================================================
-void Skeleton::disableSelfCollision()
-{
-  disableSelfCollisionCheck();
-  setAdjacentBodyCheck(false);
 }
 
 //==============================================================================
@@ -3963,25 +3944,6 @@ double Skeleton::computePotentialEnergy() const
   }
 
   return PE;
-}
-
-//==============================================================================
-void Skeleton::clearCollidingBodies()
-{
-  for (auto i = 0u; i < getNumBodyNodes(); ++i) {
-    auto bodyNode = getBodyNode(i);
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    bodyNode->setColliding(false);
-    DART_SUPPRESS_DEPRECATED_END
-
-    auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode) {
-      auto& pointMasses = softBodyNode->getPointMasses();
-
-      for (auto pointMass : pointMasses)
-        pointMass->setColliding(false);
-    }
-  }
 }
 
 //==============================================================================
