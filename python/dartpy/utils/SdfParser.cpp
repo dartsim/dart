@@ -65,30 +65,10 @@ void SdfParser(py::module& m)
 
   sm.def(
       "readWorld",
-      +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
-          -> simulation::WorldPtr {
-        DART_SUPPRESS_DEPRECATED_BEGIN
-        return utils::SdfParser::readWorld(uri, retriever);
-        DART_SUPPRESS_DEPRECATED_END
-      },
-      ::py::arg("uri"),
-      ::py::arg("retriever"));
-  sm.def(
-      "readWorld",
       ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
           &utils::SdfParser::readWorld),
       ::py::arg("uri"),
       ::py::arg("options") = utils::SdfParser::Options());
-  sm.def(
-      "readSkeleton",
-      +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
-          -> dynamics::SkeletonPtr {
-        DART_SUPPRESS_DEPRECATED_BEGIN
-        return utils::SdfParser::readSkeleton(uri, retriever);
-        DART_SUPPRESS_DEPRECATED_END
-      },
-      ::py::arg("uri"),
-      ::py::arg("retriever"));
   sm.def(
       "readSkeleton",
       ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
