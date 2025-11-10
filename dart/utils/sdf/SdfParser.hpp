@@ -39,6 +39,8 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <dart/utils/Export.hpp>
+
 namespace dart {
 namespace utils {
 
@@ -55,7 +57,7 @@ enum class RootJointType
   Fixed = 1,
 };
 
-struct Options
+struct DART_UTILS_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr mResourceRetriever;
@@ -70,11 +72,24 @@ struct Options
       RootJointType defaultRootJointType = RootJointType::Floating);
 };
 
-simulation::WorldPtr readWorld(
+DART_DEPRECATED(6.0)
+simulation::WorldPtr DART_UTILS_API readSdfFile(
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
+
+simulation::WorldPtr DART_UTILS_API readWorld(
     const common::Uri& uri, const Options& options = Options());
 
-dynamics::SkeletonPtr readSkeleton(
+DART_DEPRECATED(6.12)
+simulation::WorldPtr DART_UTILS_API readWorld(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+
+dynamics::SkeletonPtr DART_UTILS_API readSkeleton(
     const common::Uri& uri, const Options& options = Options());
+
+DART_DEPRECATED(6.12)
+dynamics::SkeletonPtr DART_UTILS_API readSkeleton(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retrievers);
 
 } // namespace SdfParser
 
