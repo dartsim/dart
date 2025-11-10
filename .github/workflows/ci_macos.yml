@@ -66,8 +66,7 @@ jobs:
   build-debug:
     name: arm64-Debug
     runs-on: macos-latest
-    # Only run Debug builds on schedule or main branch
-    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
         uses: actions/checkout@v5
