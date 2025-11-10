@@ -35,13 +35,15 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public GenericJoint<math::SO3Space>
+class DART_API BallJoint : public GenericJoint<math::SO3Space>
 {
 public:
   friend class Skeleton;
