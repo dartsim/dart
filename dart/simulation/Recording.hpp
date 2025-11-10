@@ -41,6 +41,8 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <vector>
@@ -54,7 +56,7 @@ class Skeleton;
 namespace simulation {
 
 /// \brief class Recording
-class Recording
+class DART_API Recording
 {
 public:
   /// \brief Create Recording with a list of skeletons
