@@ -431,7 +431,8 @@ DART_API Eigen::Vector6d dad(
     const Eigen::Vector6d& _s, const Eigen::Vector6d& _t);
 
 /// \brief
-Inertia transformInertia(const Eigen::Isometry3d& _T, const Inertia& _AI);
+DART_API Inertia
+transformInertia(const Eigen::Isometry3d& _T, const Inertia& _AI);
 
 /// Use the Parallel Axis Theorem to compute the moment of inertia of a body
 /// whose center of mass has been shifted from the origin
