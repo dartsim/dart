@@ -191,6 +191,14 @@ int main(int argc, char* argv[])
   viewer.addWorldNode(worldNode);
   viewer.allowSimulation(false);
 
+  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
+      new dart::gui::osg::GridVisual());
+  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::ZX);
+  grid->setNumCells(40);
+  grid->setMinorLineStepSize(0.1);
+  grid->setOffset(Eigen::Vector3d::Zero());
+  viewer.addAttachment(grid);
+
   enableDragAndDrop(viewer, g1);
 
   viewer.setUpViewInWindow(0, 0, 1280, 960);
@@ -198,6 +206,7 @@ int main(int argc, char* argv[])
       ::osg::Vec3(3.5, 2.0, 1.8),
       ::osg::Vec3(0.0, 0.0, 1.2),
       ::osg::Vec3(0.0, 0.0, 1.0));
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   std::cout << "Use the mouse to drag body nodes. Close the viewer window to "
                "exit."
