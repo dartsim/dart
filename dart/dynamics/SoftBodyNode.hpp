@@ -44,7 +44,7 @@ namespace dynamics {
 ///
 /// This class is implementation of Sumit Jain and C. Karen Liu's paper:
 /// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
-class SoftBodyNode : public detail::SoftBodyNodeBase
+class DART_API SoftBodyNode : public detail::SoftBodyNodeBase
 {
 public:
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
