@@ -156,6 +156,9 @@ private:
   /// Converts NloptSolver::Algorithm to nlopt::algorithm
   static nlopt::algorithm convertAlgorithm(Algorithm algorithm);
 
+  /// Converts nlopt::algorithm to NloptSolver::Algorithm
+  static Algorithm convertAlgorithm(nlopt::algorithm algorithm);
+
   /// Wrapping function for nlopt callback function, nlopt_func
   static double _nlopt_func(
       unsigned n,
