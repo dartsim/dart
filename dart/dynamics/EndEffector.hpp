@@ -78,7 +78,7 @@ public:
 };
 
 //==============================================================================
-class DART_API EndEffector final : public common::EmbedPropertiesOnTopOf<
+class EndEffector final : public common::EmbedPropertiesOnTopOf<
                               EndEffector,
                               detail::EndEffectorProperties,
                               detail::EndEffectorCompositeBase>
