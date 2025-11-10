@@ -20,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -27,6 +28,80 @@ using namespace dart::simulation;
 using namespace dart::utils;
 
 namespace {
+
+struct IkHandle
+{
+  dart::dynamics::EndEffector* effector = nullptr;
+  dart::dynamics::InverseKinematicsPtr ik;
+  std::shared_ptr<dart::gui::osg::InteractiveFrame> frame;
+  int hotkey = 0;
+  bool active = false;
+};
+
+class G1WorldNode : public dart::gui::osg::WorldNode
+{
+public:
+  using dart::gui::osg::WorldNode::WorldNode;
+
+  void addIkHandle(const std::shared_ptr<IkHandle>& handle)
+  {
+    mHandles.push_back(handle);
+  }
+
+  void customPreRefresh() override
+  {
+    for (const auto& handle : mHandles) {
+      if (!handle->active)
+        continue;
+
+      handle->ik->getTarget()->setTransform(handle->frame->getTransform());
+      handle->ik->solveAndApply(true);
+    }
+  }
+
+private:
+  std::vector<std::shared_ptr<IkHandle>> mHandles;
+};
+
+class IkInputHandler : public ::osgGA::GUIEventHandler
+{
+public:
+  explicit IkInputHandler(std::vector<std::shared_ptr<IkHandle>> handles)
+    : mHandles(std::move(handles))
+  {
+  }
+
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  {
+    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN)
+      return false;
+
+    const int key = ea.getKey();
+    for (const auto& handle : mHandles) {
+      if (key != handle->hotkey)
+        continue;
+
+      handle->active = !handle->active;
+      if (handle->active) {
+        handle->frame->setTransform(handle->effector->getTransform());
+        handle->frame->setNodeMask(~0u);
+        std::cout << "Activated IK target '" << handle->effector->getName()
+                  << "'.\n";
+      } else {
+        handle->frame->setNodeMask(0u);
+        std::cout << "Deactivated IK target '" << handle->effector->getName()
+                  << "'.\n";
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+private:
+  std::vector<std::shared_ptr<IkHandle>> mHandles;
+};
 
 struct Options
 {
@@ -133,6 +208,68 @@ SkeletonPtr createGround()
   return ground;
 }
 
+std::vector<std::shared_ptr<IkHandle>> setupIkHandles(
+    const SkeletonPtr& robot,
+    dart::gui::osg::Viewer& viewer,
+    const ::osg::ref_ptr<G1WorldNode>& worldNode)
+{
+  struct Config
+  {
+    std::string bodyNode;
+    std::string label;
+    int key;
+  };
+
+  const std::vector<Config> configs = {
+      {"left_rubber_hand", "Left Hand", ::osgGA::GUIEventAdapter::KEY_1},
+      {"right_rubber_hand", "Right Hand", ::osgGA::GUIEventAdapter::KEY_2},
+      {"left_ankle_roll_link", "Left Foot", ::osgGA::GUIEventAdapter::KEY_3},
+      {"right_ankle_roll_link", "Right Foot", ::osgGA::GUIEventAdapter::KEY_4},
+      {"left_elbow_link", "Left Elbow", ::osgGA::GUIEventAdapter::KEY_5},
+      {"right_elbow_link", "Right Elbow", ::osgGA::GUIEventAdapter::KEY_6}};
+
+  std::vector<std::shared_ptr<IkHandle>> handles;
+  handles.reserve(configs.size());
+
+  for (const auto& config : configs) {
+    dart::dynamics::BodyNode* bn = robot->getBodyNode(config.bodyNode);
+    if (!bn) {
+      DART_WARN(
+          "Unable to find body node '{}' for IK target '{}'.",
+          config.bodyNode,
+          config.label);
+      continue;
+    }
+
+    auto* ee = bn->createEndEffector(config.label);
+    auto ik = ee->getIK(true);
+
+    auto frame = std::make_shared<dart::gui::osg::InteractiveFrame>(
+        dart::dynamics::Frame::World(),
+        config.label + "_target",
+        ee->getTransform(),
+        0.15);
+    frame->setNodeMask(0u);
+
+    viewer.addSimpleFrame(frame.get());
+    viewer.enableDragAndDrop(frame.get());
+
+    ik->setTarget(frame.get());
+    ik->setMaximumIterations(30);
+
+    auto handle = std::make_shared<IkHandle>();
+    handle->effector = ee;
+    handle->ik = ik;
+    handle->frame = frame;
+    handle->hotkey = config.key;
+
+    handles.push_back(handle);
+    worldNode->addIkHandle(handle);
+  }
+
+  return handles;
+}
+
 SkeletonPtr loadG1(
     const Options& options, const ResourceRetrieverPtr& retriever)
 {
@@ -185,21 +322,23 @@ int main(int argc, char* argv[])
             << "Package root for '" << options.packageName << "' set to '"
             << options.packageUri << "'.\n";
 
-  ::osg::ref_ptr<dart::gui::osg::WorldNode> worldNode
-      = new dart::gui::osg::WorldNode(world);
+  ::osg::ref_ptr<G1WorldNode> worldNode = new G1WorldNode(world);
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(worldNode);
   viewer.allowSimulation(false);
 
   auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
       new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::ZX);
+  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
   grid->setNumCells(40);
   grid->setMinorLineStepSize(0.1);
   grid->setOffset(Eigen::Vector3d::Zero());
   viewer.addAttachment(grid);
 
   enableDragAndDrop(viewer, g1);
+
+  auto ikHandles = setupIkHandles(g1, viewer, worldNode);
+  viewer.addEventHandler(new IkInputHandler(ikHandles));
 
   viewer.setUpViewInWindow(0, 0, 1280, 960);
   viewer.getCameraManipulator()->setHomePosition(
@@ -208,8 +347,9 @@ int main(int argc, char* argv[])
       ::osg::Vec3(0.0, 0.0, 1.0));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  std::cout << "Use the mouse to drag body nodes. Close the viewer window to "
-               "exit."
+  std::cout << "Use the mouse to drag body nodes.\n"
+            << "Press keys 1-6 to toggle IK targets (hands, feet, elbows). "
+               "Close the viewer window to exit."
             << std::endl;
 
   return viewer.run();
