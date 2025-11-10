@@ -239,7 +239,7 @@ test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE --output-on-failure -L dart7"], depends-on = [
+test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
     { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
@@ -820,7 +820,7 @@ test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config $BUILD_TYPE --output-on-failure -L dart7"], depends-on = [
+test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
     { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
