@@ -37,16 +37,14 @@ jobs:
         with:
           cache: true
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ runner.os }}-Release
-          max-size: 500M
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for ccache
+      - name: Configure environment for sccache
         run: |
-          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation
@@ -66,8 +64,7 @@ jobs:
   build-debug:
     name: arm64-Debug
     runs-on: macos-latest
-    # Only run Debug builds on schedule or main branch
-    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -77,16 +74,14 @@ jobs:
         with:
           cache: true
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ runner.os }}-Debug
-          max-size: 500M
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for ccache
+      - name: Configure environment for sccache
         run: |
-          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
       - name: Test DART and dartpy
         run: |

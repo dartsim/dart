@@ -8,28 +8,31 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 ### Core CI Workflows
 
-| Workflow | Purpose | Platforms | Trigger |
-|----------|---------|-----------|---------|
-| `ci_ubuntu.yml` | Build, test, coverage | Ubuntu | PR, push, schedule |
-| `ci_macos.yml` | Build, test | macOS | PR, push, schedule |
-| `ci_windows.yml` | Build, test | Windows | PR, push, schedule |
-| `ci_gz_physics.yml` | Gazebo integration | Ubuntu | PR, push, schedule |
-| `api_doc.yml` | API documentation | Ubuntu | Push to main, docs changes |
-| `publish_dartpy.yml` | Python wheels | Multi-platform | Push, schedule, tags |
+| Workflow             | Purpose               | Platforms      | Trigger                    |
+| -------------------- | --------------------- | -------------- | -------------------------- |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule         |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule         |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule         |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule         |
+| `api_doc.yml`        | API documentation     | Ubuntu         | Push to main, docs changes |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule, tags       |
 
 ### Design Principles
 
 **Optimize for fast feedback on PRs:**
+
 - Essential validations run on every PR
 - Full matrix testing runs on main branch and releases
 - Debug builds run on schedule (2x per week)
 
 **Efficient resource usage:**
-- Compilation caching (ccache/sccache) reduces build time by 50-70%
+
+- Compilation caching (sccache) reduces build time by 50-70%
 - Path filtering prevents unnecessary workflow runs
 - Conditional execution skips non-essential jobs on PRs
 
 **Maintain full test coverage:**
+
 - All tests run on at least one platform per PR
 - Complete platform matrix on main branch
 - Scheduled runs ensure periodic full validation
@@ -39,53 +42,51 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 ### Why Caching Matters
 
 DART compilation takes 15-25 minutes per build without caching. With proper caching:
+
 - **First build**: Normal compilation time (populates cache)
 - **Subsequent builds**: 50-70% faster (only changed files recompile)
 
-### ccache (Ubuntu & macOS)
+### sccache (All Platforms)
 
-**Setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
-```yaml
-- name: Setup ccache
-  uses: hendrikmuhs/ccache-action@v1.2
-  with:
-    key: ${{ runner.os }}-${{ matrix.build_type }}
-    max-size: 500M
+We standardized on sccache everywhere because it:
 
-- name: Configure environment for ccache
-  run: |
-    echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-    echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-```
+- Works with Clang, GCC, and MSVC (including PDB handling)
+- Supports remote cache backends (if we add them later)
+- Ships an official GitHub Action with built-in metrics
 
-**How it works:**
-- CMake automatically uses ccache as a compiler launcher
-- Compilation outputs are cached based on preprocessed source
-- Cache key includes OS + build type for optimal separation
-- 500MB limit per configuration (sufficient for incremental builds)
+**Linux/macOS setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
 
-### sccache (Windows)
-
-**Setup** (see `.github/workflows/ci_windows.yml`):
 ```yaml
 - name: Setup sccache
-  uses: mozilla-actions/sccache-action@v0.0.7
+  uses: mozilla-actions/sccache-action@v0.0.9
+
+- name: Configure environment for sccache
+  run: |
+    echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+```
+
+**Windows setup** (see `.github/workflows/ci_windows.yml`):
+
+```yaml
+- name: Setup sccache
+  uses: mozilla-actions/sccache-action@v0.0.9
 
 - name: Configure environment for sccache
   shell: powershell
   run: |
+    echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 ```
 
-**Why sccache for Windows:**
-- Better MSVC support than ccache
-- Native integration with Windows build tools
-- Handles PDB files correctly
+**Local builds:** `pixi` auto-detects sccache. If the CLI finds `sccache` on PATH (and you have not overridden `CMAKE_*_COMPILER_LAUNCHER`), it sets the launchers before invoking CMake so your local builds benefit from the same cache.
 
 ## MSVC Multi-Core Compilation
 
 **Critical configuration** (`CMakeLists.txt` line 282-284):
+
 ```cmake
 # /MP - Multi-processor compilation (uses all available cores)
 # /FS - Force synchronous PDB writes (prevents PDB conflicts in parallel builds with /MP)
@@ -113,6 +114,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS
 Debug builds are slower and primarily useful for debugging, not CI validation.
 
 **Pattern** (see `ci_ubuntu.yml` and `ci_macos.yml`):
+
 ```yaml
 build:
   name: ${{ matrix.build_type }}
@@ -124,6 +126,7 @@ build:
 ```
 
 **Behavior:**
+
 - **PRs**: Only Release builds run
 - **Main branch**: Both Release and Debug run
 - **Scheduled runs**: Both Release and Debug run
@@ -134,6 +137,7 @@ build:
 Full wheel matrix is expensive (60-90 minutes) and only needed for releases.
 
 **Pattern** (see `publish_dartpy.yml`):
+
 ```yaml
 build_wheels:
   if: |
@@ -144,6 +148,7 @@ build_wheels:
 ```
 
 **Behavior:**
+
 - **PRs**: Only essential configurations build
 - **Main branch**: Full matrix builds
 - **Release tags**: Full matrix builds
@@ -154,6 +159,7 @@ build_wheels:
 API docs only need rebuilding when documentation or public headers change.
 
 **Pattern** (see `api_doc.yml`):
+
 ```yaml
 on:
   push:
@@ -169,6 +175,7 @@ on:
 ```
 
 **Behavior:**
+
 - **PRs**: Only runs if docs/headers change
 - **Main branch**: Only runs if docs/headers change
 - **Savings**: 20-30 minutes on most PRs
@@ -178,6 +185,7 @@ on:
 **Centralized approach:** Linting is deterministic and platform-independent, so running it once is sufficient.
 
 **Implementation** (see `ci_ubuntu.yml`):
+
 ```yaml
 - name: Check Lint
   if: matrix.build_type == 'Release'
@@ -188,6 +196,7 @@ on:
 ```
 
 **Behavior:**
+
 - Only runs on Ubuntu Release build
 - Removed from macOS and Windows workflows
 - Savings: 12-25 minutes per PR
@@ -197,18 +206,21 @@ on:
 ### Test Coverage
 
 **Per PR:**
+
 - Ubuntu Release: Full tests + coverage
 - macOS Release: Full tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
 
 **Scheduled runs:**
+
 - Add Debug builds for all platforms
 - Ensure periodic full validation
 
 ### Test Execution
 
 All tests run through `pixi run test-all`, which includes:
+
 - Linting (check-lint)
 - Unit tests (C++)
 - Python tests (dartpy)
@@ -221,12 +233,14 @@ All tests run through `pixi run test-all`, which includes:
 ### Expected CI Times
 
 **Without caching (first run):**
+
 - Ubuntu: 45-60 min
 - macOS: 30-45 min
 - Windows: 25-35 min
 - Total: ~100-150 min
 
 **With caching (subsequent runs):**
+
 - Ubuntu: 20-30 min
 - macOS: 15-25 min
 - Windows: 15-20 min
@@ -235,11 +249,13 @@ All tests run through `pixi run test-all`, which includes:
 ### Cache Health
 
 **Monitor cache hit rates:**
+
 - Target: >80% after first run
 - Check cache statistics in workflow logs
 - Adjust `max-size` if caches frequently exceed limits
 
 **Cache invalidation:**
+
 - Caches are specific to OS + build type
 - Automatic invalidation on cache key change
 - Manual cache clearing via GitHub UI if needed
@@ -247,11 +263,13 @@ All tests run through `pixi run test-all`, which includes:
 ### Maintenance Tasks
 
 **Regular:**
+
 - Review average CI times weekly
 - Monitor cache hit rates
 - Check for test flakiness
 
 **Quarterly:**
+
 - Update GitHub Actions versions
 - Review and optimize cache sizes
 - Evaluate new optimization opportunities
@@ -261,11 +279,13 @@ All tests run through `pixi run test-all`, which includes:
 ### Slow CI Builds
 
 **Check:**
+
 1. Cache hit rate in workflow logs
 2. Whether ccache/sccache is being used (look for "compiler launcher" in logs)
 3. If Debug builds are running on PRs (should only run on schedule)
 
 **Solutions:**
+
 - Clear GitHub Actions cache and rebuild
 - Verify `CMAKE_*_COMPILER_LAUNCHER` environment variables are set
 - Check conditional execution logic
@@ -273,10 +293,12 @@ All tests run through `pixi run test-all`, which includes:
 ### Cache-Related Build Failures
 
 **Symptoms:**
+
 - Build succeeds locally but fails in CI
 - Errors about missing headers or outdated objects
 
 **Solutions:**
+
 - Force cache bust by changing cache key
 - Add dependency tracking to cache key (e.g., hash of `pixi.lock`)
 - Run full clean build on schedule to catch issues
@@ -284,11 +306,13 @@ All tests run through `pixi run test-all`, which includes:
 ### Platform-Specific Issues
 
 **Debug-only failures:**
+
 - Debug builds still run on schedule
 - Check scheduled workflow runs for failures
 - Debug-specific issues (assertions, memory checks) caught there
 
 **Single-platform failures:**
+
 - Ensure test runs on at least one platform
 - Review platform-specific conditionals
 - Check if issue is in platform-specific code
@@ -319,16 +343,19 @@ All tests run through `pixi run test-all`, which includes:
 ## Performance Optimization History
 
 **Phase 1: Quick Wins** (Implemented)
+
 - Centralized lint checks: 12-25 min saved
 - Conditional Debug builds: 30-40 min saved
 - Optimized wheel builds: 60-90 min saved
 - Path filtering for docs: 20-30 min saved
 
 **Phase 2: Caching** (Implemented)
+
 - ccache/sccache: 30-50 min saved on subsequent builds
 - MSVC multi-core verified as optimally configured
 
 **Future opportunities:**
+
 - Parallel test execution (CTest `--parallel`)
 - Split test suites into parallel jobs
 - Docker-based CI for faster dependency installation

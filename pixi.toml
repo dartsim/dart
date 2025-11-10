@@ -65,6 +65,17 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
 cmake \
   -G Ninja \
   -S . \
@@ -83,7 +94,8 @@ cmake \
   -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
-  -DDART_VERBOSE=${DART_VERBOSE}
+  -DDART_VERBOSE=${DART_VERBOSE} \
+  $LAUNCHER_DEFS
 """], env = { DART_VERBOSE = "OFF" }, args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
@@ -158,6 +170,17 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
 cmake \
   -G Ninja \
   -S . \
@@ -176,7 +199,8 @@ cmake \
   -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
-  -DDART_VERBOSE=${DART_VERBOSE}
+  -DDART_VERBOSE=${DART_VERBOSE} \
+  $LAUNCHER_DEFS
 """], env = { DART_VERBOSE = "OFF" }, args = [{ arg = "dartpy", default = "ON" }] }
 
 build-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
@@ -201,7 +225,7 @@ build-dartpy7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_
     { arg = "build_type", default = "Release" }
 ] }
 
-config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART7=ON -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE}"], env = { DART_VERBOSE = "OFF" }, args = [
+config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif command -v sccache >/dev/null 2>&1 && [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  CMAKE_C_COMPILER_LAUNCHER=sccache\n  CMAKE_CXX_COMPILER_LAUNCHER=sccache\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART7=ON -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS"], env = { DART_VERBOSE = "OFF" }, args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
@@ -239,7 +263,7 @@ test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE --output-on-failure -L dart7"], depends-on = [
+test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
     { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
@@ -262,8 +286,8 @@ test-lcpsolver = { cmd = """
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy7 = { cmd = ["bash", "-lc", """
-BUILD_TYPE={{ build_type }}
-python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
+export BUILD_TYPE={{ build_type }}
+python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
 """], depends-on = [{ task = "build-dartpy7", args = ["ON", "{{ build_type }}"] }], args = [
     { arg = "build_type", default = "Release" }
 ] }
@@ -279,22 +303,35 @@ cmake \
     { arg = "build_type", default = "Release" }
 ] }
 
-config-coverage = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_CODECOV=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+config-coverage = { cmd = ["bash", "-lc", """
+set -euo pipefail
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
+cmake \
+    -G Ninja \
+    -S . \
+    -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+    -DDART_BUILD_PROFILE=OFF \
+    -DDART_CODECOV=ON \
+    -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+    -DDART_USE_SYSTEM_GOOGLETEST=ON \
+    -DDART_USE_SYSTEM_IMGUI=ON \
+    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_VERBOSE=$DART_VERBOSE \
+    $LAUNCHER_DEFS
+"""], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
 
 build-coverage = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
@@ -561,6 +598,17 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
 cmake \
   -G Ninja \
   -S . \
@@ -579,7 +627,8 @@ cmake \
   -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
-  -DDART_VERBOSE=${DART_VERBOSE}
+  -DDART_VERBOSE=${DART_VERBOSE} \
+  $LAUNCHER_DEFS
 """], env = { BUILD_TYPE = "asan", CMAKE_BUILD_TYPE = "RelWithDebInfo", DART_BUILD_PROFILE = "OFF", DART_VERBOSE = "OFF" } }
 
 build-asan = { cmd = ["bash", "-lc", """
@@ -820,7 +869,7 @@ test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config $BUILD_TYPE --output-on-failure -L dart7"], depends-on = [
+test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
     { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
@@ -949,18 +998,31 @@ download-gz = { cmd = """
 
 patch-gz = { cmd = "python3 scripts/patch_gz_physics.py", depends-on = ["download-gz"] }
 
-config-gz = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/gz-physics \
-        -B .deps/gz-physics/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-        -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
-        -DBUILD_TESTING=ON
-""", depends-on = ["patch-gz", { task = "install", args = ["OFF"] }] }
+config-gz = { cmd = ["bash", "-lc", """
+set -euo pipefail
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
+fi
+LAUNCHER_DEFS=""
+if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
+fi
+if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+fi
+cmake \
+    -G Ninja \
+    -S .deps/gz-physics \
+    -B .deps/gz-physics/build \
+    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+    -DCMAKE_EXE_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+    -DCMAKE_SHARED_LINKER_FLAGS=-L$CONDA_PREFIX/lib \
+    -DBUILD_TESTING=ON \
+    $LAUNCHER_DEFS
+"""], depends-on = ["patch-gz", { task = "install", args = ["OFF"] }] }
 
 build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
     "config-gz",

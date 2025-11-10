@@ -338,6 +338,11 @@ def main():
         action="store_true",
         help="Skip Debug build (only build Release)",
     )
+    parser.add_argument(
+        "--keep-going",
+        action="store_true",
+        help="Continue running remaining steps even if a failure occurs (default: fail fast)",
+    )
 
     args = parser.parse_args()
 
@@ -351,46 +356,61 @@ def main():
         return 1
 
     results = {}
+    continue_running = True
+
+    def run_step(name: str, func):
+        nonlocal continue_running
+        if not continue_running:
+            return
+
+        result = func()
+        results[name] = result
+
+        if not result and not args.keep_going:
+            print_error(
+                f"{name} failed. Stopping early (pass --keep-going to continue running tests)."
+            )
+            continue_running = False
 
     # Run linting
     if not args.skip_lint:
-        results["Linting"] = run_lint_tests()
+        run_step("Linting", run_lint_tests)
     else:
         print_warning("Skipping linting tests")
 
     # Run build
     if not args.skip_build:
-        results["Build"] = run_build_tests(skip_debug=args.skip_debug)
+        run_step("Build", lambda: run_build_tests(skip_debug=args.skip_debug))
     else:
         print_warning("Skipping build tests")
 
     # Run unit tests
     if not args.skip_tests:
-        results["Unit Tests"] = run_unit_tests()
+        run_step("Unit Tests", run_unit_tests)
     else:
         print_warning("Skipping unit tests")
 
     # Run dart7 tests
     if not args.skip_dart7:
-        results["DART7 Tests"] = run_dart7_tests()
+        run_step("DART7 Tests", run_dart7_tests)
     else:
         print_warning("Skipping dart7 tests")
 
     # Run Python tests
     if not args.skip_python:
-        results["Python Tests"] = run_python_tests()
+        run_step("Python Tests", run_python_tests)
     else:
         print_warning("Skipping Python tests")
 
     # Run dartpy7 tests
     if not args.skip_dartpy7:
-        results["dartpy7 Tests"] = run_dartpy7_tests()
+        run_step("dartpy7 Tests", run_dartpy7_tests)
     else:
         print_warning("Skipping dartpy7 tests")
 
     # Run documentation build
     if not args.skip_docs:
-        results["Documentation"] = run_docs_tests()
+        run_step("Documentation", run_docs_tests)
     else:
         print_warning("Skipping documentation tests")
 
