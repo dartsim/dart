@@ -33,6 +33,7 @@
 # Tests build helper libraries (baseline solvers, integration fixtures, etc.)
 # keep their artifacts within their local build tree so the Visual Studio
 # project references that rely on relative paths continue to work.
+set(_dart_prev_use_global_output_dirs ${DART_USE_GLOBAL_OUTPUT_DIRS})
 set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
 
 # Set up GoogleTest
@@ -161,3 +162,5 @@ dart_format_add(
 )
 
 add_subdirectory(benchmark)
+
+set(DART_USE_GLOBAL_OUTPUT_DIRS ${_dart_prev_use_global_output_dirs})
