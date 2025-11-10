@@ -134,18 +134,6 @@ public:
   /// taken care of automatically, and Problem::setInitialGuess(~) will be
   /// called with the current positions of the Degrees Of Freedom.
   ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(bool applySolution = true);
-
-  /// Same as solve(bool), but the positions vector will be filled with the
-  /// solved positions.
-  ///
-  /// \deprecated Deprecated in DART 6.8. Please use solveAndApply() or
-  /// findSolution() instead.
-  DART_DEPRECATED(6.8)
-  bool solve(Eigen::VectorXd& positions, bool applySolution = true);
-
   /// Finds a solution of the IK problem without applying the solution.
   ///
   /// The initial guess for the IK optimization problem is the current joint
