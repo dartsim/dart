@@ -286,8 +286,8 @@ test-lcpsolver = { cmd = """
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-dartpy7 = { cmd = ["bash", "-lc", """
-BUILD_TYPE={{ build_type }}
-python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', env['BUILD_TYPE'], 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
+export BUILD_TYPE={{ build_type }}
+python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
 """], depends-on = [{ task = "build-dartpy7", args = ["ON", "{{ build_type }}"] }], args = [
     { arg = "build_type", default = "Release" }
 ] }
