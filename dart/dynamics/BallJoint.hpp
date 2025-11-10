@@ -50,7 +50,7 @@ public:
 
   using Base = GenericJoint<math::SO3Space>;
 
-  struct Properties : Base::Properties
+  struct DART_API Properties : Base::Properties
   {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 
