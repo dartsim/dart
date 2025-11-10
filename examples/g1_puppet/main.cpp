@@ -185,7 +185,8 @@ int main(int argc, char* argv[])
             << "Package root for '" << options.packageName << "' set to '"
             << options.packageUri << "'.\n";
 
-  auto worldNode = new dart::gui::osg::WorldNode(world);
+  ::osg::ref_ptr<dart::gui::osg::WorldNode> worldNode
+      = new dart::gui::osg::WorldNode(world);
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(worldNode);
   viewer.allowSimulation(false);
