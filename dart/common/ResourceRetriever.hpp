@@ -42,7 +42,7 @@
 namespace dart {
 namespace common {
 
-/// ResourceRetriever provides methods for testing for the existance of and
+/// ResourceRetriever provides methods for testing for the existence of and
 /// accessing the content of a resource specified by URI.
 class ResourceRetriever
 {
@@ -59,7 +59,7 @@ public:
   ///
   /// \param[in] uri URI to the resource to be retrieved.
   /// \return The string retrieved from the resource.
-  /// \throw std::runtime_error when failed to read sucessfully.
+  /// \throw std::runtime_error when failed to read successfully.
   virtual std::string readAll(const Uri& uri);
 
   /// Returns absolute file path to \c uri; an empty string if unavailable.

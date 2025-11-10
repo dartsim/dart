@@ -84,7 +84,7 @@ public:
   /// Reads all data from this resource, and returns it as a string.
   ///
   /// \return The string retrieved from the resource.
-  /// \throw std::runtime_error when failed to read sucessfully.
+  /// \throw std::runtime_error when failed to read successfully.
   virtual std::string readAll();
 };
 
