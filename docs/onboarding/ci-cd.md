@@ -25,7 +25,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Debug builds run on schedule (2x per week)
 
 **Efficient resource usage:**
-- Compilation caching (ccache/sccache) reduces build time by 50-70%
+- Compilation caching (sccache) reduces build time by 50-70%
 - Path filtering prevents unnecessary workflow runs
 - Conditional execution skips non-essential jobs on PRs
 
@@ -42,46 +42,39 @@ DART compilation takes 15-25 minutes per build without caching. With proper cach
 - **First build**: Normal compilation time (populates cache)
 - **Subsequent builds**: 50-70% faster (only changed files recompile)
 
-### ccache (Ubuntu & macOS)
+### sccache (All Platforms)
 
-**Setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
-```yaml
-- name: Setup ccache
-  uses: hendrikmuhs/ccache-action@v1.2
-  with:
-    key: ${{ runner.os }}-${{ matrix.build_type }}
-    max-size: 500M
+We standardized on sccache everywhere because it:
+- Works with Clang, GCC, and MSVC (including PDB handling)
+- Supports remote cache backends (if we add them later)
+- Ships an official GitHub Action with built-in metrics
 
-- name: Configure environment for ccache
-  run: |
-    echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-    echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-```
-
-**How it works:**
-- CMake automatically uses ccache as a compiler launcher
-- Compilation outputs are cached based on preprocessed source
-- Cache key includes OS + build type for optimal separation
-- 500MB limit per configuration (sufficient for incremental builds)
-
-### sccache (Windows)
-
-**Setup** (see `.github/workflows/ci_windows.yml`):
+**Linux/macOS setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
 ```yaml
 - name: Setup sccache
-  uses: mozilla-actions/sccache-action@v0.0.7
+  uses: mozilla-actions/sccache-action@v0.0.9
+
+- name: Configure environment for sccache
+  run: |
+    echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+    echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+```
+
+**Windows setup** (see `.github/workflows/ci_windows.yml`):
+```yaml
+- name: Setup sccache
+  uses: mozilla-actions/sccache-action@v0.0.9
 
 - name: Configure environment for sccache
   shell: powershell
   run: |
+    echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 ```
 
-**Why sccache for Windows:**
-- Better MSVC support than ccache
-- Native integration with Windows build tools
-- Handles PDB files correctly
+**Local builds:** `pixi` auto-detects sccache. If the CLI finds `sccache` on PATH (and you have not overridden `CMAKE_*_COMPILER_LAUNCHER`), it sets the launchers before invoking CMake so your local builds benefit from the same cache.
 
 ## MSVC Multi-Core Compilation
 
