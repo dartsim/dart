@@ -106,12 +106,6 @@ public:
   /// implementation dependent, and prints a warning.
   const BodyNode* getBodyNode(const std::string& name) const override;
 
-  // Documentation inherited
-  const std::vector<BodyNode*>& getBodyNodes() override;
-
-  // Documentation inherited
-  const std::vector<const BodyNode*>& getBodyNodes() const override;
-
   /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
   /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
@@ -156,12 +150,6 @@ public:
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
   const Joint* getJoint(const std::string& name) const override;
-
-  // Documentation inherited
-  std::vector<Joint*> getJoints() override;
-
-  // Documentation inherited
-  std::vector<const Joint*> getJoints() const override;
 
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///

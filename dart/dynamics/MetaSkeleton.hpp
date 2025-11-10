@@ -124,18 +124,6 @@ public:
   /// \return The body node of given name.
   virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
 
-  /// Get all the BodyNodes that are held by this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
-  DART_DEPRECATED(6.13)
-  virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
-
-  /// Get all the BodyNodes that are held by this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
-  DART_DEPRECATED(6.13)
-  virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
-
   /// Returns all the BodyNodes of given name.
   /// \param[in] name The BodyNode name that want to search.
   /// \return The list of BodyNodes of given name.
@@ -175,18 +163,6 @@ public:
   /// \param[in] name The joint name that want to search.
   /// \return The joint of given name.
   virtual const Joint* getJoint(const std::string& name) const = 0;
-
-  /// Returns all the joints that are held by this MetaSkeleton.
-  ///
-  /// \deprecated Use eachJoint() instead.
-  DART_DEPRECATED(6.13)
-  virtual std::vector<Joint*> getJoints() = 0;
-
-  /// Returns all the joints that are held by this MetaSkeleton.
-  ///
-  /// \deprecated Use eachJoint() instead.
-  DART_DEPRECATED(6.13)
-  virtual std::vector<const Joint*> getJoints() const = 0;
 
   /// Returns all the Joint of given name.
   ///

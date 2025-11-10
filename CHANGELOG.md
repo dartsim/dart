@@ -30,6 +30,7 @@
   * Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
   * Removed all APIs deprecated in DART 6.11 (`DartLoader::Flags` and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
   * Removed all APIs deprecated in DART 6.12 (the `SdfParser::readWorld`/`readSkeleton` overloads that accepted direct `ResourceRetriever` parameters).
+  * Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
 
 ## DART 6
 

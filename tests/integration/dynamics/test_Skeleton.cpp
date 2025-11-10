@@ -795,8 +795,9 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
   skel->createJointAndBodyNodePair<WeldJoint>(bn);
 
   const auto numSkelDofs = skel->getNumDofs();
-  for (auto& bodyNode : skel->getBodyNodes())
+  skel->eachBodyNode([](BodyNode* bodyNode) {
     bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+  });
 
   // Make sure this does not cause seg-fault
   Eigen::VectorXd constraintForces = skel->getConstraintForces();

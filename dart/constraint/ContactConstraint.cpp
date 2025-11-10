@@ -662,57 +662,6 @@ bool ContactConstraint::isActive() const
 }
 
 //==============================================================================
-double ContactConstraint::computeFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeFrictionCoefficient(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimarySlipCompliance(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
-      shapeNode);
-}
-
-//==============================================================================
-Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeRestitutionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeRestitutionCoefficient(shapeNode);
-}
-
 //==============================================================================
 dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
 {

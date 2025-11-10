@@ -1244,9 +1244,9 @@ world->addSimpleFrame(manipulator);
 viewer.enableDragAndDrop(manipulator.get());
 
 // Enable drag-and-drop for robot bodies with IK
-for (auto bodyNode : robot->getBodyNodes()) {
+robot->eachBodyNode([&](BodyNode* bodyNode) {
   viewer.enableDragAndDrop(bodyNode);
-}
+});
 ```
 
 ### Pattern 5: Loading Robot Models

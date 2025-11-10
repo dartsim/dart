@@ -455,9 +455,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
 
-  auto bodyNodes = pendulum->getBodyNodes();
-
-  for (auto bodyNode : bodyNodes) {
+  pendulum->eachBodyNode([&](BodyNode* bodyNode) {
     Joint* joint = bodyNode->getParentJoint();
 
     joint->setActuatorType(Joint::FORCE);
@@ -480,7 +478,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
         &Joint::setVelocity,
         &Joint::setVelocityLowerLimit,
         &Joint::setVelocityUpperLimit>(joint);
-  }
+  });
 }
 
 //==============================================================================

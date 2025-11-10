@@ -129,9 +129,9 @@ int main()
   DART_ASSERT(world != nullptr);
 
   auto skel = world->getSkeleton("human");
-  for (auto joint : skel->getJoints()) {
+  skel->eachJoint([](dart::dynamics::Joint* joint) {
     joint->setLimitEnforcement(true);
-  }
+  });
 
   // Create the world node
   ::osg::ref_ptr<HumanJointLimitsWorldNode> node

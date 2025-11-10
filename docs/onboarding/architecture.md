@@ -84,7 +84,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 - **Utilities**
   - `NameManager.hpp` - Manages unique names
   - `VersionCounter.hpp` - Version tracking for change detection
-  - `Timer.hpp`, `Stopwatch.hpp` - Timing utilities
+  - `Stopwatch.hpp` - Timing utilities
   - `Logging.hpp` - Logging utilities
   - `ResourceRetriever.hpp` - Resource loading abstraction
 

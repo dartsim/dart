@@ -358,12 +358,6 @@ public:
   /// Get const soft body node whose name is _name
   const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
-  // Documentation inherited
-  const std::vector<BodyNode*>& getBodyNodes() override;
-
-  // Documentation inherited
-  const std::vector<const BodyNode*>& getBodyNodes() const override;
-
   /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
@@ -406,12 +400,6 @@ public:
 
   // Documentation inherited
   const Joint* getJoint(const std::string& name) const override;
-
-  // Documentation inherited
-  std::vector<Joint*> getJoints() override;
-
-  // Documentation inherited
-  std::vector<const Joint*> getJoints() const override;
 
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
