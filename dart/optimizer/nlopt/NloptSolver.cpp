@@ -211,6 +211,7 @@ void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
 NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 {
   return mAlg;
+  return convertAlgorithm(mAlg);
 }
 
 //==============================================================================

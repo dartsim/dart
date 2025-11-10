@@ -62,20 +62,3 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 ## Citation
 
 If you use DART in an academic publication, please consider citing this [JOSS Paper](https://doi.org/10.21105/joss.00500) [[BibTeX](https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27)]
-
-## Building from Source
-
-While packages and `pixi` cover most workflows, you can always build the C++ library directly:
-
-```bash
-# Non-Windows (Ninja preferred)
-cmake -S . -B build -G Ninja -DDART_BUILD_DARTPY=ON
-cmake --build build --parallel
-
-# Windows (Visual Studio generator)
-cmake -S . -B build -G "Visual Studio 17 2022" -DDART_BUILD_DARTPY=ON
-cmake --build build --config Release --parallel
-```
-
-> **Why Ninja?**  
-> On Linux and macOS the Ninja generator provides faster, more reliable incremental builds than Makefiles. All of our automation (pixi tasks and GitHub Actions) already runs CMake with `-G Ninja`, so using the same generator locally guarantees identical build graphs and maximum cache hits (especially when sccache is available).
