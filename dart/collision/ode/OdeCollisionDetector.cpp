@@ -33,6 +33,7 @@
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
@@ -42,13 +43,21 @@
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <ode/ode.h>
+
+#include <algorithm>
+#include <deque>
+#include <functional>
+#include <unordered_map>
+#include <utility>
 
 namespace dart {
 namespace collision {
@@ -70,6 +79,64 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+double computeTangentialSpeed(const Contact& contact);
+
+bool shouldUseContactHistory(
+    const CollisionObject* object1, const CollisionObject* object2);
+
+using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
+
+struct ContactHistoryItem
+{
+  CollObjPair pair;
+  std::deque<Contact> history;
+  ContactHistoryItem() = delete;
+  ContactHistoryItem(CollObjPair newPair, std::deque<Contact> newHistory)
+    : pair(std::move(newPair)), history(std::move(newHistory))
+  {
+    // Do nothing
+  }
+};
+
+// using ContactManifold = std::unordered_map<CollObjPair, std::deque<Contact>,
+// obj_pair_hash>;
+std::vector<ContactHistoryItem> pastContacts;
+
+CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
+{
+  if (std::less<CollisionObject*>()(o2, o1)) {
+    std::swap(o1, o2);
+  }
+  return std::make_pair(o1, o2);
+}
+
+std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
+{
+  for (auto& item : pastContacts) {
+    if (pair.first == item.pair.first && pair.second == item.pair.second) {
+      return item.history;
+    }
+  }
+  auto newItem = ContactHistoryItem{pair, std::deque<Contact>()};
+  pastContacts.push_back(newItem);
+
+  return pastContacts.back().history;
+}
+void eraseHistoryForObject(const CollisionObject* object)
+{
+  if (!object)
+    return;
+
+  pastContacts.erase(
+      std::remove_if(
+          pastContacts.begin(),
+          pastContacts.end(),
+          [object](const ContactHistoryItem& item) {
+            return item.pair.first == object || item.pair.second == object;
+          }),
+      pastContacts.end());
+}
 
 struct OdeCollisionCallbackData
 {
@@ -162,6 +229,23 @@ bool OdeCollisionDetector::collide(
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
+  if (result) {
+    for (auto& past_contact : pastContacts) {
+      bool clear = true;
+      for (const auto& curr_result : result->getContacts()) {
+        auto current_pair = MakeNewPair(
+            curr_result.collisionObject1, curr_result.collisionObject2);
+        if (past_contact.pair == current_pair) {
+          clear = false;
+          break;
+        }
+      }
+      if (clear) {
+        past_contact.history.clear();
+      }
+    }
+  }
+
   return data.numContacts > 0;
 }
 
@@ -253,6 +337,18 @@ dWorldID OdeCollisionDetector::getOdeWorldId() const
   return mWorldId;
 }
 
+//==============================================================================
+void OdeCollisionDetector::clearContactHistoryFor(const CollisionObject* object)
+{
+  eraseHistoryForObject(object);
+}
+
+//==============================================================================
+void OdeCollisionDetector::clearContactHistory()
+{
+  pastContacts.clear();
+}
+
 namespace {
 
 //==============================================================================
@@ -288,8 +384,9 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   cdData->numContacts += numc;
 
-  if (result)
+  if (result) {
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
+  }
 }
 
 //==============================================================================
@@ -304,19 +401,107 @@ void reportContacts(
   if (0u == numContacts)
     return;
 
+  if (0u == option.maxNumContacts)
+    return;
+
+  if (result.getNumContacts() >= option.maxNumContacts)
+    return;
+
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts) {
     result.addContact(convertContact(contactGeoms[0], b1, b2, option));
-
     return;
   }
 
-  for (auto i = 0; i < numContacts; ++i) {
-    result.addContact(convertContact(contactGeoms[i], b1, b2, option));
+  const auto available = option.maxNumContacts - result.getNumContacts();
+  const auto requested = static_cast<std::size_t>(numContacts);
+  const auto contactsToCopy = static_cast<int>(std::min(requested, available));
 
-    if (result.getNumContacts() >= option.maxNumContacts)
-      return;
+  for (auto i = 0; i < contactsToCopy; ++i) {
+    result.addContact(convertContact(contactGeoms[i], b1, b2, option));
+  }
+
+  if (result.getNumContacts() >= option.maxNumContacts) {
+    return;
+  }
+
+  if (!shouldUseContactHistory(b1, b2)) {
+    return;
+  }
+
+  const auto pair = MakeNewPair(b1, b2);
+  auto& pastContacsVec = FindPairInHist(pair);
+  auto results_vec_copy = result.getContacts();
+
+  bool sliding = false;
+  constexpr double slidingThreshold = 1e-3;
+  std::size_t pairContactCount = 0u;
+  for (const auto& curr_cont : results_vec_copy) {
+    const auto current_pair
+        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
+    if (current_pair != pair)
+      continue;
+
+    ++pairContactCount;
+
+    if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
+      sliding = true;
+      break;
+    }
+  }
+
+  if (sliding) {
+    return;
+  }
+
+  const std::size_t pairTarget
+      = std::min<std::size_t>(3u, option.maxNumContacts);
+  if (pairContactCount >= pairTarget) {
+    return;
+  }
+
+  std::size_t missing = pairTarget - pairContactCount;
+  const auto globalRemaining = option.maxNumContacts - result.getNumContacts();
+  missing = std::min(missing, globalRemaining);
+  if (missing == 0u) {
+    return;
+  }
+
+  for (auto it = pastContacsVec.rbegin();
+       it != pastContacsVec.rend() && missing > 0u;
+       ++it) {
+    auto past_cont = *it;
+    for (const auto& curr_cont : results_vec_copy) {
+      const auto res_pair
+          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
+      if (res_pair != pair) {
+        continue;
+      }
+      auto dist_v = past_cont.point - curr_cont.point;
+      const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
+      if (dist_m < 0.01) {
+        continue;
+      } else {
+        if (result.getNumContacts() >= option.maxNumContacts) {
+          return;
+        }
+        result.addContact(past_cont);
+        --missing;
+      }
+    }
+  }
+  for (const auto& item : results_vec_copy) {
+    const auto res_pair
+        = MakeNewPair(item.collisionObject1, item.collisionObject2);
+    if (res_pair == pair) {
+      pastContacsVec.push_back(item);
+    }
+  }
+
+  const auto size = pastContacsVec.size();
+  if (size > 11) {
+    pastContacsVec.erase(pastContacsVec.begin(), pastContacsVec.end() - 5);
   }
 }
 
@@ -339,6 +524,72 @@ Contact convertContact(
   }
 
   return contact;
+}
+
+double computeTangentialSpeed(const Contact& contact)
+{
+  const auto* frame1 = contact.collisionObject1
+                           ? contact.collisionObject1->getShapeFrame()
+                           : nullptr;
+  const auto* frame2 = contact.collisionObject2
+                           ? contact.collisionObject2->getShapeFrame()
+                           : nullptr;
+
+  const dynamics::BodyNode* bn1 = (frame1 && frame1->isShapeNode())
+                                      ? frame1->asShapeNode()->getBodyNodePtr()
+                                      : nullptr;
+  const dynamics::BodyNode* bn2 = (frame2 && frame2->isShapeNode())
+                                      ? frame2->asShapeNode()->getBodyNodePtr()
+                                      : nullptr;
+
+  const Eigen::Vector3d worldPoint = contact.point;
+
+  Eigen::Vector3d v1 = Eigen::Vector3d::Zero();
+  if (bn1) {
+    const Eigen::Vector3d localPoint
+        = bn1->getWorldTransform().inverse() * worldPoint;
+    v1 = bn1->getLinearVelocity(
+        localPoint, dynamics::Frame::World(), dynamics::Frame::World());
+  }
+
+  Eigen::Vector3d v2 = Eigen::Vector3d::Zero();
+  if (bn2) {
+    const Eigen::Vector3d localPoint
+        = bn2->getWorldTransform().inverse() * worldPoint;
+    v2 = bn2->getLinearVelocity(
+        localPoint, dynamics::Frame::World(), dynamics::Frame::World());
+  }
+
+  const Eigen::Vector3d rel = v1 - v2;
+  Eigen::Vector3d normal = contact.normal;
+  const double normalNorm = normal.norm();
+  if (normalNorm > 0.0) {
+    normal /= normalNorm;
+  } else {
+    normal.setZero();
+  }
+  const Eigen::Vector3d tangential = rel - rel.dot(normal) * normal;
+  return tangential.norm();
+}
+
+bool shouldUseContactHistory(
+    const CollisionObject* object1, const CollisionObject* object2)
+{
+  if (!object1 || !object2)
+    return false;
+
+  const auto shape1 = object1->getShape();
+  const auto shape2 = object2->getShape();
+
+  const bool hasCapsule
+      = (shape1
+         && dynamic_cast<const dynamics::CapsuleShape*>(shape1.get())
+                != nullptr)
+        || (shape2
+            && dynamic_cast<const dynamics::CapsuleShape*>(shape2.get())
+                   != nullptr);
+
+  return hasCapsule;
 }
 
 } // anonymous namespace
