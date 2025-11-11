@@ -36,8 +36,6 @@
 #include <dart/math/Constants.hpp>
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/common/Deprecated.hpp>
-
 #include <Eigen/Dense>
 
 namespace dart {

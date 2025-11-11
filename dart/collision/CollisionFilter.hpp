@@ -35,8 +35,6 @@
 
 #include <dart/collision/detail/UnorderedPairs.hpp>
 
-#include <dart/common/Deprecated.hpp>
-
 namespace dart {
 
 namespace dynamics {

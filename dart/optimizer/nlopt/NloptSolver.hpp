@@ -35,8 +35,6 @@
 
 #include <dart/optimizer/Solver.hpp>
 
-#include <dart/common/Deprecated.hpp>
-
 #include <nlopt.hpp>
 
 #define NLOPT_VERSION_GE(x, y, z)                                              \

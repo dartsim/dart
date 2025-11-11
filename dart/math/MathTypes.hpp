@@ -33,7 +33,6 @@
 #ifndef DART_MATH_MATHTYPES_HPP_
 #define DART_MATH_MATHTYPES_HPP_
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/common/Memory.hpp>
 
 #include <Eigen/Dense>
