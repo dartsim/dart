@@ -23,23 +23,23 @@ endif()
 
 # Additional collision tests
 if(TARGET dart-utils-urdf)
-  dart_add_test("integration" test_self_collision_filtering collision/test_SelfCollisionFiltering.cpp)
-  dart_add_test("integration" test_no_false_contacts collision/test_NoFalseContacts.cpp)
+  dart_add_test("integration" test_self_collision_filtering collision/test_self_collision_filtering.cpp)
+  dart_add_test("integration" test_no_false_contacts collision/test_no_false_contacts.cpp)
 endif()
 
 if(TARGET dart-collision-bullet)
-  dart_add_test("integration" test_collision_accuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" test_collision_accuracy collision/test_collision_accuracy.cpp)
   target_link_libraries(test_collision_accuracy dart-collision-bullet)
 endif()
 
 if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
-  dart_add_test("integration" test_plane_shape_collision collision/test_PlaneShapeCollision.cpp)
+  dart_add_test("integration" test_plane_shape_collision collision/test_plane_shape_collision.cpp)
   target_link_libraries(test_plane_shape_collision
     dart-collision-bullet
     dart-collision-ode
     dart-utils)
 
-  dart_add_test("integration" test_contact_grouping collision/test_ContactGrouping.cpp)
+  dart_add_test("integration" test_contact_grouping collision/test_contact_grouping.cpp)
   target_link_libraries(test_contact_grouping
     dart-collision-ode
     dart-utils)
@@ -66,7 +66,7 @@ endif()
 
 # Additional constraint tests
 if(TARGET dart-utils-urdf)
-  dart_add_test("integration" test_lcp_solver_stability constraint/test_LcpSolverStability.cpp)
+  dart_add_test("integration" test_lcp_solver_stability constraint/test_lcp_solver_stability.cpp)
 endif()
 
 # ==============================================================================
@@ -100,19 +100,22 @@ if(TARGET dart-utils)
   target_link_libraries(test_SoftDynamics dart-utils)
 
   # Additional dynamics tests
-  dart_add_test("integration" test_servo_joint_limits dynamics/test_ServoJointLimits.cpp)
+  dart_add_test("integration" test_servo_joint_limits dynamics/test_servo_joint_limits.cpp)
   target_link_libraries(test_servo_joint_limits dart-utils)
 
-  dart_add_test("integration" test_universal_joint_limits dynamics/test_UniversalJointLimits.cpp)
+  dart_add_test("integration" test_universal_joint_limits dynamics/test_universal_joint_limits.cpp)
   target_link_libraries(test_universal_joint_limits dart-utils)
 
   if(TARGET dart-utils-urdf)
     dart_add_test("integration" test_ForwardKinematics dynamics/test_ForwardKinematics.cpp)
     target_link_libraries(test_ForwardKinematics dart-utils-urdf)
 
+    dart_add_test("integration" test_AtlasIK dynamics/test_AtlasIK.cpp)
+    target_link_libraries(test_AtlasIK dart-utils-urdf)
+
     # Additional dynamics tests
-    dart_add_test("integration" test_skeleton_state dynamics/test_SkeletonState.cpp)
-    dart_add_test("integration" test_skeleton_topology dynamics/test_SkeletonTopology.cpp)
+    dart_add_test("integration" test_skeleton_state dynamics/test_skeleton_state.cpp)
+    dart_add_test("integration" test_skeleton_topology dynamics/test_skeleton_topology.cpp)
   endif()
 endif()
 
@@ -142,7 +145,7 @@ if(TARGET dart-utils-urdf)
   endif()
 
   # Additional IO tests
-  dart_add_test("integration" test_urdf_material_parsing io/test_UrdfMaterialParsing.cpp)
+  dart_add_test("integration" test_urdf_material_parsing io/test_urdf_material_parsing.cpp)
   target_link_libraries(test_urdf_material_parsing dart-utils-urdf)
 
   dart_add_library(SharedLibraryWamIkFast io/SharedLibraryWamIkFast.hpp io/SharedLibraryWamIkFast.cpp)
@@ -214,7 +217,7 @@ if(TARGET dart-utils)
   endif()
 
   # Additional simulation tests
-  dart_add_test("integration" test_momentum_conservation simulation/test_MomentumConservation.cpp)
+  dart_add_test("integration" test_momentum_conservation simulation/test_momentum_conservation.cpp)
   target_link_libraries(test_momentum_conservation dart-utils)
 endif()
 
