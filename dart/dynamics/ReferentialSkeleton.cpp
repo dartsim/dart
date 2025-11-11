@@ -336,25 +336,6 @@ const DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
-{
-  // We want to refill the raw DegreeOfFreedom vector, because the pointers will
-  // change any time a BodyNode's parent Joint gets changed, and we have no way
-  // of knowing when that might happen.
-  return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(mDofs, mRawDofs);
-}
-
-//==============================================================================
-std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
-{
-  // We want to refill the raw DegreeOfFreedom vector, because the pointers will
-  // change any time a BodyNode's parent Joint gets changed, and we have no way
-  // of knowing when that might happen.
-  return convertVector<DegreeOfFreedomPtr, const DegreeOfFreedom*>(
-      mDofs, mRawConstDofs);
-}
-
-//==============================================================================
 std::size_t ReferentialSkeleton::getIndexOf(
     const DegreeOfFreedom* _dof, bool _warning) const
 {

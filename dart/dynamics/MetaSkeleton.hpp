@@ -202,18 +202,6 @@ public:
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   virtual const DegreeOfFreedom* getDof(std::size_t _idx) const = 0;
 
-  /// Get the vector of DegreesOfFreedom for this MetaSkeleton
-  ///
-  /// \deprecated Use eachDof() instead.
-  DART_DEPRECATED(6.13)
-  virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
-
-  /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
-  DART_DEPRECATED(6.13)
-  virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
-
   /// Get the index of a specific DegreeOfFreedom within this
   /// ReferentialSkeleton. Returns INVALID_INDEX if it is not held in this
   /// ReferentialSkeleton. When _warning is true, a warning message will be

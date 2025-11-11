@@ -884,32 +884,6 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS(BodyNode, ShapeNode)
 
 //==============================================================================
-const std::vector<ShapeNode*> BodyNode::getShapeNodes()
-{
-  const auto numShapeNodes = getNumShapeNodes();
-
-  std::vector<ShapeNode*> shapeNodes(numShapeNodes);
-
-  for (auto i = 0u; i < numShapeNodes; ++i)
-    shapeNodes[i] = getShapeNode(i);
-
-  return shapeNodes;
-}
-
-//==============================================================================
-const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
-{
-  const auto numShapeNodes = getNumShapeNodes();
-
-  std::vector<const ShapeNode*> shapeNodes(numShapeNodes);
-
-  for (auto i = 0u; i < numShapeNodes; ++i)
-    shapeNodes[i] = getShapeNode(i);
-
-  return shapeNodes;
-}
-
-//==============================================================================
 void BodyNode::removeAllShapeNodes()
 {
   eachShapeNode([](ShapeNode* shapeNode) { shapeNode->remove(); });

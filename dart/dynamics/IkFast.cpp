@@ -404,11 +404,11 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 
   convertTransform(desiredBodyTf, mTargetTranspose, mTargetRotation);
 
-  const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
+  const auto* skeleton = mIK->getNode()->getSkeleton();
   const auto ikFastNumFreeParams = getNumFreeParameters();
   const auto ikFastFreeParams = getFreeParameters();
   for (auto i = 0; i < ikFastNumFreeParams; ++i)
-    mFreeParams[i] = dofs[ikFastFreeParams[i]]->getPosition();
+    mFreeParams[i] = skeleton->getDof(ikFastFreeParams[i])->getPosition();
 
   ikfast::IkSolutionList<IkReal> solutions;
   const auto success = computeIk(

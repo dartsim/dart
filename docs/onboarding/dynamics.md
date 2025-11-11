@@ -98,7 +98,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 
 - **ShapeNode Management:**
   - `createShapeNode()` - Attach collision/visual shapes
-  - `getShapeNodesWith<Aspect>()` - Query shapes with specific aspects
+  - `getNumShapeNodesWith<Aspect>()` / `getShapeNodeWith<Aspect>(index)` - Query shapes with specific aspects
   - `eachShapeNodeWith<Aspect>()` - Iterate over shapes
 
 - **Specialized Nodes:**

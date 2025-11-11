@@ -1156,19 +1156,6 @@ const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
-{
-  return mSkelCache.mDofs;
-}
-
-//==============================================================================
-std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
-{
-  return convertToConstPtrVector<DegreeOfFreedom>(
-      mSkelCache.mDofs, mSkelCache.mConstDofs);
-}
-
-//==============================================================================
 std::size_t Skeleton::getIndexOf(
     const DegreeOfFreedom* _dof, bool _warning) const
 {

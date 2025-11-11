@@ -204,9 +204,12 @@ void MetaSkeleton(py::module& m)
           "getDofs",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::DegreeOfFreedom*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getDofs();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
+            const auto numDofs = self->getNumDofs();
+            dofs.reserve(numDofs);
+            for (std::size_t i = 0; i < numDofs; ++i)
+              dofs.emplace_back(self->getDof(i));
+            return dofs;
           },
           ::py::return_value_policy::reference_internal)
       .def(

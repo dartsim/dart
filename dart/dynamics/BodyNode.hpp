@@ -483,18 +483,6 @@ public:
   ShapeNode* createShapeNode(
       const std::shared_ptr<ShapeType>& shape, StringType&& name);
 
-  /// Return the list of ShapeNodes
-  ///
-  /// \deprecated Use eachShapeNode() instead.
-  DART_DEPRECATED(6.13)
-  const std::vector<ShapeNode*> getShapeNodes();
-
-  /// Return the list of (const) ShapeNodes
-  ///
-  /// \deprecated Use eachShapeNode() instead.
-  DART_DEPRECATED(6.13)
-  const std::vector<const ShapeNode*> getShapeNodes() const;
-
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();
 
@@ -511,20 +499,6 @@ public:
   /// Return the number of ShapeNodes containing given Aspect in this BodyNode
   template <class Aspect>
   std::size_t getNumShapeNodesWith() const;
-
-  /// Return the list of ShapeNodes containing given Aspect
-  ///
-  /// \deprecated Use eachShapeNodeWith() instead.
-  template <class Aspect>
-  DART_DEPRECATED(6.13)
-  const std::vector<ShapeNode*> getShapeNodesWith();
-
-  /// Return the list of ShapeNodes containing given Aspect
-  ///
-  /// \deprecated Use eachShapeNodeWith() instead.
-  template <class Aspect>
-  DART_DEPRECATED(6.13)
-  const std::vector<const ShapeNode*> getShapeNodesWith() const;
 
   /// Returns the index-th ShapeNode among the ShapeNodes that have a specific
   /// Aspect.

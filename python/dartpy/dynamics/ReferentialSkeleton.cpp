@@ -176,7 +176,12 @@ void ReferentialSkeleton(py::module& m)
           "getDofs",
           +[](const dart::dynamics::ReferentialSkeleton* self)
               -> std::vector<const dart::dynamics::DegreeOfFreedom*> {
-            return self->getDofs();
+            std::vector<const dart::dynamics::DegreeOfFreedom*> dofs;
+            const auto numDofs = self->getNumDofs();
+            dofs.reserve(numDofs);
+            for (std::size_t i = 0; i < numDofs; ++i)
+              dofs.emplace_back(self->getDof(i));
+            return dofs;
           })
       .def(
           "getIndexOf",

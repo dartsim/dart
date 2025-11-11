@@ -180,12 +180,6 @@ public:
   const DegreeOfFreedom* getDof(std::size_t _idx) const override;
 
   // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDofs() override;
-
-  // Documentation inherited
-  std::vector<const DegreeOfFreedom*> getDofs() const override;
-
-  // Documentation inherited
   std::size_t getIndexOf(
       const DegreeOfFreedom* _dof, bool _warning = true) const override;
 
