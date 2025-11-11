@@ -1703,17 +1703,18 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
 
 #if HAVE_BULLET
-  // Ensure Bullet's registrar is linked so the factory knows about it on
-  // platforms (e.g., Windows) where the DLL is otherwise not loaded.
-  collision::BulletCollisionDetector::getStaticType();
+  // Force-load the Bullet collision plugin on platforms (e.g., Windows) where
+  // the DLL is otherwise not loaded unless a symbol is referenced.
+  auto bulletDetector = collision::BulletCollisionDetector::create();
+  ASSERT_NE(bulletDetector, nullptr);
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #else
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #endif
 
 #if HAVE_ODE
-  // Same for ODE-based detection.
-  collision::OdeCollisionDetector::getStaticType();
+  auto odeDetector = collision::OdeCollisionDetector::create();
+  ASSERT_NE(odeDetector, nullptr);
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
 #else
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
