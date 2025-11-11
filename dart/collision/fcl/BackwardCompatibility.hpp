@@ -37,6 +37,8 @@
 
 #include <dart/common/Diagnostics.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 // clang-format off
@@ -98,10 +100,10 @@ using DistanceResult = ::fcl::DistanceResult<double>;
 using Contact = ::fcl::Contact<double>;
 
 /// Returns norm of a 3-dim vector
-double length(const dart::collision::fcl::Vector3& t);
+double DART_API length(const dart::collision::fcl::Vector3& t);
 
 /// Returns squared norm of a 3-dim vector
-double length2(const dart::collision::fcl::Vector3& t);
+double DART_API length2(const dart::collision::fcl::Vector3& t);
 
 [[nodiscard]] inline dart::collision::fcl::Transform3 getTransform3Identity()
 {
@@ -109,32 +111,32 @@ double length2(const dart::collision::fcl::Vector3& t);
 }
 
 /// Returns translation component of a transform
-dart::collision::fcl::Vector3 getTranslation(
+dart::collision::fcl::Vector3 DART_API getTranslation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets translation component of a transform
-void setTranslation(
+void DART_API setTranslation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 getRotation(
+dart::collision::fcl::Matrix3 DART_API getRotation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
-void setRotation(
+void DART_API setRotation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
-void setEulerZYX(
+void DART_API setEulerZYX(
     dart::collision::fcl::Matrix3& rot,
     double eulerX,
     double eulerY,
     double eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
-dart::collision::fcl::Vector3 transform(
+dart::collision::fcl::Vector3 DART_API transform(
     const dart::collision::fcl::Transform3& t,
     const dart::collision::fcl::Vector3& v);
 
