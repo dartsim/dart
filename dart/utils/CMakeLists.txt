@@ -11,6 +11,9 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
+list(REMOVE_ITEM hdrs "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.hpp")
+list(REMOVE_ITEM srcs "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.cpp")
+
 function(dart_add_utils_headers)
   dart_property_add(DART_UTILS_HEADERS ${ARGN})
 endfunction(dart_add_utils_headers)
@@ -22,6 +25,7 @@ endfunction(dart_add_utils_sources)
 # Add subdirectories
 add_subdirectory(mjcf)
 add_subdirectory(sdf)
+add_subdirectory(scene)
 
 get_property(dart_utils_headers GLOBAL PROPERTY DART_UTILS_HEADERS)
 get_property(dart_utils_sources GLOBAL PROPERTY DART_UTILS_SOURCES)
@@ -87,5 +91,12 @@ dart_install_compat_headers(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+if(TARGET ${PROJECT_NAME}-utils-scene)
+  add_component_dependencies(${PROJECT_NAME} utils-scene utils)
+  if(TARGET ${PROJECT_NAME}-utils-urdf)
+    add_component_dependencies(${PROJECT_NAME} utils-scene utils-urdf)
+  endif()
+endif()
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})

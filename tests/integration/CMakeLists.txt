@@ -135,6 +135,11 @@ if(TARGET dart-utils)
   endif()
 endif()
 
+if(TARGET dart-utils-scene)
+  dart_add_test("integration" test_SceneParser io/test_SceneParser.cpp)
+  target_link_libraries(test_SceneParser dart-utils-scene)
+endif()
+
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" test_DartLoader io/test_DartLoader.cpp)
