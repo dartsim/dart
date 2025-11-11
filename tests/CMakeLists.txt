@@ -68,7 +68,10 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(${target_name} ${target_name})
+  add_test(
+    NAME ${target_name}
+    COMMAND $<TARGET_FILE:${target_name}>
+  )
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
   set_tests_properties(
