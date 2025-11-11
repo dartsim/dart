@@ -32,7 +32,6 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
