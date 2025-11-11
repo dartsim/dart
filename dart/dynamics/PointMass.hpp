@@ -50,13 +50,13 @@ class SoftBodyNode;
 class PointMassNotifier;
 
 ///
-class PointMass : public common::Subject
+class DART_API PointMass : public common::Subject
 {
 public:
   friend class SoftBodyNode;
 
   /// State for each PointMass
-  struct State
+  struct DART_API State
   {
     /// Position
     Eigen::Vector3d mPositions;
@@ -83,7 +83,7 @@ public:
   };
 
   /// Properties for each PointMass
-  struct Properties
+  struct DART_API Properties
   {
     /// Resting position viewed in the parent SoftBodyNode frame
     Eigen::Vector3d mX0;
