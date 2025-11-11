@@ -231,12 +231,10 @@ inline constexpr S reciprocal(S x)
   #error You must #define dSINGLE or dDOUBLE
 #endif
 
-// dInfinity - Positive infinity for dReal type (replaces odeconfig.h macro)
-// DEPRECATED: Use ScalarTraits<Scalar>::inf() in templated code instead
+// Positive infinity for dReal type (replaces odeconfig.h macro)
 inline constexpr dReal dInfinity = ScalarTraits<dReal>::inf();
 
-// Legacy dPAD macro - now defined as constexpr function
-// DEPRECATED: Use padding() function directly in new code
+// Legacy dPAD macro - kept for compatibility with downstream code
 constexpr int dPAD(int a)
 {
   return padding(a);

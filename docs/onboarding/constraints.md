@@ -30,7 +30,7 @@ This document provides a comprehensive analysis of the constraint and integratio
 - DynamicJointConstraint.hpp/cpp - Dynamic joint constraints
 
 **LCP Solvers:**
-- LCPSolver.hpp/cpp (deprecated) - Base LCP solver
+- LCPSolver.hpp/cpp - Base LCP solver
 - BoxedLcpSolver.hpp - Boxed LCP solver interface
 - DantzigLCPSolver.hpp/cpp - Dantzig LCP solver
 - DantzigBoxedLcpSolver.hpp/cpp - Dantzig boxed LCP solver
