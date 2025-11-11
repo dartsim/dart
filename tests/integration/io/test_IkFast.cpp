@@ -136,13 +136,17 @@ TEST(IkFast, LoadWamArmIk)
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
+#ifdef DART_IKFAST_GENERATED_LIB_PATH
+  const std::string libName = DART_IKFAST_GENERATED_LIB_PATH;
+#else
   std::stringstream ss;
   ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
-#if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
-  ss << "d";
-#endif
+  #if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
+    ss << "d";
+  #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;
-  std::string libName = ss.str();
+  const std::string libName = ss.str();
+#endif
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
