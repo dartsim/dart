@@ -142,7 +142,7 @@ TEST(IkFast, LoadWamArmIk)
   std::stringstream ss;
   ss << DART_SHARED_LIB_PREFIX << "GeneratedWamIkFast";
   #if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
-    ss << "d";
+  ss << "d";
   #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;
   const std::string libName = ss.str();

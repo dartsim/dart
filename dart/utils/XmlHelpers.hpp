@@ -33,13 +33,13 @@
 #ifndef DART_UTILS_XMLHELPERS_HPP_
 #define DART_UTILS_XMLHELPERS_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/math/Geometry.hpp>
 #include <dart/math/MathTypes.hpp>
 
 #include <dart/common/Logging.hpp>
 #include <dart/common/ResourceRetriever.hpp>
-
-#include <dart/utils/Export.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>

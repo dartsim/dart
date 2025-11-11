@@ -33,9 +33,9 @@
 #ifndef DART_UTILS_FILEINFODOF_HPP_
 #define DART_UTILS_FILEINFODOF_HPP_
 
-#include <Eigen/Dense>
-
 #include <dart/utils/Export.hpp>
+
+#include <Eigen/Dense>
 
 #include <vector>
 

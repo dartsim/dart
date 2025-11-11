@@ -33,10 +33,9 @@
 #ifndef DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 #define DART_UTILS_MJCF_DETAIL_OPTION_HPP_
 
+#include <dart/utils/Export.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
-
-#include <dart/utils/Export.hpp>
 
 #include <Eigen/Core>
 #include <tinyxml2.h>

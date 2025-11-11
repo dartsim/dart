@@ -33,12 +33,12 @@
 #ifndef DART_UTILS_MJCFPARSER_HPP_
 #define DART_UTILS_MJCFPARSER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-
-#include <dart/utils/Export.hpp>
 
 #include <string>
 
@@ -72,8 +72,8 @@ struct DART_UTILS_API Options
 ///
 /// \warning This MJCF model parser is experimental and not complete
 /// implementation of the spec.
-simulation::WorldPtr DART_UTILS_API readWorld(
-    const common::Uri& uri, const Options& options = Options());
+simulation::WorldPtr DART_UTILS_API
+readWorld(const common::Uri& uri, const Options& options = Options());
 
 } // namespace MjcfParser
 } // namespace utils

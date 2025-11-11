@@ -33,9 +33,9 @@
 #ifndef DART_LCPSOLVER_LEMKE_HPP_
 #define DART_LCPSOLVER_LEMKE_HPP_
 
-#include <Eigen/Dense>
-
 #include <dart/Export.hpp>
+
+#include <Eigen/Dense>
 
 namespace dart {
 namespace lcpsolver {
