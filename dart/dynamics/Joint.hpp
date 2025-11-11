@@ -224,11 +224,6 @@ public:
   ///
   /// \sa ActuatorType
   ///
-  /// \deprecated Deprecated since DART 6.10. Please use
-  /// setLimitEnforcement() instead
-  DART_DEPRECATED(6.10)
-  void setPositionLimitEnforced(bool enforced);
-
   /// Sets whether enforcing joint position and velocity limits.
   ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
@@ -244,11 +239,6 @@ public:
   ///
   /// \sa ActuatorType
   ///
-  /// \deprecated Deprecated since DART 6.10. Please use
-  /// areLimitsEnforced() instead
-  DART_DEPRECATED(6.10)
-  bool isPositionLimitEnforced() const;
-
   /// Returns whether enforcing joint position and velocity limits
   ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
