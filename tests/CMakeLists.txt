@@ -79,17 +79,15 @@ function(dart_add_test test_type target_name) # ARGN for source files
   # Run each test via 'cmake -E env' so we can prepend the freshly built DART
   # bin/<config> directory to PATH before launching the binary.
   if(WIN32)
-    string(REPLACE ";" "\\;" _dart_test_path "$ENV{PATH}")
-    set(_dart_test_path_sep "\\;")
+    set(_dart_test_env "PATH=$<TARGET_FILE_DIR:dart>$<SEMICOLON>$ENV{PATH}")
   else()
-    set(_dart_test_path "$ENV{PATH}")
-    set(_dart_test_path_sep ":")
+    set(_dart_test_env "PATH=$<TARGET_FILE_DIR:dart>:$ENV{PATH}")
   endif()
   add_test(
     NAME ${target_name}
     COMMAND
       ${CMAKE_COMMAND} -E env
-      "PATH=$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}${_dart_test_path}"
+      "${_dart_test_env}"
       $<TARGET_FILE:${target_name}>
   )
 
