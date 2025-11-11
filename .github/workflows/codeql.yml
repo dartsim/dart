@@ -26,6 +26,9 @@ jobs:
   analyze:
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
+    env:
+      BUILD_TYPE: Release
+      DART_VERBOSE: ON
     strategy:
       fail-fast: false
       matrix:
@@ -33,9 +36,13 @@ jobs:
           - language: cpp
             build_mode: manual
             run_build: true
+            dartpy: "OFF"
+            gui_osg: "OFF"
           - language: python
             build_mode: none
             run_build: false
+            dartpy: "ON"
+            gui_osg: "ON"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -54,16 +61,20 @@ jobs:
 
       - name: Configure (CMake)
         if: matrix.run_build
+        env:
+          DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
+          DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
+          DART_BUILD_DARTPY7_OVERRIDE: ${{ matrix.dartpy }}
         run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Release \
           pixi run config
 
       - name: Build
         if: matrix.run_build
+        env:
+          DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
+          DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
+          DART_BUILD_DARTPY7_OVERRIDE: ${{ matrix.dartpy }}
         run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Release \
           pixi run build
 
       - name: CodeQL Analyze
