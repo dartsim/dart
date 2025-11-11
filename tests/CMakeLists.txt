@@ -102,6 +102,17 @@ set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
 add_subdirectory(baseline)
 set(DART_USE_GLOBAL_OUTPUT_DIRS ${_dart_prev_use_global_output_dirs})
 
+if(CMAKE_CONFIGURATION_TYPES)
+  foreach(_dart_cfg ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper}
+        "${DART_BINARY_DIR}/bin/${_dart_cfg}"
+    )
+  endforeach()
+else()
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
+endif()
+
 # Common test utilities shared across test types
 add_subdirectory(common)
 
