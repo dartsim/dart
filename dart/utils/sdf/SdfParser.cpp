@@ -305,15 +305,6 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 }
 
 //==============================================================================
-simulation::WorldPtr readWorld(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
-{
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readWorld(uri, options);
-}
-
-//==============================================================================
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options)
 {
@@ -351,15 +342,6 @@ dynamics::SkeletonPtr readSkeleton(
   dynamics::SkeletonPtr newSkeleton = readSkeleton(skelElement, uri, retriever);
 
   return newSkeleton;
-}
-
-//==============================================================================
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
-{
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readSkeleton(uri, options);
 }
 
 namespace {

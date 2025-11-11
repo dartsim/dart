@@ -37,7 +37,6 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
 namespace dart {
@@ -74,16 +73,8 @@ struct Options
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const Options& options = Options());
 
-DART_DEPRECATED(6.12)
-simulation::WorldPtr readWorld(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
-
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options = Options());
-
-DART_DEPRECATED(6.12)
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retrievers);
 
 } // namespace SdfParser
 
