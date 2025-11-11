@@ -71,23 +71,12 @@ function(dart_add_test test_type target_name) # ARGN for source files
   add_test(${target_name} ${target_name})
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
-  if(CMAKE_CONFIGURATION_TYPES)
-    foreach(_dart_cfg ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
-      set_target_properties(
-        ${target_name}
-        PROPERTIES
-          RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper}
-            "${DART_BINARY_DIR}/bin/${_dart_cfg}"
-      )
-    endforeach()
-  else()
-    set_target_properties(
-      ${target_name}
-      PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-    )
-  endif()
+  set_tests_properties(
+    ${target_name}
+    PROPERTIES
+      ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+  )
 
   dart_format_add(${sources})
 
