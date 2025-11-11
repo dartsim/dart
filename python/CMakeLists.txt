@@ -44,6 +44,10 @@ if(WIN32)
 else()
   set(DART_PYTHON_PATHS "${DART_PYTHON_BUILD_DIR}:${DART_PYTHON_SOURCE_DIR}")
 endif()
+file(MAKE_DIRECTORY "${DART_DARTPY_BUILD_DIR}")
+file(WRITE "${DART_DARTPY_BUILD_DIR}/__init__.py"
+  "# Auto-generated so python/tests can import the build tree\n"
+  "from .dartpy import *\n")
 
 add_subdirectory(dartpy)
 add_subdirectory(tests)
