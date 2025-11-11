@@ -6,7 +6,7 @@ import typing
 from . import MjcfParser
 from . import SdfParser
 from . import SkelParser
-__all__: list[str] = ['CompositeResourceRetriever', 'DartLoader', 'DartLoaderFlags', 'DartLoaderOptions', 'DartLoaderRootJointType', 'DartResourceRetriever', 'MjcfParser', 'PackageResourceRetriever', 'SdfParser', 'SkelParser']
+__all__: list[str] = ['CompositeResourceRetriever', 'DartLoader', 'DartLoaderOptions', 'DartLoaderRootJointType', 'DartResourceRetriever', 'MjcfParser', 'PackageResourceRetriever', 'SdfParser', 'SkelParser']
 class CompositeResourceRetriever(dartpy.common.ResourceRetriever):
     def __init__(self) -> None:
         ...
@@ -15,7 +15,6 @@ class CompositeResourceRetriever(dartpy.common.ResourceRetriever):
     def addSchemaRetriever(self, schema: str, resourceRetriever: dartpy.common.ResourceRetriever) -> bool:
         ...
 class DartLoader:
-    Flags = DartLoaderFlags
     Options = DartLoaderOptions
     RootJointType = DartLoaderRootJointType
     def __init__(self) -> None:
@@ -25,70 +24,18 @@ class DartLoader:
     def getOptions(self) -> DartLoaderOptions:
         ...
     @typing.overload
-    def parseSkeleton(self, uri: dartpy.common.Uri, resourceRetriever: dartpy.common.ResourceRetriever, flags: int = ...) -> dartpy.dynamics.Skeleton:
-        ...
-    @typing.overload
     def parseSkeleton(self, uri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
-        ...
-    @typing.overload
-    def parseSkeletonString(self, urdfString: str, baseUri: dartpy.common.Uri, resourceRetriever: dartpy.common.ResourceRetriever, flags: int = ...) -> dartpy.dynamics.Skeleton:
         ...
     @typing.overload
     def parseSkeletonString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
         ...
     @typing.overload
-    def parseWorld(self, uri: dartpy.common.Uri, resourceRetriever: dartpy.common.ResourceRetriever, flags: int = ...) -> dartpy.simulation.World:
-        ...
-    @typing.overload
     def parseWorld(self, uri: dartpy.common.Uri) -> dartpy.simulation.World:
-        ...
-    @typing.overload
-    def parseWorldString(self, urdfString: str, baseUri: dartpy.common.Uri, resourceRetriever: dartpy.common.ResourceRetriever, flags: int = ...) -> dartpy.simulation.World:
         ...
     @typing.overload
     def parseWorldString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.simulation.World:
         ...
     def setOptions(self, options: DartLoaderOptions = ...) -> None:
-        ...
-class DartLoaderFlags:
-    """
-    Members:
-    
-      NONE
-    
-      FIXED_BASE_LINK
-    
-      DEFAULT
-    """
-    DEFAULT: typing.ClassVar[DartLoaderFlags]  # value = <DartLoaderFlags.NONE: 0>
-    FIXED_BASE_LINK: typing.ClassVar[DartLoaderFlags]  # value = <DartLoaderFlags.FIXED_BASE_LINK: 2>
-    NONE: typing.ClassVar[DartLoaderFlags]  # value = <DartLoaderFlags.NONE: 0>
-    __members__: typing.ClassVar[dict[str, DartLoaderFlags]]  # value = {'NONE': <DartLoaderFlags.NONE: 0>, 'FIXED_BASE_LINK': <DartLoaderFlags.FIXED_BASE_LINK: 2>, 'DEFAULT': <DartLoaderFlags.NONE: 0>}
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: int) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: int) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
         ...
 class DartLoaderOptions:
     mDefaultInertia: dartpy.dynamics.Inertia
