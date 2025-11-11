@@ -74,11 +74,10 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(${target_name} ${target_name})
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
-  # Ensure dynamic libraries built under bin/<config> are discoverable when the
-  # test runs (notably required on Windows where DLL lookup is PATH-based).
+  # Run each test via 'cmake -E env' so we can prepend the freshly built DART
+  # bin/<config> directory to PATH before launching the binary.
   if(WIN32)
     string(REPLACE ";" "\\;" _dart_test_path "$ENV{PATH}")
     set(_dart_test_path_sep "\\;")
@@ -86,11 +85,12 @@ function(dart_add_test test_type target_name) # ARGN for source files
     set(_dart_test_path "$ENV{PATH}")
     set(_dart_test_path_sep ":")
   endif()
-  set_tests_properties(
-    ${target_name}
-    PROPERTIES
-      ENVIRONMENT
-        "PATH=$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}${_dart_test_path}"
+  add_test(
+    NAME ${target_name}
+    COMMAND
+      ${CMAKE_COMMAND} -E env
+      "PATH=$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}${_dart_test_path}"
+      $<TARGET_FILE:${target_name}>
   )
 
   dart_format_add(${sources})
