@@ -30,12 +30,6 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-# Tests build helper libraries (baseline solvers, integration fixtures, etc.)
-# keep their artifacts within their local build tree so the Visual Studio
-# project references that rely on relative paths continue to work.
-set(_dart_prev_use_global_output_dirs ${DART_USE_GLOBAL_OUTPUT_DIRS})
-set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
-
 # Set up GoogleTest
 if(DART_USE_SYSTEM_GOOGLETEST)
   find_package(GTest MODULE REQUIRED)
@@ -74,22 +68,8 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
+  add_test(${target_name} ${target_name})
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
-
-  # Run each test via 'cmake -E env' so we can prepend the freshly built DART
-  # bin/<config> directory to PATH before launching the binary.
-  if(WIN32)
-    set(_dart_test_env "PATH=$<TARGET_FILE_DIR:dart>$<SEMICOLON>$ENV{PATH}")
-  else()
-    set(_dart_test_env "PATH=$<TARGET_FILE_DIR:dart>:$ENV{PATH}")
-  endif()
-  add_test(
-    NAME ${target_name}
-    COMMAND
-      ${CMAKE_COMMAND} -E env
-      "${_dart_test_env}"
-      $<TARGET_FILE:${target_name}>
-  )
 
   dart_format_add(${sources})
 
@@ -110,7 +90,10 @@ endfunction()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Build baseline libraries for testing (ODE reference implementation)
+set(_dart_prev_use_global_output_dirs ${DART_USE_GLOBAL_OUTPUT_DIRS})
+set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
 add_subdirectory(baseline)
+set(DART_USE_GLOBAL_OUTPUT_DIRS ${_dart_prev_use_global_output_dirs})
 
 # Common test utilities shared across test types
 add_subdirectory(common)
@@ -176,5 +159,3 @@ dart_format_add(
 )
 
 add_subdirectory(benchmark)
-
-set(DART_USE_GLOBAL_OUTPUT_DIRS ${_dart_prev_use_global_output_dirs})
