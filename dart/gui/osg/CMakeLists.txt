@@ -45,6 +45,10 @@ dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
 if(MSVC AND BUILD_SHARED_LIBS)
+  set_target_properties(
+    ${target_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+
   if(CMAKE_CONFIGURATION_TYPES)
     foreach(_cfg ${CMAKE_CONFIGURATION_TYPES})
       string(TOUPPER "${_cfg}" _cfg_upper)
