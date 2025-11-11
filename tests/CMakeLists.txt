@@ -77,6 +77,22 @@ function(dart_add_test test_type target_name) # ARGN for source files
   add_test(${target_name} ${target_name})
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
+  # Ensure dynamic libraries built under bin/<config> are discoverable when the
+  # test runs (notably required on Windows where DLL lookup is PATH-based).
+  if(WIN32)
+    string(REPLACE ";" "\\;" _dart_test_path "$ENV{PATH}")
+    set(_dart_test_path_sep "\\;")
+  else()
+    set(_dart_test_path "$ENV{PATH}")
+    set(_dart_test_path_sep ":")
+  endif()
+  set_tests_properties(
+    ${target_name}
+    PROPERTIES
+      ENVIRONMENT
+        "PATH=$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}${_dart_test_path}"
+  )
+
   dart_format_add(${sources})
 
 endfunction()
