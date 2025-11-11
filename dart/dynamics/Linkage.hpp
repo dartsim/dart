@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/ReferentialSkeleton.hpp>
 
+#include <dart/Export.hpp>
+
 #include <unordered_set>
 
 namespace dart {
@@ -51,11 +53,11 @@ namespace dynamics {
 /// so that they match whatever assembly they had the last time
 /// Linkage::reassemble() was called (or the assembly that they had when the
 /// Linkage was constructed, if Linkage::reassemble has never been called).
-class Linkage : public ReferentialSkeleton
+class DART_API Linkage : public ReferentialSkeleton
 {
 public:
   /// The Criteria class is used to specify how a Linkage should be constructed
-  struct Criteria
+  struct DART_API Criteria
   {
     /// The ExpansionPolicy indicates how the collection of BodyNodes should
     /// expand from the starting BodyNode (mStart)
@@ -76,7 +78,7 @@ public:
 
     /// This structure defines targets for the expansion criteria and the
     /// desired behavior for those targets
-    struct Target
+    struct DART_API Target
     {
       /// Default constructor for Target
       Target(
@@ -115,7 +117,7 @@ public:
     /// in the Linkage. If mInclusive is set to false, then mTerminal will not
     /// be included in the Linkage. Note that the BodyNode of mStart may be
     /// included as an inclusive terminal, but NOT as an exclusive terminal.
-    struct Terminal
+    struct DART_API Terminal
     {
       /// Default constructor for Terminal
       Terminal(BodyNode* _terminal = nullptr, bool _inclusive = true);

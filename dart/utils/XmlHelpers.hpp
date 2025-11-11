@@ -59,7 +59,7 @@ DART_UTILS_API std::string toString(char v);
 template <typename S, int N>
 std::string toString(const Eigen::Matrix<S, N, 1>& v);
 template <typename S>
-DART_UTILS_API std::string toString(
+std::string toString(
     const Eigen::Transform<S, 3, Eigen::Isometry>& v,
     const std::string& rotationType = "intrinsic");
 
