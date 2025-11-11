@@ -53,7 +53,7 @@ jobs:
           cache: true
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           config-file: ./.github/codeql/config.yml
           languages: ${{ matrix.language }}
@@ -78,4 +78,4 @@ jobs:
           pixi run build
 
       - name: CodeQL Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
