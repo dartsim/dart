@@ -33,14 +33,14 @@
 #ifndef DART_UTILS_VSKPARSER_HPP_
 #define DART_UTILS_VSKPARSER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/math/Constants.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-
-#include <dart/utils/Export.hpp>
 
 namespace dart {
 namespace utils {
@@ -99,8 +99,8 @@ struct DART_UTILS_API Options
 };
 
 /// Read Skeleton from VSK file
-dynamics::SkeletonPtr DART_UTILS_API readSkeleton(
-    const common::Uri& fileUri, Options options = Options());
+dynamics::SkeletonPtr DART_UTILS_API
+readSkeleton(const common::Uri& fileUri, Options options = Options());
 
 } // namespace VskParser
 

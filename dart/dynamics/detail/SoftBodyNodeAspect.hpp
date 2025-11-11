@@ -36,9 +36,9 @@
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/PointMass.hpp>
 
-#include <dart/Export.hpp>
-
 #include <dart/common/RequiresAspect.hpp>
+
+#include <dart/Export.hpp>
 
 namespace dart {
 namespace dynamics {

@@ -35,6 +35,7 @@
 
 #include <dart/utils/CompositeResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
+#include <dart/utils/urdf/Export.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -45,8 +46,6 @@
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
-
-#include <dart/utils/urdf/Export.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>

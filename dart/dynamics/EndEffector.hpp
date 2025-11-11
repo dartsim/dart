@@ -52,12 +52,12 @@ class EndEffector;
 
 //==============================================================================
 class DART_API Support final
-    : public common::AspectWithStateAndVersionedProperties<
-                          Support,
-                          detail::SupportStateData,
-                          detail::SupportPropertiesData,
-                          EndEffector,
-                          &detail::SupportUpdate>
+  : public common::AspectWithStateAndVersionedProperties<
+        Support,
+        detail::SupportStateData,
+        detail::SupportPropertiesData,
+        EndEffector,
+        &detail::SupportUpdate>
 {
 public:
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)

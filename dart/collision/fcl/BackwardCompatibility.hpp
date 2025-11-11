@@ -111,8 +111,8 @@ double DART_API length2(const dart::collision::fcl::Vector3& t);
 }
 
 /// Returns translation component of a transform
-dart::collision::fcl::Vector3 DART_API getTranslation(
-    const dart::collision::fcl::Transform3& T);
+dart::collision::fcl::Vector3 DART_API
+getTranslation(const dart::collision::fcl::Transform3& T);
 
 /// Sets translation component of a transform
 void DART_API setTranslation(
@@ -120,8 +120,8 @@ void DART_API setTranslation(
     const dart::collision::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 DART_API getRotation(
-    const dart::collision::fcl::Transform3& T);
+dart::collision::fcl::Matrix3 DART_API
+getRotation(const dart::collision::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
 void DART_API setRotation(

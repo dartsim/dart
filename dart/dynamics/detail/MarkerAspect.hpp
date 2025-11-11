@@ -33,8 +33,9 @@
 #ifndef DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
 
-#include <dart/Export.hpp>
 #include <dart/math/Helpers.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 
