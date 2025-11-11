@@ -237,12 +237,12 @@ def run_unit_tests() -> bool:
     return success
 
 
-def run_dart7_tests() -> bool:
-    """Run dart7-specific tests (ctest filtered to dart7 labels)."""
-    print_header("DART7 TESTS")
+def run_dart8_tests() -> bool:
+    """Run dart8-specific tests (ctest filtered to dart8 labels)."""
+    print_header("DART8 TESTS")
 
     result, _ = run_command(
-        pixi_command("test-dart7", PIXI_DEFAULT_DARTPY, "Release"), "dart7 C++ tests"
+        pixi_command("test-dart8", PIXI_DEFAULT_DARTPY, "Release"), "dart8 C++ tests"
     )
     return result
 
@@ -257,12 +257,12 @@ def run_python_tests() -> bool:
     return result
 
 
-def run_dartpy7_tests() -> bool:
-    """Run dartpy7 smoke test."""
-    print_header("DARTPY7 SMOKE TEST")
+def run_dartpy8_tests() -> bool:
+    """Run dartpy8 smoke test."""
+    print_header("DARTPY8 SMOKE TEST")
 
     result, _ = run_command(
-        pixi_command("test-dartpy7", "Release"), "dartpy7 smoke test"
+        pixi_command("test-dartpy8", "Release"), "dartpy8 smoke test"
     )
     return result
 
@@ -328,10 +328,10 @@ def main():
     )
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
-        "--skip-dart7", action="store_true", help="Skip dart7 C++ tests"
+        "--skip-dart8", action="store_true", help="Skip dart8 C++ tests"
     )
     parser.add_argument(
-        "--skip-dartpy7", action="store_true", help="Skip dartpy7 smoke tests"
+        "--skip-dartpy8", action="store_true", help="Skip dartpy8 smoke tests"
     )
     parser.add_argument(
         "--skip-debug",
@@ -390,11 +390,11 @@ def main():
     else:
         print_warning("Skipping unit tests")
 
-    # Run dart7 tests
-    if not args.skip_dart7:
-        run_step("DART7 Tests", run_dart7_tests)
+    # Run dart8 tests
+    if not args.skip_dart8:
+        run_step("DART8 Tests", run_dart8_tests)
     else:
-        print_warning("Skipping dart7 tests")
+        print_warning("Skipping dart8 tests")
 
     # Run Python tests
     if not args.skip_python:
@@ -402,11 +402,11 @@ def main():
     else:
         print_warning("Skipping Python tests")
 
-    # Run dartpy7 tests
-    if not args.skip_dartpy7:
-        run_step("dartpy7 Tests", run_dartpy7_tests)
+    # Run dartpy8 tests
+    if not args.skip_dartpy8:
+        run_step("dartpy8 Tests", run_dartpy8_tests)
     else:
-        print_warning("Skipping dartpy7 tests")
+        print_warning("Skipping dartpy8 tests")
 
     # Run documentation build
     if not args.skip_docs:
