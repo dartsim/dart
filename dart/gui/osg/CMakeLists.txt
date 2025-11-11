@@ -44,6 +44,18 @@ file(GLOB render_hdrs "render/*.hpp")
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
+if(MSVC AND BUILD_SHARED_LIBS)
+  add_custom_command(
+    TARGET ${target_name} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${DART_BINARY_DIR}/lib/$<CONFIG>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_LINKER_FILE:${target_name}>"
+            "${DART_BINARY_DIR}/lib/$<CONFIG>/$<TARGET_LINKER_FILE_NAME:${target_name}>"
+    COMMENT "Copying ${target_name} import library to lib/$<CONFIG>"
+  )
+endif()
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
