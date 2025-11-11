@@ -56,6 +56,11 @@ jobs:
 
         include:
           - os: ubuntu-latest
+            build: "cp314-manylinux_x86_64"
+            experimental: false
+            release_only: true
+
+          - os: ubuntu-latest
             build: "cp312-manylinux_x86_64"
             experimental: false
             release_only: true
@@ -76,7 +81,27 @@ jobs:
             release_only: false
 
           - os: macos-latest
+            build: "cp314-macosx_arm64"
+            experimental: false
+            release_only: true
+
+          - os: macos-latest
             build: "cp312-macosx_arm64"
+            experimental: false
+            release_only: true
+
+          - os: macos-13
+            build: "cp313-macosx_x86_64"
+            experimental: false
+            release_only: true
+
+          - os: macos-13
+            build: "cp314-macosx_x86_64"
+            experimental: false
+            release_only: true
+
+          - os: macos-13
+            build: "cp312-macosx_x86_64"
             experimental: false
             release_only: true
 
@@ -84,6 +109,11 @@ jobs:
             build: "cp313-win_amd64"
             experimental: false
             release_only: false
+
+          - os: windows-latest
+            build: "cp314-win_amd64"
+            experimental: false
+            release_only: true
 
           - os: windows-latest
             build: "cp312-win_amd64"
@@ -98,7 +128,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Set up Vcpkg
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main') }}
+        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) }}
         uses: johnwason/vcpkg-action@v7
         with:
           # TODO: Add ode and coin-or-ipopt
