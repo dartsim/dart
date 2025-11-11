@@ -1104,7 +1104,7 @@ public:
       const InverseKinematics* _ik)>
       QualityComparison;
 
-  struct UniqueProperties
+  struct DART_API UniqueProperties
   {
     /// Flag for how to use the extra DOFs in the IK module.
     ExtraDofUtilization mExtraDofUtilization;

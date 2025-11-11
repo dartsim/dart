@@ -271,7 +271,7 @@ private:
 /// value initially in the bounds. This value is only updated if an available
 /// solution is found.
 /// \return True if a solution is found. False, otherwise.
-bool wrapCyclicSolution(double curr, double lb, double ub, double& sol);
+DART_API bool wrapCyclicSolution(double curr, double lb, double ub, double& sol);
 
 } // namespace dynamics
 } // namespace dart
