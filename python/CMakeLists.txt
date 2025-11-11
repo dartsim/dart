@@ -46,8 +46,30 @@ else()
 endif()
 file(MAKE_DIRECTORY "${DART_DARTPY_BUILD_DIR}")
 file(WRITE "${DART_DARTPY_BUILD_DIR}/__init__.py"
-  "# Auto-generated so python/tests can import the build tree\n"
-  "from .dartpy import *\n")
+  "# Auto-generated so python/tests can import the build tree.\n"
+  "import importlib.machinery\n"
+  "import importlib.util\n"
+  "import pathlib\n"
+  "import sys\n"
+  "\n"
+  "_pkg_dir = pathlib.Path(__file__).resolve().parent\n"
+  "_ext_path = None\n"
+  "for _suffix in importlib.machinery.EXTENSION_SUFFIXES:\n"
+  "    _candidate = _pkg_dir / f\"dartpy{_suffix}\"\n"
+  "    if _candidate.exists():\n"
+  "        _ext_path = _candidate\n"
+  "        break\n"
+  "\n"
+  "if _ext_path is None:\n"
+  "    raise ImportError(f\"Cannot find dartpy extension next to {_pkg_dir}\")\n"
+  "\n"
+  "_loader = importlib.machinery.ExtensionFileLoader(__name__, str(_ext_path))\n"
+  "_spec = importlib.util.spec_from_loader(__name__, _loader)\n"
+  "_module = importlib.util.module_from_spec(_spec)\n"
+  "_loader.exec_module(_module)\n"
+  "\n"
+  "sys.modules[__name__] = _module\n"
+  "globals().update(_module.__dict__)\n")
 
 add_subdirectory(dartpy)
 add_subdirectory(tests)
