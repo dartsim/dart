@@ -36,6 +36,7 @@
 #define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
 #include "../../helpers/GTestUtils.hpp"
+#include "dart/config.hpp"
 #include "dart/common/Composite.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
@@ -748,6 +749,11 @@ TEST(Aspect, Construction)
 
 TEST(Aspect, Joints)
 {
+#if defined(_WIN32) && DART_BUILD_SHARED
+  GTEST_SKIP() << "Specialized aspect access instrumentation is unavailable on "
+                  "Windows shared builds.";
+#endif
+
   usedSpecializedAspectAccess = false;
 
   dart::dynamics::SkeletonPtr skel = Skeleton::create();
