@@ -46,7 +46,7 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <dart/utils/Export.hpp>
+#include <dart/utils/urdf/Export.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -79,7 +79,7 @@ namespace utils {
 /**
  * @class DartLoader
  */
-class DART_UTILS_API DartLoader
+class DART_UTILS_URDF_API DartLoader
 {
 public:
   /// Root joint type to be used when the parent joint of the root link is not
@@ -94,7 +94,7 @@ public:
   };
 
   /// Options to be used in parsing URDF files.
-  struct DART_UTILS_API Options
+  struct DART_UTILS_URDF_API Options
   {
     /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
     common::ResourceRetrieverPtr mResourceRetriever;
