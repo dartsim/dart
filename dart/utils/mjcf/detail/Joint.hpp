@@ -39,6 +39,8 @@
 #include <dart/utils/mjcf/detail/JointAttributes.hpp>
 #include <dart/utils/mjcf/detail/Types.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <tinyxml2.h>
 
 namespace dart {
@@ -48,7 +50,7 @@ namespace detail {
 
 class Body;
 
-class Joint final
+class DART_UTILS_API Joint final
 {
 public:
   Joint() = default;

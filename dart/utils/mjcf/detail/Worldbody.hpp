@@ -40,6 +40,8 @@
 #include <dart/utils/mjcf/detail/Site.hpp>
 #include <dart/utils/mjcf/detail/Size.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <tinyxml2.h>
 
 #include <string>
@@ -50,7 +52,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Worldbody final
+class DART_UTILS_API Worldbody final
 {
 public:
   /// Default constructor
