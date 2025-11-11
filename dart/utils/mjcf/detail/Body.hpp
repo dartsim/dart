@@ -41,6 +41,8 @@
 #include <dart/utils/mjcf/detail/Joint.hpp>
 #include <dart/utils/mjcf/detail/Site.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <tinyxml2.h>
 
 namespace dart {
@@ -50,7 +52,7 @@ namespace detail {
 
 class Size;
 
-class Body final
+class DART_UTILS_API Body final
 {
 public:
   /// Default constructor.
