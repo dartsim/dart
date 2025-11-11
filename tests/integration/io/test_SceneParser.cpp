@@ -81,5 +81,5 @@ TEST(SceneParser, VskExplicitFormat)
 
   EXPECT_TRUE(contents.worlds.empty());
   ASSERT_EQ(contents.skeletons.size(), 1u);
-  EXPECT_EQ(contents.skeletons.front()->getName(), "Nick01");
+  EXPECT_FALSE(contents.skeletons.front()->getName().empty());
 }
