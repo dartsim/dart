@@ -56,24 +56,9 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(
-    const common::filesystem::path& path)
-{
-  return create(path.string());
-}
-
-//==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
 {
   return detail::SharedLibraryManager::getSingleton().load(path);
-}
-
-//==============================================================================
-SharedLibrary::SharedLibrary(
-    ProtectedConstructionTag, const common::filesystem::path& canonicalPath)
-  : SharedLibrary(ProtectedConstruction, canonicalPath.string())
-{
-  // Do nothing
 }
 
 //==============================================================================
