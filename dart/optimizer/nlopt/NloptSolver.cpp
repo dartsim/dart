@@ -48,7 +48,7 @@ namespace optimizer {
 //==============================================================================
 NloptSolver::NloptSolver(
     const Solver::Properties& properties, NloptSolver::Algorithm alg)
-  : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0)
+  : Solver(properties), mOpt(nullptr), mAlg(alg), mMinF(0.0)
 {
   // Do nothing
 }
@@ -56,10 +56,7 @@ NloptSolver::NloptSolver(
 //==============================================================================
 NloptSolver::NloptSolver(
     std::shared_ptr<Problem> problem, NloptSolver::Algorithm alg)
-  : Solver(std::move(problem)),
-    mOpt(nullptr),
-    mAlg(convertAlgorithm(alg)),
-    mMinF(0.0)
+  : Solver(std::move(problem)), mOpt(nullptr), mAlg(alg), mMinF(0.0)
 {
   // Do nothing
 }
@@ -91,9 +88,10 @@ bool NloptSolver::solve()
 {
   // Allocate a new nlopt::opt structure if needed
   std::size_t dimension = mProperties.mProblem->getDimension();
+  const auto nloptAlg = convertAlgorithm(mAlg);
   if (nullptr == mOpt || mOpt->get_dimension() != dimension
-      || mOpt->get_algorithm() != mAlg) {
-    mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
+      || mOpt->get_algorithm() != nloptAlg) {
+    mOpt = std::make_unique<nlopt::opt>(nloptAlg, dimension);
   } else {
     mOpt->remove_equality_constraints();
     mOpt->remove_inequality_constraints();
@@ -121,8 +119,8 @@ bool NloptSolver::solve()
           "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
           "equality constraints!",
           e.what(),
-          nlopt::algorithm_name(mAlg),
-          mAlg);
+          nlopt::algorithm_name(nloptAlg),
+          nloptAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
@@ -144,8 +142,8 @@ bool NloptSolver::solve()
           "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
           "inequality constraints!",
           e.what(),
-          nlopt::algorithm_name(mAlg),
-          mAlg);
+          nlopt::algorithm_name(nloptAlg),
+          nloptAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
@@ -206,13 +204,13 @@ NloptSolver& NloptSolver::operator=(const NloptSolver& other)
 //==============================================================================
 void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
 {
-  mAlg = convertAlgorithm(alg);
+  mAlg = alg;
 }
 
 //==============================================================================
 NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 {
-  return convertAlgorithm(mAlg);
+  return mAlg;
 }
 
 //==============================================================================

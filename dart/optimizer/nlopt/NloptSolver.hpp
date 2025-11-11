@@ -179,7 +179,7 @@ private:
   std::unique_ptr<nlopt::opt> mOpt;
 
   /// Algorithm to be used by the nlopt::opt
-  nlopt::algorithm mAlg;
+  Algorithm mAlg;
 
   /// Optimization parameters
   std::vector<double> mX;
