@@ -11,14 +11,14 @@ def test_version_string():
     # Check version string
     assert d.__version__ is not None
     assert isinstance(d.__version__, str)
-    assert "7.0.0" in d.__version__
+    assert "8.0.0" in d.__version__
 
 
 def test_version_major():
     """Test major version number."""
     import dartpy8 as d
 
-    assert d.version_major() == 7
+    assert d.version_major() == 8
 
 
 def test_version_minor():
@@ -39,7 +39,7 @@ def test_version_components():
     """Test all version components together."""
     import dartpy8 as d
 
-    assert d.version_major() == 7
+    assert d.version_major() == 8
     assert d.version_minor() == 0
     assert d.version_patch() == 0
 

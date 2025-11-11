@@ -38,7 +38,7 @@ namespace dart8 {
 
 inline constexpr int versionMajor()
 {
-  return 7;
+  return 8;
 }
 
 inline constexpr int versionMinor()
@@ -53,7 +53,7 @@ inline constexpr int versionPatch()
 
 inline constexpr std::string_view version()
 {
-  return "7.0.0";
+  return "8.0.0";
 }
 
 } // namespace dart8
