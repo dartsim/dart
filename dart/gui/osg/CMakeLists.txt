@@ -63,18 +63,6 @@ if(MSVC AND BUILD_SHARED_LIBS)
     )
   endif()
 
-  add_custom_command(
-    TARGET ${target_name} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-            "${DART_BINARY_DIR}/lib/$<CONFIG>"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_IMPLIB_FILE:${target_name}>"
-            "${DART_BINARY_DIR}/lib/$<CONFIG>/$<TARGET_IMPLIB_FILE_NAME:${target_name}>"
-    BYPRODUCTS
-      "${DART_BINARY_DIR}/lib/$<CONFIG>/$<TARGET_IMPLIB_FILE_NAME:${target_name}>"
-    COMMENT "Ensuring ${target_name} import library exists under lib/$<CONFIG>"
-    VERBATIM
-  )
 endif()
 
 # Component
