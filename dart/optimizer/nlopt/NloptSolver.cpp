@@ -47,23 +47,8 @@ namespace optimizer {
 
 //==============================================================================
 NloptSolver::NloptSolver(
-    const Solver::Properties& properties, nlopt::algorithm alg)
-  : NloptSolver(properties, convertAlgorithm(alg))
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(
     const Solver::Properties& properties, NloptSolver::Algorithm alg)
-  : Solver(properties), mOpt(nullptr), mAlg(convertAlgorithm(alg)), mMinF(0.0)
-{
-  // Do nothing
-}
-
-//==============================================================================
-NloptSolver::NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg)
-  : NloptSolver(std::move(problem), convertAlgorithm(alg))
+  : Solver(properties), mOpt(nullptr), mAlg(alg), mMinF(0.0)
 {
   // Do nothing
 }
@@ -71,10 +56,7 @@ NloptSolver::NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg)
 //==============================================================================
 NloptSolver::NloptSolver(
     std::shared_ptr<Problem> problem, NloptSolver::Algorithm alg)
-  : Solver(std::move(problem)),
-    mOpt(nullptr),
-    mAlg(convertAlgorithm(alg)),
-    mMinF(0.0)
+  : Solver(std::move(problem)), mOpt(nullptr), mAlg(alg), mMinF(0.0)
 {
   // Do nothing
 }
@@ -106,9 +88,10 @@ bool NloptSolver::solve()
 {
   // Allocate a new nlopt::opt structure if needed
   std::size_t dimension = mProperties.mProblem->getDimension();
+  const auto nloptAlg = convertAlgorithm(mAlg);
   if (nullptr == mOpt || mOpt->get_dimension() != dimension
-      || mOpt->get_algorithm() != mAlg) {
-    mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
+      || mOpt->get_algorithm() != nloptAlg) {
+    mOpt = std::make_unique<nlopt::opt>(nloptAlg, dimension);
   } else {
     mOpt->remove_equality_constraints();
     mOpt->remove_inequality_constraints();
@@ -136,8 +119,8 @@ bool NloptSolver::solve()
           "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
           "equality constraints!",
           e.what(),
-          nlopt::algorithm_name(mAlg),
-          mAlg);
+          nlopt::algorithm_name(nloptAlg),
+          nloptAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
@@ -159,8 +142,8 @@ bool NloptSolver::solve()
           "an Nlopt solver. Check whether your algorithm [{}] ({}) supports "
           "inequality constraints!",
           e.what(),
-          nlopt::algorithm_name(mAlg),
-          mAlg);
+          nlopt::algorithm_name(nloptAlg),
+          nloptAlg);
       DART_ASSERT(false);
     } catch (const std::exception& e) {
       DART_ERROR(
@@ -201,14 +184,14 @@ std::string NloptSolver::getType() const
 //==============================================================================
 std::shared_ptr<Solver> NloptSolver::clone() const
 {
-  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm2());
+  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm());
 }
 
 //==============================================================================
 void NloptSolver::copy(const NloptSolver& other)
 {
   setProperties(other.getSolverProperties());
-  setAlgorithm(other.getAlgorithm2());
+  setAlgorithm(other.getAlgorithm());
 }
 
 //==============================================================================
@@ -219,38 +202,21 @@ NloptSolver& NloptSolver::operator=(const NloptSolver& other)
 }
 
 //==============================================================================
-void NloptSolver::setAlgorithm(nlopt::algorithm alg)
-{
-  setAlgorithm(convertAlgorithm(alg));
-}
-
-//==============================================================================
 void NloptSolver::setAlgorithm(NloptSolver::Algorithm alg)
 {
-  mAlg = convertAlgorithm(alg);
+  mAlg = alg;
 }
 
 //==============================================================================
-nlopt::algorithm NloptSolver::getAlgorithm() const
+NloptSolver::Algorithm NloptSolver::getAlgorithm() const
 {
-  return convertAlgorithm(getAlgorithm2());
-}
-
-//==============================================================================
-NloptSolver::Algorithm NloptSolver::getAlgorithm2() const
-{
-  return convertAlgorithm(mAlg);
+  return mAlg;
 }
 
 //==============================================================================
 #define NLOPTSOLVER_ALGORITHM_DART_TO_NLOPT(alg_name)                          \
   case alg_name:                                                               \
     return nlopt::algorithm::alg_name;
-
-//==============================================================================
-#define NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(alg_name)                          \
-  case nlopt::algorithm::alg_name:                                             \
-    return alg_name;
 
 //==============================================================================
 nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
@@ -311,6 +277,11 @@ nlopt::algorithm NloptSolver::convertAlgorithm(NloptSolver::Algorithm algorithm)
 }
 
 //==============================================================================
+#define NLOPTSOLVER_ALGORITHM_NLOPT_TO_DART(alg_name)                          \
+  case nlopt::algorithm::alg_name:                                             \
+    return alg_name;
+
+//==============================================================================
 NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
 {
   switch (algorithm) {
@@ -363,8 +334,8 @@ NloptSolver::Algorithm NloptSolver::convertAlgorithm(nlopt::algorithm algorithm)
       DART_WARN(
           "[NloptSolver] Attempt to convert unsupported algorithm '{}'. Use "
           "NloptSolver::Algorithm::LN_COBYLA instead. ",
-          algorithm);
-      return LN_COBYLA;
+          nlopt::algorithm_name(algorithm));
+      return Algorithm::LN_COBYLA;
   }
 }
 

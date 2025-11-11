@@ -53,13 +53,6 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
       Eigen::aligned_allocator<_Tp_nc>(), std::forward<_Args>(__args)...);
 }
 
-//==============================================================================
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
-  return std::make_unique<T>(std::forward<Args>(args)...);
-}
-
 } // namespace common
 } // namespace dart
 

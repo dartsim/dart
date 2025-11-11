@@ -49,11 +49,6 @@ namespace common {
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
-/// \deprecated Deprecated in 6.9. Use std::make_unique instead.
-template <typename T, typename... Args>
-DART_DEPRECATED(6.9)
-std::unique_ptr<T> make_unique(Args&&... args);
-
 template <typename _Tp>
 using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
 

@@ -118,17 +118,9 @@ public:
   };
 
   /// Default Constructor
-  DART_DEPRECATED(6.9)
-  NloptSolver(const Solver::Properties& properties, nlopt::algorithm alg);
-
-  /// Default Constructor
   NloptSolver(
       const Solver::Properties& properties = Solver::Properties(),
       Algorithm alg = LN_COBYLA);
-
-  /// Alternative Constructor
-  DART_DEPRECATED(6.9)
-  NloptSolver(std::shared_ptr<Problem> problem, nlopt::algorithm alg);
 
   /// Alternative Constructor
   NloptSolver(std::shared_ptr<Problem> problem, Algorithm alg = LN_COBYLA);
@@ -155,26 +147,16 @@ public:
   NloptSolver& operator=(const NloptSolver& other);
 
   /// Set the algorithm that is to be used by the nlopt solver
-  DART_DEPRECATED(6.9)
-  void setAlgorithm(nlopt::algorithm alg);
-
-  /// Set the algorithm that is to be used by the nlopt solver
   void setAlgorithm(Algorithm alg);
 
   /// Get the algorithm that is to be used by the nlopt solver
-  DART_DEPRECATED(6.9)
-  nlopt::algorithm getAlgorithm() const;
-
-  /// Get the algorithm that is to be used by the nlopt solver
-  Algorithm getAlgorithm2() const;
-  // TODO(JS): Rename to getAlgorithm2() once getAlgorithm() is removed in
-  // DART 7
+  Algorithm getAlgorithm() const;
 
 private:
-  /// Converts nlopt::algorithm to NloptSolver::Algorithm
+  /// Converts NloptSolver::Algorithm to nlopt::algorithm
   static nlopt::algorithm convertAlgorithm(Algorithm algorithm);
 
-  /// Converts NloptSolver::Algorithm to nlopt::algorithm
+  /// Converts nlopt::algorithm to NloptSolver::Algorithm
   static Algorithm convertAlgorithm(nlopt::algorithm algorithm);
 
   /// Wrapping function for nlopt callback function, nlopt_func
@@ -197,7 +179,7 @@ private:
   std::unique_ptr<nlopt::opt> mOpt;
 
   /// Algorithm to be used by the nlopt::opt
-  nlopt::algorithm mAlg;
+  Algorithm mAlg;
 
   /// Optimization parameters
   std::vector<double> mX;
