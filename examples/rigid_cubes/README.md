@@ -78,7 +78,6 @@ Follow the control instructions displayed in the console and viewer window.
 
 ## Technical Notes
 
-- **Converted from GLUT**: This example was converted from the deprecated GLUT-based `glut_rigid_cubes` example
 - **OSG Patterns**: Uses modern OSG viewer patterns with proper reference counting
 - **Real-time Simulation**: Leverages `RealTimeWorldNode` for smooth physics stepping
 - **Shadow Rendering**: Includes default shadow technique for enhanced visualization

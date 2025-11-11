@@ -34,6 +34,7 @@
 #include "dart/common/Macros.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
+#include <dart/config.hpp>
 #include <dart/gui/osg/all.hpp>
 #include <dart/utils/all.hpp>
 #include <dart/collision/bullet/all.hpp>
@@ -125,7 +126,7 @@ public:
 int main()
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH "/skel/kima/kima_human_edited.skel");
+      dart::config::dataPath("skel/kima/kima_human_edited.skel"));
   DART_ASSERT(world != nullptr);
 
   auto skel = world->getSkeleton("human");

@@ -41,11 +41,10 @@
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
+#include <limits>
 
 namespace dart {
 namespace constraint {
-
-using dart::lcpsolver::dInfinity;
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -57,6 +56,12 @@ using dart::lcpsolver::dInfinity;
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
 #define DART_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
+
+namespace {
+
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+} // namespace
 
 double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;
@@ -365,7 +370,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = kInfinity;
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
@@ -427,7 +432,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = kInfinity;
     DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------

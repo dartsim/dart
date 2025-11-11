@@ -107,17 +107,6 @@ inline constexpr T sqrt1_2 = T(0.7071067811865475244008443621048490L);
 
 namespace dart::lcpsolver {
 
-//==============================================================================
-// Legacy dReal Type (Deprecated)
-//==============================================================================
-// IMPORTANT: The dReal type and related macros (dSINGLE/dDOUBLE) are kept
-// ONLY for backward compatibility with existing code that still uses the old
-// dSolveLCP API. This type will be REMOVED in a future release.
-//
-// For new code, use the templated SolveLCP<Scalar> API with explicit scalar
-// types (float or double) instead of relying on dReal.
-//==============================================================================
-
 #if defined(dSINGLE)
 using dReal = float;
   #ifdef dDOUBLE
@@ -230,15 +219,6 @@ inline constexpr S reciprocal(S x)
 #else
   #error You must #define dSINGLE or dDOUBLE
 #endif
-
-// Positive infinity for dReal type (replaces odeconfig.h macro)
-inline constexpr dReal dInfinity = ScalarTraits<dReal>::inf();
-
-// Legacy dPAD macro - kept for compatibility with downstream code
-constexpr int dPAD(int a)
-{
-  return padding(a);
-}
 
 //==============================================================================
 // Matrix Multiplication Functions (Phase 14.3 - SIMD Optimization)

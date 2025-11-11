@@ -490,10 +490,11 @@ LCP<Scalar>::LCP(
     int* findex = m_findex;
     Scalar *lo = m_lo, *hi = m_hi;
     const int n = m_n;
+    const Scalar inf = ScalarTraits<Scalar>::inf();
     for (int k = m_nub; k < n; ++k) {
       if (findex && findex[k] >= 0)
         continue;
-      if (lo[k] == -dInfinity && hi[k] == dInfinity) {
+      if (lo[k] == -inf && hi[k] == inf) {
         swapProblem(
             m_A,
             m_x,
@@ -570,7 +571,7 @@ LCP<Scalar>::LCP(
     const int nub = m_nub;
     for (int k=0; k<n; k++) {
       if (k<nub) printf ("C");
-      else if (m_lo[k]==-dInfinity && m_hi[k]==dInfinity) printf ("c");
+      else if (m_lo[k]==-inf && m_hi[k]==inf) printf ("c");
       else printf (".");
     }
     printf ("\n");

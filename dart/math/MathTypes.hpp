@@ -37,9 +37,6 @@
 
 #include <Eigen/Dense>
 
-#include <map>
-#include <vector>
-
 //------------------------------------------------------------------------------
 // Types
 //------------------------------------------------------------------------------
@@ -55,24 +52,6 @@ inline Vector6d compose(
   composition << _angular, _linear;
   return composition;
 }
-
-// Deprecated
-using EIGEN_V_VEC3D = std::vector<Eigen::Vector3d>;
-
-// Deprecated
-using EIGEN_VV_VEC3D = std::vector<std::vector<Eigen::Vector3d>>;
-
-// Deprecated in favor of dart::common::aligned_vector
-template <typename _Tp>
-using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
-
-// Deprecated in favor of dart::common::aligned_map
-template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
-using aligned_map = std::map<
-    _Key,
-    _Tp,
-    _Compare,
-    Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
 } // namespace Eigen
 

@@ -54,12 +54,12 @@ namespace utils {
 /// \endcode
 ///
 /// DartResourceRetriever searches files in the following order:
-/// 1) Preprocessor, DART_DATA_LOCAL_PATH: Path to the data directory in the
-///    source directory (e.g., [DART_SRC_ROOT]/data/).
-/// 2) Preprocessor, DART_DATA_GLOBAL_PATH: Path to the data directory installed
-///    in a system directory. The location can be varied depending on OS
-///    (e.g., Linux: /usr/local/share/doc/dart/data/).
-/// 3) environment variable, DART_DATA_PATH: Path to the data directory
+/// 1) The source tree's data directory (see dart::config::kDataLocalPath),
+///    typically `[DART_SRC_ROOT]/data/`.
+/// 2) The installed data directory (see dart::config::kDataGlobalPath), whose
+///    exact location depends on the platform (e.g.,
+///    `/usr/local/share/doc/dart/data/` on Linux).
+/// 3) environment variable, `DART_DATA_PATH`: Path to the data directory
 ///    specified by the user.
 class DartResourceRetriever : public common::ResourceRetriever
 {

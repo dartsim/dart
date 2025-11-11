@@ -40,8 +40,13 @@
 #include "dart/lcpsolver/dantzig/lcp.h"
 
 #include <iostream>
+#include <limits>
 
-using dart::lcpsolver::dInfinity;
+namespace {
+
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+} // namespace
 
 namespace dart {
 namespace constraint {
@@ -196,7 +201,7 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -velocities[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = static_cast<double>(dInfinity);
+      mUpperBound[i] = kInfinity;
 
       if (mIsPositionLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -213,7 +218,7 @@ void JointLimitConstraint::update()
     mViolation[i] = positions[i] - positionUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -velocities[i];
-      mLowerBound[i] = -static_cast<double>(dInfinity);
+      mLowerBound[i] = -kInfinity;
       mUpperBound[i] = 0.0;
 
       if (mIsPositionLimitViolated[i]) {
@@ -234,7 +239,7 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -mViolation[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = static_cast<double>(dInfinity);
+      mUpperBound[i] = kInfinity;
 
       if (mIsVelocityLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -251,7 +256,7 @@ void JointLimitConstraint::update()
     mViolation[i] = velocities[i] - velocityUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -mViolation[i];
-      mLowerBound[i] = -static_cast<double>(dInfinity);
+      mLowerBound[i] = -kInfinity;
       mUpperBound[i] = 0.0;
 
       if (mIsVelocityLimitViolated[i]) {

@@ -37,8 +37,13 @@
 #include "dart/lcpsolver/dantzig/lcp.h"
 
 #include <iostream>
+#include <limits>
 
-using dart::lcpsolver::dInfinity;
+namespace {
+
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+} // namespace
 
 namespace dart {
 namespace constraint {
@@ -146,13 +151,13 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   DART_ASSERT(_lcp->findex[1] == -1);
   DART_ASSERT(_lcp->findex[2] == -1);
 
-  _lcp->lo[0] = -dInfinity;
-  _lcp->lo[1] = -dInfinity;
-  _lcp->lo[2] = -dInfinity;
+  _lcp->lo[0] = -kInfinity;
+  _lcp->lo[1] = -kInfinity;
+  _lcp->lo[2] = -kInfinity;
 
-  _lcp->hi[0] = dInfinity;
-  _lcp->hi[1] = dInfinity;
-  _lcp->hi[2] = dInfinity;
+  _lcp->hi[0] = kInfinity;
+  _lcp->hi[1] = kInfinity;
+  _lcp->hi[2] = kInfinity;
 
   _lcp->x[0] = mOldX[0];
   _lcp->x[1] = mOldX[1];
