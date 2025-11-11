@@ -46,7 +46,7 @@ namespace dynamics {
 class DART_API Branch : public Linkage
 {
 public:
-  struct Criteria
+  struct DART_API Criteria
   {
     /// Constructor. Requires a starting BodyNode.
     Criteria(BodyNode* _start);

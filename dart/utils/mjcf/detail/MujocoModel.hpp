@@ -42,6 +42,8 @@
 #include <dart/utils/mjcf/detail/Size.hpp>
 #include <dart/utils/mjcf/detail/Worldbody.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
@@ -53,7 +55,7 @@ namespace MjcfParser {
 namespace detail {
 
 /// Main class to parse MJCF model file
-class MujocoModel final
+class DART_UTILS_API MujocoModel final
 {
 public:
   MujocoModel() = default;
