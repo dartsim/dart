@@ -1,3 +1,34 @@
+#
+# Copyright (c) 2011-2025, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/main/LICENSE
+#
+# This file is provided under the following "BSD-style" License:
+#   Redistribution and use in source and binary forms, with or
+#   without modification, are permitted provided that the following
+#   conditions are met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+#   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+#   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+#   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+#   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+#   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+
 import math
 from typing import List, Tuple
 
@@ -23,6 +54,7 @@ delta_damping = 1.0
 
 
 def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
+    """Helper to create column-vectors for dartpy APIs."""
     vec = np.zeros(3)
     vec[:] = values
     return vec
@@ -39,6 +71,7 @@ class Controller:
         self.body_force_visuals = self._create_force_visuals()
 
     def _create_force_visuals(self):
+        """Create one hidden arrow per body so we can show applied forces."""
         visuals = []
         for idx in range(self.pendulum.getNumBodyNodes()):
             body = self.pendulum.getBodyNode(idx)
@@ -74,25 +107,39 @@ class Controller:
         if 0 <= index < len(self.force_countdown):
             self.force_countdown[index] = default_countdown
 
-    def change_rest_position(self, _delta: float):
-        # Lesson 2a
-        pass
+    def change_rest_position(self, delta: float):
+        for i in range(self.pendulum.getNumDofs()):
+            dof = self.pendulum.getDof(i)
+            q0 = dof.getRestPosition() + delta
+            q0 = max(min(q0, math.radians(90.0)), math.radians(-90.0))
+            dof.setRestPosition(q0)
+        # Only curl along the middle axis of the BallJoint.
+        self.pendulum.getDof(0).setRestPosition(0.0)
+        self.pendulum.getDof(2).setRestPosition(0.0)
 
-    def change_stiffness(self, _delta: float):
-        # Lesson 2b
-        pass
+    def change_stiffness(self, delta: float):
+        for i in range(self.pendulum.getNumDofs()):
+            dof = self.pendulum.getDof(i)
+            stiffness = max(0.0, dof.getSpringStiffness() + delta)
+            dof.setSpringStiffness(stiffness)
 
-    def change_damping(self, _delta: float):
-        # Lesson 2c
-        pass
+    def change_damping(self, delta: float):
+        for i in range(self.pendulum.getNumDofs()):
+            dof = self.pendulum.getDof(i)
+            damping = max(0.0, dof.getDampingCoefficient() + delta)
+            dof.setDampingCoefficient(damping)
 
     def add_constraint(self):
-        # Lesson 3
-        pass
+        tip = self.pendulum.getBodyNode(self.pendulum.getNumBodyNodes() - 1)
+        location = tip.getTransform().multiply([0.0, 0.0, default_height])
+        self.ball_constraint = dart.constraint.BallJointConstraint(tip, location)
+        self.world.getConstraintSolver().addConstraint(self.ball_constraint)
 
     def remove_constraint(self):
-        # Lesson 3
-        pass
+        if self.ball_constraint is None:
+            return
+        self.world.getConstraintSolver().removeConstraint(self.ball_constraint)
+        self.ball_constraint = None
 
     def has_constraint(self) -> bool:
         return self.ball_constraint is not None
@@ -101,23 +148,55 @@ class Controller:
         self.apply_body_force = not self.apply_body_force
 
     def update(self):
-        # Lesson 1a: Reset shapes to their default state.
+        # Reset visuals.
+        for idx in range(self.pendulum.getNumBodyNodes()):
+            body = self.pendulum.getBodyNode(idx)
+            num_visual_nodes = body.getNumShapeNodes()
+            for j in range(min(2, num_visual_nodes)):
+                visual = (
+                    body.getShapeNode(j).getVisualAspect()
+                )
+                visual.setColor([0.0, 0.0, 1.0, 1.0])
+            _, arrow_visual = self.body_force_visuals[idx]
+            arrow_visual.hide()
 
         if not self.apply_body_force:
-            # Lesson 1b: Apply joint torques and highlight joints.
             for i in range(self.pendulum.getNumDofs()):
                 if self.force_countdown[i] > 0:
-                    # Lesson 1b
-                    pass
+                    dof = self.pendulum.getDof(i)
+                    torque = default_torque if self.positive_sign else -default_torque
+                    dof.setForce(torque)
+
+                    child = dof.getChildBodyNode()
+                    if child.getNumShapeNodes() > 0:
+                        joint_visual = child.getShapeNode(0).getVisualAspect()
+                        joint_visual.setColor([1.0, 0.0, 0.0, 1.0])
+                    self.force_countdown[i] -= 1
         else:
-            # Lesson 1c: Apply external body forces and visualize them.
             num_slots = min(
                 self.pendulum.getNumBodyNodes(), len(self.force_countdown)
             )
             for i in range(num_slots):
                 if self.force_countdown[i] > 0:
-                    # Lesson 1c
-                    pass
+                    body = self.pendulum.getBodyNode(i)
+                    force = np.array([default_force, 0.0, 0.0])
+                    location = np.array(
+                        [-default_width / 2.0, 0.0, default_height / 2.0]
+                    )
+                    if not self.positive_sign:
+                        force *= -1.0
+                        location[0] *= -1.0
+                    body.addExtForce(force, location, True, True)
+
+                    if body.getNumShapeNodes() > 1:
+                        body_shape = body.getShapeNode(1).getVisualAspect()
+                        body_shape.setColor([1.0, 0.0, 0.0, 1.0])
+
+                    arrow, arrow_visual = self.body_force_visuals[i]
+                    tail, head = self._arrow_positions()
+                    arrow.setPositions(tail, head)
+                    arrow_visual.show()
+                    self.force_countdown[i] -= 1
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):

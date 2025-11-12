@@ -9,7 +9,7 @@ APIs.
 .. toctree::
    :maxdepth: 1
 
-   tutorials/multi-pendulum
-   tutorials/collisions
-   tutorials/dominoes
-   tutorials/biped
+   tutorials/01-multi-pendulum
+   tutorials/02-collisions
+   tutorials/03-dominoes
+   tutorials/04-biped
