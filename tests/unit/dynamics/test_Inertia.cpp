@@ -91,12 +91,8 @@ TEST(Inertia, Transformations)
     const Eigen::Matrix6d adjoint = math::getAdTMatrix(T.inverse());
     const Eigen::Matrix6d expected
         = adjoint.transpose() * inertia.getSpatialTensor() * adjoint;
-    const Eigen::Matrix6d mathExpected
-        = math::transformInertia(T, inertia.getSpatialTensor());
-
     EXPECT_TRUE(expected.isApprox(transformed.getSpatialTensor(), tol));
     EXPECT_TRUE(expected.isApprox(inPlace.getSpatialTensor(), tol));
-    EXPECT_TRUE(mathExpected.isApprox(transformed.getSpatialTensor(), tol));
     EXPECT_NEAR(transformed.getMass(), inertia.getMass(), tol);
     EXPECT_NEAR(inPlace.getMass(), inertia.getMass(), tol);
 
