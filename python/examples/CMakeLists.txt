@@ -39,11 +39,26 @@ function(dartpy_add_example example_name) # ARGN for source file
   else()
     set(source "${example_name}.py")
   endif()
+  if(NOT EXISTS "${source}")
+    return()
+  endif()
+  if(source MATCHES "_nb[/\\\\.]")
+    set(dependency_target dartpy_nb)
+  else()
+    set(dependency_target dartpy)
+  endif()
+  if(NOT TARGET ${dependency_target})
+    if(DART_VERBOSE)
+      message(STATUS "Skipping Python example ${example_name} because ${dependency_target} is not available.")
+    endif()
+    return()
+  endif()
   add_custom_target(${example_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
     COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
+    DEPENDS ${dependency_target}
   )
 endfunction()
 

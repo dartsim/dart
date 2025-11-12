@@ -55,43 +55,84 @@ set(dartpy_test_utils
 )
 
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
+set(dartpy_pybind_tests)
+set(dartpy_nanobind_tests)
+foreach(test_file ${dartpy_test_files})
+  if(test_file MATCHES "_nb\\.py$")
+    list(APPEND dartpy_nanobind_tests ${test_file})
+  else()
+    list(APPEND dartpy_pybind_tests ${test_file})
+  endif()
+endforeach()
 
-# Add custom target to run the tests
-if(DARTPY_PYTEST_FOUND)
-  add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+set(_pytest_dependencies)
+if(DARTPY_PYTEST_FOUND AND dartpy_pybind_tests AND TARGET dartpy)
+  add_custom_target(pytest_pybind
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest (pybind11) with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_pybind_tests} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+    SOURCES ${dartpy_pybind_tests} ${dartpy_test_utils}
     DEPENDS dartpy
   )
+  list(APPEND _pytest_dependencies pytest_pybind)
+elseif(dartpy_pybind_tests AND NOT TARGET dartpy)
+  add_custom_target(pytest_pybind
+    COMMAND ${CMAKE_COMMAND} -E echo "Skipping pybind11 tests because dartpy target is not built."
+  )
+  list(APPEND _pytest_dependencies pytest_pybind)
+endif()
+
+if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy_nb)
+  add_custom_target(pytest_nb
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest (nanobind) with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_nanobind_tests} -v
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCES ${dartpy_nanobind_tests} ${dartpy_test_utils}
+    DEPENDS dartpy_nb
+  )
+  list(APPEND _pytest_dependencies pytest_nb)
+elseif(dartpy_nanobind_tests AND NOT TARGET dartpy_nb)
+  add_custom_target(pytest_nb
+    COMMAND ${CMAKE_COMMAND} -E echo "Skipping nanobind tests because dartpy_nb target is not built."
+  )
+  list(APPEND _pytest_dependencies pytest_nb)
+endif()
+
+if(_pytest_dependencies)
+  add_custom_target(pytest DEPENDS ${_pytest_dependencies})
 else()
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Warning: Failed to run pytest because pytest is not found!"
+    COMMAND ${CMAKE_COMMAND} -E echo "Warning: No Python tests are configured for the current build."
   )
 endif()
 
 #===============================================================================
 # Usage:
-#   dartpy_add_test(test_name) # assumed source is test_name.py
-#   dartpy_add_test(test_name main.py)
+#   dartpy_add_test(test_name dep source.py)
 #===============================================================================
-function(dartpy_add_test test_name) # ARGN for source file
-  if(${ARGC} GREATER 1)
-    set(source ${ARGN})
-  else()
-    set(source "${test_name}.py")
+function(dartpy_add_test test_name dependency_target source)
+  if(NOT TARGET ${dependency_target})
+    return()
   endif()
   add_custom_target(${test_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
     COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
-    DEPENDS dartpy
+    DEPENDS ${dependency_target}
   )
 endfunction()
 
-foreach(dartpy_test_file ${dartpy_test_files})
-  get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
-  dartpy_add_test(py_${dartpy_test_name} ${dartpy_test_file})
-endforeach()
+if(TARGET dartpy)
+  foreach(dartpy_test_file ${dartpy_pybind_tests})
+    get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
+    dartpy_add_test(py_${dartpy_test_name} dartpy ${dartpy_test_file})
+  endforeach()
+endif()
+
+if(TARGET dartpy_nb)
+  foreach(dartpy_test_file ${dartpy_nanobind_tests})
+    get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
+    dartpy_add_test(py_${dartpy_test_name} dartpy_nb ${dartpy_test_file})
+  endforeach()
+endif()
