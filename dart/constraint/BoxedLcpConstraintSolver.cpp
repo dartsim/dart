@@ -37,6 +37,7 @@
 #include <fmt/ostream.h>
 
 #include <cassert>
+
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
   #include <iostream>
