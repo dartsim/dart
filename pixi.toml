@@ -287,7 +287,7 @@ py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
   "build-py-dev",
 ], args = [
   { arg = "example", default = "hello_world" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [
