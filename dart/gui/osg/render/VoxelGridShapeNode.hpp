@@ -56,10 +56,10 @@ namespace render {
 
 class VoxelGridShapeGeode;
 
-class BoxDrawable final : public ::osg::ShapeDrawable
+class VoxelBoxDrawable final : public ::osg::ShapeDrawable
 {
 public:
-  BoxDrawable(double size, const Eigen::Vector4d& color);
+  VoxelBoxDrawable(double size, const Eigen::Vector4d& color);
 
   void updateSize(double size);
   void updateColor(const Eigen::Vector4d& color);
@@ -79,7 +79,7 @@ public:
   void updateColor(const Eigen::Vector4d& color);
 
 private:
-  ::osg::ref_ptr<BoxDrawable> mDrawable;
+  ::osg::ref_ptr<VoxelBoxDrawable> mDrawable;
   ::osg::ref_ptr<::osg::Geode> mGeode;
 };
 
