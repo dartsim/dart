@@ -79,7 +79,7 @@ public:
 };
 
 //==============================================================================
-class DART_DYNAMICS_API EndEffector final : public common::EmbedPropertiesOnTopOf<
+class EndEffector final : public common::EmbedPropertiesOnTopOf<
                               EndEffector,
                               detail::EndEffectorProperties,
                               detail::EndEffectorCompositeBase>
@@ -97,11 +97,6 @@ public:
 
   /// Destructor
   virtual ~EndEffector() = default;
-
-  EndEffector(const EndEffector&) = delete;
-  EndEffector& operator=(const EndEffector&) = delete;
-  EndEffector(EndEffector&&) = default;
-  EndEffector& operator=(EndEffector&&) = default;
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
@@ -134,7 +129,7 @@ public:
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
-  void setDefaultRelativeTransform(
+  DART_DYNAMICS_API void setDefaultRelativeTransform(
       const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
