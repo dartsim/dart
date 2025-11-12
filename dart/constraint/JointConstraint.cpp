@@ -38,15 +38,9 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 
 #include <algorithm>
-#include <limits>
-
-namespace {
-
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
-} // namespace
 
 namespace dart {
 namespace constraint {
@@ -178,6 +172,9 @@ double JointConstraint::getConstraintForceMixing()
 //==============================================================================
 void JointConstraint::update()
 {
+  const double inf = dart::math::constantsd::inf();
+  const double negInf = -inf;
+
   // Reset dimension
   mDim = 0;
 
@@ -251,7 +248,7 @@ void JointConstraint::update()
         // Set the impulse bounds to not to be negative so that the impulse only
         // exerted to push the joint toward the positive direction.
         mImpulseLowerBound[i] = 0.0;
-        mImpulseUpperBound[i] = kInfinity;
+        mImpulseUpperBound[i] = inf;
 
         if (mActive[i]) {
           ++(mLifeTime[i]);
@@ -287,7 +284,7 @@ void JointConstraint::update()
 
         // Set the impulse bounds to not to be positive so that the impulse only
         // exerted to push the joint toward the negative direction.
-        mImpulseLowerBound[i] = -kInfinity;
+        mImpulseLowerBound[i] = negInf;
         mImpulseUpperBound[i] = 0.0;
 
         if (mActive[i]) {
@@ -311,9 +308,9 @@ void JointConstraint::update()
           = mJoint->areLimitsEnforced()
             && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       const bool servoHasFiniteLowerLimit
-          = isServo && velocityLowerLimits[i] != -kInfinity;
+          = isServo && velocityLowerLimits[i] != negInf;
       const bool servoHasFiniteUpperLimit
-          = isServo && velocityUpperLimits[i] != kInfinity;
+          = isServo && velocityUpperLimits[i] != inf;
       const bool processServoVelocityLimits
           = servoHasFiniteLowerLimit || servoHasFiniteUpperLimit;
       const bool skipVelocityLimitsForServoRecovery
@@ -332,7 +329,7 @@ void JointConstraint::update()
           if (!relaxLowerVelocityBound) {
             mDesiredVelocityChange[i] = -vel_lb_error;
             mImpulseLowerBound[i] = 0.0;
-            mImpulseUpperBound[i] = kInfinity;
+            mImpulseUpperBound[i] = inf;
 
             if (mActive[i]) {
               ++(mLifeTime[i]);
@@ -352,7 +349,7 @@ void JointConstraint::update()
         if (vel_ub_error > 0.0) {
           if (!relaxUpperVelocityBound) {
             mDesiredVelocityChange[i] = -vel_ub_error;
-            mImpulseLowerBound[i] = -kInfinity;
+            mImpulseLowerBound[i] = negInf;
             mImpulseUpperBound[i] = 0.0;
 
             if (mActive[i]) {

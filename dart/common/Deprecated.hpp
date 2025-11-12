@@ -35,8 +35,6 @@
 
 #include <dart/config.hpp>
 
-#include <dart/common/Diagnostics.hpp>
-
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
 // versions of DART. Every deprecated function should be removed for every major
@@ -54,17 +52,8 @@
   #define DART_FORCEINLINE
 #endif
 
-// We define two convenient macros that can be used to suppress
-// deprecated-warnings for a specific code block rather than a whole project.
-// This macros would be useful when you need to call deprecated function for
-// some reason (e.g., for backward compatibility) but don't want warnings.
-//
-// Example code:
-//
-// deprecated_function()  // warning
-//
-// DART_SUPPRESS_DEPRECATED_BEGIN
-// deprecated_function()  // okay, no warning
-// DART_SUPPRESS_DEPRECATED_END
-//
+// Warning suppression helpers (DART_SUPPRESS_*) now live in
+// dart/common/Diagnostics.hpp to decouple general diagnostics utilities from
+// the DART_DEPRECATED attribute helpers in this header.
+
 #endif // DART_COMMON_DEPRECATED_HPP_

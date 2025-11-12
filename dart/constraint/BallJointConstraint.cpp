@@ -35,15 +35,9 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 
 #include <iostream>
-#include <limits>
-
-namespace {
-
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
-} // namespace
 
 namespace dart {
 namespace constraint {
@@ -143,6 +137,8 @@ void BallJointConstraint::update()
 //==============================================================================
 void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
+  const double inf = dart::math::constantsd::inf();
+
   DART_ASSERT(_lcp->w[0] == 0.0);
   DART_ASSERT(_lcp->w[1] == 0.0);
   DART_ASSERT(_lcp->w[2] == 0.0);
@@ -151,13 +147,13 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   DART_ASSERT(_lcp->findex[1] == -1);
   DART_ASSERT(_lcp->findex[2] == -1);
 
-  _lcp->lo[0] = -kInfinity;
-  _lcp->lo[1] = -kInfinity;
-  _lcp->lo[2] = -kInfinity;
+  _lcp->lo[0] = -inf;
+  _lcp->lo[1] = -inf;
+  _lcp->lo[2] = -inf;
 
-  _lcp->hi[0] = kInfinity;
-  _lcp->hi[1] = kInfinity;
-  _lcp->hi[2] = kInfinity;
+  _lcp->hi[0] = inf;
+  _lcp->hi[1] = inf;
+  _lcp->hi[2] = inf;
 
   _lcp->x[0] = mOldX[0];
   _lcp->x[1] = mOldX[1];

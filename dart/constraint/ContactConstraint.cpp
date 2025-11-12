@@ -38,10 +38,10 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
-#include <limits>
 
 namespace dart {
 namespace constraint {
@@ -56,12 +56,6 @@ namespace constraint {
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
 #define DART_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
-
-namespace {
-
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
-} // namespace
 
 double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;
@@ -370,7 +364,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = kInfinity;
+    info->hi[0] = dart::math::constantsd::inf();
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
@@ -432,7 +426,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = kInfinity;
+    info->hi[0] = dart::math::constantsd::inf();
     DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------

@@ -38,15 +38,9 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 
 #include <iostream>
-#include <limits>
-
-namespace {
-
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
-
-} // namespace
 
 namespace dart {
 namespace constraint {
@@ -181,6 +175,9 @@ double JointLimitConstraint::getConstraintForceMixing()
 //==============================================================================
 void JointLimitConstraint::update()
 {
+  const double inf = dart::math::constantsd::inf();
+  const double negInf = -inf;
+
   // Reset dimension
   mDim = 0;
 
@@ -201,7 +198,7 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -velocities[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = kInfinity;
+      mUpperBound[i] = inf;
 
       if (mIsPositionLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -218,7 +215,7 @@ void JointLimitConstraint::update()
     mViolation[i] = positions[i] - positionUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -velocities[i];
-      mLowerBound[i] = -kInfinity;
+      mLowerBound[i] = negInf;
       mUpperBound[i] = 0.0;
 
       if (mIsPositionLimitViolated[i]) {
@@ -239,7 +236,7 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -mViolation[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = kInfinity;
+      mUpperBound[i] = inf;
 
       if (mIsVelocityLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -256,7 +253,7 @@ void JointLimitConstraint::update()
     mViolation[i] = velocities[i] - velocityUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -mViolation[i];
-      mLowerBound[i] = -kInfinity;
+      mLowerBound[i] = negInf;
       mUpperBound[i] = 0.0;
 
       if (mIsVelocityLimitViolated[i]) {
