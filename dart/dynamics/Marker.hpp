@@ -35,8 +35,10 @@
 
 #include <dart/dynamics/FixedJacobianNode.hpp>
 #include <dart/dynamics/detail/MarkerAspect.hpp>
-#include <dart/Export.hpp>
+
 #include <dart/common/Deprecated.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

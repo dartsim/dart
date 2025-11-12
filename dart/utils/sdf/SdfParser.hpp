@@ -39,6 +39,7 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
 namespace dart {
@@ -71,11 +72,6 @@ struct DART_UTILS_API Options
       common::ResourceRetrieverPtr resourceRetriever = nullptr,
       RootJointType defaultRootJointType = RootJointType::Floating);
 };
-
-DART_DEPRECATED(6.0)
-simulation::WorldPtr DART_UTILS_API readSdfFile(
-    const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
 
 simulation::WorldPtr DART_UTILS_API
 readWorld(const common::Uri& uri, const Options& options = Options());
