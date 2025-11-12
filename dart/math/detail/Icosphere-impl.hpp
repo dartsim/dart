@@ -69,7 +69,7 @@ template <typename S>
 std::pair<typename Icosphere<S>::Vertices, typename Icosphere<S>::Triangles>
 Icosphere<S>::computeIcosahedron(S radius)
 {
-  constexpr S phi = constants<S>::phi();
+  constexpr S phi = phi_v<S>;
   const S unitX = 1 / std::sqrt(1 + phi * phi);
   const S unitZ = unitX * phi;
 
