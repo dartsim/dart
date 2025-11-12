@@ -1,4 +1,5 @@
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -101,7 +102,8 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 
   const std::string filePath
       = std::string(DART_DATA_PATH) + "skel/kima/l-foot.dae";
-  const std::string fileUri = "file://" + filePath;
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
 
