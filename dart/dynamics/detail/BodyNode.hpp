@@ -217,6 +217,38 @@ std::size_t BodyNode::getNumShapeNodesWith() const
 
 //==============================================================================
 template <class AspectT>
+const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
+{
+  std::vector<ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
+
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    auto* shapeNode = getShapeNode(i);
+    if (shapeNode->has<AspectT>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class AspectT>
+const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
+{
+  std::vector<const ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
+
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    const auto* shapeNode = getShapeNode(i);
+    if (shapeNode->has<AspectT>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class AspectT>
 ShapeNode* BodyNode::getShapeNodeWith(std::size_t index)
 {
   std::size_t count = 0;

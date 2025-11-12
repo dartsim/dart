@@ -273,115 +273,12 @@ TestInfo* MakeAndRegisterTestInfo(
     return True
 
 
-def patch_gz_base_header(base_header: Path) -> bool:
-    """Update gz-physics Base.hh to the post-DART-6.x APIs."""
-
-    if not base_header.exists():
-        print(f"Error: Base.hh not found at {base_header}", file=sys.stderr)
-        return False
-
-    text = base_header.read_text()
-
-    joint_loop_old = """    for (auto &jt : skel->getJoints())
-    {
-      this->joints.RemoveEntity(jt);
-      this->jointsByName.erase(::sdf::JoinName(
-          world->getName(), ::sdf::JoinName(skel->getName(), jt->getName())));
-    }
-"""
-    joint_loop_new = """    for (std::size_t i = 0, jointCount = skel->getNumJoints(); i < jointCount; ++i)
-    {
-      auto* jt = skel->getJoint(i);
-      this->joints.RemoveEntity(jt);
-      this->jointsByName.erase(::sdf::JoinName(
-          world->getName(), ::sdf::JoinName(skel->getName(), jt->getName())));
-    }
-"""
-
-    body_loop_old = """    for (auto &bn : skel->getBodyNodes())
-    {
-#ifdef DART_HAS_EACH_SHAPE_NODE_API
-      bn->eachShapeNode([this](dart::dynamics::ShapeNode *_sn)
-      {
-        this->shapes.RemoveEntity(_sn);
-      });
-#else
-      for (auto &sn : bn->getShapeNodes())
-      {
-        this->shapes.RemoveEntity(sn);
-      }
-#endif
-      this->links.RemoveEntity(bn);
-      this->linksByName.erase(::sdf::JoinName(
-          world->getName(), ::sdf::JoinName(skel->getName(), bn->getName())));
-    }
-"""
-    body_loop_new = """    for (std::size_t i = 0, bodyCount = skel->getNumBodyNodes(); i < bodyCount; ++i)
-    {
-      auto* bn = skel->getBodyNode(i);
-#ifdef DART_HAS_EACH_SHAPE_NODE_API
-      bn->eachShapeNode([this](dart::dynamics::ShapeNode *_sn)
-      {
-        this->shapes.RemoveEntity(_sn);
-      });
-#else
-      const auto shapeCount = bn->getNumShapeNodes();
-      for (std::size_t snIndex = 0; snIndex < shapeCount; ++snIndex)
-      {
-        auto* sn = bn->getShapeNode(snIndex);
-        this->shapes.RemoveEntity(sn);
-      }
-#endif
-      this->links.RemoveEntity(bn);
-      this->linksByName.erase(::sdf::JoinName(
-          world->getName(), ::sdf::JoinName(skel->getName(), bn->getName())));
-    }
-"""
-
-    debug_loop_old = """        for (auto& joint :  modelInfo->model->getJoints())
-        {
-          ss  << "  Joint:     " << joint->getName() << "\\n";
-        }
-"""
-    debug_loop_new = """        for (std::size_t j = 0, jointCount = modelInfo->model->getNumJoints(); j < jointCount; ++j)
-        {
-          auto* joint = modelInfo->model->getJoint(j);
-          ss  << "  Joint:     " << joint->getName() << "\\n";
-        }
-"""
-
-    replacements = [
-        (joint_loop_old, joint_loop_new, "joint removal"),
-        (body_loop_old, body_loop_new, "body removal"),
-        (debug_loop_old, debug_loop_new, "debug model joint listing"),
-        (
-            "#if DART_VERSION_AT_LEAST(6, 13, 0)",
-            "#if DART_VERSION_GE(6, 13, 0)",
-            "DART_VERSION_GE macro usage",
-        ),
-    ]
-
-    for old, new, desc in replacements:
-        if old not in text:
-            print(
-                f"Error: Failed to locate {desc} snippet in {base_header}",
-                file=sys.stderr,
-            )
-            return False
-        text = text.replace(old, new, 1)
-        print(f"✓ Updated {desc} loop in {base_header}")
-
-    base_header.write_text(text)
-    return True
-
-
 def main():
     """Main entry point for the script."""
     # Get the gz-physics CMakeLists.txt path
     repo_root = Path(__file__).parent.parent
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
     gtest_root = cmake_file.parent / "test" / "gtest_vendor"
-    base_header = cmake_file.parent / "dartsim" / "src" / "Base.hh"
 
     # Patch versions
     old_version = "6.10"
@@ -393,10 +290,6 @@ def main():
     if success:
         overload_success = inject_make_and_register_overload(gtest_root)
         success = success and overload_success
-
-    if success:
-        base_success = patch_gz_base_header(base_header)
-        success = success and base_success
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)
