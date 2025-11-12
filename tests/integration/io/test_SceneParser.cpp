@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/SceneParser.hpp"
+#include "dart/utils/scene/SceneParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -82,4 +82,74 @@ TEST(SceneParser, VskExplicitFormat)
   EXPECT_TRUE(contents.worlds.empty());
   ASSERT_EQ(contents.skeletons.size(), 1u);
   EXPECT_FALSE(contents.skeletons.front()->getName().empty());
+}
+
+//==============================================================================
+TEST(SceneParser, AutoDetectVsk)
+{
+  const auto contents = SceneParser::readFile("dart://sample/vsk/Nick01.vsk");
+
+  EXPECT_TRUE(contents.worlds.empty());
+  ASSERT_EQ(contents.skeletons.size(), 1u);
+}
+
+//==============================================================================
+TEST(SceneParser, SdfSkeletonFallback)
+{
+  SceneParser::Options options;
+  options.mFormatHint = SceneParser::Format::Sdf;
+
+  const auto contents = SceneParser::readFile(
+      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf", options);
+
+  EXPECT_TRUE(contents.worlds.empty());
+  ASSERT_FALSE(contents.skeletons.empty());
+}
+
+#if defined(DART_SCENEPARSER_HAS_URDF)
+//==============================================================================
+TEST(SceneParser, UrdfWorld)
+{
+  SceneParser::Options options;
+  options.mFormatHint = SceneParser::Format::Urdf;
+
+  const auto contents = SceneParser::readFile(
+      "dart://sample/urdf/test/testWorld.urdf", options);
+
+  ASSERT_EQ(contents.worlds.size(), 1u);
+  ASSERT_GE(contents.skeletons.size(), 1u);
+}
+#endif
+
+//==============================================================================
+TEST(SceneParser, MjcfExplicitHint)
+{
+  SceneParser::Options options;
+  options.mFormatHint = SceneParser::Format::Mjcf;
+
+  const auto contents
+      = SceneParser::readFile("dart://sample/mjcf/openai/ant.xml", options);
+
+  ASSERT_EQ(contents.worlds.size(), 1u);
+}
+
+//==============================================================================
+TEST(SceneParser, MjcfAutoFallback)
+{
+  const auto contents
+      = SceneParser::readFile("dart://sample/mjcf/openai/ant.xml");
+
+  ASSERT_EQ(contents.worlds.size(), 1u);
+}
+
+//==============================================================================
+TEST(SceneParser, FormatHintFailureReturnsEmpty)
+{
+  SceneParser::Options options;
+  options.mFormatHint = SceneParser::Format::Sdf;
+
+  const auto contents
+      = SceneParser::readFile("dart://sample/vsk/Nick01.vsk", options);
+
+  EXPECT_TRUE(contents.empty());
 }

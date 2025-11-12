@@ -1,5 +1,5 @@
-set(scene_headers "${CMAKE_CURRENT_SOURCE_DIR}/../SceneParser.hpp")
-set(scene_sources "${CMAKE_CURRENT_SOURCE_DIR}/../SceneParser.cpp")
+set(scene_headers "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.hpp")
+set(scene_sources "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.cpp")
 
 dart_add_utils_headers(${scene_headers})
 
@@ -19,7 +19,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 
 install(
   FILES ${scene_headers}
-  DESTINATION include/dart/utils
+  DESTINATION include/dart/utils/scene
   COMPONENT headers
 )
 

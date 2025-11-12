@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/SceneParser.hpp"
+#include "dart/utils/scene/SceneParser.hpp"
 
 #include <dart/utils/SkelParser.hpp>
 

@@ -49,6 +49,42 @@ using namespace simulation;
 using namespace utils;
 using namespace dart::test;
 
+namespace {
+
+std::string standaloneSkeletonSkel()
+{
+  return R"(
+<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="standalone">
+    <body name="link 1">
+      <gravity>1</gravity>
+      <transformation>0 0 0 0 0 0</transformation>
+      <inertia>
+        <mass>1</mass>
+        <offset>0 0 0</offset>
+        <moment_of_inertia>
+          <ixx>1</ixx>
+          <iyy>1</iyy>
+          <izz>1</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <joint type="free" name="root joint">
+      <parent>world</parent>
+      <child>link 1</child>
+      <transformation>0 0 0 0 0 0</transformation>
+    </joint>
+  </skeleton>
+</skel>
+)";
+}
+
+} // namespace
+
 //==============================================================================
 TEST(SkelParser, DataStructure)
 {
@@ -125,40 +161,50 @@ TEST(SkelParser, FileContentsWorldAndSkeletons)
 //==============================================================================
 TEST(SkelParser, FileContentsSkeletonOnlyXml)
 {
-  const std::string skeletonOnly = R"(
-<?xml version="1.0" ?>
-<skel version="1.0">
-  <skeleton name="standalone">
-    <body name="link 1">
-      <gravity>1</gravity>
-      <transformation>0 0 0 0 0 0</transformation>
-      <inertia>
-        <mass>1</mass>
-        <offset>0 0 0</offset>
-        <moment_of_inertia>
-          <ixx>1</ixx>
-          <iyy>1</iyy>
-          <izz>1</izz>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyz>0</iyz>
-        </moment_of_inertia>
-      </inertia>
-    </body>
-    <joint type="free" name="root joint">
-      <parent>world</parent>
-      <child>link 1</child>
-      <transformation>0 0 0 0 0 0</transformation>
-    </joint>
-  </skeleton>
-</skel>
-)";
-
-  const FileContents contents = SkelParser::readFileXML(skeletonOnly, "");
+  const FileContents contents
+      = SkelParser::readFileXML(standaloneSkeletonSkel(), "");
 
   EXPECT_TRUE(contents.worlds.empty());
   ASSERT_EQ(contents.skeletons.size(), 1u);
   EXPECT_EQ(contents.skeletons.front()->getName(), "standalone");
+}
+
+//==============================================================================
+TEST(SkelParser, ReadFileMissingResource)
+{
+  const FileContents contents = SkelParser::readFile(
+      "dart://sample/skel/test/this_file_does_not_exist.skel");
+  EXPECT_TRUE(contents.empty());
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldMissingResource)
+{
+  WorldPtr world = SkelParser::readWorld(
+      "dart://sample/skel/test/this_file_does_not_exist.skel");
+  EXPECT_EQ(world, nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadSkeletonMissingResource)
+{
+  SkeletonPtr skeleton = SkelParser::readSkeleton(
+      "dart://sample/skel/test/this_file_does_not_exist.skel");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadWorldXmlWithoutWorldElement)
+{
+  WorldPtr world = SkelParser::readWorldXML(standaloneSkeletonSkel(), "");
+  EXPECT_EQ(world, nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ReadFileXmlParseFailure)
+{
+  const FileContents contents = SkelParser::readFileXML("not xml", "");
+  EXPECT_TRUE(contents.empty());
 }
 
 //==============================================================================

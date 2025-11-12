@@ -11,9 +11,6 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-list(REMOVE_ITEM hdrs "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.hpp")
-list(REMOVE_ITEM srcs "${CMAKE_CURRENT_SOURCE_DIR}/SceneParser.cpp")
-
 function(dart_add_utils_headers)
   dart_property_add(DART_UTILS_HEADERS ${ARGN})
 endfunction(dart_add_utils_headers)
