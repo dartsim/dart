@@ -255,6 +255,8 @@ py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"]
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
+py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
+
 test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
@@ -426,6 +428,10 @@ tu-dominoes-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_do
 tu-multi-pendulum = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_multi_pendulum"] }] }
 
 tu-multi-pendulum-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_multi_pendulum_finished"] }] }
+
+tu-wholebody-ik = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_wholebody_ik"] }] }
+
+tu-wholebody-ik-fi = { depends-on = [{ task = "run-cpp-target", args = ["tutorial_wholebody_ik_finished"] }] }
 
 install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [{ task = "config-install", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
 
