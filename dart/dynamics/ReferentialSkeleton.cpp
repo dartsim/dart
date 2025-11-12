@@ -139,6 +139,19 @@ static std::vector<T2>& convertVector(
 }
 
 //==============================================================================
+const std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
+{
+  return convertVector<BodyNodePtr, BodyNode*>(mBodyNodes, mRawBodyNodes);
+}
+
+//==============================================================================
+const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
+{
+  return convertVector<BodyNodePtr, const BodyNode*>(
+      mBodyNodes, mRawConstBodyNodes);
+}
+
+//==============================================================================
 std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(
     const std::string& name)
 {
@@ -252,6 +265,26 @@ const Joint* ReferentialSkeleton::getJoint(const std::string& name) const
 }
 
 //==============================================================================
+std::vector<Joint*> ReferentialSkeleton::getJoints()
+{
+  std::vector<Joint*> joints;
+  joints.reserve(mJoints.size());
+  for (const auto& joint : mJoints)
+    joints.push_back(joint.get());
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> ReferentialSkeleton::getJoints() const
+{
+  std::vector<const Joint*> joints;
+  joints.reserve(mJoints.size());
+  for (const auto& joint : mJoints)
+    joints.push_back(joint.get());
+  return joints;
+}
+
+//==============================================================================
 //==============================================================================
 std::vector<Joint*> ReferentialSkeleton::getJoints(const std::string& name)
 {
@@ -332,6 +365,19 @@ DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx)
 const DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
+}
+
+//==============================================================================
+const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
+{
+  return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(mDofs, mRawDofs);
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
+{
+  return convertVector<DegreeOfFreedomPtr, const DegreeOfFreedom*>(
+      mDofs, mRawConstDofs);
 }
 
 //==============================================================================
