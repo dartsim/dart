@@ -35,6 +35,8 @@
 
 #include <dart/config.hpp>
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <Eigen/Dense>
 
 // clang-format off
