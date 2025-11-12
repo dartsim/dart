@@ -51,7 +51,8 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-BoxDrawable::BoxDrawable(double size, const Eigen::Vector4d& color)
+VoxelBoxDrawable::VoxelBoxDrawable(
+    double size, const Eigen::Vector4d& color)
 {
   mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
   setColor(eigToOsgVec4f(color));
@@ -64,7 +65,7 @@ BoxDrawable::BoxDrawable(double size, const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-void BoxDrawable::updateSize(double size)
+void VoxelBoxDrawable::updateSize(double size)
 {
   mShape->setHalfLengths(::osg::Vec3(
       static_cast<float>(size * 0.5),
@@ -75,7 +76,7 @@ void BoxDrawable::updateSize(double size)
 }
 
 //==============================================================================
-void BoxDrawable::updateColor(const Eigen::Vector4d& color)
+void VoxelBoxDrawable::updateColor(const Eigen::Vector4d& color)
 {
   // Set color
   setColor(eigToOsgVec4f(color));
@@ -101,7 +102,7 @@ void BoxDrawable::updateColor(const Eigen::Vector4d& color)
 VoxelNode::VoxelNode(
     const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
 {
-  mDrawable = new BoxDrawable(size, color);
+  mDrawable = new VoxelBoxDrawable(size, color);
   mGeode = new ::osg::Geode();
 
   mGeode->addDrawable(mDrawable);
