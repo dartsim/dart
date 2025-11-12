@@ -260,6 +260,9 @@ dynamics::BallJoint::Properties readBallJoint(
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
+common::ResourceRetrieverPtr getRetriever(
+    const common::ResourceRetrieverPtr& retriever);
+
 bool loadSdfXmlDocument(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
