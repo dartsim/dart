@@ -258,18 +258,6 @@ def main():
 4. **Whole-body IK** uses all relevant DOFs to achieve the goal
 5. **Drag-and-drop** provides intuitive interactive control
 
-## dartpy vs C++ Differences
-
-If you're familiar with DART's C++ API, here are the key differences in dartpy:
-
-| Concept | C++ | Python (dartpy) |
-|---------|-----|-----------------|
-| Transformation | `Eigen::Isometry3d` | `dart.math.Isometry3()` |
-| Set translation | `tf.translation() = vec` | `tf.set_translation([x, y, z])` |
-| Arrays/Vectors | `Eigen::VectorXd` | NumPy arrays |
-| Bounds | `Eigen::Vector6d::Constant(-1e-8)` | `np.array([-1e-8, -1e-8, -1e-8])` |
-| Pointers | `SkeletonPtr` | Direct object references |
-
 ## Extending the Tutorial
 
 Try adding:
