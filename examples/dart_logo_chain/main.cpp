@@ -341,8 +341,8 @@ dynamics::SkeletonPtr createRainbowChain(Eigen::VectorXd& targetAngles)
             ? Eigen::Isometry3d::Identity()
             : makeTranslationIsometry(Eigen::Vector3d(kSegmentLength, 0, 0)));
     joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-    joint->setPositionLimits(
-        Eigen::Vector2d(-math::constantsd::pi(), math::constantsd::pi()));
+    joint->getDof(0)->setPositionLimits(
+        -math::constantsd::pi(), math::constantsd::pi());
     joint->setDampingCoefficient(0, 0.5);
 
     auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(
