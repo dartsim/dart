@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
 #define DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
 
+#include <dart/gui/osg/Export.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
 #include <osg/NodeCallback>
@@ -41,7 +42,7 @@
 
 namespace dart::gui::osg::detail {
 
-class CameraModeCallback : public ::osg::NodeCallback
+class DART_GUI_OSG_API CameraModeCallback : public ::osg::NodeCallback
 {
 public:
   /// Default constructor

@@ -39,13 +39,14 @@
 #ifndef DART_GUI_OSG_IMGUIWIDGET_HPP_
 #define DART_GUI_OSG_IMGUIWIDGET_HPP_
 
+#include <dart/gui/osg/Export.hpp>
 #include <dart/gui/osg/ImGuiViewer.hpp>
 
 namespace dart {
 namespace gui {
 namespace osg {
 
-class ImGuiWidget
+class DART_GUI_OSG_API ImGuiWidget
 {
 public:
   /// Constructor
@@ -77,7 +78,7 @@ protected:
   bool mIsVisible;
 };
 
-class AboutWidget : public ImGuiWidget
+class DART_GUI_OSG_API AboutWidget : public ImGuiWidget
 {
 public:
   // Documentation inherited
