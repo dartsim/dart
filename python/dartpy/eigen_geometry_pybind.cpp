@@ -40,7 +40,6 @@
 
 #include <cassert>
 #include <cmath>
-
 using std::fabs;
 
 namespace dart {
