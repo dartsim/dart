@@ -87,7 +87,7 @@ public:
   /// getting a result close to a solution even if it failed to find the
   /// solution.
   /// \return True if a solution is successfully found
-  bool solveAndApply(bool allowIncompleteResult = true);
+  DART_DYNAMICS_API bool solveAndApply(bool allowIncompleteResult = true);
 
   /// Identical to solveAndApply(bool), but \c position will be filled with the
   /// solved positions.
@@ -102,7 +102,7 @@ public:
   /// getting a result close to a solution even if it failed to find the
   /// solution.
   /// \return True if a solution is successfully found
-  bool solveAndApply(
+  DART_DYNAMICS_API bool solveAndApply(
       Eigen::VectorXd& positions, bool allowIncompleteResult = true);
 
   /// Clone this HierarchicalIK module
