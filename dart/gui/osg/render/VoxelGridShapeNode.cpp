@@ -51,94 +51,84 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class BoxDrawable final : public ::osg::ShapeDrawable
+BoxDrawable::BoxDrawable(double size, const Eigen::Vector4d& color)
 {
-public:
-  BoxDrawable(double size, const Eigen::Vector4d& color)
-  {
-    mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
-    setColor(eigToOsgVec4f(color));
-    setShape(mShape);
-    setDataVariance(::osg::Object::DYNAMIC);
-    getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-    getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
-    getOrCreateStateSet()->setAttributeAndModes(
-        new ::osg::CullFace(::osg::CullFace::BACK));
-  }
-
-  void updateSize(double size)
-  {
-    mShape->setHalfLengths(::osg::Vec3(
-        static_cast<float>(size * 0.5),
-        static_cast<float>(size * 0.5),
-        static_cast<float>(size * 0.5)));
-    dirtyBound();
-    dirtyDisplayList();
-  }
-
-  void updateColor(const Eigen::Vector4d& color)
-  {
-    // Set color
-    setColor(eigToOsgVec4f(color));
-
-    // Set alpha specific properties
-    ::osg::StateSet* ss = getOrCreateStateSet();
-    if (std::abs(color[3]) > 1 - getAlphaThreshold()) {
-      ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
-      ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
-      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
-      depth->setWriteMask(true);
-      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    } else {
-      ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-      ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
-      ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
-      depth->setWriteMask(false);
-      ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
-    }
-  }
-
-protected:
-  ::osg::ref_ptr<::osg::Box> mShape;
-};
+  mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
+  setColor(eigToOsgVec4f(color));
+  setShape(mShape);
+  setDataVariance(::osg::Object::DYNAMIC);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setAttributeAndModes(
+      new ::osg::CullFace(::osg::CullFace::BACK));
+}
 
 //==============================================================================
-class VoxelNode : public ::osg::MatrixTransform
+void BoxDrawable::updateSize(double size)
 {
-public:
-  VoxelNode(
-      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
-  {
-    mDrawable = new BoxDrawable(size, color);
-    mGeode = new ::osg::Geode();
+  mShape->setHalfLengths(::osg::Vec3(
+      static_cast<float>(size * 0.5),
+      static_cast<float>(size * 0.5),
+      static_cast<float>(size * 0.5)));
+  dirtyBound();
+  dirtyDisplayList();
+}
 
-    mGeode->addDrawable(mDrawable);
-    addChild(mGeode);
+//==============================================================================
+void BoxDrawable::updateColor(const Eigen::Vector4d& color)
+{
+  // Set color
+  setColor(eigToOsgVec4f(color));
 
-    updateCenter(point);
+  // Set alpha specific properties
+  ::osg::StateSet* ss = getOrCreateStateSet();
+  if (std::abs(color[3]) > 1 - getAlphaThreshold()) {
+    ss->setMode(GL_BLEND, ::osg::StateAttribute::OFF);
+    ss->setRenderingHint(::osg::StateSet::OPAQUE_BIN);
+    ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+    depth->setWriteMask(true);
+    ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
+  } else {
+    ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+    ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+    ::osg::ref_ptr<::osg::Depth> depth = new ::osg::Depth;
+    depth->setWriteMask(false);
+    ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
   }
+}
 
-  void updateCenter(const Eigen::Vector3d& point)
-  {
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation() = point;
-    setMatrix(eigToOsgMatrix(tf));
-  }
+//==============================================================================
+VoxelNode::VoxelNode(
+    const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
+{
+  mDrawable = new BoxDrawable(size, color);
+  mGeode = new ::osg::Geode();
 
-  void updateSize(double size)
-  {
-    mDrawable->updateSize(size);
-  }
+  mGeode->addDrawable(mDrawable);
+  addChild(mGeode);
 
-  void updateColor(const Eigen::Vector4d& color)
-  {
-    mDrawable->updateColor(color);
-  }
+  updateCenter(point);
+}
 
-protected:
-  ::osg::ref_ptr<BoxDrawable> mDrawable;
-  ::osg::ref_ptr<::osg::Geode> mGeode;
-};
+//==============================================================================
+void VoxelNode::updateCenter(const Eigen::Vector3d& point)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = point;
+  setMatrix(eigToOsgMatrix(tf));
+}
+
+//==============================================================================
+void VoxelNode::updateSize(double size)
+{
+  mDrawable->updateSize(size);
+}
+
+//==============================================================================
+void VoxelNode::updateColor(const Eigen::Vector4d& color)
+{
+  mDrawable->updateColor(color);
+}
 
 //==============================================================================
 VoxelGridShapeNode::VoxelGridShapeNode(
