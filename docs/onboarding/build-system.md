@@ -232,7 +232,14 @@ dart/
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
-#### 14. urdfdom
+#### 14. libsdformat
+- **Version:** ≥ 16.0.0, < 17
+- **Purpose:** SDFormat parser used to canonicalize files and perform version conversion before DART walks the XML DOM.
+- **Component:** `dart-utils`
+- **CMake Module:** `cmake/DARTFindsdformat.cmake`
+- **Notes:** Required to read SDF files newer than 1.6; DART falls back to the legacy TinyXML2-only path if libsdformat is unavailable.
+
+#### 15. urdfdom
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
 - **Component:** `dart-utils-urdf`
@@ -241,17 +248,17 @@ dart/
 
 ### Build/Test Dependencies (Build-time only)
 
-#### 15. Google Test (gtest)
+#### 16. Google Test (gtest)
 - **Version:** ≥ 1.17.0, < 2
 - **Purpose:** Unit testing framework
 - **Option:** `DART_USE_SYSTEM_GOOGLETEST`
 
-#### 16. Google Benchmark
+#### 17. Google Benchmark
 - **Version:** ≥ 1.9.3, < 2
 - **Purpose:** Performance benchmarking
 - **Option:** `DART_USE_SYSTEM_GOOGLEBENCHMARK`
 
-#### 17. Tracy Profiler
+#### 18. Tracy Profiler
 - **Version:** ≥ 0.11.1, < 0.12
 - **Purpose:** Frame profiling
 - **Option:** `DART_USE_SYSTEM_TRACY`

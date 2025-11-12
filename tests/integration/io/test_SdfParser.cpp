@@ -78,6 +78,19 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 }
 
 //==============================================================================
+TEST(SdfParser, ParsesHighVersionWorlds)
+{
+  WorldPtr world
+      = SdfParser::readWorld("dart://sample/sdf/test/high_version.world");
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_GT(world->getNumSkeletons(), 0u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+}
+
+//==============================================================================
 TEST(SdfParser, SDFJointProperties)
 {
   WorldPtr world = SdfParser::readWorld(

@@ -37,6 +37,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -61,11 +62,24 @@
 #include <Eigen/StdVector>
 #include <tinyxml2.h>
 
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <system_error>
+#include <vector>
+
+#if HAVE_SDFORMAT
+  #include <sdf/Error.hh>
+  #include <sdf/ParserConfig.hh>
+  #include <sdf/PrintConfig.hh>
+  #include <sdf/Root.hh>
+#endif
 
 namespace dart {
 namespace utils {
@@ -73,6 +87,17 @@ namespace utils {
 namespace SdfParser {
 
 namespace {
+
+bool loadSdfXmlDocument(
+    tinyxml2::XMLDocument& doc,
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever,
+    bool& normalizedBySdformat);
+
+#if HAVE_SDFORMAT
+std::optional<std::string> canonicalizeSdfWithSdformat(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+#endif
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 
@@ -233,10 +258,215 @@ dynamics::BallJoint::Properties readBallJoint(
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
-common::ResourceRetrieverPtr getRetriever(
-    const common::ResourceRetrieverPtr& retriever);
+bool loadSdfXmlDocument(
+    tinyxml2::XMLDocument& doc,
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever,
+    bool& normalizedBySdformat)
+{
+  normalizedBySdformat = false;
 
-} // anonymous namespace
+#if HAVE_SDFORMAT
+  if (const auto normalized = canonicalizeSdfWithSdformat(uri, retriever)) {
+    const auto result = doc.Parse(normalized->c_str());
+    if (result == tinyxml2::XML_SUCCESS) {
+      normalizedBySdformat = true;
+      return true;
+    }
+
+    DART_WARN(
+        "[SdfParser] Failed to parse libsdformat-normalized document for [{}]: "
+        "{}. Falling back to TinyXML2.",
+        uri.toString(),
+        toString(result));
+    doc.Clear();
+  }
+#else
+  (void)retriever;
+#endif
+
+  try {
+    openXMLFile(doc, uri, retriever);
+    return true;
+  } catch (const std::exception& e) {
+    DART_WARN("Loading file [{}] failed: {}", uri.toString(), e.what());
+    return false;
+  }
+}
+
+#if HAVE_SDFORMAT
+std::string describeSdformatError(const sdf::Error& error)
+{
+  std::ostringstream stream;
+  stream << error.Message();
+
+  if (const auto file = error.FilePath()) {
+    stream << " (" << *file;
+    if (const auto line = error.LineNumber()) {
+      stream << ':' << *line;
+    }
+    stream << ')';
+  }
+
+  return stream.str();
+}
+
+bool logSdformatErrors(
+    const sdf::Errors& errors,
+    const common::Uri& uri,
+    const std::string& context)
+{
+  bool hasCriticalErrors = false;
+  if (errors.empty())
+    return false;
+
+  for (const auto& error : errors) {
+    DART_WARN(
+        "[SdfParser] {} [{}]: {}",
+        context,
+        uri.toString(),
+        describeSdformatError(error));
+    if (error.Code() != sdf::ErrorCode::WARNING)
+      hasCriticalErrors = true;
+  }
+
+  return hasCriticalErrors;
+}
+
+std::filesystem::path writeTemporaryResource(
+    const std::string& data, const common::Uri& uri)
+{
+  std::filesystem::path pattern("dart_sdf_%%%%-%%%%");
+  const auto extension = std::filesystem::path(uri.getPath()).extension();
+  if (!extension.empty())
+    pattern += extension.string();
+
+  const auto tempPath = std::filesystem::unique_path(
+      std::filesystem::temp_directory_path() / pattern);
+
+  std::ofstream output(tempPath, std::ios::binary);
+  output.write(data.data(), static_cast<std::streamsize>(data.size()));
+
+  if (!output) {
+    throw std::runtime_error(
+        "Failed to write temporary file for resource [" + uri.toString()
+        + "] at path [" + tempPath.string() + "]");
+  }
+
+  return tempPath;
+}
+
+std::string resolveWithRetriever(
+    const std::string& requested,
+    const common::ResourceRetrieverPtr& retriever,
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
+{
+  if (!retriever)
+    return std::string();
+
+  common::Uri requestedUri;
+  if (!requestedUri.fromStringOrPath(requested))
+    return std::string();
+
+  const auto path = retriever->getFilePath(requestedUri);
+  if (!path.empty())
+    return path;
+
+  if (!retriever->exists(requestedUri))
+    return std::string();
+
+  try {
+    const auto data = retriever->readAll(requestedUri);
+    const auto tmp = writeTemporaryResource(data, requestedUri);
+    tempFiles->push_back(tmp);
+    return tmp.string();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to materialize [{}] for libsdformat: {}",
+        requested,
+        e.what());
+    return std::string();
+  }
+}
+
+void cleanupTemporaryResources(
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
+{
+  if (!tempFiles)
+    return;
+
+  for (const auto& path : *tempFiles) {
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
+  }
+}
+
+std::optional<std::string> canonicalizeSdfWithSdformat(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  if (!retriever)
+    return std::nullopt;
+
+  auto tempFiles = std::make_shared<std::vector<std::filesystem::path>>();
+  sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
+  config.SetFindCallback(
+      [retriever, tempFiles](const std::string& requested) -> std::string {
+        return resolveWithRetriever(requested, retriever, tempFiles);
+      });
+
+  sdf::Root root;
+  sdf::Errors errors;
+  const auto localPath = retriever->getFilePath(uri);
+  if (!localPath.empty()) {
+    errors = root.Load(localPath, config);
+  } else {
+    std::string content;
+    try {
+      content = retriever->readAll(uri);
+    } catch (const std::exception& e) {
+      DART_WARN(
+          "[SdfParser] Failed to read [{}] via ResourceRetriever: {}",
+          uri.toString(),
+          e.what());
+      cleanupTemporaryResources(tempFiles);
+      return std::nullopt;
+    }
+    errors = root.LoadSdfString(content, config);
+  }
+
+  const bool hasCriticalLoadErrors = logSdformatErrors(
+      errors, uri, "libsdformat reported an issue while loading");
+  if (hasCriticalLoadErrors) {
+    cleanupTemporaryResources(tempFiles);
+    return std::nullopt;
+  }
+
+  const auto* element = root.Element();
+  if (element == nullptr) {
+    DART_WARN(
+        "[SdfParser] libsdformat returned an empty document for [{}].",
+        uri.toString());
+    cleanupTemporaryResources(tempFiles);
+    return std::nullopt;
+  }
+
+  sdf::Errors printErrors;
+  sdf::PrintConfig printConfig;
+  printConfig.SetPreserveIncludes(false);
+  const std::string xml
+      = element->ToString(printErrors, "", true, false, printConfig);
+  const bool hasCriticalPrintErrors = logSdformatErrors(
+      printErrors,
+      uri,
+      "libsdformat reported an issue while serializing canonical XML");
+  cleanupTemporaryResources(tempFiles);
+
+  if (hasCriticalPrintErrors)
+    return std::nullopt;
+
+  return xml;
+}
+#endif // HAVE_SDFORMAT
 
 //==============================================================================
 Options::Options(
@@ -250,21 +480,33 @@ Options::Options(
 
 //==============================================================================
 bool checkVersion(
-    const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
+    const tinyxml2::XMLElement& sdfElement,
+    const common::Uri& uri,
+    bool allowFutureVersions)
 {
   const std::string version = getAttributeString(&sdfElement, "version");
-  // TODO: We need version aware SDF parser (see #264)
-  // We support 1.4 ~ 1.6.
-  if (version != "1.4" && version != "1.5" && version != "1.6") {
+  const bool supported
+      = (version == "1.4" || version == "1.5" || version == "1.6");
+
+  if (supported)
+    return true;
+
+  if (allowFutureVersions) {
     DART_WARN(
-        "[SdfParser] The file format of [{}] was found to be [{}], but we only "
-        "support SDF 1.4, 1.5, and 1.6!",
+        "[SdfParser] The file format of [{}] reports version [{}], which is "
+        "newer than the built-in parser understands. Continuing because the "
+        "document was normalized by libsdformat.",
         uri.toString(),
-        version);
-    return false;
+        version.empty() ? "unknown" : version);
+    return true;
   }
 
-  return true;
+  DART_WARN(
+      "[SdfParser] The file format of [{}] was found to be [{}], but we only "
+      "support SDF 1.4, 1.5, and 1.6!",
+      uri.toString(),
+      version);
+  return false;
 }
 
 //==============================================================================
@@ -275,12 +517,9 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument sdfFile;
-  try {
-    openXMLFile(sdfFile, uri, retriever);
-  } catch (std::exception const& e) {
-    DART_WARN("Loading file [{}] failed: {}", uri.toString(), e.what());
+  bool normalizedBySdformat = false;
+  if (!loadSdfXmlDocument(sdfFile, uri, retriever, normalizedBySdformat))
     return nullptr;
-  }
 
   //--------------------------------------------------------------------------
   // Load DART
@@ -291,7 +530,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 
   //--------------------------------------------------------------------------
   // version attribute
-  if (!checkVersion(*sdfElement, uri))
+  if (!checkVersion(*sdfElement, uri, normalizedBySdformat))
     return nullptr;
 
   //--------------------------------------------------------------------------
@@ -313,12 +552,9 @@ dynamics::SkeletonPtr readSkeleton(
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
-  try {
-    openXMLFile(_dartFile, uri, retriever);
-  } catch (std::exception const& e) {
-    DART_WARN("Loading file [{}] failed: {}", uri.toString(), e.what());
+  bool normalizedBySdformat = false;
+  if (!loadSdfXmlDocument(_dartFile, uri, retriever, normalizedBySdformat))
     return nullptr;
-  }
 
   //--------------------------------------------------------------------------
   // Load sdf
@@ -329,7 +565,7 @@ dynamics::SkeletonPtr readSkeleton(
 
   //--------------------------------------------------------------------------
   // version attribute
-  if (!checkVersion(*sdfElement, uri))
+  if (!checkVersion(*sdfElement, uri, normalizedBySdformat))
     return nullptr;
 
   //--------------------------------------------------------------------------

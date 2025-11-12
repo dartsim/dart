@@ -2,6 +2,9 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+dart_find_package(sdformat)
+dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
+
 find_package(CURL)
 dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
 
@@ -33,6 +36,9 @@ set(component_name utils)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
 target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
+if(HAVE_SDFORMAT AND TARGET sdformat::sdformat)
+  target_link_libraries(${target_name} PUBLIC sdformat::sdformat)
+endif()
 
 if(HAVE_CURL)
   target_include_directories(${target_name} PRIVATE ${CURL_INCLUDE_DIRS})
