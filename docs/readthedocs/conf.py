@@ -24,7 +24,7 @@ def get_dart_version():
     except (FileNotFoundError, ET.ParseError):
         pass
     # Fallback to latest stable version
-    return 'v6.13.2'
+    return 'v6.16.0'
 
 # Read available API documentation versions from docs_versions.txt
 def get_api_versions():
@@ -39,7 +39,7 @@ def get_api_versions():
                     versions.append(line)
     except FileNotFoundError:
         # Fallback if file not found
-        versions = ['v6.13.2', 'v6.12.2', 'v6.11.1']
+        versions = ['v6.16.0', 'v6.15.0']
     return versions
 
 # Get current DART version from package.xml
@@ -53,7 +53,7 @@ if current_version in api_versions:
     api_version_to_link = current_version
 else:
     # For development versions, link to latest stable
-    api_version_to_link = api_versions[0] if api_versions else 'v6.13.2'
+    api_version_to_link = api_versions[0] if api_versions else 'v6.16.0'
 
 # Make these available to RST files via html_context
 html_context = {

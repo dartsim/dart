@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: [jammy, noble, questing]
-        dart_version: [v6.15]
+        dart_version: [v6.16]
         platforms: ["linux/amd64,linux/arm64,linux/ppc64le,linux/s390x"]
     env:
       UBUNTU_VERSION: ${{ matrix.distro }}

@@ -93,7 +93,7 @@ def get_container_tool():
         return None
 
 
-def build_ubuntu(distro: str, container_tool: str, dart_version: str = "v6.15"):
+def build_ubuntu(distro: str, container_tool: str, dart_version: str = "v6.16"):
     """Build Ubuntu Docker image for a specific distro."""
     # Resolve distro to codename (supports both version numbers and codenames)
     try:
@@ -131,7 +131,7 @@ def build_ubuntu(distro: str, container_tool: str, dart_version: str = "v6.15"):
         return False
 
 
-def build_all_ubuntu(container_tool: str, dart_version: str = "v6.15"):
+def build_all_ubuntu(container_tool: str, dart_version: str = "v6.16"):
     """Build all Ubuntu Docker images."""
     distros = ["jammy", "noble", "questing"]
     success = True
@@ -143,7 +143,7 @@ def build_all_ubuntu(container_tool: str, dart_version: str = "v6.15"):
     return success
 
 
-def build_manylinux(container_tool: str, dart_version: str = "v6.15"):
+def build_manylinux(container_tool: str, dart_version: str = "v6.16"):
     """Build manylinux Docker image."""
     dockerfile = Path(f"docker/dev/{dart_version}/Dockerfile.manylinux_2_28_x86_64")
     if not dockerfile.exists():
@@ -204,8 +204,8 @@ Examples:
 
     parser.add_argument(
         "--dart-version",
-        default="v6.15",
-        help="DART version to build (default: v6.15)",
+        default="v6.16",
+        help="DART version to build (default: v6.16)",
     )
 
     args = parser.parse_args()

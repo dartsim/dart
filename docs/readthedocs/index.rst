@@ -27,7 +27,7 @@ Articulated Body Algorithm to compute motion dynamics.
 Updates
 -------
 
-* 2024-11-15: DART version 6.15.0 released. See :doc:`overview` and :doc:`dart/cpp_api_reference` for links to the API reference.
+* 2025-11-09: DART version 6.16.0 released. See :doc:`overview` and :doc:`dart/cpp_api_reference` for links to the API reference.
 * 2022-12-31: DART version 6.13.0 released.
 
 Social Media
