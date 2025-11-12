@@ -356,12 +356,12 @@ public:
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<BodyNode*>& getBodyNodes();
+  const std::vector<BodyNode*>& getBodyNodes() override;
 
   /// Deprecated list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<const BodyNode*>& getBodyNodes() const;
+  const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   /// Get soft body node whose name is _name
   SoftBodyNode* getSoftBodyNode(const std::string& _name);
@@ -415,12 +415,12 @@ public:
   /// Deprecated joint list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  std::vector<Joint*> getJoints();
+  std::vector<Joint*> getJoints() override;
 
   /// Deprecated joint list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  std::vector<const Joint*> getJoints() const;
+  std::vector<const Joint*> getJoints() const override;
 
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
@@ -459,12 +459,12 @@ public:
   /// Deprecated DOF list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  const std::vector<DegreeOfFreedom*>& getDofs();
+  const std::vector<DegreeOfFreedom*>& getDofs() override;
 
   /// Deprecated DOF list getter retained for backward compatibility until
   /// gz-physics migrates.
   DART_DEPRECATED(6.13)
-  std::vector<const DegreeOfFreedom*> getDofs() const;
+  std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
   std::size_t getIndexOf(
