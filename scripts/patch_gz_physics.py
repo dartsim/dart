@@ -325,8 +325,10 @@ def patch_gz_base_header(base_header: Path) -> bool:
         this->shapes.RemoveEntity(_sn);
       });
 #else
-      for (auto &sn : bn->getShapeNodes())
+      const auto shapeCount = bn->getNumShapeNodes();
+      for (std::size_t snIndex = 0; snIndex < shapeCount; ++snIndex)
       {
+        auto* sn = bn->getShapeNode(snIndex);
         this->shapes.RemoveEntity(sn);
       }
 #endif
@@ -352,6 +354,11 @@ def patch_gz_base_header(base_header: Path) -> bool:
         (joint_loop_old, joint_loop_new, "joint removal"),
         (body_loop_old, body_loop_new, "body removal"),
         (debug_loop_old, debug_loop_new, "debug model joint listing"),
+        (
+            "#if DART_VERSION_AT_LEAST(6, 13, 0)",
+            "#if DART_VERSION_GE(6, 13, 0)",
+            "DART_VERSION_GE macro usage",
+        ),
     ]
 
     for old, new, desc in replacements:
