@@ -98,6 +98,11 @@ public:
   /// Destructor
   virtual ~EndEffector() = default;
 
+  EndEffector(const EndEffector&) = delete;
+  EndEffector& operator=(const EndEffector&) = delete;
+  EndEffector(EndEffector&&) = default;
+  EndEffector& operator=(EndEffector&&) = default;
+
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
