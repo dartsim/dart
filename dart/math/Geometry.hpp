@@ -463,8 +463,10 @@ DART_API Eigen::Isometry3d computeTransform(
     AxisType axisType = AxisType::AXIS_X);
 
 /// Generate frame given origin and z-axis
-DART_API DART_DEPRECATED(6.0) Eigen::Isometry3d getFrameOriginAxisZ(
+// clang-format off
+DART_DEPRECATED(6.0) DART_API Eigen::Isometry3d getFrameOriginAxisZ(
     const Eigen::Vector3d& _origin, const Eigen::Vector3d& _axisZ);
+// clang-format on
 
 /// \brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.
