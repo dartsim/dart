@@ -63,8 +63,8 @@ void addCapsuleShape(
     const Eigen::Vector3d& axis,
     const Eigen::Vector3d& color)
 {
-  auto shape
-      = std::make_shared<dynamics::CapsuleShape>(dims[0], dims[1]); // radius, height
+  auto shape = std::make_shared<dynamics::CapsuleShape>(
+      dims[0], dims[1]); // radius, height
   auto node = body->createShapeNodeWith<dynamics::VisualAspect>(shape);
   node->getVisualAspect()->setColor(color);
 
@@ -93,12 +93,11 @@ void addSphereShape(
 dynamics::SkeletonPtr createGround()
 {
   auto ground = dynamics::Skeleton::create("ground");
-  auto pair
-      = ground->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
+  auto pair = ground->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto body = pair.second;
 
-  auto shape = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(12.0, 12.0, 0.05));
+  auto shape
+      = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(12.0, 12.0, 0.05));
   auto node = body->createShapeNodeWith<dynamics::VisualAspect>(shape);
   node->getVisualAspect()->setColor(dart::Color::LightGray());
   node->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.025));
@@ -127,18 +126,29 @@ dynamics::SkeletonPtr createLetterD(const Eigen::Vector3d& position)
       color);
   addBoxShape(
       body,
-      Eigen::Vector3d(width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
-      Eigen::Vector3d(kLetterThickness / 2.0, kLetterHeight / 2.0 - kLetterThickness / 2.0, 0),
+      Eigen::Vector3d(
+          width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
+      Eigen::Vector3d(
+          kLetterThickness / 2.0,
+          kLetterHeight / 2.0 - kLetterThickness / 2.0,
+          0),
       color);
   addBoxShape(
       body,
-      Eigen::Vector3d(width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
-      Eigen::Vector3d(kLetterThickness / 2.0, -kLetterHeight / 2.0 + kLetterThickness / 2.0, 0),
+      Eigen::Vector3d(
+          width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
+      Eigen::Vector3d(
+          kLetterThickness / 2.0,
+          -kLetterHeight / 2.0 + kLetterThickness / 2.0,
+          0),
       color);
 
   addCapsuleShape(
       body,
-      Eigen::Vector3d((width - kLetterThickness) / 2.0, kLetterHeight - 2.0 * kLetterThickness, 0),
+      Eigen::Vector3d(
+          (width - kLetterThickness) / 2.0,
+          kLetterHeight - 2.0 * kLetterThickness,
+          0),
       Eigen::Vector3d(width / 2.0 - kLetterThickness / 2.0, 0, 0),
       Eigen::Vector3d::UnitY(),
       color);
@@ -202,17 +212,25 @@ dynamics::SkeletonPtr createLetterR(const Eigen::Vector3d& position)
       color);
   addBoxShape(
       body,
-      Eigen::Vector3d(width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
-      Eigen::Vector3d(kLetterThickness / 2.0, kLetterHeight / 2.0 - kLetterThickness / 2.0, 0),
+      Eigen::Vector3d(
+          width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
+      Eigen::Vector3d(
+          kLetterThickness / 2.0,
+          kLetterHeight / 2.0 - kLetterThickness / 2.0,
+          0),
       color);
   addBoxShape(
       body,
-      Eigen::Vector3d(width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
+      Eigen::Vector3d(
+          width - kLetterThickness / 2.0, kLetterThickness, kLetterDepth),
       Eigen::Vector3d(kLetterThickness / 2.0, 0.05, 0),
       color);
   addCapsuleShape(
       body,
-      Eigen::Vector3d((width - kLetterThickness) / 2.0, (kLetterHeight / 2.0) - kLetterThickness, 0),
+      Eigen::Vector3d(
+          (width - kLetterThickness) / 2.0,
+          (kLetterHeight / 2.0) - kLetterThickness,
+          0),
       Eigen::Vector3d(width / 2.0 - kLetterThickness / 2.0, 0.2, 0),
       Eigen::Vector3d::UnitY(),
       color);
@@ -220,7 +238,8 @@ dynamics::SkeletonPtr createLetterR(const Eigen::Vector3d& position)
       body,
       Eigen::Vector3d(kLetterThickness / 2.0, kLetterHeight / 2.0, 0),
       Eigen::Vector3d(width / 2.0 - 0.1, -kLetterHeight / 4.0, 0),
-      (Eigen::Vector3d(width / 2.0 - 0.1, -kLetterHeight / 4.0, 0)).normalized(),
+      (Eigen::Vector3d(width / 2.0 - 0.1, -kLetterHeight / 4.0, 0))
+          .normalized(),
       color);
 
   setStaticInertia(body);
@@ -278,9 +297,9 @@ dynamics::SkeletonPtr createArrow(const Eigen::Vector3d& position)
   node->getVisualAspect()->setColor(color);
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0.15, 0, 0);
-  tf.linear()
-      = Eigen::AngleAxisd(math::constantsd::pi() / 2.0, Eigen::Vector3d::UnitY())
-            .toRotationMatrix();
+  tf.linear() = Eigen::AngleAxisd(
+                    math::constantsd::pi() / 2.0, Eigen::Vector3d::UnitY())
+                    .toRotationMatrix();
   node->setRelativeTransform(tf);
 
   setStaticInertia(body);
@@ -318,8 +337,8 @@ dynamics::SkeletonPtr createRainbowChain(Eigen::VectorXd& targetAngles)
         Eigen::Vector2d(-math::constantsd::pi(), math::constantsd::pi()));
     joint->setDampingCoefficient(0, 0.5);
 
-    auto shape = std::make_shared<dynamics::BoxShape>(
-        Eigen::Vector3d(kSegmentLength, kSegmentRadius * 0.9, kSegmentRadius * 0.9));
+    auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(
+        kSegmentLength, kSegmentRadius * 0.9, kSegmentRadius * 0.9));
     auto shapeNode = body->createShapeNodeWith<
         dynamics::VisualAspect,
         dynamics::CollisionAspect,
@@ -379,7 +398,8 @@ public:
     const Eigen::VectorXd error = desired - q;
     const Eigen::VectorXd dError = -dq;
 
-    const Eigen::VectorXd tau = mKp.cwiseProduct(error) + mKd.cwiseProduct(dError);
+    const Eigen::VectorXd tau
+        = mKp.cwiseProduct(error) + mKd.cwiseProduct(dError);
     mChain->setForces(tau);
   }
 
@@ -394,9 +414,10 @@ void addLettering(simulation::WorldPtr world)
 {
   const Eigen::Vector3d baseline(0.8, -0.85, kLetterElevation);
   std::vector<dynamics::SkeletonPtr> letters;
-  letters.emplace_back(createLetterD(baseline + Eigen::Vector3d(0.0, 0.0, 0.0)));
-  letters.emplace_back(createLetterA(
-      baseline + Eigen::Vector3d(kLetterSpacing, 0.0, 0.0)));
+  letters.emplace_back(
+      createLetterD(baseline + Eigen::Vector3d(0.0, 0.0, 0.0)));
+  letters.emplace_back(
+      createLetterA(baseline + Eigen::Vector3d(kLetterSpacing, 0.0, 0.0)));
   letters.emplace_back(createLetterR(
       baseline + Eigen::Vector3d(2.0 * kLetterSpacing, 0.0, 0.0)));
   letters.emplace_back(createLetterT(
@@ -435,8 +456,7 @@ int main()
   gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
 
-  auto shadow
-      = gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+  auto shadow = gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
   node->setShadowTechnique(shadow);
 
   viewer.setUpViewInWindow(0, 0, 960, 720);
