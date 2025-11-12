@@ -39,6 +39,7 @@
 #include <dart/config.hpp>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <btBulletCollisionCommon.h>
 

@@ -27,6 +27,10 @@
   * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
   * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.
 
+* Collision
+  * `FCLCollisionDetector` always instantiates `PlaneShape` as an FCL halfspace, restoring infinite-plane behavior and enabling mesh collisions (fixes [#114](https://github.com/dartsim/dart/issues/114)).
+  * Bullet now registers `btGImpactCollisionAlgorithm`, so concave `MeshShape` geometries (e.g., foot.obj) reliably collide with `PlaneShape` along with new regression tests (fixes [#114](https://github.com/dartsim/dart/issues/114)).
+
 * Core
   * Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1).
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
