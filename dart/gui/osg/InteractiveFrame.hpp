@@ -65,6 +65,11 @@ public:
   InteractiveTool(
       InteractiveFrame* frame, double defaultAlpha, const std::string& name);
 
+  InteractiveTool(const InteractiveTool&) = delete;
+  InteractiveTool& operator=(const InteractiveTool&) = delete;
+  InteractiveTool(InteractiveTool&&) = default;
+  InteractiveTool& operator=(InteractiveTool&&) = default;
+
   /// Set this tool to be enabled or disabled
   void setEnabled(bool enabled);
 
@@ -123,6 +128,11 @@ public:
       = Eigen::Isometry3d::Identity(),
       double size_scale = 0.2,
       double thickness_scale = 2.0);
+
+  InteractiveFrame(const InteractiveFrame&) = delete;
+  InteractiveFrame& operator=(const InteractiveFrame&) = delete;
+  InteractiveFrame(InteractiveFrame&&) = default;
+  InteractiveFrame& operator=(InteractiveFrame&&) = default;
 
   /// Destructor
   virtual ~InteractiveFrame();

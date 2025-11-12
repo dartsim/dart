@@ -35,6 +35,7 @@
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/gui/osg/CameraMode.hpp>
 #include <dart/gui/osg/Export.hpp>
 
 #include <Eigen/Core>
@@ -75,20 +76,6 @@ class InteractiveFrameDnD;
 class BodyNodeDnD;
 class Viewer;
 class SaveScreen;
-
-/// Camera mode
-enum class CameraMode
-{
-  /// To render the RGBA color
-  RGBA,
-
-  /// To render the depth buffer
-  ///
-  /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
-  DEPTH,
-};
-
-[[nodiscard]] std::string toString(CameraMode mode);
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_GUI_OSG_API ViewerAttachment
