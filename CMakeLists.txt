@@ -112,8 +112,8 @@ set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 # Build options
 #===============================================================================
 
-# DART 7.0 options
-option(DART7_VERBOSE "Show detailed DART7 dependency information" OFF)
+# DART 8.0 options
+option(DART8_VERBOSE "Show detailed DART8 dependency information" OFF)
 
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
@@ -170,11 +170,11 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY syst
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
-dart_option(DART_BUILD_DART7 "Build experimental DART7 library" OFF CATEGORY build)
-dart_option(DART_BUILD_DARTPY7 "Build experimental dartpy7 Python bindings" OFF CATEGORY build)
+dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
+dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
 
-if(DART_BUILD_DARTPY7)
-  set(DART_BUILD_DART7 ON CACHE BOOL "Build experimental DART7 library" FORCE)
+if(DART_BUILD_DARTPY8)
+  set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
 endif()
 
 #===============================================================================
@@ -487,15 +487,15 @@ endif()
 
 add_subdirectory(dart)
 
-if(DART_BUILD_DART7)
-  add_subdirectory(dart7)
+if(DART_BUILD_DART8)
+  add_subdirectory(dart8)
 
   if(MSVC)
-    add_subdirectory(tests_dart7)
-    add_subdirectory(examples_dart7)
+    add_subdirectory(tests_dart8)
+    add_subdirectory(examples_dart8)
   else()
-    add_subdirectory(tests_dart7 EXCLUDE_FROM_ALL)
-    add_subdirectory(examples_dart7 EXCLUDE_FROM_ALL)
+    add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
+    add_subdirectory(examples_dart8 EXCLUDE_FROM_ALL)
   endif()
 endif()
 
@@ -559,8 +559,8 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
-if(DART_BUILD_DARTPY7)
-  list(APPEND all_target_candidates dartpy7)
+if(DART_BUILD_DARTPY8)
+  list(APPEND all_target_candidates dartpy8)
 endif()
 if(BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)

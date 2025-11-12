@@ -47,13 +47,7 @@ class RootJointType:
     def value(self) -> int:
         ...
 @typing.overload
-def readSkeleton(uri: dartpy.common.Uri, retriever: dartpy.common.ResourceRetriever) -> dartpy.dynamics.Skeleton:
-    ...
-@typing.overload
 def readSkeleton(uri: dartpy.common.Uri, options: Options = ...) -> dartpy.dynamics.Skeleton:
-    ...
-@typing.overload
-def readWorld(uri: dartpy.common.Uri, retriever: dartpy.common.ResourceRetriever) -> dartpy.simulation.World:
     ...
 @typing.overload
 def readWorld(uri: dartpy.common.Uri, options: Options = ...) -> dartpy.simulation.World:

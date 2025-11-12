@@ -65,8 +65,8 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
-DART_BUILD_DARTPY7_VALUE=${DART_BUILD_DARTPY7_OVERRIDE:-${DART_BUILD_DARTPY_VALUE}}
-DART_BUILD_DART7_VALUE=${DART_BUILD_DART7_OVERRIDE:-ON}
+DART_BUILD_DARTPY8_VALUE=${DART_BUILD_DARTPY8_OVERRIDE:-${DART_BUILD_DARTPY_VALUE}}
+DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_GUI_OSG_VALUE=${DART_BUILD_GUI_OSG_OVERRIDE:-ON}
 if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   CMAKE_C_COMPILER_LAUNCHER=sccache
@@ -87,8 +87,8 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_DART7=${DART_BUILD_DART7_VALUE} \
-  -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY7_VALUE} \
+  -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
+  -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY8_VALUE} \
   -DDART_BUILD_GUI_OSG=${DART_BUILD_GUI_OSG_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
@@ -112,8 +112,8 @@ lint-cpp = { cmd = """
     --target format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-lint-dart7 = { cmd = """
-    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+lint-dart8 = { cmd = """
+    find dart8 tests_dart8 examples_dart8 python/dartpy8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
@@ -124,7 +124,7 @@ lint-yaml = { cmd = """
     prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-dart7", "lint-py", "lint-yaml"] }
+lint = { depends-on = ["lint-cpp", "lint-dart8", "lint-py", "lint-yaml"] }
 
 # Check formatting without modifying files (used in CI)
 check-lint-cpp = { cmd = """
@@ -133,8 +133,8 @@ check-lint-cpp = { cmd = """
         --target check-format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-check-lint-dart7 = { cmd = """
-    find dart7 tests_dart7 examples_dart7 python/dartpy7 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+check-lint-dart8 = { cmd = """
+    find dart8 tests_dart8 examples_dart8 python/dartpy8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -145,7 +145,7 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-dart7", "check-lint-py", "check-lint-yaml"] }
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-dart8", "check-lint-py", "check-lint-yaml"] }
 
 build = { cmd = ["bash", "-lc", """
 set -euo pipefail
@@ -193,8 +193,8 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_DART7=ON \
-  -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} \
+  -DDART_BUILD_DART8=ON \
+  -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -212,7 +212,7 @@ build-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_ty
     { arg = "build_type", default = "Release" }
 ] }
 
-build-dart7-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart7_tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+build-dart8-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart8_tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
@@ -224,12 +224,12 @@ build-py-dev = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_t
     { arg = "build_type", default = "Release" }
 ] }
 
-build-dartpy7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy7"], depends-on = [{ task = "config-py", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+build-dartpy8 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy8"], depends-on = [{ task = "config-py", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
 
-config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif command -v sccache >/dev/null 2>&1 && [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  CMAKE_C_COMPILER_LAUNCHER=sccache\n  CMAKE_CXX_COMPILER_LAUNCHER=sccache\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART7=ON -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS"], env = { DART_VERBOSE = "OFF" }, args = [
+config-py = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif command -v sccache >/dev/null 2>&1 && [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  CMAKE_C_COMPILER_LAUNCHER=sccache\n  CMAKE_CXX_COMPILER_LAUNCHER=sccache\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS"], env = { DART_VERBOSE = "OFF" }, args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
@@ -254,22 +254,22 @@ py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"]
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
 
 test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
+test-dart8 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart8"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
@@ -289,10 +289,10 @@ test-lcpsolver = { cmd = """
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy7 = { cmd = ["bash", "-lc", """
+test-dartpy8 = { cmd = ["bash", "-lc", """
 export BUILD_TYPE={{ build_type }}
-python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy7').glob('dartpy7*.so'), None); assert ext is not None, 'dartpy7 extension not found'; spec=importlib.util.spec_from_file_location('dartpy7', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy7 smoke test passed')"
-"""], depends-on = [{ task = "build-dartpy7", args = ["ON", "{{ build_type }}"] }], args = [
+python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy8').glob('dartpy8*.so'), None); assert ext is not None, 'dartpy8 extension not found'; spec=importlib.util.spec_from_file_location('dartpy8', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy8 smoke test passed')"
+"""], depends-on = [{ task = "build-dartpy8", args = ["ON", "{{ build_type }}"] }], args = [
     { arg = "build_type", default = "Release" }
 ] }
 
@@ -437,8 +437,8 @@ config-install = { cmd = """
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_DART7={{ dartpy }} \
-        -DDART_BUILD_DARTPY7={{ dartpy }} \
+        -DDART_BUILD_DART8={{ dartpy }} \
+        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -621,8 +621,8 @@ cmake \
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=ON \
-  -DDART_BUILD_DART7=ON \
-  -DDART_BUILD_DARTPY7=ON \
+  -DDART_BUILD_DART8=ON \
+  -DDART_BUILD_DARTPY8=ON \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=ON \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -650,7 +650,7 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 ctest \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --output-on-failure \
-  -LE dart7
+  -LE dart8
 """], depends-on = ["build-asan"], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=1" } }
 
 ################################################################################
@@ -749,8 +749,8 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_DART7=ON \
-        -DDART_BUILD_DARTPY7={{ dartpy }} \
+        -DDART_BUILD_DART8=ON \
+        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
@@ -819,13 +819,13 @@ build-tests = { cmd = """
     { arg = "build_type", default = "Release" }
 ] }
 
-build-dart7-tests = { cmd = """
+build-dart8-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
-        --target dart7_tests
+        --target dart8_tests
 """, depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
@@ -860,22 +860,22 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
 
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart7"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
+test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
 
 test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
 ] }
 
-test-dart7 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart7"], depends-on = [
+test-dart8 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart8"], depends-on = [
     { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart7-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
 ], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }
@@ -938,8 +938,8 @@ config-install = { cmd = """
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_DART7={{ dartpy }} \
-        -DDART_BUILD_DARTPY7={{ dartpy }} \
+        -DDART_BUILD_DART8={{ dartpy }} \
+        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \

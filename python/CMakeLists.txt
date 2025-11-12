@@ -28,7 +28,7 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY7)
+if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY8)
   return()
 endif()
 
@@ -99,11 +99,11 @@ if(DART_BUILD_DARTPY)
   message(STATUS "- DARTPY_PYTEST_FOUND : ${DARTPY_PYTEST_FOUND}")
 endif()
 
-if(DART_BUILD_DARTPY7)
-  add_subdirectory(dartpy7)
+if(DART_BUILD_DARTPY8)
+  add_subdirectory(dartpy8)
 
   message(STATUS "")
-  message(STATUS "[ dartpy7 ]")
+  message(STATUS "[ dartpy8 ]")
   message(STATUS "- Python3_EXECUTABLE  : ${Python3_EXECUTABLE}")
   message(STATUS "- PYTHON_SITE_PACKAGES: ${PYTHON_SITE_PACKAGES}")
 endif()
