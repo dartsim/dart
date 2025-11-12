@@ -117,8 +117,9 @@ TEST(ConfigurationSpaceTests, IntegrateVelocityAddsAcceleration)
   const Eigen::Vector2d velocity(0.5, -0.2);
   const Eigen::Vector2d acceleration(1.0, 0.25);
   const double dt = 0.4;
+  const Eigen::Vector2d expected = velocity + acceleration * dt;
 
   const auto integrated
       = integrateVelocity<R2Space>(velocity, acceleration, dt);
-  EXPECT_VECTOR_NEAR(integrated, velocity + acceleration * dt, 1e-12);
+  EXPECT_VECTOR_NEAR(integrated, expected, 1e-12);
 }
