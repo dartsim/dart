@@ -485,13 +485,15 @@ public:
 
   /// Return the list of ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead.
+  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodes();
 
   /// Return the list of (const) ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead.
+  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodes() const;
 
@@ -514,14 +516,16 @@ public:
 
   /// Return the list of ShapeNodes containing given Aspect
   ///
-  /// \deprecated Use eachShapeNodeWith() instead.
+  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodesWith();
 
   /// Return the list of ShapeNodes containing given Aspect (const)
   ///
-  /// \deprecated Use eachShapeNodeWith() instead.
+  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodesWith() const;

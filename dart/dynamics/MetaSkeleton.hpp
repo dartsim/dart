@@ -38,6 +38,7 @@
 
 #include <dart/math/Geometry.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/LockableReference.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
@@ -124,6 +125,16 @@ public:
   /// \return The body node of given name.
   virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
 
+  /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
+
+  /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
+
   /// Returns all the BodyNodes of given name.
   /// \param[in] name The BodyNode name that want to search.
   /// \return The list of BodyNodes of given name.
@@ -183,6 +194,16 @@ public:
   virtual std::vector<const Joint*> getJoints(
       const std::string& name) const = 0;
 
+  /// Deprecated joint list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual std::vector<Joint*> getJoints() = 0;
+
+  /// Deprecated joint list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual std::vector<const Joint*> getJoints() const = 0;
+
   /// Returns whether this Skeleton contains \c join.
   virtual bool hasJoint(const Joint* joint) const = 0;
 
@@ -201,6 +222,16 @@ public:
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   virtual const DegreeOfFreedom* getDof(std::size_t _idx) const = 0;
+
+  /// Deprecated DOF list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
+
+  /// Deprecated DOF list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
 
   /// Get the index of a specific DegreeOfFreedom within this
   /// ReferentialSkeleton. Returns INVALID_INDEX if it is not held in this
