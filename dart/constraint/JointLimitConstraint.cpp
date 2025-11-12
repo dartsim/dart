@@ -175,7 +175,7 @@ double JointLimitConstraint::getConstraintForceMixing()
 //==============================================================================
 void JointLimitConstraint::update()
 {
-  const double inf = dart::math::constantsd::inf();
+  const double inf = dart::math::inf;
   const double negInf = -inf;
 
   // Reset dimension
