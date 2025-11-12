@@ -1085,7 +1085,7 @@ public:
   struct Solution
   {
     /// Default constructor
-    Solution(
+    DART_API Solution(
         const Eigen::VectorXd& _config = Eigen::VectorXd(),
         int _validity = VALID);
 
