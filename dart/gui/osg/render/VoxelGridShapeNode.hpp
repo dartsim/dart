@@ -55,7 +55,7 @@ namespace render {
 class VoxelGridShapeGeode;
 class VoxelNode;
 
-class VoxelGridShapeNode : public ShapeNode, public ::osg::Group
+class DART_GUI_OSG_API VoxelGridShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   VoxelGridShapeNode(

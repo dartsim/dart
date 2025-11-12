@@ -36,6 +36,7 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>
 #include <dart/common/Subject.hpp>
+#include <dart/gui/osg/Export.hpp>
 
 #include <Eigen/Core>
 #include <osgGA/GUIEventHandler>
@@ -99,9 +100,10 @@ enum ConstraintType
 class MouseEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DefaultEventHandler : public ::osgGA::GUIEventHandler,
-                            public virtual dart::common::Subject,
-                            public virtual dart::common::Observer
+class DART_GUI_OSG_API DefaultEventHandler
+  : public ::osgGA::GUIEventHandler,
+    public virtual dart::common::Subject,
+    public virtual dart::common::Observer
 {
 public:
   /// Constructor takes in a pointer to a viewer

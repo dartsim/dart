@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_SHAPEFRAMENODE_HPP_
 
 #include <dart/config.hpp>
+#include <dart/gui/osg/Export.hpp>
 
 #include <dart/dynamics/SmartPointer.hpp>
 
@@ -58,7 +59,7 @@ class ShapeNode;
 
 class WorldNode;
 
-class ShapeFrameNode : public ::osg::MatrixTransform
+class DART_GUI_OSG_API ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
   /// Create a ShapeFrameNode. If recursive is set to true, it will also create
