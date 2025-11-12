@@ -33,7 +33,6 @@
 #include "helpers/GTestUtils.hpp"
 
 #include <dart/config.hpp>
-
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>

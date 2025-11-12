@@ -34,7 +34,6 @@
 #include "TinkertoyWorldNode.hpp"
 
 #include <dart/config.hpp>
-
 #include <dart/gui/osg/All.hpp>
 
 #include <dart/All.hpp>
