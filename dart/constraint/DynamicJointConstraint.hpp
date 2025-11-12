@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/Export.hpp>
 
 namespace dart {
 
@@ -45,7 +46,7 @@ namespace constraint {
 
 /// Base class for joint constraints that are being created or destructed during
 /// simulation.
-class DynamicJointConstraint : public ConstraintBase
+class DART_CONSTRAINT_API DynamicJointConstraint : public ConstraintBase
 {
 public:
   /// Contructor
