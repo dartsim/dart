@@ -41,8 +41,8 @@ msgid "Update your package list:"
 msgstr "패키지 목록을 업데이트하세요:"
 
 #: ../../dart/user_guide/installation.rst:21
-msgid "Install the `libdart7-all-dev-nightly` package:"
-msgstr "`libdart7-all-dev-nightly` 패키지를 설치하세요:"
+msgid "Install the `libdart8-all-dev-nightly` package:"
+msgstr "`libdart8-all-dev-nightly` 패키지를 설치하세요:"
 
 #: ../../dart/user_guide/installation.rst:27
 msgid "macOS"
