@@ -382,16 +382,24 @@ a table of some relevant functions for quick references.
 
 ## Lesson 6: Actuator types
 
-DART provides five types of actuator. Each joint can select its own
+DART provides seven types of actuator. Each joint can select its own
 actuator type.
 
 | Type         | Description                                                                                                         |
 | ------------ | ------------------------------------------------------------------------------------------------------------------- |
 | FORCE        | Take joint force and return the resulting joint acceleration.                                                       |
 | PASSIVE      | Take nothing (joint force = 0) and return the resulting joint acceleration.                                         |
+| SERVO        | Track a desired joint velocity using a constraint-based servo that applies whatever force is allowed by the joint.  |
 | ACCELERATION | Take desired joint acceleration and return the joint force to achieve the acceleration.                             |
 | VELOCITY     | Take desired joint velocity and return the joint force to achieve the velocity.                                     |
 | LOCKED       | Lock the joint by setting the joint velocity and acceleration to zero and return the joint force to lock the joint. |
+| MIMIC        | Mirror the command of another joint instead of accepting a direct command.                                          |
+
+Servo actuators behave dynamically (like `FORCE` joints) while steering the
+velocity toward the command via a `ServoMotorConstraint`. This is useful when
+you want to respect force limits and still let the dynamics solver decide how
+much torque is needed, as opposed to the `VELOCITY` actuator which drives the
+joint kinematically.
 
 In this Lesson, we will switch the actuator type of the wheels
 from the default FORCE type to VELOCITY type.
