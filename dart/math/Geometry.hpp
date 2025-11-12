@@ -465,9 +465,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// rotations
 inline double wrapToPi(double angle)
 {
-  constexpr auto pi = pi;
-
-  return std::fmod(angle + pi, 2 * pi) - pi;
+  return std::fmod(angle + pi, two_pi) - pi;
 }
 
 template <typename MatrixType, typename ReturnType>

@@ -160,8 +160,14 @@ struct DART_DEPRECATED(7.0) constants
   }
 };
 
+#ifdef DART_SUPPRESS_DEPRECATED_BEGIN
+DART_SUPPRESS_DEPRECATED_BEGIN
+#endif
 using constantsf DART_DEPRECATED(7.0) = constants<float>;
 using constantsd DART_DEPRECATED(7.0) = constants<double>;
+#ifdef DART_SUPPRESS_DEPRECATED_END
+DART_SUPPRESS_DEPRECATED_END
+#endif
 
 } // namespace math
 } // namespace dart
