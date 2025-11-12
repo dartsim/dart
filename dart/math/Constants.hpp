@@ -49,6 +49,7 @@
 #endif
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Diagnostics.hpp"
 
 namespace dart {
 namespace math {
