@@ -51,12 +51,12 @@ namespace dart8 {
 /// - Target frames for IK
 ///
 /// DART6 equivalent: SimpleFrame (with modifiable transform)
-class FreeFrame : public Frame,
-                  public EntityObjectWith<
-                      TagComps<comps::FreeFrameTag>,
-                      ReadOnlyComps<>,
-                      WriteOnlyComps<>,
-                      ReadWriteComps<comps::FreeFrameProperties>>
+class DART8_API FreeFrame : public Frame,
+                            public EntityObjectWith<
+                                TagComps<comps::FreeFrameTag>,
+                                ReadOnlyComps<>,
+                                WriteOnlyComps<>,
+                                ReadWriteComps<comps::FreeFrameProperties>>
 {
 public:
   /// Constructor (package-private, use World::addFreeFrame)

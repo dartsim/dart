@@ -87,11 +87,12 @@ namespace dart8 {
 /// Phase 3: Additional frame types (SimpleFrame, ShapeFrame)
 ///
 /// @see LinkComponent, FrameTag
-class Frame : public EntityObjectWith<
-                  TagComps<comps::FrameTag>,
-                  ReadOnlyComps<>,
-                  WriteOnlyComps<>,
-                  ReadWriteComps<comps::FrameState, comps::FrameCache>>
+class DART8_API Frame
+  : public EntityObjectWith<
+        TagComps<comps::FrameTag>,
+        ReadOnlyComps<>,
+        WriteOnlyComps<>,
+        ReadWriteComps<comps::FrameState, comps::FrameCache>>
 {
 public:
   // Allow internal classes to access getEntity() for ECS operations

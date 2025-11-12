@@ -63,7 +63,7 @@ namespace dart8 {
 ///
 /// @note RigidBody objects are owned by World and accessed via handles.
 ///       The underlying data is stored in the World's ECS registry.
-class RigidBody : public Frame
+class DART8_API RigidBody : public Frame
 {
 public:
   /// Constructor (typically called by World::addRigidBody)
