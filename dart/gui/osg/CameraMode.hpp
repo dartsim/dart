@@ -30,54 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
-#define DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
+#ifndef DART_GUI_OSG_CAMERAMODE_HPP_
+#define DART_GUI_OSG_CAMERAMODE_HPP_
 
-#include <dart/gui/osg/CameraMode.hpp>
 #include <dart/gui/osg/Export.hpp>
 
-#include <osg/NodeCallback>
+#include <string>
 
-#include <mutex>
+namespace dart::gui::osg {
 
-namespace dart::gui::osg::detail {
-
-class DART_GUI_OSG_API CameraModeCallback : public ::osg::NodeCallback
+/// Camera mode
+enum class CameraMode
 {
-public:
-  /// Default constructor
-  CameraModeCallback();
+  /// To render the RGBA color
+  RGBA,
 
-  // Documentation inherited
-  void operator()(::osg::Node* node, ::osg::NodeVisitor* nv) override;
-
-  /// Sets the camera mode of the primary camera.
+  /// To render the depth buffer
   ///
-  /// \note Thread safe
-  void setCameraMode(CameraMode mode);
-
-  /// Returns the camera mode of the primary camera.
-  ///
-  /// \note Thread safe
-  CameraMode getCameraMode() const;
-
-  /// Sets the scene to render the depth
-  ///
-  /// \note Thread safe
-  void setSceneData(::osg::Node* scene);
-
-private:
-  ::osg::ref_ptr<::osg::Camera> mDepthRrtCam;
-  ::osg::ref_ptr<::osg::Camera> mDepthHudCam;
-  CameraMode mCameraMode;
-  bool mCameraModeChanged;
-  ::osg::ref_ptr<::osg::Node> mScene;
-  ::osg::ref_ptr<::osg::Node> mSceneToChange;
-
-  /// Mutex for all the member variables
-  mutable std::mutex mMutex;
+  /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
+  DEPTH,
 };
 
-} // namespace dart::gui::osg::detail
+DART_GUI_OSG_API std::string toString(CameraMode mode);
 
-#endif // DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_
+} // namespace dart::gui::osg
+
+#endif // DART_GUI_OSG_CAMERAMODE_HPP_

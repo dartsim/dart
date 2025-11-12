@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_IMGUIVIEWER_HPP_
 
 #include <dart/gui/osg/Export.hpp>
+#include <dart/gui/osg/ImGuiHandler.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
 #include <memory>
@@ -41,8 +42,6 @@
 namespace dart {
 namespace gui {
 namespace osg {
-
-class ImGuiHandler;
 class MainMenuWidget;
 class AboutWidget;
 
