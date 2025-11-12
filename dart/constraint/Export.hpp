@@ -35,7 +35,7 @@
 #include <dart/common/Export.hpp>
 
 #ifndef DART_CONSTRAINT_API
-  #if defined(DART_BUILDING_DART_CONSTRAINT)
+  #if defined(DART_BUILDING_DART_CONSTRAINT) || defined(DART_BUILDING_DART)
     #define DART_CONSTRAINT_API DART_DLL_EXPORT
   #else
     #define DART_CONSTRAINT_API DART_DLL_IMPORT
