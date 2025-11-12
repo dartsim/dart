@@ -62,6 +62,8 @@
 #include <Eigen/StdVector>
 #include <tinyxml2.h>
 
+#include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -333,18 +335,38 @@ bool logSdformatErrors(
   return hasCriticalErrors;
 }
 
+std::filesystem::path makeTemporaryPath(const common::Uri& uri)
+{
+  static std::atomic<uint64_t> counter{0};
+
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto extension = std::filesystem::path(uri.getPath()).extension();
+
+  for (std::size_t attempt = 0; attempt < 64; ++attempt) {
+    std::stringstream name;
+    name << "dart_sdf_"
+         << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+         << '_' << counter.fetch_add(1, std::memory_order_relaxed);
+    if (attempt > 0)
+      name << '_' << attempt;
+    if (!extension.empty())
+      name << extension.string();
+
+    const auto candidate = tempDir / name.str();
+    if (!std::filesystem::exists(candidate))
+      return candidate;
+  }
+
+  throw std::runtime_error(
+      "Failed to allocate temporary path for [" + uri.toString() + "]");
+}
+
 std::filesystem::path writeTemporaryResource(
     const std::string& data, const common::Uri& uri)
 {
-  std::filesystem::path pattern("dart_sdf_%%%%-%%%%");
-  const auto extension = std::filesystem::path(uri.getPath()).extension();
-  if (!extension.empty())
-    pattern += extension.string();
+  const auto tempPath = makeTemporaryPath(uri);
 
-  const auto tempPath = std::filesystem::unique_path(
-      std::filesystem::temp_directory_path() / pattern);
-
-  std::ofstream output(tempPath, std::ios::binary);
+  std::ofstream output(tempPath.string(), std::ios::binary);
   output.write(data.data(), static_cast<std::streamsize>(data.size()));
 
   if (!output) {
