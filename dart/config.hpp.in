@@ -38,6 +38,22 @@
        && (DART_MINOR_VERSION < y                                              \
            || (DART_MINOR_VERSION <= y && DART_PATCH_VERSION <= z))))
 
+#define DART_VERSION_AT_LEAST(x, y, z)                                         \
+  DART_VERSION_GE(x, y, z)
+
+#define DART_MAJOR_MINOR_VERSION_AT_LEAST(x, y)                                \
+  (DART_MAJOR_VERSION > x                                                      \
+   || (DART_MAJOR_VERSION >= x                                                 \
+       && (DART_MINOR_VERSION > y || (DART_MINOR_VERSION >= y))))
+
+#define DART_VERSION_AT_MOST(x, y, z)                                          \
+  DART_VERSION_LE(x, y, z)
+
+#define DART_MAJOR_MINOR_VERSION_AT_MOST(x, y)                                 \
+  (DART_MAJOR_VERSION < x                                                      \
+   || (DART_MAJOR_VERSION <= x                                                 \
+       && (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
+
 // Detect the compiler
 #if defined(__clang__)
   #define DART_COMPILER_CLANG

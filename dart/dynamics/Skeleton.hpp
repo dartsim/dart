@@ -44,6 +44,7 @@
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
 #include <dart/dynamics/detail/SkeletonAspect.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/NameManager.hpp>
 #include <dart/common/VersionCounter.hpp>
 
@@ -352,6 +353,14 @@ public:
   // Documentation inherited
   const BodyNode* getBodyNode(const std::string& name) const override;
 
+  /// Deprecated list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  const std::vector<BodyNode*>& getBodyNodes();
+
+  /// Deprecated list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  const std::vector<const BodyNode*>& getBodyNodes() const;
+
   /// Get soft body node whose name is _name
   SoftBodyNode* getSoftBodyNode(const std::string& _name);
 
@@ -401,6 +410,14 @@ public:
   // Documentation inherited
   const Joint* getJoint(const std::string& name) const override;
 
+  /// Deprecated joint list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  std::vector<Joint*> getJoints();
+
+  /// Deprecated joint list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  std::vector<const Joint*> getJoints() const;
+
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
@@ -434,6 +451,14 @@ public:
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
+
+  /// Deprecated DOF list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  const std::vector<DegreeOfFreedom*>& getDofs();
+
+  /// Deprecated DOF list getter retained for backward compatibility.
+  DART_DEPRECATED(6.13)
+  std::vector<const DegreeOfFreedom*> getDofs() const;
 
   // Documentation inherited
   std::size_t getIndexOf(
