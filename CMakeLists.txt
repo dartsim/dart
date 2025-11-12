@@ -199,6 +199,10 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
+dart_option(DART_BUILD_DARTPY_NB
+  "Build experimental dartpy nanobind bindings"
+  OFF
+  CATEGORY build)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON CATEGORY build)
 dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
@@ -230,6 +234,7 @@ dart_option(DART_USE_SYSTEM_IMGUI
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
@@ -643,6 +648,9 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
+if(DART_BUILD_DARTPY_NB)
+  list(APPEND all_target_candidates dartpy_nb)
+endif()
 if(DART_BUILD_DARTPY8)
   list(APPEND all_target_candidates dartpy8)
 endif()
@@ -976,6 +984,9 @@ message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install all th
 if(TARGET dartpy)
   message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target dartpy' to build dartpy")
   message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install dartpy")
+endif()
+if(TARGET dartpy_nb)
+  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target dartpy_nb' to build the nanobind prototype (dartpy_nb)")
 endif()
 if(TARGET coverage)
   message(STATUS "- 'coverage'     : generage coverage report")
