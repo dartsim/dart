@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_WORLDNODE_HPP_
 
 #include <dart/gui/osg/Export.hpp>
+#include <dart/gui/osg/ShapeFrameNode.hpp>
 
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
