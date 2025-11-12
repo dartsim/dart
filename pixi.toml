@@ -267,6 +267,17 @@ py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"]
 
 py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
 
+py-tu = { cmd = "python python/tutorials/{{ tutorial }}/{{ entry }}.py", depends-on = ["build-py-dev"], args = [{ arg = "tutorial" }, { arg = "entry", default = "main" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+
+py-tu-multi-pendulum = { depends-on = [{ task = "py-tu", args = ["multi_pendulum", "main"] }] }
+py-tu-multi-pendulum-fi = { depends-on = [{ task = "py-tu", args = ["multi_pendulum", "main_finished"] }] }
+py-tu-collisions = { depends-on = [{ task = "py-tu", args = ["collisions", "main"] }] }
+py-tu-collisions-fi = { depends-on = [{ task = "py-tu", args = ["collisions", "main_finished"] }] }
+py-tu-dominoes = { depends-on = [{ task = "py-tu", args = ["dominoes", "main"] }] }
+py-tu-dominoes-fi = { depends-on = [{ task = "py-tu", args = ["dominoes", "main_finished"] }] }
+py-tu-biped = { depends-on = [{ task = "py-tu", args = ["biped", "main"] }] }
+py-tu-biped-fi = { depends-on = [{ task = "py-tu", args = ["biped", "main_finished"] }] }
+
 test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
     { arg = "build_type", default = "Release" }

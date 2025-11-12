@@ -1,73 +1,113 @@
 # Biped (dartpy)
 
-The dartpy biped tutorial focuses on the core control lessons (PD/SPD tracking,
-ankle strategy, and external pushes) while matching the workflow from the C++
-guide. Skateboard/velocity-actuator lessons from the original tutorial are not
-implemented because the python assets currently target the `fullbody1` model,
-but the surrounding structure (event handlers, SPD gains, ankle controller)
-remains the same.
+## Overview
 
-- Starter code: `python/tutorials/biped/main.py`
-- Finished code: `python/tutorials/biped/main_finished.py`
-- Run the tutorial: `python python/tutorials/biped/main.py`
+The biped tutorial demonstrates stabilizing a human model with PD / SPD
+controllers, ankle strategies, and external pushes.  The python version mirrors
+all conceptual lessons from the original guide but uses the `fullbody1` skeleton
+and the dartpy API throughout.
 
-## Lessons 1 & 2 – Loading and posing the biped
+Run the tutorial via:
 
-`main()` loads `dart://sample/skel/fullbody1.skel`, sets joint limits implicitly
-through the SKEL configuration, and then calls a small block of DOF assignments
-to create the “ready” pose. This matches the work done by `loadBiped()` and
-`setInitialPose()` in the C++ tutorial.
+```bash
+pixi run py tu-biped
+```
 
-## Lesson 3 – SPD controller
+The code lives in `python/tutorials/biped/`.  Each section below references
+functions in `main.py` (the starter file) and highlights the edits required to
+complete the exercise.
 
-Inside `MyWorldNode.customPreStep()` the first block implements the stable PD
-controller using numpy:
+## Lesson 1 – Loading the biped and floor
+
+The tutorial uses two skeletons:
+
+- `fullbody1` – loaded with `dart.utils.SkelParser.readWorld(...)`
+- `floor` – created manually with a `WeldJoint` and a thin box shape
+
+`main()` loads the world, extracts the `fullbody1` skeleton, and adjusts a few
+DOFs to create the initial pose:
 
 ```python
+world = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
+world.setGravity([0.0, -9.81, 0.0])
+biped = world.getSkeleton("fullbody1")
+biped.getDof("j_pelvis_rot_y").setPosition(-0.2)
+# (additional DOF tweaks omitted for brevity)
+```
+
+The floor skeleton is welded to the world, assigned a 10×10×0.01 m box shape,
+and translated downward so the biped stands on top.
+
+## Lesson 2 – Basic PD controller
+
+`MyWorldNode` stores diagonal `Kp`/`Kd` matrices and a target pose `q_d`.  The
+first six rows (floating base) are zeroed out the same way they were in the
+original walkthrough.  The method ``customPreStep()`` computes the SPD torques:
+
+```python
+q = self.skel.getPositions()
+dq = self.skel.getVelocities()
 invM = np.linalg.inv(self.skel.getMassMatrix() + self.Kd * self.timestep)
 p = -self.Kp @ (q + dq * self.timestep - self.q_d)
 d = -self.Kd @ dq
-ddq = invM @ (
-    -self.skel.getCoriolisAndGravityForces() + p + d + constraint_forces
-)
+constraint = self.skel.getConstraintForces()
+cor_grav = self.skel.getCoriolisAndGravityForces()
+ddq = invM @ (-cor_grav + p + d + constraint)
 self.torques = p + d + (-self.Kd @ ddq) * self.timestep
 ```
 
-The gains in `self.Kp` / `self.Kd` mirror the C++ values (floating base rows set
-to zero, large gains elsewhere).
+The computed torques are scaled by ``0.8`` before being applied to the skeleton,
+mirroring the “safety margin” implemented in the reference solution.
 
-## Lesson 4 – Ankle strategy
+## Lesson 3 – Ankle strategy
 
-The next block applies the sagittal-plane ankle strategy. It measures the COM
-offset relative to the left heel/ankle frames and adjusts the toe/heel DOFs:
+After the SPD block the tutorial adds the ankle strategy used to recover from
+small pushes.  The code measures the horizontal offset between the COM and the
+left heel’s COP, then applies corrective torques to the ankle joints:
 
 ```python
+com = self.skel.getCOM()
+cop = self.left_heel.getTransform().multiply([0.05, 0.0, 0.0])
 offset = com[0] - cop[0]
 if 0.0 < offset < 0.1:
+    k1, k2, kd = 200.0, 100.0, 10.0
     self.torques[self.left_foot[0]] += -k1 * offset + kd * (self.pre_offset - offset)
-    ...
+    # (repeat for the other three ankle DOFs)
 elif -0.2 < offset < -0.05:
-    ...
+    k1, k2, kd = 2000.0, 100.0, 100.0
+    # apply backward-recovery torques
 ```
 
-This directly ports the logic from the C++ tutorial to python.
+The strategy writes into the same ``self.torques`` array computed by the SPD
+controller, so the final torques contain both joint-space and task-space
+contributions.
 
-## Lesson 5 – External pushes
+## Lesson 4 – External pushes and visualization
 
-`InputHandler` listens for `'.'` (forward) and `','` (backward) key presses and
-calls `MyWorldNode.set_external_force()`. An `ArrowShape` attached to a
-`SimpleFrame` visualises the applied force and is toggled inside
-`customPreStep()`. You can change the magnitude/duration through
-`DEFAULT_FORCE` and `DEFAULT_COUNTDOWN`.
+`InputHandler` listens for comma and period key presses, which apply pushes along
+the ±X directions.  `MyWorldNode` stores the currently active force and visualises it
+with an `ArrowShape` attached to a `SimpleFrame`.  Each frame the code updates the
+arrow to extend from the spine COM backward along the applied force.  When the
+force timer expires the arrow is hidden and the force is reset to zero.
+
+## Lesson 5 – Wheel commands (optional)
+
+The original tutorial eventually adds skateboard wheels driven by velocity
+commands.  The dartpy tutorial keeps the API surface identical: ``setWheelCommands``
+sets velocity commands for four wheel joints while zeroing out the PD gains for
+those rows.  Toggling the wheel speed with `a`/`s` is left as an experiment in
+`Controller.changeWheelSpeed()`.
 
 ## Keyboard reference
 
-- `space`: pause/resume simulation
-- `p`: replay
-- `'.'`: push the torso forward
-- `','`: push the torso backward
+| Key | Effect |
+| --- | ------ |
+| `space` | Toggle simulation |
+| `p` | Replay |
+| `.` | Apply a forward push to the torso |
+| `,` | Apply a backward push to the torso |
+| `a` | Increase skateboard speed |
+| `s` | Decrease skateboard speed |
 
-The SPD and ankle controllers run continuously, so the character will return to
-its nominal pose after each perturbation. Follow along with the original tutorial
-text for a deeper explanation of each control block—the python file keeps the
-same structure to make cross-referencing easy.
+Use the ankle strategy and SPD controller together to keep the biped upright
+while experimenting with the external push hotkeys.
