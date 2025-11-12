@@ -90,6 +90,13 @@ void addSphereShape(
   node->setRelativeTranslation(offset);
 }
 
+Eigen::Isometry3d makeTranslationIsometry(const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  return tf;
+}
+
 dynamics::SkeletonPtr createGround()
 {
   auto ground = dynamics::Skeleton::create("ground");
@@ -114,7 +121,7 @@ dynamics::SkeletonPtr createLetterD(const Eigen::Vector3d& position)
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto joint = pair.first;
   auto body = pair.second;
-  joint->setTransformFromParentBodyNode(Eigen::Translation3d(position));
+  joint->setTransformFromParentBodyNode(makeTranslationIsometry(position));
 
   const Eigen::Vector3d color = Eigen::Vector3d::Constant(0.05);
   const double width = 0.52;
@@ -165,7 +172,7 @@ dynamics::SkeletonPtr createLetterA(const Eigen::Vector3d& position)
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto joint = pair.first;
   auto body = pair.second;
-  joint->setTransformFromParentBodyNode(Eigen::Translation3d(position));
+  joint->setTransformFromParentBodyNode(makeTranslationIsometry(position));
 
   const Eigen::Vector3d color = Eigen::Vector3d::Constant(0.05);
   const double width = 0.55;
@@ -200,7 +207,7 @@ dynamics::SkeletonPtr createLetterR(const Eigen::Vector3d& position)
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto joint = pair.first;
   auto body = pair.second;
-  joint->setTransformFromParentBodyNode(Eigen::Translation3d(position));
+  joint->setTransformFromParentBodyNode(makeTranslationIsometry(position));
 
   const Eigen::Vector3d color = Eigen::Vector3d::Constant(0.05);
   const double width = 0.52;
@@ -254,7 +261,7 @@ dynamics::SkeletonPtr createLetterT(const Eigen::Vector3d& position)
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto joint = pair.first;
   auto body = pair.second;
-  joint->setTransformFromParentBodyNode(Eigen::Translation3d(position));
+  joint->setTransformFromParentBodyNode(makeTranslationIsometry(position));
 
   const Eigen::Vector3d color = Eigen::Vector3d::Constant(0.05);
   const double width = 0.55;
@@ -282,7 +289,7 @@ dynamics::SkeletonPtr createArrow(const Eigen::Vector3d& position)
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr);
   auto joint = pair.first;
   auto body = pair.second;
-  joint->setTransformFromParentBodyNode(Eigen::Translation3d(position));
+  joint->setTransformFromParentBodyNode(makeTranslationIsometry(position));
 
   const Eigen::Vector3d color = Eigen::Vector3d::Constant(0.05);
 
@@ -316,7 +323,7 @@ dynamics::SkeletonPtr createRainbowChain(Eigen::VectorXd& targetAngles)
   auto baseJoint = basePair.first;
   auto baseBody = basePair.second;
   baseJoint->setTransformFromParentBodyNode(
-      Eigen::Translation3d(Eigen::Vector3d(0.0, 0.0, kChainElevation)));
+      makeTranslationIsometry(Eigen::Vector3d(0.0, 0.0, kChainElevation)));
   setStaticInertia(baseBody);
 
   dynamics::BodyNode* parentBody = baseBody;
@@ -330,8 +337,9 @@ dynamics::SkeletonPtr createRainbowChain(Eigen::VectorXd& targetAngles)
 
     joint->setAxis(Eigen::Vector3d::UnitZ());
     joint->setTransformFromParentBodyNode(
-        (i == 0) ? Eigen::Isometry3d::Identity()
-                 : Eigen::Translation3d(kSegmentLength, 0, 0));
+        (i == 0)
+            ? Eigen::Isometry3d::Identity()
+            : makeTranslationIsometry(Eigen::Vector3d(kSegmentLength, 0, 0)));
     joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     joint->setPositionLimits(
         Eigen::Vector2d(-math::constantsd::pi(), math::constantsd::pi()));
