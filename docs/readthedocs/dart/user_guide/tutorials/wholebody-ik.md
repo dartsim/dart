@@ -9,7 +9,9 @@ This tutorial demonstrates how to use whole-body inverse kinematics (IK) to cont
 - Configuring IK with correct error method bounds
 - Enabling interactive drag-and-drop for IK targets
 
-Please reference the source code in [**tutorial_wholebody_ik/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_wholebody_ik/main.cpp) and [**tutorial_wholebody_ik_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_wholebody_ik_finished/main.cpp) for C++, or [**python/tutorials/wholebody_ik/main.py**](https://github.com/dartsim/dart/blob/main/python/tutorials/wholebody_ik/main.py) and [**python/tutorials/wholebody_ik/main_finished.py**](https://github.com/dartsim/dart/blob/main/python/tutorials/wholebody_ik/main_finished.py) for Python.
+Please reference the source code in [**tutorial_wholebody_ik/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_wholebody_ik/main.cpp) and [**tutorial_wholebody_ik_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_wholebody_ik_finished/main.cpp).
+
+For the Python version of this tutorial, see the [dartpy tutorial](/dartpy/user_guide/tutorials).
 
 ## What is Whole-Body IK?
 
@@ -54,31 +56,6 @@ SkeletonPtr loadAtlasRobot()
 }
 ```
 
-### Python Version
-
-```python
-def load_atlas_robot():
-    loader = dart.utils.DartLoader()
-    atlas = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
-
-    if not atlas:
-        raise RuntimeError("Failed to load Atlas robot!")
-
-    # Set up initial standing pose
-    atlas.getDof("r_leg_hpy").setPosition(-45.0 * np.pi / 180.0)
-    atlas.getDof("r_leg_kny").setPosition(90.0 * np.pi / 180.0)
-    atlas.getDof("r_leg_aky").setPosition(-45.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_hpy").setPosition(-45.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_kny").setPosition(90.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_aky").setPosition(-45.0 * np.pi / 180.0)
-
-    # Prevent knees from bending backwards
-    atlas.getDof("r_leg_kny").setPositionLowerLimit(10.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_kny").setPositionLowerLimit(10.0 * np.pi / 180.0)
-
-    return atlas
-```
-
 The standing pose bends the hips and knees to create a natural standing configuration. We also set joint limits on the knees to prevent them from bending backward, which would be physically unrealistic.
 
 ## Lesson 2: Create End Effectors with Offsets
@@ -104,21 +81,6 @@ EndEffector* createHandEndEffector(
 
   return hand;
 }
-```
-
-### Python Version
-
-```python
-def create_hand_end_effector(hand_body_node, name):
-    # Create transformation for the end effector
-    hand_offset = dart.math.Isometry3()
-    y_offset = 0.12 if name == "l_hand" else -0.12
-    hand_offset.set_translation([0.0, y_offset, 0.0])
-
-    hand = hand_body_node.createEndEffector(name)
-    hand.setDefaultRelativeTransform(hand_offset, True)
-
-    return hand
 ```
 
 The offset is critical because it determines where the IK target will be. Without the offset, the target would be at the wrist joint, which is less intuitive than the palm center.
@@ -178,34 +140,6 @@ void setupHandIK(EndEffector* hand)
 }
 ```
 
-**Python Version:**
-
-```python
-def setup_hand_ik(hand):
-    ik = hand.getIK(True)
-
-    # CRITICAL: Set tight bounds
-    ik.getErrorMethod().setLinearBounds(
-        np.array([-1e-8, -1e-8, -1e-8]),
-        np.array([1e-8, 1e-8, 1e-8])
-    )
-    ik.getErrorMethod().setAngularBounds(
-        np.array([-1e-8, -1e-8, -1e-8]),
-        np.array([1e-8, 1e-8, 1e-8])
-    )
-
-    # Use whole-body IK
-    ik.useWholeBody()
-
-    # Configure solver
-    solver = ik.getSolver()
-    solver.setNumMaxIterations(100)
-    solver.setTolerance(1e-4)
-
-    # Activate IK
-    ik.setActive(True)
-```
-
 ## Lesson 4: Enable Interactive Drag-and-Drop
 
 DART provides a convenient drag-and-drop feature that allows you to interactively move end effectors. When you drag an end effector, the IK solver automatically adjusts the robot's posture to reach the new position.
@@ -228,27 +162,9 @@ int main()
 }
 ```
 
-### Python Version
-
-```python
-def main():
-    # ... previous setup code ...
-
-    viewer = dart.gui.osg.Viewer()
-    viewer.addWorldNode(world_node)
-
-    # Enable drag-and-drop for both hands
-    viewer.enableDragAndDrop(left_hand)
-    viewer.enableDragAndDrop(right_hand)
-
-    viewer.run()
-```
-
 When you run the tutorial, you'll see colored spheres at the hand positions. Click and drag these spheres to move the hands, and watch the entire robot adjust its posture to reach the new positions!
 
 ## Running the Tutorial
-
-### C++ Version
 
 ```bash
 # Build the tutorial
@@ -259,16 +175,6 @@ pixi run build
 
 # Run the finished version
 ./build/default/cpp/Release/bin/tutorial_wholebody_ik_finished
-```
-
-### Python Version
-
-```bash
-# Run the unfinished version (won't work until you complete the TODOs)
-python python/tutorials/wholebody_ik/main.py
-
-# Run the finished version
-python python/tutorials/wholebody_ik/main_finished.py
 ```
 
 ## Key Takeaways
