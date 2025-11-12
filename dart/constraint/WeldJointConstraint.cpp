@@ -144,7 +144,7 @@ void WeldJointConstraint::update()
 //==============================================================================
 void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  const double inf = dart::math::constantsd::inf();
+  const double inf = dart::math::inf;
   const double negInf = -inf;
 
   DART_ASSERT(isActive());

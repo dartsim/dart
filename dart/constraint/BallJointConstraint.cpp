@@ -137,7 +137,7 @@ void BallJointConstraint::update()
 //==============================================================================
 void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  const double inf = dart::math::constantsd::inf();
+  const double inf = dart::math::inf;
 
   DART_ASSERT(_lcp->w[0] == 0.0);
   DART_ASSERT(_lcp->w[1] == 0.0);

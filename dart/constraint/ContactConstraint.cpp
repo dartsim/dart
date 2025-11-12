@@ -364,7 +364,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = dart::math::constantsd::inf();
+    info->hi[0] = dart::math::inf;
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
@@ -426,7 +426,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = dart::math::constantsd::inf();
+    info->hi[0] = dart::math::inf;
     DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------
