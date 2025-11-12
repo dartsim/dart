@@ -404,7 +404,7 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 
   convertTransform(desiredBodyTf, mTargetTranspose, mTargetRotation);
 
-  const auto* skeleton = mIK->getNode()->getSkeleton();
+  const auto skeleton = mIK->getNode()->getSkeleton();
   const auto ikFastNumFreeParams = getNumFreeParameters();
   const auto ikFastFreeParams = getFreeParameters();
   for (auto i = 0; i < ikFastNumFreeParams; ++i)
