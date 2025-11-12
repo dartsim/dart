@@ -157,9 +157,9 @@ static inline void clamp_sincos(double& sincos, bool& valid)
 static inline Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
 {
   Eigen::Vector3d v;
-  v[0] = u[0] - constantsd::pi();
-  v[1] = constantsd::pi() - u[1];
-  v[2] = u[2] - constantsd::pi();
+  v[0] = u[0] - pi;
+  v[1] = pi - u[1];
+  v[2] = u[2] - pi;
   return v;
 }
 
@@ -260,7 +260,7 @@ public:
       clamp_sincos(cosGamma, isValid);
 
       double gamma = flipEP * acos(cosGamma);
-      double theta3 = alpha + beta + gamma - 2 * constantsd::pi();
+      double theta3 = alpha + beta + gamma - 2 * pi;
 
       testQ(EP) = theta3;
 
@@ -275,12 +275,12 @@ public:
       if (std::abs(denom) < zeroSize) {
         isValid = false;
         const double& prevWY = skel->getPosition(mDofs[WY]);
-        theta2 = incWY ? prevWY : constantsd::pi() - prevWY;
+        theta2 = incWY ? prevWY : pi - prevWY;
         s2 = sin(theta2);
       } else {
         s2 = numer / denom;
         clamp_sincos(s2, isValid);
-        theta2 = incWY ? constantsd::pi() - asin(s2) : asin(s2);
+        theta2 = incWY ? pi - asin(s2) : asin(s2);
       }
 
       testQ(WY) = theta2;
@@ -537,7 +537,7 @@ public:
       C45 = cos(q4 + q5);
       C5 = cos(q5);
       if (C45 * L4 + C5 * L5 < 0)
-        q6 = dart::math::wrapToPi(q6 + constantsd::pi());
+        q6 = dart::math::wrapToPi(q6 + pi);
 
       S6 = sin(q6);
       C6 = cos(q6);
@@ -552,7 +552,7 @@ public:
       q1 = atan2(C6 * sy + S6 * sx, C6 * ny + S6 * nx);
       C2 = cos(q2);
       if (C2 < 0)
-        q1 = dart::math::wrapToPi(q1 + constantsd::pi());
+        q1 = dart::math::wrapToPi(q1 + pi);
 
       q345 = atan2(-az / C2, -(C6 * ax - S6 * ay) / C2);
       q3 = dart::math::wrapToPi(q345 - q4 - q5);
@@ -642,16 +642,16 @@ protected:
     L6 = 0.0;
 
     hipRotation = Eigen::Isometry3d::Identity();
-    hipRotation.rotate(Eigen::AngleAxisd(
-        90 * constantsd::pi() / 180.0, Eigen::Vector3d::UnitZ()));
+    hipRotation.rotate(
+        Eigen::AngleAxisd(90 * pi / 180.0, Eigen::Vector3d::UnitZ()));
 
     waist = dofs[2]->getChildBodyNode()->getTransform(
                 dofs[0]->getParentBodyNode())
             * hipRotation;
 
     footTfInv = Eigen::Isometry3d::Identity();
-    footTfInv.rotate(Eigen::AngleAxisd(
-        -90 * constantsd::pi() / 180.0, Eigen::Vector3d::UnitY()));
+    footTfInv.rotate(
+        Eigen::AngleAxisd(-90 * pi / 180.0, Eigen::Vector3d::UnitY()));
     footTfInv
         = footTfInv * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
     footTfInv = footTfInv.inverse();
@@ -750,7 +750,7 @@ public:
 
       double linearStep = 0.01;
       double elevationStep = 0.2 * linearStep;
-      double rotationalStep = 2.0 * constantsd::pi() / 180.0;
+      double rotationalStep = 2.0 * pi / 180.0;
 
       if (mAmplifyMovement) {
         linearStep *= 2.0;

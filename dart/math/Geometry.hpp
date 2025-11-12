@@ -465,7 +465,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// rotations
 inline double wrapToPi(double angle)
 {
-  constexpr auto pi = constantsd::pi();
+  constexpr auto pi = pi;
 
   return std::fmod(angle + pi, 2 * pi) - pi;
 }
