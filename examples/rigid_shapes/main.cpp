@@ -104,8 +104,7 @@ private:
   {
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
-    const Eigen::Vector3d rotation
-        = Random::uniform<Eigen::Vector3d>(-constantsd::pi(), constantsd::pi());
+    const Eigen::Vector3d rotation = Random::uniform<Eigen::Vector3d>(-pi, pi);
     const Eigen::Vector3d position = Eigen::Vector3d(
         Random::uniform(-1.0, 1.0),
         Random::uniform(0.5, 1.0),

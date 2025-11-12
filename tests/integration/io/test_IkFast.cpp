@@ -48,7 +48,7 @@ using namespace dart::test;
 //==============================================================================
 TEST(IkFast, WrapCyclicSolution)
 {
-  const auto pi = math::constantsd::pi();
+  const auto pi = math::pi;
 
   double sol;
 

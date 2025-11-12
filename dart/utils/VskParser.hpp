@@ -89,8 +89,8 @@ struct Options
       = Eigen::Vector3d::Constant(0.05),
       double thicknessRatio = 0.35,
       double density = 1e+3,
-      double jointPositionLowerLimit = -math::constantsd::pi(),
-      double jointPositionUpperLimit = +math::constantsd::pi(),
+      double jointPositionLowerLimit = -math::pi,
+      double jointPositionUpperLimit = +math::pi,
       double jointDampingCoefficient = 0.1,
       double jointFriction = 0.0,
       bool removeEndBodyNodes = false);
