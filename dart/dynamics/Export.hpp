@@ -35,7 +35,7 @@
 #include <dart/common/Export.hpp>
 
 #ifndef DART_DYNAMICS_API
-  #if defined(DART_BUILDING_DART_DYNAMICS)
+  #if defined(DART_BUILDING_DART_DYNAMICS) || defined(DART_BUILDING_DART)
     #define DART_DYNAMICS_API DART_DLL_EXPORT
   #else
     #define DART_DYNAMICS_API DART_DLL_IMPORT
