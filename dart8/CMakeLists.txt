@@ -72,4 +72,11 @@ target_link_libraries(dart8
     spdlog::spdlog
 )
 
+target_compile_definitions(dart8
+  PUBLIC
+    DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
+  PRIVATE
+    DART_BUILDING_DART8
+)
+
 add_library(dart8::dart8 ALIAS dart8)

@@ -104,7 +104,7 @@ struct LinkOptions
 /// \note Handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
 ///       or the World is destroyed.
-class MultiBody
+class DART8_API MultiBody
 {
 public:
   /// Construct a MultiBody handle

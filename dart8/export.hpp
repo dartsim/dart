@@ -32,50 +32,20 @@
 
 #pragma once
 
-#include <dart8/frame/frame.hpp>
+#include <dart/common/Export.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+#ifndef DART8_API
+  #if defined(DART_BUILDING_DART8)
+    #define DART8_API DART_DLL_EXPORT
+  #else
+    #define DART8_API DART_DLL_IMPORT
+  #endif
+#endif
 
-namespace dart8 {
-
-/// FixedFrame - fixed offset from parent frame
-///
-/// A FixedFrame is rigidly attached to a parent frame with a fixed
-/// offset. It has zero velocity and acceleration relative to its parent.
-/// It inherits from Frame to provide coordinate frame functionality.
-///
-/// Use cases:
-/// - Rigidly mounted sensors
-/// - Attachment points on links
-/// - Fixed coordinate frames for collision geometries
-/// - End-effector frames
-///
-/// DART6 equivalent: FixedFrame
-class DART8_API FixedFrame : public Frame,
-                             public EntityObjectWith<
-                                 TagComps<comps::FixedFrameTag>,
-                                 ReadOnlyComps<>,
-                                 WriteOnlyComps<>,
-                                 ReadWriteComps<comps::FixedFrameProperties>>
-{
-public:
-  /// Constructor (package-private, use World::addFixedFrame)
-  FixedFrame(entt::entity entity, World* world);
-
-  //--------------------------------------------------------------------------
-  // Transform API
-  //--------------------------------------------------------------------------
-
-  /// Set the fixed local transform offset
-  ///
-  /// @param transform New fixed transform offset from parent frame
-  void setLocalTransform(const Eigen::Isometry3d& transform);
-
-  /// Get the fixed local transform offset
-  ///
-  /// @return Transform offset from parent frame (local)
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const;
-};
-
-} // namespace dart8
+#ifndef DART8_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART8_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART8_LOCAL
+  #endif
+#endif
