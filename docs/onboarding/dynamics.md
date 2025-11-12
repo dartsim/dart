@@ -272,20 +272,16 @@ double pos = dof->getPosition();
 - **Spatial Inertia Tensor:** 6x6 matrix representation for spatial dynamics
 - **Validation:** Methods to verify physical validity of inertia parameters
 
-**Key Methods:**
-- **Parameter Access:**
-  - `setParameter()`, `getParameter()` - Generic parameter access
-  - `setMass()`, `getMass()`
-  - `setLocalCOM()`, `getLocalCOM()`
-  - `setMoment()`, `getMoment()` - Moment of inertia matrix
-
-- **Spatial Tensor:**
-  - `setSpatialTensor()`, `getSpatialTensor()` - 6x6 spatial inertia
-
-- **Validation:**
-  - `verify()` - Check if inertia is physically valid
-  - `verifyMoment()` - Static method to check moment of inertia
-  - `verifySpatialTensor()` - Static method to check spatial tensor
+**Key Capabilities:**
+- Manage minimal mass properties (mass, COM, moment of inertia) or work directly
+  with the 6x6 spatial inertia tensor for Featherstone-style algorithms.
+- Convert between parameter sets on demand; the class keeps the spatial tensor
+  and scalar parameters in sync regardless of which representation is modified.
+- Re-express an inertia in another frame using a provided transform, which
+  internally applies the spatial adjoint to the tensor and updates the derived
+  COM and moment quantities.
+- Validate inputs (moments/spatial tensor) against physical constraints so that
+  downstream dynamics code can safely assume well-formed inertias.
 
 **Physical Constraints:**
 - Mass must be positive
