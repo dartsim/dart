@@ -463,7 +463,7 @@ std::optional<std::string> canonicalizeSdfWithSdformat(
     return std::nullopt;
   }
 
-  const auto* element = root.Element();
+  const auto element = root.Element();
   if (element == nullptr) {
     DART_WARN(
         "[SdfParser] libsdformat returned an empty document for [{}].",
