@@ -33,13 +33,14 @@
 #ifndef DART_GUI_OSG_VIEWER_HPP_
 #define DART_GUI_OSG_VIEWER_HPP_
 
-#include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Subject.hpp>
 #include <dart/gui/osg/CameraMode.hpp>
 #include <dart/gui/osg/DefaultEventHandler.hpp>
 #include <dart/gui/osg/Export.hpp>
 #include <dart/gui/osg/WorldNode.hpp>
 #include <dart/gui/osg/detail/CameraModeCallback.hpp>
+
+#include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Subject.hpp>
 
 #include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
@@ -81,8 +82,7 @@ class Viewer;
 class SaveScreen;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_GUI_OSG_API ViewerAttachment
-  : public virtual ::osg::Group
+class DART_GUI_OSG_API ViewerAttachment : public virtual ::osg::Group
 {
 public:
   friend class Viewer;
@@ -117,9 +117,8 @@ private:
   Viewer* mViewer;
 };
 
-class DART_GUI_OSG_API Viewer
-  : public osgViewer::Viewer,
-    public dart::common::Subject
+class DART_GUI_OSG_API Viewer : public osgViewer::Viewer,
+                                public dart::common::Subject
 {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the

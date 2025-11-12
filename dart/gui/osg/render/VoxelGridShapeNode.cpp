@@ -51,8 +51,7 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-VoxelBoxDrawable::VoxelBoxDrawable(
-    double size, const Eigen::Vector4d& color)
+VoxelBoxDrawable::VoxelBoxDrawable(double size, const Eigen::Vector4d& color)
 {
   mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
   setColor(eigToOsgVec4f(color));

@@ -32,12 +32,11 @@
 
 #include "dart/gui/osg/WorldNode.hpp"
 
-#include "dart/gui/osg/Viewer.hpp"
-
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Viewer.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <osg/NodeCallback>

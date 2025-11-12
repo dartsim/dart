@@ -33,8 +33,8 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_HPP_
 #define DART_DYNAMICS_ENDEFFECTOR_HPP_
 
-#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/CompositeNode.hpp>
+#include <dart/dynamics/Export.hpp>
 #include <dart/dynamics/FixedJacobianNode.hpp>
 #include <dart/dynamics/detail/EndEffectorAspect.hpp>
 

@@ -48,8 +48,7 @@ namespace osg {
 
 class InteractiveFrame;
 
-class DART_GUI_OSG_API InteractiveTool
-  : public dart::dynamics::SimpleFrame
+class DART_GUI_OSG_API InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
   enum Type
@@ -114,8 +113,7 @@ protected:
   InteractiveFrame* mInteractiveFrame;
 };
 
-class DART_GUI_OSG_API InteractiveFrame
-  : public dart::dynamics::SimpleFrame
+class DART_GUI_OSG_API InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InteractiveFrame)

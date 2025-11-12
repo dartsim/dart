@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_DRAGANDDROP_HPP_
 
 #include "DefaultEventHandler.hpp"
+
 #include <dart/gui/osg/Export.hpp>
 
 #include <dart/dynamics/Entity.hpp>
@@ -59,9 +60,8 @@ class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an dart::gui::osg environment
-class DART_GUI_OSG_API DragAndDrop
-  : public dart::common::Subject,
-    public dart::common::Observer
+class DART_GUI_OSG_API DragAndDrop : public dart::common::Subject,
+                                     public dart::common::Observer
 {
 public:
   enum class RotationOption : int
