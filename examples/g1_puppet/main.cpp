@@ -15,13 +15,20 @@
 #include <dart/dynamics/WeldJoint.hpp>
 
 #include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <dart/all.hpp>
 
+#include <CLI/CLI.hpp>
+
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
+
+#include <cstddef>
+#include <cstdlib>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -127,42 +134,115 @@ struct Options
   std::string robotUri = "package://g1_description/g1_29dof.urdf";
 };
 
-void printUsage(const char* executable)
+std::optional<std::string> getLastPathSegment(std::string value)
 {
-  std::cout
-      << "Usage: " << executable << " [--package-uri URI] [--robot-uri URI]"
-      << "\n\n"
-      << "This example downloads the Unitree G1 humanoid URDF directly "
-         "from GitHub.\n"
-      << "Provide --package-uri to point at a different ROS package root, "
-         "and\n"
-      << "--robot-uri for an alternative URDF/SDF.\n";
+  if (value.empty())
+    return std::nullopt;
+
+  const std::size_t terminator = value.find_first_of("?#");
+  if (terminator != std::string::npos)
+    value.erase(terminator);
+
+  while (!value.empty() && (value.back() == '/' || value.back() == '\\'))
+    value.pop_back();
+
+  if (value.empty())
+    return std::nullopt;
+
+  const std::size_t slash = value.find_last_of("/\\");
+  std::string segment
+      = value.substr(slash == std::string::npos ? 0 : slash + 1);
+
+  if (segment.empty())
+    return std::nullopt;
+
+  return segment;
+}
+
+std::optional<std::string> inferPackageNameFromRobotUri(
+    const std::string& robotUri)
+{
+  if (robotUri.empty())
+    return std::nullopt;
+
+  dart::common::Uri uri;
+  if (!uri.fromStringOrPath(robotUri))
+    return std::nullopt;
+
+  if (!uri.mScheme || *uri.mScheme != "package")
+    return std::nullopt;
+
+  if (!uri.mAuthority)
+    return std::nullopt;
+
+  return uri.mAuthority.get();
+}
+
+std::optional<std::string> inferPackageNameFromPackageUri(
+    const std::string& packageUri)
+{
+  if (packageUri.empty())
+    return std::nullopt;
+
+  dart::common::Uri uri;
+  if (uri.fromStringOrPath(packageUri)) {
+    if (uri.mScheme && *uri.mScheme == "package" && uri.mAuthority)
+      return uri.mAuthority.get();
+
+    if (uri.mPath) {
+      if (auto segment = getLastPathSegment(uri.mPath.get()))
+        return segment;
+    }
+  }
+
+  return getLastPathSegment(packageUri);
 }
 
 Options parseCommandLine(int argc, char* argv[])
 {
   Options options;
 
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-    if ((arg == "--package-uri" || arg == "-p") && i + 1 < argc) {
-      options.packageUri = argv[++i];
-      continue;
-    }
+  CLI::App app(
+      "Download and puppet the Unitree G1 humanoid directly from upstream "
+      "URDF resources.");
 
-    if ((arg == "--robot-uri" || arg == "-r") && i + 1 < argc) {
-      options.robotUri = argv[++i];
-      continue;
-    }
+  auto* packageUriOpt = app.add_option(
+      "-p,--package-uri",
+      options.packageUri,
+      "ROS package root used to resolve package:// URIs (supports file:// "
+      "and http(s)://).");
 
-    if (arg == "--help" || arg == "-h") {
-      printUsage(argv[0]);
-      std::exit(0);
-    }
+  auto* robotUriOpt = app.add_option(
+      "-r,--robot-uri",
+      options.robotUri,
+      "URDF/SDF entry point to load (package://, file://, or http(s)://).");
 
-    std::cerr << "Unknown or incomplete argument '" << arg << "'.\n";
-    printUsage(argv[0]);
-    std::exit(1);
+  auto* packageNameOpt = app.add_option(
+      "--package-name",
+      options.packageName,
+      "Override the ROS package name registered with the package URI.");
+
+  try {
+    app.parse(argc, argv);
+  } catch (const CLI::ParseError& e) {
+    std::exit(app.exit(e));
+  }
+
+  const bool packageNameExplicit = packageNameOpt->count() > 0;
+  const bool packageUriExplicit = packageUriOpt->count() > 0;
+  const bool robotUriExplicit = robotUriOpt->count() > 0;
+
+  if (!packageNameExplicit) {
+    if (robotUriExplicit) {
+      if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
+        options.packageName = *robotName;
+    } else if (packageUriExplicit) {
+      if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
+        options.packageName = *packageName;
+    } else if (
+        auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
+      options.packageName = *robotName;
+    }
   }
 
   return options;

@@ -35,5 +35,14 @@ values:
   --robot-uri package://g1_with_brainco_hand/g1_29dof_with_hand.urdf
 ```
 
+The parser infers the package name from `--robot-uri` when it sees a
+`package://` scheme, but you can override it manually with
+`--package-name <name>` if needed. `./g1_puppet --help` lists every option.
+
+> **CLI dependency:** The example uses [CLI11](https://github.com/CLIUtils/CLI11)
+> for argument parsing. Building DART through `pixi` installs the library
+> automatically; standalone builds should make the CLI11 CMake package
+> discoverable (e.g., `conda install -c conda-forge cli11`).
+
 Use the mouse to drag individual body nodes. The example runs in kinematic mode
 so you can quickly inspect the downloaded model without setting up controllers.
