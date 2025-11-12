@@ -47,10 +47,12 @@ TEST(ConfigurationSpaceTests, RealVectorSpaceInverseUsesLdltFallback)
   // Make the matrix symmetric positive definite so LDLT is well conditioned.
   Eigen::Matrix<double, 5, 5> spd
       = random.transpose() * random + Eigen::Matrix<double, 5, 5>::Identity();
+  const Eigen::Matrix<double, 5, 5> identity
+      = Eigen::Matrix<double, 5, 5>::Identity();
 
   const auto inv = inverse<RealVectorSpace<5>>(spd);
 
-  EXPECT_MATRIX_NEAR(spd * inv, Eigen::Matrix<double, 5, 5>::Identity(), 1e-12);
+  EXPECT_MATRIX_NEAR(spd * inv, identity, 1e-12);
 }
 
 //==============================================================================
