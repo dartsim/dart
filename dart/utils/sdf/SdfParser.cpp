@@ -490,6 +490,8 @@ std::optional<std::string> canonicalizeSdfWithSdformat(
 }
 #endif // HAVE_SDFORMAT
 
+} // anonymous namespace
+
 //==============================================================================
 Options::Options(
     common::ResourceRetrieverPtr resourceRetriever,
