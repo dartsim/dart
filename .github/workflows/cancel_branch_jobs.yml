@@ -1,0 +1,62 @@
+# Cancel queued or running workflow runs for a branch once its PR is merged.
+name: Cancel PR Branch Jobs
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-jobs:
+    name: Cancel workflows for merged branch
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel runs for PR branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const currentRunId = context.runId;
+
+            core.info(`Searching for unfinished runs on branch "${branch}"...`);
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner,
+                repo,
+                branch,
+                per_page: 100,
+              },
+            );
+
+            const cancellableStatuses = new Set(['in_progress', 'queued']);
+            const targets = runs.filter(
+              (run) =>
+                cancellableStatuses.has(run.status) && run.id !== currentRunId,
+            );
+
+            if (targets.length === 0) {
+              core.info('No queued or in-progress runs found for this branch.');
+              return;
+            }
+
+            for (const run of targets) {
+              core.info(
+                `Canceling ${run.name} (run #${run.id}) [status=${run.status}]`,
+              );
+              await github.rest.actions.cancelWorkflowRun({
+                owner,
+                repo,
+                run_id: run.id,
+              });
+            }
+
+            core.info(`Canceled ${targets.length} workflow run(s).`)
