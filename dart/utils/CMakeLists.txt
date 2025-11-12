@@ -2,6 +2,9 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+find_package(CURL)
+dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -30,6 +33,14 @@ set(component_name utils)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
 target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
+
+if(HAVE_CURL)
+  target_include_directories(${target_name} PRIVATE ${CURL_INCLUDE_DIRS})
+  target_link_libraries(${target_name} PRIVATE CURL::libcurl)
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_CURL=1)
+else()
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_CURL=0)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

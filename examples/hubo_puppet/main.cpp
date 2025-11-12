@@ -37,7 +37,7 @@
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/all.hpp>
 
 #include <dart/all.hpp>
 
