@@ -6,9 +6,23 @@ on:
   push:
     branches:
       - "main"
+    paths-ignore:
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "main"
+    paths-ignore:
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     - cron: "0 6 * * 1" # Weekly on Mondays at 06:00 UTC
   workflow_dispatch:
