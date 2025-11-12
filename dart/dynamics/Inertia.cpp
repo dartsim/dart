@@ -216,6 +216,22 @@ const Eigen::Matrix6d& Inertia::getSpatialTensor() const
 }
 
 //==============================================================================
+Inertia Inertia::transformed(const Eigen::Isometry3d& transform) const
+{
+  const Eigen::Matrix6d adjoint = math::getAdTMatrix(transform.inverse());
+  return Inertia(adjoint.transpose() * getSpatialTensor() * adjoint);
+}
+
+//==============================================================================
+Inertia& Inertia::transform(const Eigen::Isometry3d& transform)
+{
+  const Eigen::Matrix6d adjoint = math::getAdTMatrix(transform.inverse());
+  mSpatialTensor = adjoint.transpose() * mSpatialTensor * adjoint;
+  computeParameters();
+  return *this;
+}
+
+//==============================================================================
 bool Inertia::verifyMoment(
     const Eigen::Matrix3d& _moment, bool _printWarnings, double _tolerance)
 {
