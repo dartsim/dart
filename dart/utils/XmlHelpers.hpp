@@ -135,16 +135,6 @@ DART_UTILS_API tinyxml2::XMLElement* getElement(
 DART_UTILS_API bool hasAttribute(
     const tinyxml2::XMLElement* element, const char* const name);
 
-// Please use getAttributeString() instead.
-DART_DEPRECATED(6.0)
-DART_UTILS_API std::string getAttribute(
-    tinyxml2::XMLElement* element, const char* const name);
-
-// Please use getAttributeDouble() instead.
-DART_DEPRECATED(6.0)
-DART_UTILS_API void getAttribute(
-    tinyxml2::XMLElement* element, const char* const name, double* d);
-
 DART_UTILS_API std::string getAttributeString(
     const tinyxml2::XMLElement* element, const std::string& attributeName);
 DART_UTILS_API bool getAttributeBool(

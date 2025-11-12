@@ -34,9 +34,11 @@
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
 #include <dart/dynamics/GenericJoint.hpp>
+
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>

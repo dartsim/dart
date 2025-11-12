@@ -33,10 +33,13 @@
 #ifndef DART_MATH_GEOMETRY_HPP_
 #define DART_MATH_GEOMETRY_HPP_
 
-#include <dart/Export.hpp>
-#include <dart/common/Deprecated.hpp>
 #include <dart/math/Constants.hpp>
 #include <dart/math/MathTypes.hpp>
+
+#include <dart/common/Deprecated.hpp>
+
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 namespace dart {
@@ -461,12 +464,6 @@ DART_API Eigen::Isometry3d computeTransform(
     const Eigen::Vector3d& axis,
     const Eigen::Vector3d& translation,
     AxisType axisType = AxisType::AXIS_X);
-
-/// Generate frame given origin and z-axis
-// clang-format off
-DART_DEPRECATED(6.0) DART_API Eigen::Isometry3d getFrameOriginAxisZ(
-    const Eigen::Vector3d& _origin, const Eigen::Vector3d& _axisZ);
-// clang-format on
 
 /// \brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.

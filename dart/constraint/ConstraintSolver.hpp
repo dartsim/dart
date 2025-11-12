@@ -38,9 +38,11 @@
 #include <dart/constraint/SmartPointer.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
+
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <span>
