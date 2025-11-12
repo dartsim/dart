@@ -36,7 +36,9 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/gui/osg/CameraMode.hpp>
+#include <dart/gui/osg/DefaultEventHandler.hpp>
 #include <dart/gui/osg/Export.hpp>
+#include <dart/gui/osg/WorldNode.hpp>
 #include <dart/gui/osg/detail/CameraModeCallback.hpp>
 
 #include <Eigen/Core>

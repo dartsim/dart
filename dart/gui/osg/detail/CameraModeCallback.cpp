@@ -36,6 +36,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/gui/osg/Utils.hpp"
 
+#include <osg/Texture2D>
+
 namespace dart::gui::osg::detail {
 
 //==============================================================================
