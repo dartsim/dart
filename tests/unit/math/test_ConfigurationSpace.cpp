@@ -88,8 +88,10 @@ TEST(ConfigurationSpaceTests, IntegratePositionSO3MatchesClosedForm)
   const Eigen::Vector3d velocity(0.4, 0.0, -0.25);
   const double dt = 0.02;
 
-  const auto integrated = integratePosition<SO3Space>(pose, velocity, dt);
-  const auto expected = pose * math::expMapRot(velocity * dt);
+  const Eigen::Matrix3d integrated
+      = integratePosition<SO3Space>(pose, velocity, dt);
+  const Eigen::Matrix3d expected
+      = (pose * math::expMapRot(velocity * dt)).eval();
 
   EXPECT_MATRIX_NEAR(integrated, expected, 1e-12);
 }
@@ -105,8 +107,10 @@ TEST(ConfigurationSpaceTests, IntegratePositionSE3AppliesTwistIncrement)
   velocity << 0.2, -0.1, 0.05, 0.25, -0.3, 0.4;
   const double dt = 0.1;
 
-  const auto integrated = integratePosition<SE3Space>(pose, velocity, dt);
-  const auto expected = pose * toManifoldPoint<SE3Space>(velocity * dt);
+  const Eigen::Isometry3d integrated
+      = integratePosition<SE3Space>(pose, velocity, dt);
+  const Eigen::Isometry3d expected
+      = pose * toManifoldPoint<SE3Space>(velocity * dt);
 
   EXPECT_TRUE(integrated.isApprox(expected, 1e-12));
 }
