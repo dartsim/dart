@@ -37,6 +37,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/gui/osg/CameraMode.hpp>
 #include <dart/gui/osg/Export.hpp>
+#include <dart/gui/osg/detail/CameraModeCallback.hpp>
 
 #include <Eigen/Core>
 #include <osgShadow/ShadowTechnique>
