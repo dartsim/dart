@@ -1292,11 +1292,10 @@ dynamics::ShapePtr readShape(
       double offset = getValueDouble(planeEle, "offset");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, offset));
     } else if (hasElement(planeEle, "point")) {
-      DART_WARN(
-          "[readShape] <point> element of <plane> is deprecated as of DART "
-          "4.3. Please use <offset> element instead.");
-      Eigen::Vector3d point = getValueVector3d(planeEle, "point");
-      newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, point));
+      DART_ERROR(
+          "[readShape] <point> element of <plane> was removed. Please use the "
+          "<offset> element instead.");
+      return nullptr;
     } else {
       DART_WARN(
           "[readShape] <offset> element is not specified for plane shape. DART "

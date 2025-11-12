@@ -103,10 +103,11 @@ iterate through these two Shapes in each BodyNode, setting their colors to blue.
 for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
 {
   BodyNode* bn = mPendulum->getBodyNode(i);
-  auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-  for(std::size_t j = 0; j < 2; ++j)
+  const auto numVisualShapeNodes = bn->getNumShapeNodesWith<VisualAspect>();
+  for(std::size_t j = 0; j < 2 && j < numVisualShapeNodes; ++j)
   {
-    visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
+    auto* visualShapeNode = bn->getShapeNodeWith<VisualAspect>(j);
+    visualShapeNode->getVisualAspect()->setColor(dart::Color::Blue());
   }
 
   // TODO: Remove any arrows
@@ -119,9 +120,9 @@ default, this arrow should not be attached, so in the outer for-loop, we should
 check for arrows and remove them:
 
 ```cpp
-if(visualShapeNodes.size() == 3)
+if(numVisualShapeNodes == 3)
 {
-  visualShapeNodes[2]->remove();
+  bn->getShapeNodeWith<VisualAspect>(2)->remove();
 }
 ```
 
@@ -160,7 +161,7 @@ that corresponds to this Joint:
 
 ```cpp
 BodyNode* bn = dof->getChildBodyNode();
-auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+auto* shapeNode = bn->getShapeNodeWith<VisualAspect>(0);
 ```
 
 Because of the way the pendulum bodies were constructed, we trust that the
@@ -168,7 +169,7 @@ zeroth indexed visualization shape will be the shape that depicts the joint.
 So now we will color it red:
 
 ```cpp
-shapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
+shapeNode->getVisualAspect()->setColor(dart::Color::Red());
 ```
 
 ### Lesson 1c: Apply body forces based on user input

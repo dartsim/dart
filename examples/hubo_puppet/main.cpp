@@ -32,6 +32,8 @@
 
 #include "dart/common/Macros.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/utils/all.hpp>
@@ -1113,9 +1115,9 @@ SkeletonPtr createGround()
 SkeletonPtr createHubo()
 {
   dart::utils::DartLoader loader;
-  loader.addPackageDirectory("drchubo", DART_DATA_PATH "/urdf/drchubo");
-  SkeletonPtr hubo
-      = loader.parseSkeleton(DART_DATA_PATH "/urdf/drchubo/drchubo.urdf");
+  loader.addPackageDirectory("drchubo", dart::config::dataPath("urdf/drchubo"));
+  SkeletonPtr hubo = loader.parseSkeleton(
+      dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     BodyNode* bn = hubo->getBodyNode(i);

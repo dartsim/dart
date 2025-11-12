@@ -69,7 +69,8 @@ TEST(VskParser, EmptySkeleton)
 //==============================================================================
 TEST(VskParser, LoadFromFileURI)
 {
-  const std::string prefix = "file://" DART_DATA_LOCAL_PATH "vsk/";
+  const std::string prefix
+      = std::string("file://") + dart::config::dataLocalPath("vsk/");
 
   EXPECT_EQ(VskParser::readSkeleton(prefix + "test/empty.vsk"), nullptr);
   EXPECT_NE(VskParser::readSkeleton(prefix + "Nick01.vsk"), nullptr);

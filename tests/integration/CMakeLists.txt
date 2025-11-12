@@ -227,7 +227,6 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     utils/test_Aspect.cpp
-    utils/test_Common.cpp
     utils/test_Concurrency.cpp
     utils/test_Frames.cpp
     utils/test_Signal.cpp

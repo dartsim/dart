@@ -16,7 +16,7 @@ def test_basic():
     assert joint1.getType() == "FreeJoint"
     assert joint1.getName() == "joint0"
 
-    assert skel.getBodyNodes()[0].getName() == body1.getName()
+    assert skel.getBodyNode(0).getName() == body1.getName()
 
 
 if __name__ == "__main__":

@@ -38,14 +38,13 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
 
 namespace dart {
 namespace constraint {
-
-using dart::lcpsolver::dInfinity;
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -62,17 +61,6 @@ double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;
 double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double ContactConstraint::mConstraintForceMixing = DART_CFM;
-
-//==============================================================================
-ContactConstraint::ContactConstraint(
-    collision::Contact& contact, double timeStep)
-  : ContactConstraint(
-      contact,
-      timeStep,
-      DefaultContactSurfaceHandler().createParams(contact, 1u))
-{
-  // Do nothing
-}
 
 //==============================================================================
 ContactConstraint::ContactConstraint(
@@ -376,7 +364,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = dart::math::constantsd::inf();
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
@@ -438,7 +426,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = dart::math::constantsd::inf();
     DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------
@@ -662,57 +650,6 @@ bool ContactConstraint::isActive() const
 }
 
 //==============================================================================
-double ContactConstraint::computeFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeFrictionCoefficient(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondaryFrictionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
-      shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computePrimarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computePrimarySlipCompliance(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeSecondarySlipCompliance(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeSecondarySlipCompliance(
-      shapeNode);
-}
-
-//==============================================================================
-Eigen::Vector3d ContactConstraint::computeWorldFirstFrictionDir(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(shapeNode);
-}
-
-//==============================================================================
-double ContactConstraint::computeRestitutionCoefficient(
-    const dynamics::ShapeNode* shapeNode)
-{
-  return DefaultContactSurfaceHandler::computeRestitutionCoefficient(shapeNode);
-}
-
 //==============================================================================
 dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
 {

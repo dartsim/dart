@@ -142,13 +142,9 @@ protected:
   /// Canonical path to the shared library where a canonical path is an absolute
   /// path that has no elements which are symbolic links, and no dot or dot dot
   /// elements such as "/path/../to/yourfile".
-  /// \deprecated Use mCanonicalPath2 instead.
   common::filesystem::path mCanonicalPath;
-  // TODO(JS): Remove in DART 7.
 
-  /// Canonical path to the shared library where a canonical path is an absolute
-  /// path that has no elements which are symbolic links, and no dot or dot dot
-  /// elements such as "/path/../to/yourfile".
+  /// Backing string returned by path()
   std::string mPath;
 
   /// Handle to the loaded library.

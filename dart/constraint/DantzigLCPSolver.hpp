@@ -42,9 +42,6 @@
 namespace dart {
 namespace constraint {
 
-/// \deprecated This header has been deprecated in DART 6.7. Please include
-/// DantzigBoxedLcpSolver.hpp instead.
-///
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
 /// algorithm
 class DantzigLCPSolver : public LCPSolver

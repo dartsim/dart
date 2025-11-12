@@ -39,9 +39,11 @@
 
 #include <dart/common/Logging.hpp>
 
+#include <dart/config.hpp>
 #include <dart/lcpsolver/dantzig/lcp.h>
 
 #include <iostream>
+#include <limits>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -83,7 +85,7 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
   mActive = false;
 
   // load neural net weights from external file
-  mNet.load(DART_DATA_PATH "/humanJointLimits/neuralnets/net-larm");
+  mNet.load(dart::config::dataPath("humanJointLimits/neuralnets/net-larm"));
 }
 
 //==============================================================================
@@ -275,7 +277,7 @@ void HumanArmJointLimitConstraint::update()
     mNegativeVel = -mJacobian.dot(q_d);
 
     mLowerBound = 0.0;
-    mUpperBound = dInfinity;
+    mUpperBound = std::numeric_limits<double>::infinity();
     mDim = 1;
   }
 }

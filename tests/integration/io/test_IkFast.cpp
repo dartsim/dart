@@ -32,6 +32,8 @@
 
 #include "helpers/GTestUtils.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/utils/urdf/all.hpp>
 
 #include <dart/all.hpp>
@@ -119,8 +121,9 @@ TEST(IkFast, LoadWamArmIk)
 {
   utils::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
-      "herb_description", DART_DATA_PATH "/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+      "herb_description", dart::config::dataPath("urdf/wam"));
+  auto wam
+      = urdfParser.parseSkeleton(dart::config::dataPath("urdf/wam/wam.urdf"));
   ASSERT_NE(wam, nullptr);
 
   auto wam7 = wam->getBodyNode("/wam7");

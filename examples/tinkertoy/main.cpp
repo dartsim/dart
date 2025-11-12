@@ -33,6 +33,8 @@
 #include "TinkertoyWidget.hpp"
 #include "TinkertoyWorldNode.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/gui/osg/all.hpp>
 
 #include <dart/all.hpp>
@@ -81,7 +83,7 @@ public:
         return true;
       } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Return) {
         if (!mViewer->isRecording())
-          mViewer->record(DART_DATA_PATH "/screencap");
+          mViewer->record(dart::config::dataPath("screencap"));
         else
           mViewer->pauseRecording();
         return true;

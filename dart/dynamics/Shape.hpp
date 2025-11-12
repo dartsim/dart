@@ -39,7 +39,6 @@
 
 #include <dart/common/Castable.hpp>
 #include <dart/common/ClassWithVirtualBase.hpp>
-#include <dart/common/Deprecated.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
@@ -60,7 +59,6 @@ public:
   using VersionChangedSignal
       = common::Signal<void(Shape* shape, std::size_t version)>;
 
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   enum ShapeType
   {
     SPHERE,
@@ -103,7 +101,6 @@ public:
   };
 
   /// \brief Constructor
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   explicit Shape(ShapeType _type);
 
   /// \brief Constructor
@@ -199,7 +196,6 @@ protected:
   /// \brief
   static std::atomic_int mCounter;
 
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   /// Type of primitive shpae.
   ShapeType mType;
 

@@ -24,12 +24,15 @@
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
   * Removed all APIs deprecated in DART 6.7 (legacy math random helpers, `Skeleton::clone()` overloads, and `ConstraintSolver::set/getLCPSolver()`).
   * Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias).
+  * Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   * Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
   * Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   * Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   * Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
   * Removed all APIs deprecated in DART 6.11 (`DartLoader::Flags` and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
   * Removed all APIs deprecated in DART 6.12 (the `SdfParser::readWorld`/`readSkeleton` overloads that accepted direct `ResourceRetriever` parameters).
+  * Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
+  * Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
 
 ## DART 6
 

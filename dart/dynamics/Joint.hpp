@@ -40,7 +40,6 @@
 
 #include <dart/math/MathTypes.hpp>
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>

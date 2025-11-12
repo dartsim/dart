@@ -220,12 +220,10 @@ template <class AspectT>
 const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 {
   std::vector<ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
 
-  auto numShapeNode = getNumShapeNodes();
-
-  for (auto i = 0u; i < numShapeNode; ++i) {
-    auto shapeNode = getShapeNode(i);
-
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    auto* shapeNode = getShapeNode(i);
     if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }
@@ -238,12 +236,10 @@ template <class AspectT>
 const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 {
   std::vector<const ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
 
-  auto numShapeNode = getNumShapeNodes();
-
-  for (auto i = 0u; i < numShapeNode; ++i) {
-    const auto shapeNode = getShapeNode(i);
-
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    const auto* shapeNode = getShapeNode(i);
     if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }

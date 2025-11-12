@@ -98,7 +98,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 
 - **ShapeNode Management:**
   - `createShapeNode()` - Attach collision/visual shapes
-  - `getShapeNodesWith<Aspect>()` - Query shapes with specific aspects
+  - `getNumShapeNodesWith<Aspect>()` / `getShapeNodeWith<Aspect>(index)` - Query shapes with specific aspects
   - `eachShapeNodeWith<Aspect>()` - Iterate over shapes
 
 - **Specialized Nodes:**
@@ -300,7 +300,7 @@ double pos = dof->getPosition();
 **Purpose:** Abstract base class for geometric shapes used for collision detection and visualization.
 
 **Key Features:**
-- **Shape Types:** (enumeration, deprecated - use `getType()` instead)
+- **Shape Types:** (legacy enumeration; prefer `Shape::getType()` for new code)
   - Primitive shapes: Sphere, Box, Ellipsoid, Cylinder, Capsule, Cone, Pyramid
   - Complex shapes: Mesh, SoftMesh, MultiSphere, HeightMap, LineSegment, Plane
 

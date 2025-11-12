@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/Diagnostics.hpp>
 
 #include <Eigen/Dense>
 

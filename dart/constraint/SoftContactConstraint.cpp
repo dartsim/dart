@@ -42,11 +42,10 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
-
-using dart::lcpsolver::dInfinity;
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -448,7 +447,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 
       // Upper and lower bounds of normal impulsive force
       _info->lo[index] = 0.0;
-      _info->hi[index] = dInfinity;
+      _info->hi[index] = dart::math::constantsd::inf();
       DART_ASSERT(_info->findex[index] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
@@ -523,7 +522,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 
       // Upper and lower bounds of normal impulsive force
       _info->lo[i] = 0.0;
-      _info->hi[i] = dInfinity;
+      _info->hi[i] = dart::math::constantsd::inf();
       DART_ASSERT(_info->findex[i] == -1);
 
       //------------------------------------------------------------------------

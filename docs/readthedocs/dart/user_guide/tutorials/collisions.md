@@ -425,7 +425,7 @@ will have exactly one visualization shape: the soft shape visualizer. We can
 grab that shape and reduce the value of its alpha channel:
 
 ```
-auto shape = bn->getShapeNodesWith<VisualAspect>()[0];
+auto* shape = bn->getShapeNodeWith<VisualAspect>(0);
 math::Vector4d color = shape->getVisualAspect()->getRGBA();
 color[3] = 0.4;
 shape->getVisualAspect()->setRGBA(color);

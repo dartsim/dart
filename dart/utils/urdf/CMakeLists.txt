@@ -54,8 +54,6 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} urdfdom)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_urdf headers" ${hdrs})
-# TODO: remove below line once the files are completely removed.
-list(REMOVE_ITEM header_names "URDFTypes.hpp")
 dart_generate_component_headers(
   COMPONENT_NAME urdf
   TARGET_DIR "dart/utils/urdf/"
