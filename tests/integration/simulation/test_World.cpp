@@ -47,7 +47,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -356,7 +356,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
     worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);

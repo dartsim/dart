@@ -155,6 +155,23 @@ dart/
 
 ### Optional Dependencies
 
+### Optional Component Build Flags
+
+Optional targets are now controlled by explicit tri-state CMake options named `DART_BUILD_<feature>`.  
+Each option accepts `AUTO` (default, build when dependencies are detected), `ON` (force enable and fail if a dependency is missing), or `OFF` (never build even if the dependency exists). When a component is built, `dart/config.hpp` exposes a matching `DART_HAVE_*` macro that downstream C++/Python code can use for feature guards.
+
+| Feature / Component        | CMake Option                      | Default | `DART_HAVE_*` Macro | Required Dependencies                 |
+|---------------------------|-----------------------------------|---------|---------------------|---------------------------------------|
+| Bullet collision backend  | `DART_BUILD_COLLISION_BULLET`     | AUTO    | `DART_HAVE_BULLET`  | Bullet                                |
+| ODE collision backend     | `DART_BUILD_COLLISION_ODE`        | AUTO    | `DART_HAVE_ODE`     | ODE                                   |
+| IPOPT optimizer plugin    | `DART_BUILD_OPTIMIZER_IPOPT`      | AUTO    | `DART_HAVE_IPOPT`   | IPOPT                                 |
+| NLopt optimizer plugin    | `DART_BUILD_OPTIMIZER_NLOPT`      | AUTO    | `DART_HAVE_NLOPT`   | NLopt                                 |
+| PaGMO optimizer plugin    | `DART_BUILD_OPTIMIZER_PAGMO`      | AUTO    | `DART_HAVE_PAGMO`   | pagmo (disabled when building wheels) |
+| dart-utils component      | `DART_BUILD_UTILS`                | AUTO    | —                   | tinyxml2                              |
+| dart-utils-urdf component | `DART_BUILD_UTILS_URDF`           | AUTO    | —                   | urdfdom + `dart-utils` target         |
+
+Additional feature macros such as `DART_HAVE_OCTOMAP` and `DART_HAVE_SNOPT` continue to mirror detection results for their respective dependencies.
+
 #### 6. spdlog (Logging)
 - **Version:** ≥ 1.15.3, < 2
 - **Purpose:** Fast C++ logging library

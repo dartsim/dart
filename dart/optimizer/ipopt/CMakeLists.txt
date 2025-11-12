@@ -1,6 +1,26 @@
 # Dependency checks
+set(_dart_build_mode "${DART_BUILD_OPTIMIZER_IPOPT}")
+if(_dart_build_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-ipopt (DART_BUILD_OPTIMIZER_IPOPT=OFF)")
+  endif()
+  set(DART_HAVE_IPOPT FALSE CACHE BOOL "Whether IPOPT support is enabled" FORCE)
+  return()
+endif()
+
 dart_find_package(IPOPT)
-dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.9")
+
+if(NOT IPOPT_FOUND)
+  set(DART_HAVE_IPOPT FALSE CACHE BOOL "Whether IPOPT support is enabled" FORCE)
+  if(_dart_build_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_OPTIMIZER_IPOPT=ON but IPOPT was not found.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-ipopt (IPOPT not found)")
+  endif()
+  return()
+endif()
+
+set(DART_HAVE_IPOPT TRUE CACHE BOOL "Whether IPOPT support is enabled" FORCE)
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

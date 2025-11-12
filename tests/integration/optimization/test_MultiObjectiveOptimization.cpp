@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
-#if HAVE_PAGMO
+#if DART_HAVE_PAGMO
   #include <dart/optimizer/pagmo/All.hpp>
 #endif
 
@@ -168,7 +168,7 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
 //==============================================================================
 TEST(ZDT1, Basic)
 {
-#if HAVE_PAGMO
+#if DART_HAVE_PAGMO
   PagmoMultiObjectiveSolver pagmoSolver;
   testZDT1(pagmoSolver);
   testZDT1Generic(pagmoSolver);

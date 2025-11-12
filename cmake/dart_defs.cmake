@@ -108,7 +108,30 @@ endfunction()
 #===============================================================================
 
 #-------------------------------------------------------------------------------
-# Define a DART option with tracking for display
+# Internal helper to register option metadata for summary printing
+#-------------------------------------------------------------------------------
+function(_dart_register_option variable help_text default_value option_category)
+  if(option_category STREQUAL "")
+    set(option_category "__DART_AUTO__")
+  endif()
+
+  set_property(
+    GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND
+  )
+  set_property(
+    GLOBAL PROPERTY DART_DETAIL_property_option_help_text "${help_text}" APPEND
+  )
+  set_property(
+    GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
+    APPEND
+  )
+  set_property(
+    GLOBAL PROPERTY DART_DETAIL_property_option_category "${option_category}" APPEND
+  )
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Define a DART boolean option with tracking for display
 # Usage:
 #   dart_option(<variable> "<help_text>" <value>)
 #-------------------------------------------------------------------------------
@@ -136,24 +159,8 @@ function(dart_option variable help_text default_value)
     endif()
   endif()
 
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND
-  )
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_help_text "${help_text}" APPEND
-  )
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
-    APPEND
-  )
-  if(option_category STREQUAL "")
-    set(option_category "__DART_AUTO__")
-  endif()
-  set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_category "${option_category}" APPEND
-  )
+  _dart_register_option(${variable} "${help_text}" "${default_value}" "${option_category}")
 
-  # Add option
   option(${variable} ${help_text} ${default_value})
 
   # Normalize boolean value variants (e.g. 1/0, On/Off, TRUE/FALSE) to ON/OFF
@@ -162,6 +169,70 @@ function(dart_option variable help_text default_value)
   else()
     set(${variable} OFF PARENT_SCOPE)
   endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Define a DART choice option (e.g., AUTO/ON/OFF) with tracking
+# Usage:
+#   dart_choice_option(<variable> "<help_text>" <default> CHOICES "A;B" [CATEGORY foo])
+#-------------------------------------------------------------------------------
+function(dart_choice_option variable help_text default_value)
+  set(option_category "")
+  cmake_parse_arguments(
+    DART_CHOICE_OPTION
+    ""
+    "CATEGORY"
+    "CHOICES"
+    ${ARGN}
+  )
+
+  if(DART_CHOICE_OPTION_UNPARSED_ARGUMENTS)
+    message(
+      FATAL_ERROR
+      "dart_choice_option(${variable} ...): unrecognized arguments: ${DART_CHOICE_OPTION_UNPARSED_ARGUMENTS}"
+    )
+  endif()
+
+  if(DART_CHOICE_OPTION_CATEGORY)
+    set(option_category "${DART_CHOICE_OPTION_CATEGORY}")
+  endif()
+
+  if(NOT DART_CHOICE_OPTION_CHOICES)
+    message(
+      FATAL_ERROR
+      "dart_choice_option(${variable} ...): CHOICES argument is required (e.g., CHOICES \"AUTO;ON;OFF\")"
+    )
+  endif()
+
+  set(choices_normalized "")
+  foreach(choice IN LISTS DART_CHOICE_OPTION_CHOICES)
+    string(TOUPPER "${choice}" choice_upper)
+    list(APPEND choices_normalized "${choice_upper}")
+  endforeach()
+
+  string(TOUPPER "${default_value}" default_upper)
+  if(NOT default_upper IN_LIST choices_normalized)
+    message(
+      FATAL_ERROR
+      "dart_choice_option(${variable} ...): default value \"${default_value}\" must be one of: ${choices_normalized}"
+    )
+  endif()
+
+  _dart_register_option(${variable} "${help_text}" "${default_upper}" "${option_category}")
+
+  set(${variable} "${default_upper}" CACHE STRING "${help_text}")
+  set_property(CACHE ${variable} PROPERTY STRINGS ${choices_normalized})
+
+  string(TOUPPER "${${variable}}" current_upper)
+  if(NOT current_upper IN_LIST choices_normalized)
+    message(
+      FATAL_ERROR
+      "\"${${variable}}\" is not a valid value for ${variable}. Allowed values: ${choices_normalized}"
+    )
+  endif()
+
+  set(${variable} "${current_upper}" CACHE STRING "${help_text}" FORCE)
+  set(${variable} "${current_upper}" PARENT_SCOPE)
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -1304,16 +1375,14 @@ endfunction()
 #   version: Optional minimum version requirement (ARGV3)
 #-------------------------------------------------------------------------------
 macro(dart_check_optional_package variable component dependency)
-  option(DART_SKIP_${variable} "If ON, do not use ${variable} even if it is found." OFF)
-  mark_as_advanced(DART_SKIP_${variable})
-  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
-    set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
+  if(${${variable}_FOUND})
+    set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
                      " found")
     endif()
   else()
-    set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${${variable}_FOUND})
       if(ARGV3) # version
         message(WARNING "Looking for ${dependency} - NOT found, to use"
@@ -1322,9 +1391,6 @@ macro(dart_check_optional_package variable component dependency)
         message(WARNING "Looking for ${dependency} - NOT found, to use"
                         " ${component}, please install ${dependency}")
       endif()
-    elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
-      message(STATUS "Not using ${dependency} - version ${${variable}_VERSION}"
-                     " even if found because DART_SKIP_${variable} is ON.")
     endif()
     return()
   endif()

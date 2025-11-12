@@ -180,6 +180,72 @@ if(DART_BUILD_DARTPY8)
   set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
 endif()
 
+# Explicit controls for optional components/features
+set(_dart_optional_choices "AUTO;ON;OFF")
+dart_choice_option(
+  DART_BUILD_COLLISION_BULLET
+  "Build the Bullet collision backend (AUTO builds when Bullet is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_COLLISION_ODE
+  "Build the ODE collision backend (AUTO builds when ODE is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_OPTIMIZER_IPOPT
+  "Build the IPOPT optimizer plugin (AUTO builds when IPOPT is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_OPTIMIZER_NLOPT
+  "Build the NLopt optimizer plugin (AUTO builds when NLopt is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_OPTIMIZER_PAGMO
+  "Build the PaGMO optimizer plugin (AUTO builds when pagmo is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_UTILS
+  "Build the dart-utils component (AUTO builds when tinyxml2 is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+dart_choice_option(
+  DART_BUILD_UTILS_URDF
+  "Build the dart-utils-urdf component (AUTO builds when urdfdom is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
+unset(_dart_optional_choices)
+
+if(DART_BUILD_UTILS_URDF STREQUAL "ON" AND NOT (DART_BUILD_UTILS STREQUAL "ON"))
+  message(FATAL_ERROR "DART_BUILD_UTILS must be ON when DART_BUILD_UTILS_URDF is set to ON")
+endif()
+
+# Normalized default values for feature detection macros
+set(DART_HAVE_IPOPT FALSE CACHE BOOL "Whether IPOPT support is enabled" FORCE)
+set(DART_HAVE_NLOPT FALSE CACHE BOOL "Whether NLopt support is enabled" FORCE)
+set(DART_HAVE_PAGMO FALSE CACHE BOOL "Whether PaGMO support is enabled" FORCE)
+set(DART_HAVE_SNOPT FALSE CACHE BOOL "Whether SNOPT support is enabled" FORCE)
+set(DART_HAVE_BULLET FALSE CACHE BOOL "Whether Bullet support is enabled" FORCE)
+set(DART_HAVE_ODE FALSE CACHE BOOL "Whether ODE support is enabled" FORCE)
+set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Whether OctoMap support is enabled" FORCE)
+
 #===============================================================================
 # Print intro
 #===============================================================================
@@ -288,6 +354,13 @@ else()
 endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
+if(DART_BUILD_WHEELS AND (DART_BUILD_OPTIMIZER_PAGMO STREQUAL "ON"))
+  message(
+    FATAL_ERROR
+    "DART_BUILD_OPTIMIZER_PAGMO=ON is incompatible with DART_BUILD_WHEELS=ON. "
+    "Disable one of these options."
+  )
+endif()
 
 #===============================================================================
 # Find dependencies

@@ -1,6 +1,25 @@
 # Dependency checks
+set(_dart_build_mode "${DART_BUILD_COLLISION_ODE}")
+if(_dart_build_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-collision-ode (DART_BUILD_COLLISION_ODE=OFF)")
+  endif()
+  set(DART_HAVE_ODE FALSE CACHE BOOL "Whether ODE support is enabled" FORCE)
+  return()
+endif()
+
 dart_find_package(ODE)
-dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.13")
+
+if(NOT ODE_FOUND)
+  message(WARNING "Looking for ODE - NOT found, to use dart-collision-ode, please install libode-dev")
+  set(DART_HAVE_ODE FALSE CACHE BOOL "Whether ODE support is enabled" FORCE)
+  if(_dart_build_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_COLLISION_ODE=ON but ODE was not found.")
+  endif()
+  return()
+endif()
+
+set(DART_HAVE_ODE TRUE CACHE BOOL "Whether ODE support is enabled" FORCE)
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

@@ -24,7 +24,7 @@ add_subdirectory(imgui)
 add_subdirectory(joint_constraints)
 add_subdirectory(mixed_chain)
 add_subdirectory(operational_space_control)
-if(HAVE_OCTOMAP)
+if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
 # TODO: Re-enable when rerun example has source files

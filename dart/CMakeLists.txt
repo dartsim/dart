@@ -76,7 +76,13 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
-add_subdirectory(utils) # tinyxml2, bullet
+if(NOT (DART_BUILD_UTILS STREQUAL "OFF"))
+  add_subdirectory(utils) # tinyxml2, bullet
+else()
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-utils component (DART_BUILD_UTILS=OFF)")
+  endif()
+endif()
 add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
