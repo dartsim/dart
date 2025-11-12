@@ -37,6 +37,7 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <dart/dynamics/All.hpp>
@@ -111,14 +112,19 @@ void runIssue1234Test(
   const auto box
       = std::make_shared<dart::dynamics::BoxShape>(bb.getMax() - bb.getMin());
 
-  const auto sphere = std::make_shared<dart::dynamics::SphereShape>(
-      bb.getMax()[0] - bb.getMin()[0]);
+  const std::string concaveUri = "dart://sample/obj/foot.obj";
+  const auto concaveScene = dart::dynamics::MeshShape::loadMesh(
+      concaveUri, dart::utils::DartResourceRetriever::create());
+  ASSERT_TRUE(concaveScene);
+  const auto concaveMesh = std::make_shared<dart::dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), concaveScene, concaveUri);
+
+  const std::vector<dart::dynamics::ShapePtr> shapes = {box, mesh, concaveMesh};
 
   std::size_t numTests = 0;
   std::size_t numPasses = 0;
 
-  for (const dart::dynamics::ShapePtr& shape :
-       {dart::dynamics::ShapePtr{box}, dart::dynamics::ShapePtr{mesh}}) {
+  for (const dart::dynamics::ShapePtr& shape : shapes) {
     for (const double offset : {-0.1, 0.0, 0.1}) {
       for (const auto& normal :
            {Eigen::Vector3d(0.0, 0.0, 1.0),
@@ -171,4 +177,15 @@ TEST(Issue1234, ODE)
 {
   runIssue1234Test(
       [] { return dart::collision::OdeCollisionDetector::create(); });
+}
+
+//==============================================================================
+TEST(Issue1234, FCL)
+{
+  runIssue1234Test([] {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    detector->setPrimitiveShapeType(
+        dart::collision::FCLCollisionDetector::MESH);
+    return detector;
+  });
 }

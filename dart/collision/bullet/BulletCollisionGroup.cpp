@@ -179,6 +179,9 @@ BulletCollisionGroup::BulletCollisionGroup(
         mBulletProadphaseAlg.get(),
         mBulletCollisionConfiguration.get()))
 {
+  auto* dispatcher
+      = static_cast<btCollisionDispatcher*>(mBulletDispatcher.get());
+  btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
   ensureBulletAllocator();
   // Do nothing
 }
