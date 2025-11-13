@@ -50,9 +50,9 @@ using namespace dart::simulation;
 //==============================================================================
 std::shared_ptr<World> createWorld()
 {
-  auto world = simulation::World::create(simulation::WorldConfig{
-      .collisionDetector = CollisionDetectorType::Ode,
-  });
+  simulation::WorldConfig config;
+  config.collisionDetector = CollisionDetectorType::Ode;
+  auto world = simulation::World::create(config);
   return world;
 }
 

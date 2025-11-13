@@ -88,10 +88,9 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   // subscribe to them.
   const auto cdType = toCollisionDetectorType(GetParam());
   ASSERT_TRUE(cdType.has_value());
-  dart::simulation::WorldPtr world
-      = dart::simulation::World::create(WorldConfig{
-          .collisionDetector = *cdType,
-      });
+  WorldConfig config;
+  config.collisionDetector = *cdType;
+  dart::simulation::WorldPtr world = dart::simulation::World::create(config);
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
@@ -303,10 +302,9 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   // subscribe to them.
   const auto cdType = toCollisionDetectorType(GetParam());
   ASSERT_TRUE(cdType.has_value());
-  dart::simulation::WorldPtr world
-      = dart::simulation::World::create(WorldConfig{
-          .collisionDetector = *cdType,
-      });
+  WorldConfig config;
+  config.collisionDetector = *cdType;
+  dart::simulation::WorldPtr world = dart::simulation::World::create(config);
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");

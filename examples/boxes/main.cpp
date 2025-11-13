@@ -76,9 +76,9 @@ using dart::simulation::CollisionDetectorType;
 int main()
 {
   // Create an empty world
-  auto world = simulation::World::create(simulation::WorldConfig{
-      .collisionDetector = CollisionDetectorType::Bullet,
-  });
+  simulation::WorldConfig config;
+  config.collisionDetector = CollisionDetectorType::Bullet;
+  auto world = simulation::World::create(config);
 
   // Create dim x dim x dim boxes
   auto dim = 5;

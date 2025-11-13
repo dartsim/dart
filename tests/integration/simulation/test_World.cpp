@@ -357,10 +357,10 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
   if (!factory->canCreate("dart"))
     GTEST_SKIP() << "dart collision detector is not available in this build";
 
-  auto world = World::create(WorldConfig{
-      .name = "configured-world",
-      .collisionDetector = CollisionDetectorType::Dart,
-  });
+  WorldConfig config;
+  config.name = "configured-world";
+  config.collisionDetector = CollisionDetectorType::Dart;
+  auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
 }
