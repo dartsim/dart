@@ -33,6 +33,7 @@
 #include <nanobind/nanobind.h>
 
 #include "dart/config.hpp"
+#include "common/module.hpp"
 #include "math/module.hpp"
 
 namespace nb = nanobind;
@@ -46,6 +47,9 @@ NB_MODULE(dartpy_nb, m)
 #else
   m.attr("__version__") = DART_VERSION;
 #endif
+
+  auto common = m.def_submodule("common", "Common utilities backed by nanobind");
+  dart::python_nb::defCommonModule(common);
 
   auto math = m.def_submodule("math", "Math utilities backed by nanobind");
   dart::python_nb::defMathModule(math);
