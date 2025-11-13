@@ -1,0 +1,128 @@
+# Cancel queued or running workflow runs for a branch once its PR is merged.
+name: Cancel PR Branch Jobs
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-jobs:
+    name: Cancel workflows for merged branch
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel runs for PR branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const headRepo = context.payload.pull_request.head.repo;
+            const baseRepo = context.payload.pull_request.base.repo;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const currentRunId = context.runId;
+
+            if (!headRepo || !baseRepo) {
+              core.warning(
+                'Head/base repository information is unavailable; skip cancellation to avoid affecting other forks.',
+              );
+              return;
+            }
+
+            const headRepoId =
+              typeof headRepo.id === 'number' ? headRepo.id : undefined;
+            const headRepoFullName = headRepo?.full_name?.toLowerCase();
+            const headRepoLabel =
+              headRepoFullName ?? (headRepoId ? String(headRepoId) : 'unknown');
+            const headOwnerLogin = headRepo?.owner?.login?.toLowerCase();
+            const baseOwnerLogin = baseRepo?.owner?.login?.toLowerCase();
+            const headOwnerId =
+              typeof headRepo?.owner?.id === 'number'
+                ? headRepo.owner.id
+                : undefined;
+            const baseOwnerId =
+              typeof baseRepo?.owner?.id === 'number'
+                ? baseRepo.owner.id
+                : undefined;
+
+            const ownersDiffer =
+              (typeof headOwnerId === 'number' &&
+                typeof baseOwnerId === 'number' &&
+                headOwnerId !== baseOwnerId) ||
+              (headOwnerLogin &&
+                baseOwnerLogin &&
+                headOwnerLogin !== baseOwnerLogin);
+
+            if (ownersDiffer) {
+              core.info(
+                `Skipping cancellation: PR head repo owner (${headOwnerLogin ??
+                  headOwnerId}) differs from base repo owner (${baseOwnerLogin ??
+                  baseOwnerId}).`,
+              );
+              return;
+            }
+
+            core.info(
+              `Searching for unfinished runs on branch "${branch}" from repo "${headRepoLabel}"...`,
+            );
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner,
+                repo,
+                branch,
+                per_page: 100,
+              },
+            );
+
+            const cancellableStatuses = new Set(['in_progress', 'queued']);
+            const targets = runs.filter((run) => {
+              if (!cancellableStatuses.has(run.status)) return false;
+              if (run.id === currentRunId) return false;
+              if (run.head_branch !== branch) return false;
+              if (!run.head_repository) return false;
+
+              const matchesId =
+                typeof headRepoId === 'number' &&
+                run.head_repository.id === headRepoId;
+              const matchesFullName =
+                headRepoFullName &&
+                run.head_repository.full_name?.toLowerCase() ===
+                  headRepoFullName;
+
+              return matchesId || matchesFullName;
+            });
+
+            if (targets.length === 0) {
+              core.info('No queued or in-progress runs found for this branch.');
+              return;
+            }
+
+            for (const run of targets) {
+              core.info(
+                `Canceling ${run.name} (run #${run.id}) [status=${run.status}]`,
+              );
+              try {
+                await github.rest.actions.cancelWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    `Insufficient permissions to cancel run #${run.id}; skipping remaining cancellations.`,
+                  );
+                  return;
+                }
+                throw error;
+              }
+            }
+
+            core.info(`Canceled ${targets.length} workflow run(s).`)
