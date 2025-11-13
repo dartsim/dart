@@ -17,6 +17,7 @@ import argparse
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 
@@ -50,6 +51,47 @@ class Symbols:
 
 
 PIXI_DEFAULT_DARTPY = "ON"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+
+def _env_flag_enabled(name: str, default: str = "ON") -> bool:
+    """Helper to treat ON/OFF/0/1 env values as booleans."""
+    value = os.environ.get(name, default)
+    if value is None:
+        return True
+    return value.upper() not in {"OFF", "0", "FALSE"}
+
+
+def _cmake_option_enabled(option: str) -> Optional[bool]:
+    """Return bool if option present in CMakeCache, otherwise None."""
+    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    cache_path = ROOT_DIR / "build" / env_name / "cpp" / build_type / "CMakeCache.txt"
+    if not cache_path.is_file():
+        return None
+
+    needle = f"{option}:BOOL="
+    with cache_path.open("r", encoding="utf-8", errors="ignore") as cache:
+        for line in cache:
+            if line.startswith(needle):
+                value = line.strip().split("=", maxsplit=1)[-1].upper()
+                return value == "ON"
+    return None
+
+
+def _ninja_target_exists(build_type: str, target: str) -> Optional[bool]:
+    """Check if the Ninja generator defined a specific target."""
+    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    ninja_file = ROOT_DIR / "build" / env_name / "cpp" / build_type / "build.ninja"
+    if not ninja_file.is_file():
+        return None
+
+    pattern = f"build {target}:"
+    with ninja_file.open("r", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            if line.startswith(pattern):
+                return True
+    return False
 
 
 def pixi_command(task: str, *args: str) -> str:
@@ -249,6 +291,16 @@ def run_python_tests() -> bool:
     """Run Python tests"""
     print_header("PYTHON TESTS")
 
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    cmake_flag = _cmake_option_enabled("DART_BUILD_DARTPY")
+    if cmake_flag is False:
+        print_warning("Skipping python tests because DART_BUILD_DARTPY is OFF in build")
+        return True
+
+    if not _env_flag_enabled("DART_BUILD_DARTPY_OVERRIDE", PIXI_DEFAULT_DARTPY):
+        print_warning("Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF")
+        return True
+
     # Check if Python bindings are enabled
     result, _ = run_command(pixi_command("test-py"), "Python tests")
 
@@ -258,6 +310,20 @@ def run_python_tests() -> bool:
 def run_dartpy8_tests() -> bool:
     """Run dartpy8 smoke test."""
     print_header("DARTPY8 SMOKE TEST")
+
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    cmake_flag = _cmake_option_enabled("DART_BUILD_DARTPY8")
+    if cmake_flag is False:
+        print_warning(
+            "Skipping dartpy8 smoke test because DART_BUILD_DARTPY8 is OFF in build"
+        )
+        return True
+
+    if not _env_flag_enabled("DART_BUILD_DARTPY8_OVERRIDE", PIXI_DEFAULT_DARTPY):
+        print_warning(
+            "Skipping dartpy8 smoke test because DART_BUILD_DARTPY8_OVERRIDE is OFF"
+        )
+        return True
 
     result, _ = run_command(
         pixi_command("test-dartpy8", "Release"), "dartpy8 smoke test"
@@ -420,3 +486,16 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+    target_exists = _ninja_target_exists(build_type, "pytest")
+    if target_exists is False:
+        print_warning(
+            "Skipping python tests because Ninja target 'pytest' was not generated"
+        )
+        return True
+
+    target_exists = _ninja_target_exists(build_type, "dartpy8")
+    if target_exists is False:
+        print_warning(
+            "Skipping dartpy8 smoke test because Ninja target 'dartpy8' was not generated"
+        )
+        return True
