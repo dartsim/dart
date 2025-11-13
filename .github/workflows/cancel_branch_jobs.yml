@@ -22,13 +22,14 @@ jobs:
           script: |
             const branch = context.payload.pull_request.head.ref;
             const headRepo = context.payload.pull_request.head.repo;
+            const baseRepo = context.payload.pull_request.base.repo;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const currentRunId = context.runId;
 
-            if (!headRepo) {
+            if (!headRepo || !baseRepo) {
               core.warning(
-                'Head repository information is unavailable; skip cancellation to avoid affecting other forks.',
+                'Head/base repository information is unavailable; skip cancellation to avoid affecting other forks.',
               );
               return;
             }
@@ -38,6 +39,33 @@ jobs:
             const headRepoFullName = headRepo?.full_name?.toLowerCase();
             const headRepoLabel =
               headRepoFullName ?? (headRepoId ? String(headRepoId) : 'unknown');
+            const headOwnerLogin = headRepo?.owner?.login?.toLowerCase();
+            const baseOwnerLogin = baseRepo?.owner?.login?.toLowerCase();
+            const headOwnerId =
+              typeof headRepo?.owner?.id === 'number'
+                ? headRepo.owner.id
+                : undefined;
+            const baseOwnerId =
+              typeof baseRepo?.owner?.id === 'number'
+                ? baseRepo.owner.id
+                : undefined;
+
+            const ownersDiffer =
+              (typeof headOwnerId === 'number' &&
+                typeof baseOwnerId === 'number' &&
+                headOwnerId !== baseOwnerId) ||
+              (headOwnerLogin &&
+                baseOwnerLogin &&
+                headOwnerLogin !== baseOwnerLogin);
+
+            if (ownersDiffer) {
+              core.info(
+                `Skipping cancellation: PR head repo owner (${headOwnerLogin ??
+                  headOwnerId}) differs from base repo owner (${baseOwnerLogin ??
+                  baseOwnerId}).`,
+              );
+              return;
+            }
 
             core.info(
               `Searching for unfinished runs on branch "${branch}" from repo "${headRepoLabel}"...`,
@@ -80,11 +108,21 @@ jobs:
               core.info(
                 `Canceling ${run.name} (run #${run.id}) [status=${run.status}]`,
               );
-              await github.rest.actions.cancelWorkflowRun({
-                owner,
-                repo,
-                run_id: run.id,
-              });
+              try {
+                await github.rest.actions.cancelWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    `Insufficient permissions to cancel run #${run.id}; skipping remaining cancellations.`,
+                  );
+                  return;
+                }
+                throw error;
+              }
             }
 
             core.info(`Canceled ${targets.length} workflow run(s).`)
