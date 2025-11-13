@@ -240,7 +240,7 @@ def run_dart8_tests() -> bool:
     print_header("DART8 TESTS")
 
     result, _ = run_command(
-        pixi_command("test-dart8", PIXI_DEFAULT_DARTPY, "Release"), "dart8 C++ tests"
+        pixi_command("test-dart8", PIXI_DEFAULT_DARTPY), "dart8 C++ tests"
     )
     return result
 
