@@ -247,7 +247,10 @@ void World(py::module& m)
           ::py::arg("collisionDetectorType"))
       .def(
           "getCollisionDetector",
-          &dart::simulation::World::getCollisionDetector)
+          +[](dart::simulation::World* self)
+              -> dart::collision::CollisionDetectorPtr {
+            return self->getCollisionDetector();
+          })
       .def(
           "reset",
           +[](dart::simulation::World* self) -> void { return self->reset(); })
