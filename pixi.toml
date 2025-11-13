@@ -59,7 +59,22 @@ urdfdom = ">=4.0.1,<5"
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
-config = { cmd = """
+config = { cmd = ["bash", "-lc", """
+    DART_BUILD_DARTPY_VALUE="$DART_BUILD_DARTPY_OVERRIDE"
+    if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
+        DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
+    fi
+
+    DART_BUILD_DARTPY8_VALUE="$DART_BUILD_DARTPY8_OVERRIDE"
+    if [ -z "$DART_BUILD_DARTPY8_VALUE" ]; then
+        DART_BUILD_DARTPY8_VALUE="{{ dartpy }}"
+    fi
+
+    DART_BUILD_GUI_OSG_VALUE="$DART_BUILD_GUI_OSG_OVERRIDE"
+    if [ -z "$DART_BUILD_GUI_OSG_VALUE" ]; then
+        DART_BUILD_GUI_OSG_VALUE="ON"
+    fi
+
     cmake \
         -G Ninja \
         -S . \
@@ -67,17 +82,18 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DARTPY=$DART_BUILD_DARTPY_VALUE \
         -DDART_BUILD_DART8=ON \
-        -DDART_BUILD_DARTPY8={{ dartpy }} \
+        -DDART_BUILD_DARTPY8=$DART_BUILD_DARTPY8_VALUE \
         -DDART_BUILD_PROFILE=ON \
+        -DDART_BUILD_GUI_OSG=$DART_BUILD_GUI_OSG_VALUE \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
+"""], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
     { arg = "dartpy", default = "ON" },
 ] }
 
