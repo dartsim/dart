@@ -1202,8 +1202,9 @@ endmacro()
 #
 # This macro generates:
 #   1. All.hpp - The new meta header that includes all component headers
-#   2. <component_name>.hpp - Deprecated header that includes All.hpp with warning
-#   3. PascalCase compatibility headers for snake_case files (automatic)
+#   2. all.hpp - Deprecated meta header that includes All.hpp with warning
+#   3. <component_name>.hpp - Deprecated header that includes All.hpp with warning
+#   4. PascalCase compatibility headers for snake_case files (automatic)
 #
 # If SOURCE_HEADERS is provided, generates PascalCase compatibility headers
 # for all snake_case files in SOURCE_HEADERS.
@@ -1220,6 +1221,20 @@ macro(dart_generate_component_headers)
   foreach(header IN LISTS DART_GCH_HEADERS)
     file(APPEND ${all_hpp_path} "#include \"${DART_GCH_TARGET_DIR}${header}\"\n")
   endforeach()
+
+  # Generate all.hpp (deprecated compatibility header)
+  set(lower_all_hpp_path "${DART_GCH_OUTPUT_DIR}/all.hpp")
+  file(WRITE ${lower_all_hpp_path} "// Automatically generated file by cmake\n\n")
+  file(APPEND ${lower_all_hpp_path} "// DEPRECATED: This header is deprecated and will be removed in the next major release.\n")
+  file(APPEND ${lower_all_hpp_path} "// Please use <${DART_GCH_TARGET_DIR}All.hpp> instead of <${DART_GCH_TARGET_DIR}all.hpp>\n\n")
+  file(APPEND ${lower_all_hpp_path} "#ifndef DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n")
+  file(APPEND ${lower_all_hpp_path} "#if defined(_MSC_VER)\n")
+  file(APPEND ${lower_all_hpp_path} "#  pragma message(\"Warning: ${DART_GCH_TARGET_DIR}all.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\")\n")
+  file(APPEND ${lower_all_hpp_path} "#elif defined(__GNUC__) || defined(__clang__)\n")
+  file(APPEND ${lower_all_hpp_path} "#  warning \"${DART_GCH_TARGET_DIR}all.hpp is deprecated. Use ${DART_GCH_TARGET_DIR}All.hpp instead.\"\n")
+  file(APPEND ${lower_all_hpp_path} "#endif\n")
+  file(APPEND ${lower_all_hpp_path} "#endif // DART_SUPPRESS_DEPRECATED_HEADER_WARNING\n\n")
+  file(APPEND ${lower_all_hpp_path} "#include \"${DART_GCH_TARGET_DIR}All.hpp\"\n")
 
   # Generate <component_name>.hpp (deprecated header with backward compatibility)
   set(deprecated_hpp_path "${DART_GCH_OUTPUT_DIR}/${DART_GCH_COMPONENT_NAME}.hpp")
