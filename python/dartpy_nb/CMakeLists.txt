@@ -70,6 +70,11 @@ if(NOT _dartpy_nb_nanobind_found)
 endif()
 
 set(dartpy_nb_headers
+  common/module.hpp
+  common/logging.hpp
+  common/stopwatch.hpp
+  common/string.hpp
+  common/uri.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -78,6 +83,11 @@ set(dartpy_nb_headers
 
 set(dartpy_nb_sources
   dartpy_nb.cpp
+  common/module.cpp
+  common/logging.cpp
+  common/stopwatch.cpp
+  common/string.cpp
+  common/uri.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp
