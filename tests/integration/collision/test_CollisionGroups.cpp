@@ -43,34 +43,11 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
-#include <optional>
-
-using dart::simulation::CollisionDetectorType;
-using dart::simulation::WorldConfig;
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>
 {
 };
-
-namespace {
-
-std::optional<CollisionDetectorType> toCollisionDetectorType(
-    const std::string& name)
-{
-  const auto lower = dart::common::toLower(name);
-  if (lower == "dart")
-    return CollisionDetectorType::Dart;
-  if (lower == "fcl")
-    return CollisionDetectorType::FCL;
-  if (lower == "bullet")
-    return CollisionDetectorType::Bullet;
-  if (lower == "ode")
-    return CollisionDetectorType::Ode;
-  return std::nullopt;
-}
-
-} // namespace
 
 TEST_P(CollisionGroupsTest, SkeletonSubscription)
 {
@@ -86,11 +63,9 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
 
   // Note: When skeletons are added to a world, the constraint solver will
   // subscribe to them.
-  const auto cdType = toCollisionDetectorType(GetParam());
-  ASSERT_TRUE(cdType.has_value());
-  WorldConfig config;
-  config.collisionDetector = *cdType;
-  dart::simulation::WorldPtr world = dart::simulation::World::create(config);
+  dart::simulation::WorldPtr world = dart::simulation::World::create();
+  world->setCollisionDetector(
+      dart::collision::CollisionDetector::getFactory()->create(GetParam()));
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
@@ -300,11 +275,11 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   }
   // Note: When skeletons are added to a world, the constraint solver will
   // subscribe to them.
-  const auto cdType = toCollisionDetectorType(GetParam());
-  ASSERT_TRUE(cdType.has_value());
-  WorldConfig config;
-  config.collisionDetector = *cdType;
-  dart::simulation::WorldPtr world = dart::simulation::World::create(config);
+  dart::simulation::WorldPtr world = dart::simulation::World::create();
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+
+  world->setCollisionDetector(cd);
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");

@@ -105,10 +105,9 @@ TEST(Issue1184, Accuracy)
     for (const auto& objectShapeFunction : objectShapeFunctions) {
       for (const double halfsize : halfsizes) {
         for (const bool falling : fallingModes) {
-          dart::simulation::WorldConfig config;
-          config.name = "test";
-          config.collisionDetector = CollisionDetectorType::Bullet;
-          auto world = dart::simulation::World::create(config);
+          auto world = dart::simulation::World::create("test");
+          world->setCollisionDetector(
+              dart::collision::BulletCollisionDetector::create());
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
           const double initialHeight

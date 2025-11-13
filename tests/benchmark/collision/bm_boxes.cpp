@@ -81,9 +81,10 @@ namespace {
 [[nodiscard]] simulation::WorldPtr createWorld(size_t dim)
 {
   // Create an empty world
-  simulation::WorldConfig config;
-  config.collisionDetector = CollisionDetectorType::Bullet;
-  auto world = simulation::World::create(config);
+  auto world = simulation::World::create();
+
+  // Set collision detector type
+  world->setCollisionDetector(collision::BulletCollisionDetector::create());
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {
