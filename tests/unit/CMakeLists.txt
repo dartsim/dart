@@ -16,6 +16,9 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Raycast dart-collision-bullet)
 endif()
 
+dart_add_test("unit" test_CollisionResult collision/test_CollisionResult.cpp)
+target_link_libraries(test_CollisionResult dart-collision-fcl)
+
 # ==============================================================================
 # Common Tests
 # ==============================================================================
