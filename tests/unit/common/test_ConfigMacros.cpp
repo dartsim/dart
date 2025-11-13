@@ -31,6 +31,9 @@
 #ifndef DART_HAVE_SNOPT
   #error "DART_HAVE_SNOPT must be defined"
 #endif
+#ifndef DART_HAVE_GUI_OSG
+  #error "DART_HAVE_GUI_OSG must be defined"
+#endif
 
 namespace dart::unittest {
 

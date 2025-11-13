@@ -142,7 +142,6 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
@@ -231,10 +230,20 @@ dart_choice_option(
   CHOICES "${_dart_optional_choices}"
   CATEGORY build
 )
+dart_choice_option(
+  DART_BUILD_GUI_OSG
+  "Build the OpenSceneGraph GUI backend (AUTO builds when OSG is available)"
+  AUTO
+  CHOICES "${_dart_optional_choices}"
+  CATEGORY build
+)
 unset(_dart_optional_choices)
 
-if(DART_BUILD_UTILS_URDF STREQUAL "ON" AND NOT (DART_BUILD_UTILS STREQUAL "ON"))
-  message(FATAL_ERROR "DART_BUILD_UTILS must be ON when DART_BUILD_UTILS_URDF is set to ON")
+if(DART_BUILD_UTILS_URDF STREQUAL "ON" AND DART_BUILD_UTILS STREQUAL "OFF")
+  message(FATAL_ERROR "DART_BUILD_UTILS must not be OFF when DART_BUILD_UTILS_URDF is set to ON")
+endif()
+if(DART_BUILD_GUI_OSG STREQUAL "ON" AND DART_BUILD_UTILS STREQUAL "OFF")
+  message(FATAL_ERROR "DART_BUILD_UTILS must not be OFF when DART_BUILD_GUI_OSG is set to ON")
 endif()
 
 # Normalized default values for feature detection macros
@@ -245,6 +254,7 @@ set(DART_HAVE_SNOPT FALSE CACHE BOOL "Whether SNOPT support is enabled" FORCE)
 set(DART_HAVE_BULLET FALSE CACHE BOOL "Whether Bullet support is enabled" FORCE)
 set(DART_HAVE_ODE FALSE CACHE BOOL "Whether ODE support is enabled" FORCE)
 set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Whether OctoMap support is enabled" FORCE)
+set(DART_HAVE_GUI_OSG FALSE CACHE BOOL "Whether the OSG GUI backend is enabled" FORCE)
 
 #===============================================================================
 # Print intro

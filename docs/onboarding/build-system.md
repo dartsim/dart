@@ -36,7 +36,7 @@
 
 ### Key Build Options
 ```cmake
-DART_BUILD_GUI_OSG          = ON   # Build OpenSceneGraph GUI
+DART_BUILD_GUI_OSG          = AUTO # Build OpenSceneGraph GUI when available
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -169,6 +169,7 @@ Each option accepts `AUTO` (default, build when dependencies are detected), `ON`
 | PaGMO optimizer plugin    | `DART_BUILD_OPTIMIZER_PAGMO`      | AUTO    | `DART_HAVE_PAGMO`   | pagmo (disabled when building wheels) |
 | dart-utils component      | `DART_BUILD_UTILS`                | AUTO    | —                   | tinyxml2                              |
 | dart-utils-urdf component | `DART_BUILD_UTILS_URDF`           | AUTO    | —                   | urdfdom + `dart-utils` target         |
+| OpenSceneGraph GUI backend| `DART_BUILD_GUI_OSG`              | AUTO    | `DART_HAVE_GUI_OSG` | `dart-utils`, OpenSceneGraph, ImGui   |
 
 Additional feature macros such as `DART_HAVE_OCTOMAP` and `DART_HAVE_SNOPT` continue to mirror detection results for their respective dependencies.
 

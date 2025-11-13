@@ -22,6 +22,7 @@
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
   * Introduced tri-state `DART_BUILD_<feature>` options (AUTO/ON/OFF) for all optional components and unified the generated feature macros under the `DART_HAVE_*` prefix (replacing the legacy `HAVE_*` macros and `DART_SKIP_*` workflow).
+  * Extended the tri-state system to `DART_BUILD_GUI_OSG`, including the new `DART_HAVE_GUI_OSG` macro so OpenSceneGraph support is managed like other optional components.
 
 * Simulation
   * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.

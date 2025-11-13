@@ -149,7 +149,7 @@ dart_find_package(spdlog)
 #--------------------
 
 # ImGui
-if(DART_BUILD_GUI_OSG)
+if(NOT DART_BUILD_GUI_OSG STREQUAL "OFF")
   if(DART_USE_SYSTEM_IMGUI)
     # Use system-installed ImGui
     dart_find_package(imgui)
