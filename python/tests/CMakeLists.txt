@@ -68,7 +68,7 @@ endforeach()
 set(_pytest_dependencies)
 if(DARTPY_PYTEST_FOUND AND dartpy_pybind_tests AND TARGET dartpy)
   add_custom_target(pytest_pybind
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest (pybind11) with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy]"
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [pybind11] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy]"
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_pybind_tests} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_pybind_tests} ${dartpy_test_utils}
@@ -84,7 +84,7 @@ endif()
 
 if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy_nb)
   add_custom_target(pytest_nb
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest (nanobind) with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [nanobind] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_nanobind_tests} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_nanobind_tests} ${dartpy_test_utils}
