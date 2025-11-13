@@ -22,13 +22,16 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     common/test_CAllocator.cpp
+    common/test_Composite.cpp
     common/test_Factory.cpp
     common/test_FreeListAllocator.cpp
     common/test_Logging.cpp
     common/test_MemoryManager.cpp
     common/test_PoolAllocator.cpp
+    common/test_Resource.cpp
     common/test_StlAllocator.cpp
     common/test_Stopwatch.cpp
+    common/test_SubjectObserver.cpp
     common/test_String.cpp
     common/test_Uri.cpp
 )
@@ -65,6 +68,7 @@ dart_build_tests(
   TARGET_PREFIX UNIT
   LINK_LIBRARIES dart
   SOURCES
+    math/test_ConfigurationSpace.cpp
     math/test_Geometry.cpp
     math/test_Icosphere.cpp
     math/test_Math.cpp
