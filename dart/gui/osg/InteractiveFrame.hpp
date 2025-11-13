@@ -66,8 +66,8 @@ public:
 
   InteractiveTool(const InteractiveTool&) = delete;
   InteractiveTool& operator=(const InteractiveTool&) = delete;
-  InteractiveTool(InteractiveTool&&) = default;
-  InteractiveTool& operator=(InteractiveTool&&) = default;
+  InteractiveTool(InteractiveTool&&) = delete;
+  InteractiveTool& operator=(InteractiveTool&&) = delete;
 
   /// Set this tool to be enabled or disabled
   void setEnabled(bool enabled);
@@ -129,8 +129,8 @@ public:
 
   InteractiveFrame(const InteractiveFrame&) = delete;
   InteractiveFrame& operator=(const InteractiveFrame&) = delete;
-  InteractiveFrame(InteractiveFrame&&) = default;
-  InteractiveFrame& operator=(InteractiveFrame&&) = default;
+  InteractiveFrame(InteractiveFrame&&) = delete;
+  InteractiveFrame& operator=(InteractiveFrame&&) = delete;
 
   /// Destructor
   virtual ~InteractiveFrame();
