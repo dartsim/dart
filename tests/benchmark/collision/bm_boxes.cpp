@@ -43,6 +43,7 @@
 #include <benchmark/benchmark.h>
 
 using namespace dart;
+using dart::simulation::CollisionDetectorType;
 
 namespace {
 
@@ -80,11 +81,9 @@ namespace {
 [[nodiscard]] simulation::WorldPtr createWorld(size_t dim)
 {
   // Create an empty world
-  auto world = simulation::World::create();
-
-  // Set collision detector type
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+  auto world = simulation::World::create(simulation::WorldConfig{
+      .collisionDetector = CollisionDetectorType::Bullet,
+  });
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {

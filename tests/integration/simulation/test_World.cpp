@@ -307,11 +307,9 @@ TEST(World, ValidatingClones)
 
     // Set non default collision detector
 #if HAVE_BULLET
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::BulletCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
 #endif
   }
 
@@ -332,6 +330,39 @@ TEST(World, ValidatingClones)
       EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
+}
+
+//==============================================================================
+TEST(World, SetCollisionDetectorByType)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+}
+
+//==============================================================================
+TEST(World, ConfiguresCollisionDetectorViaConfig)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  auto world = World::create(WorldConfig{
+      .name = "configured-world",
+      .collisionDetector = CollisionDetectorType::Dart,
+  });
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
 }
 
 //==============================================================================
