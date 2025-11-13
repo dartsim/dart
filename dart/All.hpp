@@ -34,13 +34,13 @@
 
 // clang-format off
 #include <dart/config.hpp>
-#include <dart/common/all.hpp>
-#include <dart/math/all.hpp>
-#include <dart/integration/all.hpp>
-#include <dart/collision/all.hpp>
-#include <dart/lcpsolver/all.hpp>
-#include <dart/constraint/all.hpp>
-#include <dart/optimizer/all.hpp>
-#include <dart/dynamics/all.hpp>
-#include <dart/simulation/all.hpp>
+#include <dart/common/All.hpp>
+#include <dart/math/All.hpp>
+#include <dart/integration/All.hpp>
+#include <dart/collision/All.hpp>
+#include <dart/lcpsolver/All.hpp>
+#include <dart/constraint/All.hpp>
+#include <dart/optimizer/All.hpp>
+#include <dart/dynamics/All.hpp>
+#include <dart/simulation/All.hpp>
 // clang-format on

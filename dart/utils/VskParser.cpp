@@ -44,7 +44,7 @@
 // Local Files
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
-#include "dart/dynamics/all.hpp"
+#include "dart/dynamics/All.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"

@@ -44,7 +44,7 @@ target_compile_definitions(${target_name}
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp ${DART_GENERATED_COMPAT_HEADERS}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp ${DART_GENERATED_COMPAT_HEADERS}
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )

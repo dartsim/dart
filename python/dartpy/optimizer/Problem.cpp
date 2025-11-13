@@ -33,7 +33,7 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>

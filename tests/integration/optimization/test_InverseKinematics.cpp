@@ -33,7 +33,7 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/config.hpp"
-#include "dart/dynamics/all.hpp"
+#include "dart/dynamics/All.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <gtest/gtest.h>

@@ -64,7 +64,7 @@ dart_generate_component_headers(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
   DESTINATION include/dart/utils/urdf
   COMPONENT headers
 )

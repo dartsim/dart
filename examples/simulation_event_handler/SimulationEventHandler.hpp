@@ -33,9 +33,9 @@
 #ifndef EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
 #define EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <osgGA/GUIEventHandler>
 
