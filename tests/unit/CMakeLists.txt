@@ -8,6 +8,9 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Distance dart-collision-bullet)
 endif()
 
+dart_add_test("unit" test_CollisionGroup collision/test_CollisionGroup.cpp)
+target_link_libraries(test_CollisionGroup dart-collision-fcl)
+
 dart_add_test("unit" test_Raycast collision/test_Raycast.cpp)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_Raycast dart-collision-bullet)
@@ -40,6 +43,8 @@ dart_build_tests(
 # Constraint Tests
 # ==============================================================================
 dart_add_test("unit" test_ConstraintSolver constraint/test_ConstraintSolver.cpp)
+dart_add_test(
+  "unit" test_JointLimitConstraint constraint/test_JointLimitConstraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
