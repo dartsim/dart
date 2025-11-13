@@ -21,11 +21,27 @@ jobs:
         with:
           script: |
             const branch = context.payload.pull_request.head.ref;
+            const headRepo = context.payload.pull_request.head.repo;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const currentRunId = context.runId;
 
-            core.info(`Searching for unfinished runs on branch "${branch}"...`);
+            if (!headRepo) {
+              core.warning(
+                'Head repository information is unavailable; skip cancellation to avoid affecting other forks.',
+              );
+              return;
+            }
+
+            const headRepoId =
+              typeof headRepo.id === 'number' ? headRepo.id : undefined;
+            const headRepoFullName = headRepo?.full_name?.toLowerCase();
+            const headRepoLabel =
+              headRepoFullName ?? (headRepoId ? String(headRepoId) : 'unknown');
+
+            core.info(
+              `Searching for unfinished runs on branch "${branch}" from repo "${headRepoLabel}"...`,
+            );
 
             const runs = await github.paginate(
               github.rest.actions.listWorkflowRunsForRepo,
@@ -38,10 +54,22 @@ jobs:
             );
 
             const cancellableStatuses = new Set(['in_progress', 'queued']);
-            const targets = runs.filter(
-              (run) =>
-                cancellableStatuses.has(run.status) && run.id !== currentRunId,
-            );
+            const targets = runs.filter((run) => {
+              if (!cancellableStatuses.has(run.status)) return false;
+              if (run.id === currentRunId) return false;
+              if (run.head_branch !== branch) return false;
+              if (!run.head_repository) return false;
+
+              const matchesId =
+                typeof headRepoId === 'number' &&
+                run.head_repository.id === headRepoId;
+              const matchesFullName =
+                headRepoFullName &&
+                run.head_repository.full_name?.toLowerCase() ===
+                  headRepoFullName;
+
+              return matchesId || matchesFullName;
+            });
 
             if (targets.length === 0) {
               core.info('No queued or in-progress runs found for this branch.');
