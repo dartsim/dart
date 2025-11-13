@@ -83,6 +83,7 @@ TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
 
   CollisionOption option;
+  option.maxNumContacts = 1u;
   CollisionResult result;
   ASSERT_TRUE(group->collide(option, &result));
 
@@ -108,23 +109,27 @@ TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
 {
   auto detector = DARTCollisionDetector::create();
-  auto skeleton = makeSkeleton("solo");
-  auto group = detector->createCollisionGroup();
-  group->addShapeFrame(skeleton->getBodyNode(0)->getShapeNode(0));
+  auto skeletonA = makeSkeleton("solo_a");
+  auto skeletonB = makeSkeleton("solo_b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
 
   CollisionOption option;
+  option.maxNumContacts = 1u;
   CollisionResult result;
   ASSERT_TRUE(group->collide(option, &result));
   ASSERT_TRUE(result.isCollision());
   ASSERT_EQ(result.getNumContacts(), 1u);
 
-  auto* shape = skeleton->getBodyNode(0)->getShapeNode(0);
-  ASSERT_TRUE(result.inCollision(shape));
+  auto* shapeA = skeletonA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = skeletonB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_TRUE(result.inCollision(shapeA));
+  ASSERT_TRUE(result.inCollision(shapeB));
 
   result.clear();
   EXPECT_FALSE(result.isCollision());
   EXPECT_EQ(result.getNumContacts(), 0u);
-  EXPECT_FALSE(result.inCollision(shape));
+  EXPECT_FALSE(result.inCollision(shapeA));
+  EXPECT_FALSE(result.inCollision(shapeB));
   EXPECT_TRUE(result.getCollidingBodyNodes().empty());
   EXPECT_TRUE(result.getCollidingShapeFrames().empty());
 }
