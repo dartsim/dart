@@ -76,7 +76,9 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
       return "ode";
   }
 
-  DART_UNREACHABLE;
+  DART_FATAL(
+      "Encountered unsupported CollisionDetectorType value: {}.",
+      static_cast<int>(type));
   return "fcl";
 }
 
