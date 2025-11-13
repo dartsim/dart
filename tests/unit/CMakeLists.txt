@@ -9,7 +9,6 @@ if(TARGET dart-collision-bullet)
 endif()
 
 dart_add_test("unit" test_CollisionGroup collision/test_CollisionGroup.cpp)
-target_link_libraries(test_CollisionGroup dart-collision-fcl)
 
 dart_add_test("unit" test_Raycast collision/test_Raycast.cpp)
 if(TARGET dart-collision-bullet)
@@ -17,7 +16,6 @@ if(TARGET dart-collision-bullet)
 endif()
 
 dart_add_test("unit" test_CollisionResult collision/test_CollisionResult.cpp)
-target_link_libraries(test_CollisionResult dart-collision-fcl)
 
 # ==============================================================================
 # Common Tests

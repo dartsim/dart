@@ -60,12 +60,20 @@ std::shared_ptr<Skeleton> makeSingleRevoluteSkeleton()
 
 } // namespace
 
+class ExposedJointLimitConstraint : public JointLimitConstraint
+{
+public:
+  using JointLimitConstraint::isActive;
+  using JointLimitConstraint::JointLimitConstraint;
+  using JointLimitConstraint::update;
+};
+
 //==============================================================================
 TEST(JointLimitConstraintTests, ActivatesForPositionAndVelocityViolations)
 {
   auto skeleton = makeSingleRevoluteSkeleton();
   auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
-  JointLimitConstraint constraint(joint);
+  ExposedJointLimitConstraint constraint(joint);
 
   joint->setPosition(0, 0.0);
   joint->setVelocity(0, 0.0);

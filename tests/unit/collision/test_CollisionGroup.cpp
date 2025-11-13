@@ -35,7 +35,8 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -62,11 +63,11 @@ std::shared_ptr<SimpleFrame> createBoxFrame(
 class CountingFilter : public CollisionFilter
 {
 public:
-  bool needsCollision(
+  bool ignoresCollision(
       const CollisionObject*, const CollisionObject*) const override
   {
     ++mCallCount;
-    return !mReject;
+    return mReject;
   }
 
   mutable int mCallCount = 0;
@@ -76,7 +77,7 @@ public:
 std::unique_ptr<CollisionGroup> makeOverlappingGroup(
     std::shared_ptr<SimpleFrame>& outA, std::shared_ptr<SimpleFrame>& outB)
 {
-  auto detector = fcl::FCLCollisionDetector::create();
+  auto detector = dart::collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   outA = createBoxFrame("boxA");
@@ -103,12 +104,12 @@ TEST(CollisionGroupTests, CollidablesCanBeToggled)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_LT(0u, result.getNumContacts());
 
-  group->setCollidable(frameA.get(), false);
+  group->removeShapeFrame(frameA.get());
   result.clear();
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(0u, result.getNumContacts());
 
-  group->setCollidable(frameA.get(), true);
+  group->addShapeFrame(frameA.get());
   result.clear();
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_LT(0u, result.getNumContacts());
@@ -121,24 +122,24 @@ TEST(CollisionGroupTests, CollisionFilterAndContactLimitAreApplied)
   std::shared_ptr<SimpleFrame> frameB;
   auto group = makeOverlappingGroup(frameA, frameB);
 
-  CountingFilter filter;
+  auto filter = std::make_shared<CountingFilter>();
   CollisionOption option;
-  option.collisionFilter = &filter;
+  option.collisionFilter = filter;
 
   CollisionResult result;
-  filter.mReject = true;
+  filter->mReject = true;
   EXPECT_FALSE(group->collide(option, &result));
-  EXPECT_EQ(1, filter.mCallCount);
+  EXPECT_EQ(1, filter->mCallCount);
   EXPECT_EQ(0u, result.getNumContacts());
 
-  filter.mReject = false;
+  filter->mReject = false;
   option.maxNumContacts = 1u;
   result.clear();
-  filter.mCallCount = 0;
+  filter->mCallCount = 0;
 
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(1u, result.getNumContacts());
-  EXPECT_EQ(1, filter.mCallCount);
+  EXPECT_EQ(1, filter->mCallCount);
 
   // When we raise the limit we should collect more than one contact for the
   // overlapping cubes.

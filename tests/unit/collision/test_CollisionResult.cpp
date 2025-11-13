@@ -31,10 +31,11 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
-#include "dart/collision/Contact.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
@@ -60,26 +61,15 @@ std::shared_ptr<Skeleton> makeSkeleton(const std::string& name)
   return skeleton;
 }
 
-class DummyCollisionObject : public CollisionObject
+std::unique_ptr<CollisionGroup> makeGroupWithOverlap(
+    const std::shared_ptr<Skeleton>& a,
+    const std::shared_ptr<Skeleton>& b,
+    const std::shared_ptr<CollisionDetector>& detector)
 {
-public:
-  explicit DummyCollisionObject(const dynamics::ShapeFrame* frame)
-    : CollisionObject(nullptr, frame)
-  {
-  }
-
-  void updateEngineData() override {}
-};
-
-Contact makeContact(CollisionObject* a, CollisionObject* b)
-{
-  Contact contact;
-  contact.collisionObject1 = a;
-  contact.collisionObject2 = b;
-  contact.point = Eigen::Vector3d::Zero();
-  contact.normal = Eigen::Vector3d::UnitZ();
-  contact.penetrationDepth = 0.1;
-  return contact;
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(a->getBodyNode(0)->getShapeNode(0));
+  group->addShapeFrame(b->getBodyNode(0)->getShapeNode(0));
+  return group;
 }
 
 } // namespace
@@ -87,31 +77,28 @@ Contact makeContact(CollisionObject* a, CollisionObject* b)
 //==============================================================================
 TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 {
+  auto detector = DARTCollisionDetector::create();
   auto skeletonA = makeSkeleton("a");
   auto skeletonB = makeSkeleton("b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
 
-  auto shapeNodeA = skeletonA->getBodyNode(0)->getShapeNode(0);
-  auto shapeNodeB = skeletonB->getBodyNode(0)->getShapeNode(0);
-
-  auto objectA = std::make_unique<DummyCollisionObject>(shapeNodeA);
-  auto objectB = std::make_unique<DummyCollisionObject>(shapeNodeB);
-
+  CollisionOption option;
   CollisionResult result;
-  result.addContact(makeContact(objectA.get(), objectB.get()));
+  ASSERT_TRUE(group->collide(option, &result));
 
   EXPECT_TRUE(result.isCollision());
   EXPECT_TRUE(result);
   EXPECT_EQ(result.getNumContacts(), 1u);
 
-  EXPECT_TRUE(result.inCollision(skeletonA->getBodyNode(0)));
-  EXPECT_TRUE(result.inCollision(skeletonB->getBodyNode(0)));
-  EXPECT_TRUE(result.inCollision(shapeNodeA));
-  EXPECT_TRUE(result.inCollision(shapeNodeB));
+  auto* bodyA = skeletonA->getBodyNode(0);
+  auto* bodyB = skeletonB->getBodyNode(0);
+  auto* shapeA = bodyA->getShapeNode(0);
+  auto* shapeB = bodyB->getShapeNode(0);
 
-  const auto& contacts = result.getContacts();
-  ASSERT_EQ(contacts.size(), 1u);
-  EXPECT_EQ(contacts.front().collisionObject1, objectA.get());
-  EXPECT_EQ(contacts.front().collisionObject2, objectB.get());
+  EXPECT_TRUE(result.inCollision(bodyA));
+  EXPECT_TRUE(result.inCollision(bodyB));
+  EXPECT_TRUE(result.inCollision(shapeA));
+  EXPECT_TRUE(result.inCollision(shapeB));
 
   EXPECT_EQ(result.getCollidingBodyNodes().size(), 2u);
   EXPECT_EQ(result.getCollidingShapeFrames().size(), 2u);
@@ -120,20 +107,24 @@ TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 //==============================================================================
 TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
 {
+  auto detector = DARTCollisionDetector::create();
   auto skeleton = makeSkeleton("solo");
-  auto shapeNode = skeleton->getBodyNode(0)->getShapeNode(0);
-  auto object = std::make_unique<DummyCollisionObject>(shapeNode);
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(skeleton->getBodyNode(0)->getShapeNode(0));
 
+  CollisionOption option;
   CollisionResult result;
-  result.addContact(makeContact(object.get(), object.get()));
+  ASSERT_TRUE(group->collide(option, &result));
   ASSERT_TRUE(result.isCollision());
   ASSERT_EQ(result.getNumContacts(), 1u);
-  ASSERT_TRUE(result.inCollision(shapeNode));
+
+  auto* shape = skeleton->getBodyNode(0)->getShapeNode(0);
+  ASSERT_TRUE(result.inCollision(shape));
 
   result.clear();
   EXPECT_FALSE(result.isCollision());
   EXPECT_EQ(result.getNumContacts(), 0u);
-  EXPECT_FALSE(result.inCollision(shapeNode));
+  EXPECT_FALSE(result.inCollision(shape));
   EXPECT_TRUE(result.getCollidingBodyNodes().empty());
   EXPECT_TRUE(result.getCollidingShapeFrames().empty());
 }
