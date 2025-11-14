@@ -80,6 +80,12 @@ set(dartpy_nb_headers
   common/string.hpp
   common/subject.hpp
   common/uri.hpp
+  utils/module.hpp
+  utils/dart_loader.hpp
+  utils/resource_retriever.hpp
+  utils/skel_parser.hpp
+  utils/sdf_parser.hpp
+  utils/mjcf_parser.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -98,6 +104,12 @@ set(dartpy_nb_sources
   common/string.cpp
   common/subject.cpp
   common/uri.cpp
+  utils/module.cpp
+  utils/dart_loader.cpp
+  utils/resource_retriever.cpp
+  utils/skel_parser.cpp
+  utils/sdf_parser.cpp
+  utils/mjcf_parser.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp
