@@ -59,8 +59,21 @@ void defJoint(nb::module_& m)
           nb::arg("positions"))
       .def("getRelativeJacobian", [](Joint& self) { return self.getRelativeJacobian(); })
       .def("getRelativeJacobianTimeDeriv", &Joint::getRelativeJacobianTimeDeriv)
+      .def("getTransformFromChildBodyNode", &Joint::getTransformFromChildBodyNode)
+      .def("getTransformFromParentBodyNode", &Joint::getTransformFromParentBodyNode)
       .def("setTransformFromChildBodyNode", &Joint::setTransformFromChildBodyNode, nb::arg("transform"))
-      .def("setTransformFromParentBodyNode", &Joint::setTransformFromParentBodyNode, nb::arg("transform"));
+      .def("setTransformFromParentBodyNode", &Joint::setTransformFromParentBodyNode, nb::arg("transform"))
+      .def("getWrenchToParentBodyNode",
+          [](Joint& self, const dart::dynamics::Frame& frame) {
+            return self.getWrenchToParentBodyNode(frame);
+          },
+          nb::arg("frame"))
+      .def("getWrenchToChildBodyNode",
+          [](Joint& self, const dart::dynamics::Frame& frame) {
+            return self.getWrenchToChildBodyNode(frame);
+          },
+          nb::arg("frame"))
+      .def("setLimitEnforcement", &Joint::setLimitEnforcement, nb::arg("enforce"));
 }
 
 } // namespace dart::python_nb
