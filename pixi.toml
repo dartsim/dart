@@ -415,12 +415,13 @@ test-dartpy8 = { cmd = """
     "build-dartpy8",
 ], env = { BUILD_TYPE = "Release" } }
 
-test-py = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --parallel \
-        --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+test-py = { cmd = "python scripts/pixi_test_py.py", depends-on = [
+    { task = "config-py", args = [
+        "{{ dartpy }}",
+    ] },
+], env = { BUILD_TYPE = "Release" }, args = [
+    { arg = "dartpy", default = "ON" },
+] }
 
 config-coverage = { cmd = """
     cmake \
@@ -1065,13 +1066,7 @@ test-dart8 = { cmd = """
     { arg = "dartpy", default = "ON" },
 ] }
 
-test-py = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+test-py = { cmd = "python scripts/pixi_test_py.py", depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
     python scripts/test_all.py
