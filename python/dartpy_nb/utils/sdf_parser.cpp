@@ -1,0 +1,46 @@
+#include "utils/sdf_parser.hpp"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+
+#include "dart/utils/sdf/SdfParser.hpp"
+
+namespace nb = nanobind;
+
+namespace dart::python_nb {
+
+void defSdfParser(nb::module_& m)
+{
+  using SdfParser = utils::SdfParser;
+
+  auto sm = m.def_submodule("SdfParser");
+
+  nb::enum_<SdfParser::RootJointType>(sm, "RootJointType")
+      .value("FLOATING", SdfParser::RootJointType::FLOATING)
+      .value("FIXED", SdfParser::RootJointType::FIXED);
+
+  nb::class_<SdfParser::Options>(sm, "Options")
+      .def(
+          nb::init<common::ResourceRetrieverPtr, SdfParser::RootJointType>(),
+          nb::arg("resourceRetriever") = nullptr,
+          nb::arg("defaultRootJointType") = SdfParser::RootJointType::FLOATING)
+      .def_readwrite("mResourceRetriever", &SdfParser::Options::mResourceRetriever)
+      .def_readwrite("mDefaultRootJointType", &SdfParser::Options::mDefaultRootJointType);
+
+  sm.def(
+      "readWorld",
+      [](const common::Uri& uri, const SdfParser::Options& options) {
+        return SdfParser::readWorld(uri, options);
+      },
+      nb::arg("uri"),
+      nb::arg("options") = SdfParser::Options());
+  sm.def(
+      "readSkeleton",
+      [](const common::Uri& uri, const SdfParser::Options& options) {
+        return SdfParser::readSkeleton(uri, options);
+      },
+      nb::arg("uri"),
+      nb::arg("options") = SdfParser::Options());
+}
+
+} // namespace dart::python_nb
