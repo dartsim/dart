@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.16.0 (2025-11-09)](https://github.com/dartsim/dart/milestone/83?closed=1)
+### [DART 6.17.0 (2025-11-09)](https://github.com/dartsim/dart/milestone/83?closed=1)
 
 * Tested Platforms
 
