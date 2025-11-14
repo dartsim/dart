@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_STOPWATCH_HPP_
 #define DART_COMMON_STOPWATCH_HPP_
 
-#include <dart/common/Export.hpp>
+#include <dart/Export.hpp>
 
 #include <chrono>
 #include <iostream>
@@ -116,22 +116,22 @@ private:
 /// tic();
 /// auto elapsedS = toc();  // prints and returns the elapsed time
 /// \endcode
-DART_COMMON_API void tic();
+DART_API void tic();
 
 /// Returns the elapsed time in seconds since the last tic() call.
-DART_COMMON_API double toc(bool print = false);
+DART_API double toc(bool print = false);
 
 /// Returns the elapsed time in seconds since the last tic() call.
-DART_COMMON_API double tocS(bool print = false);
+DART_API double tocS(bool print = false);
 
 /// Returns the elapsed time in milliseconds since the last tic() call.
-DART_COMMON_API double tocMS(bool print = false);
+DART_API double tocMS(bool print = false);
 
 /// Returns the elapsed time in microseconds since the last tic() call.
-DART_COMMON_API double tocUS(bool print = false);
+DART_API double tocUS(bool print = false);
 
 /// Returns the elapsed time in nanoseconds since the last tic() call.
-DART_COMMON_API double tocNS(bool print = false);
+DART_API double tocNS(bool print = false);
 
 using StopwatchS = Stopwatch<std::chrono::seconds>;
 using StopwatchMS = Stopwatch<std::chrono::milliseconds>;

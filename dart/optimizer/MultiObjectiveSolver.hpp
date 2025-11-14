@@ -33,8 +33,9 @@
 #ifndef DART_OPTIMIZER_MULTIOBJECTIVESOLVER_HPP_
 #define DART_OPTIMIZER_MULTIOBJECTIVESOLVER_HPP_
 
-#include <dart/optimizer/Export.hpp>
 #include <dart/optimizer/Population.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -55,14 +56,14 @@ class MultiObjectiveProblem;
 /// for various problem types. This base class allows the different
 /// MultiObjectiveSolver implementations to be swapped out with each other
 /// quickly and easily to help with testing, benchmarking, and experimentation.
-class DART_OPTIMIZER_API MultiObjectiveSolver
+class DART_API MultiObjectiveSolver
 {
 public:
   /// The MultiObjectiveSolver::Properties class contains Solver parameters that
   /// are common to all MultiObjectiveSolver types. Most (but not necessarily
   /// all) Solvers will make use of these parameters, and these parameters can
   /// be directly copied or transferred between all Solver types.
-  struct DART_OPTIMIZER_API Properties
+  struct DART_API Properties
   {
     /// Multi-objective optimization problem to be solved
     std::shared_ptr<MultiObjectiveProblem> mProblem;

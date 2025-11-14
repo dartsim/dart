@@ -34,8 +34,9 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/Export.hpp>
 #include <dart/collision/fcl/FCLTypes.hpp>
+
+#include <dart/Export.hpp>
 
 #include <vector>
 
@@ -44,7 +45,7 @@ namespace collision {
 
 class FCLCollisionObject;
 
-class DART_COLLISION_API FCLCollisionDetector : public CollisionDetector
+class DART_API FCLCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;

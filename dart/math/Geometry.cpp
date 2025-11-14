@@ -36,8 +36,6 @@
 #include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
 
-#include <dart/math/Export.hpp>
-
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -1371,7 +1369,7 @@ Eigen::Vector6d dad(const Eigen::Vector6d& _s, const Eigen::Vector6d& _t)
   return res;
 }
 
-DART_MATH_API Inertia
+DART_API Inertia
 transformInertia(const Eigen::Isometry3d& _T, const Inertia& _I)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21

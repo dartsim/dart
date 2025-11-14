@@ -33,7 +33,7 @@
 #ifndef DART_LCPSOLVER_LEMKE_HPP_
 #define DART_LCPSOLVER_LEMKE_HPP_
 
-#include <dart/lcpsolver/Export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -41,11 +41,11 @@ namespace dart {
 namespace lcpsolver {
 
 /// \brief
-int DART_LCPSOLVER_API Lemke(
+int DART_API Lemke(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
 /// \brief
-bool DART_LCPSOLVER_API validate(
+bool DART_API validate(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);

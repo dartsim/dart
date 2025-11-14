@@ -33,8 +33,9 @@
 #ifndef DART_MATH_TRIMESH_HPP_
 #define DART_MATH_TRIMESH_HPP_
 
-#include <dart/math/Export.hpp>
 #include <dart/math/Mesh.hpp>
+
+#include <dart/Export.hpp>
 
 #include <memory>
 
