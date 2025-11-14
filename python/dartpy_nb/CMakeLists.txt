@@ -86,6 +86,11 @@ set(dartpy_nb_headers
   utils/skel_parser.hpp
   utils/sdf_parser.hpp
   utils/mjcf_parser.hpp
+  optimizer/module.hpp
+  optimizer/function.hpp
+  optimizer/problem.hpp
+  optimizer/solver.hpp
+  optimizer/gradient_descent.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -110,6 +115,11 @@ set(dartpy_nb_sources
   utils/skel_parser.cpp
   utils/sdf_parser.cpp
   utils/mjcf_parser.cpp
+  optimizer/module.cpp
+  optimizer/function.cpp
+  optimizer/problem.cpp
+  optimizer/solver.cpp
+  optimizer/gradient_descent.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp

@@ -35,6 +35,7 @@
 #include "dart/config.hpp"
 #include "common/module.hpp"
 #include "math/module.hpp"
+#include "optimizer/module.hpp"
 #include "utils/module.hpp"
 
 namespace nb = nanobind;
@@ -57,4 +58,7 @@ NB_MODULE(dartpy_nb, m)
 
   auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
   dart::python_nb::defUtilsModule(utils);
+
+  auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
+  dart::python_nb::defOptimizerModule(optimizer);
 }
