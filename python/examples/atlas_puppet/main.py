@@ -57,11 +57,13 @@ class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
             return False
 
         # Handle key press
-        if event_type == dart.gui.osg.EventType.KEYDOWN:
+        gui_adapter = dart.gui.osg.GUIEventAdapter.EventType
+
+        if event_type == gui_adapter.KEYDOWN:
             return self.teleop_world.handle_key_press(key_char)
 
         # Handle key release
-        elif event_type == dart.gui.osg.EventType.KEYUP:
+        elif event_type == gui_adapter.KEYUP:
             return self.teleop_world.handle_key_release(key_char)
 
         return False
