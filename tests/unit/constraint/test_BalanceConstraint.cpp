@@ -73,7 +73,9 @@ EndEffector* addSupportEndEffector(
     const math::SupportGeometry& geometry)
 {
   auto* ee = parent->createEndEffector(name);
-  ee->setDefaultRelativeTransform(Eigen::Translation3d(translation));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  ee->setDefaultRelativeTransform(tf);
   ee->resetRelativeTransform();
 
   auto* support = ee->getSupport(true);
