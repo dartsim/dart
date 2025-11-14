@@ -4,8 +4,20 @@ dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
 dart_find_package(sdformat)
 dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
+if(NOT HAVE_SDFORMAT)
+  message(
+    FATAL_ERROR
+    "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
+    "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake.")
+endif()
 if(TARGET sdformat::sdformat)
   set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
+else()
+  message(
+    FATAL_ERROR
+    "libsdformat was found but the sdformat::sdformat imported target is "
+    "missing. Please install the CMake config package that exports this "
+    "target.")
 endif()
 
 find_package(CURL)
@@ -38,10 +50,7 @@ set(component_name utils)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
-target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
-if(HAVE_SDFORMAT AND TARGET sdformat::sdformat)
-  target_link_libraries(${target_name} PUBLIC sdformat::sdformat)
-endif()
+target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2 sdformat::sdformat)
 
 if(HAVE_CURL)
   target_include_directories(${target_name} PRIVATE ${CURL_INCLUDE_DIRS})
