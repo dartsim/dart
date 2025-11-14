@@ -1,7 +1,9 @@
 #include "dynamics/joint.hpp"
 
+#include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include "dart/dynamics/Joint.hpp"
 
@@ -24,7 +26,36 @@ void defJoint(nb::module_& m)
           [](const Joint& self) -> const std::string& {
             return self.getType();
           },
-          nb::rv_policy::reference_internal);
+          nb::rv_policy::reference_internal)
+      .def("getNumDofs", &Joint::getNumDofs)
+      .def("setPositions",
+          [](Joint& self, const Eigen::VectorXd& positions) {
+            self.setPositions(positions);
+          },
+          nb::arg("positions"))
+      .def("getPositions",
+          [](const Joint& self) {
+            return self.getPositions();
+          })
+      .def("setVelocities",
+          [](Joint& self, const Eigen::VectorXd& velocities) {
+            self.setVelocities(velocities);
+          },
+          nb::arg("velocities"))
+      .def("getVelocities",
+          [](const Joint& self) {
+            return self.getVelocities();
+          })
+      .def("getRelativeTransform", &Joint::getRelativeTransform)
+      .def("getRelativeJacobian",
+          [](Joint& self, const Eigen::VectorXd& positions) {
+            return self.getRelativeJacobian(positions);
+          },
+          nb::arg("positions"))
+      .def("getRelativeJacobian", [](Joint& self) { return self.getRelativeJacobian(); })
+      .def("getRelativeJacobianTimeDeriv", &Joint::getRelativeJacobianTimeDeriv)
+      .def("setTransformFromChildBodyNode", &Joint::setTransformFromChildBodyNode, nb::arg("transform"))
+      .def("setTransformFromParentBodyNode", &Joint::setTransformFromParentBodyNode, nb::arg("transform"));
 }
 
 } // namespace dart::python_nb
