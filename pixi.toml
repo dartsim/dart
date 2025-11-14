@@ -247,10 +247,7 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-py-atlas-puppet = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
-""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
+py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
 
 bm = { cmd = """
     cmake \
