@@ -39,9 +39,9 @@
 #ifndef DART_SIMULATION_RECORDING_HPP_
 #define DART_SIMULATION_RECORDING_HPP_
 
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/simulation/Export.hpp>
 
-#include <dart/Export.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
 #include <Eigen/Dense>
 
@@ -56,7 +56,7 @@ class Skeleton;
 namespace simulation {
 
 /// \brief class Recording
-class DART_API Recording
+class DART_SIMULATION_API Recording
 {
 public:
   /// \brief Create Recording with a list of skeletons

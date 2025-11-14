@@ -33,9 +33,8 @@
 #ifndef DART_OPTIMIZER_POPULATION_HPP_
 #define DART_OPTIMIZER_POPULATION_HPP_
 
+#include <dart/optimizer/Export.hpp>
 #include <dart/optimizer/MultiObjectiveProblem.hpp>
-
-#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -48,7 +47,7 @@ namespace optimizer {
 
 class MultiObjectiveProblem;
 
-class DART_API Population
+class DART_OPTIMIZER_API Population
 {
 public:
   /// Constructor

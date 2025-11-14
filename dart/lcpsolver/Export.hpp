@@ -30,44 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STRING_HPP_
-#define DART_COMMON_STRING_HPP_
+#pragma once
 
 #include <dart/common/Export.hpp>
 
-#include <string>
-#include <vector>
+#ifndef DART_LCPSOLVER_API
+  #if defined(DART_BUILDING_DART_LCPSOLVER) || defined(DART_BUILDING_DART)
+    #define DART_LCPSOLVER_API DART_DLL_EXPORT
+  #else
+    #define DART_LCPSOLVER_API DART_DLL_IMPORT
+  #endif
+#endif
 
-namespace dart::common {
-
-/// Converts string to upper cases
-DART_COMMON_API std::string toUpper(std::string str);
-
-/// Converts string to upper cases in place
-DART_COMMON_API void toUpperInPlace(std::string& str);
-
-/// Converts string to lower cases
-DART_COMMON_API std::string toLower(std::string str);
-
-/// Converts string to lower cases in place
-DART_COMMON_API void toLowerInPlace(std::string& str);
-
-/// Trims both sides of string
-DART_COMMON_API std::string trim(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Trims left side of string
-DART_COMMON_API std::string trimLeft(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Trims right side of string
-DART_COMMON_API std::string trimRight(
-    const std::string& str, const std::string& whitespaces = " \n\r\t");
-
-/// Splits string given delimiters
-DART_COMMON_API std::vector<std::string> split(
-    const std::string& str, const std::string& delimiters = " \n\r\t");
-
-} // namespace dart::common
-
-#endif // DART_COMMON_STRING_HPP_
+#ifndef DART_LCPSOLVER_LOCAL
+  #if DART_BUILD_SHARED
+    #define DART_LCPSOLVER_LOCAL DART_DLL_LOCAL
+  #else
+    #define DART_LCPSOLVER_LOCAL
+  #endif
+#endif

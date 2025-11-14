@@ -33,9 +33,8 @@
 #ifndef DART_OPTIMIZER_MULTIOBJECTIVEPROBLEM_HPP_
 #define DART_OPTIMIZER_MULTIOBJECTIVEPROBLEM_HPP_
 
+#include <dart/optimizer/Export.hpp>
 #include <dart/optimizer/Function.hpp>
-
-#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -46,7 +45,7 @@
 namespace dart {
 namespace optimizer {
 
-class DART_API MultiObjectiveProblem
+class DART_OPTIMIZER_API MultiObjectiveProblem
 {
 public:
   /// Constructor

@@ -33,16 +33,15 @@
 #ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
 #define DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
 
+#include <dart/common/Export.hpp>
 #include <dart/common/ResourceRetriever.hpp>
-
-#include <dart/Export.hpp>
 
 namespace dart {
 namespace common {
 
 /// LocalResourceRetriever provides access to local resources specified by
 /// file:// URIs by wrapping the standard C and C++ file manipulation routines.
-class DART_API LocalResourceRetriever : public virtual ResourceRetriever
+class DART_COMMON_API LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;

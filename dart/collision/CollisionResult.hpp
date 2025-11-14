@@ -34,8 +34,7 @@
 #define DART_COLLISION_COLLISIONRESULT_HPP_
 
 #include <dart/collision/Contact.hpp>
-
-#include <dart/Export.hpp>
+#include <dart/collision/Export.hpp>
 
 #include <unordered_set>
 #include <vector>
@@ -51,7 +50,7 @@ class ShapeFrame;
 
 namespace collision {
 
-class DART_API CollisionResult
+class DART_COLLISION_API CollisionResult
 {
 public:
   /// Add one contact

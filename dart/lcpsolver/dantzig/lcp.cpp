@@ -158,7 +158,7 @@ rows/columns and manipulate C.
 #include "dart/lcpsolver/dantzig/matrix.h"
 #include "dart/lcpsolver/dantzig/misc.h"
 
-#include <dart/Export.hpp>
+#include <dart/lcpsolver/Export.hpp>
 
 #include <memory>
 #include <vector>
@@ -536,7 +536,7 @@ bool dSolveLCP(
 // Specialization for double - no conversion needed (must be before
 // instantiation)
 template <>
-DART_API bool SolveLCP<double>(
+DART_LCPSOLVER_API bool SolveLCP<double>(
     int n,
     double* A,
     double* x,
@@ -611,7 +611,7 @@ bool SolveLCP(
 }
 
 // Explicit template instantiations
-template DART_API bool SolveLCP<float>(
+template DART_LCPSOLVER_API bool SolveLCP<float>(
     int n,
     float* A,
     float* x,

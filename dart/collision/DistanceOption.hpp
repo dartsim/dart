@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
 #define DART_COLLISION_DISTANCE_OPTION_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/collision/Export.hpp>
 
 #include <memory>
 
@@ -44,7 +44,7 @@ namespace collision {
 
 struct DistanceFilter;
 
-struct DART_API DistanceOption
+struct DART_COLLISION_API DistanceOption
 {
   /// Whether to calculate the nearest points.
   ///

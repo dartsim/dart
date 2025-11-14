@@ -35,9 +35,8 @@
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Cloneable.hpp>
+#include <dart/common/Export.hpp>
 #include <dart/common/detail/NoOp.hpp>
-
-#include <dart/Export.hpp>
 
 #include <string>
 
@@ -46,7 +45,7 @@ namespace common {
 
 class Composite;
 
-class DART_API Aspect
+class DART_COMMON_API Aspect
 {
 public:
   friend class Composite;
