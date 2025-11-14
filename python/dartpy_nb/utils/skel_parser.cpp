@@ -21,6 +21,13 @@ void defSkelParser(nb::module_& m)
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
   sm.def(
+      "readWorld",
+      [](const std::string& uri, const common::ResourceRetrieverPtr& retriever) {
+        return utils::SkelParser::readWorld(common::Uri(uri), retriever);
+      },
+      nb::arg("uri"),
+      nb::arg("retriever") = nullptr);
+  sm.def(
       "readWorldXML",
       [](const std::string& xml, const std::string& base, const common::ResourceRetrieverPtr& retriever) {
         return utils::SkelParser::readWorldXML(xml, base, retriever);
@@ -32,6 +39,13 @@ void defSkelParser(nb::module_& m)
       "readSkeleton",
       [](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever) {
         return utils::SkelParser::readSkeleton(uri, retriever);
+      },
+      nb::arg("uri"),
+      nb::arg("retriever") = nullptr);
+  sm.def(
+      "readSkeleton",
+      [](const std::string& uri, const common::ResourceRetrieverPtr& retriever) {
+        return utils::SkelParser::readSkeleton(common::Uri(uri), retriever);
       },
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
