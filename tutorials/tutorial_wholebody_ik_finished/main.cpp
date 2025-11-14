@@ -48,6 +48,12 @@
 #include <dart/utils/all.hpp>
 #include <dart/all.hpp>
 
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <memory>
+#include <thread>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -185,6 +191,147 @@ void setupHandIK(EndEffector* hand)
   std::cout << "  - Max iterations: 100" << std::endl;
 }
 
+void configureSmoothMotion(dart::dynamics::InverseKinematics* ik)
+{
+  if (!ik)
+    return;
+
+  auto* gradient = ik->getGradientMethod();
+  if (!gradient)
+    return;
+
+  const auto& dofs = ik->getDofs();
+  Eigen::VectorXd weights
+      = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs.size()));
+  const std::size_t rootCount = std::min<std::size_t>(6, dofs.size());
+  if (rootCount > 0) {
+    weights.head(static_cast<Eigen::Index>(rootCount)).setConstant(0.25);
+  }
+  gradient->setComponentWeights(weights);
+  gradient->setComponentWiseClamp(0.15);
+
+  if (auto* dls
+      = dynamic_cast<dart::dynamics::InverseKinematics::JacobianDLS*>(
+          gradient)) {
+    dls->setDampingCoefficient(2.0);
+  }
+}
+
+struct HandTarget
+{
+  std::shared_ptr<SimpleFrame> mFrame;
+  Eigen::Vector3d mRestTranslation;
+};
+
+HandTarget createHandTarget(EndEffector* hand)
+{
+  auto target = std::make_shared<SimpleFrame>(
+      Frame::World(), hand->getName() + "_target", hand->getWorldTransform());
+  hand->getIK()->setTarget(target.get());
+  return HandTarget{target, target->getTransform().translation()};
+}
+
+void updateTargetPose(const HandTarget& target, const Eigen::Vector3d& offset)
+{
+  Eigen::Isometry3d tf = target.mFrame->getTransform();
+  tf.translation() = target.mRestTranslation + offset;
+  target.mFrame->setTransform(tf);
+}
+
+void runHeadlessDemo(
+    const WorldPtr& world,
+    const SkeletonPtr& atlas,
+    EndEffector* leftHand,
+    EndEffector* rightHand,
+    std::size_t steps,
+    double radius)
+{
+  auto leftTarget = createHandTarget(leftHand);
+  auto rightTarget = createHandTarget(rightHand);
+  world->addSimpleFrame(leftTarget.mFrame);
+  world->addSimpleFrame(rightTarget.mFrame);
+
+  auto atlasIK = atlas->getIK(true);
+  atlasIK->setActive(true);
+  configureSmoothMotion(atlasIK.get());
+  auto solver = atlasIK->getSolver();
+  auto* gradientSolver
+      = dynamic_cast<dart::optimizer::GradientDescentSolver*>(solver.get());
+
+  std::cout << "Running headless trajectory tracking for " << steps
+            << " samples..." << std::endl;
+  for (std::size_t i = 0; i < steps; ++i) {
+    const double phase
+        = static_cast<double>(i) / static_cast<double>(steps)
+          * 2.0 * constantsd::pi();
+    Eigen::Vector3d leftOffset(
+        radius * std::cos(phase), 0.0, radius * std::sin(phase));
+    Eigen::Vector3d rightOffset(
+        0.5 * radius * std::cos(phase),
+        0.5 * radius * std::sin(phase),
+        0.0);
+
+    updateTargetPose(leftTarget, leftOffset);
+    updateTargetPose(rightTarget, rightOffset);
+
+    const auto start = std::chrono::steady_clock::now();
+    const bool solved = atlasIK->solveAndApply(true);
+    const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - start);
+    world->step();
+
+    const auto& lTrans = leftHand->getWorldTransform().translation();
+    const auto& rTrans = rightHand->getWorldTransform().translation();
+    const Eigen::Vector3d leftError
+        = leftTarget.mFrame->getTransform().translation() - lTrans;
+    const Eigen::Vector3d rightError
+        = rightTarget.mFrame->getTransform().translation() - rTrans;
+    const Eigen::VectorXd q = atlas->getPositions();
+    const Eigen::Index previewSize = std::min<Eigen::Index>(6, q.size());
+    const Eigen::VectorXd qPreview = q.head(previewSize);
+    const std::size_t iterations
+        = gradientSolver ? gradientSolver->getLastNumIterations() : 0;
+
+    std::cout << "[headless] step " << i << " solved=" << std::boolalpha
+              << solved << " | left_err=" << leftError.norm()
+              << "m right_err=" << rightError.norm() << "m | iter="
+              << iterations << " time=" << duration.count() / 1000.0
+              << "ms | q[0:6]=" << qPreview.transpose() << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+  std::cout << "Headless run complete." << std::endl;
+}
+
+void runGuiDemo(
+    const WorldPtr& world,
+    const SkeletonPtr& atlas,
+    EndEffector* leftHand,
+    EndEffector* rightHand)
+{
+  auto worldNode = new WholeBodyIKWorldNode(world, atlas);
+
+  Viewer viewer;
+  viewer.addWorldNode(worldNode);
+  viewer.enableDragAndDrop(leftHand);
+  viewer.enableDragAndDrop(rightHand);
+
+  auto handler = new WholeBodyIKEventHandler(worldNode, atlas, leftHand);
+  viewer.addEventHandler(handler);
+
+  std::cout << "============================================" << std::endl;
+  std::cout << "  Interactive Controls" << std::endl;
+  std::cout << "============================================" << std::endl;
+  std::cout << "Use the viewer gizmos to drag the hands." << std::endl;
+  std::cout << "Press 'R' to reset the standing pose." << std::endl;
+  std::cout << "============================================" << std::endl;
+
+  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  viewer.setCameraHomePosition(
+      {3.0, 2.0, 2.0}, {0.0, 0.5, 0.0}, {0.0, 0.0, 1.0});
+  viewer.run();
+}
+
 int main()
 {
   // Load the Atlas humanoid robot
@@ -217,53 +364,34 @@ int main()
   setupHandIK(leftHand);
   setupHandIK(rightHand);
   std::cout << std::endl;
+  configureSmoothMotion(leftHand->getIK());
+  configureSmoothMotion(rightHand->getIK());
 
   // Create the world and add the robot
-  WorldPtr world = std::make_shared<World>();
+  WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->addSkeleton(atlas);
 
-  // Create the world node
-  ::osg::ref_ptr<WholeBodyIKWorldNode> worldNode
-      = new WholeBodyIKWorldNode(world, atlas);
+  bool headless = false;
+  std::size_t headlessSteps = 120;
+  double trajectoryRadius = 0.08;
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
+    if (arg == "--headless") {
+      headless = true;
+    } else if (arg.rfind("--steps=", 0) == 0) {
+      headlessSteps = std::stoul(arg.substr(8));
+    } else if (arg.rfind("--radius=", 0) == 0) {
+      trajectoryRadius = std::stod(arg.substr(9));
+    }
+  }
 
-  // Create the viewer
-  Viewer viewer;
-  viewer.addWorldNode(worldNode);
-
-  // Enable drag-and-drop for the end effectors
-  // This allows you to interactively move the hands
-  viewer.enableDragAndDrop(leftHand);
-  viewer.enableDragAndDrop(rightHand);
-
-  // Create event handler
-  auto handler = new WholeBodyIKEventHandler(worldNode, atlas, leftHand);
-  viewer.addEventHandler(handler);
-
-  // Print instructions
-  std::cout << "============================================" << std::endl;
-  std::cout << "  Interactive Controls" << std::endl;
-  std::cout << "============================================" << std::endl;
-  std::cout << "Left-click and drag the colored spheres to move the hands" << std::endl;
-  std::cout << "The robot will automatically adjust its posture using whole-body IK" << std::endl;
-  std::cout << std::endl;
-  std::cout << "Press 'R' to reset to standing pose" << std::endl;
-  std::cout << "Press Space to pause/resume simulation" << std::endl;
-  std::cout << "============================================" << std::endl;
-
-  // Set up the viewer window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
-
-  // Set camera position
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(3.0, 2.0, 2.0),
-      ::osg::Vec3(0.0, 0.5, 0.0),
-      ::osg::Vec3(0.0, 0.0, 1.0));
-
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Run the application
-  viewer.run();
+  if (headless) {
+    runHeadlessDemo(
+        world, atlas, leftHand, rightHand, headlessSteps, trajectoryRadius);
+  } else {
+    runGuiDemo(world, atlas, leftHand, rightHand);
+  }
 
   return 0;
 }

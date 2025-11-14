@@ -1,172 +1,133 @@
 """
-Whole-Body Inverse Kinematics Tutorial
+Whole-Body Inverse Kinematics Tutorial (Exercise Version)
 
-This tutorial will teach you how to:
-- Lesson 1: Load a humanoid robot and set up a standing pose
-- Lesson 2: Create end effectors with proper offsets
-- Lesson 3: Configure IK with proper error method bounds
-- Lesson 4: Enable drag-and-drop interaction for IK targets
-
-Follow the instructions in each lesson to complete the tutorial.
+This guided tutorial now covers:
+- Lesson 1: Load Atlas and configure a standing pose
+- Lesson 2: Create hand end effectors with offsets
+- Lesson 3: Configure IK with tight error bounds
+- Lesson 4: Enable drag-and-drop interaction in the viewer
+- Lesson 5: Drive IK targets headlessly (no GUI)
+- Lesson 6: Tune IK options for smoother trajectories
 """
 
-import dartpy as dart
+import argparse
 import numpy as np
+import dartpy as dart
 
 
 class WholeBodyIKWorldNode(dart.gui.osg.RealTimeWorldNode):
-    """Custom world node for handling IK updates."""
-
     def __init__(self, world, robot):
         super().__init__(world)
         self.robot = robot
 
     def customPreStep(self):
-        """Called before each simulation step."""
-        # The IK is solved automatically when targets are moved
+        # IK updates happen when targets are moved by drag-and-drop
         pass
 
 
-def load_atlas_robot():
-    """Load the Atlas humanoid robot and configure initial pose.
+def parse_args():
+    parser = argparse.ArgumentParser(description="Whole-body IK tutorial")
+    parser.add_argument(
+        "--mode",
+        choices=["gui", "headless"],
+        default="gui",
+        help="Select interactive viewer or headless solver loop",
+    )
+    return parser.parse_args()
 
-    Lesson 1: Complete this function to load and configure the robot.
-    """
+
+def load_atlas_robot():
     loader = dart.utils.DartLoader()
     atlas = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     if not atlas:
         raise RuntimeError("Failed to load Atlas robot!")
 
-    # TODO: Set up initial standing pose by setting the following joint positions:
-    #   - r_leg_hpy: -45 degrees
-    #   - r_leg_kny: 90 degrees
-    #   - r_leg_aky: -45 degrees
-    #   - l_leg_hpy: -45 degrees
-    #   - l_leg_kny: 90 degrees
-    #   - l_leg_aky: -45 degrees
-    # Hint: Use atlas.getDof("joint_name").setPosition(angle_in_radians)
-    # Hint: Convert degrees to radians using np.pi / 180.0
-
-    # TODO: Set knee joint lower limits to prevent backward bending (10 degrees)
-    # Hint: Use atlas.getDof("r_leg_kny").setPositionLowerLimit(...)
+    # TODO(Lesson 1): Configure the standing pose and knee limits (same as before)
 
     return atlas
 
 
 def create_hand_end_effector(hand_body_node, name):
-    """Create an end effector for a hand with appropriate offset.
-
-    Lesson 2: Complete this function to create an end effector with proper offset.
-    """
-    # TODO: Create transformation for the end effector
-    # The offset should move the end effector point to the palm center
-    # Left hand offset: (0.0, 0.12, 0.0)
-    # Right hand offset: (0.0, -0.12, 0.0)
-    # Hint: Use dart.math.Isometry3() for the offset transformation
-    # Hint: Use hand_offset.set_translation([x, y, z])
-
+    """Lesson 2: Create an end effector with palm offset."""
+    # TODO: Create a dart.math.Isometry3(), set the translation offset, and
+    # call setDefaultRelativeTransform on the created end effector.
     hand = hand_body_node.createEndEffector(name)
-    # TODO: Set the default relative transform with the offset
-    # Hint: Use hand.setDefaultRelativeTransform(hand_offset, True)
-
     return hand
 
 
 def setup_hand_ik(hand):
-    """Configure inverse kinematics for a hand end effector.
-
-    Lesson 3: Complete this function to configure IK with proper settings.
-    """
-    # Get or create the IK module for this end effector
+    """Lesson 3: Configure IK settings."""
     ik = hand.getIK(True)
 
-    # TODO: Set tight bounds for the error method
-    # This is CRITICAL! The error method only produces non-zero error when
-    # displacement is outside the bounds. With infinite bounds, error is always zero!
-    # Use bounds of [-1e-8, -1e-8, -1e-8] to [1e-8, 1e-8, 1e-8] for both linear and angular
-    # Hint: Use ik.getErrorMethod().setLinearBounds(lower_array, upper_array)
-    # Hint: Use ik.getErrorMethod().setAngularBounds(lower_array, upper_array)
+    # TODO: Set tight linear and angular bounds (±1e-8) on the error method.
+    # TODO: Call useWholeBody() so all dependent DOFs contribute.
+    # TODO: Configure solver max iterations and tolerance, then activate IK.
 
-    # TODO: Use whole-body IK to allow all dependent DOFs to be used
-    # Hint: Use ik.useWholeBody()
-
-    # TODO: Configure the solver parameters:
-    #   - Max iterations: 100
-    #   - Tolerance: 1e-4
-    # Hint: solver = ik.getSolver()
-    # Hint: solver.setNumMaxIterations(100)
-    # Hint: solver.setTolerance(1e-4)
-
-    # TODO: Activate the IK module
-    # Hint: Use ik.setActive(True)
-
-    print(f"Set up IK for end effector: {hand.getName()}")
+    return ik
 
 
-def main():
-    """Main tutorial function."""
-    # Load the Atlas humanoid robot
-    atlas = load_atlas_robot()
+def configure_smooth_motion(ik):
+    """Lesson 6: Apply weights/clamps for smoother motion."""
+    # TODO: Grab ik.getGradientMethod(), build a weights vector matching
+    # len(ik.getDofs()), down-weight the first 6 DOFs (root), and set a
+    # component-wise clamp to keep gradients bounded. Optional: if the
+    # gradient method exposes setDampingCoefficient, increase it slightly.
+    pass
 
-    print("=" * 50)
-    print("  Whole-Body IK Tutorial")
-    print("=" * 50)
-    print(f"Loaded robot: {atlas.getName()}")
-    print(f"Number of DOFs: {atlas.getNumDofs()}")
-    print()
 
-    # Create end effectors for both hands
-    left_hand_body = atlas.getBodyNode("l_hand")
-    right_hand_body = atlas.getBodyNode("r_hand")
+def enable_gui_controls(world, atlas, left_hand, right_hand):
+    node = WholeBodyIKWorldNode(world, atlas)
+    viewer = dart.gui.osg.Viewer()
+    viewer.addWorldNode(node)
 
-    if not left_hand_body or not right_hand_body:
-        raise RuntimeError("Failed to find hand body nodes!")
+    # TODO(Lesson 4): Call viewer.enableDragAndDrop on both hands to allow
+    # interactive manipulation.
 
-    left_hand = create_hand_end_effector(left_hand_body, "l_hand")
-    right_hand = create_hand_end_effector(right_hand_body, "r_hand")
+    viewer.setUpViewInWindow(0, 0, 1280, 960)
+    viewer.setCameraHomePosition([3.0, 2.0, 2.0], [0.0, 0.5, 0.0], [0.0, 0.0, 1.0])
+    viewer.run()
 
-    # Set up IK for both hands
-    print("Setting up whole-body IK...")
-    setup_hand_ik(left_hand)
-    setup_hand_ik(right_hand)
-    print()
 
-    # Create the world and add the robot
+def run_headless_demo(world, atlas, left_hand, right_hand):
+    """Lesson 5: Scripted IK loop without a GUI."""
+    # TODO:
+    #   * Create dart.dynamics.SimpleFrame targets for each hand and register
+    #     them with the respective IK modules via setTarget().
+    #   * Build a small trajectory (e.g., circular arc) by updating the target
+    #     transforms each iteration.
+    #   * Call atlas.getIK(True).solveAndApply(True) so both hands solve
+    #     simultaneously, then world.step().
+    #   * Print the resulting end-effector positions so users can verify the
+    #     trajectory is followed.
+    raise NotImplementedError("Lesson 5: implement run_headless_demo")
+
+
+def build_world(atlas):
     world = dart.simulation.World()
     world.setGravity([0.0, -9.81, 0.0])
     world.addSkeleton(atlas)
+    return world
 
-    # Create the world node
-    world_node = WholeBodyIKWorldNode(world, atlas)
 
-    # Create the viewer
-    viewer = dart.gui.osg.Viewer()
-    viewer.addWorldNode(world_node)
+def main():
+    args = parse_args()
+    atlas = load_atlas_robot()
 
-    # Lesson 4: Enable drag-and-drop for interactive IK
-    # TODO: Enable drag-and-drop for the left and right hand end effectors
-    # This allows you to interactively move the hands and see the robot adjust
-    # Hint: Use viewer.enableDragAndDrop(end_effector)
+    left_hand = create_hand_end_effector(atlas.getBodyNode("l_hand"), "l_hand")
+    right_hand = create_hand_end_effector(atlas.getBodyNode("r_hand"), "r_hand")
 
-    # Print instructions
-    print("=" * 50)
-    print("  Interactive Controls")
-    print("=" * 50)
-    print("Left-click and drag the colored spheres to move the hands")
-    print("The robot will automatically adjust its posture using whole-body IK")
-    print()
-    print("Press Space to pause/resume simulation")
-    print("=" * 50)
+    left_ik = setup_hand_ik(left_hand)
+    right_ik = setup_hand_ik(right_hand)
+    configure_smooth_motion(left_ik)
+    configure_smooth_motion(right_ik)
 
-    # Set up the viewer window
-    viewer.setUpViewInWindow(0, 0, 1280, 960)
+    world = build_world(atlas)
 
-    # Set camera position
-    viewer.setCameraHomePosition([3.0, 2.0, 2.0], [0.0, 0.5, 0.0], [0.0, 0.0, 1.0])
-
-    # Run the application
-    viewer.run()
+    if args.mode == "gui":
+        enable_gui_controls(world, atlas, left_hand, right_hand)
+    else:
+        run_headless_demo(world, atlas, left_hand, right_hand)
 
 
 if __name__ == "__main__":
