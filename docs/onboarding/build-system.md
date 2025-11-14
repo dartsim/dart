@@ -234,10 +234,10 @@ dart/
 
 #### 14. libsdformat
 - **Version:** ≥ 16.0.0, < 17
-- **Purpose:** SDFormat parser used to canonicalize files and perform version conversion before DART walks the XML DOM.
+- **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindsdformat.cmake`
-- **Notes:** Required to read SDF files newer than 1.6; DART falls back to the legacy TinyXML2-only path if libsdformat is unavailable.
+- **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
 #### 15. urdfdom
 - **Version:** ≥ 4.0.1, < 5
@@ -377,7 +377,7 @@ Component Dependency Tree:
     │   └── depends: dart, bullet
     │
     ├── utils
-    │   └── depends: dart, tinyxml2
+    │   └── depends: dart, tinyxml2, libsdformat
     │
     ├── utils-urdf
     │   └── depends: utils, urdfdom
@@ -394,7 +394,7 @@ Component Dependency Tree:
 | `optimizer-ipopt` | `dart-optimizer-ipopt` | `dart`, `ipopt` |
 | `optimizer-nlopt` | `dart-optimizer-nlopt` | `dart`, `nlopt` |
 | `collision-bullet` | `dart-collision-bullet` | `dart`, `bullet` |
-| `utils` | `dart-utils` | `dart`, `tinyxml2` |
+| `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
 | `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL` |
@@ -682,4 +682,5 @@ build/
 <depend>libxi-dev</depend>
 <depend>libxmu-dev</depend>
 <depend>tinyxml2</depend>
+<depend>sdformat</depend>
 ```

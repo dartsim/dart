@@ -1,0 +1,454 @@
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "dart/utils/sdf/detail/SdfHelpers.hpp"
+
+#if HAVE_SDFORMAT
+
+#include <dart/common/Uri.hpp>
+
+#include <gz/math/Quaternion.hh>
+
+namespace dart::utils::SdfParser::detail {
+
+std::string toLowerCopy(std::string text)
+{
+  std::transform(
+      text.begin(),
+      text.end(),
+      text.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return text;
+}
+
+sdf::ParamPtr getAttributeParam(
+    const ElementPtr& element, const std::string& attributeName)
+{
+  if (!element || attributeName.empty())
+    return nullptr;
+
+  if (!element->HasAttribute(attributeName))
+    return nullptr;
+
+  return element->GetAttribute(attributeName);
+}
+
+sdf::ParamPtr getChildValueParam(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  if (!parentElement || name.empty())
+    return nullptr;
+
+  if (!parentElement->HasElement(name))
+    return nullptr;
+
+  const auto child = parentElement->GetElement(name);
+  if (!child)
+    return nullptr;
+
+  return child->GetValue();
+}
+
+Eigen::Vector3d toEigen(const gz::math::Vector3d& vec)
+{
+  return Eigen::Vector3d(vec.X(), vec.Y(), vec.Z());
+}
+
+Eigen::Vector2d toEigen(const gz::math::Vector2d& vec)
+{
+  return Eigen::Vector2d(vec.X(), vec.Y());
+}
+
+Eigen::Vector3i toEigen(const gz::math::Vector3i& vec)
+{
+  return Eigen::Vector3i(vec.X(), vec.Y(), vec.Z());
+}
+
+Eigen::VectorXd colorToVector(const gz::math::Color& color)
+{
+  Eigen::VectorXd result(4);
+  result << color.R(), color.G(), color.B(), color.A();
+  return result;
+}
+
+Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation()
+      = Eigen::Vector3d(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
+  Eigen::Quaterniond quat(
+      pose.Rot().W(), pose.Rot().X(), pose.Rot().Y(), pose.Rot().Z());
+  transform.linear() = quat.toRotationMatrix();
+  return transform;
+}
+
+bool hasElement(const ElementPtr& parent, const std::string& name)
+{
+  return parent && !name.empty() && parent->HasElement(name);
+}
+
+ElementPtr getElement(const ElementPtr& parent, const std::string& name)
+{
+  if (!parent || name.empty())
+    return nullptr;
+
+  if (!parent->HasElement(name))
+    return nullptr;
+
+  return parent->GetElement(name);
+}
+
+bool hasAttribute(const ElementPtr& element, const std::string& attributeName)
+{
+  return element && !attributeName.empty()
+         && element->HasAttribute(attributeName);
+}
+
+std::string getAttributeString(
+    const ElementPtr& element, const std::string& attributeName)
+{
+  if (!element) {
+    DART_ASSERT(false);
+    return std::string();
+  }
+
+  const auto attribute = getAttributeParam(element, attributeName);
+  if (!attribute) {
+    DART_WARN(
+        "[SdfParser] Missing attribute [{}] on <{}>.",
+        attributeName,
+        element->GetName());
+    return std::string();
+  }
+
+  std::string value;
+  if (attribute->Get(value))
+    return value;
+
+  try {
+    return attribute->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse attribute [{}] on <{}>: {}",
+        attributeName,
+        element->GetName(),
+        e.what());
+    return std::string();
+  }
+}
+
+std::string getValueString(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return std::string();
+
+  std::string value;
+  if (param->Get(value))
+    return value;
+
+  try {
+    return param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}> as string: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return std::string();
+  }
+}
+
+bool getValueBool(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  bool value = false;
+  if (readScalarParam(getChildValueParam(parentElement, name), value))
+    return value;
+
+  DART_WARN(
+      "[SdfParser] Failed to parse element <{}> under <{}> as bool.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown");
+  return false;
+}
+
+unsigned int getValueUInt(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  unsigned int value = 0u;
+  if (readScalarParam(getChildValueParam(parentElement, name), value))
+    return value;
+
+  DART_WARN(
+      "[SdfParser] Failed to parse element <{}> under <{}> as unsigned int.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown");
+  return 0u;
+}
+
+double getValueDouble(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  double value = 0.0;
+  if (readScalarParam(getChildValueParam(parentElement, name), value))
+    return value;
+
+  DART_WARN(
+      "[SdfParser] Failed to parse element <{}> under <{}> as double.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown");
+  return 0.0;
+}
+
+Eigen::Vector2d getValueVector2d(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  Eigen::Vector2d result = Eigen::Vector2d::Zero();
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return result;
+
+  gz::math::Vector2d vec2;
+  if (param->Get(vec2))
+    return toEigen(vec2);
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return result;
+  }
+
+  const auto values = parseArray<double>(text);
+  if (values.size() >= 2) {
+    result << values[0], values[1];
+    return result;
+  }
+
+  DART_WARN(
+      "[SdfParser] Element <{}> under <{}> expected 2 values but found {}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      values.size());
+  return result;
+}
+
+Eigen::Vector3d getValueVector3d(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  Eigen::Vector3d result = Eigen::Vector3d::Zero();
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return result;
+
+  gz::math::Vector3d vec3;
+  if (param->Get(vec3))
+    return toEigen(vec3);
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return result;
+  }
+
+  const auto values = parseArray<double>(text);
+  if (values.size() >= 3) {
+    result << values[0], values[1], values[2];
+    return result;
+  }
+
+  DART_WARN(
+      "[SdfParser] Element <{}> under <{}> expected 3 values but found {}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      values.size());
+  return result;
+}
+
+Eigen::Vector3i getValueVector3i(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  Eigen::Vector3i result = Eigen::Vector3i::Zero();
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return result;
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return result;
+  }
+
+  const auto values = parseArray<int>(text);
+  if (values.size() >= 3) {
+    result << values[0], values[1], values[2];
+    return result;
+  }
+
+  DART_WARN(
+      "[SdfParser] Element <{}> under <{}> expected 3 integer values but found {}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      values.size());
+  return result;
+}
+
+Eigen::VectorXd getValueVectorXd(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return Eigen::VectorXd();
+
+  gz::math::Color color;
+  if (param->Get(color))
+    return colorToVector(color);
+
+  gz::math::Vector3d vec3;
+  if (param->Get(vec3)) {
+    Eigen::VectorXd result(3);
+    result << vec3.X(), vec3.Y(), vec3.Z();
+    return result;
+  }
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return Eigen::VectorXd();
+  }
+
+  const auto values = parseArray<double>(text);
+  Eigen::VectorXd result(values.size());
+  for (std::size_t i = 0; i < values.size(); ++i)
+    result[static_cast<Eigen::Index>(i)] = values[i];
+
+  return result;
+}
+
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
+    const ElementPtr& parentElement, const std::string& name)
+{
+  const auto param = getChildValueParam(parentElement, name);
+  if (!param)
+    return Eigen::Isometry3d::Identity();
+
+  gz::math::Pose3d pose;
+  if (param->Get(pose))
+    return poseToIsometry(pose);
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        e.what());
+    return Eigen::Isometry3d::Identity();
+  }
+
+  const auto values = parseArray<double>(text);
+  if (values.size() == 6) {
+    gz::math::Pose3d fallbackPose(
+        gz::math::Vector3d(values[0], values[1], values[2]),
+        gz::math::Quaterniond(values[3], values[4], values[5]));
+    return poseToIsometry(fallbackPose);
+  }
+
+  DART_WARN(
+      "[SdfParser] Element <{}> under <{}> expected 6 pose values but found {}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      values.size());
+  return Eigen::Isometry3d::Identity();
+}
+
+ElementEnumerator::ElementEnumerator(
+    const ElementPtr& parentElement, const std::string& name)
+  : mParent(parentElement),
+    mName(name),
+    mCurrent(nullptr),
+    mInitialized(false)
+{
+  // Do nothing
+}
+
+bool ElementEnumerator::next()
+{
+  if (!mParent)
+    return false;
+
+  if (!mInitialized) {
+    mCurrent = getElement(mParent, mName);
+    mInitialized = true;
+  } else if (mCurrent) {
+    mCurrent = mCurrent->GetNextElement(mName);
+  }
+
+  return static_cast<bool>(mCurrent);
+}
+
+ElementPtr ElementEnumerator::get() const
+{
+  return mCurrent;
+}
+
+} // namespace dart::utils::SdfParser::detail
+
+#endif // HAVE_SDFORMAT
+
