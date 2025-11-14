@@ -87,12 +87,6 @@ void ReferentialSkeleton(py::module& m)
           })
       .def(
           "getBodyNodes",
-          +[](dart::dynamics::ReferentialSkeleton* self)
-              -> const std::vector<dart::dynamics::BodyNode*>& {
-            return self->getBodyNodes();
-          })
-      .def(
-          "getBodyNodes",
           +[](dart::dynamics::ReferentialSkeleton* self,
               const std::string& name)
               -> std::vector<dart::dynamics::BodyNode*> {
@@ -134,18 +128,6 @@ void ReferentialSkeleton(py::module& m)
           "getNumJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> std::size_t {
             return self->getNumJoints();
-          })
-      .def(
-          "getJoints",
-          +[](dart::dynamics::ReferentialSkeleton* self)
-              -> std::vector<dart::dynamics::Joint*> {
-            return self->getJoints();
-          })
-      .def(
-          "getJoints",
-          +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> std::vector<const dart::dynamics::Joint*> {
-            return self->getJoints();
           })
       .def(
           "getJoints",
@@ -194,7 +176,12 @@ void ReferentialSkeleton(py::module& m)
           "getDofs",
           +[](const dart::dynamics::ReferentialSkeleton* self)
               -> std::vector<const dart::dynamics::DegreeOfFreedom*> {
-            return self->getDofs();
+            std::vector<const dart::dynamics::DegreeOfFreedom*> dofs;
+            const auto numDofs = self->getNumDofs();
+            dofs.reserve(numDofs);
+            for (std::size_t i = 0; i < numDofs; ++i)
+              dofs.emplace_back(self->getDof(i));
+            return dofs;
           })
       .def(
           "getIndexOf",

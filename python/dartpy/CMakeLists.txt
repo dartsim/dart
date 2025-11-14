@@ -1,24 +1,53 @@
-# Copyright (c) 2011-2025, The DART development contributors
+# Copyright (c) The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
-#   https://github.com/dartsim/dart/blob/main/LICENSE
+#   https://github.com/dartsim/dart/blob/master/LICENSE
 #
-# This file is provided under the "BSD-style" License
+# This file is provided under the following "BSD-style" License:
+#   Redistribution and use in source and binary forms, with or
+#   without modification, are permitted provided that the following
+#   conditions are met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+#   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+#   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+#   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+#   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+#   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
 
+# Determine Python site-packages directory
+# For wheel builds with scikit-build-core, SKBUILD_PLATLIB_DIR is used directly
+# For traditional CMake installs, we need to calculate the relative path
+# and prefix it with CMAKE_INSTALL_PREFIX
 execute_process(COMMAND ${Python3_EXECUTABLE} -c
-  "from distutils.sysconfig import get_python_lib;\
-  print(get_python_lib(plat_specific=True))"
-  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+  "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
+  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-if(NOT IS_ABSOLUTE ${PYTHON_SITE_PACKAGES})
-  set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
-endif()
+set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}")
 set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
+
+# Exclude GUI OSG bindings if GUI is not built
+if(NOT DART_BUILD_GUI_OSG)
+  list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
+  list(FILTER dartpy_sources EXCLUDE REGEX ".*/gui/osg/.*")
+endif()
 
 # Python binding module name
 set(pybind_module dartpy)
@@ -27,12 +56,21 @@ set(pybind_module dartpy)
 # pybind11_add_module(<name> [MODULE | SHARED] [EXCLUDE_FROM_ALL]
 #                     [NO_EXTRAS] [SYSTEM] [THIN_LTO] source1 [source2 ...])
 #
-pybind11_add_module(${pybind_module}
-  MODULE
-  EXCLUDE_FROM_ALL
-  ${dartpy_headers}
-  ${dartpy_sources}
-)
+# When building wheels, don't use EXCLUDE_FROM_ALL so the module is built automatically
+if(DART_BUILD_WHEELS)
+  pybind11_add_module(${pybind_module}
+    MODULE
+    ${dartpy_headers}
+    ${dartpy_sources}
+  )
+else()
+  pybind11_add_module(${pybind_module}
+    MODULE
+    EXCLUDE_FROM_ALL
+    ${dartpy_headers}
+    ${dartpy_sources}
+  )
+endif()
 
 target_include_directories(${pybind_module}
   SYSTEM PUBLIC
@@ -46,8 +84,6 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-gui
-  dart-gui-osg
 )
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
@@ -67,13 +103,48 @@ endif()
 if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
 endif()
+if(TARGET dart-gui-osg)
+  target_link_libraries(${pybind_module} PUBLIC dart-gui-osg)
+endif()
 
 target_compile_definitions(${pybind_module}
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
 
+if(DART_PYBIND11_EXTRA_DEFINITIONS)
+  target_compile_definitions(${pybind_module}
+    PRIVATE ${DART_PYBIND11_EXTRA_DEFINITIONS}
+  )
+endif()
+
+# Pass DART_BUILD_GUI_OSG to Python bindings so they can conditionally compile OSG support
+if(DART_BUILD_GUI_OSG)
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+else()
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=0)
+endif()
+
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
+
+# Emit the dartpy extension directly into the configured runtime directory so
+# multi-config generators (MSVC/Xcode) don't append config subfolders.
+set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
+foreach(_type LIBRARY RUNTIME ARCHIVE)
+  set_target_properties(${pybind_module} PROPERTIES
+    ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
+  )
+endforeach()
+if(CMAKE_CONFIGURATION_TYPES)
+  foreach(_config ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${_config} _config_upper)
+    foreach(_type LIBRARY RUNTIME ARCHIVE)
+      set_target_properties(${pybind_module} PROPERTIES
+        ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
+      )
+    endforeach()
+  endforeach()
+endif()
 
 # Get the path to the bind module
 set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
@@ -89,11 +160,22 @@ if(BUILD_SHARED_LIBS)
   )
 endif()
 
-# TODO: Fix installing dartpy to site-packages directory
-# Install the pybind module to site-packages directory
-# install(TARGETS ${pybind_module}
-#   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
-# )
+# Install the pybind module and package stub. For scikit-build-core installs we
+# honor SKBUILD_PLATLIB_DIR; otherwise install into the traditional site-packages
+# directory.
+if(DEFINED SKBUILD_PLATLIB_DIR)
+  set(DARTPY_INSTALL_DIR "${SKBUILD_PLATLIB_DIR}/dartpy")
+else()
+  set(DARTPY_INSTALL_DIR "${PYTHON_SITE_PACKAGES}/dartpy")
+endif()
+
+install(TARGETS ${pybind_module}
+  LIBRARY DESTINATION "${DARTPY_INSTALL_DIR}"
+)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+  DESTINATION "${DARTPY_INSTALL_DIR}"
+)
 
 list(REMOVE_ITEM dartpy_headers
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h

@@ -42,8 +42,8 @@
 /// more details on custom type casters.
 
 #include <string>
-#include <utility>
 #include "dart/common/Macros.hpp"
+#include <utility>
 
 #include <Eigen/Dense>
 #include "pybind11/eigen.h"

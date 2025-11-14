@@ -33,7 +33,6 @@
 //
 
 #include "eigen_geometry_pybind.h"
-
 #include "dart/common/Macros.hpp"
 #include "pybind11/pybind11.h"
 
@@ -61,9 +60,7 @@ namespace {
 
 // N.B. Use a loose tolerance, so that we don't have to be super strict with
 // C++.
-#if DART_BUILD_MODE_DEBUG
-const double kCheckTolerance = 1e-5;
-#endif
+[[maybe_unused]] constexpr double kCheckTolerance = 1e-5;
 
 template <typename T>
 void CheckRotMat(const Eigen::Matrix<T, 3, 3>& R)
