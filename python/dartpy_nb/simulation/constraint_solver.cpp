@@ -7,6 +7,7 @@
 #include "collision/collision_option.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
 
 namespace nb = nanobind;
 
@@ -35,7 +36,19 @@ void defConstraintSolver(nb::module_& m)
           [](ConstraintSolver& self) -> dart::collision::CollisionOption& {
             return self.getCollisionOption();
           },
-          nb::rv_policy::reference_internal);
+          nb::rv_policy::reference_internal)
+      .def("addConstraint",
+          [](ConstraintSolver& self,
+              const std::shared_ptr<dart::constraint::ConstraintBase>& constraint) {
+            self.addConstraint(constraint);
+          },
+          nb::arg("constraint"))
+      .def("removeConstraint",
+          [](ConstraintSolver& self,
+              const std::shared_ptr<dart::constraint::ConstraintBase>& constraint) {
+            self.removeConstraint(constraint);
+          },
+          nb::arg("constraint"));
 }
 
 } // namespace dart::python_nb

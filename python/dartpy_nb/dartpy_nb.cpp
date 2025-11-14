@@ -39,6 +39,7 @@
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
+#include "constraint/module.hpp"
 #include "utils/module.hpp"
 
 namespace nb = nanobind;
@@ -70,6 +71,9 @@ NB_MODULE(dartpy_nb, m)
 
   auto simulation = m.def_submodule("simulation", "Simulation utilities backed by nanobind");
   dart::python_nb::defSimulationModule(simulation);
+
+  auto constraint = m.def_submodule("constraint", "Constraint utilities backed by nanobind");
+  dart::python_nb::defConstraintModule(constraint);
 
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
