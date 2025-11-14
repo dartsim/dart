@@ -34,6 +34,7 @@
 #define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -47,7 +48,7 @@ class Joint;
 namespace constraint {
 
 /// JointLimitConstraint handles joint position and velocity limits
-class JointLimitConstraint : public ConstraintBase
+class DART_CONSTRAINT_API JointLimitConstraint : public ConstraintBase
 {
 public:
   /// Constructor
