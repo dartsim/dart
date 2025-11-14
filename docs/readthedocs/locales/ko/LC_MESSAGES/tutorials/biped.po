@@ -282,7 +282,7 @@ msgstr ""
 
 #: ../../tutorials/biped.md:208 4bf3fb25ba0743f2a37995734727018a
 msgid "Lesson 3: Stable PD control"
-msgstr ""
+msgstr "Lesson 3: 안정적인 PD 제어"
 
 #: ../../tutorials/biped.md:210 a16308dafd2046279a5758805320f21e
 msgid ""
@@ -293,6 +293,9 @@ msgid ""
 "demonstrate the implementation of SPD using DART without going into "
 "details of SPD derivation."
 msgstr ""
+"SPD(Stable PD)는 [Jie Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html)이 "
+"제안한 PD 제어 변형으로, 현재 상태 대신 다음 타임스텝에서 예측한 상태를 사용해 제어력을 "
+"계산합니다. 이 Lesson에서는 SPD의 수학적 유도 대신 DART로 구현하는 방법을 보여줍니다."
 
 #: ../../tutorials/biped.md:217 db157fbd54994361aad8286d64d04510
 msgid ""
@@ -301,6 +304,8 @@ msgid ""
 "quantities are readily available via DART API, which makes the full "
 "implementation of SPD simple and concise:"
 msgstr ""
+"SPD를 구현하려면 라그랑주 운동방정식에 등장하는 동역학량에 접근해야 합니다. DART API가 이러한 "
+"값을 제공하므로 구현이 간결해집니다:"
 
 #: ../../tutorials/biped.md:238 d1e75a85366746a4a4152c6334c86372
 msgid ""
@@ -311,6 +316,10 @@ msgid ""
 "due to contacts, joint limits, and other joint constraints set by the "
 "user (e.g. the weld joint constraint in the multi-pendulum tutorial)."
 msgstr ""
+"``getMassMatrix``, ``getCoriolisForces``, ``getGravityForces``, "
+"``getConstraintForces`` 함수를 호출하면 각각 질량 행렬, 코리올리 힘, 중력, 일반화 좌표로 "
+"사영된 제약 힘을 얻을 수 있습니다. 제약 힘에는 접촉, 조인트 제한, 사용자가 추가한 다른 "
+"제약(예: multi-pendulum 튜토리얼의 용접 제약)이 포함됩니다."
 
 #: ../../tutorials/biped.md:249 90e14cbdab8e4ef0ba9597d095af9c95
 msgid ""
@@ -322,6 +331,10 @@ msgid ""
 "forward push), the biped loses its balance quickly. We will demonstrate a"
 " more robust feedback controller in the next Lesson."
 msgstr ""
+"SPD를 사용하면 폭넓은 강성·감쇠 계수 범위에서도 안정적인 움직임을 얻을 수 있으므로 기본값인 "
+"1000/50을 그대로 사용해도 됩니다. 목표 자세를 유지하면 이족 보행자는 오랫동안 균형을 유지할 수 "
+"있지만 ',' 또는 '.' 키로 외력을 가하면 금방 무너집니다. 다음 Lesson에서는 더 견고한 피드백 "
+"제어기를 소개합니다."
 
 #: ../../tutorials/biped.md:258 73235c167e224c9982ebd6035cb0cd68
 msgid "Lesson 4: Ankle strategy"
