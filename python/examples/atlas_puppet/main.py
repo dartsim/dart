@@ -35,12 +35,40 @@ import numpy as np
 DISPLAY_ELEVATION = 0.05
 
 
+class TargetDisplayController:
+    """Manages visibility of an interactive target."""
+
+    def __init__(self, world, viewer, frame):
+        self.world = world
+        self.viewer = viewer
+        self.frame = frame
+        self._dnd = None
+        self.visible = False
+
+    def show(self):
+        if self.visible:
+            return
+        self.world.addSimpleFrame(self.frame)
+        self._dnd = self.viewer.enableDragAndDrop(self.frame)
+        self.visible = True
+
+    def hide(self):
+        if not self.visible:
+            return
+        if self._dnd is not None:
+            self.viewer.disableDragAndDrop(self._dnd)
+            self._dnd = None
+        self.world.removeSimpleFrame(self.frame)
+        self.visible = False
+
+
 class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
     """Custom keyboard event handler for Atlas control."""
 
-    def __init__(self, teleop_world):
+    def __init__(self, teleop_world, target_displays):
         super().__init__()
         self.teleop_world = teleop_world
+        self.target_displays = target_displays
         print("✓ AtlasKeyboardHandler created")
 
     def handle(self, ea, aa):
@@ -130,6 +158,10 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
             ik = ee.getIK()
             is_active = ik.isActive()
             ik.setActive(not is_active)
+            if ik.isActive():
+                self.target_displays[idx].show()
+            else:
+                self.target_displays[idx].hide()
 
             status = "OFF" if is_active else "ON"
             print(f"{ee_names[idx]} IK: {status}")
@@ -525,11 +557,6 @@ def main():
     # Set up end effectors with IK and get targets
     interactive_targets = setup_end_effectors(atlas)
 
-    # CRITICAL: Add interactive frames to the world so they're visible!
-    for target in interactive_targets:
-        world.addSimpleFrame(target)
-    print(f"✓ Added {len(interactive_targets)} interactive frames to world")
-
     # Get end effectors
     l_hand = atlas.getBodyNode("l_hand").getEndEffector(0)
     r_hand = atlas.getBodyNode("r_hand").getEndEffector(0)
@@ -551,6 +578,10 @@ def main():
 
     print(f"✓ Positioned interactive targets at end effector locations")
 
+    # Start with IK targets inactive/hidden until toggled via keyboard.
+    for eff in (l_hand, r_hand, l_foot, r_foot):
+        eff.getIK().setActive(False)
+
     print()
     print("Starting viewer...")
     print()
@@ -565,9 +596,13 @@ def main():
 
     # Enable drag-and-drop for all interactive frames
     print("Enabling drag-and-drop for interactive targets...")
-    for target in interactive_targets:
-        viewer.enableDragAndDrop(target)
-    print(f"✓ Drag-and-drop enabled for {len(interactive_targets)} interactive frames")
+    target_displays = [
+        TargetDisplayController(world, viewer, frame)
+        for frame in interactive_targets
+    ]
+    for controller in target_displays:
+        controller.hide()
+    print("✓ Interactive targets are hidden by default (press 1-4 to show)")
     print()
 
     # Add custom instructions for atlas_puppet
@@ -582,6 +617,9 @@ def main():
     )
     viewer.addInstructionText(
         "1 -> 4:        Toggle the interactive target of an EndEffector\n"
+    )
+    viewer.addInstructionText(
+        "              (targets start hidden until toggled on)\n"
     )
     viewer.addInstructionText("W A S D:       Move the robot around the scene\n")
     viewer.addInstructionText(
@@ -620,7 +658,7 @@ def main():
 
     # Register keyboard event handler
     print("Registering keyboard event handler...")
-    keyboard_handler = AtlasKeyboardHandler(node)
+    keyboard_handler = AtlasKeyboardHandler(node, target_displays)
     viewer.addEventHandler(keyboard_handler)
     print("✓ Keyboard handler registered - W/A/S/D/Q/E/F/Z/X/C/R/T keys enabled!")
     print()
