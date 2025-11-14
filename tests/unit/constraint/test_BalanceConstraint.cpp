@@ -144,7 +144,7 @@ TEST(BalanceConstraintTests, CentroidErrorDropsInsidePolygon)
   ASSERT_GT(outsideError, 0.0);
   EXPECT_DOUBLE_EQ(outsideError, constraint.eval(q));
 
-  setComOffset(rig, 0.95);
+  setComOffset(rig, 1.5);
   const double insideError = constraint.eval(rig.skeleton->getPositions());
   EXPECT_NEAR(insideError, 0.0, 1e-12);
 }
@@ -184,7 +184,7 @@ TEST(BalanceConstraintTests, OptimizeBalanceHonorsTolerance)
       BalanceConstraint::SHIFT_SUPPORT,
       BalanceConstraint::OPTIMIZE_BALANCE);
 
-  setComOffset(rig, 0.85);
+  setComOffset(rig, 1.2);
   const auto q = rig.skeleton->getPositions();
 
   constraint.setOptimizationTolerance(1e-6);
