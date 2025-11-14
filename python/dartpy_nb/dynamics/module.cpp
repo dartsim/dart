@@ -9,6 +9,7 @@
 #include "dynamics/inertia.hpp"
 #include "dynamics/inverse_kinematics.hpp"
 #include "dynamics/joint.hpp"
+#include "dynamics/meta_skeleton.hpp"
 #include "dynamics/prismatic_joint.hpp"
 #include "dynamics/revolute_joint.hpp"
 #include "dynamics/shape.hpp"
@@ -30,6 +31,7 @@ void defDynamicsModule(nanobind::module_& m)
   defShape(m);
   defFrame(m);
   defBodyNode(m);
+  defMetaSkeleton(m);
   defShapeFrame(m);
   defShapeNode(m);
   defSimpleFrame(m);
