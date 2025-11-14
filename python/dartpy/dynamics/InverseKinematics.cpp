@@ -588,7 +588,7 @@ void InverseKinematics(py::module& m)
       .def(
           "getGradientMethod",
           +[](dart::dynamics::InverseKinematics* self)
-              -> dart::dynamics::InverseKinematics::GradientMethod* {
+              -> dart::dynamics::InverseKinematics::GradientMethod& {
             return self->getGradientMethod();
           },
           ::py::return_value_policy::reference,
@@ -596,7 +596,7 @@ void InverseKinematics(py::module& m)
       .def(
           "getGradientMethod",
           +[](const dart::dynamics::InverseKinematics* self)
-              -> dart::dynamics::InverseKinematics::GradientMethod* {
+              -> const dart::dynamics::InverseKinematics::GradientMethod& {
             return self->getGradientMethod();
           },
           ::py::return_value_policy::reference,
