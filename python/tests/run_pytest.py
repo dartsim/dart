@@ -9,8 +9,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Iterable, List
-
-import pytest
+import subprocess
 
 
 def _collect_crash_logs(start_ts: float) -> List[Path]:
@@ -57,7 +56,9 @@ def main(argv: Iterable[str]) -> int:
         pytest_args = pytest_args[1:]
 
     start_timestamp = time.time()
-    exit_code = pytest.main(pytest_args)
+    cmd = [sys.executable, "-m", "pytest", *pytest_args]
+    completed = subprocess.run(cmd)
+    exit_code = completed.returncode
 
     if exit_code != 0:
         crash_logs = _collect_crash_logs(start_timestamp)
