@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_HIERARCHICALIK_HPP_
 #define DART_DYNAMICS_HIERARCHICALIK_HPP_
 
-#include <dart/dynamics/Export.hpp>
+#include <dart/Export.hpp>
 #include <dart/dynamics/InverseKinematics.hpp>
 
 #include <unordered_set>
@@ -61,7 +61,7 @@ typedef std::vector<std::vector<std::shared_ptr<InverseKinematics>>>
 /// put into the IK modules' Problems. Any additional constraints or objectives
 /// that you want the HierarchicalIK to solve should be put directly into the
 /// HierarchicalIK's Problem.
-class DART_DYNAMICS_API HierarchicalIK : public common::Subject
+class DART_API HierarchicalIK : public common::Subject
 {
 public:
   /// Virtual destructor
