@@ -36,6 +36,7 @@
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/HierarchicalIK.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 
@@ -54,6 +55,7 @@ struct BalanceRig
 {
   SkeletonPtr skeleton;
   std::shared_ptr<WholeBodyIK> ik;
+  std::size_t comDofIndex;
 };
 
 math::SupportGeometry makeFootGeometry()
@@ -99,8 +101,15 @@ BalanceRig makeBalanceRig()
   addSupportEndEffector(
       rootBody, "right_foot", Eigen::Vector3d(1.0, -0.15, 0.0), geometry);
 
+  PrismaticJoint::Properties sliderProps;
+  sliderProps.mAxis = Eigen::Vector3d::UnitX();
+  auto [sliderJoint, comBody]
+      = skeleton->createJointAndBodyNodePair<PrismaticJoint>(
+          rootBody, sliderProps, BodyNode::Properties());
+  comBody->setMass(20.0);
+
   auto ik = WholeBodyIK::create(skeleton);
-  return {skeleton, ik};
+  return {skeleton, ik, sliderJoint->getDof(0)->getIndexInSkeleton()};
 }
 
 Eigen::VectorXd getPositions(const SkeletonPtr& skeleton)
@@ -110,12 +119,11 @@ Eigen::VectorXd getPositions(const SkeletonPtr& skeleton)
   return q;
 }
 
-double translateAlongX(SkeletonPtr skeleton, double x)
+void setComOffset(const BalanceRig& rig, double x)
 {
-  Eigen::VectorXd q = skeleton->getPositions();
-  q[3] = x;
-  skeleton->setPositions(q);
-  return x;
+  Eigen::VectorXd q = rig.skeleton->getPositions();
+  q[rig.comDofIndex] = x;
+  rig.skeleton->setPositions(q);
 }
 
 } // namespace
@@ -136,7 +144,7 @@ TEST(BalanceConstraintTests, CentroidErrorDropsInsidePolygon)
   ASSERT_GT(outsideError, 0.0);
   EXPECT_DOUBLE_EQ(outsideError, constraint.eval(q));
 
-  translateAlongX(rig.skeleton, 0.95);
+  setComOffset(rig, 0.95);
   const double insideError = constraint.eval(rig.skeleton->getPositions());
   EXPECT_NEAR(insideError, 0.0, 1e-12);
 }
@@ -176,7 +184,7 @@ TEST(BalanceConstraintTests, OptimizeBalanceHonorsTolerance)
       BalanceConstraint::SHIFT_SUPPORT,
       BalanceConstraint::OPTIMIZE_BALANCE);
 
-  translateAlongX(rig.skeleton, 0.85);
+  setComOffset(rig, 0.85);
   const auto q = rig.skeleton->getPositions();
 
   constraint.setOptimizationTolerance(1e-6);
