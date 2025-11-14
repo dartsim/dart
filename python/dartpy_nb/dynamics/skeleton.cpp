@@ -46,6 +46,7 @@ void defSkeleton(nb::module_& m)
       .def(nb::init<>())
       .def("getNumBodyNodes", &Skeleton::getNumBodyNodes)
       .def("getNumJoints", &Skeleton::getNumJoints)
+      .def("getNumDofs", &Skeleton::getNumDofs)
       .def("getBodyNode",
           [](Skeleton& self, std::size_t idx) -> BodyNode* {
             return self.getBodyNode(idx);
@@ -85,6 +86,19 @@ void defSkeleton(nb::module_& m)
             self.setPositions(positions);
           },
           nb::arg("positions"))
+      .def("resetPositions", &Skeleton::resetPositions)
+      .def("enableSelfCollisionCheck",
+          &Skeleton::enableSelfCollisionCheck)
+      .def("disableSelfCollisionCheck",
+          &Skeleton::disableSelfCollisionCheck)
+      .def("isEnabledSelfCollisionCheck",
+          &Skeleton::isEnabledSelfCollisionCheck)
+      .def("enableAdjacentBodyCheck",
+          &Skeleton::enableAdjacentBodyCheck)
+      .def("disableAdjacentBodyCheck",
+          &Skeleton::disableAdjacentBodyCheck)
+      .def("isEnabledAdjacentBodyCheck",
+          &Skeleton::isEnabledAdjacentBodyCheck)
       .def("createFreeJointAndBodyNodePair",
           [](Skeleton& self,
               BodyNode* parent,
