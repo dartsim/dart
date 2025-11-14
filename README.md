@@ -43,16 +43,16 @@ vcpkg install dartsim:x64-windows         # Windows
 
 ## Documentation
 
-### Developer Resources
-
-- **[Developer Onboarding Guide](docs/onboarding/README.md)** - Comprehensive guide for new contributors covering architecture, components, and workflows
-- **[Contributing Guide](CONTRIBUTING.md)** - Style guide and contribution process
-
 ### User Documentation
 
 For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
 
 An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim/dart).
+
+### Developer Resources
+
+- **[Developer Onboarding Guide](docs/onboarding/README.md)** - Comprehensive guide for new contributors covering architecture, components, and workflows
+- **[Contributing Guide](CONTRIBUTING.md)** - Style guide and contribution process
 
 ## Project Status
 
