@@ -40,6 +40,7 @@
 
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -62,6 +63,21 @@ namespace {
 
 using dart::collision::CollisionDetector;
 using dart::collision::CollisionDetectorPtr;
+
+void configureCollisionDetector(
+    const CollisionDetectorPtr& detector, const std::string& key)
+{
+  if (!detector)
+    return;
+
+  if (key == "fcl") {
+    auto fclDetector
+        = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
+    if (fclDetector) {
+      fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+    }
+  }
+}
 
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
@@ -102,6 +118,7 @@ CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
         key);
   }
 
+  configureCollisionDetector(detector, key);
   return detector;
 }
 
