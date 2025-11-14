@@ -952,8 +952,8 @@ void BodyNode(py::module& m)
           })
       .def(
           "getEndEffector",
-          +[](dart::dynamics::BodyNode* self, std::size_t index)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::BodyNode* self,
+              std::size_t index) -> dart::dynamics::EndEffector* {
             return self->getEndEffector(index);
           },
           ::py::return_value_policy::reference_internal,

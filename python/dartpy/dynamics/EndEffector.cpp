@@ -57,9 +57,7 @@ void EndEffector(py::module& m)
       .def(
           "getGeometry",
           +[](const dart::dynamics::Support* self)
-              -> dart::math::SupportGeometry {
-            return self->getGeometry();
-          })
+              -> dart::math::SupportGeometry { return self->getGeometry(); })
       .def(
           "setActive",
           +[](dart::dynamics::Support* self, bool supporting) {
@@ -67,8 +65,7 @@ void EndEffector(py::module& m)
           },
           ::py::arg("supporting") = true)
       .def(
-          "isActive",
-          +[](const dart::dynamics::Support* self) -> bool {
+          "isActive", +[](const dart::dynamics::Support* self) -> bool {
             return self->isActive();
           });
 
@@ -92,20 +89,20 @@ void EndEffector(py::module& m)
           })
       .def(
           "createSupport",
-          +[](dart::dynamics::EndEffector* self)
-              -> dart::dynamics::Support* {
+          +[](dart::dynamics::EndEffector* self) -> dart::dynamics::Support* {
             return self->createSupport();
           },
           ::py::return_value_policy::reference_internal)
       .def(
           "getSupport",
-          +[](dart::dynamics::EndEffector* self)
-              -> dart::dynamics::Support* { return self->getSupport(); },
+          +[](dart::dynamics::EndEffector* self) -> dart::dynamics::Support* {
+            return self->getSupport();
+          },
           ::py::return_value_policy::reference_internal)
       .def(
           "getSupport",
-          +[](dart::dynamics::EndEffector* self, bool createIfNull)
-              -> dart::dynamics::Support* {
+          +[](dart::dynamics::EndEffector* self,
+              bool createIfNull) -> dart::dynamics::Support* {
             return self->getSupport(createIfNull);
           },
           ::py::return_value_policy::reference_internal,

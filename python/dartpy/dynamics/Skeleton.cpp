@@ -610,8 +610,8 @@ void Skeleton(py::module& m)
           ::py::arg("treeIndex"))
       .def(
           "getEndEffector",
-          +[](dart::dynamics::Skeleton* self, std::size_t index)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::Skeleton* self,
+              std::size_t index) -> dart::dynamics::EndEffector* {
             return self->getEndEffector(index);
           },
           ::py::return_value_policy::reference_internal,
@@ -628,8 +628,8 @@ void Skeleton(py::module& m)
           ::py::arg("nodeIndex"))
       .def(
           "getEndEffector",
-          +[](dart::dynamics::Skeleton* self, const std::string& name)
-              -> dart::dynamics::EndEffector* {
+          +[](dart::dynamics::Skeleton* self,
+              const std::string& name) -> dart::dynamics::EndEffector* {
             return self->getEndEffector(name);
           },
           ::py::return_value_policy::reference_internal,

@@ -49,10 +49,8 @@ void HierarchicalIK(py::module& m)
       std::shared_ptr<dart::dynamics::HierarchicalIK>>(m, "HierarchicalIK")
       .def(
           "solveAndApply",
-          +[](dart::dynamics::HierarchicalIK* self,
-              bool allowIncompleteResult) -> bool {
-            return self->solveAndApply(allowIncompleteResult);
-          },
+          +[](dart::dynamics::HierarchicalIK* self, bool allowIncompleteResult)
+              -> bool { return self->solveAndApply(allowIncompleteResult); },
           ::py::arg("allowIncompleteResult") = true);
 
   ::py::class_<
