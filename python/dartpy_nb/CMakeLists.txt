@@ -120,6 +120,8 @@ set(dartpy_nb_headers
   simulation/module.hpp
   simulation/world.hpp
   simulation/constraint_solver.hpp
+  constraint/module.hpp
+  constraint/dynamic_joint_constraint.hpp
 )
 
 set(dartpy_nb_sources
@@ -174,6 +176,8 @@ set(dartpy_nb_sources
   simulation/module.cpp
   simulation/world.cpp
   simulation/constraint_solver.cpp
+  constraint/module.cpp
+  constraint/dynamic_joint_constraint.cpp
 )
 
 nanobind_add_module(dartpy_nb
