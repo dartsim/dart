@@ -557,7 +557,8 @@ msgid ""
 "Setting mBallConstraint to a nullptr will allow its smart pointer to "
 "delete it."
 msgstr ""
+"mBallConstraint를 nullptr로 설정하면 스마트 포인터가 제약을 삭제할 수 있습니다."
 
 #: ../../tutorials/multi-pendulum.md:388 9b66d05f5e8f4b8db60ffff391a88766
 msgid "**Now you are ready to run the demo!**"
-msgstr ""
+msgstr "**이제 데모를 실행할 준비가 되었습니다!**"
