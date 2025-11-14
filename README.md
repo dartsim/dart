@@ -12,6 +12,10 @@ DART utilizes generalized coordinates to represent articulated rigid body
 systems and employs Featherstone's Articulated Body Algorithm to compute motion
 dynamics.
 
+<p align="center">
+  <video src="https://github.com/user-attachments/assets/26b94452-2bae-4a08-8ab5-96e439759359" width="720" autoplay loop muted playsinline controls></video>
+</p>
+
 ## Getting Started
 
 Install DART using your preferred package manager:
