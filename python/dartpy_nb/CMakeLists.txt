@@ -95,6 +95,7 @@ set(dartpy_nb_headers
   math/constants.hpp
   math/geometry.hpp
   math/random.hpp
+  math/eigen_geometry.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
   dynamics/frame.hpp
@@ -152,6 +153,7 @@ set(dartpy_nb_sources
   math/constants.cpp
   math/geometry.cpp
   math/random.cpp
+  math/eigen_geometry.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
   dynamics/frame.cpp
