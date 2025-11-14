@@ -46,9 +46,10 @@ void defWorld(nb::module_& m)
             return self.addSkeleton(skeleton);
           },
           nb::arg("skeleton"))
+      .def("setTimeStep", &World::setTimeStep, nb::arg("timeStep"))
+      .def("getTimeStep", &World::getTimeStep)
       .def("step", &World::step)
       .def("getTime", &World::getTime)
-      .def("getTimeStep", &World::getTimeStep)
       .def("getConstraintSolver",
           [](World& self) -> dart::constraint::ConstraintSolver* {
             return self.getConstraintSolver();
