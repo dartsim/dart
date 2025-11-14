@@ -191,20 +191,24 @@ msgid ""
 "top of this function is where we will want to reset everything to the "
 "default appearance."
 msgstr ""
+"``MyWindow`` 클래스에서 ``timeStepping`` 함수를 찾습니다. 이 함수의 앞부분에서 모든 "
+"외관을 기본값으로 되돌릴 것입니다."
 
 #: ../../tutorials/multi-pendulum.md:93 e9b7d557bbf944cbb2a0c3b0cb683064
 msgid ""
 "Each BodyNode contains visualization ``Shape``s that will be rendered "
 "during simulation. In our case, each BodyNode has two shapes:"
 msgstr ""
+"각 BodyNode에는 시뮬레이션 중 렌더링되는 시각화 ``Shape`` 가 들어 있습니다. 우리의 예제 "
+"BodyNode마다 두 개의 Shape가 있습니다:"
 
 #: ../../tutorials/multi-pendulum.md:96 47552cbbdceb4522a5c3ad62c37e3585
 msgid "One shape to visualize the parent joint"
-msgstr ""
+msgstr "부모 조인트를 표현하는 Shape 하나"
 
 #: ../../tutorials/multi-pendulum.md:97 34f9167726e640c5b6d04d4cef9b1c7f
 msgid "One shape to visualize the body"
-msgstr ""
+msgstr "바디를 표현하는 Shape 하나"
 
 #: ../../tutorials/multi-pendulum.md:99 7b0bfc9a0b664a2ca0f352bcd376b081
 msgid ""
@@ -212,6 +216,8 @@ msgid ""
 "want to iterate through these two Shapes in each BodyNode, setting their "
 "colors to blue."
 msgstr ""
+"모든 요소의 기본 색상은 파란색이므로 각 BodyNode의 두 Shape를 순회하며 색상을 파란색으로 "
+"바꿔 줍니다."
 
 #: ../../tutorials/multi-pendulum.md:116 38ff08108a9645a59944f1a894db447d
 msgid ""
@@ -220,14 +226,16 @@ msgid ""
 " to it. By default, this arrow should not be attached, so in the outer "
 "for-loop, we should check for arrows and remove them:"
 msgstr ""
+"또한 사용자가 외력을 가했다면 일부 BodyNode에 화살표 Shape가 붙어 있을 수 있습니다. 기본 "
+"상태에서는 화살표가 없어야 하므로 바깥 for 루프에서 이러한 화살표를 확인해 제거합니다:"
 
 #: ../../tutorials/multi-pendulum.md:128 a0471fc9b25645fdb6d003620c0f1b1d
 msgid "Now everything will be reset to the default appearance."
-msgstr ""
+msgstr "이제 모든 요소가 기본 외관으로 초기화됩니다."
 
 #: ../../tutorials/multi-pendulum.md:130 5c3d9e46fe1c40c2b3c917d2e2d67e9e
 msgid "Lesson 1b: Apply joint torques based on user input"
-msgstr ""
+msgstr "Lesson 1b: 사용자 입력에 따라 조인트 토크 적용"
 
 #: ../../tutorials/multi-pendulum.md:132 772c2fbb799a4c7fb57383fec2cb7e79
 msgid ""
@@ -237,18 +245,22 @@ msgid ""
 "key. If an entry in ``mForceCountDown`` is greater than zero, then that "
 "implies that the user wants a force to be applied for that entry."
 msgstr ""
+"이 튜토리얼의 ``MyWindow`` 클래스에는 ``mForceCountDown`` 이라는 "
+"``std::vector<int>`` 변수가 있습니다. 사용자가 숫자 키를 누를 때마다 해당 요소가 "
+"``default_countdown`` 값으로 설정됩니다. ``mForceCountDown`` 의 항목이 0보다 크면 "
+"그 항목에 힘을 적용하고자 함을 의미합니다."
 
 #: ../../tutorials/multi-pendulum.md:138 b7256c32b1804ea6a775183f85fbed08
 msgid "There are two ways that forces can be applied:"
-msgstr ""
+msgstr "힘을 적용하는 방법은 두 가지입니다:"
 
 #: ../../tutorials/multi-pendulum.md:140 f6157e7820a84890b87576d5a3f8ed7b
 msgid "As an internal joint force"
-msgstr ""
+msgstr "조인트 내부 힘으로 적용"
 
 #: ../../tutorials/multi-pendulum.md:141 a5c8ffb447634baea600e109746048ac
 msgid "As an external body force"
-msgstr ""
+msgstr "바디 외력으로 적용"
 
 #: ../../tutorials/multi-pendulum.md:143 c3a1ab2be8b9486b80637e1dc99a3ec5
 msgid ""
@@ -257,6 +269,9 @@ msgid ""
 "  if-statement for ``mForceCountDown``. In that if-statement, we'll grab "
 "the relevant DegreeOfFreedom and set its generalized (joint) force:"
 msgstr ""
+"먼저 조인트 힘 적용을 살펴보겠습니다. ``getNumDofs()`` 로 각 ``DegreeOfFreedom`` 을 "
+"순회하는 for 루프 내부에 ``mForceCountDown`` 을 확인하는 if 문이 있습니다. 이 안에서 "
+"해당 자유도를 가져와 그 일반화(조인트) 힘을 설정합니다:"
 
 #: ../../tutorials/multi-pendulum.md:153 e9cdf272bcb8470f905a430b378a0103
 msgid ""
@@ -264,6 +279,8 @@ msgid ""
 "minus sign '-' key. We use this boolean to decide whether the applied "
 "force should be positive or negative."
 msgstr ""
+"사용자가 '-' 키를 누르면 ``mPositiveSign`` 불리언 값이 토글됩니다. 이 값을 사용해 "
+"적용할 힘의 부호를 결정합니다."
 
 #: ../../tutorials/multi-pendulum.md:157 cd158a8ace024d8da5f55d5e09863d75
 msgid ""
@@ -271,6 +288,8 @@ msgid ""
 " We'll do this by highlighting the joint with the color red. First we'll "
 "grab the Shape that corresponds to this Joint:"
 msgstr ""
+"이제 조인트 힘이 적용 중임을 시각화하려 합니다. 조인트를 빨간색으로 강조 표시하면 됩니다. "
+"먼저 해당 조인트에 대응하는 Shape를 가져옵니다:"
 
 #: ../../tutorials/multi-pendulum.md:166 cfb74ad840c0498593e2753dec0808c1
 msgid ""
@@ -278,10 +297,12 @@ msgid ""
 "the zeroth indexed visualization shape will be the shape that depicts the"
 " joint. So now we will color it red:"
 msgstr ""
+"펜듈럼 바디의 구성 방식을 고려하면 0번 인덱스 Shape가 조인트를 나타낸다고 가정할 수 "
+"있습니다. 따라서 이 Shape를 빨간색으로 칠합니다:"
 
 #: ../../tutorials/multi-pendulum.md:174 a010a3563bf441549f6cdfef41192db9
 msgid "Lesson 1c: Apply body forces based on user input"
-msgstr ""
+msgstr "Lesson 1c: 사용자 입력에 따라 바디 외력 적용"
 
 #: ../../tutorials/multi-pendulum.md:176 f67998fc9c68421a843486be437afd5e
 msgid ""
@@ -291,6 +312,9 @@ msgid ""
 "there is an if-statement for ``mForceCountDown``. In that if-statement, "
 "we'll grab the relevant BodyNode:"
 msgstr ""
+"mBodyForce가 true이면 조인트 내부 힘 대신 바디 외력을 적용합니다. ``getNumBodyNodes()`` "
+"로 각 ``BodyNode`` 를 순회하는 for 루프 안에 ``mForceCountDown`` 을 확인하는 if 문이 "
+"있습니다. 그 안에서 해당 BodyNode를 가져옵니다:"
 
 #: ../../tutorials/multi-pendulum.md:185 28639b5a5daf4f1299462f358296e3a6
 msgid ""
@@ -302,6 +326,10 @@ msgid ""
 "would be a three-dimensional vector of floats, and an math::Vector3i "
 "would be a three-dimensional vector of integers."
 msgstr ""
+"이제 힘을 표현하는 ``math::Vector3d`` 와, 힘이 작용할 위치를 나타내는 또 다른 "
+"벡터를 만듭니다. ``math::Vector3d`` 는 Eigen C++ 라이브러리에서 제공하는 3차원 "
+"수학 벡터 타입입니다. 이름 끝의 ``d`` 는 \"차원\"이 아니라 ``double`` 을 의미합니다. "
+"``math::Vector3f`` 는 float 벡터, ``math::Vector3i`` 는 정수 벡터입니다."
 
 #: ../../tutorials/multi-pendulum.md:197 1382da491f71480281606a53ae4ea3c8
 msgid ""
@@ -311,14 +339,17 @@ msgid ""
 " side is pushing the body in the positive direction. However, we need to "
 "account for sign changes:"
 msgstr ""
+"힘의 크기는 ``default_force`` 이며 양의 x 방향을 가리킵니다. 힘의 위치는 바디의 음의 "
+"x 면 중심으로, 음의 방향에서 양의 방향으로 누르는 손가락을 상상하면 됩니다. 단, 부호가 바뀔 수 "
+"있으므로 다음과 같이 처리합니다:"
 
 #: ../../tutorials/multi-pendulum.md:210 d639677e4ca94831bf4b6909c037e5e4
 msgid "That will flip the signs whenever the user is requesting a negative force."
-msgstr ""
+msgstr "이렇게 하면 사용자가 음의 힘을 요청할 때마다 부호가 뒤집힙니다."
 
 #: ../../tutorials/multi-pendulum.md:212 cd39535f3a054d5496a83b38ed548a43
 msgid "Now we can add the external force:"
-msgstr ""
+msgstr "이제 외력을 추가할 수 있습니다:"
 
 #: ../../tutorials/multi-pendulum.md:218 8c5d564e7d59419eabe4c5eed2e6ef69
 msgid ""
@@ -326,12 +357,15 @@ msgid ""
 " force and the location vectors are being expressed with respect to the "
 "body frame."
 msgstr ""
+"마지막에 있는 두 개의 ``true`` 값은 힘과 위치 벡터가 모두 바디 좌표계 기준임을 DART에 "
+"알려줍니다."
 
 #: ../../tutorials/multi-pendulum.md:221 688c6acd8b714c28abc0662f03538efa
 msgid ""
 "Now we'll want to visualize the force being applied to the body. First, "
 "we'll grab the Shape for the body and color it red:"
 msgstr ""
+"이제 바디에 적용된 힘을 시각화합니다. 먼저 해당 바디 Shape를 가져와 빨간색으로 색칠합니다:"
 
 #: ../../tutorials/multi-pendulum.md:229 d45578ca2926433cbbb8e947f985d948
 msgid ""
@@ -340,6 +374,8 @@ msgid ""
 "grabbing the 1-index visualization shape, because we trust that it is the"
 " shape for the body."
 msgstr ""
+"이전에 우리는 부모 조인트를 나타낸다고 믿는 0번 인덱스 Shape를 사용했습니다. 이번에는 바디를 "
+"나타낸다고 믿는 1번 인덱스 Shape를 가져옵니다."
 
 #: ../../tutorials/multi-pendulum.md:234 e01b22fcc0944ac9836e3a89c7511e36
 msgid ""
@@ -347,10 +383,12 @@ msgid ""
 " represent the applied force. The ``MyWindow`` class already provides the"
 " arrow shape; we just need to add it:"
 msgstr ""
+"이제 바디 시각화 Shape에 화살표를 추가해 적용된 힘을 표현하겠습니다. ``MyWindow`` 클래스에는 "
+"이미 화살표 Shape가 있으므로 가져오기만 하면 됩니다:"
 
 #: ../../tutorials/multi-pendulum.md:242 d82a024021004b149238ebcaf430b2f2
 msgid "Lesson 2: Set spring and damping properties for joints"
-msgstr ""
+msgstr "Lesson 2: 조인트 스프링과 감쇠 특성 설정"
 
 #: ../../tutorials/multi-pendulum.md:244 13563f3402254fbea92bac662d7b9d62
 msgid ""
@@ -363,14 +401,18 @@ msgid ""
 "are computed using implicit methods in order to improve numerical "
 "stability."
 msgstr ""
+"DART의 조인트는 내재된 스프링 및 감쇠 특성을 가질 수 있습니다. 기본적으로 이 값들은 0이어서 "
+"조인트는 ``Joint::setForces`` 로 전달된 힘만 생성합니다. 하지만 스프링 계수를 0이 아닌 값으로 "
+"설정하면 조인트가 훅의 법칙에 따라 작동하며, 감쇠 계수를 0이 아닌 값으로 설정하면 선형 감쇠가 "
+"적용됩니다. 이러한 힘은 수치적 안정성을 높이기 위해 암시적 방식으로 계산됩니다."
 
 #: ../../tutorials/multi-pendulum.md:252 bd0e8924df2a48d28b773afb4cdd622f
 msgid "Lesson 2a: Set joint spring rest position"
-msgstr ""
+msgstr "Lesson 2a: 조인트 스프링 평형 위치 설정"
 
 #: ../../tutorials/multi-pendulum.md:254 8e5e82f6a96f40709ee37c9891aa6821
 msgid "First let's see how to get and set the rest positions."
-msgstr ""
+msgstr "먼저 평형 위치를 가져오고 설정하는 방법을 살펴보겠습니다."
 
 #: ../../tutorials/multi-pendulum.md:256 2141b7871cc4410684f5c3b70cf022fe
 msgid ""
@@ -380,6 +422,9 @@ msgid ""
 "the pendulum. To start, we'll go through all the generalized coordinates "
 "and change their rest positions by ``delta``:"
 msgstr ""
+"``MyWindow`` 클래스에서 ``changeRestPosition`` 함수를 찾습니다. 사용자가 'q' 또는 'a' 키를 "
+"누를 때마다 이 함수가 호출됩니다. 해당 키로 펜듈럼의 평형 위치를 감고 펼 수 있도록 합니다. 먼저 "
+"모든 일반화 좌표를 순회하며 평형 위치에 ``delta`` 만큼 변화를 줍니다:"
 
 #: ../../tutorials/multi-pendulum.md:272 2cd1c3069be94db582d1a59668545381
 msgid ""
@@ -388,6 +433,8 @@ msgid ""
 "magnitude of the rest angle. Right before ``dof->setRestPosition(q0);`` "
 "we can put:"
 msgstr ""
+"하지만 너무 많이 감기도록 허용하면 시스템이 다소 불안정해질 수 있으니 평형 각도의 크기에 제한을 "
+"둡니다. ``dof->setRestPosition(q0);`` 호출 직전에 다음 코드를 넣습니다:"
 
 #: ../../tutorials/multi-pendulum.md:281 c5224cc999bc441c8dd2a0eefafc5e01
 msgid ""
@@ -399,16 +446,22 @@ msgid ""
 "happening by zeroing out the rest positions of the BallJoint's other two "
 "degrees of freedom:"
 msgstr ""
+"마지막으로 고려할 점이 있습니다. 펜듈럼의 첫 번째 조인트는 BallJoint이며 세 개의 자유도를 "
+"가집니다. 모든 자유도의 평형 위치를 변경하면 펜듈럼이 x-z 평면 밖으로 꼬입니다. 원하는 경우 "
+"그렇게 두어도 되지만, BallJoint의 나머지 두 자유도의 평형 위치를 0으로 유지하면 이를 방지할 수 "
+"있습니다:"
 
 #: ../../tutorials/multi-pendulum.md:293 0069f1f83e114ede9f9d7d1ec2fd2c9c
 msgid "Lesson 2b: Set joint spring stiffness"
-msgstr ""
+msgstr "Lesson 2b: 조인트 스프링 강성 설정"
 
 #: ../../tutorials/multi-pendulum.md:295 207ad5f4eebe4694b8ea135ed59a094e
 msgid ""
 "Changing the rest position does not accomplish anything without having "
 "any spring stiffness. We can change the spring stiffness as follows:"
 msgstr ""
+"스프링 강성이 없으면 평형 위치를 바꿔도 효과가 없습니다. 다음과 같이 스프링 강성을 설정할 수 "
+"있습니다:"
 
 #: ../../tutorials/multi-pendulum.md:307 45e07c4a7c904c37a37d9be4436b679c
 msgid ""
@@ -418,10 +471,13 @@ msgid ""
 " being negative. So before the line "
 "``dof->setSpringStiffness(stiffness);`` you'll want to put:"
 msgstr ""
+"다만 스프링 강성이 음수가 되면 폭발적인 거동이 나타나므로 주의해야 합니다. 사용자가 실수로 음수로 "
+"줄이지 않을 것이라고 믿는 것도 좋지 않습니다. 따라서 ``dof->setSpringStiffness(stiffness);`` "
+"앞에 다음을 넣어야 합니다:"
 
 #: ../../tutorials/multi-pendulum.md:317 91862f4dba9242508baef515071c265f
 msgid "Lesson 2c: Set joint damping"
-msgstr ""
+msgstr "Lesson 2c: 조인트 감쇠 설정"
 
 #: ../../tutorials/multi-pendulum.md:319 4a1edae10f0f45a98bebef6a44c8ae75
 msgid ""
@@ -430,12 +486,14 @@ msgid ""
 "generalized velocities of the joint. This draws energy out of the system "
 "and generally results in more stable behavior."
 msgstr ""
+"조인트 감쇠는 조인트 액추에이터 내부의 마찰로 생각할 수 있습니다. 일반화 속도에 비례하는 저항력을 "
+"조인트에 가해 시스템에서 에너지를 빼앗고 전체적으로 더 안정적인 거동을 유도합니다."
 
 #: ../../tutorials/multi-pendulum.md:324 d38c718bde4745308bff8f667376a9e8
 msgid ""
 "The API for getting and setting the damping is just like the API for "
 "stiffness:"
-msgstr ""
+msgstr "감쇠 값을 가져오고 설정하는 API는 강성 API와 동일합니다:"
 
 #: ../../tutorials/multi-pendulum.md:337 fda8399130674bf0aa0d0a4c3c581895
 msgid ""
@@ -443,10 +501,12 @@ msgid ""
 "negative. In fact, a negative damping coefficient would be far more "
 "harmful than a negative stiffness coefficient."
 msgstr ""
+"감쇠 계수 역시 절대 음수가 되지 않도록 해야 합니다. 실제로 음의 감쇠 계수는 음의 강성보다 훨씬 더 "
+"위험합니다."
 
 #: ../../tutorials/multi-pendulum.md:341 3cdc28b13e864ea9b84ecd7116acd9cf
 msgid "Lesson 3: Add and remove dynamic constraints"
-msgstr ""
+msgstr "Lesson 3: 동적 제약 추가 및 제거"
 
 #: ../../tutorials/multi-pendulum.md:343 2d68bdbfc6c84889aad26936950ff441
 msgid ""
@@ -456,6 +516,9 @@ msgid ""
 "using standard Joints. You can also create a dynamic constraint that "
 "attaches a BodyNode to the World instead of to another BodyNode."
 msgstr ""
+"DART의 동적 제약은 여러 유형의 조인트 방식 제약 중 하나를 선택해 두 BodyNode를 연결할 수 있게 "
+"합니다. 이를 통해 일반 조인트로는 만들 수 없는 폐루프 제약을 구성할 수 있습니다. 또한 다른 BodyNode가 "
+"아닌 월드에 BodyNode를 연결하는 동적 제약도 만들 수 있습니다."
 
 #: ../../tutorials/multi-pendulum.md:349 5560910d72944278a69b1fa4434b45b4
 msgid ""
@@ -463,6 +526,8 @@ msgid ""
 "BallJoint style constraint whenever the function ``addConstraint()`` gets"
 " called. First, let's grab the last BodyNode in the pendulum:"
 msgstr ""
+"우리 예제에서는 ``addConstraint()`` 가 호출될 때마다 마지막 BodyNode를 BallJoint 스타일 "
+"제약으로 월드에 연결하려 합니다. 먼저 펜듈럼의 마지막 BodyNode를 얻습니다:"
 
 #: ../../tutorials/multi-pendulum.md:357 565b59cb0411409bbb7cc91bbd274dbf
 msgid ""
@@ -470,20 +535,22 @@ msgid ""
 "We want to connect the very end of the tip to the world, so the location "
 "would be:"
 msgstr ""
+"이제 제약이 위치해야 할 지점을 계산합니다. 끝단을 월드에 연결하고자 하므로 위치는 다음과 같습니다:"
 
 #: ../../tutorials/multi-pendulum.md:365 77dd85734e814d6dafa6cc26eacddade
 msgid "Now we can create the BallJointConstraint:"
-msgstr ""
+msgstr "이제 BallJointConstraint를 생성합니다:"
 
 #: ../../tutorials/multi-pendulum.md:372 e2c2eebee68e4862abf91a4ac6e70c3a
 msgid "And then add it to the world:"
-msgstr ""
+msgstr "그리고 월드에 추가합니다:"
 
 #: ../../tutorials/multi-pendulum.md:378 5d33bf12df1e47fb82bac740d582bd10
 msgid ""
 "Now we also want to be able to remove this constraint. In the function "
 "``removeConstraint()``, we can put the following code:"
 msgstr ""
+"이제 이 제약을 제거할 수도 있어야 합니다. ``removeConstraint()`` 함수에 다음 코드를 넣습니다:"
 
 #: ../../tutorials/multi-pendulum.md:386 d715721ff1a345f79b5bfda5b1c36bb5
 msgid ""
