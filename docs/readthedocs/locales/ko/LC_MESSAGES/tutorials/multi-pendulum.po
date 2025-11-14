@@ -49,19 +49,19 @@ msgstr "시각화에서 도형 추가/제거"
 
 #: ../../tutorials/multi-pendulum.md:11 6f774e3795694bc3af2cf977e8c77899
 msgid "Apply internal forces in the joints"
-msgstr ""
+msgstr "조인트에 내부 힘을 가하기"
 
 #: ../../tutorials/multi-pendulum.md:12 9e4252c49f18494199a5bf95268f96d1
 msgid "Apply external forces to the bodies"
-msgstr ""
+msgstr "바디에 외력을 적용하기"
 
 #: ../../tutorials/multi-pendulum.md:13 e02a47c7f68a4afd95e8fd998310f327
 msgid "Alter the implicit spring and damping properties of joints"
-msgstr ""
+msgstr "조인트의 내재된 스프링/감쇠 특성 조정하기"
 
 #: ../../tutorials/multi-pendulum.md:14 22968d390f1f4503ab8fc90cfb4c956f
 msgid "Add/remove dynamic constraints"
-msgstr ""
+msgstr "동적 제약 조건 추가/제거"
 
 #: ../../tutorials/multi-pendulum.md:16 deb75105ea7d419a894b9f78e36f99ea
 msgid ""
@@ -71,10 +71,15 @@ msgid ""
 "Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
 "/tutorialMultiPendulum-Finished.cpp)."
 msgstr ""
+"자세한 구현은 "
+"[**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp)"
+" 및 "
+"[**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum-Finished.cpp)"
+" 를 참고하세요."
 
 #: ../../tutorials/multi-pendulum.md:18 dc6cb16ce06042c49d5b230c821deedc
 msgid "Lesson 0: Simulate a passive multi-pendulum"
-msgstr ""
+msgstr "Lesson 0: 수동 다중 진자 시뮬레이션"
 
 #: ../../tutorials/multi-pendulum.md:20 ccd92bef0aa84ce0867dd767ee71b58d
 msgid ""
@@ -85,6 +90,10 @@ msgid ""
 "It also loads models in URDF, SDF, and SKEL formats as demonstrated in "
 "the later tutorials."
 msgstr ""
+"이 워밍업 단계에서는 DART에서 시뮬레이션 프로그램을 구성하는 방법을 설명합니다. 튜토리얼 전반에 "
+"사용할 예제는 중력 하에서 움직이는 다섯 개의 강체로 구성된 진자입니다. DART를 사용하면 사용자 "
+"정의 관절 강체/연성체 시스템을 처음부터 만들 수 있습니다. 이후 튜토리얼에서 다루듯 URDF, "
+"SDF, SKEL 형식의 모델도 불러올 수 있습니다."
 
 #: ../../tutorials/multi-pendulum.md:27 81fb35c6d3e046b5a48b235842546987
 msgid ""
@@ -92,6 +101,8 @@ msgid ""
 "In the ``main`` function, we first create an empty skeleton named "
 "*pendulum*."
 msgstr ""
+"DART에서는 관절 구조의 동역학 모델을 ``Skeleton`` 으로 표현합니다. ``main`` 함수에서 먼저 "
+"*pendulum* 이라는 빈 스켈레톤을 생성합니다."
 
 #: ../../tutorials/multi-pendulum.md:35 202981328d4b41b7924f45321d1fc605
 msgid ""
@@ -102,6 +113,10 @@ msgid ""
 "pair of a ``BallJoint``  and a BodyNode, and attach this pair to the "
 "currently empty pendulum skeleton."
 msgstr ""
+"Skeleton은 서로 ``Joint`` 로 연결된 여러 ``BodyNode``(바디)로 이루어집니다. 모든 조인트는 "
+"자식 BodyNode를 하나 가지며, 모든 BodyNode는 부모 조인트를 가집니다. 루트 BodyNode 역시 "
+"월드에 연결되는 조인트를 갖습니다. ``makeRootBody`` 함수에서는 ``BallJoint`` 와 "
+"BodyNode 한 쌍을 만들고, 이를 비어 있는 pendulum 스켈레톤에 붙입니다."
 
 #: ../../tutorials/multi-pendulum.md:47 d5c3280642a3455ababa8906084e1e31
 msgid ""
@@ -112,6 +127,9 @@ msgid ""
 "this is how we add more BodyNodes to the pendulum in the function "
 "``addBody``:"
 msgstr ""
+"첫 번째 인자가 nullptr인 것은 새 BodyNode가 펜듈럼의 루트임을 의미합니다. 기존 BodyNode에 "
+"이어 붙이고 싶다면 첫 번째 인수로 그 BodyNode의 포인터를 넘기면 됩니다. 실제로 "
+"``addBody`` 함수에서 추가 BodyNode를 붙일 때 이렇게 동작합니다:"
 
 #: ../../tutorials/multi-pendulum.md:58 516c9cde29ef4eab811f10f77167aa44
 msgid ""
@@ -121,6 +139,10 @@ msgid ""
 "World with the pendulum skeleton in it, and assign the World to an "
 "instance of ``MyWindow``, a subclass derived from SimWindow."
 msgstr ""
+"DART에서 가장 간단하게 시뮬레이션 프로그램을 구성하는 방법은 ``SimWindow`` 클래스를 사용하는 "
+"것입니다. SimWindow는 ``World`` 인스턴스를 하나 소유하며 월드 안의 모든 스켈레톤을 "
+"시뮬레이션합니다. 이 예제에서는 펜듈럼 스켈레톤을 포함한 월드를 만들고, SimWindow를 상속한 "
+"``MyWindow`` 인스턴스에 할당합니다."
 
 #: ../../tutorials/multi-pendulum.md:70 0a3d95d3662847dda064155aef27f63d
 msgid ""
@@ -130,10 +152,13 @@ msgid ""
 "routine. For example, one can incorporate sensors, actuators, or user "
 "interaction in the forward simulation."
 msgstr ""
+"매 타임스텝마다 ``MyWindow::timeStepping`` 함수가 호출되어 월드의 상태를 갱신합니다. 기본 "
+"timeStepping 함수를 오버라이드하면 시뮬레이션 루틴을 원하는 대로 확장할 수 있습니다. "
+"예를 들어 전방 시뮬레이션에 센서, 액추에이터 또는 사용자 상호작용을 포함할 수 있습니다."
 
 #: ../../tutorials/multi-pendulum.md:77 21bee4e8735b445a924fe400c2079542
 msgid "Lesson 1: Change shapes and applying forces"
-msgstr ""
+msgstr "Lesson 1: 도형 변경 및 힘 적용"
 
 #: ../../tutorials/multi-pendulum.md:79 3bad84c5f2c041eb825a59fc93892f5c
 msgid ""
@@ -143,10 +168,13 @@ msgid ""
 "simulation. For this reason, we'll discuss visualizing and forces at the "
 "same time."
 msgstr ""
+"우리는 다섯 개의 바디로 이루어진 펜듈럼에 시뮬레이션 도중 힘을 가할 수 있기를 원합니다. 또한 "
+"이 힘들을 시각화해 시뮬레이션 상태를 더 쉽게 파악하고자 합니다. 따라서 시각화와 힘 처리를 "
+"함께 다룹니다."
 
 #: ../../tutorials/multi-pendulum.md:84 39775c329d5f4430a92e21ec20f359c9
 msgid "Lesson 1a: Reset everything to default appearance"
-msgstr ""
+msgstr "Lesson 1a: 기본 외관으로 초기화"
 
 #: ../../tutorials/multi-pendulum.md:86 8ddfb941705d4169937954658d48a4b8
 msgid ""
@@ -154,6 +182,8 @@ msgid ""
 " default appearance. The default is for everything to be blue and there "
 "not to be any arrow attached to any body."
 msgstr ""
+"각 단계에서 모든 요소가 기본 외관으로 시작하도록 해야 합니다. 기본값은 모든 도형이 파란색이며 "
+"어떠한 바디에도 화살표가 붙어 있지 않은 상태입니다."
 
 #: ../../tutorials/multi-pendulum.md:90 c48b01e4d4f74b53905c3914e9084954
 msgid ""
