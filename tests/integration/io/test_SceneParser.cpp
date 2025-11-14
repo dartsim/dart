@@ -34,8 +34,65 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
+#include <random>
+
 using namespace dart;
 using namespace utils;
+
+namespace {
+
+struct TempFile
+{
+  std::filesystem::path path;
+
+  ~TempFile()
+  {
+    if (path.empty())
+      return;
+
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
+  }
+};
+
+TempFile makeTempFile(const std::string& contents, const std::string& extension)
+{
+  TempFile file;
+  const auto tempDir = std::filesystem::temp_directory_path();
+
+  auto buildCandidate = [&]() {
+    static std::mt19937 rng(std::random_device{}());
+    static const char hex[] = "0123456789abcdef";
+    std::uniform_int_distribution<int> dist(0, 15);
+
+    std::string suffix(8, '0');
+    for (char& ch : suffix)
+      ch = hex[dist(rng)];
+
+    return tempDir / ("dart_scene_parser_" + suffix + extension);
+  };
+
+  for (int attempt = 0; attempt < 32; ++attempt) {
+    auto candidate = buildCandidate();
+    if (!std::filesystem::exists(candidate)) {
+      file.path = candidate;
+      break;
+    }
+  }
+
+  if (file.path.empty())
+    file.path = buildCandidate();
+
+  std::ofstream stream(file.path);
+  stream << contents;
+  stream.close();
+
+  return file;
+}
+
+} // namespace
 
 //==============================================================================
 TEST(SceneParser, SkelAutoDetection)
@@ -140,6 +197,133 @@ TEST(SceneParser, MjcfAutoFallback)
       = SceneParser::readFile("dart://sample/mjcf/openai/ant.xml");
 
   ASSERT_EQ(contents.worlds.size(), 1u);
+}
+
+//==============================================================================
+TEST(SceneParser, SdfWorldAlsoReturnsStandaloneModels)
+{
+  const std::string sdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="mixed">
+    <gravity>0 0 -9.81</gravity>
+    <model name="world_model">
+      <static>true</static>
+      <link name="world_link">
+        <inertial>
+          <mass>1</mass>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>1</ixx>
+            <iyy>1</iyy>
+            <izz>1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="world_visual">
+          <geometry>
+            <box>
+              <size>0.1 0.1 0.1</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="world_collision">
+          <geometry>
+            <box>
+              <size>0.1 0.1 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </world>
+  <model name="standalone_model">
+    <static>true</static>
+    <link name="standalone_link">
+      <inertial>
+        <mass>1</mass>
+        <pose>0 0 0 0 0 0</pose>
+        <inertia>
+          <ixx>1</ixx>
+          <iyy>1</iyy>
+          <izz>1</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="standalone_visual">
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.2</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="standalone_collision">
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.2</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)";
+
+  const auto file = makeTempFile(sdf, ".sdf");
+  ASSERT_FALSE(file.path.empty());
+
+  const auto contents = SceneParser::readFile(file.path.string());
+
+  ASSERT_EQ(contents.worlds.size(), 1u);
+  ASSERT_GE(contents.skeletons.size(), 2u);
+
+  bool hasStandalone = false;
+  for (const auto& skeleton : contents.skeletons) {
+    if (skeleton && skeleton->getName() == "standalone_model")
+      hasStandalone = true;
+  }
+
+  EXPECT_TRUE(hasStandalone);
+}
+
+//==============================================================================
+TEST(SceneParser, DetectsUrdfByContent)
+{
+  const std::string urdf = R"(
+<?xml version="1.0" ?>
+<robot name="temp_robot">
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1" iyy="1" izz="1" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
+)";
+
+  const auto file = makeTempFile(urdf, ".xml");
+  ASSERT_FALSE(file.path.empty());
+
+  const auto contents = SceneParser::readFile(file.path.string());
+
+  EXPECT_TRUE(contents.worlds.empty());
+  ASSERT_EQ(contents.skeletons.size(), 1u);
+  EXPECT_EQ(contents.skeletons.front()->getName(), "temp_robot");
 }
 
 //==============================================================================

@@ -32,8 +32,11 @@
 
 #include "dart/utils/scene/SceneParser.hpp"
 
+#include <dart/utils/CompositeResourceRetriever.hpp>
+#include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/SkelParser.hpp>
 
+#include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/Logging.hpp>
 
 #if defined(DART_SCENEPARSER_HAS_URDF)
@@ -83,6 +86,129 @@ std::string getExtension(const common::Uri& uri)
   return toLower(path.substr(dot));
 }
 
+common::ResourceRetrieverPtr getRetriever(const Options& options)
+{
+  if (options.mResourceRetriever)
+    return options.mResourceRetriever;
+
+  auto retriever = std::make_shared<utils::CompositeResourceRetriever>();
+  retriever->addSchemaRetriever(
+      "file", std::make_shared<common::LocalResourceRetriever>());
+  retriever->addSchemaRetriever("dart", DartResourceRetriever::create());
+  return retriever;
+}
+
+std::optional<std::string> readSnippet(
+    const common::Uri& uri, const Options& options, std::size_t maxBytes = 4096)
+{
+  try {
+    const auto retriever = getRetriever(options);
+    auto resource = retriever->retrieve(uri);
+    if (!resource)
+      return std::nullopt;
+
+    const std::size_t available = resource->getSize();
+    const std::size_t toRead = std::min(maxBytes, available);
+
+    if (toRead == 0)
+      return std::string();
+
+    std::string buffer(toRead, '\0');
+    const std::size_t read = resource->read(buffer.data(), 1, toRead);
+    buffer.resize(read);
+    return buffer;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+Format detectFormatFromSnippet(const std::string& snippet)
+{
+  std::size_t pos = 0;
+  while (pos < snippet.size()) {
+    const auto startTag = snippet.find('<', pos);
+    if (startTag == std::string::npos)
+      break;
+
+    if (snippet.compare(startTag, 4, "<!--") == 0) {
+      const auto end = snippet.find("-->", startTag + 4);
+      if (end == std::string::npos)
+        break;
+      pos = end + 3;
+      continue;
+    }
+
+    if (snippet.compare(startTag, 5, "<?xml") == 0) {
+      const auto end = snippet.find("?>", startTag + 5);
+      if (end == std::string::npos)
+        break;
+      pos = end + 2;
+      continue;
+    }
+
+    if (snippet.compare(startTag, 9, "<!DOCTYPE") == 0) {
+      const auto end = snippet.find('>', startTag + 9);
+      if (end == std::string::npos)
+        break;
+      pos = end + 1;
+      continue;
+    }
+
+    std::size_t nameBegin = startTag + 1;
+    while (nameBegin < snippet.size()
+           && std::isspace(static_cast<unsigned char>(snippet[nameBegin])))
+      ++nameBegin;
+
+    if (nameBegin >= snippet.size())
+      break;
+
+    const char lead = snippet[nameBegin];
+    if (lead == '/' || lead == '!' || lead == '?') {
+      pos = nameBegin + 1;
+      continue;
+    }
+
+    std::size_t nameEnd = nameBegin;
+    while (nameEnd < snippet.size()
+           && (std::isalnum(static_cast<unsigned char>(snippet[nameEnd]))
+               || snippet[nameEnd] == '_' || snippet[nameEnd] == ':'
+               || snippet[nameEnd] == '-'))
+      ++nameEnd;
+
+    if (nameEnd <= nameBegin) {
+      pos = nameEnd + 1;
+      continue;
+    }
+
+    const std::string tag
+        = toLower(snippet.substr(nameBegin, nameEnd - nameBegin));
+
+    if (tag == "skel")
+      return Format::Skel;
+    if (tag == "sdf" || tag == "world" || tag == "model")
+      return Format::Sdf;
+    if (tag == "robot")
+      return Format::Urdf;
+    if (tag == "mujoco" || tag == "mjcf")
+      return Format::Mjcf;
+    if (tag == "kinematicmodel")
+      return Format::Vsk;
+
+    break;
+  }
+
+  return Format::Auto;
+}
+
+Format sniffFormat(const common::Uri& uri, const Options& options)
+{
+  const auto snippet = readSnippet(uri, options);
+  if (!snippet || snippet->empty())
+    return Format::Auto;
+
+  return detectFormatFromSnippet(*snippet);
+}
+
 Format guessFormat(const common::Uri& uri)
 {
   const std::string ext = getExtension(uri);
@@ -121,11 +247,17 @@ std::vector<Format> computeCandidates(
   if (guessed != Format::Auto)
     appendUnique(formats, guessed);
 
-  appendUnique(formats, Format::Skel);
+  if (guessed == Format::Auto) {
+    const Format sniffed = sniffFormat(uri, options);
+    if (sniffed != Format::Auto)
+      appendUnique(formats, sniffed);
+  }
+
   appendUnique(formats, Format::Sdf);
   appendUnique(formats, Format::Urdf);
   appendUnique(formats, Format::Mjcf);
   appendUnique(formats, Format::Vsk);
+  appendUnique(formats, Format::Skel);
 
   return formats;
 }
@@ -173,13 +305,14 @@ ParseResult parseSdf(const common::Uri& uri, const Options& options)
 
   if (auto world = SdfParser::readWorld(uri, sdfOptions)) {
     addWorld(contents, world);
-    return contents;
   }
 
   if (auto skeleton = SdfParser::readSkeleton(uri, sdfOptions)) {
     addSkeleton(contents, skeleton);
-    return contents;
   }
+
+  if (!contents.empty())
+    return contents;
 
   return std::nullopt;
 }
