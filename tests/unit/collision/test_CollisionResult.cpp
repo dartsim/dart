@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
