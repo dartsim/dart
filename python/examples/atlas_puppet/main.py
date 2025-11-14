@@ -100,10 +100,11 @@ class AtlasKeyboardHandler(dart.gui.osg.GUIEventHandler):
 class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
     """Custom world node with keyboard teleoperation and continuous IK solving."""
 
-    def __init__(self, world, atlas, interactive_targets):
+    def __init__(self, world, atlas, interactive_targets, target_displays):
         super().__init__(world)
         self.atlas = atlas
         self.interactive_targets = interactive_targets
+        self.target_displays = target_displays
         self.iter = 0
 
         # Movement state
@@ -586,16 +587,11 @@ def main():
     print("Starting viewer...")
     print()
 
-    # Create custom world node with teleoperation and IK solving
-    node = TeleoperationWorld(world, atlas, interactive_targets)
-
     # Create viewer
     viewer = dart.gui.osg.Viewer()
     viewer.allowSimulation(False)  # Kinematics only - IK is solved in customPreRefresh
-    viewer.addWorldNode(node)
 
-    # Enable drag-and-drop for all interactive frames
-    print("Enabling drag-and-drop for interactive targets...")
+    # Manage interactive target visibility
     target_displays = [
         TargetDisplayController(world, viewer, frame)
         for frame in interactive_targets
@@ -604,6 +600,10 @@ def main():
         controller.hide()
     print("✓ Interactive targets are hidden by default (press 1-4 to show)")
     print()
+
+    # Create custom world node with teleoperation and IK solving
+    node = TeleoperationWorld(world, atlas, interactive_targets, target_displays)
+    viewer.addWorldNode(node)
 
     # Add custom instructions for atlas_puppet
     viewer.addInstructionText(
