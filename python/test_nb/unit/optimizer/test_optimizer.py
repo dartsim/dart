@@ -1,6 +1,6 @@
 import math
 
-import dartpy as dart
+import dartpy_nb as dart
 import pytest
 
 

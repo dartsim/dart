@@ -1,7 +1,7 @@
 import os
 import platform
 
-import dartpy as dart
+import dartpy_nb as dart
 import pytest
 from tests.util import get_asset_path
 
