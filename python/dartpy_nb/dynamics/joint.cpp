@@ -73,7 +73,18 @@ void defJoint(nb::module_& m)
             return self.getWrenchToChildBodyNode(frame);
           },
           nb::arg("frame"))
-      .def("setLimitEnforcement", &Joint::setLimitEnforcement, nb::arg("enforce"));
+      .def("setLimitEnforcement", &Joint::setLimitEnforcement, nb::arg("enforce"))
+      .def("setDampingCoefficient",
+          [](Joint& self, std::size_t index, double coefficient) {
+            self.setDampingCoefficient(index, coefficient);
+          },
+          nb::arg("index"),
+          nb::arg("coefficient"))
+      .def("getDampingCoefficient",
+          [](const Joint& self, std::size_t index) {
+            return self.getDampingCoefficient(index);
+          },
+          nb::arg("index"));
 }
 
 } // namespace dart::python_nb
