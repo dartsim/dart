@@ -8,6 +8,8 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Distance dart-collision-bullet)
 endif()
 
+dart_add_test("unit" test_DistanceFilter collision/test_DistanceFilter.cpp)
+
 dart_add_test("unit" test_CollisionGroup collision/test_CollisionGroup.cpp)
 
 dart_add_test("unit" test_Raycast collision/test_Raycast.cpp)
