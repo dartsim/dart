@@ -34,7 +34,6 @@
 #define DART_CONSTRAINT_DYNAMICJOINTCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/Export.hpp>
 
 namespace dart {
 
@@ -87,10 +86,10 @@ public:
   static double getConstraintForceMixing();
 
   /// Get the first BodyNode that this constraint is associated with
-  DART_CONSTRAINT_API dynamics::BodyNode* getBodyNode1() const;
+  DART_API dynamics::BodyNode* getBodyNode1() const;
 
   /// Get the second BodyNode that this constraint is associated with
-  DART_CONSTRAINT_API dynamics::BodyNode* getBodyNode2() const;
+  DART_API dynamics::BodyNode* getBodyNode2() const;
 
 protected:
   /// First body node

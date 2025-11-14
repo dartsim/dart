@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 #define DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 
-#include <dart/constraint/Export.hpp>
+#include <dart/Export.hpp>
 
 #include <dart/dynamics/HierarchicalIK.hpp>
 
@@ -44,7 +44,7 @@ namespace constraint {
 /// into a HierarchicalIK module. Adding this constraint to the Problem of a
 /// HierarchicalIK will allow the IK solver to constrain the Skeleton so that it
 /// satisfies a support polygon style balancing constraint.
-class DART_CONSTRAINT_API BalanceConstraint
+class DART_API BalanceConstraint
   : public optimizer::Function,
     public dynamics::HierarchicalIK::Function
 {
