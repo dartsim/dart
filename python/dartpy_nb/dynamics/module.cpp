@@ -1,11 +1,13 @@
 #include "dynamics/module.hpp"
 
+#include "dynamics/ball_joint.hpp"
 #include "dynamics/body_node.hpp"
 #include "dynamics/entity.hpp"
 #include "dynamics/free_joint.hpp"
 #include "dynamics/frame.hpp"
 #include "dynamics/inertia.hpp"
 #include "dynamics/joint.hpp"
+#include "dynamics/prismatic_joint.hpp"
 #include "dynamics/revolute_joint.hpp"
 #include "dynamics/shape.hpp"
 #include "dynamics/shape_frame.hpp"
@@ -21,6 +23,8 @@ void defDynamicsModule(nanobind::module_& m)
   defJoint(m);
   defFreeJoint(m);
   defRevoluteJoint(m);
+  defPrismaticJoint(m);
+  defBallJoint(m);
   defShape(m);
   defFrame(m);
   defBodyNode(m);

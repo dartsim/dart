@@ -107,6 +107,8 @@ set(dartpy_nb_headers
   dynamics/joint.hpp
   dynamics/free_joint.hpp
   dynamics/revolute_joint.hpp
+  dynamics/prismatic_joint.hpp
+  dynamics/ball_joint.hpp
   dynamics/skeleton.hpp
   collision/module.hpp
   collision/collision_option.hpp
@@ -155,6 +157,8 @@ set(dartpy_nb_sources
   dynamics/joint.cpp
   dynamics/free_joint.cpp
   dynamics/revolute_joint.cpp
+  dynamics/prismatic_joint.cpp
+  dynamics/ball_joint.cpp
   dynamics/skeleton.cpp
   collision/module.cpp
   collision/collision_option.cpp
