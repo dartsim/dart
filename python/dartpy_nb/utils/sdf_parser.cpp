@@ -27,17 +27,38 @@ void defSdfParser(nb::module_& m)
       .def_readwrite("mResourceRetriever", &SdfParser::Options::mResourceRetriever)
       .def_readwrite("mDefaultRootJointType", &SdfParser::Options::mDefaultRootJointType);
 
+  auto read_world = [](auto uri, const SdfParser::Options& options) {
+    return SdfParser::readWorld(uri, options);
+  };
+  auto read_skeleton = [](auto uri, const SdfParser::Options& options) {
+    return SdfParser::readSkeleton(uri, options);
+  };
+
   sm.def(
       "readWorld",
-      [](const common::Uri& uri, const SdfParser::Options& options) {
-        return SdfParser::readWorld(uri, options);
+      [=](const common::Uri& uri, const SdfParser::Options& options) {
+        return read_world(uri, options);
+      },
+      nb::arg("uri"),
+      nb::arg("options") = SdfParser::Options());
+  sm.def(
+      "readWorld",
+      [=](const std::string& uri, const SdfParser::Options& options) {
+        return read_world(common::Uri(uri), options);
       },
       nb::arg("uri"),
       nb::arg("options") = SdfParser::Options());
   sm.def(
       "readSkeleton",
-      [](const common::Uri& uri, const SdfParser::Options& options) {
-        return SdfParser::readSkeleton(uri, options);
+      [=](const common::Uri& uri, const SdfParser::Options& options) {
+        return read_skeleton(uri, options);
+      },
+      nb::arg("uri"),
+      nb::arg("options") = SdfParser::Options());
+  sm.def(
+      "readSkeleton",
+      [=](const std::string& uri, const SdfParser::Options& options) {
+        return read_skeleton(common::Uri(uri), options);
       },
       nb::arg("uri"),
       nb::arg("options") = SdfParser::Options());

@@ -46,6 +46,12 @@ void defDartLoader(nb::module_& m)
                      [](DartLoader& self, const common::Uri& uri) { return self.parseSkeleton(uri); },
                      nb::arg("uri"))
                  .def(
+                     "parseSkeleton",
+                     [](DartLoader& self, const std::string& uri) {
+                       return self.parseSkeleton(common::Uri(uri));
+                     },
+                     nb::arg("uri"))
+                 .def(
                      "parseSkeletonString",
                      [](DartLoader& self, const std::string& data, const common::Uri& base) {
                        return self.parseSkeletonString(data, base);
@@ -55,6 +61,12 @@ void defDartLoader(nb::module_& m)
                  .def(
                      "parseWorld",
                      [](DartLoader& self, const common::Uri& uri) { return self.parseWorld(uri); },
+                     nb::arg("uri"))
+                 .def(
+                     "parseWorld",
+                     [](DartLoader& self, const std::string& uri) {
+                       return self.parseWorld(common::Uri(uri));
+                     },
                      nb::arg("uri"))
                  .def(
                      "parseWorldString",
