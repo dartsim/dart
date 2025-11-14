@@ -2,122 +2,88 @@
 
 ## Overview
 
-The domino tutorial combines runtime skeleton editing with an operational-space
-controller (OSC).  By following the lessons you will:
+This tutorial mirrors the domino controller sample in pure python.  It walks
+through the same lessons as the C++ document:
 
-- clone domino skeletons, position them relative to existing ones, and ensure
-  they are collision free before adding them to the world
-- load a URDF manipulator and target the top of the first domino
-- implement both a gravity-compensated PD controller and an OSC task
-- visualize disembodied pushes with `ArrowShape`s driven from keyboard input
+1. Create the domino, floor, and manipulator skeletons.
+2. Add, lean, and remove dominoes while preventing collisions.
+3. Implement the gravity-compensated PD controller and the operational-space
+   controller (OSC) that pushes the first domino.
+4. Apply additional body forces to the human using keyboard input.
 
-All code resides in `python/tutorials/03_dominoes/`.  Run the tutorial with:
+All code lives in `python/tutorials/03_dominoes/`.  Launch it with:
 
 ```bash
 pixi run py-tu-dominoes
 ```
 
-## Lesson 1: Creating the world
+## Lesson 1 – Create the world
 
-### 1a – Base domino
+### 1a. Base domino and floor
 
-`create_domino()` instantiates a `FreeJoint`/`BodyNode` pair and attaches a thin
-box shape:
+`create_domino()` constructs a `FreeJoint`/`BodyNode` pair and attaches a thin
+box. The `Joint_pos_z` DOF is set to `default_domino_height / 2`, which keeps the
+box resting on the floor.  `create_floor()` uses a `WeldJoint` plus a large box
+shape to create the ground plane—identical to the C++ setup.
 
-```python
-domino = dart.dynamics.Skeleton("domino")
-_, body = domino.createFreeJointAndBodyNodePair()
-shape = dart.dynamics.BoxShape([
-    default_domino_depth,
-    default_domino_width,
-    default_domino_height,
-])
-node = body.createShapeNode(shape)
-node.createVisualAspect().setColor([0.9, 0.3, 0.1, 1.0])
-node.createCollisionAspect()
-node.createDynamicsAspect()
-```
+### 1b. Manipulator
 
-The mass is computed from the box volume and the root DOF `Joint_pos_z` is set to
-`default_domino_height / 2` so the domino rests on the floor.
+`create_manipulator()` loads `dart://sample/urdf/KR5/KR5 sixx R650.urdf` via
+`dart.utils.DartLoader`.  The base joint is translated backward so the arm sits
+behind the domino stack, matching the initial pose in `tutorialDominoes.cpp`.
 
-### 1b – Floor and manipulator
+## Lesson 2 – Domino editing
 
-`create_floor()` uses a `WeldJoint` and a large box to create the ground plane.
-`create_manipulator()` loads the KR5 URDF via `dart.utils.DartLoader` and moves
-the base backwards so the arm sits behind the domino line.
+`DominoEventHandler` manages a deque of domino skeletons and the cumulative angle
+of the line.  Pressing `q`, `w`, or `e` calls `attempt_to_create_domino(angle)`.
+The method:
 
-## Lesson 2: Domino editing
-
-`DominoEventHandler` manages user-created dominoes.  Pressing `q`, `w`, or `e`
-creates a new domino leaning left, straight, or right.  The handler:
-
-1. Clones the base domino skeleton (`skeleton.clone("domino_n")`).
-2. Computes a displacement along the current heading using `default_distance`.
+1. Clones the template domino (`self.first_domino.clone("domino_n")`).
+2. Computes a displacement along the current heading using `default_distance *
+   [cos(total_angle), sin(total_angle), 0]` and applies it to the clone.
 3. Adjusts the yaw (`pose[2]`) by the requested lean angle.
-4. Temporarily removes the floor from the world collision group, builds a new
-   collision group containing the clone, and checks for intersections.  If the
-   clone collides with any existing object the spawn is aborted and a warning is
-   printed.
+4. Removes the floor from the world collision group, builds a new collision group
+   containing the clone, and checks for intersections.  If the clone would
+   penetrate anything, the method prints a warning and discards it; otherwise it
+   adds the clone to the world and tracks it in `self.dominoes`.
 
-Deleted dominoes are removed from both the world and the internal history so
-angles remain consistent.
+Pressing `d` removes the most recently added domino from both the world and the
+history vectors, mirroring Lesson 2d from the C++ tutorial.
 
-## Lesson 3: Controller setup
+## Lesson 3 – Controller setup
 
-`Controller` stores the manipulator skeleton, the active domino skeleton, the
-end-effector pointer, and a `SimpleFrame` named `target`.  The target is
-positioned at the top center of the first domino and rotated so it matches the
-end-effector orientation.
+`Controller` stores the manipulator, the first domino, the end-effector
+(`mEndEffector` in C++), the target frame, and an offset from the wrist frame to
+ the contact point.  Reducing the tutorial to python does not change the math: we
+still rely on `SimpleFrame` to hold the target transform and use the same gains.
 
-### 3a – PD controller
+### 3a. Gravity-compensated PD
 
-`set_pd_forces()` copies the structure from the C++ tutorial but uses numpy:
+`set_pd_forces()` implements the SPD controller described in the tutorial.  It
+copies the manipulator’s positions/velocities into numpy arrays, advances them by
+one time step, and forms the error terms.  The mass matrix and the
+Coriolis/gravity vectors come from `dart.dynamics.Skeleton`.  The forces are then
+applied via `Skeleton.setForces(...)`.
 
-```python
-q = self.manipulator.getPositions().copy()
-dq = self.manipulator.getVelocities()
-dt = self.manipulator.getTimeStep()
-q += dq * dt
-q_err = self.q_desired - q
-dq_err = -dq
-Cg = self.manipulator.getCoriolisAndGravityForces()
-M = self.manipulator.getMassMatrix()
-self.forces = M @ (self.kp_pd * q_err + self.kd_pd * dq_err) + Cg
-self.manipulator.setForces(self.forces)
-```
+### 3b. Operational-space controller (OSC)
 
-### 3b – Operational-space controller
+Holding `r` enables OSC.  The method computes the six-dimensional Jacobian at the
+wrist offset, forms the pseudo-inverse the same way the C++ sample does, and
+constructs the angular and translational error terms using
+`dart.math.AngleAxis`.  A small feed-forward wrench is added along +X to “push”
+the domino.  The final torques are the sum of the OSC output, the PD forces, and
+the gravity/coriolis compensation terms.
 
-When the user holds `r`, `set_operational_space_forces()` takes over.  It computes
-the Jacobian at the wrist offset, the pseudo-inverse, and the angular/linear
-errors relative to `self.target`:
+## Lesson 4 – External pushes
 
-```python
-J = self.end_effector.getWorldJacobian(self.offset)
-pinv_J = J.T @ np.linalg.inv(J @ J.T + 0.0025 * np.eye(6))
-relative = self.target.getTransform(self.end_effector).rotation()
-angle_axis = dart.math.AngleAxis(relative)
-angular_error = np.asarray(angle_axis.axis()).reshape(3) * angle_axis.angle()
-translation_error = (
-    self.target.getWorldTransform().translation()
-    - self.end_effector.getWorldTransform().multiply(self.offset)
-)
-```
+`MyWorldNode` tracks an external force vector and a countdown timer.  Pressing `,`
+or `.` calls `set_external_force(force, duration)`.  During `customPreStep()` the
+force is applied to `h_spine` with `BodyNode.addExtForce()`.  An `ArrowShape`
+attached to a `SimpleFrame` is updated so the push is visible—exactly like the
+“disembodied force” described in the C++ tutorial.  When the timer expires the
+arrow is hidden and the stored force resets to zero.
 
-A small feed-forward wrench (`f_desired[3] = default_push_force`) completes the
-OSC task.  The handler toggles between PD and OSC modes so you can compare them
-interactively.
-
-## Lesson 4: External pushes
-
-`MyWorldNode` keeps track of an external force vector and a countdown timer.
-Pressing `,` or `.` calls `set_external_force()` with a ±X push.  During each
-`customPreStep()` call the node applies the force to `h_spine` and updates an
-`ArrowShape` attached to a `SimpleFrame` so the push is visible in the viewer.
-When the timer expires the arrow is hidden and the force is cleared.
-
-## Lesson 5: User interface summary
+## Lesson 5 – Keyboard reference
 
 | Key | Effect |
 | --- | ------ |
@@ -126,11 +92,12 @@ When the timer expires the arrow is hidden and the force is cleared.
 | `space` | Start / pause the simulation |
 | `p` | Replay |
 | `f` | Push the first domino with a disembodied force |
-| `r` | Use the manipulator arm (OSC controller) to push the domino |
-| `,` / `.` | Apply backward / forward pushes to the human torso |
-| `v` | Toggle contact force visualization |
+| `r` | Engage the OSC controller on the manipulator arm |
+| `,` / `.` | Apply backward / forward pushes to the torso |
+| `v` | Toggle contact-force visualization |
 
-Follow the lessons sequentially: place dominoes, start the simulation, and
-experiment with both push mechanisms.  Because everything is written in Python,
-you can easily extend the tutorial—for example by changing the OSC target or by
-adding new domino placement modes.
+Use the tutorial the same way you would use the C++ version: place dominoes,
+start the simulation, press `f` or `r` to knock them over, and experiment with
+the torso pushes.  Because the entire sample is written in dartpy you can script
+new behaviors (for example, auto-generating a domino spiral) with only a few
+lines of Python.

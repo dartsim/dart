@@ -2,174 +2,111 @@
 
 ## Overview
 
-This tutorial recreates the five-lesson multi-pendulum walkthrough entirely in
-Python. By following along you will:
+This tutorial mirrors the five lessons in `tutorialMultiPendulum.cpp`, but every
+step is implemented with dartpy. Along the way you will:
 
-- construct articulated chains with ball/revolute joints
-- attach visual, collision, and dynamics aspects to each body
-- apply joint torques and body forces from keyboard input
-- modify implicit spring / damping properties during runtime
-- toggle constraints on and off using dartpy’s constraint solver
+- create articulated chains programmatically
+- attach visualization, collision, and dynamics aspects to each body node
+- apply joint torques or body forces from keyboard input
+- modify implicit springs and dampers while the simulation is running
+- attach/detach constraints using the dartpy constraint solver
 
-All code lives in `python/tutorials/01_multi_pendulum/`.  Every directory
-contains a scaffold (`main.py`) and a completed reference solution
-(`main_finished.py`).  Run any revision with:
+All code lives in `python/tutorials/01_multi_pendulum/`. Each directory contains
+`main.py` (a scaffold) and `main_finished.py` (the reference solution). Run the
+python tutorial with:
 
 ```bash
 pixi run py-tu-multi-pendulum
-# or
-python python/tutorials/01_multi_pendulum/main.py
 ```
 
-The python implementation mirrors the structure of the original tutorial:
+## Lesson 0 – Build and visualize the pendulum
 
-- `make_root_body()` / `add_body()` build the rigid links
-- `Controller` stores per-link state, applies forces, and manages constraints
-- `PendulumEventHandler` translates keyboard events into controller calls
-- `CustomWorldNode` hooks the controller into the osg viewer loop
+### 0a. Root body
 
-## Lesson 0: Simulate a passive multi-pendulum
+`make_root_body()` creates the root `BallJoint`/`BodyNode` pair. After calling
+`pendulum.createBallJointAndBodyNodePair(None, joint_prop, body_prop)` the helper
+invokes `set_geometry()` which:
 
-Lesson 0 focuses on skeleton construction.
+1. Creates a `BoxShape` sized `default_width × default_depth × default_height`.
+2. Centers the shape on the local COM and attaches visual/collision/dynamics
+   aspects.
+3. Sets the body mass/inertia from the box volume.
 
-### 0.1 Create the root body
+This is the direct python translation of Lesson 0’s instructions.
 
-The root link is attached with a `BallJoint`.  Its helper looks like:
+### 0b. Additional links
 
-```python
-joint_prop = dart.dynamics.BallJointProperties()
-joint_prop.mName = f"{name}_joint"
-joint_prop.mRestPositions = np.ones(3) * default_rest_position
-body_prop = dart.dynamics.BodyNodeProperties(
-    dart.dynamics.BodyNodeAspectProperties(name)
-)
-joint, body = pendulum.createBallJointAndBodyNodePair(
-    None,
-    joint_prop,
-    body_prop,
-)
-```
+`add_body()` appends a `RevoluteJoint` attached to the previously created body.
+The joint axis is aligned with `UnitY`, and both the parent and child offsets are
+set so that the two bodies meet halfway along `default_height`. Each body again
+calls `set_geometry()` so the entire chain shares the same dimensions.
 
-`set_geometry(body)` then attaches a `BoxShape`, centers it on the COM, assigns
-visual/collision aspects, and sets the mass using the box volume.  This mirrors
-`tutorialMultiPendulum.cpp` but uses python-friendly helpers.
+### 0c. Viewer plumbing
 
-### 0.2 Append additional links
+`main()` constructs a `dart.simulation.World`, adds the skeleton, and wires in a
+`Controller`, `PendulumEventHandler`, and `CustomWorldNode`.  The world node is a
+subclass of `dart.gui.osg.RealTimeWorldNode`; overriding `customPreStep()` lets
+us call `controller.update()` before every physics step.  The event handler maps
+keyboard events onto controller actions.  Finally, `viewer.run()` starts the
+interactive simulation.
 
-Each additional body is connected with a `RevoluteJoint` that rotates about the
-Y axis:
+## Lesson 1 – Change shapes and apply forces
 
-```python
-joint_prop = dart.dynamics.RevoluteJointProperties()
-joint_prop.mAxis = [0.0, 1.0, 0.0]
-joint_prop.mT_ParentBodyToJoint.set_translation([0.0, 0.0, default_height])
-joint, body = pendulum.createRevoluteJointAndBodyNodePair(
-    parent,
-    joint_prop,
-    body_prop,
-)
-```
+The controller stores the same state as the C++ sample:
 
-Rest positions, stiffness, and damping are initialized to shared defaults so the
-chain behaves predictably.
+- `force_countdown`: array of integers, one per DOF/body. A positive entry means
+  “apply a force for N more frames.”
+- `positive_sign`: toggled with `-` to flip the direction of torques/forces.
+- `apply_body_force`: toggled with `f` to switch between joint torques and body
+  forces.
+- `body_force_visuals`: `(ArrowShape, VisualAspect)` pairs used to visualize
+  external pushes.
 
-### 0.3 Launch the viewer
+### 1a. Reset visuals
 
-`main()` finishes by creating a `dart.simulation.World`, adding the pendulum,
-creating a `Controller`, wiring up the event handler, and running the osg view:
+At the start of every update the controller loops over the body nodes, restores
+blue coloring on the first two shapes (joint capsule + body box), and hides any
+arrow visuals.  This reproduces Lesson 1a’s instructions.
 
-```python
-controller = Controller(pendulum, world)
-viewer = dart.gui.osg.Viewer()
-viewer.addWorldNode(CustomWorldNode(world, controller))
-viewer.addEventHandler(PendulumEventHandler(controller))
-viewer.run()
-```
+### 1b. Apply joint torques
 
-`CustomWorldNode.customPreStep()` calls `controller.update()` before each frame
-so the controller can inject forces.
+If `apply_body_force` is `False`, the controller iterates over the DOFs and looks
+for positive countdown entries.  Each active DOF receives `default_torque` (or
+its negative) through `DegreeOfFreedom.setForce()`.  The child body is colored
+red (`getShapeNode(0)`) so it is obvious which joint is being actuated.  Keys `1`
+through `0` map to DOFs `0`–`9`, matching the original tutorial.
 
-## Lesson 1: Change shapes and apply forces
+### 1c. Apply body forces
 
-### 1a – Reset visuals
+If `apply_body_force` is `True`, the same countdown drives calls to
+`BodyNode.addExtForce()`.  Each body owns a `SimpleFrame` with an `ArrowShape`. We
+update the arrow’s head/tail vectors and call `visual.show()` while the force is
+active, then hide it when the countdown hits zero. This matches Lesson 1c’s
+“attach an arrow when applying an external force” requirement.
 
-Every frame begins with a cleanup pass that restores colors and hides the arrow
-visuals used for body forces:
+## Lesson 2 – Change implicit spring/damper settings
 
-```python
-for index in range(self.pendulum.getNumBodyNodes()):
-    body = self.pendulum.getBodyNode(index)
-    for j in range(min(2, body.getNumShapeNodes())):
-        body.getShapeNode(j).getVisualAspect().setColor([0.0, 0.0, 1.0, 1.0])
-    _, visual = self.body_force_visuals[index]
-    visual.hide()
-```
+The python tutorial exposes the same hotkeys as the C++ version:
 
-### 1b – Joint torques
+- `q` / `a`: increase/decrease every DOF’s rest position by 10°.  After the loop,
+the controller manually resets the X/Z axes of the root ball joint to zero so
+only the middle axis curls.
+- `w` / `s`: adjust spring stiffness in increments of 10, clamped at zero.
+- `e` / `d`: adjust damping in increments of 1, again clamped at zero.
 
-`force_countdown` mirrors the `std::vector<int>` from the C++ sample.  When a
-user presses keys `1` through `0`, the handler sets an entry to
-`default_countdown`.  While the entry is positive the controller applies a
-constant torque and highlights the joint’s visualization shape:
+Each helper uses dartpy’s `DegreeOfFreedom` accessors (`getRestPosition()`,
+`setSpringStiffness()`, etc.), so the code looks different but the behavior is
+identical to Lesson 2 in the C++ tutorial.
 
-```python
-if self.force_countdown[i] > 0:
-    dof = self.pendulum.getDof(i)
-    torque = default_torque if self.positive_sign else -default_torque
-    dof.setForce(torque)
-    child = dof.getChildBodyNode()
-    child.getShapeNode(0).getVisualAspect().setColor([1.0, 0.0, 0.0, 1.0])
-    self.force_countdown[i] -= 1
-```
+## Lesson 3 – Add and remove constraints
 
-### 1c – Body forces
-
-Pressing `f` toggles `apply_body_force`.  In this mode the same countdown array
-controls external forces applied with `BodyNode.addExtForce()`.  Each body owns a
-`SimpleFrame`/`ArrowShape` pair that makes the force visible:
-
-```python
-force = np.array([default_force, 0.0, 0.0])
-location = np.array([-default_width / 2.0, 0.0, default_height / 2.0])
-if not self.positive_sign:
-    force *= -1.0
-    location[0] *= -1.0
-body.addExtForce(force, location, True, True)
-arrow, visual = self.body_force_visuals[i]
-arrow.setPositions(*self._arrow_positions())
-visual.show()
-```
-
-## Lesson 2: Adjust implicit springs
-
-`change_rest_position()`, `change_stiffness()`, and `change_damping()` loop over
-the DOFs and update the corresponding property.
-
-- Rest positions (`q`/`a`) move by ±10° and are clamped to ±90°.  The X and Z
-  axes of the root ball joint are forced back to zero so only the Y axis curls.
-- Stiffness (`w`/`s`) increments/decrements by 10 but never drops below zero.
-- Damping (`e`/`d`) adjusts in increments of 1.0, again clamped to zero.
-
-These functions closely follow the logic in the C++ tutorial but use dartpy’s
-`DegreeOfFreedom` accessors.
-
-## Lesson 3: Toggle constraints
-
-The final lesson attaches the pendulum tip to the world when you press `r`.  The
-controller stores the active `dart.constraint.BallJointConstraint` and adds or
-removes it from the world’s solver:
-
-```python
-def add_constraint(self):
-    tip = self.pendulum.getBodyNode(self.pendulum.getNumBodyNodes() - 1)
-    location = tip.getTransform().multiply([0.0, 0.0, default_height])
-    self.ball_constraint = dart.constraint.BallJointConstraint(tip, location)
-    self.world.getConstraintSolver().addConstraint(self.ball_constraint)
-```
-
-Removing the constraint simply calls `removeConstraint()` and clears the stored
-pointer.  Toggling the constraint while forces are active makes it easy to see
-how implicit springs and constraints interact.
+The final lesson adds a `dart.constraint.BallJointConstraint` between the world
+and the last body.  `Controller.add_constraint()` computes the attachment point
+by transforming `[0, 0, default_height]` through the tip’s body transform and
+passes it to the constraint constructor.  `Controller.remove_constraint()` calls
+`World.getConstraintSolver().removeConstraint(...)` and clears the stored pointer.
+The event handler maps the `r` key to toggle these calls so you can switch
+between free-swinging and constrained modes while applying forces.
 
 ## Keyboard reference
 
@@ -179,13 +116,14 @@ how implicit springs and constraints interact.
 | `p` | Replay |
 | `1`–`0` | Apply torques or body forces to links 1–10 |
 | `-` | Flip the torque/force direction |
-| `f` | Switch between joint torque mode and body-force mode |
-| `q` / `a` | Increase / decrease joint rest positions |
+| `f` | Switch between joint torques and body forces |
+| `q` / `a` | Increase / decrease rest positions |
 | `w` / `s` | Increase / decrease stiffness |
 | `e` / `d` | Increase / decrease damping |
-| `r` | Attach / detach the ball joint constraint |
+| `r` | Attach / detach the constraint on the chain tip |
 
-Work through the lessons in order: build the passive chain, experiment with the
-force modes, tweak the spring parameters, and finally attach/detach the
-constraint while applying forces.  Everything you touch uses the dartpy API, so
-extending the tutorial with new experiments is only a few lines of Python away.
+Follow the lessons sequentially just like the C++ guide: build the passive chain,
+exercise the torque/body-force controls, experiment with springs/dampers, and
+finally attach/detach the constraint. Because everything is done through dartpy
+you can script additional experiments—logging applied forces, fading colors
+based on torque magnitude, etc.—with only a few lines of Python.
