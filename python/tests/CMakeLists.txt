@@ -56,11 +56,16 @@ set(dartpy_test_utils
 
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
+set(_dart_pytest_env "PYTHONPATH=${DART_PYTHONPATH_ENV}")
+if(DART_PXR_PLUGIN_PATH)
+  list(APPEND _dart_pytest_env "PXR_PLUGINPATH_NAME=${DART_PXR_PLUGIN_PATH}")
+endif()
+
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
   add_custom_target(pytest
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+    COMMAND ${CMAKE_COMMAND} -E env ${_dart_pytest_env} "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy
@@ -84,7 +89,7 @@ function(dartpy_add_test test_name) # ARGN for source file
   endif()
   add_custom_target(${test_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
-    COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" ${Python3_EXECUTABLE} ${source}
+    COMMAND ${CMAKE_COMMAND} -E env ${_dart_pytest_env} ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
     DEPENDS dartpy
