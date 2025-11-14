@@ -160,7 +160,7 @@ msgstr ""
 
 #: ../../tutorials/biped.md:94 37b6ccf8260c4e5b89ea19bbb824dba5
 msgid "Lesson 2: Proportional-derivative control"
-msgstr ""
+msgstr "Lesson 2: 비례-미분(PD) 제어"
 
 #: ../../tutorials/biped.md:96 25ac503c810d40afa01fff2de3560660
 msgid ""
@@ -176,12 +176,22 @@ msgid ""
 "coefficients. The detailed description of a PD controller can be found "
 "[here](https://en.wikipedia.org/wiki/PID_controller)."
 msgstr ""
+"이족 보행자가 스스로 움직임을 제어하려면 액추에이터를 통해 내부 힘을 만들어야 합니다. 이번 "
+"Lesson에서는 목표 자세를 유지하기 위해 내부 힘을 생성하는 가장 단순한 제어기 중 하나를 설계해 "
+"보겠습니다. 비례-미분(PD) 제어는 &Tau; = -k<sub>p</sub> (&theta; - "
+"&theta;<sub>target</sub>) - k<sub>d</sub> &theta;&#775; 공식을 사용해 제어력을 계산합니다. "
+"&theta; 와 &theta;&#775; 는 특정 자유도의 현재 위치와 속도, &theta;<sub>target</sub> 은 "
+"제어기가 지정한 목표 위치, k<sub>p</sub> 와 k<sub>d</sub> 는 강성 및 감쇠 계수입니다. PD "
+"제어기에 대한 자세한 설명은 "
+"[여기](https://en.wikipedia.org/wiki/PID_controller)에서 확인할 수 있습니다."
 
 #: ../../tutorials/biped.md:108 c8a355775ee34b8884b8973bb9c8d430
 msgid ""
 "The first task is to set the biped to a particular configuration. You can"
 " use ``setPosition`` to set each degree of freedom individually:"
 msgstr ""
+"첫 번째 작업은 이족 보행자를 특정 자세로 맞추는 것입니다. 각 자유도를 개별적으로 설정하려면 "
+"``setPosition`` 을 사용할 수 있습니다:"
 
 #: ../../tutorials/biped.md:119 40b4442448114189baf05d5fe6b6d060
 msgid ""
@@ -191,12 +201,16 @@ msgid ""
 "the entire configuration using a vector that holds the positions of all "
 "the degreed of freedoms using ``setPositions``."
 msgstr ""
+"여기서는 \"j_thigh_left_z\" 자유도를 0.15 라디안으로 설정합니다. 스켈레톤의 각 자유도에는 "
+"``getIndexInSkeleton`` 으로 접근할 수 있는 인덱스가 있다는 점에 유의하세요. "
+"``setPositions`` 를 사용하면 모든 자유도의 위치를 담은 벡터로 전체 자세를 한 번에 지정할 수도 "
+"있습니다."
 
 #: ../../tutorials/biped.md:127 425b6b5ccfd34e60a936c9859582ba9f
 msgid ""
 "We continue to set more degrees of freedoms in the lower body to create a"
 " roughly stable standing pose."
-msgstr ""
+msgstr "이후 하반신의 자유도를 추가로 설정해 대략적인 안정 정지 자세를 구성합니다."
 
 #: ../../tutorials/biped.md:139 6af51d20437a4e42a00d156aa76cbdde
 msgid ""
@@ -205,6 +219,8 @@ msgid ""
 " to make this happen. Let's take a look at the constructor of our "
 "``Controller`` in the skeleton code:"
 msgstr ""
+"이제 이 구성에서 시뮬레이션을 시작하지만, 시뮬레이션이 진행되면 자세가 금방 무너집니다. 이를 유지하려면 "
+"제어기가 필요합니다. 스켈레톤 코드의 ``Controller`` 생성자를 살펴보면:"
 
 #: ../../tutorials/biped.md:164 5d8cd6c96d1f40a98fddb43c1af77c01
 msgid ""
@@ -216,6 +232,10 @@ msgid ""
 "end of the constructor, we set the target position of the PD controller "
 "to the current configuration of the biped."
 msgstr ""
+"여기서는 첫 여섯 자유도를 제외하고 임의로 강성과 감쇠 계수를 각각 1000과 50으로 둡니다. 전체 "
+"병진/회전 자유도는 액추에이터가 없으므로 루트의 처음 여섯 자유도는 내부 힘을 생성하지 않습니다. "
+"따라서 해당 계수는 0으로 설정합니다. 생성자 마지막에서는 PD 제어기의 목표 자세를 현재 이족 보행자 "
+"구성으로 초기화합니다."
 
 #: ../../tutorials/biped.md:172 df3ecb0f41eb4a1a8fc30b36a0a5b3fe
 msgid ""
@@ -223,12 +243,14 @@ msgid ""
 "controller and add them to the internal forces of biped using "
 "``setForces``:"
 msgstr ""
+"이제 이 설정을 바탕으로 PD 제어기가 생성하는 힘을 계산해 ``setForces`` 를 통해 이족 보행자의 "
+"내부 힘에 더할 수 있습니다:"
 
 #: ../../tutorials/biped.md:188 d3752f2112ff49aebde7b0eba30d7c82
 msgid ""
 "Note that the PD control force is *added* to the current internal force "
 "stored in mForces instead of overriding it."
-msgstr ""
+msgstr "PD 제어력이 기존 mForces 값에 덮어쓰이지 않고 *추가* 된다는 점을 기억하세요."
 
 #: ../../tutorials/biped.md:191 cb9e20250dbf4267a122c98a544bd230
 msgid ""
@@ -238,6 +260,9 @@ msgid ""
 "biped deviates from the target position, huge internal forces are "
 "generated to cause the numerical simulation to blow up."
 msgstr ""
+"프로그램을 다시 실행해 보면 스페이스바를 누르자마자 스켈레톤이 사라집니다! 강성과 감쇠 계수를 너무 "
+"크게 설정했기 때문입니다. 목표 자세에서 조금만 벗어나도 엄청난 내부 힘이 발생해 수치 시뮬레이션이 "
+"폭발적으로 발산하는 것입니다."
 
 #: ../../tutorials/biped.md:198 6083f91adcdb415d8323a32c70b6bb79
 msgid ""
@@ -250,6 +275,10 @@ msgid ""
 "next Lesson, we will introduce a much more efficient way to stabilize the"
 " PD controllers without endless tuning and trial-and-errors."
 msgstr ""
+"따라서 계수를 조금 낮춰야 합니다. 각 자유도는 바디 노드의 관성, 조인트 형태와 특성, 현재 구성 등 "
+"많은 요인에 따라 개별적으로 조정해야 합니다. 적절한 값을 찾는 과정은 새 작업이나 다른 스켈레톤에 "
+"일반화하기 어렵고 번거롭습니다. 다음 Lesson에서는 끝없는 튜닝 없이 PD 제어기를 안정화하는 더 "
+"효율적인 방법을 소개합니다."
 
 #: ../../tutorials/biped.md:208 4bf3fb25ba0743f2a37995734727018a
 msgid "Lesson 3: Stable PD control"
