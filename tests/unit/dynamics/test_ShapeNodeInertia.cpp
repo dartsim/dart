@@ -37,7 +37,6 @@
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-#include <dart/dynamics/all.hpp>
 
 #include <dart/math/Constants.hpp>
 #include <dart/math/Geometry.hpp>
@@ -70,8 +69,7 @@ TEST(ShapeNodeInertia, AppliesRelativeTransform)
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0.5, -0.2, 0.1);
-  tf.linear() = Eigen::AngleAxisd(
-                    math::constantsd::pi() / 4.0, Eigen::Vector3d::UnitZ())
+  tf.linear() = Eigen::AngleAxisd(math::pi / 4.0, Eigen::Vector3d::UnitZ())
                     .toRotationMatrix();
   node->setRelativeTransform(tf);
 
@@ -106,8 +104,7 @@ TEST(ShapeNodeInertia, BodyNodeAggregationMatchesManualSum)
 
   Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
   tfB.translation() = Eigen::Vector3d(-0.05, 0.02, -0.03);
-  tfB.linear() = Eigen::AngleAxisd(
-                     math::constantsd::pi() / 3.0, Eigen::Vector3d::UnitY())
+  tfB.linear() = Eigen::AngleAxisd(math::pi / 3.0, Eigen::Vector3d::UnitY())
                      .toRotationMatrix();
   nodeB->setRelativeTransform(tfB);
 
