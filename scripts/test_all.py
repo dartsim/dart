@@ -301,6 +301,13 @@ def run_python_tests() -> bool:
         print_warning("Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF")
         return True
 
+    target_exists = _ninja_target_exists(build_type, "pytest")
+    if target_exists is False:
+        print_warning(
+            "Skipping python tests because Ninja target 'pytest' was not generated"
+        )
+        return True
+
     # Check if Python bindings are enabled
     result, _ = run_command(pixi_command("test-py"), "Python tests")
 
@@ -322,6 +329,13 @@ def run_dartpy8_tests() -> bool:
     if not _env_flag_enabled("DART_BUILD_DARTPY8_OVERRIDE", PIXI_DEFAULT_DARTPY):
         print_warning(
             "Skipping dartpy8 smoke test because DART_BUILD_DARTPY8_OVERRIDE is OFF"
+        )
+        return True
+
+    target_exists = _ninja_target_exists(build_type, "dartpy8")
+    if target_exists is False:
+        print_warning(
+            "Skipping dartpy8 smoke test because Ninja target 'dartpy8' was not generated"
         )
         return True
 
@@ -486,16 +500,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-    target_exists = _ninja_target_exists(build_type, "pytest")
-    if target_exists is False:
-        print_warning(
-            "Skipping python tests because Ninja target 'pytest' was not generated"
-        )
-        return True
-
-    target_exists = _ninja_target_exists(build_type, "dartpy8")
-    if target_exists is False:
-        print_warning(
-            "Skipping dartpy8 smoke test because Ninja target 'dartpy8' was not generated"
-        )
-        return True
