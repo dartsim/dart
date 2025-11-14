@@ -1,21 +1,33 @@
-"""
-Integration tests for Atlas robot inverse kinematics.
+"""Integration tests for Atlas robot inverse kinematics."""
 
-NOTE: These tests are currently disabled because they require Python bindings
-for createEndEffector() and getEndEffector() which are not yet available in dartpy.
+from pathlib import Path
+import os
+import sys
 
-See python/examples/atlas_puppet for a working example using the existing API.
-"""
+
+def _prepend_build_python():
+    """Ensure the built dartpy extension is importable when running from source."""
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    candidate = (
+        Path(__file__).resolve().parents[3]
+        / "build"
+        / pixi_env
+        / "cpp"
+        / build_type
+        / "python"
+    )
+    if candidate.exists():
+        path_str = str(candidate)
+        if path_str not in sys.path:
+            sys.path.insert(0, path_str)
+
+
+_prepend_build_python()
 
 import dartpy as dart
 import numpy as np
 import pytest
-
-
-# Skip all tests in this file until Python bindings are available
-pytestmark = pytest.mark.skip(
-    reason="Waiting for createEndEffector/getEndEffector Python bindings"
-)
 
 
 def create_simple_atlas():
@@ -42,14 +54,68 @@ def setup_atlas_standing_pose(atlas):
     atlas.getDof("l_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
 
 
+def ensure_end_effector(atlas, body_name, ee_name=None):
+    """Return an EndEffector for the given body, creating one if needed."""
+    bn = atlas.getBodyNode(body_name)
+    assert bn is not None
+    name = ee_name or body_name
+
+    existing = atlas.getEndEffector(name)
+    if existing is not None:
+        return existing
+
+    if bn.getNumEndEffectors() > 0:
+        ee = bn.getEndEffector(0)
+        if ee is not None:
+            return ee
+
+    return bn.createEndEffector(name)
+
+
+def test_end_effector_creation_and_support():
+    """End effectors can be created, configured, and retrieved from skeletons."""
+    atlas = create_simple_atlas()
+    bn = atlas.getBodyNode("l_hand")
+    ee_name = "custom_l_hand"
+
+    effector = bn.createEndEffector(ee_name)
+    assert effector is not None
+    assert effector.getName() == ee_name
+
+    tf = dart.math.Isometry3()
+    tf.set_translation([0.01, -0.02, 0.03])
+    effector.setDefaultRelativeTransform(tf, True)
+
+    support = effector.createSupport()
+    support_points = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([0.05, 0.0, 0.0]),
+        np.array([0.0, 0.05, 0.0]),
+    ]
+    support.setGeometry(support_points)
+
+    stored = support.getGeometry()
+    assert len(stored) == len(support_points)
+    for expected, actual in zip(support_points, stored):
+        assert np.allclose(np.asarray(actual).ravel(), expected.ravel())
+
+    assert effector.hasSupport()
+    retrieved = atlas.getEndEffector(ee_name)
+    assert retrieved is effector
+
+    effector.removeSupport()
+    assert not effector.hasSupport()
+    recreated = effector.getSupport(True)
+    assert recreated is not None
+
+
 def test_atlas_hand_ik_simple():
     """Test simple hand IK to reach forward."""
     atlas = create_simple_atlas()
     setup_atlas_standing_pose(atlas)
 
-    # Get the left hand end effector (already exists in Atlas URDF)
-    l_hand_bn = atlas.getBodyNode("l_hand")
-    l_hand = l_hand_bn.getEndEffector(0)
+    # Get or create the left hand end effector
+    l_hand = ensure_end_effector(atlas, "l_hand")
 
     # Set offset for palm center
     tf_hand = dart.math.Isometry3()
@@ -126,7 +192,7 @@ def test_atlas_foot_ik_constrained():
     # Get foot body node and its end effector
     l_foot_bn = atlas.getBodyNode("l_foot")
     assert l_foot_bn is not None
-    l_foot = l_foot_bn.getEndEffector(0)
+    l_foot = ensure_end_effector(atlas, "l_foot")
 
     # Set offset
     tf_foot = dart.math.Isometry3()
@@ -178,13 +244,8 @@ def test_atlas_hierarchical_ik():
     atlas = create_simple_atlas()
     setup_atlas_standing_pose(atlas)
 
-    # Create end effectors for both hands
-    l_hand_bn = atlas.getBodyNode("l_hand")
-    r_hand_bn = atlas.getBodyNode("r_hand")
-
-    # Get existing end effectors
-    l_hand = l_hand_bn.getEndEffector(0)
-    r_hand = r_hand_bn.getEndEffector(0)
+    l_hand = ensure_end_effector(atlas, "l_hand")
+    r_hand = ensure_end_effector(atlas, "r_hand")
 
     # Set offsets
     tf_hand_l = dart.math.Isometry3()
@@ -250,8 +311,7 @@ def test_atlas_hierarchical_ik():
 def test_ik_solver_properties():
     """Test that IK solver properties can be set and retrieved."""
     atlas = create_simple_atlas()
-    l_hand_bn = atlas.getBodyNode("l_hand")
-    l_hand = l_hand_bn.getEndEffector(0)
+    l_hand = ensure_end_effector(atlas, "l_hand")
 
     ik = l_hand.getIK(True)
     solver = ik.getSolver()

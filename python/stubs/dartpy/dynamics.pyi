@@ -4,7 +4,7 @@ import dartpy.math
 import dartpy.optimizer
 import numpy
 import typing
-__all__: list[str] = ['ACCELERATION', 'ActuatorType', 'ArrowShape', 'ArrowShapeProperties', 'BallJoint', 'BallJointProperties', 'BodyNode', 'BodyNodeAspectProperties', 'BodyNodeProperties', 'BoxShape', 'CapsuleShape', 'Chain', 'ChainCriteria', 'CollisionAspect', 'CompositeJoiner_EmbedProperties_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space', 'CompositeJoiner_EmbedProperties_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space', 'CompositeJoiner_EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space', 'CompositeJoiner_EmbedProperties_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R1GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R2GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R3GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_SE3GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_SO3GenericJointStateGenericJointUniqueProperties_Joint', 'ConeShape', 'CylinderShape', 'DefaultActuatorType', 'DegreeOfFreedom', 'Detachable', 'DynamicsAspect', 'EllipsoidShape', 'EmbedPropertiesOnTopOf_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space', 'EmbedPropertiesOnTopOf_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space', 'EmbedPropertiesOnTopOf_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space', 'EmbedPropertiesOnTopOf_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space', 'EmbedProperties_EulerJoint_EulerJointUniqueProperties', 'EmbedProperties_Joint_JointProperties', 'EmbedProperties_PlanarJoint_PlanarJointUniqueProperties', 'EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties', 'EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties', 'EmbedProperties_ScrewJoint_ScrewJointUniqueProperties', 'EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'EmbedProperties_UniversalJoint_UniversalJointUniqueProperties', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndProperties_GenericJoint_R1GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_R2GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_R3GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_SE3GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_SO3GenericJointState_GenericJointUniqueProperties', 'Entity', 'EulerJoint', 'EulerJointProperties', 'EulerJointUniqueProperties', 'FORCE', 'Frame', 'FreeJoint', 'FreeJointProperties', 'GenericJointProperties_R1', 'GenericJointProperties_R2', 'GenericJointProperties_R3', 'GenericJointProperties_SE3', 'GenericJointProperties_SO3', 'GenericJointUniqueProperties_R1', 'GenericJointUniqueProperties_R2', 'GenericJointUniqueProperties_R3', 'GenericJointUniqueProperties_SE3', 'GenericJointUniqueProperties_SO3', 'GenericJoint_R1', 'GenericJoint_R2', 'GenericJoint_R3', 'GenericJoint_SE3', 'GenericJoint_SO3', 'Inertia', 'InverseKinematics', 'InverseKinematicsErrorMethod', 'InverseKinematicsErrorMethodProperties', 'InverseKinematicsTaskSpaceRegion', 'InverseKinematicsTaskSpaceRegionProperties', 'InverseKinematicsTaskSpaceRegionUniqueProperties', 'JacobianNode', 'Joint', 'JointProperties', 'LOCKED', 'LineSegmentShape', 'Linkage', 'LinkageCriteria', 'MIMIC', 'MeshShape', 'MetaSkeleton', 'MimicDofProperties', 'MultiSphereConvexHullShape', 'Node', 'PASSIVE', 'PlanarJoint', 'PlanarJointProperties', 'PlanarJointUniqueProperties', 'PlaneShape', 'PointCloudShape', 'PrismaticJoint', 'PrismaticJointProperties', 'PrismaticJointUniqueProperties', 'ReferentialSkeleton', 'RequiresAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties', 'RequiresAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties', 'RevoluteJoint', 'RevoluteJointProperties', 'RevoluteJointUniqueProperties', 'SERVO', 'ScrewJoint', 'ScrewJointProperties', 'ScrewJointUniqueProperties', 'Shape', 'ShapeFrame', 'ShapeNode', 'SimpleFrame', 'Skeleton', 'SoftMeshShape', 'SpecializedForAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties', 'SphereShape', 'TemplatedJacobianBodyNode', 'TranslationalJoint', 'TranslationalJoint2D', 'TranslationalJoint2DProperties', 'TranslationalJoint2DUniqueProperties', 'TranslationalJointProperties', 'UniversalJoint', 'UniversalJointProperties', 'UniversalJointUniqueProperties', 'VELOCITY', 'VisualAspect', 'WeldJoint', 'ZeroDofJoint', 'ZeroDofJointProperties']
+__all__: list[str] = ['ACCELERATION', 'ActuatorType', 'ArrowShape', 'ArrowShapeProperties', 'BallJoint', 'BallJointProperties', 'BodyNode', 'BodyNodeAspectProperties', 'BodyNodeProperties', 'BoxShape', 'CapsuleShape', 'Chain', 'ChainCriteria', 'CollisionAspect', 'CompositeJoiner_EmbedProperties_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space', 'CompositeJoiner_EmbedProperties_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space', 'CompositeJoiner_EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space', 'CompositeJoiner_EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space', 'CompositeJoiner_EmbedProperties_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R1GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R2GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_R3GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_SE3GenericJointStateGenericJointUniqueProperties_Joint', 'CompositeJoiner_EmbedStateAndProperties_GenericJoint_SO3GenericJointStateGenericJointUniqueProperties_Joint', 'ConeShape', 'CylinderShape', 'DefaultActuatorType', 'DegreeOfFreedom', 'Detachable', 'DynamicsAspect', 'EllipsoidShape', 'EmbedPropertiesOnTopOf_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space', 'EmbedPropertiesOnTopOf_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space', 'EmbedPropertiesOnTopOf_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space', 'EmbedPropertiesOnTopOf_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space', 'EmbedPropertiesOnTopOf_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space', 'EmbedProperties_EulerJoint_EulerJointUniqueProperties', 'EmbedProperties_Joint_JointProperties', 'EmbedProperties_PlanarJoint_PlanarJointUniqueProperties', 'EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties', 'EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties', 'EmbedProperties_ScrewJoint_ScrewJointUniqueProperties', 'EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'EmbedProperties_UniversalJoint_UniversalJointUniqueProperties', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndPropertiesOnTopOf_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties_Joint', 'EmbedStateAndProperties_GenericJoint_R1GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_R2GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_R3GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_SE3GenericJointState_GenericJointUniqueProperties', 'EmbedStateAndProperties_GenericJoint_SO3GenericJointState_GenericJointUniqueProperties', 'Entity', 'EndEffector', 'EulerJoint', 'EulerJointProperties', 'EulerJointUniqueProperties', 'FORCE', 'Frame', 'FreeJoint', 'FreeJointProperties', 'GenericJointProperties_R1', 'GenericJointProperties_R2', 'GenericJointProperties_R3', 'GenericJointProperties_SE3', 'GenericJointProperties_SO3', 'GenericJointUniqueProperties_R1', 'GenericJointUniqueProperties_R2', 'GenericJointUniqueProperties_R3', 'GenericJointUniqueProperties_SE3', 'GenericJointUniqueProperties_SO3', 'GenericJoint_R1', 'GenericJoint_R2', 'GenericJoint_R3', 'GenericJoint_SE3', 'GenericJoint_SO3', 'Inertia', 'InverseKinematics', 'HierarchicalIK', 'InverseKinematicsErrorMethod', 'InverseKinematicsErrorMethodProperties', 'InverseKinematicsTaskSpaceRegion', 'InverseKinematicsTaskSpaceRegionProperties', 'InverseKinematicsTaskSpaceRegionUniqueProperties', 'JacobianNode', 'Joint', 'JointProperties', 'LOCKED', 'LineSegmentShape', 'Linkage', 'LinkageCriteria', 'MIMIC', 'MeshShape', 'MetaSkeleton', 'MimicDofProperties', 'MultiSphereConvexHullShape', 'Node', 'PASSIVE', 'PlanarJoint', 'PlanarJointProperties', 'PlanarJointUniqueProperties', 'PlaneShape', 'PointCloudShape', 'PrismaticJoint', 'PrismaticJointProperties', 'PrismaticJointUniqueProperties', 'ReferentialSkeleton', 'RequiresAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties', 'RequiresAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'RequiresAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties', 'RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties', 'RevoluteJoint', 'RevoluteJointProperties', 'RevoluteJointUniqueProperties', 'SERVO', 'ScrewJoint', 'ScrewJointProperties', 'ScrewJointUniqueProperties', 'Shape', 'ShapeFrame', 'ShapeNode', 'WholeBodyIK', 'SimpleFrame', 'Skeleton', 'SoftMeshShape', 'SpecializedForAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties', 'SpecializedForAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties', 'SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties', 'SphereShape', 'Support', 'TemplatedJacobianBodyNode', 'TranslationalJoint', 'TranslationalJoint2D', 'TranslationalJoint2DProperties', 'TranslationalJoint2DUniqueProperties', 'TranslationalJointProperties', 'UniversalJoint', 'UniversalJointProperties', 'UniversalJointUniqueProperties', 'VELOCITY', 'VisualAspect', 'WeldJoint', 'ZeroDofJoint', 'ZeroDofJointProperties']
 M = typing.TypeVar("M", bound=int)
 N = typing.TypeVar("N", bound=int)
 class ActuatorType:
@@ -280,6 +280,8 @@ class BodyNode(TemplatedJacobianBodyNode, Frame):
     @typing.overload
     def createShapeNode(self, shape: Shape, name: str) -> ShapeNode:
         ...
+    def createEndEffector(self, name: str = 'EndEffector') -> EndEffector:
+        ...
     @typing.overload
     def createTranslationalJoint2DAndBodyNodePair(self) -> tuple[..., BodyNode]:
         ...
@@ -424,6 +426,8 @@ class BodyNode(TemplatedJacobianBodyNode, Frame):
         ...
     def getNumEndEffectors(self) -> int:
         ...
+    def getEndEffector(self, index: int) -> EndEffector:
+        ...
     def getNumMarkers(self) -> int:
         ...
     def getNumShapeNodes(self) -> int:
@@ -532,6 +536,53 @@ class BodyNode(TemplatedJacobianBodyNode, Frame):
         ...
     def split(self, skeletonName: str) -> ...:
         ...
+class Support:
+    def setGeometry(
+        self,
+        geometry: typing.Iterable[
+            numpy.ndarray[
+                tuple[typing.Literal[3], typing.Literal[1]],
+                numpy.dtype[numpy.float64],
+            ]
+        ],
+    ) -> None:
+        ...
+
+    def getGeometry(
+        self,
+    ) -> list[
+        numpy.ndarray[
+            tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]
+        ]
+    ]:
+        ...
+
+    def setActive(self, supporting: bool = True) -> None:
+        ...
+
+    def isActive(self) -> bool:
+        ...
+
+
+class EndEffector(JacobianNode):
+    def setDefaultRelativeTransform(self, transform: dartpy.math.Isometry3, useNow: bool = False) -> None:
+        ...
+    def resetRelativeTransform(self) -> None:
+        ...
+    def createSupport(self) -> Support:
+        ...
+    @typing.overload
+    def getSupport(self) -> typing.Optional[Support]:
+        ...
+    @typing.overload
+    def getSupport(self, createIfNull: bool) -> Support:
+        ...
+    def hasSupport(self) -> bool:
+        ...
+    def removeSupport(self) -> None:
+        ...
+
+
 class BodyNodeAspectProperties:
     mGravityMode: bool
     mInertia: ...
@@ -3170,6 +3221,18 @@ class InverseKinematicsTaskSpaceRegionUniqueProperties:
     mReferenceFrame: SimpleFrame
     def __init__(self, computeErrorFromCenter: bool = True, referenceFrame: SimpleFrame = None) -> None:
         ...
+
+
+class HierarchicalIK(dartpy.common.Subject):
+    def solveAndApply(self, allowIncompleteResult: bool = True) -> bool:
+        ...
+
+
+class WholeBodyIK(HierarchicalIK):
+    def refreshIKHierarchy(self) -> None:
+        ...
+
+
 class JacobianNode(Frame, Node):
     def clearIK(self) -> None:
         ...
@@ -5755,6 +5818,9 @@ class Skeleton(MetaSkeleton):
     def getIK(self) -> ...:
         ...
     @typing.overload
+    def getIK(self, createIfNull: bool) -> ...:
+        ...
+    @typing.overload
     def getIndexOf(self, bn: BodyNode) -> int:
         ...
     @typing.overload
@@ -5871,6 +5937,15 @@ class Skeleton(MetaSkeleton):
         ...
     @typing.overload
     def getNumEndEffectors(self, treeIndex: int) -> int:
+        ...
+    @typing.overload
+    def getEndEffector(self, index: int) -> EndEffector:
+        ...
+    @typing.overload
+    def getEndEffector(self, treeIndex: int, nodeIndex: int) -> EndEffector:
+        ...
+    @typing.overload
+    def getEndEffector(self, name: str) -> EndEffector:
         ...
     def getNumJoints(self) -> int:
         ...
