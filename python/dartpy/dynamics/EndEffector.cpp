@@ -88,6 +88,13 @@ void EndEffector(py::module& m)
             self->resetRelativeTransform();
           })
       .def(
+          "setRelativeTransform",
+          +[](dart::dynamics::EndEffector* self,
+              const Eigen::Isometry3d& transform) {
+            self->setRelativeTransform(transform);
+          },
+          ::py::arg("transform"))
+      .def(
           "createSupport",
           +[](dart::dynamics::EndEffector* self) -> dart::dynamics::Support* {
             return self->createSupport();
