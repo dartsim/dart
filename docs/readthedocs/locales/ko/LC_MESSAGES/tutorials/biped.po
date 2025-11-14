@@ -338,7 +338,7 @@ msgstr ""
 
 #: ../../tutorials/biped.md:258 73235c167e224c9982ebd6035cb0cd68
 msgid "Lesson 4: Ankle strategy"
-msgstr ""
+msgstr "Lesson 4: 발목 전략"
 
 #: ../../tutorials/biped.md:260 1a48c5e28cda43bf8d51ec099ad20e4b
 msgid ""
@@ -351,6 +351,11 @@ msgid ""
 "mass and center of pressure in the anterior-posterior axis. k<sub>p</sub>"
 " and k<sub>d</sub> are the feedback gains defined by the user."
 msgstr ""
+"발목(또는 고관절) 전략은 정지 균형을 유지하는 효과적인 방법입니다. 개념은 질량 중심과 바닥에 "
+"투영된 압력 중심 간의 차이를 측정해 발목의 목표 위치를 조정하는 것입니다. 선형 피드백 규칙 "
+"&theta;<sub>a</sub> = -k<sub>p</sub> (x - p) - k<sub>d</sub> (x&#775; - p&#775;)을 "
+"사용하며, x와 p는 앞뒤 축에서의 질량 중심과 압력 중심을 의미하고 k<sub>p</sub>, k<sub>d</sub> "
+"는 사용자가 정하는 피드백 이득입니다."
 
 #: ../../tutorials/biped.md:270 fc6c094d7c2d434ea4795d7affc0d475
 msgid ""
@@ -358,6 +363,7 @@ msgid ""
 "the center of mass and an approximated center of pressure in the "
 "anterior-posterior axis:"
 msgstr ""
+"발목 전략을 적용하려면 먼저 앞뒤 축에서 질량 중심과 근사 압력 중심 사이의 편차를 계산합니다:"
 
 #: ../../tutorials/biped.md:285 e268c84e5a774304b09ec76f18d03d14
 msgid ""
@@ -368,6 +374,10 @@ msgid ""
 "as default). DART APIs also come in handy when computing the derivative "
 "term,  -k<sub>d</sub> (x&#775; - p&#775;):"
 msgstr ""
+"DART는 유용한 운동학 정보를 얻기 위한 다양한 API를 제공합니다. 예를 들어 ``getCOM`` 은 "
+"스켈레톤의 질량 중심을 반환하고 ``getTransform`` 은 기본적으로 월드 좌표계에 대한 BodyNode의 "
+"변환을 돌려줍니다. 도함수 항  -k<sub>d</sub> (x&#775; - p&#775;) 를 계산할 때도 DART "
+"API가 유용합니다:"
 
 #: ../../tutorials/biped.md:303 5bf2fe8920a34f1aa8c449cf35a24886
 msgid ""
@@ -377,77 +387,80 @@ msgid ""
 "Documentation](http://dartsim.github.io/dart/). The  following table "
 "summarizes the essential APIs."
 msgstr ""
+"DART에서는 어떤 좌표계에서든任의 지점의 선형/각 속도·가속도를 쉽게 얻을 수 있습니다. 관련 API "
+"전체 목록은 [API 문서](http://dartsim.github.io/dart/)에서 확인할 수 있으며, 아래 "
+"표에는 핵심 API를 정리했습니다."
 
 #: ../../tutorials/biped.md 548bb935c838469a8743489ab41fa7f6
 #: 57b66f7869634a4a802e59b4b601c450 7602d2ca13704a50b6fa772052922080
 msgid "Function Name"
-msgstr ""
+msgstr "함수 이름"
 
 #: ../../tutorials/biped.md 5eb089a7291f41829d88967b731828e3
 #: 69f61a38e00e49a681f02ad0d9e730d9 a7d815505e1241db8a50e3640ab7f4d0
 #: f8246d5e34f04affaf47bb2af66db58d
 msgid "Description"
-msgstr ""
+msgstr "설명"
 
 #: ../../tutorials/biped.md f522f1e6c8cf46c19361a0f3be41e628
 msgid "getSpatialVelocity"
-msgstr ""
+msgstr "getSpatialVelocity"
 
 #: ../../tutorials/biped.md 2362b91aeeeb4937a6a15dba74e0b703
 msgid ""
 "Return the spatial velocity of this BodyNode in the coordinates of the "
 "BodyNode."
-msgstr ""
+msgstr "이 BodyNode 좌표계에서의 공간 속도를 반환합니다."
 
 #: ../../tutorials/biped.md 49f5a0b3e9e844ae9d8abe34169ade70
 msgid "getLinearVelocity"
-msgstr ""
+msgstr "getLinearVelocity"
 
 #: ../../tutorials/biped.md 4fce3d6b4ca147969f3a44248f73ab66
 msgid ""
 "Return the linear portion of classical velocity of the BodyNode relative "
 "to some other BodyNode."
-msgstr ""
+msgstr "다른 BodyNode에 대한 고전적 속도의 선형 부분을 반환합니다."
 
 #: ../../tutorials/biped.md 95267a85718e4acd9dafa6c170b64162
 msgid "getAngularVelocity"
-msgstr ""
+msgstr "getAngularVelocity"
 
 #: ../../tutorials/biped.md 079c3453f8cf4d4b99b1b7dc9f99597e
 msgid ""
 "Return the angular portion of classical velocity of this BodyNode "
 "relative to some other BodyNode."
-msgstr ""
+msgstr "다른 BodyNode에 대한 고전적 속도의 각 부분을 반환합니다."
 
 #: ../../tutorials/biped.md 4d065fb737de420e8cd23610331bf828
 msgid "getSpatialAcceleration"
-msgstr ""
+msgstr "getSpatialAcceleration"
 
 #: ../../tutorials/biped.md f98d48fb9c5b4f62b3a88d836f0122d4
 msgid ""
 "Return the spatial acceleration of this BodyNode in the coordinates of "
 "the BodyNode."
-msgstr ""
+msgstr "해당 BodyNode 좌표계에서의 공간 가속도를 반환합니다."
 
 #: ../../tutorials/biped.md f270b1bb0f36463984fb8fc0c998b7a1
 msgid "getLinearAcceleration"
-msgstr ""
+msgstr "getLinearAcceleration"
 
 #: ../../tutorials/biped.md 46d3eab0e575406591ed5a41664ffd24
 msgid ""
 "Return the linear portion of classical acceleration of the BodyNode "
 "relative to some other BodyNode."
-msgstr ""
+msgstr "다른 BodyNode에 대한 고전적 가속도의 선형 부분을 반환합니다."
 
 #: ../../tutorials/biped.md 120aa004c225432e9213f66d5f874023
 msgid "getAngularAcceleration"
-msgstr ""
+msgstr "getAngularAcceleration"
 
 #: ../../tutorials/biped.md e6e0ae68c71e4f24b029750721402a90
 msgid ""
 "Return the angular portion of classical acceleration of this BodyNode "
 "relative to some other BodyNode."
-msgstr ""
+msgstr "다른 BodyNode에 대한 고전적 가속도의 각 부분을 반환합니다."
 
 #: ../../tutorials/biped.md:317 d30820d61c594146ba404b589c230b58
 msgid ""
@@ -455,10 +468,12 @@ msgid ""
 "parameters tuning. We found that using different feedback rules for "
 "falling forward and backward result in more stable controller."
 msgstr ""
+"발목 전략 구현의 나머지는 파라미터 조정 문제입니다. 전방/후방으로 넘어질 때 서로 다른 피드백 "
+"규칙을 사용하면 제어기가 더 안정적이라는 점을 확인했습니다."
 
 #: ../../tutorials/biped.md:321 9a38fb6d300e4a8bacec5c7c1af19c10
 msgid "Lesson 5: Skeleton editing"
-msgstr ""
+msgstr "Lesson 5: 스켈레톤 편집"
 
 #: ../../tutorials/biped.md:323 c8b14a2434584fa7a0b337c3d9ecec0d
 msgid ""
@@ -467,10 +482,13 @@ msgid ""
 "scratch. In this Lesson, we will load a skateboard model from a SKEL file"
 " and merge our biped with the skateboard to create a wheel-based robot."
 msgstr ""
+"DART는 스켈레톤 일부를 복사·삭제·분할·병합하는 다양한 기능을 제공해 모델링 작업을 돕습니다. 이번 "
+"Lesson에서는 SKEL 파일에서 스케이트보드 모델을 불러와 이족 보행자와 결합해 바퀴 기반 로봇을 "
+"만듭니다."
 
 #: ../../tutorials/biped.md:329 c71eb602feb240a392cf9fe3a5138f86
 msgid "We first load a skateboard from **skateboard.skel**:"
-msgstr ""
+msgstr "**skateboard.skel** 에서 스케이트보드를 불러옵니다:"
 
 #: ../../tutorials/biped.md:340 2ff0daa6883d4ccaac4af067e71542f3
 msgid ""
@@ -479,6 +497,9 @@ msgid ""
 "joint. To do so, you need to first create an instance of "
 "``EulerJoint::Properties`` for this new joint."
 msgstr ""
+"목표는 새 Euler 조인트를 통해 스케이트보드 스켈레톤을 이족 보행자 스켈레톤의 왼발 뒤꿈치 BodyNode "
+"아래 서브트리로 만드는 것입니다. 이를 위해 먼저 ``EulerJoint::Properties`` 인스턴스를 "
+"생성합니다."
 
 #: ../../tutorials/biped.md:355 0d2e26134ca9473fb0689c371b5c4aec
 msgid ""
@@ -487,62 +508,68 @@ msgid ""
 "foot. Now you can merge the skateboard and the biped using this new Euler"
 " joint by"
 msgstr ""
+"스케이트보드와 왼발 사이에 공간을 두기 위해 자식 BodyNode와 조인트 사이의 수직 거리를 0.1m "
+"늘립니다. 그런 다음 아래 코드로 새 Euler 조인트를 이용해 스케이트보드와 이족 보행자를 병합할 수 "
+"있습니다:"
 
 #: ../../tutorials/biped.md:368 96f72a82f3e8442eba5687a9e37fb706
 msgid ""
 "There are many other functions you can use to edit skeletons. Here is a "
 "table of some relevant functions for quick references."
 msgstr ""
+"스켈레톤 편집에 사용할 수 있는 다른 함수도 많습니다. 참고용으로 주요 함수를 표로 정리했습니다."
 
 #: ../../tutorials/biped.md 8c8bd1f1b8b7440b9e80c1ec9dc5fd27
 msgid "Example"
-msgstr ""
+msgstr "예시"
 
 #: ../../tutorials/biped.md d1e416dc653f42fdbfdf8cacb105749a
 msgid "remove"
-msgstr ""
+msgstr "remove"
 
 #: ../../tutorials/biped.md a72bea0bca01482284ca7dfb25e76efc
 msgid "bd1->remove()"
-msgstr ""
+msgstr "bd1->remove()"
 
 #: ../../tutorials/biped.md 65eb7c671e104790a39531d852cdae48
 msgid "Remove the BodyNode bd1 and its subtree from their Skeleton."
-msgstr ""
+msgstr "BodyNode bd1과 그 하위 트리를 스켈레톤에서 제거합니다."
 
 #: ../../tutorials/biped.md 5b426894b39647d4a8707d8d59b891ee
 msgid "moveTo"
-msgstr ""
+msgstr "moveTo"
 
 #: ../../tutorials/biped.md 334e5eea319c46209add7d67d78d433a
 msgid "bd1->moveTo(bd2)"
-msgstr ""
+msgstr "bd1->moveTo(bd2)"
 
 #: ../../tutorials/biped.md 653862075091459599ea70aecf7594dd
 msgid "Move the BodyNode bd1 and its subtree under the BodyNode bd2."
-msgstr ""
+msgstr "BodyNode bd1과 그 하위 트리를 BodyNode bd2 아래로 이동합니다."
 
 #: ../../tutorials/biped.md 79bc780ba1e943d1838c630767930a92
 msgid "split"
-msgstr ""
+msgstr "split"
 
 #: ../../tutorials/biped.md a0f8c78ad74d4a4dbc6df8950da4dddf
 msgid "auto newSkel = bd1->split(\"new skeleton\")`"
-msgstr ""
+msgstr "auto newSkel = bd1->split(\"new skeleton\")`"
 
 #: ../../tutorials/biped.md 7252d2e9833c429897db0299ef69cd89
 msgid ""
 "Remove the BodyNode bd1 and its subtree from their current Skeleton and "
 "move them into a newly created Skeleton with \"new skeleton\" name."
 msgstr ""
+"BodyNode bd1과 그 하위 트리를 현재 스켈레톤에서 제거한 뒤 \"new skeleton\"이라는 이름의 새 "
+"스켈레톤으로 옮깁니다."
 
 #: ../../tutorials/biped.md 64b7a22c9a394275a4c675f96a89309f
 msgid "changeParentJointType"
-msgstr ""
+msgstr "changeParentJointType"
 
 #: ../../tutorials/biped.md 3a2192ecd3ee46e9811294afa732a3e4
 msgid "bd1->changeParentJointType&lt;BallJoint&gt;()"
-msgstr ""
+msgstr "bd1->changeParentJointType&lt;BallJoint&gt;()"
 
 #: ../../tutorials/biped.md aa8c1b18503c4a11ab7a6911be6dfdae
 msgid "Change the Joint type of the BodyNode bd1's parent joint to BallJoint"
@@ -616,39 +643,41 @@ msgstr ""
 msgid ""
 "Take desired joint acceleration and return the joint force to achieve the"
 " acceleration."
-msgstr ""
+msgstr "목표 가속도를 입력받아 해당 가속도를 만들 힘을 반환합니다."
 
 #: ../../tutorials/biped.md 473259fa7eb54e43b7e499b19e1ab437
 msgid "VELOCITY"
-msgstr ""
+msgstr "VELOCITY"
 
 #: ../../tutorials/biped.md 8f02dfc185ad4cfabd0a9ff8ce7b18a9
 msgid ""
 "Take desired joint velocity and return the joint force to achieve the "
 "velocity."
-msgstr ""
+msgstr "목표 속도를 입력받아 그 속도를 내기 위한 힘을 반환합니다."
 
 #: ../../tutorials/biped.md 51f618bfb5df4920a07b41c09e04d5e1
 msgid "LOCKED"
-msgstr ""
+msgstr "LOCKED"
 
 #: ../../tutorials/biped.md 055670a6b46f45c0aee3bd61f30c3e95
 msgid ""
 "Lock the joint by setting the joint velocity and acceleration to zero and"
 " return the joint force to lock the joint."
-msgstr ""
+msgstr "속도와 가속도를 0으로 만들고 조인트를 잠그기 위한 힘을 반환합니다."
 
 #: ../../tutorials/biped.md:394 6374500ce0f9452fb38de4d54aab2d59
 msgid ""
 "In this Lesson, we will switch the actuator type of the wheels from the "
 "default FORCE type to VELOCITY type."
 msgstr ""
+"이번 Lesson에서는 바퀴 액추에이터를 기본 FORCE 유형에서 VELOCITY 유형으로 변경합니다."
 
 #: ../../tutorials/biped.md:406 208d9a9f092648218c5af9ba92d63c87
 msgid ""
 "Once all four wheels are set to VELOCITY actuator type, you can command "
 "them by directly setting the desired velocity:"
 msgstr ""
+"네 개 바퀴를 모두 VELOCITY 유형으로 바꾸면 원하는 속도를 직접 지정해 제어할 수 있습니다:"
 
 #: ../../tutorials/biped.md:419 2445adcb17894359a5c12730d3bac6b8
 msgid ""
@@ -656,10 +685,12 @@ msgid ""
 " step. If you wish the wheel to continue spinning at a particular speed, "
 "``setCommand`` needs to be called at every time step."
 msgstr ""
+"``setCommand`` 는 현재 타임스텝에서만 제어력을 적용합니다. 특정 속도로 계속 회전시키려면 매 "
+"타임스텝마다 ``setCommand`` 를 호출해야 합니다."
 
 #: ../../tutorials/biped.md:423 f041c60d1a6b4e44aa0f21bf6d638df2
 msgid "We also set the stiffness and damping coefficients for the wheels to zero."
-msgstr ""
+msgstr "바퀴의 강성과 감쇠 계수도 0으로 설정합니다."
 
 #: ../../tutorials/biped.md:438 f4da6665ca9c4bb8bbcd5443b14e19ed
 msgid ""
@@ -668,6 +699,8 @@ msgid ""
 "scheme, the values of these spring and damping coefficients do not affect"
 " the dynamics of the system."
 msgstr ""
+"이는 속도 기반 액추에이터가 SPD 계산에 영향을 주지 않도록 하기 위함입니다. 단순 PD 제어를 "
+"사용하더라도 이 스프링·감쇠 계수 값은 시스템 동역학에 영향을 주지 않습니다."
 
 #: ../../tutorials/biped.md:443 cadaaf17c881406a96a21dff3ff72055
 msgid ""
@@ -677,10 +710,13 @@ msgid ""
 "falls on the floor immediately because the current target pose is not "
 "balanced for one-foot stance. We need to find a better target pose."
 msgstr ""
+"지금까지 구성한 상태로 시뮬레이션을 돌립니다. 이족 보행자는 Euler 조인트를 통해 스케이트보드와 "
+"연결되어 있고, 시뮬레이션 도중 'a'와 's' 키로 바퀴 속도를 조절할 수 있습니다. 다만 현재 목표 "
+"자세가 한 발 지지에 적합하지 않아 곧바로 넘어지므로 더 나은 목표 자세가 필요합니다."
 
 #: ../../tutorials/biped.md:450 6e36388cbfa4462599c97947ce81a6e1
 msgid "Lesson 7: Inverse kinematics"
-msgstr ""
+msgstr "Lesson 7: 역기구학"
 
 #: ../../tutorials/biped.md:452 65816804bde44e21b58c138ac7d94cd6
 msgid ""
@@ -694,6 +730,10 @@ msgid ""
 "well as the vertical distance of the four corners of the left foot from "
 "the ground:"
 msgstr ""
+"이번에는 목표 자세를 직접 설계하는 대신 역기구학(IK) 문제를 구성해 기울기 하강법으로 균형 자세를 "
+"구합니다. 균형 자세란 질량 중심이 지면 접촉으로 잘 지지되고 왼발이 평평하게 놓인 상태로 정의합니다. "
+"이에 따라 질량 중심과 왼발 중심 간 수평 편차와 왼발 네 모서리의 지면과의 높이를 최소화하는 "
+"최적화 문제로 IK를 정식화합니다:"
 
 #: ../../tutorials/biped.md:464 201581bea3ba437f8bcf38d6b0655b3e
 msgid ""
@@ -701,6 +741,8 @@ msgid ""
 "center of pressure on the ground, and *p<sub>i</sub>* indicates the "
 "vertical height of one corner of the left foot."
 msgstr ""
+"여기서 <b>c</b> 와 <b>p</b> 는 지면에 투영한 질량 중심과 압력 중심, *p<sub>i</sub>* 는 왼발 "
+"각 모서리의 높이를 의미합니다."
 
 #: ../../tutorials/biped.md:468 2aa27b9af1e342119bb95ed419198166
 msgid ""
@@ -712,6 +754,9 @@ msgid ""
 "the objective function requires the Jacobian of the center of mass of the"
 " Skeleton, as well as the Jacobian of the center of mass of a BodyNode:"
 msgstr ""
+"이 목표 함수의 그래디언트를 계산하려면 각 항을 자유도에 대해 편미분해야 하므로 자코비안을 구해야 "
+"합니다. DART는 다양한 자코비안에 접근하는 API를 제공합니다. 예를 들어 첫 번째 항의 그래디언트는 "
+"스켈레톤 질량 중심 자코비안과 특정 BodyNode 질량 중심 자코비안을 필요로 합니다:"
 
 #: ../../tutorials/biped.md:487 cbca4adc041a472a9c712e4f24961b76
 msgid ""
@@ -724,6 +769,10 @@ msgid ""
 "being the frame of reference. We use ``getLinearJacobian`` again to "
 "compute the gradient of the second term of the objective function:"
 msgstr ""
+"``getCOMLinearJacobian`` 은 스켈레톤 질량 중심의 선형 자코비안을, ``getLinearJacobian`` "
+"은 BodyNode 상의 특정 점 자코비안을 반환합니다. BodyNode와 해당 점의 로컬 좌표는 함수 "
+"인자로 넘기며, 여기서는 왼발을 기준으로 ``getCOM`` 을 호출해 질량 중심 좌표를 얻습니다. 두 번째 "
+"항의 그래디언트 역시 ``getLinearJacobian`` 으로 계산합니다:"
 
 #: ../../tutorials/biped.md:507 09721d55cc6349a9a82d914539a15c3d
 msgid ""
@@ -731,78 +780,80 @@ msgid ""
 "Documentation](http://dartsim.github.io/dart/). The  following table "
 "summarizes the essential APIs."
 msgstr ""
+"자코비안 관련 API 전체 목록은 [API 문서](http://dartsim.github.io/dart/)에서 확인할 수 있으며 "
+"아래 표는 핵심 API를 정리한 것입니다."
 
 #: ../../tutorials/biped.md f45e0b34d46b45268eaa90c6e4f6a3ee
 msgid "getJacobian"
-msgstr ""
+msgstr "getJacobian"
 
 #: ../../tutorials/biped.md 04ea7d7e1fc04cbda2c48a1f1d4f1e04
 msgid ""
 "Return the generalized Jacobian targeting the origin of the BodyNode. The"
 " Jacobian is expressed in the Frame of this BodyNode."
-msgstr ""
+msgstr "BodyNode 원점을 대상으로 하는 일반화 자코비안을 BodyNode 좌표계로 반환합니다."
 
 #: ../../tutorials/biped.md bbba6b312c51446797455e1090419649
 msgid "getLinearJacobian"
-msgstr ""
+msgstr "getLinearJacobian"
 
 #: ../../tutorials/biped.md 9676006c0d784727a4b78ea788ce0f80
 msgid ""
 "Return the linear Jacobian targeting the origin of the BodyNode. You can "
 "specify a coordinate Frame to express the Jacobian in."
-msgstr ""
+msgstr "BodyNode 원점의 선형 자코비안을 반환하며 표현 좌표계를 지정할 수 있습니다."
 
 #: ../../tutorials/biped.md 50f168ccafbf4ee5ba964967f5493cc6
 msgid "getAngularJacobian"
-msgstr ""
+msgstr "getAngularJacobian"
 
 #: ../../tutorials/biped.md 6fa27b523fc64728944d265792b49e0b
 msgid ""
 "Return the angular Jacobian targeting the origin of the BodyNode. You can"
 " specify a coordinate Frame to express the Jacobian in."
-msgstr ""
+msgstr "BodyNode 원점의 각 자코비안을 반환하며 표현 좌표계를 지정할 수 있습니다."
 
 #: ../../tutorials/biped.md 2a6eb530fcae495bb8e28bb0c073caf8
 msgid "getJacobianSpatialDeriv"
-msgstr ""
+msgstr "getJacobianSpatialDeriv"
 
 #: ../../tutorials/biped.md b8ac1341aa4a431f821f88641a19dd24
 msgid ""
 "Return the spatial time derivative of the generalized Jacobian targeting "
 "the origin of the BodyNode. The Jacobian is expressed in the BodyNode's "
 "coordinate Frame."
-msgstr ""
+msgstr "BodyNode 원점의 일반화 자코비안에 대한 공간 도함수를 BodyNode 좌표계로 반환합니다."
 
 #: ../../tutorials/biped.md ed005bef00fc4f3490359db1d7c5b1fb
 msgid "getJacobianClassicDeriv"
-msgstr ""
+msgstr "getJacobianClassicDeriv"
 
 #: ../../tutorials/biped.md fd26f38f30d54ef8a8ad671954955776
 msgid ""
 "Return the classical time derivative of the generalized Jacobian "
 "targeting the origin of the BodyNode. The Jacobian is expressed in the "
 "World coordinate Frame."
-msgstr ""
+msgstr "BodyNode 원점의 일반화 자코비안을 월드 좌표계에서 고전적으로 미분한 값을 반환합니다."
 
 #: ../../tutorials/biped.md 38ea7ea0cb274b8ab589b0cb03caf03f
 msgid "getLinearJacobianDeriv"
-msgstr ""
+msgstr "getLinearJacobianDeriv"
 
 #: ../../tutorials/biped.md 7f9a93efdf284bdd94ab3f80500249bb
 msgid ""
 "Return the linear Jacobian (classical) time derivative, in terms of any "
 "coordinate Frame."
-msgstr ""
+msgstr "선형 자코비안의 고전적 시간 미분을 원하는 좌표계로 반환합니다."
 
 #: ../../tutorials/biped.md 345f2fba8c754695a9beb3f2998b4983
 msgid "getAngularJacobianDeriv"
-msgstr ""
+msgstr "getAngularJacobianDeriv"
 
 #: ../../tutorials/biped.md 18fbc34cb89543259ca0119ff666f803
 msgid ""
 "Return the angular Jacobian (classical) time derivative, in terms of any "
 "coordinate Frame."
-msgstr ""
+msgstr "각 자코비안의 고전적 시간 미분을 원하는 좌표계로 반환합니다."
 
 #: ../../tutorials/biped.md:520 99cb2ec7d9654c9d84de259d5ffc06a9
 msgid ""
@@ -811,3 +862,5 @@ msgid ""
 "acceleration/deceleration on the skateboard, the biped is able to "
 "maintain balance and hold the one-foot stance pose."
 msgstr ""
+"이 Lesson을 끝으로 이족 보행 튜토리얼을 마칩니다. 이족 보행자는 스케이트보드 위에서 안정적으로 서 "
+"있어야 하며, 적당한 가감속이 가해져도 한 발 지지 자세를 유지할 수 있어야 합니다."
