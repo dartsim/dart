@@ -61,7 +61,11 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self) -> dart::dynamics::Joint* {
             return self.getParentJoint();
           },
-          nb::rv_policy::reference_internal);
+          nb::rv_policy::reference_internal)
+      .def("getInertia",
+          [](BodyNode& self) -> dart::dynamics::Inertia {
+            return self.getInertia();
+          });
 }
 
 } // namespace dart::python_nb
