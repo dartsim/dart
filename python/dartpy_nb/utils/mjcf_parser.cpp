@@ -33,6 +33,13 @@ void defMjcfParser(nb::module_& m)
       },
       nb::arg("uri"),
       nb::arg("options") = MjcfParser::Options());
+  sm.def(
+      "readWorld",
+      [](const std::string& uri, const MjcfParser::Options& options) {
+        return MjcfParser::readWorld(common::Uri(uri), options);
+      },
+      nb::arg("uri"),
+      nb::arg("options") = MjcfParser::Options());
 }
 
 } // namespace dart::python_nb
