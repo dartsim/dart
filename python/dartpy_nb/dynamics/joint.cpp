@@ -47,6 +47,11 @@ void defJoint(nb::module_& m)
             return self.getVelocities();
           })
       .def("getRelativeTransform", &Joint::getRelativeTransform)
+      .def("setRelativeTransform",
+          [](Joint& self, const Eigen::Isometry3d& tf) {
+            self.setRelativeTransform(tf);
+          },
+          nb::arg("transform"))
       .def("getRelativeJacobian",
           [](Joint& self, const Eigen::VectorXd& positions) {
             return self.getRelativeJacobian(positions);
