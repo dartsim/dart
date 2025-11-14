@@ -136,7 +136,7 @@ lint-toml = { cmd = """
 
 lint = { depends-on = [
   "lint-cpp",
-  "lint-dart7",
+  "lint-dart8",
   "lint-py",
   "lint-yaml",
   "lint-toml",
@@ -165,9 +165,18 @@ check-lint-toml = { cmd = """
     taplo format --check pixi.toml
 """ }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-dart8", "check-lint-py", "check-lint-yaml"] }
+check-lint = { depends-on = [
+  "check-lint-cpp",
+  "check-lint-dart8",
+  "check-lint-py",
+  "check-lint-yaml",
+  "check-lint-toml",
+] }
 
-build = { cmd = ["bash", "-lc", """
+build = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
 cmake \
@@ -239,9 +248,32 @@ cmake \
   { arg = "dartpy", default = "ON" },
 ] }
 
-build-dart8-tests = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart8_tests"], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
-    { arg = "dartpy", default = "ON" },
-    { arg = "build_type", default = "Release" }
+build-tests = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target tests",
+], depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+build-dart8-tests = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart8_tests",
+], depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
 ] }
 
 build-dart7-tests = { cmd = [
@@ -258,6 +290,40 @@ build-dart7-tests = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
+build-math-tests = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -j --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh",
+], depends-on = [
+  "config",
+] }
+
+build-py-dev = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy",
+], depends-on = [
+  { task = "config-py", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+build-dartpy8 = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy8",
+], depends-on = [
+  { task = "config-py", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
 ] }
 
 build-dartpy7 = { cmd = [
@@ -325,7 +391,7 @@ py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
   "build-py-dev",
 ], args = [
   { arg = "example", default = "hello_world" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [
@@ -353,32 +419,45 @@ py-ex-rigid-chain = { depends-on = [
 
 py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
 
-py-ex-biped-stand = { depends-on = [{ task = "py-ex", args = ["biped_stand"] }] }
-
-py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_pointcloud"] }] }
-
-py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"] }] }
-
-py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
-
-py-ex-atlas-puppet = { depends-on = [{ task = "py-ex", args = ["atlas_puppet"] }] }
-
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
-    { arg = "dartpy", default = "ON" },
-    { arg = "build_type", default = "Release" }
+py-ex-biped-stand = { depends-on = [
+  { task = "py-ex", args = [
+    "biped_stand",
+  ] },
 ] }
 
-test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
-], args = [
-    { arg = "dartpy", default = "ON" },
-    { arg = "build_type", default = "Release" }
+py-ex-contacts-pointcloud = { depends-on = [
+  { task = "py-ex", args = [
+    "contacts_pointcloud",
+  ] },
 ] }
 
-test-dart8 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart8"], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+py-ex-drag-and-drop = { depends-on = [
+  { task = "py-ex", args = [
+    "drag_and_drop",
+  ] },
+] }
+
+py-ex-operational-space-control = { depends-on = [
+  { task = "py-ex", args = [
+    "operational_space_control",
+  ] },
+] }
+
+py-ex-atlas-puppet = { depends-on = [
+  { task = "py-ex", args = [
+    "atlas_puppet",
+  ] },
+] }
+
+test = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE dart8",
+], depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
@@ -393,7 +472,29 @@ test-no-plane = { cmd = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
+  { task = "build-dart8-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
   { task = "build-dart7-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+test-dart8 = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart8",
+], depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+  { task = "build-dart8-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -434,11 +535,20 @@ test-lcpsolver = { cmd = """
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy8 = { cmd = ["bash", "-lc", """
+test-dartpy8 = { cmd = [
+  "bash",
+  "-lc",
+  """
 export BUILD_TYPE={{ build_type }}
 python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy8').glob('dartpy8*.so'), None); assert ext is not None, 'dartpy8 extension not found'; spec=importlib.util.spec_from_file_location('dartpy8', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy8 smoke test passed')"
-"""], depends-on = [{ task = "build-dartpy8", args = ["ON", "{{ build_type }}"] }], args = [
-    { arg = "build_type", default = "Release" }
+""",
+], depends-on = [
+  { task = "build-dartpy8", args = [
+    "ON",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "build_type", default = "Release" },
 ] }
 
 test-py = { cmd = [
@@ -915,7 +1025,10 @@ ctest \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --output-on-failure \
   -LE dart8
-"""], depends-on = ["build-asan"], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=1" } }
+""",
+], depends-on = [
+  "build-asan",
+], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=1" } }
 
 ################################################################################
 # linux-64
@@ -1116,9 +1229,13 @@ build-dart8-tests = { cmd = """
         --config $BUILD_TYPE \
         --parallel \
         --target dart8_tests
-""", depends-on = [{ task = "config", args = ["{{ dartpy }}"] }], args = [
-    { arg = "dartpy", default = "ON" },
-    { arg = "build_type", default = "Release" }
+""", depends-on = [
+  { task = "config", args = [
+    "{{ dartpy }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
 ] }
 
 build-py-dev = { cmd = """
@@ -1152,22 +1269,51 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
 
-test = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart8"], depends-on = [{ task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
-    { arg = "dartpy", default = "ON" },
-    { arg = "build_type", default = "Release" }
-] }
-
-test-no-plane = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\""], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+test = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE dart8",
+], depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
-test-dart8 = { cmd = ["bash", "-lc", "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart8"], depends-on = [
-    { task = "build-tests", args = ["{{ dartpy }}", "{{ build_type }}"] },
-    { task = "build-dart8-tests", args = ["{{ dartpy }}", "{{ build_type }}"] }
+test-no-plane = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\"",
+], depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+  { task = "build-dart8-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+test-dart8 = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L dart8",
+], depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+  { task = "build-dart8-tests", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
