@@ -1,5 +1,6 @@
 #include "dynamics/skeleton.hpp"
 
+#include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -70,6 +71,20 @@ void defSkeleton(nb::module_& m)
             return self.getJoint(name);
           },
           nb::rv_policy::reference_internal)
+      .def("getRootJoint",
+          [](Skeleton& self) -> dart::dynamics::Joint* {
+            return self.getRootJoint();
+          },
+          nb::rv_policy::reference_internal)
+      .def("getPositions",
+          [](Skeleton& self) {
+            return self.getPositions();
+          })
+      .def("setPositions",
+          [](Skeleton& self, const Eigen::VectorXd& positions) {
+            self.setPositions(positions);
+          },
+          nb::arg("positions"))
       .def("createFreeJointAndBodyNodePair",
           [](Skeleton& self,
               BodyNode* parent,
