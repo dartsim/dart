@@ -37,6 +37,7 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/Export.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/SmartPointer.hpp>
@@ -45,8 +46,6 @@
 
 #include <dart/common/Observer.hpp>
 
-#include <dart/Export.hpp>
-
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -54,7 +53,7 @@
 namespace dart {
 namespace collision {
 
-class DART_API CollisionGroup
+class DART_COLLISION_API CollisionGroup
 {
 public:
   /// Constructor

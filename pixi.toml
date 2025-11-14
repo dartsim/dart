@@ -415,12 +415,14 @@ test-dartpy8 = { cmd = """
     "build-dartpy8",
 ], env = { BUILD_TYPE = "Release" } }
 
-test-py = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --parallel \
-        --target pytest
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+test-py = { cmd = ["bash", "-lc", """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-Release}
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
+    --parallel \
+    --target pytest
+"""], depends-on = ["config"] }
 
 config-coverage = { cmd = """
     cmake \

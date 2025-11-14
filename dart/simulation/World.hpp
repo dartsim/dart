@@ -39,6 +39,7 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/simulation/Export.hpp>
 #include <dart/simulation/Recording.hpp>
 #include <dart/simulation/SmartPointer.hpp>
 
@@ -52,8 +53,6 @@
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
-
-#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -85,7 +84,7 @@ DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_API World : public virtual common::Subject
+class DART_SIMULATION_API World : public virtual common::Subject
 {
 public:
   using NameChangedSignal = common::Signal<void(

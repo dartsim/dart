@@ -33,7 +33,7 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
-#include <dart/Export.hpp>
+#include <dart/optimizer/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -44,7 +44,7 @@
 namespace dart {
 namespace optimizer {
 
-class DART_API Function
+class DART_OPTIMIZER_API Function
 {
 public:
   /// Constructor
@@ -98,7 +98,7 @@ typedef std::function<void(
 /// ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during
 /// runtime for an optimizer::Function instance.
-class DART_API ModularFunction : public Function
+class DART_OPTIMIZER_API ModularFunction : public Function
 {
 public:
   /// Constructor
@@ -157,7 +157,7 @@ protected:
 };
 
 /// NullFunction is a constant-zero Function
-class DART_API NullFunction : public Function
+class DART_OPTIMIZER_API NullFunction : public Function
 {
 public:
   /// Constructor
