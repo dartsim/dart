@@ -33,6 +33,7 @@
 #include "../../helpers/GTestUtils.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/DistanceFilter.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -54,8 +55,8 @@ namespace {
 class DummyCollisionObject : public CollisionObject
 {
 public:
-  explicit DummyCollisionObject(const ShapeFrame* frame)
-    : CollisionObject(nullptr, frame)
+  DummyCollisionObject(CollisionDetector* detector, const ShapeFrame* frame)
+    : CollisionObject(detector, frame)
   {
   }
 
@@ -114,9 +115,10 @@ ChainBodies makeThreeBodyChain(const std::string& name)
   return chain;
 }
 
-DummyCollisionObject makeObject(const ShapeNode* shapeNode)
+DummyCollisionObject makeObject(
+    const ShapeNode* shapeNode, CollisionDetector* detector)
 {
-  return DummyCollisionObject(shapeNode);
+  return DummyCollisionObject(detector, shapeNode);
 }
 
 } // namespace
@@ -125,7 +127,8 @@ DummyCollisionObject makeObject(const ShapeNode* shapeNode)
 TEST(DistanceFilterTests, RejectsIdenticalObjects)
 {
   auto chain = makeThreeBodyChain("identical");
-  auto object = makeObject(chain.rootShape);
+  auto detector = DARTCollisionDetector::create();
+  auto object = makeObject(chain.rootShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_FALSE(filter.needDistance(&object, &object));
@@ -135,10 +138,11 @@ TEST(DistanceFilterTests, RejectsIdenticalObjects)
 TEST(DistanceFilterTests, SkipsNonCollidableBodies)
 {
   auto chain = makeThreeBodyChain("non_collidable");
+  auto detector = DARTCollisionDetector::create();
   chain.child->setCollidable(false);
 
-  auto rootObj = makeObject(chain.rootShape);
-  auto childObj = makeObject(chain.childShape);
+  auto rootObj = makeObject(chain.rootShape, detector.get());
+  auto childObj = makeObject(chain.childShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_FALSE(filter.needDistance(&rootObj, &childObj));
@@ -148,10 +152,11 @@ TEST(DistanceFilterTests, SkipsNonCollidableBodies)
 TEST(DistanceFilterTests, RespectsSelfCollisionToggle)
 {
   auto chain = makeThreeBodyChain("self_collision");
+  auto detector = DARTCollisionDetector::create();
   chain.skeleton->disableSelfCollisionCheck();
 
-  auto rootObj = makeObject(chain.rootShape);
-  auto childObj = makeObject(chain.childShape);
+  auto rootObj = makeObject(chain.rootShape, detector.get());
+  auto childObj = makeObject(chain.childShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_FALSE(filter.needDistance(&rootObj, &childObj));
@@ -161,11 +166,12 @@ TEST(DistanceFilterTests, RespectsSelfCollisionToggle)
 TEST(DistanceFilterTests, AdjacentBodiesSkippedWhenDisabled)
 {
   auto chain = makeThreeBodyChain("adjacent_only");
+  auto detector = DARTCollisionDetector::create();
   chain.skeleton->enableSelfCollisionCheck();
   chain.skeleton->disableAdjacentBodyCheck();
 
-  auto rootObj = makeObject(chain.rootShape);
-  auto childObj = makeObject(chain.childShape);
+  auto rootObj = makeObject(chain.rootShape, detector.get());
+  auto childObj = makeObject(chain.childShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_FALSE(filter.needDistance(&rootObj, &childObj));
@@ -175,11 +181,12 @@ TEST(DistanceFilterTests, AdjacentBodiesSkippedWhenDisabled)
 TEST(DistanceFilterTests, NonAdjacentBodiesStillMeasured)
 {
   auto chain = makeThreeBodyChain("non_adjacent");
+  auto detector = DARTCollisionDetector::create();
   chain.skeleton->enableSelfCollisionCheck();
   chain.skeleton->disableAdjacentBodyCheck();
 
-  auto rootObj = makeObject(chain.rootShape);
-  auto grandchildObj = makeObject(chain.grandchildShape);
+  auto rootObj = makeObject(chain.rootShape, detector.get());
+  auto grandchildObj = makeObject(chain.grandchildShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_TRUE(filter.needDistance(&rootObj, &grandchildObj));
@@ -191,8 +198,9 @@ TEST(DistanceFilterTests, SeparateSkeletonsAlwaysChecked)
   auto firstChain = makeThreeBodyChain("first");
   auto secondChain = makeThreeBodyChain("second");
 
-  auto firstObj = makeObject(firstChain.rootShape);
-  auto secondObj = makeObject(secondChain.rootShape);
+  auto detector = DARTCollisionDetector::create();
+  auto firstObj = makeObject(firstChain.rootShape, detector.get());
+  auto secondObj = makeObject(secondChain.rootShape, detector.get());
 
   BodyNodeDistanceFilter filter;
   EXPECT_TRUE(filter.needDistance(&firstObj, &secondObj));
