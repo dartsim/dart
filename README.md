@@ -12,6 +12,10 @@ DART utilizes generalized coordinates to represent articulated rigid body
 systems and employs Featherstone's Articulated Body Algorithm to compute motion
 dynamics.
 
+<p align="center">
+  <img src="docs/assets/unitree_g1_demo.gif" width="720" alt="Unitree G1 humanoid demo" />
+</p>
+
 ## Getting Started
 
 Install DART using your preferred package manager:
@@ -39,16 +43,16 @@ vcpkg install dartsim:x64-windows         # Windows
 
 ## Documentation
 
-### Developer Resources
-
-- **[Developer Onboarding Guide](docs/onboarding/README.md)** - Comprehensive guide for new contributors covering architecture, components, and workflows
-- **[Contributing Guide](CONTRIBUTING.md)** - Style guide and contribution process
-
 ### User Documentation
 
 For more information on DART, please visit the DART documentation: [English](https://dart.readthedocs.io/) | [한국어](https://dart-ko.readthedocs.io/) (WIP)
 
 An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim/dart).
+
+### Developer Resources
+
+- **[Developer Onboarding Guide](docs/onboarding/README.md)** - Comprehensive guide for new contributors covering architecture, components, and workflows
+- **[Contributing Guide](CONTRIBUTING.md)** - Style guide and contribution process
 
 ## Project Status
 

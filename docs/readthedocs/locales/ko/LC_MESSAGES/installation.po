@@ -80,7 +80,7 @@ msgstr "리눅스 x86_64"
 #: c3acd7b9741848759b843b696e5c5e34 cd9e0267bbba4f7dbb6af1793272c2d1
 #: f7958fb6b1d44321b2295c3c30ef49d8 fac425af1ae94d759841883e384c8952
 msgid "O"
-msgstr ""
+msgstr "O"
 
 #: ../../installation.rst:22 b93d6b56e2a145e2a47c6492b64ccb0c
 msgid "Linux arm64"
@@ -96,7 +96,7 @@ msgstr "리눅스 arm64"
 #: c22bd4cd8b4549c98b4c60e35682ebd2 d3f53f9124a9475aa36f44f2406e7588
 #: ec471725611a4414907d72ebbeac1f36
 msgid "X"
-msgstr ""
+msgstr "X"
 
 #: ../../installation.rst:24 20821757ae8c4999bb2e2b74e08f7734
 msgid "macOS x86_64"
