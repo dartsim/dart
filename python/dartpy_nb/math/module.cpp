@@ -33,6 +33,7 @@
 #include "math/module.hpp"
 
 #include "math/constants.hpp"
+#include "math/eigen_geometry.hpp"
 #include "math/geometry.hpp"
 #include "math/random.hpp"
 
@@ -43,6 +44,7 @@ void defMathModule(nanobind::module_& m)
   defMathConstants(m);
   defRandom(m);
   defGeometry(m);
+  defEigenGeometry(m);
 }
 
 } // namespace dart::python_nb
