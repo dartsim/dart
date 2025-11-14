@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <chrono>
 #include <numeric>

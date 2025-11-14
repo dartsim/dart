@@ -35,11 +35,11 @@
 
 #include "Controller.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode
 {

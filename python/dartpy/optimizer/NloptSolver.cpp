@@ -35,9 +35,9 @@
 
   #include "eigen_pybind.h"
 
-  #include <dart/optimizer/nlopt/all.hpp>
+  #include <dart/optimizer/nlopt/All.hpp>
 
-  #include <dart/all.hpp>
+  #include <dart/All.hpp>
 
   #include <pybind11/pybind11.h>
 

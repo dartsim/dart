@@ -35,11 +35,11 @@
 #include "HumanLegJointLimitConstraint.hpp"
 
 #include <dart/config.hpp>
-#include <dart/gui/osg/all.hpp>
-#include <dart/utils/all.hpp>
-#include <dart/collision/bullet/all.hpp>
+#include <dart/gui/osg/All.hpp>
+#include <dart/utils/All.hpp>
+#include <dart/collision/bullet/All.hpp>
 #include <dart/collision/ode/ode.hpp>
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <cmath>
 

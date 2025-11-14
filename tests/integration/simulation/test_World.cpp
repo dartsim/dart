@@ -34,7 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/collision/all.hpp"
+#include "dart/collision/All.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -46,7 +46,7 @@
 
 #include <iostream>
 #if HAVE_BULLET
-  #include "dart/collision/bullet/all.hpp"
+  #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"

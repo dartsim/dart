@@ -40,7 +40,7 @@
 #define DART_UNITTESTS_DYNAMICS_HELPERS_HPP_
 
 #include "dart/common/Macros.hpp"
-#include "dart/dynamics/all.hpp"
+#include "dart/dynamics/All.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <Eigen/Dense>
