@@ -33,6 +33,7 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/config.hpp>
+
 #include <dart/gui/osg/All.hpp>
 
 #include <dart/utils/All.hpp>
