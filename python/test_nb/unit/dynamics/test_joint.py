@@ -103,6 +103,55 @@ def test_kinematics():
     kinematics_tester(joint)
 
 
+def test_joint_dof_accessors():
+    skel = dart.dynamics.Skeleton()
+    joint, _ = skel.createRevoluteJointAndBodyNodePair()
+
+    assert joint.getNumDofs() == 1
+    dof = joint.getDof(0)
+    assert dof is not None
+
+    joint.setDofName(0, "hinge")
+    assert joint.getDofName(0) == "hinge"
+    joint.preserveDofName(0, True)
+    assert joint.isDofNamePreserved(0)
+
+    joint.setCommand(0, 0.5)
+    assert joint.getCommand(0) == pytest.approx(0.5)
+
+    cmds = np.array([0.2])
+    joint.setCommands(cmds)
+    assert np.allclose(joint.getCommands(), cmds)
+    joint.resetCommands()
+    assert np.allclose(joint.getCommands(), np.zeros(1))
+
+    joint.setPosition(0, 0.1)
+    assert joint.getPosition(0) == pytest.approx(0.1)
+    joint.resetPositions()
+    assert joint.getPosition(0) == pytest.approx(0.0)
+
+    joint.setVelocity(0, 0.3)
+    assert joint.getVelocity(0) == pytest.approx(0.3)
+    joint.resetVelocities()
+    assert joint.getVelocity(0) == pytest.approx(0.0)
+
+    joint.setAcceleration(0, 0.7)
+    assert joint.getAcceleration(0) == pytest.approx(0.7)
+    joint.resetAccelerations()
+    assert joint.getAcceleration(0) == pytest.approx(0.0)
+
+    joint.setForce(0, 1.2)
+    assert joint.getForce(0) == pytest.approx(1.2)
+    joint.resetForces()
+    assert joint.getForce(0) == pytest.approx(0.0)
+
+
+def test_weld_joint_static_type():
+    static_type = dart.dynamics.WeldJoint.getStaticType()
+    assert isinstance(static_type, str)
+    assert len(static_type) > 0
+
+
 def test_access_to_parent_child_transforms():
     skel = dart.dynamics.Skeleton()
     joint, _ = skel.createRevoluteJointAndBodyNodePair()

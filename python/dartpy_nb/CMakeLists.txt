@@ -98,6 +98,7 @@ set(dartpy_nb_headers
   math/eigen_geometry.hpp
   dynamics/module.hpp
   dynamics/entity.hpp
+  dynamics/degree_of_freedom.hpp
   dynamics/frame.hpp
   dynamics/shape.hpp
   dynamics/shape_frame.hpp
@@ -110,6 +111,7 @@ set(dartpy_nb_headers
   dynamics/revolute_joint.hpp
   dynamics/prismatic_joint.hpp
   dynamics/ball_joint.hpp
+  dynamics/weld_joint.hpp
   dynamics/chain.hpp
   dynamics/meta_skeleton.hpp
   dynamics/inverse_kinematics.hpp
@@ -159,6 +161,7 @@ set(dartpy_nb_sources
   math/eigen_geometry.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
+  dynamics/degree_of_freedom.cpp
   dynamics/frame.cpp
   dynamics/shape.cpp
   dynamics/shape_frame.cpp
@@ -171,6 +174,7 @@ set(dartpy_nb_sources
   dynamics/revolute_joint.cpp
   dynamics/prismatic_joint.cpp
   dynamics/ball_joint.cpp
+  dynamics/weld_joint.cpp
   dynamics/chain.cpp
   dynamics/meta_skeleton.cpp
   dynamics/inverse_kinematics.cpp
