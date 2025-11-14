@@ -23,12 +23,13 @@ def _collect_crash_logs(start_ts: float) -> List[Path]:
         return []
 
     crash_files: List[Path] = []
-    for path in crash_dir.glob("python*.crash"):
-        try:
-            if path.stat().st_mtime >= start_ts:
-                crash_files.append(path)
-        except OSError:
-            continue
+    for pattern in ("python*.crash", "python*.ips"):
+        for path in crash_dir.glob(pattern):
+            try:
+                if path.stat().st_mtime >= start_ts:
+                    crash_files.append(path)
+            except OSError:
+                continue
     crash_files.sort(key=lambda p: p.stat().st_mtime)
     return crash_files
 
@@ -63,7 +64,25 @@ def main(argv: Iterable[str]) -> int:
         if crash_logs:
             _print_crash_log(crash_logs[-1])
         else:
-            print("No macOS crash logs were generated.", file=sys.stderr)
+            print(
+                "No macOS crash logs were generated under ~/Library/Logs/DiagnosticReports.",
+                file=sys.stderr,
+            )
+            crash_dir = Path.home() / "Library" / "Logs" / "DiagnosticReports"
+            if crash_dir.exists():
+                candidates = sorted(crash_dir.glob("python*"), key=lambda p: p.stat().st_mtime)[
+                    -3:
+                ]
+                if candidates:
+                    print("Recent diagnostic files:", file=sys.stderr)
+                    for cand in candidates:
+                        try:
+                            ts = time.strftime(
+                                "%Y-%m-%d %H:%M:%S", time.localtime(cand.stat().st_mtime)
+                            )
+                        except OSError:
+                            ts = "unknown"
+                        print(f"  {cand.name} (modified {ts})", file=sys.stderr)
 
     return exit_code
 
