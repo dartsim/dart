@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
 from typing import Iterable, List
-import subprocess
 
 
 def _collect_crash_logs(start_ts: float) -> List[Path]:
@@ -41,6 +42,32 @@ def _print_crash_log(path: Path) -> None:
                 print(line.rstrip("\n"))
     except OSError as exc:
         print(f"Failed to read crash log {path}: {exc}")
+    finally:
+        print("::endgroup::")
+
+def _run_lldb_import() -> None:
+    if sys.platform != "darwin":
+        return
+    if not shutil.which("lldb"):
+        print("lldb is not available; skipping extra diagnostics.")
+        return
+    print("::group::lldb dartpy import backtrace")
+    cmd = [
+        "lldb",
+        "--batch",
+        "-o",
+        "run",
+        "-o",
+        "bt",
+        "-o",
+        "thread backtrace all",
+        "--",
+        sys.executable,
+        "-c",
+        "import dartpy",
+    ]
+    try:
+        subprocess.run(cmd, check=False)
     finally:
         print("::endgroup::")
 
@@ -84,6 +111,7 @@ def main(argv: Iterable[str]) -> int:
                         except OSError:
                             ts = "unknown"
                         print(f"  {cand.name} (modified {ts})", file=sys.stderr)
+        _run_lldb_import()
 
     return exit_code
 
