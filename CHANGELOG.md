@@ -12,6 +12,27 @@
   * macOS 14 / Clang 15 / arm64
   * Windows / MSVC 19.40 / x86_64
 
+* Python
+  * Added an installable `dartpy` package entry point so `import dartpy` works when building from source distributions.
+  * Imported the full set of Python API docs (`python/dartpy_docs`) and `.pyi` typing stubs to improve IDE completion and Sphinx coverage.
+  * Added whole-body IK tutorials, Atlas teleoperation example refresh, and accompanying Python integration tests (Atlas IK + inverse kinematics regression).
+
+* Tutorials & Examples
+  * Ported the whole-body IK tutorial pair (exercise + finished solution) and refreshed the Atlas puppet teleop example to match the latest bindings.
+
+* Build
+  * Bumped the release metadata, pixi environment, and every tutorial/example `find_package` requirement to 6.17.0 so downstream consumers request the correct version.
+
+### [DART 6.16.0 (2025-11-09)](https://github.com/dartsim/dart/milestone/83?closed=1)
+
+* Tested Platforms
+
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
 * Simulation
   * Allow servo joints to recover from position limits: [#2086](https://github.com/dartsim/dart/pull/2086)
   * Fix passive joint commands to respect joint actuation limits: [#1997](https://github.com/dartsim/dart/pull/1997)
