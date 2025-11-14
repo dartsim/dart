@@ -1,0 +1,281 @@
+#usda 1.0
+(
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "World"
+{
+    def PhysicsScene "scene"
+    {
+        float3 physics:gravityDirection = (0, -1, 0)
+        float physics:gravityMagnitude = 9.81
+    }
+
+    def Xform "UnitreeH1" (
+        prepend apiSchemas = ["UsdPhysicsArticulationRootAPI"]
+    )
+    {
+        def Xform "pelvis" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0, 1, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 12
+            float3 physics:diagonalInertia = (0.6, 0.5, 0.6)
+        }
+
+        def Xform "torso" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0, 1.4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 15
+            float3 physics:diagonalInertia = (0.8, 0.6, 0.8)
+        }
+
+        def Xform "head" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0, 1.75, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 4
+            float3 physics:diagonalInertia = (0.1, 0.1, 0.1)
+        }
+
+        def Xform "left_thigh" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.08, 0.8, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 6
+            float3 physics:diagonalInertia = (0.2, 0.2, 0.2)
+        }
+
+        def Xform "left_shin" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.08, 0.45, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 4
+            float3 physics:diagonalInertia = (0.15, 0.15, 0.15)
+        }
+
+        def Xform "left_foot" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.08, 0.1, 0.05)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 2
+            float3 physics:diagonalInertia = (0.05, 0.05, 0.05)
+        }
+
+        def Xform "right_thigh" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.08, 0.8, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 6
+            float3 physics:diagonalInertia = (0.2, 0.2, 0.2)
+        }
+
+        def Xform "right_shin" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.08, 0.45, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 4
+            float3 physics:diagonalInertia = (0.15, 0.15, 0.15)
+        }
+
+        def Xform "right_foot" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.08, 0.1, 0.05)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 2
+            float3 physics:diagonalInertia = (0.05, 0.05, 0.05)
+        }
+
+        def Xform "left_upper_arm" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.25, 1.4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 3
+            float3 physics:diagonalInertia = (0.1, 0.1, 0.1)
+        }
+
+        def Xform "left_forearm" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.45, 1.2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 2
+            float3 physics:diagonalInertia = (0.08, 0.08, 0.08)
+        }
+
+        def Xform "right_upper_arm" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.25, 1.4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 3
+            float3 physics:diagonalInertia = (0.1, 0.1, 0.1)
+        }
+
+        def Xform "right_forearm" (
+            prepend apiSchemas = ["UsdPhysicsRigidBodyAPI", "UsdPhysicsMassAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.45, 1.2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 2
+            float3 physics:diagonalInertia = (0.08, 0.08, 0.08)
+        }
+
+        def PhysicsRevoluteJoint "torso_pitch"
+        {
+            rel physics:body0 = </World/UnitreeH1/pelvis>
+            rel physics:body1 = </World/UnitreeH1/torso>
+            point3f physics:localPos0 = (0, 0.2, 0)
+            point3f physics:localPos1 = (0, -0.2, 0)
+            float3 physics:axis = (1, 0, 0)
+            float physics:lowerLimit = -0.8
+            float physics:upperLimit = 0.8
+        }
+
+        def PhysicsRevoluteJoint "neck_pitch"
+        {
+            rel physics:body0 = </World/UnitreeH1/torso>
+            rel physics:body1 = </World/UnitreeH1/head>
+            point3f physics:localPos0 = (0, 0.25, 0)
+            point3f physics:localPos1 = (0, -0.1, 0)
+            float3 physics:axis = (1, 0, 0)
+            float physics:lowerLimit = -0.6
+            float physics:upperLimit = 0.6
+        }
+
+        def PhysicsRevoluteJoint "left_hip"
+        {
+            rel physics:body0 = </World/UnitreeH1/pelvis>
+            rel physics:body1 = </World/UnitreeH1/left_thigh>
+            point3f physics:localPos0 = (-0.08, -0.05, 0)
+            point3f physics:localPos1 = (0, 0.25, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = -1.2
+            float physics:upperLimit = 1.2
+        }
+
+        def PhysicsRevoluteJoint "left_knee"
+        {
+            rel physics:body0 = </World/UnitreeH1/left_thigh>
+            rel physics:body1 = </World/UnitreeH1/left_shin>
+            point3f physics:localPos0 = (0, -0.25, 0)
+            point3f physics:localPos1 = (0, 0.2, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 2
+        }
+
+        def PhysicsRevoluteJoint "left_ankle"
+        {
+            rel physics:body0 = </World/UnitreeH1/left_shin>
+            rel physics:body1 = </World/UnitreeH1/left_foot>
+            point3f physics:localPos0 = (0, -0.25, 0)
+            point3f physics:localPos1 = (0, 0.05, 0)
+            float3 physics:axis = (1, 0, 0)
+            float physics:lowerLimit = -0.8
+            float physics:upperLimit = 0.8
+        }
+
+        def PhysicsRevoluteJoint "right_hip"
+        {
+            rel physics:body0 = </World/UnitreeH1/pelvis>
+            rel physics:body1 = </World/UnitreeH1/right_thigh>
+            point3f physics:localPos0 = (0.08, -0.05, 0)
+            point3f physics:localPos1 = (0, 0.25, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = -1.2
+            float physics:upperLimit = 1.2
+        }
+
+        def PhysicsRevoluteJoint "right_knee"
+        {
+            rel physics:body0 = </World/UnitreeH1/right_thigh>
+            rel physics:body1 = </World/UnitreeH1/right_shin>
+            point3f physics:localPos0 = (0, -0.25, 0)
+            point3f physics:localPos1 = (0, 0.2, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 2
+        }
+
+        def PhysicsRevoluteJoint "right_ankle"
+        {
+            rel physics:body0 = </World/UnitreeH1/right_shin>
+            rel physics:body1 = </World/UnitreeH1/right_foot>
+            point3f physics:localPos0 = (0, -0.25, 0)
+            point3f physics:localPos1 = (0, 0.05, 0)
+            float3 physics:axis = (1, 0, 0)
+            float physics:lowerLimit = -0.8
+            float physics:upperLimit = 0.8
+        }
+
+        def PhysicsRevoluteJoint "left_shoulder"
+        {
+            rel physics:body0 = </World/UnitreeH1/torso>
+            rel physics:body1 = </World/UnitreeH1/left_upper_arm>
+            point3f physics:localPos0 = (-0.15, 0.2, 0)
+            point3f physics:localPos1 = (0.1, 0, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = -1.4
+            float physics:upperLimit = 1.4
+        }
+
+        def PhysicsRevoluteJoint "left_elbow"
+        {
+            rel physics:body0 = </World/UnitreeH1/left_upper_arm>
+            rel physics:body1 = </World/UnitreeH1/left_forearm>
+            point3f physics:localPos0 = (-0.2, 0, 0)
+            point3f physics:localPos1 = (0.1, 0, 0)
+            float3 physics:axis = (0, 1, 0)
+            float physics:lowerLimit = -1.2
+            float physics:upperLimit = 0.5
+        }
+
+        def PhysicsRevoluteJoint "right_shoulder"
+        {
+            rel physics:body0 = </World/UnitreeH1/torso>
+            rel physics:body1 = </World/UnitreeH1/right_upper_arm>
+            point3f physics:localPos0 = (0.15, 0.2, 0)
+            point3f physics:localPos1 = (-0.1, 0, 0)
+            float3 physics:axis = (0, 0, 1)
+            float physics:lowerLimit = -1.4
+            float physics:upperLimit = 1.4
+        }
+
+        def PhysicsRevoluteJoint "right_elbow"
+        {
+            rel physics:body0 = </World/UnitreeH1/right_upper_arm>
+            rel physics:body1 = </World/UnitreeH1/right_forearm>
+            point3f physics:localPos0 = (0.2, 0, 0)
+            point3f physics:localPos1 = (-0.1, 0, 0)
+            float3 physics:axis = (0, 1, 0)
+            float physics:lowerLimit = -1.2
+            float physics:upperLimit = 0.5
+        }
+    }
+}

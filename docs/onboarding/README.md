@@ -68,7 +68,7 @@ DART addresses the need for:
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
 - **Python Bindings**: Complete API coverage via pybind11 with NumPy integration
-- **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading
+- **File Format Support**: URDF, SDF, SKEL, MJCF, USD for robot model loading
 - **Cross-Platform**: Linux, macOS (Intel/ARM), Windows
 
 ### Technologies Used
@@ -519,7 +519,7 @@ graph TB
 - `dartpy.constraint` - Constraint solving
 - `dartpy.simulation` - World simulation
 - `dartpy.gui.osg` - 3D visualization with OSG and ImGui
-- `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
+- `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF, USD)
 
 **Key Files**:
 - [`pyproject.toml`](pyproject.toml) - Python package configuration

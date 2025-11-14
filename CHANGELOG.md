@@ -19,8 +19,10 @@
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
+  * Added the optional `DART_BUILD_USD` toggle plus pxr/OpenUSD discovery helpers to gate the new USD loader.
 
 * Core
+  * Added a USD (OpenUSD / Omniverse) articulation parser (`dart::utils::UsdParser`) plus dartpy bindings (`dartpy.utils.UsdParser`) that turn USD stages into DART skeletons, along with curated sample USD assets (simple arm and Unitree H1-inspired humanoid).
   * Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1).
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
   * Removed all APIs deprecated in DART 6.7 (legacy math random helpers, `Skeleton::clone()` overloads, and `ConstraintSolver::set/getLCPSolver()`).

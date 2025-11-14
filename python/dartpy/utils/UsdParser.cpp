@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/utils/usd/UsdParser.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -37,27 +39,49 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void UtilsResourceRetriever(py::module& sm);
-void DartLoader(py::module& sm);
-void SkelParser(py::module& sm);
-void SdfParser(py::module& sm);
-void MjcfParser(py::module& sm);
-#if defined(DART_HAS_USD)
-void UsdParser(py::module& sm);
-#endif
-
-void dart_utils(py::module& m)
+void UsdParser(py::module& m)
 {
-  auto sm = m.def_submodule("utils");
+  auto sm = m.def_submodule("UsdParser");
 
-  UtilsResourceRetriever(sm);
-  DartLoader(sm);
-  SkelParser(sm);
-  SdfParser(sm);
-  MjcfParser(sm);
-#if defined(DART_HAS_USD)
-  UsdParser(sm);
-#endif
+  ::py::enum_<utils::UsdParser::RootJointType>(sm, "RootJointType")
+      .value("FLOATING", utils::UsdParser::RootJointType::FLOATING)
+      .value("FIXED", utils::UsdParser::RootJointType::FIXED);
+
+  ::py::class_<utils::UsdParser::Options>(sm, "Options")
+      .def(
+          ::py::init<
+              common::ResourceRetrieverPtr,
+              utils::UsdParser::RootJointType,
+              bool,
+              bool>(),
+          ::py::arg("resourceRetriever") = nullptr,
+          ::py::arg("defaultRootJointType")
+          = utils::UsdParser::RootJointType::FLOATING,
+          ::py::arg("preserveFixedJoints") = true,
+          ::py::arg("verbose") = false)
+      .def_readwrite(
+          "mResourceRetriever", &utils::UsdParser::Options::mResourceRetriever)
+      .def_readwrite(
+          "mDefaultRootJointType",
+          &utils::UsdParser::Options::mDefaultRootJointType)
+      .def_readwrite(
+          "mPreserveFixedJoints",
+          &utils::UsdParser::Options::mPreserveFixedJoints)
+      .def_readwrite("mVerbose", &utils::UsdParser::Options::mVerbose);
+
+  sm.def(
+      "readWorld",
+      ::py::overload_cast<const common::Uri&, const utils::UsdParser::Options&>(
+          &utils::UsdParser::readWorld),
+      ::py::arg("uri"),
+      ::py::arg("options") = utils::UsdParser::Options());
+
+  sm.def(
+      "readSkeleton",
+      ::py::overload_cast<const common::Uri&, const utils::UsdParser::Options&>(
+          &utils::UsdParser::readSkeleton),
+      ::py::arg("uri"),
+      ::py::arg("options") = utils::UsdParser::Options());
 }
 
 } // namespace python

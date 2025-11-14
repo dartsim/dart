@@ -59,6 +59,9 @@ set(
   mjcf/all.hpp
   sdf/all.hpp
 )
+if(TARGET dart-utils-usd)
+  list(APPEND header_names usd/all.hpp)
+endif()
 dart_generate_component_headers(
   COMPONENT_NAME utils
   TARGET_DIR "dart/utils/"
@@ -87,5 +90,8 @@ dart_install_compat_headers(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+if(DART_BUILD_USD)
+  add_subdirectory(usd)
+endif()
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})

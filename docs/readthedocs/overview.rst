@@ -23,7 +23,7 @@ General
 * Open-source C++ library licensed under the BSD license.
 * Supports multiple platforms including Ubuntu, FreeBSD, macOS, and Windows.
 * Fully integrated with Gazebo.
-* Supports models in URDF and SDF formats.
+* Supports models in URDF, SDF, and USD formats.
 * Provides default integration methods (semi-implicit Euler and RK4) and an extensible API for other numerical integration methods.
 * Supports lazy evaluation and automatic updates of kinematic and dynamic quantities.
 * Allows for the extension of the API to embed user-provided classes into its data structures.

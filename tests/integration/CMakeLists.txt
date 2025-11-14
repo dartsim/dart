@@ -162,6 +162,11 @@ if(TARGET dart-utils-urdf)
   endif()
 endif()
 
+if(TARGET dart-utils-usd)
+  dart_add_test("integration" test_UsdParser io/test_UsdParser.cpp)
+  target_link_libraries(test_UsdParser dart-utils-usd)
+endif()
+
 dart_format_add(
   io/GeneratedWamIkFast.cpp
   io/SharedLibraryWamIkFast.hpp

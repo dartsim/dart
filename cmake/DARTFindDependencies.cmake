@@ -140,6 +140,11 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+if(DART_BUILD_USD)
+  dart_find_package(pxr)
+  dart_check_optional_package(pxr "dart-utils-usd" "OpenUSD (pxr)")
+endif()
+
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)

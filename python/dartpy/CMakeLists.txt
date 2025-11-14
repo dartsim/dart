@@ -43,6 +43,11 @@ set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
+# Remove the USD bindings if the core library was built without USD support.
+if(NOT TARGET dart-utils-usd)
+  list(FILTER dartpy_sources EXCLUDE REGEX "utils/UsdParser.cpp$")
+endif()
+
 # Exclude GUI OSG bindings if GUI is not built
 if(NOT DART_BUILD_GUI_OSG)
   list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
@@ -85,6 +90,9 @@ set(dartpy_libraries
   dart-utils
   dart-utils-urdf
 )
+if(TARGET dart-utils-usd)
+  list(APPEND dartpy_libraries dart-utils-usd)
+endif()
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
     message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")

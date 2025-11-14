@@ -14,7 +14,7 @@ tests/
 │   ├── collision/           # Collision detection, groups, accuracy, self-collision
 │   ├── constraint/          # Constraint solver, contact, friction, LCP stability
 │   ├── dynamics/            # Multi-body dynamics, joints, kinematics, state management
-│   ├── io/                  # File parsers (DART, MJCF, SDF, URDF, Skel, VSK)
+│   ├── io/                  # File parsers (DART, MJCF, SDF, URDF, Skel, VSK, USD)
 │   ├── optimization/        # IK, multi-objective optimization
 │   ├── simulation/          # World simulation, soft body dynamics, momentum conservation
 │   └── utils/               # Resource retrievers, aspects, frames, signals
@@ -53,7 +53,7 @@ Integration tests verify that **multiple components work correctly together** in
 - **collision/**: Multi-component collision tests (e.g., collision groups with dynamics and simulation)
 - **constraint/**: Constraint solving in full physics context (contact constraints, friction with dynamics)
 - **dynamics/**: Multi-body dynamics, complex kinematics workflows, skeleton interactions
-- **io/**: File loaders and parsers (DART, MJCF, SDF, URDF, Skel, VSK formats)
+- **io/**: File loaders and parsers (DART, MJCF, SDF, URDF, Skel, VSK, USD formats)
 - **optimization/**: Inverse kinematics, multi-objective optimization with dynamics
 - **simulation/**: World simulation with multiple skeletons, building complex scenes
 - **utils/**: Resource retrievers, aspects, frames, signals with full system context
