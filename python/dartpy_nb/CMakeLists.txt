@@ -125,6 +125,8 @@ set(dartpy_nb_headers
   simulation/constraint_solver.hpp
   constraint/module.hpp
   constraint/dynamic_joint_constraint.hpp
+  constraint/joint_constraint.hpp
+  constraint/joint_coulomb_friction_constraint.hpp
 )
 
 set(dartpy_nb_sources
@@ -184,6 +186,8 @@ set(dartpy_nb_sources
   simulation/constraint_solver.cpp
   constraint/module.cpp
   constraint/dynamic_joint_constraint.cpp
+  constraint/joint_constraint.cpp
+  constraint/joint_coulomb_friction_constraint.cpp
 )
 
 nanobind_add_module(dartpy_nb
