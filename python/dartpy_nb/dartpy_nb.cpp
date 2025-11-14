@@ -34,6 +34,7 @@
 
 #include "dart/config.hpp"
 #include "common/module.hpp"
+#include "collision/module.hpp"
 #include "dynamics/module.hpp"
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
@@ -62,6 +63,9 @@ NB_MODULE(dartpy_nb, m)
 
   auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
   dart::python_nb::defUtilsModule(utils);
+
+  auto collision = m.def_submodule("collision", "Collision utilities backed by nanobind");
+  dart::python_nb::defCollisionModule(collision);
 
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);

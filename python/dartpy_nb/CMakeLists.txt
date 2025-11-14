@@ -108,6 +108,12 @@ set(dartpy_nb_headers
   dynamics/free_joint.hpp
   dynamics/revolute_joint.hpp
   dynamics/skeleton.hpp
+  collision/module.hpp
+  collision/collision_option.hpp
+  collision/collision_result.hpp
+  collision/raycast.hpp
+  collision/collision_detector.hpp
+  collision/collision_group.hpp
 )
 
 set(dartpy_nb_sources
@@ -150,6 +156,12 @@ set(dartpy_nb_sources
   dynamics/free_joint.cpp
   dynamics/revolute_joint.cpp
   dynamics/skeleton.cpp
+  collision/module.cpp
+  collision/collision_option.cpp
+  collision/collision_result.cpp
+  collision/raycast.cpp
+  collision/collision_detector.cpp
+  collision/collision_group.cpp
 )
 
 nanobind_add_module(dartpy_nb
