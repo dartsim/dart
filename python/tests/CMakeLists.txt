@@ -57,6 +57,7 @@ set(dartpy_test_utils
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
 
 set(_dart_pytest_env "PYTHONPATH=${DART_PYTHONPATH_ENV}")
+list(APPEND _dart_pytest_env "PYTHONFAULTHANDLER=1")
 if(DART_PXR_PLUGIN_PATH)
   list(APPEND _dart_pytest_env "PXR_PLUGINPATH_NAME=${DART_PXR_PLUGIN_PATH}")
 endif()
