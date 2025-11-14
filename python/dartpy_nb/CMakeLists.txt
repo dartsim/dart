@@ -110,6 +110,7 @@ set(dartpy_nb_headers
   dynamics/free_joint.hpp
   dynamics/revolute_joint.hpp
   dynamics/prismatic_joint.hpp
+  dynamics/screw_joint.hpp
   dynamics/ball_joint.hpp
   dynamics/weld_joint.hpp
   dynamics/chain.hpp
@@ -173,6 +174,7 @@ set(dartpy_nb_sources
   dynamics/free_joint.cpp
   dynamics/revolute_joint.cpp
   dynamics/prismatic_joint.cpp
+  dynamics/screw_joint.cpp
   dynamics/ball_joint.cpp
   dynamics/weld_joint.cpp
   dynamics/chain.cpp
