@@ -91,3 +91,9 @@ if(TARGET dart)
   dart_add_test("unit" test_Convhull math/test_Convhull.cpp)
   target_link_libraries(test_Convhull dart)
 endif()
+
+# ==============================================================================
+# Integration Tests
+# ==============================================================================
+dart_add_test(
+  "unit" test_EulerIntegrator integration/test_EulerIntegrator.cpp)
