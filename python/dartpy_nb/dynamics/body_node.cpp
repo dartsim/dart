@@ -6,6 +6,7 @@
 #include <nanobind/stl/vector.h>
 
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
@@ -65,7 +66,16 @@ void defBodyNode(nb::module_& m)
       .def("getInertia",
           [](BodyNode& self) -> dart::dynamics::Inertia {
             return self.getInertia();
-          });
+          })
+      .def("getOrCreateIK",
+          [](BodyNode& self) {
+            return self.getOrCreateIK();
+          })
+      .def("getIK",
+          [](BodyNode& self, bool createIfNull) {
+            return self.getIK(createIfNull);
+          },
+          nb::arg("createIfNull") = false);
 }
 
 } // namespace dart::python_nb
