@@ -34,7 +34,6 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/Export.hpp>
 
 #include <vector>
 
@@ -43,7 +42,7 @@ namespace collision {
 
 class DARTCollisionObject;
 
-class DART_COLLISION_API DARTCollisionDetector : public CollisionDetector
+class DART_API DARTCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;

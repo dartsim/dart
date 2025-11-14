@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
-#include <dart/common/Export.hpp>
+#include <dart/Export.hpp>
 
 #include <memory>
 
@@ -44,7 +44,7 @@ namespace signal {
 namespace detail {
 
 /// class ConnectionBodyBase
-class DART_COMMON_API ConnectionBodyBase
+class DART_API ConnectionBodyBase
 {
 public:
   /// Constructor

@@ -87,19 +87,3 @@
 #ifndef DART_DLL_LOCAL
   #define DART_DLL_LOCAL
 #endif
-
-#ifndef DART_COMMON_API
-  #if defined(DART_BUILDING_DART_COMMON) || defined(DART_BUILDING_DART)
-    #define DART_COMMON_API DART_DLL_EXPORT
-  #else
-    #define DART_COMMON_API DART_DLL_IMPORT
-  #endif
-#endif
-
-#ifndef DART_COMMON_LOCAL
-  #if DART_BUILD_SHARED
-    #define DART_COMMON_LOCAL DART_DLL_LOCAL
-  #else
-    #define DART_COMMON_LOCAL
-  #endif
-#endif

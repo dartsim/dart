@@ -33,7 +33,7 @@
 #ifndef DART_MATH_RANDOM_HPP_
 #define DART_MATH_RANDOM_HPP_
 
-#include <dart/math/Export.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 
@@ -42,7 +42,7 @@
 namespace dart {
 namespace math {
 
-class DART_MATH_API Random final
+class DART_API Random final
 {
 public:
   using GeneratorType = std::mt19937;

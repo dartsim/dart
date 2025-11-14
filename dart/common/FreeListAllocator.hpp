@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_FREELISTALLOCATOR_HPP_
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
-#include <dart/common/Export.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
+
+#include <dart/Export.hpp>
 
 #include <mutex>
 
@@ -54,7 +55,7 @@ namespace dart::common {
 ///
 /// If the preallocated memory is all used up, then this class allocates
 /// additional memory chunck using the base allocator.
-class DART_COMMON_API FreeListAllocator : public MemoryAllocator
+class DART_API FreeListAllocator : public MemoryAllocator
 {
 public:
   using Debug = MemoryAllocatorDebugger<FreeListAllocator>;

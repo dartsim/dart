@@ -32,13 +32,11 @@
 
 #include "dart/math/TriMesh.hpp"
 
-#include <dart/math/Export.hpp>
-
 namespace dart {
 namespace math {
 
 #if DART_OS_WINDOWS
-template class DART_MATH_API TriMesh<double>;
+template class DART_API TriMesh<double>;
 #endif
 
 } // namespace math

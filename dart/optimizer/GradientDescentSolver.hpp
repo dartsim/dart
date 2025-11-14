@@ -33,8 +33,9 @@
 #ifndef DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 #define DART_OPTIMIZER_GRADIENTDESCENTSOLVER_HPP_
 
-#include <dart/optimizer/Export.hpp>
 #include <dart/optimizer/Solver.hpp>
+
+#include <dart/Export.hpp>
 
 #include <random>
 
@@ -47,7 +48,7 @@ namespace optimizer {
 /// objective function and assigned weights) to solve nonlinear problems. Note
 /// that this is not a good option for Problems with difficult constraint
 /// functions that need to be solved exactly.
-class DART_OPTIMIZER_API GradientDescentSolver : public Solver
+class DART_API GradientDescentSolver : public Solver
 {
 public:
   static const std::string Type;
