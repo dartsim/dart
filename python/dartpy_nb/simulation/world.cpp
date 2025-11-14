@@ -1,5 +1,6 @@
 #include "simulation/world.hpp"
 
+#include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -22,11 +23,32 @@ void defWorld(nb::module_& m)
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def("getNumSkeletons", &World::getNumSkeletons)
       .def("getNumSimpleFrames", &World::getNumSimpleFrames)
+      .def("getSkeleton",
+          [](World& self, std::size_t index) {
+            return self.getSkeleton(index);
+          },
+          nb::arg("index"))
+      .def("getSkeleton",
+          [](World& self, const std::string& name) {
+            return self.getSkeleton(name);
+          },
+          nb::arg("name"))
+      .def("setGravity",
+          [](World& self, const Eigen::Vector3d& gravity) {
+            self.setGravity(gravity);
+          },
+          nb::arg("gravity"))
+      .def("getGravity",
+          &World::getGravity,
+          nb::rv_policy::reference_internal)
       .def("addSkeleton",
           [](World& self, const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
             return self.addSkeleton(skeleton);
           },
           nb::arg("skeleton"))
+      .def("step", &World::step)
+      .def("getTime", &World::getTime)
+      .def("getTimeStep", &World::getTimeStep)
       .def("getConstraintSolver",
           [](World& self) -> dart::constraint::ConstraintSolver* {
             return self.getConstraintSolver();
