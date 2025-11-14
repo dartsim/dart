@@ -95,6 +95,19 @@ set(dartpy_nb_headers
   math/constants.hpp
   math/geometry.hpp
   math/random.hpp
+  dynamics/module.hpp
+  dynamics/entity.hpp
+  dynamics/frame.hpp
+  dynamics/shape.hpp
+  dynamics/shape_frame.hpp
+  dynamics/simple_frame.hpp
+  dynamics/inertia.hpp
+  dynamics/shape_node.hpp
+  dynamics/body_node.hpp
+  dynamics/joint.hpp
+  dynamics/free_joint.hpp
+  dynamics/revolute_joint.hpp
+  dynamics/skeleton.hpp
 )
 
 set(dartpy_nb_sources
@@ -124,6 +137,19 @@ set(dartpy_nb_sources
   math/constants.cpp
   math/geometry.cpp
   math/random.cpp
+  dynamics/module.cpp
+  dynamics/entity.cpp
+  dynamics/frame.cpp
+  dynamics/shape.cpp
+  dynamics/shape_frame.cpp
+  dynamics/simple_frame.cpp
+  dynamics/inertia.cpp
+  dynamics/shape_node.cpp
+  dynamics/body_node.cpp
+  dynamics/joint.cpp
+  dynamics/free_joint.cpp
+  dynamics/revolute_joint.cpp
+  dynamics/skeleton.cpp
 )
 
 nanobind_add_module(dartpy_nb
