@@ -2,6 +2,7 @@
 
 #include "dynamics/ball_joint.hpp"
 #include "dynamics/body_node.hpp"
+#include "dynamics/chain.hpp"
 #include "dynamics/entity.hpp"
 #include "dynamics/free_joint.hpp"
 #include "dynamics/frame.hpp"
@@ -31,6 +32,7 @@ void defDynamicsModule(nanobind::module_& m)
   defShapeFrame(m);
   defShapeNode(m);
   defSimpleFrame(m);
+  defChain(m);
   defSkeleton(m);
   defInertia(m);
 }
