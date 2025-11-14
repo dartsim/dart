@@ -116,6 +116,9 @@ set(dartpy_nb_headers
   collision/raycast.hpp
   collision/collision_detector.hpp
   collision/collision_group.hpp
+  simulation/module.hpp
+  simulation/world.hpp
+  simulation/constraint_solver.hpp
 )
 
 set(dartpy_nb_sources
@@ -166,6 +169,9 @@ set(dartpy_nb_sources
   collision/raycast.cpp
   collision/collision_detector.cpp
   collision/collision_group.cpp
+  simulation/module.cpp
+  simulation/world.cpp
+  simulation/constraint_solver.cpp
 )
 
 nanobind_add_module(dartpy_nb

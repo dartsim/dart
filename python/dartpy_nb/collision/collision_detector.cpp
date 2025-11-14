@@ -29,10 +29,20 @@ void defCollisionDetector(nb::module_& m)
           });
 
   nb::class_<dart::collision::FCLCollisionDetector, CollisionDetector, std::shared_ptr<dart::collision::FCLCollisionDetector>>(m, "FCLCollisionDetector")
-      .def(nb::init<>());
+      .def(nb::init<>())
+      .def_static("getStaticType",
+          []() -> const std::string& {
+            return dart::collision::FCLCollisionDetector::getStaticType();
+          },
+          nb::rv_policy::reference_internal);
 
   nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector, std::shared_ptr<dart::collision::DARTCollisionDetector>>(m, "DARTCollisionDetector")
-      .def(nb::init<>());
+      .def(nb::init<>())
+      .def_static("getStaticType",
+          []() -> const std::string& {
+            return dart::collision::DARTCollisionDetector::getStaticType();
+          },
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace dart::python_nb
