@@ -13,7 +13,7 @@ systems and employs Featherstone's Articulated Body Algorithm to compute motion
 dynamics.
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/26b94452-2bae-4a08-8ab5-96e439759359" width="720" autoplay loop muted playsinline controls></video>
+  <img src="docs/assets/unitree_g1_demo.gif" width="720" alt="Unitree G1 humanoid demo" />
 </p>
 
 ## Getting Started
