@@ -33,8 +33,6 @@
 #ifndef DART_COLLISION_DISTANCEFILTER_HPP_
 #define DART_COLLISION_DISTANCEFILTER_HPP_
 
-#include <dart/collision/Export.hpp>
-
 namespace dart {
 
 namespace dynamics {
@@ -45,13 +43,13 @@ namespace collision {
 
 class CollisionObject;
 
-struct DART_COLLISION_API DistanceFilter
+struct DistanceFilter
 {
   virtual bool needDistance(
       const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
-struct DART_COLLISION_API BodyNodeDistanceFilter : DistanceFilter
+struct BodyNodeDistanceFilter : DistanceFilter
 {
   bool needDistance(
       const CollisionObject* object1,
