@@ -127,7 +127,8 @@ _Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... args)
   res.reserve(connections.size());
 
   for (const auto& connectionBody : connections) {
-    res.emplace_back(connectionBody->getSlot()(std::forward<ArgTypes>(args)...));
+    res.emplace_back(
+        connectionBody->getSlot()(std::forward<ArgTypes>(args)...));
   }
 
   return Combiner<ResultType>::process(res.begin(), res.end());

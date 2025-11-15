@@ -417,9 +417,8 @@ TEST(Signal, ConcurrentUsage)
   for (int t = 0; t < kNumThreads; ++t) {
     workers.emplace_back([&]() {
       for (int i = 0; i < kIterationsPerThread; ++i) {
-        Connection conn = signal.connect([&]() {
-          callbackCount.fetch_add(1, std::memory_order_relaxed);
-        });
+        Connection conn = signal.connect(
+            [&]() { callbackCount.fetch_add(1, std::memory_order_relaxed); });
         signal.raise();
         conn.disconnect();
       }
