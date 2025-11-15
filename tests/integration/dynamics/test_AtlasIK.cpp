@@ -57,18 +57,12 @@ TEST(AtlasIK, HandReachesTarget)
   ASSERT_NE(atlas, nullptr);
 
   // Set standing pose
-  atlas->getDof("r_leg_hpy")
-      ->setPosition(-45.0 * math::constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_kny")
-      ->setPosition(90.0 * math::constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_aky")
-      ->setPosition(-45.0 * math::constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_hpy")
-      ->setPosition(-45.0 * math::constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_kny")
-      ->setPosition(90.0 * math::constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_aky")
-      ->setPosition(-45.0 * math::constantsd::pi() / 180.0);
+  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * math::pi / 180.0);
+  atlas->getDof("r_leg_kny")->setPosition(90.0 * math::pi / 180.0);
+  atlas->getDof("r_leg_aky")->setPosition(-45.0 * math::pi / 180.0);
+  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * math::pi / 180.0);
+  atlas->getDof("l_leg_kny")->setPosition(90.0 * math::pi / 180.0);
+  atlas->getDof("l_leg_aky")->setPosition(-45.0 * math::pi / 180.0);
 
   // Create left hand end effector
   BodyNode* l_hand_bn = atlas->getBodyNode("l_hand");
