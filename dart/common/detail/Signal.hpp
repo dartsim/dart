@@ -57,7 +57,10 @@ template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 Connection Signal<_Res(_ArgTypes...), Combiner>::connect(const SlotType& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, slot);
-  mConnectionBodies.insert(newConnectionBody);
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    mConnectionBodies.insert(newConnectionBody);
+  }
 
   return Connection(std::move(newConnectionBody));
 }
@@ -68,7 +71,10 @@ Connection Signal<_Res(_ArgTypes...), Combiner>::connect(SlotType&& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(
       *this, std::forward<SlotType>(slot));
-  mConnectionBodies.insert(newConnectionBody);
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    mConnectionBodies.insert(newConnectionBody);
+  }
 
   return Connection(std::move(newConnectionBody));
 }
@@ -86,6 +92,7 @@ template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 void Signal<_Res(_ArgTypes...), Combiner>::disconnect(
     const std::shared_ptr<Signal::ConnectionBodyType>& connectionBody)
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   mConnectionBodies.erase(connectionBody);
 }
 
@@ -93,6 +100,7 @@ void Signal<_Res(_ArgTypes...), Combiner>::disconnect(
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 void Signal<_Res(_ArgTypes...), Combiner>::disconnectAll()
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   mConnectionBodies.clear();
 }
 
@@ -100,6 +108,7 @@ void Signal<_Res(_ArgTypes...), Combiner>::disconnectAll()
 template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 std::size_t Signal<_Res(_ArgTypes...), Combiner>::getNumConnections() const
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   return mConnectionBodies.size();
 }
 
@@ -108,14 +117,20 @@ template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 template <typename... ArgTypes>
 _Res Signal<_Res(_ArgTypes...), Combiner>::raise(ArgTypes&&... args)
 {
-  std::vector<ResultType> res(mConnectionBodies.size());
-  auto resIt = res.begin();
-
-  for (const auto& connectionBody : mConnectionBodies) {
-    *(resIt++) = connectionBody->getSlot()(std::forward<ArgTypes>(args)...);
+  std::vector<std::shared_ptr<ConnectionBodyType>> connections;
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    connections.assign(mConnectionBodies.begin(), mConnectionBodies.end());
   }
 
-  return Combiner<ResultType>::process(res.begin(), resIt);
+  std::vector<ResultType> res;
+  res.reserve(connections.size());
+
+  for (const auto& connectionBody : connections) {
+    res.emplace_back(connectionBody->getSlot()(std::forward<ArgTypes>(args)...));
+  }
+
+  return Combiner<ResultType>::process(res.begin(), res.end());
 }
 
 //==============================================================================
@@ -145,7 +160,10 @@ template <typename... _ArgTypes>
 Connection Signal<void(_ArgTypes...)>::connect(const SlotType& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(*this, slot);
-  mConnectionBodies.insert(newConnectionBody);
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    mConnectionBodies.insert(newConnectionBody);
+  }
 
   return Connection(std::move(newConnectionBody));
 }
@@ -156,7 +174,10 @@ Connection Signal<void(_ArgTypes...)>::connect(SlotType&& slot)
 {
   auto newConnectionBody = std::make_shared<ConnectionBodyType>(
       *this, std::forward<SlotType>(slot));
-  mConnectionBodies.insert(newConnectionBody);
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    mConnectionBodies.insert(newConnectionBody);
+  }
 
   return Connection(std::move(newConnectionBody));
 }
@@ -173,6 +194,7 @@ template <typename... _ArgTypes>
 void Signal<void(_ArgTypes...)>::disconnect(
     const std::shared_ptr<Signal::ConnectionBodyType>& connectionBody)
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   mConnectionBodies.erase(connectionBody);
 }
 
@@ -180,6 +202,7 @@ void Signal<void(_ArgTypes...)>::disconnect(
 template <typename... _ArgTypes>
 void Signal<void(_ArgTypes...)>::disconnectAll()
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   mConnectionBodies.clear();
 }
 
@@ -187,6 +210,7 @@ void Signal<void(_ArgTypes...)>::disconnectAll()
 template <typename... _ArgTypes>
 std::size_t Signal<void(_ArgTypes...)>::getNumConnections() const
 {
+  std::lock_guard<std::mutex> lock(mConnectionMutex);
   return mConnectionBodies.size();
 }
 
@@ -195,7 +219,13 @@ template <typename... _ArgTypes>
 template <typename... Args>
 void Signal<void(_ArgTypes...)>::raise(Args&&... args)
 {
-  for (const auto& connectionBody : mConnectionBodies) {
+  std::vector<std::shared_ptr<ConnectionBodyType>> connections;
+  {
+    std::lock_guard<std::mutex> lock(mConnectionMutex);
+    connections.assign(mConnectionBodies.begin(), mConnectionBodies.end());
+  }
+
+  for (const auto& connectionBody : connections) {
     connectionBody->getSlot()(std::forward<Args>(args)...);
   }
 }
