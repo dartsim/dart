@@ -162,6 +162,10 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
                 self.pre_offset - offset
             )
 
+        # Track the previous offset so the derivative term is evaluated against the
+        # last frame, mirroring the C++ ankle strategy implementation.
+        self.pre_offset = offset
+
         # Just to make sure no illegal torque is used
         for i in range(6):
             self.torques[i] = 0
