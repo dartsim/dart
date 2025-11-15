@@ -1691,8 +1691,13 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
   const Eigen::Vector3d actualLinearVelocity
       = body->getLinearVelocity(Frame::World(), Frame::World());
 
-  EXPECT_TRUE(equals(velocities.tail<3>(), actualLinearVelocity));
-  EXPECT_TRUE(equals(spatialVelocityFromJac.tail<3>(), actualLinearVelocity));
+  ASSERT_EQ(static_cast<int>(velocities.tail<3>().size()), 3);
+  ASSERT_EQ(static_cast<int>(spatialVelocityFromJac.tail<3>().size()), 3);
+
+  EXPECT_TRUE(
+      equals(Eigen::Vector3d(velocities.tail<3>()), actualLinearVelocity));
+  EXPECT_TRUE(equals(
+      Eigen::Vector3d(spatialVelocityFromJac.tail<3>()), actualLinearVelocity));
 }
 
 //==============================================================================
@@ -1723,6 +1728,7 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
         = body->getSpatialVelocity(worldFrame, worldFrame);
 
     EXPECT_TRUE(equals(spatialFromJac, spatialVelocity));
-    EXPECT_TRUE(equals(spatialFromJac.tail<3>(), velocities.tail<3>()));
+    EXPECT_TRUE(equals(
+        Eigen::Vector3d(spatialFromJac.tail<3>()), velocities.tail<3>()));
   }
 }
