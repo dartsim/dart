@@ -37,6 +37,7 @@
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -2347,6 +2348,29 @@ void BodyNode::updateBodyJacobian() const
 void BodyNode::updateWorldJacobian() const
 {
   mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
+
+  const auto& dependentDofs = getDependentDofs();
+  for (std::size_t col = 0; col < dependentDofs.size(); ++col) {
+    const DegreeOfFreedom* dof = dependentDofs[col];
+    if (dof == nullptr)
+      continue;
+
+    const auto* freeJoint = dynamic_cast<const FreeJoint*>(dof->getJoint());
+    if (!freeJoint)
+      continue;
+
+    const std::size_t localIndex = dof->getIndexInJoint();
+    if (localIndex < 3)
+      continue;
+
+    const std::size_t axis = localIndex - 3;
+    if (axis >= 3)
+      continue;
+
+    mWorldJacobian.topRows<3>().col(col).setZero();
+    mWorldJacobian.bottomRows<3>().col(col).setZero();
+    mWorldJacobian.bottomRows<3>().col(col)(axis) = 1.0;
+  }
 
   mIsWorldJacobianDirty = false;
 }
