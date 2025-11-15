@@ -16,6 +16,7 @@
 #include "dynamics/translational_joint2d.hpp"
 #include "dynamics/translational_joint.hpp"
 #include "dynamics/screw_joint.hpp"
+#include "dynamics/universal_joint.hpp"
 #include "dynamics/weld_joint.hpp"
 #include "dynamics/shape.hpp"
 #include "dynamics/shape_frame.hpp"
@@ -36,6 +37,7 @@ void defDynamicsModule(nanobind::module_& m)
   defPrismaticJoint(m);
   defTranslationalJoint(m);
   defScrewJoint(m);
+  defUniversalJoint(m);
   defBallJoint(m);
   defWeldJoint(m);
   defShape(m);
