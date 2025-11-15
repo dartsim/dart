@@ -1,6 +1,22 @@
 # Dependency checks
+set(_dart_build_mode "${DART_BUILD_UTILS}")
+if(_dart_build_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-utils (DART_BUILD_UTILS=OFF)")
+  endif()
+  return()
+endif()
+
 dart_find_package(tinyxml2)
-dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
+
+if(NOT tinyxml2_FOUND)
+  if(_dart_build_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_UTILS=ON but tinyxml2 was not found.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping dart-utils (tinyxml2 not found)")
+  endif()
+  return()
+endif()
 
 find_package(CURL)
 dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")

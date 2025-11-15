@@ -35,7 +35,7 @@
 #include <dart/All.hpp>
 
 #include <gtest/gtest.h>
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "../../helpers/GTestUtils.hpp"
@@ -137,7 +137,7 @@ TEST(Distance, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -240,7 +240,7 @@ TEST(Distance, Options)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -299,7 +299,7 @@ TEST(Distance, SphereSphere)
   auto fcl = FCLCollisionDetector::create();
   testSphereSphere(fcl);
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif

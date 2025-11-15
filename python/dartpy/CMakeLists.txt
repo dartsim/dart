@@ -44,7 +44,7 @@ file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
 # Exclude GUI OSG bindings if GUI is not built
-if(NOT DART_BUILD_GUI_OSG)
+if(NOT DART_HAVE_GUI_OSG)
   list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
   list(FILTER dartpy_sources EXCLUDE REGEX ".*/gui/osg/.*")
 endif()
@@ -117,11 +117,11 @@ if(DART_PYBIND11_EXTRA_DEFINITIONS)
   )
 endif()
 
-# Pass DART_BUILD_GUI_OSG to Python bindings so they can conditionally compile OSG support
-if(DART_BUILD_GUI_OSG)
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+# Pass DART_HAVE_GUI_OSG to Python bindings so they can conditionally compile OSG support
+if(DART_HAVE_GUI_OSG)
+  target_compile_definitions(${pybind_module} PRIVATE DART_HAVE_GUI_OSG=1)
 else()
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=0)
+  target_compile_definitions(${pybind_module} PRIVATE DART_HAVE_GUI_OSG=0)
 endif()
 
 # Remove debug postfix for dartpy

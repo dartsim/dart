@@ -40,6 +40,7 @@ dart_build_tests(
     common/test_SubjectObserver.cpp
     common/test_String.cpp
     common/test_Uri.cpp
+    common/test_ConfigMacros.cpp
 )
 
 # ==============================================================================

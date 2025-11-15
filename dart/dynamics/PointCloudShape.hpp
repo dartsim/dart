@@ -37,7 +37,7 @@
 
 #include <span>
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   #include <octomap/Pointcloud.h>
 #endif
 
@@ -97,7 +97,7 @@ public:
   /// Replaces points with \c points.
   void setPoint(std::span<const Eigen::Vector3d> points);
 
-#if HAVE_OCTOMAP
+#if DART_HAVE_OCTOMAP
   /// Replaces points with \c pointCloud.
   void setPoints(const ::octomap::Pointcloud& pointCloud);
 

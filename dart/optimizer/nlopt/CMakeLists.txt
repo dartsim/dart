@@ -1,6 +1,26 @@
 # Dependency checks
+set(_dart_build_mode "${DART_BUILD_OPTIMIZER_NLOPT}")
+if(_dart_build_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-nlopt (DART_BUILD_OPTIMIZER_NLOPT=OFF)")
+  endif()
+  set(DART_HAVE_NLOPT FALSE CACHE BOOL "Whether NLopt support is enabled" FORCE)
+  return()
+endif()
+
 dart_find_package(NLOPT)
-dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
+
+if(NOT NLOPT_FOUND)
+  set(DART_HAVE_NLOPT FALSE CACHE BOOL "Whether NLopt support is enabled" FORCE)
+  if(_dart_build_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_OPTIMIZER_NLOPT=ON but NLopt was not found.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-nlopt (NLopt not found)")
+  endif()
+  return()
+endif()
+
+set(DART_HAVE_NLOPT TRUE CACHE BOOL "Whether NLopt support is enabled" FORCE)
 
 if(NOT NLOPT_VERSION)
   # If version is not found, we just assume 2.9.0

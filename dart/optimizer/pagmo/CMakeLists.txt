@@ -1,14 +1,28 @@
 # Dependency checks
-dart_find_package(pagmo)
-dart_check_optional_package(pagmo "dart-optimizer-pagmo" "pagmo" "2.8")
-if(pagmo_FOUND)
-  set(HAVE_PAGMO TRUE CACHE BOOL "Check if pagmo found." FORCE)
-else()
-  set(HAVE_PAGMO FALSE CACHE BOOL "Check if pagmo found." FORCE)
+set(_dart_build_mode "${DART_BUILD_OPTIMIZER_PAGMO}")
+if(_dart_build_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-pagmo (DART_BUILD_OPTIMIZER_PAGMO=OFF)")
+  endif()
+  set(DART_HAVE_PAGMO FALSE CACHE BOOL "Whether PaGMO support is enabled" FORCE)
+  return()
 endif()
 
+dart_find_package(pagmo)
+
+if(NOT pagmo_FOUND)
+  set(DART_HAVE_PAGMO FALSE CACHE BOOL "Whether PaGMO support is enabled" FORCE)
+  if(_dart_build_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_OPTIMIZER_PAGMO=ON but pagmo was not found.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping dart-optimizer-pagmo (pagmo not found)")
+  endif()
+  return()
+endif()
+
+set(DART_HAVE_PAGMO TRUE CACHE BOOL "Whether PaGMO support is enabled" FORCE)
+
 find_package(Threads REQUIRED)
-dart_check_optional_package(Threads "dart-optimizer-pagmo" "Threads" "")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

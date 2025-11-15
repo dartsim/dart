@@ -83,22 +83,22 @@ positions = skel.getPositions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI_OSG=ON`
+**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI_OSG` enabling the component.
 
-**Root Cause**: Python bindings checked for undefined `HAVE_DART_GUI_OSG` preprocessor macro
+**Root Cause**: Python bindings previously checked an undefined `HAVE_DART_GUI_OSG` macro, so the GUI code path was never compiled.
 
 **Solution**:
-1. Use `DART_BUILD_GUI_OSG` directly in `python/dartpy/gui/module.cpp`:
+1. Use the unified `DART_HAVE_GUI_OSG` macro in `python/dartpy/gui/module.cpp`:
    ```cpp
-   #if DART_BUILD_GUI_OSG
+   #if DART_HAVE_GUI_OSG
      // Bind OSG module
    #endif
    ```
 
-2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
+2. Pass the macro from CMake in `python/dartpy/CMakeLists.txt`:
    ```cmake
-   if(DART_BUILD_GUI_OSG)
-     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+   if(DART_HAVE_GUI_OSG)
+     target_compile_definitions(${pybind_module} PRIVATE DART_HAVE_GUI_OSG=1)
    endif()
    ```
 

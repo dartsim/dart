@@ -140,7 +140,7 @@ DART uses CMake as its build system. CMake generates build files for various bui
 For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI
+- `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI (`AUTO`/`ON`/`OFF`, examples/tutorials auto-disable when `OFF`)
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
 - `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)

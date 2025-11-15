@@ -1,5 +1,19 @@
-if(NOT DART_BUILD_GUI_OSG)
-  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+set(_dart_build_gui_mode "${DART_BUILD_GUI_OSG}")
+if(_dart_build_gui_mode STREQUAL "OFF")
+  if(DART_VERBOSE)
+    message(STATUS "Skipping OpenSceneGraph GUI (DART_BUILD_GUI_OSG=OFF)")
+  endif()
+  set(DART_HAVE_GUI_OSG FALSE CACHE BOOL "Whether the OSG GUI backend is enabled" FORCE)
+  return()
+endif()
+
+if(NOT TARGET dart-utils)
+  set(DART_HAVE_GUI_OSG FALSE CACHE BOOL "Whether the OSG GUI backend is enabled" FORCE)
+  if(_dart_build_gui_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_GUI_OSG=ON requires dart-utils to be built.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping OpenSceneGraph GUI because dart-utils target is unavailable.")
+  endif()
   return()
 endif()
 
@@ -10,11 +24,17 @@ set(component_dependencies )
 set(component_dependency_packages )
 set(link_libraries )
 
-# Dependency checks
-dart_check_dependent_target(${target_name} dart-utils)
-
 # OpenSceneGraph
 dart_find_package(OpenSceneGraph)
+if(NOT (OPENSCENEGRAPH_FOUND AND OSG_FOUND))
+  set(DART_HAVE_GUI_OSG FALSE CACHE BOOL "Whether the OSG GUI backend is enabled" FORCE)
+  if(_dart_build_gui_mode STREQUAL "ON")
+    message(FATAL_ERROR "DART_BUILD_GUI_OSG=ON but OpenSceneGraph was not found.")
+  elseif(DART_VERBOSE)
+    message(STATUS "Skipping OpenSceneGraph GUI because OpenSceneGraph was not found.")
+  endif()
+  return()
+endif()
 dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph")
 list(APPEND component_dependency_packages OpenSceneGraph)
 
@@ -80,3 +100,5 @@ dart_install_compat_headers(
 )
 
 dart_format_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
+
+set(DART_HAVE_GUI_OSG TRUE CACHE BOOL "Whether the OSG GUI backend is enabled" FORCE)
