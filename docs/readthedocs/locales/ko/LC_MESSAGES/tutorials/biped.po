@@ -4,7 +4,6 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
@@ -573,71 +572,72 @@ msgstr "bd1->changeParentJointType&lt;BallJoint&gt;()"
 
 #: ../../tutorials/biped.md aa8c1b18503c4a11ab7a6911be6dfdae
 msgid "Change the Joint type of the BodyNode bd1's parent joint to BallJoint"
-msgstr ""
+msgstr "BodyNode bd1의 부모 조인트 유형을 BallJoint로 변경합니다."
 
 #: ../../tutorials/biped.md 8c18f17e3af84dc4a0eee67b9ef406d5
 msgid "copyTo"
-msgstr ""
+msgstr "copyTo"
 
 #: ../../tutorials/biped.md 77fac733ba51427ca5a8a61c8903186d
 msgid "bd1->copyTo(bd2)"
-msgstr ""
+msgstr "bd1->copyTo(bd2)"
 
 #: ../../tutorials/biped.md 876ffed30a2d41fdb6e8bd605d8ab3a3
 msgid ""
 "Create clones of the BodyNode bd1 and its subtree and attach the clones "
 "to the specified the BodyNode bd2."
-msgstr ""
+msgstr "BodyNode bd1과 그 하위 트리를 복제해 지정한 BodyNode bd2 아래에 붙입니다."
 
 #: ../../tutorials/biped.md e109798286bf4716a0bb0c1f7c56577f
 msgid "copyAs"
-msgstr ""
+msgstr "copyAs"
 
 #: ../../tutorials/biped.md 36b53cf39eb34273b874bdc655101f24
 msgid "auto newSkel = bd1->copyAs(\"new skeleton\")"
-msgstr ""
+msgstr "auto newSkel = bd1->copyAs(\"new skeleton\")"
 
 #: ../../tutorials/biped.md 83e432b495ed4b278baf9ca8f83b8ab5
 msgid ""
 "Create clones of the BodyNode bd1 and its subtree and create a new "
 "Skeleton with \"new skeleton\" name to attach them to."
-msgstr ""
+msgstr "BodyNode bd1과 그 하위 트리를 복제하여 \"new skeleton\"이라는 새 스켈레톤에 추가합니다."
 
 #: ../../tutorials/biped.md:381 7503f4997cca4c05a1fd70622ca2b160
 msgid "Lesson 6: Actuator types"
-msgstr ""
+msgstr "Lesson 6: 액추에이터 유형"
 
 #: ../../tutorials/biped.md:383 81d56146c1304e3190d95fd2d7d3725f
 msgid ""
 "DART provides five types of actuator. Each joint can select its own "
 "actuator type."
 msgstr ""
+"DART는 다섯 가지 액추에이터 유형을 제공하며 각 조인트는 필요에 맞는 유형을 선택할 수 있습니다."
 
 #: ../../tutorials/biped.md d4563fe20c894990852a8a4612b0cba4
 msgid "Type"
-msgstr ""
+msgstr "유형"
 
 #: ../../tutorials/biped.md fc7a3d5c75654c7898d5a9cc6e3d1c79
 msgid "FORCE"
-msgstr ""
+msgstr "FORCE"
 
 #: ../../tutorials/biped.md 03918077e7b0426cbaa1a5bd0aaf50e4
 msgid "Take joint force and return the resulting joint acceleration."
-msgstr ""
+msgstr "조인트 힘을 받아 그에 따른 가속도를 반환합니다."
 
 #: ../../tutorials/biped.md eeadc62c9aae4df79b8f520396ebb1f1
 msgid "PASSIVE"
-msgstr ""
+msgstr "PASSIVE"
 
 #: ../../tutorials/biped.md fc2acb70203841b2b2fb09500a7b2829
 msgid ""
 "Take nothing (joint force = 0) and return the resulting joint "
 "acceleration."
-msgstr ""
+msgstr "입력 없이(조인트 힘=0) 발생하는 가속도를 반환합니다."
 
 #: ../../tutorials/biped.md 61d41d5ad03f4f3399f372a5fd1840df
 msgid "ACCELERATION"
-msgstr ""
+msgstr "ACCELERATION"
 
 #: ../../tutorials/biped.md 708fcd28e6614a018a66c12dc9d08c42
 msgid ""
