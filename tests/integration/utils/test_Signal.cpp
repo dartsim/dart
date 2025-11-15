@@ -366,3 +366,27 @@ TEST(Signal, FrameSignals)
 
   F3.setParentFrame(&F1);
 }
+
+//==============================================================================
+TEST(Signal, SelfDisconnectDuringRaise)
+{
+  constexpr int kNumTrials = 200;
+
+  for (int trial = 0; trial < kNumTrials; ++trial) {
+    Signal<void()> signal;
+
+    Connection self;
+    self = signal.connect([&]() { self.disconnect(); });
+
+    int callbackCount = 0;
+    auto other = signal.connect([&]() { ++callbackCount; });
+    DART_UNUSED(other);
+
+    EXPECT_EQ(signal.getNumConnections(), 2u);
+
+    signal.raise();
+
+    EXPECT_EQ(signal.getNumConnections(), 0u);
+    EXPECT_EQ(callbackCount, 1);
+  }
+}
