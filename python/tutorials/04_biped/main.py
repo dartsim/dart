@@ -157,7 +157,7 @@ def main():
     print(viewer.getInstructions())
 
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([3, 1.5, 3], [0, 0, 0], [0, 0, 0])
+    viewer.setCameraHomePosition([3, 1.5, 3], [0, 0, 0], [0, 0, 1])
     viewer.run()
 
 
