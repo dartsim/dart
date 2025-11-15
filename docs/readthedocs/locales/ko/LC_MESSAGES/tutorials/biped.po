@@ -23,11 +23,11 @@ msgstr ""
 
 #: ../../tutorials/biped.md:1 2547f515f49e44fe89eb3596263c71f6
 msgid "Biped"
-msgstr ""
+msgstr "이족 보행"
 
 #: ../../tutorials/biped.md:3 e3bd29b9be5c4d27b47bece670701249
 msgid "Overview"
-msgstr ""
+msgstr "개요"
 
 #: ../../tutorials/biped.md:4 f41d5e0be1d0493384ca9463610627cb
 msgid ""
@@ -35,26 +35,28 @@ msgid ""
 "developing controllers for bipedal or wheel-based robots. The tutorial "
 "consists of seven Lessons covering the following topics:"
 msgstr ""
+"이 튜토리얼은 이족 보행 혹은 바퀴 기반 로봇의 제어기를 개발할 때 유용한 DART의 동역학 기능을 "
+"소개합니다. 총 일곱 개 Lesson으로 구성되어 있으며 다음 주제를 다룹니다:"
 
 #: ../../tutorials/biped.md:8 a1dedac556824c9aa00e5e1755cfe952
 msgid "Joint limits and self-collision."
-msgstr ""
+msgstr "조인트 제한과 자충돌"
 
 #: ../../tutorials/biped.md:9 6c5e9f6ad2c14b86a918407fcbc1f5f7
 msgid "Actuators types and management."
-msgstr ""
+msgstr "액추에이터 유형과 관리"
 
 #: ../../tutorials/biped.md:10 ba88ad2e74aa4ea7acdefadb772f13b3
 msgid "APIs for Jacobian matrices and other kinematic quantities."
-msgstr ""
+msgstr "자코비안 및 기타 운동학량 API"
 
 #: ../../tutorials/biped.md:11 4860a513296e498481ff94f77cdaad0a
 msgid "APIs for dynamic quantities."
-msgstr ""
+msgstr "동역학량 API"
 
 #: ../../tutorials/biped.md:12 16e4c7a6dd4049789385e03b19e67184
 msgid "Skeleton editing."
-msgstr ""
+msgstr "스켈레톤 편집"
 
 #: ../../tutorials/biped.md:14 8aeaa3a4d9f24f0a962f941423a197f1
 msgid ""
@@ -64,10 +66,15 @@ msgid ""
 "Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
 "/tutorialBiped-Finished.cpp)."
 msgstr ""
+"자세한 구현은 "
+"[**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp)"
+" 와 "
+"[**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp)"
+" 를 참고하세요."
 
 #: ../../tutorials/biped.md:16 6a1e709324b943bda38250999077b9fe
 msgid "Lesson 1: Joint limits and self-collision"
-msgstr ""
+msgstr "Lesson 1: 조인트 제한과 자충돌"
 
 #: ../../tutorials/biped.md:17 fad6e5b3e7344c4ba5f8d6086a2242ed
 msgid ""
@@ -79,6 +86,11 @@ msgid ""
 "[**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel)"
 " and assign the bipedal figure to a ``Skeleton`` pointer called *biped*."
 msgstr ""
+"tutorialBiped.cpp에서 ``main`` 함수를 찾아보겠습니다. 먼저 바닥을 생성하고 ``loadBiped``를 "
+"호출하여 SKEL 형식(로봇 모델을 표현하는 XML 포맷)으로 정의된 이족 보행 모델을 불러옵니다. SKEL "
+"파일은 하나 이상의 ``Skeleton`` 을 포함한 ``World`` 를 묘사합니다. 여기서는 "
+"[**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel) 에서 "
+"World를 로드한 뒤 이족 보행 모델을 *biped* 라는 ``Skeleton`` 포인터에 할당합니다."
 
 #: ../../tutorials/biped.md:34 254e5203e7cf4033bf58ed89114e4da1
 msgid ""
@@ -87,6 +99,9 @@ msgid ""
 "on itself. Before we attempt to control the biped, let's first make the "
 "biped a bit more realistic by enforcing more human-like joint limits."
 msgstr ""
+"코드를 수정하지 않고 스켈레톤을 실행(스페이스바)하면 인간형 캐릭터가 바닥에 쓰러지면서 몸이 "
+"접히는 모습을 보게 됩니다. 이족 보행자를 제어하기 전에 좀 더 현실적인 인간 관절 제한을 적용해 "
+"모델을 다듬겠습니다."
 
 #: ../../tutorials/biped.md:39 ce577bfb2d8c4818853092dab940350b
 msgid ""
@@ -94,6 +109,8 @@ msgid ""
 "freedom in the SKEL file or using provided APIs. For example, you should "
 "see the description of the right knee joint in **biped.skel**:"
 msgstr ""
+"DART에서는 SKEL 파일이나 제공된 API를 사용해 각 자유도에 상한과 하한을 설정할 수 있습니다. "
+"예를 들어 **biped.skel** 에서 오른쪽 무릎 조인트 정의를 찾아보면:"
 
 #: ../../tutorials/biped.md:56 c020e15a3ab84bae977d0b00f36cca16
 msgid ""
@@ -102,12 +119,17 @@ msgid ""
 "in the code using ``setPositionUpperLimit`` and "
 "``setPositionLowerLimit``."
 msgstr ""
+"`<upper>` 와 `<lower>` 태그는 무릎이 굽혀지기만 하고 펴지지 않도록 보장합니다. 또는 "
+"``setPositionUpperLimit`` 와 ``setPositionLowerLimit`` 을 호출해 코드에서 직접 제한을 "
+"설정할 수도 있습니다."
 
 #: ../../tutorials/biped.md:61 c4b89e1939814dfeb118ce03197d2932
 msgid ""
 "In either case, the joint limits on the biped will not be activated until"
 " you call ``setPositionLimited``:"
 msgstr ""
+"어느 방법이든 ``setPositionLimited`` 를 호출하기 전까지는 이족 보행자의 조인트 제한이 "
+"적용되지 않습니다:"
 
 #: ../../tutorials/biped.md:73 378acde01ff24aec80ee697e806826c9
 msgid ""
@@ -115,6 +137,8 @@ msgid ""
 "collision. By default, DART does not check self-collision within a "
 "skeleton. You can enable self-collision checking on the biped by"
 msgstr ""
+"조인트 제한을 설정한 다음에는 자충돌을 강제해야 합니다. 기본적으로 DART는 스켈레톤 내부의 자충돌을 "
+"검사하지 않으므로, 다음 설정으로 이족 보행자에 대한 자충돌 검사를 활성화합니다:"
 
 #: ../../tutorials/biped.md:84 65b0739d8c8544a09bee73f8c973da22
 msgid ""
@@ -122,6 +146,8 @@ msgid ""
 "you wish to disable self-collisions on adjacent body nodes, call the "
 "following function"
 msgstr ""
+"위 함수는 모든 바디 노드 쌍에 대해 자충돌을 활성화합니다. 인접한 바디 노드 간 충돌을 제외하고 "
+"싶다면 다음 함수를 호출합니다."
 
 #: ../../tutorials/biped.md:90 705ca38b9cff41e6adb931a709d9b90d
 msgid ""
@@ -129,10 +155,12 @@ msgid ""
 "floppy like a ragdoll, but now the joints do not bend backward and the "
 "body nodes do not penetrate each other anymore."
 msgstr ""
+"프로그램을 다시 실행하면 캐릭터가 여전히 인형처럼 부드럽게 움직이지만, 이제 조인트가 뒤로 꺾이지 "
+"않고 바디 노드끼리 서로 관통하지 않습니다."
 
 #: ../../tutorials/biped.md:94 37b6ccf8260c4e5b89ea19bbb824dba5
 msgid "Lesson 2: Proportional-derivative control"
-msgstr ""
+msgstr "Lesson 2: 비례-미분(PD) 제어"
 
 #: ../../tutorials/biped.md:96 25ac503c810d40afa01fff2de3560660
 msgid ""
@@ -148,12 +176,22 @@ msgid ""
 "coefficients. The detailed description of a PD controller can be found "
 "[here](https://en.wikipedia.org/wiki/PID_controller)."
 msgstr ""
+"이족 보행자가 스스로 움직임을 제어하려면 액추에이터를 통해 내부 힘을 만들어야 합니다. 이번 "
+"Lesson에서는 목표 자세를 유지하기 위해 내부 힘을 생성하는 가장 단순한 제어기 중 하나를 설계해 "
+"보겠습니다. 비례-미분(PD) 제어는 &Tau; = -k<sub>p</sub> (&theta; - "
+"&theta;<sub>target</sub>) - k<sub>d</sub> &theta;&#775; 공식을 사용해 제어력을 계산합니다. "
+"&theta; 와 &theta;&#775; 는 특정 자유도의 현재 위치와 속도, &theta;<sub>target</sub> 은 "
+"제어기가 지정한 목표 위치, k<sub>p</sub> 와 k<sub>d</sub> 는 강성 및 감쇠 계수입니다. PD "
+"제어기에 대한 자세한 설명은 "
+"[여기](https://en.wikipedia.org/wiki/PID_controller)에서 확인할 수 있습니다."
 
 #: ../../tutorials/biped.md:108 c8a355775ee34b8884b8973bb9c8d430
 msgid ""
 "The first task is to set the biped to a particular configuration. You can"
 " use ``setPosition`` to set each degree of freedom individually:"
 msgstr ""
+"첫 번째 작업은 이족 보행자를 특정 자세로 맞추는 것입니다. 각 자유도를 개별적으로 설정하려면 "
+"``setPosition`` 을 사용할 수 있습니다:"
 
 #: ../../tutorials/biped.md:119 40b4442448114189baf05d5fe6b6d060
 msgid ""
@@ -163,12 +201,16 @@ msgid ""
 "the entire configuration using a vector that holds the positions of all "
 "the degreed of freedoms using ``setPositions``."
 msgstr ""
+"여기서는 \"j_thigh_left_z\" 자유도를 0.15 라디안으로 설정합니다. 스켈레톤의 각 자유도에는 "
+"``getIndexInSkeleton`` 으로 접근할 수 있는 인덱스가 있다는 점에 유의하세요. "
+"``setPositions`` 를 사용하면 모든 자유도의 위치를 담은 벡터로 전체 자세를 한 번에 지정할 수도 "
+"있습니다."
 
 #: ../../tutorials/biped.md:127 425b6b5ccfd34e60a936c9859582ba9f
 msgid ""
 "We continue to set more degrees of freedoms in the lower body to create a"
 " roughly stable standing pose."
-msgstr ""
+msgstr "이후 하반신의 자유도를 추가로 설정해 대략적인 안정 정지 자세를 구성합니다."
 
 #: ../../tutorials/biped.md:139 6af51d20437a4e42a00d156aa76cbdde
 msgid ""
@@ -177,6 +219,8 @@ msgid ""
 " to make this happen. Let's take a look at the constructor of our "
 "``Controller`` in the skeleton code:"
 msgstr ""
+"이제 이 구성에서 시뮬레이션을 시작하지만, 시뮬레이션이 진행되면 자세가 금방 무너집니다. 이를 유지하려면 "
+"제어기가 필요합니다. 스켈레톤 코드의 ``Controller`` 생성자를 살펴보면:"
 
 #: ../../tutorials/biped.md:164 5d8cd6c96d1f40a98fddb43c1af77c01
 msgid ""
@@ -188,6 +232,10 @@ msgid ""
 "end of the constructor, we set the target position of the PD controller "
 "to the current configuration of the biped."
 msgstr ""
+"여기서는 첫 여섯 자유도를 제외하고 임의로 강성과 감쇠 계수를 각각 1000과 50으로 둡니다. 전체 "
+"병진/회전 자유도는 액추에이터가 없으므로 루트의 처음 여섯 자유도는 내부 힘을 생성하지 않습니다. "
+"따라서 해당 계수는 0으로 설정합니다. 생성자 마지막에서는 PD 제어기의 목표 자세를 현재 이족 보행자 "
+"구성으로 초기화합니다."
 
 #: ../../tutorials/biped.md:172 df3ecb0f41eb4a1a8fc30b36a0a5b3fe
 msgid ""
@@ -195,12 +243,14 @@ msgid ""
 "controller and add them to the internal forces of biped using "
 "``setForces``:"
 msgstr ""
+"이제 이 설정을 바탕으로 PD 제어기가 생성하는 힘을 계산해 ``setForces`` 를 통해 이족 보행자의 "
+"내부 힘에 더할 수 있습니다:"
 
 #: ../../tutorials/biped.md:188 d3752f2112ff49aebde7b0eba30d7c82
 msgid ""
 "Note that the PD control force is *added* to the current internal force "
 "stored in mForces instead of overriding it."
-msgstr ""
+msgstr "PD 제어력이 기존 mForces 값에 덮어쓰이지 않고 *추가* 된다는 점을 기억하세요."
 
 #: ../../tutorials/biped.md:191 cb9e20250dbf4267a122c98a544bd230
 msgid ""
@@ -210,6 +260,9 @@ msgid ""
 "biped deviates from the target position, huge internal forces are "
 "generated to cause the numerical simulation to blow up."
 msgstr ""
+"프로그램을 다시 실행해 보면 스페이스바를 누르자마자 스켈레톤이 사라집니다! 강성과 감쇠 계수를 너무 "
+"크게 설정했기 때문입니다. 목표 자세에서 조금만 벗어나도 엄청난 내부 힘이 발생해 수치 시뮬레이션이 "
+"폭발적으로 발산하는 것입니다."
 
 #: ../../tutorials/biped.md:198 6083f91adcdb415d8323a32c70b6bb79
 msgid ""
@@ -222,6 +275,10 @@ msgid ""
 "next Lesson, we will introduce a much more efficient way to stabilize the"
 " PD controllers without endless tuning and trial-and-errors."
 msgstr ""
+"따라서 계수를 조금 낮춰야 합니다. 각 자유도는 바디 노드의 관성, 조인트 형태와 특성, 현재 구성 등 "
+"많은 요인에 따라 개별적으로 조정해야 합니다. 적절한 값을 찾는 과정은 새 작업이나 다른 스켈레톤에 "
+"일반화하기 어렵고 번거롭습니다. 다음 Lesson에서는 끝없는 튜닝 없이 PD 제어기를 안정화하는 더 "
+"효율적인 방법을 소개합니다."
 
 #: ../../tutorials/biped.md:208 4bf3fb25ba0743f2a37995734727018a
 msgid "Lesson 3: Stable PD control"
@@ -741,4 +798,3 @@ msgid ""
 "acceleration/deceleration on the skateboard, the biped is able to "
 "maintain balance and hold the one-foot stance pose."
 msgstr ""
-

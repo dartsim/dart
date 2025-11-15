@@ -31,7 +31,7 @@ msgstr "DART 내장 예제"
 
 #: ../../gallery.rst:8 f48c997c27bb479d8482160d3a5b1300
 msgid "Atlas Simbicon"
-msgstr ""
+msgstr "아틀라스 심비콘"
 
 #: ../../gallery.rst:10 0032f2c5483141aa9eba993dbfa0db9e
 msgid ""
@@ -50,7 +50,7 @@ msgstr ""
 "Simbicon은 간단한 양 다리 보행 제어기입니다. 이 데모는 관절 역학 및 강체 충돌이 있는 완전한 "
 "3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 "
 "버튼에는 ImGui를 사용합니다. 소스 코드는 examples/osg/osgAtlasSimbicon 디렉토리에서 찾을 "
-"수 있습니다.
+"수 있습니다."
 
 #: ../../gallery.rst:18 df61e363fc364b38be8908808f2d64a8
 msgid ""
@@ -93,7 +93,7 @@ msgstr "중력은 2D GUI의 슬라이더를 사용하여 변화시킬 수 있습
 
 #: ../../gallery.rst:39 85c4ac9887064bf180ac4c108f482bd6
 msgid "Tinkertoy"
-msgstr ""
+msgstr "팅커토이"
 
 #: ../../gallery.rst:41 602a8be8120d494bafa79151981b8f1a
 msgid ""
@@ -154,7 +154,7 @@ msgstr "중력은 2D GUI에서 토글하거나 G 키를 눌러서 변경할 수 
 
 #: ../../gallery.rst:77 3ff061e2115c49fc951f2cc5c340c3b1
 msgid "Examples on `Gazebo <http://www.gazebosim.org/>`_"
-msgstr ""
+msgstr "`Gazebo <http://www.gazebosim.org/>`_ 예제"
 
 #: ../../gallery.rst:79 7fc92f4f31d242d789a7ac8f59fcf9ea
 msgid ""
