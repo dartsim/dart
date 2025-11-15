@@ -4,7 +4,6 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
@@ -198,9 +197,3 @@ msgid ""
 msgstr ""
 "귀하의 프로젝트에서 DART를 사용하고 있고 이 목록에 추가되길 원하시면 GitHub 저장소에 풀 "
 "리퀘스트를 보내주세요."
-
-#~ msgid ""
-#~ "DART is used by a number of "
-#~ "software projects as backend physics "
-#~ "engine."
-#~ msgstr ""

@@ -51,8 +51,7 @@ using namespace dart::simulation;
 std::shared_ptr<World> createWorld()
 {
   auto world = simulation::World::create();
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::OdeCollisionDetector::create());
+  world->setCollisionDetector(collision::OdeCollisionDetector::create());
   return world;
 }
 
