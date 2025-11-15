@@ -133,7 +133,8 @@ ResolvedOptions resolveOptions(const Options& options)
 bool loadSdfRoot(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever,
-    sdf::Root& root);
+    sdf::Root& root,
+    std::shared_ptr<std::vector<std::filesystem::path>>& tempResources);
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 
@@ -462,10 +463,23 @@ void cleanupTemporaryResources(
   }
 }
 
+struct TemporaryResourceOwner
+{
+  TemporaryResourceOwner() = default;
+
+  ~TemporaryResourceOwner()
+  {
+    cleanupTemporaryResources(files);
+  }
+
+  std::shared_ptr<std::vector<std::filesystem::path>> files;
+};
+
 bool loadSdfRoot(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever,
-    sdf::Root& root)
+    sdf::Root& root,
+    std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
 {
   if (!retriever) {
     DART_WARN(
@@ -475,7 +489,7 @@ bool loadSdfRoot(
     return false;
   }
 
-  auto tempFiles = std::make_shared<std::vector<std::filesystem::path>>();
+  tempFiles = std::make_shared<std::vector<std::filesystem::path>>();
   sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
   config.SetFindCallback(
       [retriever, tempFiles](const std::string& requested) -> std::string {
@@ -494,17 +508,19 @@ bool loadSdfRoot(
       DART_WARN(
           "[SdfParser] Failed to read [{}]: {}.", uri.toString(), e.what());
       cleanupTemporaryResources(tempFiles);
+      tempFiles.reset();
       return false;
     }
     errors = root.LoadSdfString(content, config);
   }
 
   logSdformatErrors(errors, uri, "libsdformat reported an issue while loading");
-  cleanupTemporaryResources(tempFiles);
 
   if (root.Element() == nullptr) {
     DART_WARN(
         "[SdfParser] [{}] produced an empty SDF document.", uri.toString());
+    cleanupTemporaryResources(tempFiles);
+    tempFiles.reset();
     return false;
   }
 
@@ -1601,7 +1617,8 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   const auto resolvedOptions = resolveOptions(options);
 
   sdf::Root root;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root))
+  TemporaryResourceOwner tempResources;
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources.files))
     return nullptr;
 
   const ElementPtr sdfElement = root.Element();
@@ -1629,7 +1646,8 @@ dynamics::SkeletonPtr readSkeleton(
   const auto resolvedOptions = resolveOptions(options);
 
   sdf::Root root;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root))
+  TemporaryResourceOwner tempResources;
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources.files))
     return nullptr;
 
   const ElementPtr sdfElement = root.Element();
