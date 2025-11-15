@@ -95,6 +95,16 @@ public:
     mAccels = accels;
   }
 
+  const Eigen::VectorXd& peekGenVels() const
+  {
+    return mGenVels;
+  }
+
+  const Eigen::VectorXd& peekConfigs() const
+  {
+    return mConfigs;
+  }
+
   void resetCounters()
   {
     mConfigIntegrations = 0;
@@ -107,7 +117,7 @@ public:
 
   int mConfigIntegrations = 0;
   int mVelIntegrations = 0;
-  int mGetVelCalls = 0;
+  mutable int mGetVelCalls = 0;
   int mEvalAccCalls = 0;
   double mLastConfigDt = 0.0;
   double mLastVelDt = 0.0;
@@ -140,8 +150,8 @@ TEST(EulerIntegratorTests, IntegrateUpdatesConfigsThenVels)
   const double dt = 0.1;
   integrator.integrate(&system, dt);
 
-  EXPECT_NEAR(system.getConfigs()[0], 1.0 + 2.0 * dt, 1e-12);
-  EXPECT_NEAR(system.getGenVels()[0], 2.0 + (-3.0) * dt, 1e-12);
+  EXPECT_NEAR(system.peekConfigs()[0], 1.0 + 2.0 * dt, 1e-12);
+  EXPECT_NEAR(system.peekGenVels()[0], 2.0 + (-3.0) * dt, 1e-12);
   EXPECT_EQ(system.mConfigIntegrations, 1);
   EXPECT_EQ(system.mVelIntegrations, 1);
   EXPECT_EQ(system.mGetVelCalls, 1);
@@ -167,8 +177,8 @@ TEST(EulerIntegratorTests, IntegratePosUsesVelocitiesOnly)
   const double dt = 0.25;
   integrator.integratePos(&system, dt);
 
-  EXPECT_NEAR(system.getConfigs()[0], -5.0 + 4.0 * dt, 1e-12);
-  EXPECT_NEAR(system.getGenVels()[0], 4.0, 1e-12);
+  EXPECT_NEAR(system.peekConfigs()[0], -5.0 + 4.0 * dt, 1e-12);
+  EXPECT_NEAR(system.peekGenVels()[0], 4.0, 1e-12);
   EXPECT_EQ(system.mConfigIntegrations, 1);
   EXPECT_EQ(system.mVelIntegrations, 0);
   EXPECT_EQ(system.mGetVelCalls, 1);
@@ -192,7 +202,7 @@ TEST(EulerIntegratorTests, IntegrateVelUsesAccelerationsOnly)
   const double dt = 0.4;
   integrator.integrateVel(&system, dt);
 
-  EXPECT_NEAR(system.getGenVels()[0], -1.0 + 0.5 * dt, 1e-12);
+  EXPECT_NEAR(system.peekGenVels()[0], -1.0 + 0.5 * dt, 1e-12);
   EXPECT_EQ(system.mConfigIntegrations, 0);
   EXPECT_EQ(system.mVelIntegrations, 1);
   EXPECT_EQ(system.mGetVelCalls, 0);
