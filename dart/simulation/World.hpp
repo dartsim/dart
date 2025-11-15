@@ -85,7 +85,7 @@ namespace simulation {
 enum class CollisionDetectorType
 {
   Dart,
-  FCL,
+  Fcl,
   Bullet,
   Ode,
 };
@@ -97,7 +97,7 @@ struct WorldConfig final
   std::string name = "world";
 
   /// Preferred collision detector for the world.
-  CollisionDetectorType collisionDetector = CollisionDetectorType::FCL;
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}

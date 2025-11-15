@@ -443,7 +443,7 @@ TEST(World, TypedSetterConfiguresFclMeshPrimitive)
 
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Dart);
-  world->setCollisionDetector(CollisionDetectorType::FCL);
+  world->setCollisionDetector(CollisionDetectorType::Fcl);
 
   auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
       world->getCollisionDetector());

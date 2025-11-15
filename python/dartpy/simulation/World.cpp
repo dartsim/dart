@@ -47,7 +47,7 @@ void World(py::module& m)
   ::py::enum_<dart::simulation::CollisionDetectorType>(
       m, "CollisionDetectorType")
       .value("DART", dart::simulation::CollisionDetectorType::Dart)
-      .value("FCL", dart::simulation::CollisionDetectorType::FCL)
+      .value("FCL", dart::simulation::CollisionDetectorType::Fcl)
       .value("BULLET", dart::simulation::CollisionDetectorType::Bullet)
       .value("ODE", dart::simulation::CollisionDetectorType::Ode)
       .export_values();

@@ -84,7 +84,7 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
   switch (type) {
     case CollisionDetectorType::Dart:
       return "dart";
-    case CollisionDetectorType::FCL:
+    case CollisionDetectorType::Fcl:
       return "fcl";
     case CollisionDetectorType::Bullet:
       return "bullet";
@@ -134,14 +134,14 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   if (auto detector = tryCreateCollisionDetector(requestedType))
     return detector;
 
-  if (requestedType != CollisionDetectorType::FCL) {
+  if (requestedType != CollisionDetectorType::Fcl) {
     DART_WARN(
         "WorldConfig requested collision detector '{}', but it is not "
         "available. "
         "Falling back to the default 'fcl' detector.",
         requestedKey);
 
-    if (auto fallback = tryCreateCollisionDetector(CollisionDetectorType::FCL))
+    if (auto fallback = tryCreateCollisionDetector(CollisionDetectorType::Fcl))
       return fallback;
   }
 
