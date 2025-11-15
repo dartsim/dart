@@ -170,40 +170,16 @@ check-lint = { depends-on = [
     "check-lint-yaml",
 ] }
 
-build = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --parallel \
-        --target all
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-build-debug = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --parallel \
-        --target all
-""", depends-on = ["config-debug"], env = { BUILD_TYPE = "Debug" } }
-
-config-debug = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_DART8=ON \
-        -DDART_BUILD_DARTPY8={{ dartpy }} \
-        -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" }, args = [
+build = { cmd = ["bash", "-lc", """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+cmake \
+  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
+  --parallel \
+  --target all
+"""], depends-on = [{ task = "config", args = ["{{ dartpy }}", "{{ build_type }}"] }], args = [
     { arg = "dartpy", default = "ON" },
+    { arg = "build_type", default = "Release" }
 ] }
 
 config-asan = { cmd = ["bash", "-lc", """
