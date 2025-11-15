@@ -13,6 +13,7 @@
 #include "dynamics/meta_skeleton.hpp"
 #include "dynamics/prismatic_joint.hpp"
 #include "dynamics/revolute_joint.hpp"
+#include "dynamics/translational_joint2d.hpp"
 #include "dynamics/translational_joint.hpp"
 #include "dynamics/screw_joint.hpp"
 #include "dynamics/weld_joint.hpp"
@@ -31,6 +32,7 @@ void defDynamicsModule(nanobind::module_& m)
   defDegreeOfFreedom(m);
   defFreeJoint(m);
   defRevoluteJoint(m);
+  defTranslationalJoint2D(m);
   defPrismaticJoint(m);
   defTranslationalJoint(m);
   defScrewJoint(m);
