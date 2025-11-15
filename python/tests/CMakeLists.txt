@@ -151,8 +151,11 @@ endif()
 
 if(TARGET dartpy_nb)
   foreach(dartpy_test_file ${dartpy_nanobind_tests})
-    get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
-    dartpy_add_test(py_${dartpy_test_name} dartpy_nb ${dartpy_test_file}
-      WORKING_DIRECTORY ${dartpy_nb_tests_dir})
+    file(RELATIVE_PATH _dartpy_rel_path "${CMAKE_SOURCE_DIR}/python" "${dartpy_test_file}")
+    string(REGEX REPLACE "[^A-Za-z0-9_]" "_" _dartpy_rel_path "${_dartpy_rel_path}")
+    set(_dartpy_target_name "py_nb_${_dartpy_rel_path}")
+    get_filename_component(_dartpy_workdir "${dartpy_test_file}" DIRECTORY)
+    dartpy_add_test(${_dartpy_target_name} dartpy_nb ${dartpy_test_file}
+      WORKING_DIRECTORY ${_dartpy_workdir})
   endforeach()
 endif()
