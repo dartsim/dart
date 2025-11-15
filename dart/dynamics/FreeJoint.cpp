@@ -685,7 +685,6 @@ void FreeJoint::updateRelativeJacobianTimeDeriv() const
   const Eigen::Matrix3d dRt = -omegaSkew * Rt;
   mJacobianDeriv.rightCols<3>() = childBodyToJointAd.rightCols<3>() * dRt;
 }
-}
 
 //==============================================================================
 const Eigen::Isometry3d& FreeJoint::getQ() const
