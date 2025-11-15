@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   cancel-jobs:
-    name: Cancel workflows for merged or deleted branch
+    name: Automation | Cancel branch workflows
     if: github.event_name == 'pull_request' || github.event_name == 'delete'
     runs-on: ubuntu-latest
     steps:
