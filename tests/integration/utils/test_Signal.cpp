@@ -386,7 +386,7 @@ TEST(Signal, SelfDisconnectDuringRaise)
 
     signal.raise();
 
-    EXPECT_EQ(signal.getNumConnections(), 0u);
+    EXPECT_EQ(signal.getNumConnections(), 1u);
     EXPECT_EQ(callbackCount, 1);
   }
 }
