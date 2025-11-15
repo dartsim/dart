@@ -85,26 +85,23 @@ The `docs-build` task:
 3. Runs Sphinx autodoc to introspect and document the module
 4. Generates complete API documentation with all classes, methods, and type hints
 
-### Read the Docs ⚠️
+### Read the Docs ✅
 
-**Python API pages will be empty** on Read the Docs because:
-- dartpy is a C++ extension module that must be compiled
-- Read the Docs cannot compile C++ extensions during the build
-- The documentation structure and navigation will work, but API pages will show "Module not found"
+Read the Docs now installs the published `dartpy` wheels prior to running Sphinx, so
+the Python API pages render there as well. The `.readthedocs.yml` configuration runs
+`pip install "dartpy>=7.0.0.dev0" --pre` (Linux x86_64, CPython 3.12–3.14) and then
+invokes the same `docs-build` entry point as local builds. If a future release adds
+macOS/Windows wheels, update the requirements list accordingly so RTD continues to
+pull pre-built binaries instead of trying to compile pybind11 extensions on the fly.
 
-This is a **temporary limitation** until dartpy wheels are published to PyPI.
+### Future: keep wheels fresh 🎯
 
-### Future: Full Docs Everywhere 🎯
+To ensure documentation keeps working everywhere:
 
-To enable full Python API documentation on Read the Docs:
-
-1. **Set up cibuildwheel** in CI to build wheels for Linux/macOS/Windows
-2. **Publish dartpy wheels to PyPI** (or GitHub Releases)
-3. **Update `.readthedocs.yml`** to install dartpy from PyPI before building docs
-
-This is the industry-standard approach used by NumPy, PyTorch, TensorFlow, and other projects with C++ extensions.
-
-Until then: **Use local builds for complete documentation with Python API reference.**
+1. Keep cibuildwheel jobs green so every tagged release produces fresh wheels.
+2. Publish those wheels to PyPI (or a public index) before kicking off RTD builds.
+3. Periodically audit `.readthedocs.yml` so it tracks the latest compatible wheel
+   versions and Python ranges.
 
 ## Directory Structure
 
