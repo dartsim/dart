@@ -96,16 +96,10 @@ protected:
 
   /// Return false
   template <class NodeType>
-  static constexpr bool _isSpecializedForNode(type<NodeType>)
-  {
-    return false;
-  }
+  static constexpr bool _isSpecializedForNode(type<NodeType>);
 
   /// Return true
-  static constexpr bool _isSpecializedForNode(type<SpecNode>)
-  {
-    return true;
-  }
+  static constexpr bool _isSpecializedForNode(type<SpecNode>);
 
   /// Iterator that allows direct access to the specialized Nodes
   BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
@@ -200,16 +194,10 @@ protected:
 
   /// Return false
   template <class T>
-  static constexpr bool _isSpecializedForNode(type<T>)
-  {
-    return false;
-  }
+  static constexpr bool _isSpecializedForNode(type<T>);
 
   /// Return true
-  static constexpr bool _isSpecializedForNode(type<SpecNode>)
-  {
-    return true;
-  }
+  static constexpr bool _isSpecializedForNode(type<SpecNode>);
 
   /// std::vector of iterators that allow direct access to the specialized Nodes
   /// of each tree
