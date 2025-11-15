@@ -1,10 +1,10 @@
 #include "collision/collision_option.hpp"
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
-
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionOption.hpp"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 namespace nb = nanobind;
 
@@ -16,16 +16,31 @@ void defCollisionOption(nb::module_& m)
   using BodyNodeCollisionFilter = dart::collision::BodyNodeCollisionFilter;
   using CollisionOption = dart::collision::CollisionOption;
 
-  nb::class_<CollisionFilter, std::shared_ptr<CollisionFilter>>(m, "CollisionFilter");
+  nb::class_<CollisionFilter>(m, "CollisionFilter");
 
-  nb::class_<BodyNodeCollisionFilter, CollisionFilter, std::shared_ptr<BodyNodeCollisionFilter>>(m, "BodyNodeCollisionFilter")
+  nb::class_<BodyNodeCollisionFilter, CollisionFilter>(
+      m, "BodyNodeCollisionFilter")
       .def(nb::init<>())
-      .def("addBodyNodePairToBlackList", &BodyNodeCollisionFilter::addBodyNodePairToBlackList, nb::arg("bodyNode1"), nb::arg("bodyNode2"))
-      .def("removeBodyNodePairFromBlackList", &BodyNodeCollisionFilter::removeBodyNodePairFromBlackList, nb::arg("bodyNode1"), nb::arg("bodyNode2"))
-      .def("removeAllBodyNodePairsFromBlackList", &BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList);
+      .def(
+          "addBodyNodePairToBlackList",
+          &BodyNodeCollisionFilter::addBodyNodePairToBlackList,
+          nb::arg("bodyNode1"),
+          nb::arg("bodyNode2"))
+      .def(
+          "removeBodyNodePairFromBlackList",
+          &BodyNodeCollisionFilter::removeBodyNodePairFromBlackList,
+          nb::arg("bodyNode1"),
+          nb::arg("bodyNode2"))
+      .def(
+          "removeAllBodyNodePairsFromBlackList",
+          &BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList);
 
   nb::class_<CollisionOption>(m, "CollisionOption")
-      .def(nb::init<bool, std::size_t, const std::shared_ptr<CollisionFilter>&>(),
+      .def(
+          nb::init<
+              bool,
+              std::size_t,
+              const std::shared_ptr<CollisionFilter>&>(),
           nb::arg("enableContact") = true,
           nb::arg("maxNumContacts") = 1000u,
           nb::arg("collisionFilter") = nullptr)

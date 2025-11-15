@@ -1,11 +1,11 @@
 #include "common/resource.hpp"
 
+#include "dart/common/LocalResource.hpp"
+#include "dart/common/Resource.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-
-#include "dart/common/LocalResource.hpp"
-#include "dart/common/Resource.hpp"
 
 namespace nb = nanobind;
 
@@ -20,15 +20,20 @@ void defResource(nb::module_& m)
       .value("SEEKTYPE_END", Resource::SEEKTYPE_END)
       .value("SEEKTYPE_SET", Resource::SEEKTYPE_SET);
 
-  nb::class_<Resource, std::shared_ptr<Resource>>(m, "Resource")
+  nb::class_<Resource>(m, "Resource")
       .def("getSize", &Resource::getSize)
       .def("tell", &Resource::tell)
       .def("seek", &Resource::seek, nb::arg("offset"), nb::arg("origin"))
-      .def("read", &Resource::read, nb::arg("buffer"), nb::arg("size"), nb::arg("count"))
+      .def(
+          "read",
+          &Resource::read,
+          nb::arg("buffer"),
+          nb::arg("size"),
+          nb::arg("count"))
       .def("readAll", &Resource::readAll);
 
   using LocalResource = dart::common::LocalResource;
-  nb::class_<LocalResource, Resource, std::shared_ptr<LocalResource>>(m, "LocalResource")
+  nb::class_<LocalResource, Resource>(m, "LocalResource")
       .def(nb::init<const std::string&>(), nb::arg("path"))
       .def("isGood", &LocalResource::isGood);
 }

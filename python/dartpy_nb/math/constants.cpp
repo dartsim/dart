@@ -32,9 +32,9 @@
 
 #include "math/constants.hpp"
 
-#include <nanobind/nanobind.h>
-
 #include "dart/math/Constants.hpp"
+
+#include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
 
@@ -53,17 +53,15 @@ void defMathConstants(nb::module_& m)
   m.attr("min_val") = dart::math::min_val;
   m.attr("eps") = dart::math::eps;
 
-  m.def("deg2rad",
-      [](double degrees) {
-        return degrees * dart::math::pi / 180.0;
-      },
+  m.def(
+      "deg2rad",
+      [](double degrees) { return degrees * dart::math::pi / 180.0; },
       nb::arg("degrees"),
       "Convert degrees to radians using high-precision constants.");
 
-  m.def("rad2deg",
-      [](double radians) {
-        return radians * 180.0 / dart::math::pi;
-      },
+  m.def(
+      "rad2deg",
+      [](double radians) { return radians * 180.0 / dart::math::pi; },
       nb::arg("radians"),
       "Convert radians to degrees using high-precision constants.");
 }

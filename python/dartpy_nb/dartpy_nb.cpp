@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <nanobind/nanobind.h>
-
-#include "dart/config.hpp"
-#include "common/module.hpp"
 #include "collision/module.hpp"
+#include "common/module.hpp"
+#include "constraint/module.hpp"
+#include "dart/config.hpp"
 #include "dynamics/module.hpp"
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
-#include "constraint/module.hpp"
 #include "utils/module.hpp"
+
+#include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
 
@@ -54,25 +54,30 @@ NB_MODULE(dartpy_nb, m)
   m.attr("__version__") = DART_VERSION;
 #endif
 
-  auto common = m.def_submodule("common", "Common utilities backed by nanobind");
+  auto common
+      = m.def_submodule("common", "Common utilities backed by nanobind");
   dart::python_nb::defCommonModule(common);
 
   auto math = m.def_submodule("math", "Math utilities backed by nanobind");
   dart::python_nb::defMathModule(math);
 
-  auto dynamics = m.def_submodule("dynamics", "Dynamics utilities backed by nanobind");
+  auto dynamics
+      = m.def_submodule("dynamics", "Dynamics utilities backed by nanobind");
   dart::python_nb::defDynamicsModule(dynamics);
 
   auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
   dart::python_nb::defUtilsModule(utils);
 
-  auto collision = m.def_submodule("collision", "Collision utilities backed by nanobind");
+  auto collision
+      = m.def_submodule("collision", "Collision utilities backed by nanobind");
   dart::python_nb::defCollisionModule(collision);
 
-  auto simulation = m.def_submodule("simulation", "Simulation utilities backed by nanobind");
+  auto simulation = m.def_submodule(
+      "simulation", "Simulation utilities backed by nanobind");
   dart::python_nb::defSimulationModule(simulation);
 
-  auto constraint = m.def_submodule("constraint", "Constraint utilities backed by nanobind");
+  auto constraint = m.def_submodule(
+      "constraint", "Constraint utilities backed by nanobind");
   dart::python_nb::defConstraintModule(constraint);
 
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");

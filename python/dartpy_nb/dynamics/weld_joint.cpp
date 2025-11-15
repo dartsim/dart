@@ -1,11 +1,11 @@
 #include "dynamics/weld_joint.hpp"
 
+#include "dart/dynamics/WeldJoint.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-
-#include "dart/dynamics/WeldJoint.hpp"
 
 namespace nb = nanobind;
 
@@ -15,35 +15,37 @@ void defWeldJoint(nb::module_& m)
 {
   using WeldJoint = dart::dynamics::WeldJoint;
 
-  nb::class_<WeldJoint, dart::dynamics::ZeroDofJoint, std::shared_ptr<WeldJoint>>(m, "WeldJoint")
-      .def("getWeldJointProperties",
-          [](const WeldJoint& self) {
-            return self.getWeldJointProperties();
-          })
-      .def("getType",
+  nb::class_<WeldJoint, dart::dynamics::ZeroDofJoint>(m, "WeldJoint")
+      .def(
+          "getWeldJointProperties",
+          [](const WeldJoint& self) { return self.getWeldJointProperties(); })
+      .def(
+          "getType",
           [](const WeldJoint& self) -> const std::string& {
             return self.getType();
           },
           nb::rv_policy::reference_internal)
-      .def("isCyclic",
+      .def(
+          "isCyclic",
           [](const WeldJoint& self, std::size_t index) {
             return self.isCyclic(index);
           },
           nb::arg("index"))
-      .def("setTransformFromParentBodyNode",
+      .def(
+          "setTransformFromParentBodyNode",
           [](WeldJoint& self, const Eigen::Isometry3d& tf) {
             self.setTransformFromParentBodyNode(tf);
           },
           nb::arg("transform"))
-      .def("setTransformFromChildBodyNode",
+      .def(
+          "setTransformFromChildBodyNode",
           [](WeldJoint& self, const Eigen::Isometry3d& tf) {
             self.setTransformFromChildBodyNode(tf);
           },
           nb::arg("transform"))
-      .def_static("getStaticType",
-          []() -> const std::string& {
-            return WeldJoint::getStaticType();
-          },
+      .def_static(
+          "getStaticType",
+          []() -> const std::string& { return WeldJoint::getStaticType(); },
           nb::rv_policy::reference);
 }
 

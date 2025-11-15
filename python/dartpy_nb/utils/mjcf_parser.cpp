@@ -1,10 +1,10 @@
 #include "utils/mjcf_parser.hpp"
 
+#include "dart/utils/mjcf/MjcfParser.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-
-#include "dart/utils/mjcf/MjcfParser.hpp"
 
 namespace nb = nanobind;
 
@@ -18,13 +18,20 @@ void defMjcfParser(nb::module_& m)
 
   nb::class_<MjcfParser::Options>(sm, "Options")
       .def(
-          nb::init<const common::ResourceRetrieverPtr&, const std::string&, const std::string&>(),
+          nb::init<
+              const common::ResourceRetrieverPtr&,
+              const std::string&,
+              const std::string&>(),
           nb::arg("resourceRetretrieverOrNullptrriever") = nullptr,
           nb::arg("geomSkeletonNamePrefix") = "__geom_skel__",
           nb::arg("siteSkeletonNamePrefix") = "__site_skel__")
       .def_readwrite("mRetriever", &MjcfParser::Options::mRetriever)
-      .def_readwrite("mGeomSkeletonNamePrefix", &MjcfParser::Options::mGeomSkeletonNamePrefix)
-      .def_readwrite("mSiteSkeletonNamePrefix", &MjcfParser::Options::mSiteSkeletonNamePrefix);
+      .def_readwrite(
+          "mGeomSkeletonNamePrefix",
+          &MjcfParser::Options::mGeomSkeletonNamePrefix)
+      .def_readwrite(
+          "mSiteSkeletonNamePrefix",
+          &MjcfParser::Options::mSiteSkeletonNamePrefix);
 
   sm.def(
       "readWorld",
