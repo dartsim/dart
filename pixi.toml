@@ -455,6 +455,57 @@ py-ex-operational-space-control = { depends-on = [
   ] },
 ] }
 
+py-tu = { cmd = "python python/tutorials/{{ tutorial }}/{{ entry }}.py", depends-on = [
+  "build-py-dev",
+], args = [
+  { arg = "tutorial" },
+  { arg = "entry", default = "main" },
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
+
+py-tu-multi-pendulum = { depends-on = [
+  { task = "py-tu", args = [
+    "01_multi_pendulum",
+    "main",
+  ] },
+] }
+py-tu-multi-pendulum-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "01_multi_pendulum",
+    "main_finished",
+  ] },
+] }
+py-tu-collisions = { depends-on = [
+  { task = "py-tu", args = [
+    "02_collisions",
+    "main",
+  ] },
+] }
+py-tu-collisions-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "02_collisions",
+    "main_finished",
+  ] },
+] }
+py-tu-dominoes = { depends-on = [
+  { task = "py-tu", args = [
+    "03_dominoes",
+    "main",
+  ] },
+] }
+py-tu-dominoes-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "03_dominoes",
+    "main_finished",
+  ] },
+] }
+py-tu-biped = { depends-on = [{ task = "py-tu", args = ["04_biped", "main"] }] }
+py-tu-biped-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "04_biped",
+    "main_finished",
+  ] },
+] }
+
 py-ex-atlas-puppet = { depends-on = [
   { task = "py-ex", args = [
     "atlas_puppet",
@@ -881,7 +932,7 @@ wheel-upload-test-core = { cmd = "twine upload --repository testpypi dist/dartpy
 # Generate Python stub files for dartpy module (for IDE support)
 generate-stubs = { cmd = "python scripts/generate_stubs.py", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 # Build Read the Docs documentation (user guides, tutorials, developer docs)
 # No longer requires dartpy since API docs are on GitHub Pages
@@ -915,7 +966,7 @@ api-docs-cpp = { cmd = """
 
 # Build Python API documentation (Sphinx)
 api-docs-py = { cmd = """
-    export PYTHONPATH="$PWD/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PYTHONPATH" && \
+    export PYTHONPATH="$PWD/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH" && \
     cd docs/python_api && \
     rm -rf _build && \
     sphinx-build -b html . _build/html

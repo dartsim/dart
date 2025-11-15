@@ -40,8 +40,11 @@
   * Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
   * Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
 
+<<<<<<< HEAD
 * dartpy
   * Added bindings for `dynamics::EndEffector` (including the `Support` aspect) and exposed `BodyNode::createEndEffector`/`getEndEffector` plus the `Skeleton::getEndEffector` overloads to unblock the Atlas puppet Python example and IK tests.
+* Tutorials
+  * Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
 
 ## DART 6
 
