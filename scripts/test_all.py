@@ -20,6 +20,8 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from build_helpers import cmake_target_exists, get_build_dir
+
 
 def supports_unicode() -> bool:
     """Check if the terminal supports Unicode characters"""
@@ -77,21 +79,6 @@ def _cmake_option_enabled(option: str) -> Optional[bool]:
                 value = line.strip().split("=", maxsplit=1)[-1].upper()
                 return value == "ON"
     return None
-
-
-def _ninja_target_exists(build_type: str, target: str) -> Optional[bool]:
-    """Check if the Ninja generator defined a specific target."""
-    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
-    ninja_file = ROOT_DIR / "build" / env_name / "cpp" / build_type / "build.ninja"
-    if not ninja_file.is_file():
-        return None
-
-    pattern = f"build {target}:"
-    with ninja_file.open("r", encoding="utf-8", errors="ignore") as handle:
-        for line in handle:
-            if line.startswith(pattern):
-                return True
-    return False
 
 
 def pixi_command(task: str, *args: str) -> str:
@@ -301,11 +288,9 @@ def run_python_tests() -> bool:
         print_warning("Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF")
         return True
 
-    target_exists = _ninja_target_exists(build_type, "pytest")
-    if target_exists is False:
-        print_warning(
-            "Skipping python tests because Ninja target 'pytest' was not generated"
-        )
+    build_dir = get_build_dir(build_type)
+    if not cmake_target_exists(build_dir, build_type, "pytest"):
+        print_warning("Skipping python tests because target 'pytest' was not generated")
         return True
 
     # Check if Python bindings are enabled
@@ -332,10 +317,10 @@ def run_dartpy8_tests() -> bool:
         )
         return True
 
-    target_exists = _ninja_target_exists(build_type, "dartpy8")
-    if target_exists is False:
+    build_dir = get_build_dir(build_type)
+    if not cmake_target_exists(build_dir, build_type, "dartpy8"):
         print_warning(
-            "Skipping dartpy8 smoke test because Ninja target 'dartpy8' was not generated"
+            "Skipping dartpy8 smoke test because target 'dartpy8' was not generated"
         )
         return True
 
