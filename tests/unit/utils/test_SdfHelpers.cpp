@@ -10,6 +10,8 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 namespace detail = dart::utils::SdfParser::detail;
 
 namespace {
@@ -84,4 +86,102 @@ TEST(SdfDetailHelpers, ReadGeometrySphere)
   auto sphere = std::dynamic_pointer_cast<dart::dynamics::SphereShape>(shape);
   ASSERT_TRUE(sphere);
   EXPECT_DOUBLE_EQ(sphere->getRadius(), 0.25);
+}
+
+TEST(SdfDetailHelpers, ParsesAttributesScalarsAndEnumerators)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <world name='default'>
+        <gravity>-1.0 2.0 -9.3</gravity>
+        <model name='demo_model'>
+          <link name='demo_link'>
+            <pose>1 2 3 0 0 1.57079632679</pose>
+            <self_collide>true</self_collide>
+            <mass>1.5</mass>
+            <grid>1 2 3</grid>
+            <custom_array>4 5 6 7</custom_array>
+            <plane>0.3 0.4</plane>
+            <unknown_vector>0.1 0.2 0.3</unknown_vector>
+            <visual name='visual_one'>
+              <material>
+                <diffuse>0.2 0.4 0.6 0.8</diffuse>
+              </material>
+            </visual>
+            <visual name='visual_two'>
+              <pose>0 0 0 0 0 0</pose>
+            </visual>
+          </link>
+        </model>
+      </world>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+  const auto worldElement = detail::getElement(sdfElement, "world");
+  ASSERT_TRUE(worldElement);
+  const auto modelElement = detail::getElement(worldElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  EXPECT_EQ(detail::getAttributeString(linkElement, "name"), "demo_link");
+  EXPECT_EQ(detail::getAttributeString(linkElement, "missing"), "");
+  EXPECT_TRUE(detail::hasElement(linkElement, "visual"));
+  EXPECT_FALSE(detail::hasElement(linkElement, "does_not_exist"));
+
+  EXPECT_TRUE(detail::getValueBool(linkElement, "self_collide"));
+  EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "mass"), 1.5);
+
+  const Eigen::Vector3d grid
+      = detail::getValueVector3i(linkElement, "grid").cast<double>();
+  EXPECT_EQ(grid.x(), 1);
+  EXPECT_EQ(grid.y(), 2);
+  EXPECT_EQ(grid.z(), 3);
+
+  const Eigen::VectorXd array
+      = detail::getValueVectorXd(linkElement, "custom_array");
+  ASSERT_EQ(array.size(), 4);
+  EXPECT_DOUBLE_EQ(array[0], 4);
+  EXPECT_DOUBLE_EQ(array[3], 7);
+
+  const Eigen::Vector2d plane = detail::getValueVector2d(linkElement, "plane");
+  EXPECT_DOUBLE_EQ(plane.x(), 0.3);
+  EXPECT_DOUBLE_EQ(plane.y(), 0.4);
+
+  const Eigen::Vector3d gravity
+      = detail::getValueVector3d(worldElement, "gravity");
+  EXPECT_DOUBLE_EQ(gravity.x(), -1.0);
+  EXPECT_DOUBLE_EQ(gravity.y(), 2.0);
+  EXPECT_DOUBLE_EQ(gravity.z(), -9.3);
+
+  const Eigen::VectorXd unknown
+      = detail::getValueVectorXd(linkElement, "unknown_vector");
+  ASSERT_EQ(unknown.size(), 3);
+
+  const Eigen::Isometry3d pose
+      = detail::getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
+  EXPECT_NEAR(pose.translation().x(), 1.0, 1e-12);
+  EXPECT_NEAR(pose.translation().y(), 2.0, 1e-12);
+  EXPECT_NEAR(pose.translation().z(), 3.0, 1e-12);
+
+  detail::ElementEnumerator enumerator(linkElement, "visual");
+  std::vector<std::string> names;
+  while (enumerator.next()) {
+    names.emplace_back(detail::getAttributeString(enumerator.get(), "name"));
+  }
+
+  ASSERT_EQ(names.size(), 2u);
+  EXPECT_EQ(names[0], "visual_one");
+  EXPECT_EQ(names[1], "visual_two");
+
+  const auto visualOne = detail::getElement(linkElement, "visual");
+  ASSERT_TRUE(visualOne);
+  const auto material = detail::getElement(visualOne, "material");
+  ASSERT_TRUE(material);
+
+  const Eigen::VectorXd color = detail::getValueVectorXd(material, "diffuse");
+  ASSERT_EQ(color.size(), 4);
+  EXPECT_DOUBLE_EQ(color[0], 0.2);
+  EXPECT_DOUBLE_EQ(color[3], 0.8);
 }

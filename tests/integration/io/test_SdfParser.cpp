@@ -32,6 +32,9 @@
 
 #include "helpers/GTestUtils.hpp"
 
+#include "dart/common/Resource.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
@@ -46,6 +49,9 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <map>
+
+#include <cstring>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -53,6 +59,86 @@ using namespace dart::test;
 using namespace math;
 using namespace simulation;
 using namespace utils;
+
+namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data) : mData(std::move(data)), mOffset(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mOffset;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    std::size_t base = 0;
+    if (origin == SEEKTYPE_CUR)
+      base = mOffset;
+    else if (origin == SEEKTYPE_END)
+      base = mData.size();
+
+    const auto next = static_cast<long long>(base) + offset;
+    if (next < 0 || next > static_cast<long long>(mData.size()))
+      return false;
+
+    mOffset = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    const std::size_t bytes = size * count;
+    if (bytes == 0)
+      return 0;
+
+    const std::size_t available = mData.size() - mOffset;
+    const std::size_t toCopy = std::min(bytes, available);
+    std::memcpy(buffer, mData.data() + mOffset, toCopy);
+    mOffset += toCopy;
+    return toCopy / size;
+  }
+
+private:
+  std::string mData;
+  std::size_t mOffset;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  void add(const std::string& uri, std::string data)
+  {
+    mFiles.emplace(uri, std::move(data));
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return mFiles.count(uri.toString()) > 0;
+  }
+
+  ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    auto it = mFiles.find(uri.toString());
+    if (it == mFiles.end())
+      return nullptr;
+    return std::make_shared<MemoryResource>(it->second);
+  }
+
+private:
+  std::map<std::string, std::string> mFiles;
+};
+
+} // namespace
 
 //==============================================================================
 TEST(SdfParser, SDFSingleBodyWithoutJoint)
@@ -188,4 +274,63 @@ TEST(SdfParser, ReadMaterial)
         double diff = (color - expected_color).norm();
         EXPECT_LT(diff, 1e-4);
       });
+}
+
+//==============================================================================
+TEST(SdfParser, ReadsMeshesFromCustomRetriever)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+
+  const std::string meshUri = "mem://meshes/unit_box.obj";
+  const std::string meshData = R"(o Box
+v 0 0 0
+v 1 0 0
+v 0 1 0
+v 0 0 1
+f 1 2 3
+f 1 3 4
+)";
+
+  const std::string worldUri = "mem://worlds/mesh.world";
+  const std::string worldData = R"(
+<sdf version='1.10'>
+  <world name='default'>
+    <model name='mesh_model'>
+      <static>true</static>
+      <link name='mesh_link'>
+        <visual name='mesh_visual'>
+          <geometry>
+            <mesh>
+              <uri>)" + meshUri + R"(</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>)";
+
+  retriever->add(worldUri, worldData);
+  retriever->add(meshUri, meshData);
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+
+  WorldPtr world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world);
+  ASSERT_GT(world->getNumSkeletons(), 0u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton);
+
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body);
+
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape()))
+          foundMesh = true;
+      });
+  EXPECT_TRUE(foundMesh);
 }
