@@ -287,16 +287,12 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
                 rotation.set_rotation(rot_matrix)
 
             # Build new transform
-            new_tf.set_translation(translation)
+            new_tf.set_translation(old_tf.translation() + translation)
             new_tf.set_rotation(rotation.rotation() @ old_tf.rotation())
-            new_tf.set_translation(new_tf.translation() + old_tf.translation())
 
-            # Apply to free joint
-            positions = np.zeros(6)
-            positions[0:3] = new_tf.translation()
-            rot_vec = dart.math.matrixToEulerXYZ(new_tf.rotation())
-            positions[3:6] = rot_vec
-            free_joint.setPositions(positions)
+            # Apply to free joint – FreeJoint stores rotation first, translation last
+            positions = dart.dynamics.FreeJoint.convertToPositions(new_tf)
+            free_joint.setPositions(np.asarray(positions).reshape(-1))
 
         # Solve IK
         skel_ik = self.atlas.getIK(True)

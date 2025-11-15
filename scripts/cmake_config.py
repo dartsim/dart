@@ -8,6 +8,7 @@ It replaces the long embedded bash scripts in pixi.toml for better maintainabili
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,12 +19,7 @@ def get_compiler_launcher():
     launcher_defs = []
 
     if not os.environ.get("CMAKE_C_COMPILER_LAUNCHER"):
-        if (
-            subprocess.run(
-                ["which", "sccache"], capture_output=True, check=False
-            ).returncode
-            == 0
-        ):
+        if shutil.which("sccache"):
             launcher_defs.extend(
                 [
                     "-DCMAKE_C_COMPILER_LAUNCHER=sccache",
