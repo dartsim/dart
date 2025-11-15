@@ -225,10 +225,10 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
             print("Resetting to relaxed posture...")
             self.atlas.setPositions(self.rest_config)
             # Reset targets to current end effector positions
-            self.interactive_targets[0].setTransform(self.l_hand.getTransform())
-            self.interactive_targets[1].setTransform(self.r_hand.getTransform())
-            self.interactive_targets[2].setTransform(self.l_foot.getTransform())
-            self.interactive_targets[3].setTransform(self.r_foot.getTransform())
+            self.interactive_targets[0].setTransform(self.l_hand.getWorldTransform())
+            self.interactive_targets[1].setTransform(self.r_hand.getWorldTransform())
+            self.interactive_targets[2].setTransform(self.l_foot.getWorldTransform())
+            self.interactive_targets[3].setTransform(self.r_foot.getWorldTransform())
             print("Reset complete!")
             return True
 
