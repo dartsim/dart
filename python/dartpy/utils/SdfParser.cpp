@@ -46,8 +46,8 @@ void SdfParser(py::module& m)
   auto sm = m.def_submodule("SdfParser");
 
   ::py::enum_<utils::SdfParser::RootJointType>(sm, "RootJointType")
-      .value("FLOATING", utils::SdfParser::RootJointType::FLOATING)
-      .value("FIXED", utils::SdfParser::RootJointType::FIXED);
+      .value("Floating", utils::SdfParser::RootJointType::Floating)
+      .value("Fixed", utils::SdfParser::RootJointType::Fixed);
 
   ::py::class_<utils::SdfParser::Options>(sm, "Options")
       .def(
@@ -56,7 +56,7 @@ void SdfParser(py::module& m)
               utils::SdfParser::RootJointType>(),
           ::py::arg("resourceRetriever") = nullptr,
           ::py::arg("defaultRootJointType")
-          = utils::SdfParser::RootJointType::FLOATING)
+          = utils::SdfParser::RootJointType::Floating)
       .def_readwrite(
           "mResourceRetriever", &utils::SdfParser::Options::mResourceRetriever)
       .def_readwrite(

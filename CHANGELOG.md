@@ -7,6 +7,7 @@
 * Breaking Changes
   * Increased required C++ standard from C++17 to C++20
     * See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  * Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
 
 * Minimum Compiler Requirements
   * Linux: GCC 11.0+

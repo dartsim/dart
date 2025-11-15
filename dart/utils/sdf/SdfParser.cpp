@@ -610,13 +610,13 @@ dynamics::SkeletonPtr readSkeleton(
       continue;
     else if (CREATE_ROOT_JOINT == result) {
       SDFJoint rootJoint;
-      if (options.defaultRootJointType == RootJointType::FLOATING) {
+      if (options.defaultRootJointType == RootJointType::Floating) {
         // If a root FreeJoint is needed for the parent of the current joint,
         // then create it
         rootJoint.properties = dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", body->second.initTransform));
         rootJoint.type = "free";
-      } else if (options.defaultRootJointType == RootJointType::FIXED) {
+      } else if (options.defaultRootJointType == RootJointType::Fixed) {
         // If a root WeldJoint is needed for the parent of the current joint,
         // then create it
         rootJoint.properties = dynamics::WeldJoint::Properties::createShared(
