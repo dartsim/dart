@@ -115,6 +115,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
         # Lesson 4: Apply the ankle strategy for balance recovery.
 
         # Lesson 5: Visualize and apply the external push forces.
+        pass
 
     def set_external_force(self, force, duration=10):
         self.ext_force = force

@@ -78,9 +78,11 @@ class Controller:
         # Lesson 2c: Write a stable PD controller.
 
         # Lesson 2d: Compensate for gravity and Coriolis forces.
+        pass
 
     def set_operational_space_forces(self):
         # Lesson 3b: Build an operational space controller for the manipulator.
+        pass
 
 
 class DominoEventHandler(dart.gui.osg.GUIEventHandler):
@@ -149,9 +151,11 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
 
         # Lesson 1b: Use the collision detector to ensure the new domino
         #            does not intersect existing objects.
+        pass
 
     def delete_last_domino(self):
         # Lesson 1c: Remove the most recently created domino from the scene.
+        pass
 
 
 class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
