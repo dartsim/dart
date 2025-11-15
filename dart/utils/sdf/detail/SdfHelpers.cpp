@@ -32,11 +32,9 @@
 
 #include "dart/utils/sdf/detail/SdfHelpers.hpp"
 
-#if HAVE_SDFORMAT
+#include <dart/common/Uri.hpp>
 
-  #include <dart/common/Uri.hpp>
-
-  #include <gz/math/Quaternion.hh>
+#include <gz/math/Quaternion.hh>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -444,5 +442,3 @@ ElementPtr ElementEnumerator::get() const
 }
 
 } // namespace dart::utils::SdfParser::detail
-
-#endif // HAVE_SDFORMAT

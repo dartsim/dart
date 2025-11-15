@@ -1,16 +1,14 @@
 #include <dart/config.hpp>
 
-#if HAVE_SDFORMAT
+#include <dart/utils/sdf/detail/GeometryParsers.hpp>
+#include <dart/utils/sdf/detail/SdfHelpers.hpp>
 
-  #include <dart/utils/sdf/detail/GeometryParsers.hpp>
-  #include <dart/utils/sdf/detail/SdfHelpers.hpp>
+#include <dart/dynamics/SphereShape.hpp>
 
-  #include <dart/dynamics/SphereShape.hpp>
+#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
-  #include <dart/common/LocalResourceRetriever.hpp>
-  #include <dart/common/Uri.hpp>
-
-  #include <gtest/gtest.h>
+#include <gtest/gtest.h>
 
 namespace detail = dart::utils::SdfParser::detail;
 
@@ -87,5 +85,3 @@ TEST(SdfDetailHelpers, ReadGeometrySphere)
   ASSERT_TRUE(sphere);
   EXPECT_DOUBLE_EQ(sphere->getRadius(), 0.25);
 }
-
-#endif // HAVE_SDFORMAT

@@ -33,15 +33,11 @@
 #ifndef DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
 #define DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
 
-#include <dart/config.hpp>
+#include "dart/utils/sdf/detail/SdfHelpers.hpp"
 
-#if HAVE_SDFORMAT
+#include <dart/dynamics/Shape.hpp>
 
-  #include "dart/utils/sdf/detail/SdfHelpers.hpp"
-
-  #include <dart/dynamics/Shape.hpp>
-
-  #include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -51,7 +47,5 @@ dynamics::ShapePtr readGeometryShape(
     const common::ResourceRetrieverPtr& retriever);
 
 } // namespace dart::utils::SdfParser::detail
-
-#endif // HAVE_SDFORMAT
 
 #endif // DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_

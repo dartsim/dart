@@ -32,14 +32,12 @@
 
 #include "dart/utils/sdf/detail/GeometryParsers.hpp"
 
-#if HAVE_SDFORMAT
+#include "dart/common/Uri.hpp"
 
-  #include "dart/common/Uri.hpp"
-
-  #include <dart/dynamics/BoxShape.hpp>
-  #include <dart/dynamics/CylinderShape.hpp>
-  #include <dart/dynamics/MeshShape.hpp>
-  #include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/SphereShape.hpp>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -137,5 +135,3 @@ dynamics::ShapePtr readGeometryShape(
 }
 
 } // namespace dart::utils::SdfParser::detail
-
-#endif // HAVE_SDFORMAT

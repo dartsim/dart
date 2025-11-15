@@ -62,10 +62,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
+#include <sdf/sdf.hh>
 
-#if HAVE_SDFORMAT
-  #include <sdf/sdf.hh>
-#endif
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -93,8 +91,6 @@ Options::Options(
 {
   // Do nothing
 }
-
-#if HAVE_SDFORMAT
 
 namespace {
 
@@ -1653,28 +1649,6 @@ dynamics::SkeletonPtr readSkeleton(
 
   return readSkeleton(modelElement, uri, resolvedOptions);
 }
-
-#else // HAVE_SDFORMAT
-
-simulation::WorldPtr readWorld(const common::Uri& uri, const Options&)
-{
-  DART_WARN(
-      "[SdfParser] Unable to load [{}] because DART was built without "
-      "libsdformat.",
-      uri.toString());
-  return nullptr;
-}
-
-dynamics::SkeletonPtr readSkeleton(const common::Uri& uri, const Options&)
-{
-  DART_WARN(
-      "[SdfParser] Unable to load [{}] because DART was built without "
-      "libsdformat.",
-      uri.toString());
-  return nullptr;
-}
-
-#endif // HAVE_SDFORMAT
 
 } // namespace SdfParser
 

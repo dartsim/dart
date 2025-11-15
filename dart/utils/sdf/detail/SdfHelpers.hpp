@@ -35,33 +35,31 @@
 
 #include <dart/config.hpp>
 
-#if HAVE_SDFORMAT
+#include <dart/common/Logging.hpp>
+#include <dart/common/Macros.hpp>
 
-  #include <dart/common/Logging.hpp>
-  #include <dart/common/Macros.hpp>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-  #include <Eigen/Core>
-  #include <Eigen/Geometry>
+#if __has_include(<gz/math/Color.hh>)
+  #include <gz/math/Color.hh>
+  #include <gz/math/Pose3.hh>
+  #include <gz/math/Vector2.hh>
+  #include <gz/math/Vector3.hh>
+#else
+  #include <gz/math9/gz/math/Color.hh>
+  #include <gz/math9/gz/math/Pose3.hh>
+  #include <gz/math9/gz/math/Vector2.hh>
+  #include <gz/math9/gz/math/Vector3.hh>
+#endif
+#include <sdf/sdf.hh>
 
-  #if __has_include(<gz/math/Color.hh>)
-    #include <gz/math/Color.hh>
-    #include <gz/math/Pose3.hh>
-    #include <gz/math/Vector2.hh>
-    #include <gz/math/Vector3.hh>
-  #else
-    #include <gz/math9/gz/math/Color.hh>
-    #include <gz/math9/gz/math/Pose3.hh>
-    #include <gz/math9/gz/math/Vector2.hh>
-    #include <gz/math9/gz/math/Vector3.hh>
-  #endif
-  #include <sdf/sdf.hh>
+#include <algorithm>
+#include <sstream>
+#include <string>
+#include <vector>
 
-  #include <algorithm>
-  #include <sstream>
-  #include <string>
-  #include <vector>
-
-  #include <cctype>
+#include <cctype>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -175,7 +173,5 @@ private:
 };
 
 } // namespace dart::utils::SdfParser::detail
-
-#endif // HAVE_SDFORMAT
 
 #endif // DART_UTILS_SDF_DETAIL_SDFHELPERS_HPP_
