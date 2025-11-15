@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   pixi-update:
+    name: Maintenance | Update pixi.lock (${{ matrix.base }})
     runs-on: ubuntu-latest
     strategy:
       matrix:

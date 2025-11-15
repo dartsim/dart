@@ -39,7 +39,7 @@ concurrency:
 jobs:
   coverage:
     if: github.event_name != 'workflow_dispatch'
-    name: coverage
+    name: Coverage (Debug)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -89,7 +89,7 @@ jobs:
           fail_ci_if_error: false
 
   build-release:
-    name: Release
+    name: Release Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -139,7 +139,7 @@ jobs:
           pixi run install
 
   build-debug:
-    name: Debug
+    name: Debug Tests
     runs-on: ubuntu-latest
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:

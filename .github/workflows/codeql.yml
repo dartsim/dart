@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   analyze:
-    name: CodeQL (${{ matrix.language }})
+    name: Security | CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
     env:
       BUILD_TYPE: Release

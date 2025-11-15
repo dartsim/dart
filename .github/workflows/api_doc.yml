@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: API Documentation
+    name: Docs | Build API Reference
     runs-on: ubuntu-latest
     env:
       BUILD_TYPE: Release
@@ -117,6 +117,7 @@ jobs:
           python3 scripts/build_docs.py clean
 
   deploy:
+    name: Docs | Deploy API Reference
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: build
     runs-on: ubuntu-latest

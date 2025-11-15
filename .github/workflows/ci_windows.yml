@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.build_type }}
+    name: Tests (${{ matrix.build_type }})
     runs-on: windows-latest
     strategy:
       fail-fast: false

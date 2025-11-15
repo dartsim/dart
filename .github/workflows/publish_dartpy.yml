@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   build_wheels:
-    name: ${{ matrix.os }}-py${{ matrix.python-version }}
+    name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     # Note: No manylinux container used. All platforms use pixi environments.
     # Linux wheels: auditwheel auto-detects manylinux tag based on glibc symbols.
@@ -99,6 +99,7 @@ jobs:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
 
   upload_pypi:
+    name: Wheels | Publish to PyPI
     needs: [build_wheels]
     runs-on: ubuntu-latest
     # Publish all tagged versions (stable and dev) to production PyPI
