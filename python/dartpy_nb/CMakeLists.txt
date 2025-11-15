@@ -28,6 +28,11 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+# Ensure a Python interpreter/development environment is available. nanobind
+# requires `find_package(Python ...)` rather than `Python3`, so call it here
+# even though the rest of the project uses `Python3`.*
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
 # Determine Python site-packages directory if it is not already computed.
 if(NOT DEFINED PYTHON_SITE_PACKAGES)
   execute_process(COMMAND ${Python3_EXECUTABLE} -c
