@@ -48,6 +48,8 @@ dart_build_tests(
 dart_add_test("unit" test_ConstraintSolver constraint/test_ConstraintSolver.cpp)
 dart_add_test(
   "unit" test_JointLimitConstraint constraint/test_JointLimitConstraint.cpp)
+dart_add_test(
+  "unit" test_BalanceConstraint constraint/test_BalanceConstraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -89,3 +91,9 @@ if(TARGET dart)
   dart_add_test("unit" test_Convhull math/test_Convhull.cpp)
   target_link_libraries(test_Convhull dart)
 endif()
+
+# ==============================================================================
+# Integration Tests
+# ==============================================================================
+dart_add_test(
+  "unit" test_EulerIntegrator integration/test_EulerIntegrator.cpp)

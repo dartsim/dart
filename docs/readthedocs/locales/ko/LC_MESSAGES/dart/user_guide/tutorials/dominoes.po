@@ -4,560 +4,623 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
-"7.0.0-alpha0\n"
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit 7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-02-26 00:39-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.11.0\n"
 
 #: ../../user_guide/tutorials/dominoes.md:1 41244b1644f24b0d83d85be162deb35a
 msgid "Dominoes"
-msgstr ""
+msgstr "도미노"
 
 #: ../../user_guide/tutorials/dominoes.md:3 cca93cdc8bfe44b8a2c67d6a344254ff
 msgid "Overview"
-msgstr ""
+msgstr "개요"
 
 #: ../../user_guide/tutorials/dominoes.md:5 bedb3577a81a4c9cb001bd1d7c0989e2
 msgid ""
-"This tutorial will demonstrate some of the more advanced features of "
-"DART's dynamics API which allow you to write robust controllers that work"
-" for real dynamic systems, such as robotic manipulators. We will show you"
-" how to:"
+"This tutorial will demonstrate some of the more advanced features of DART's "
+"dynamics API which allow you to write robust controllers that work for real "
+"dynamic systems, such as robotic manipulators. We will show you how to:"
 msgstr ""
+"이 튜토리얼에서는 로봇 조작기와 같은 실제 동적 시스템에서 작동하는 강력한 컨트롤러를 작성할 수 있는 DART 역학 API의 고급 기능 "
+"중 일부를 보여줍니다. 다음 방법을 알려드리겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:9 3245afc3cc694b4583fd99d7b6ea9e24
 msgid "Clone Skeletons"
-msgstr ""
+msgstr "스켈레톤 복제"
 
 #: ../../user_guide/tutorials/dominoes.md:10 2f39d602978f4814b47b61575cc55988
 msgid "Load a URDF"
-msgstr ""
+msgstr "URDF 로드"
 
 #: ../../user_guide/tutorials/dominoes.md:11 5ffdab3c032f4cfa810193d428501db6
 msgid "Write a stable PD controller w/ gravity and coriolis compensation"
-msgstr ""
+msgstr "중력 및 코리올리 보상이 포함된 안정적인 PD 컨트롤러 작성"
 
 #: ../../user_guide/tutorials/dominoes.md:12 d13c973389214167a9d7182da058bc89
 msgid "Write an operational space controller"
-msgstr ""
+msgstr "운영 공간 컨트롤러 작성"
 
 #: ../../user_guide/tutorials/dominoes.md:14 74d1cd26b2bd4395a405cd4a14e662dd
 msgid ""
 "Please reference the source code in "
 "[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)"
 " and [**tutorialDominoes-"
-"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
-"/tutorialDominoes-Finished.cpp)."
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-"
+"Finished.cpp)."
 msgstr ""
+"[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)의"
+" 소스 코드를 참조하고 [**tutorialDominoes-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-"
+"Finished.cpp)."
 
 #: ../../user_guide/tutorials/dominoes.md:16 fcc3bac33bbe4e008dcce2f3345a4501
 msgid "Lesson 1: Cloning Skeletons"
-msgstr ""
+msgstr "1장: 스켈레톤 복제"
 
 #: ../../user_guide/tutorials/dominoes.md:18 7ad84f8e8ba84385811addcdbb44875f
 msgid ""
-"There are often times where you might want to create an exact replica of "
-"an existing Skeleton. DART offers cloning functionality that allows you "
-"to do this very easily."
+"There are often times where you might want to create an exact replica of an "
+"existing Skeleton. DART offers cloning functionality that allows you to do "
+"this very easily."
 msgstr ""
+"기존 스켈레톤의 정확한 복제본을 만들고 싶을 때가 종종 있습니다. DART는 이 작업을 매우 쉽게 수행할 수 있는 복제 기능을 "
+"제공합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:22 1a24e17176a341a994915102809d4dc3
 msgid "Lesson 1a: Create a new domino"
-msgstr ""
+msgstr "1a단원: 새 도미노 만들기"
 
 #: ../../user_guide/tutorials/dominoes.md:24 8d61e294e9284a0cba82daa1bac0adc9
 msgid ""
 "Creating a new domino is straightforward. Find the function "
-"``attemptToCreateDomino`` in the ``MyWindow`` class. The class has a "
-"member called ``mFirstDomino`` which is the original domino created when "
-"the program starts up. To make a new one, we can just clone it:"
+"``attemptToCreateDomino`` in the ``MyWindow`` class. The class has a member "
+"called ``mFirstDomino`` which is the original domino created when the "
+"program starts up. To make a new one, we can just clone it:"
 msgstr ""
+"새로운 도미노를 만드는 것은 간단합니다. ``MyWindow`` 클래스에서 ``attemptToCreateDomino`` 함수를 "
+"찾으세요. 클래스에는 프로그램이 시작될 때 생성되는 원래 도미노인 ``mFirstDomino``라는 멤버가 있습니다. 새로운 것을 "
+"만들려면 복제하면 됩니다."
 
 #: ../../user_guide/tutorials/dominoes.md:33 3fe6b16173a845b4a26b4edf671d6658
 msgid ""
-"But keep in mind that every Skeleton that gets added to a world requires "
-"its own unique name. Creating a clone will keep the original name, so we "
-"should we give the new copy its own name:"
+"But keep in mind that every Skeleton that gets added to a world requires its"
+" own unique name. Creating a clone will keep the original name, so we should"
+" we give the new copy its own name:"
 msgstr ""
+"하지만 세계에 추가되는 모든 스켈레톤에는 고유한 이름이 필요하다는 점을 명심하세요. 복제본을 생성하면 원래 이름이 유지되므로 새 복사본에"
+" 고유한 이름을 지정해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:41 073016bcdfca43a8b110a1d0d94ecce4
 msgid ""
 "So the easy part is finished, but now we need to get the domino to the "
-"correct position. First, let's grab the last domino that was placed in "
-"the environment:"
+"correct position. First, let's grab the last domino that was placed in the "
+"environment:"
 msgstr ""
+"이제 쉬운 부분은 끝났습니다. 이제 도미노를 올바른 위치로 가져와야 합니다. 먼저 환경에 배치된 마지막 도미노를 잡아 보겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:49 46c758626a534ef08c40124a98bc3e11
 msgid ""
 "Now we should compute what we want its position to be. The ``MyWindow`` "
-"class keeps a member called ``mTotalAngle`` which tracks how much the "
-"line of dominoes has turned so far. We'll use that to figure out what "
+"class keeps a member called ``mTotalAngle`` which tracks how much the line "
+"of dominoes has turned so far. We'll use that to figure out what "
 "translational offset the new domino should have from the last domino:"
 msgstr ""
+"이제 우리는 그 위치가 무엇인지 계산해야 합니다. ``MyWindow`` 클래스는 도미노 줄이 지금까지 얼마나 회전했는지 추적하는 "
+"``mTotalAngle``이라는 멤버를 유지합니다. 우리는 이를 사용하여 마지막 도미노에서 새 도미노가 가져야 하는 변환 오프셋을 "
+"파악합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:59 811303e39cb9499281d90d5efa5eefc4
 msgid ""
-"And now we can compute the total position of the new domino. First, we'll"
-" copy the positions of the last domino:"
-msgstr ""
+"And now we can compute the total position of the new domino. First, we'll "
+"copy the positions of the last domino:"
+msgstr "이제 새 도미노의 전체 위치를 계산할 수 있습니다. 먼저 마지막 도미노의 위치를 ​​복사합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:66 5d5600268dae448a84482edc7b231f00
 msgid "And then we'll add the translational offset to it:"
-msgstr ""
+msgstr "그런 다음 여기에 변환 오프셋을 추가합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:72 3094353e43f445f4a321d037c931bac8
 msgid ""
-"Remember that the domino's root joint is a FreeJoint which has six "
-"degrees of freedom: the first three are for orientation and last three "
-"are for translation."
+"Remember that the domino's root joint is a FreeJoint which has six degrees "
+"of freedom: the first three are for orientation and last three are for "
+"translation."
 msgstr ""
+"도미노의 루트 관절은 6개의 자유도를 갖는 FreeJoint라는 점을 기억하십시오. 처음 3개는 방향 지정을 위한 것이고 마지막 3개는 "
+"변환을 위한 것입니다."
 
 #: ../../user_guide/tutorials/dominoes.md:75 07ea24c1c13c4fa7828fc652cf77b62a
 msgid "Finally, we should add on the change in angle for the new domino:"
-msgstr ""
+msgstr "마지막으로 새 도미노의 각도 변경을 추가해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:81 65928001cc134c43aced62798c6c8a07
 msgid "Be sure to uncomment the ``angle`` argument of the function."
-msgstr ""
+msgstr "함수의 ``angle`` 인수의 주석 처리를 제거하세요."
 
 #: ../../user_guide/tutorials/dominoes.md:83 d0010784a9b245329e8af5fbc7855e8a
 msgid "Now we can use ``x`` to set the positions of the domino:"
-msgstr ""
+msgstr "이제 ``x``를 사용하여 도미노의 위치를 ​​설정할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:89 fc46ad5871294344ad26c379fa12433f
 msgid ""
 "The root FreeJoint is the only joint in the domino's Skeleton, so we can "
 "just use the ``Skeleton::setPositions`` function to set it."
 msgstr ""
+"루트 FreeJoint는 도미노 스켈레톤의 유일한 조인트이므로 ``Skeleton::setPositions`` 함수를 사용하여 설정할 수"
+" 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:92 4c3f4ceb19d04028b98963922d1d3668
 msgid "Now we'll add the Skeleton to the world:"
-msgstr ""
+msgstr "이제 Skeleton을 세계에 추가하겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:98 1cfbce6a201c4083b253d8938b3b3959
 msgid "Lesson 1b: Make sure no dominoes are in collision"
-msgstr ""
+msgstr "레슨 1b: 충돌하는 도미노가 없는지 확인"
 
 #: ../../user_guide/tutorials/dominoes.md:100 f13a6747a94545fd9f3712cba438f137
 msgid ""
-"Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to "
-"make sure that the newly inserted Skeleton is not starting out in "
-"collision with anything, because this could make for a very ugly (perhaps"
-" even broken) simulation."
+"Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to make "
+"sure that the newly inserted Skeleton is not starting out in collision with "
+"anything, because this could make for a very ugly (perhaps even broken) "
+"simulation."
 msgstr ""
+"**충돌** 튜토리얼의 **강의 3**과 비슷하게, 새로 삽입된 스켈레톤이 어떤 것과도 충돌하여 시작되지 않는지 확인해야 합니다. 이렇게"
+" 하면 매우 보기 흉한(어쩌면 깨질 수도 있는) 시뮬레이션이 될 수 있기 때문입니다."
 
 #: ../../user_guide/tutorials/dominoes.md:104 f06b84cb57004e30b5866950ac6339e6
 msgid "First, we'll tell the world to compute collisions:"
-msgstr ""
+msgstr "먼저, 우리는 충돌을 계산하도록 세계에 지시할 것입니다:"
 
 #: ../../user_guide/tutorials/dominoes.md:112 a13057b92d6d4ff8a8c5cfce72619fcd
 msgid ""
 "Now we'll look through and see if any dominoes are in collision with "
 "anything besides the floor. We ignore collisions with the floor because, "
 "mathemetically speaking, if they are in contact with the floor then they "
-"register as being in collision. But we want the dominoes to be in contact"
-" with the floor, so this is okay."
+"register as being in collision. But we want the dominoes to be in contact "
+"with the floor, so this is okay."
 msgstr ""
+"이제 바닥 이외의 물체와 충돌하는 도미노가 있는지 살펴보겠습니다. 우리는 바닥과의 충돌을 무시합니다. 수학적으로 말하면 바닥과 접촉하면 "
+"충돌이 발생한 것으로 등록되기 때문입니다. 하지만 우리는 도미노가 바닥에 닿기를 원하므로 괜찮습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:135 f96d6b3853aa4788869cdb85b969950b
 msgid ""
-"The only object that could possibly have collided with something else is "
-"the new domino, because we don't allow the application to create new "
-"things except for the dominoes. So if this registered as true, then we "
-"should take the new domino out of the world:"
+"The only object that could possibly have collided with something else is the"
+" new domino, because we don't allow the application to create new things "
+"except for the dominoes. So if this registered as true, then we should take "
+"the new domino out of the world:"
 msgstr ""
+"다른 것과 충돌할 수 있는 유일한 객체는 새로운 도미노입니다. 왜냐하면 우리는 애플리케이션이 도미노를 제외하고는 새로운 것을 생성하는 "
+"것을 허용하지 않기 때문입니다. 따라서 이것이 사실로 등록되면 우리는 새로운 도미노를 세상 밖으로 꺼내야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:148 56de87ba3b254303989a0a2cace02650
 msgid ""
-"Otherwise, if the new domino is in an okay position, we should add it to "
-"the history:"
-msgstr ""
+"Otherwise, if the new domino is in an okay position, we should add it to the"
+" history:"
+msgstr "그렇지 않고 새 도미노가 괜찮은 위치에 있으면 이를 기록에 추가해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:161 cd4cf46034d341b198c0e5d27d439a28
 msgid "Lesson 1c: Delete the last domino added"
-msgstr ""
+msgstr "1c단원: 추가된 마지막 도미노 삭제"
 
 #: ../../user_guide/tutorials/dominoes.md:163 7f48347329354870b1070c0b63c91aa9
 msgid ""
-"Ordinarily, removing a Skeleton from a scene is just a matter of calling "
-"the ``World::removeSkeleton`` function, but we have a little bit of "
-"bookkeeping to take care of for our particular application. First, we "
-"should check whether there are any dominoes to actually remove:"
+"Ordinarily, removing a Skeleton from a scene is just a matter of calling the"
+" ``World::removeSkeleton`` function, but we have a little bit of bookkeeping"
+" to take care of for our particular application. First, we should check "
+"whether there are any dominoes to actually remove:"
 msgstr ""
+"일반적으로 장면에서 스켈레톤을 제거하는 것은 ``World::removeSkeleton`` 함수를 호출하기만 하면 되지만 특정 "
+"애플리케이션에 대해 처리해야 할 약간의 기록이 있습니다. 먼저 실제로 제거할 도미노가 있는지 확인해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:175 1eeb295c899f469c8f4104a93a80d65d
 msgid ""
 "Then we should grab the last domino in the history, remove it from the "
 "history, and then take it out of the world:"
-msgstr ""
+msgstr "그런 다음 기록의 마지막 도미노를 잡고 기록에서 제거한 다음 세계에서 꺼내야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:184 6c05e0f529d34a6cace26ab5537b9a90
 msgid ""
-"The ``SkeletonPtr`` class is really a ``std::shared_ptr<Skeleton>`` so we"
-" don't need to worry about ever calling ``delete`` on it. Instead, its "
+"The ``SkeletonPtr`` class is really a ``std::shared_ptr<Skeleton>`` so we "
+"don't need to worry about ever calling ``delete`` on it. Instead, its "
 "resources will be freed when ``lastDomino`` goes out of scope."
 msgstr ""
+"``SkeletonPtr`` 클래스는 실제로 ``std::shared_ptr<Skeleton>``이므로 ``delete`` 호출에 대해 "
+"걱정할 필요가 없습니다. 대신, ``lastDomino``가 범위를 벗어나면 해당 리소스가 해제됩니다."
 
 #: ../../user_guide/tutorials/dominoes.md:188 2652f22297df4c30849247a85fa28138
 msgid "We should also make sure to do the bookkeepping for the angles:"
-msgstr ""
+msgstr "또한 각도에 대한 장부를 확인해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:195 61b8d449b3674d8abb3a230eacffd5aa
 msgid ""
-"**Now we can add and remove dominoes from the scene. Feel free to give it"
-" a try.**"
-msgstr ""
+"**Now we can add and remove dominoes from the scene. Feel free to give it a "
+"try.**"
+msgstr "**이제 장면에서 도미노를 추가하고 제거할 수 있습니다. 마음껏 시도해 보세요.**"
 
 #: ../../user_guide/tutorials/dominoes.md:197 c83e35b465fe491a82a60cbfa0418ef9
 msgid "Lesson 1d: Apply a force to the first domino"
-msgstr ""
+msgstr "1d단원: 첫 번째 도미노에 힘 적용"
 
 #: ../../user_guide/tutorials/dominoes.md:199 dff66c15a29048fdb0a17172aeeab39b
 msgid ""
-"But just setting up dominoes isn't much fun without being able to knock "
-"them down. We can quickly and easily knock down the dominoes by magically"
-" applying a force to the first one. In the ``timeStepping`` function of "
-"``MyWindow`` there is a label for **Lesson 1d**. This spot will get "
-"visited whenever the user presses 'f', so we'll apply an external force "
-"to the first domino here:"
+"But just setting up dominoes isn't much fun without being able to knock them"
+" down. We can quickly and easily knock down the dominoes by magically "
+"applying a force to the first one. In the ``timeStepping`` function of "
+"``MyWindow`` there is a label for **Lesson 1d**. This spot will get visited "
+"whenever the user presses 'f', so we'll apply an external force to the first"
+" domino here:"
 msgstr ""
+"하지만 도미노를 세우는 것만으로는 그것을 무너뜨릴 수 없으면 재미가 없습니다. 첫 번째 도미노에 마술처럼 힘을 가하면 빠르고 쉽게 "
+"도미노를 쓰러뜨릴 수 있습니다. ``MyWindow``의 ``timeStepping`` 기능에는 **Lesson 1d**라는 라벨이 "
+"있습니다. 이 지점은 사용자가 'f'를 누를 때마다 방문하므로 여기에서 첫 번째 도미노에 외부 힘을 적용하겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:212 0b11806d9e4b404fbae8796863c9b2db
 msgid "Lesson 2: Loading and controlling a robotic manipulator"
-msgstr ""
+msgstr "2단원: 로봇 매니퓰레이터 로드 및 제어"
 
 #: ../../user_guide/tutorials/dominoes.md:214 2a0e346856894f1d9ba3245f3c0fe5fd
 msgid ""
 "Striking something with a magical force is convenient, but not very "
-"believable. Instead, let's load a robotic manipulator and have it push "
-"over the first domino."
+"believable. Instead, let's load a robotic manipulator and have it push over "
+"the first domino."
 msgstr ""
+"마법의 힘으로 무언가를 치는 것은 편리하지만 그다지 믿기지 않습니다. 대신 로봇 조작기를 로드하여 첫 번째 도미노를 밀어보도록 "
+"하겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:217 a3c57f3a03cc4ec4abc77749bbae25d8
 msgid "Lesson 2a: Load a URDF file"
-msgstr ""
+msgstr "2a단원: URDF 파일 로드"
 
 #: ../../user_guide/tutorials/dominoes.md:219 0e5918531ec04abbb119ec3283c0daeb
 msgid ""
 "Our manipulator is going to be loaded from a URDF file. URDF files are "
-"loaded by the ``dart::io::DartLoader`` class (pending upcoming changes to"
-" DART's loading system). First, create a loader:"
+"loaded by the ``dart::io::DartLoader`` class (pending upcoming changes to "
+"DART's loading system). First, create a loader:"
 msgstr ""
+"조작자는 URDF 파일에서 로드됩니다. URDF 파일은 ``dart::io::DartLoader`` 클래스에 의해 로드됩니다(DART "
+"로딩 시스템에 대한 향후 변경 사항이 있을 때까지 대기 중). 먼저 로더를 만듭니다."
 
 #: ../../user_guide/tutorials/dominoes.md:227 abb6ff6c8bc34795b700b19dd969b455
 msgid ""
 "Note that many URDF files use ROS's ``package:`` scheme to specify the "
-"locations of the resources that need to be loaded. We won't be using this"
-" in our example, but in general you should use the function "
+"locations of the resources that need to be loaded. We won't be using this in"
+" our example, but in general you should use the function "
 "``DartLoader::addPackageDirectory`` to specify the locations of these "
-"packages, because DART does not have the same package resolving abilities"
-" of ROS."
+"packages, because DART does not have the same package resolving abilities of"
+" ROS."
 msgstr ""
+"많은 URDF 파일은 로드해야 하는 리소스의 위치를 ​​지정하기 위해 ROS의 ``package:`` 구성표를 사용합니다. 예제에서는 "
+"이것을 사용하지 않을 것이지만 일반적으로 DART에는 ROS와 동일한 패키지 확인 기능이 없기 때문에 "
+"``DartLoader::addPackageDirectory`` 함수를 사용하여 이러한 패키지의 위치를 ​​지정해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:233 0dbe6ce2f55c4027806f84f5ec6d65c5
 msgid "Now we'll have ``loader`` parse the file into a Skeleton:"
-msgstr ""
+msgstr "이제 ``loader``가 파일을 Skeleton으로 구문 분석하게 됩니다:"
 
 #: ../../user_guide/tutorials/dominoes.md:240 a8815b0090ee4ba08a31a8bfa936a716
 msgid "And we should give the Skeleton a convenient name:"
-msgstr ""
+msgstr "그리고 Skeleton에 편리한 이름을 지정해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:246 faeefdf1da2643889e4e7b90eab34550
 msgid ""
 "Now we'll want to initialize the location and configuration of the "
-"manipulator. Experimentation has demonstrated that the following setup is"
-" good for our purposes:"
-msgstr ""
+"manipulator. Experimentation has demonstrated that the following setup is "
+"good for our purposes:"
+msgstr "이제 조작기의 위치와 구성을 초기화하겠습니다. 실험을 통해 다음 설정이 우리의 목적에 적합한 것으로 나타났습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:260 d5894096ec344d23addde64ec582cd8e
 msgid ""
-"And lastly, be sure to return the Skeleton that we loaded rather than the"
-" dummy Skeleton that was originally there:"
-msgstr ""
+"And lastly, be sure to return the Skeleton that we loaded rather than the "
+"dummy Skeleton that was originally there:"
+msgstr "그리고 마지막으로 원래 있던 더미 스켈레톤 대신 로드한 스켈레톤을 반환해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:267 a9dcd8b0faca432b92c73bbbab596c3c
 msgid ""
-"**Feel free to load up the application to see the manipulator in the "
-"scene, although all it will be able to do is collapse pitifully onto the "
-"floor.**"
+"**Feel free to load up the application to see the manipulator in the scene, "
+"although all it will be able to do is collapse pitifully onto the floor.**"
 msgstr ""
+"**현장에서 조작기를 보려면 자유롭게 애플리케이션을 로드하세요. 하지만 할 수 있는 일은 불쌍하게도 바닥에 쓰러지는 것뿐입니다.**"
 
 #: ../../user_guide/tutorials/dominoes.md:270 d0c664415762457bb19427fa18591f0f
 msgid "Lesson 2b: Grab the desired joint angles"
-msgstr ""
+msgstr "2b강: 원하는 관절 각도 잡기"
 
 #: ../../user_guide/tutorials/dominoes.md:272 53f9c9a421db45368a33e41a9d181b93
 msgid ""
 "To make the manipulator actually useful, we'll want to have the "
 "``Controller`` control its joint forces. For it to do that, the "
 "``Controller`` class will need to be informed of what we want the "
-"manipulator's joint angles to be. This is  easily done in the constructor"
-" of the ``Controller`` class:"
+"manipulator's joint angles to be. This is  easily done in the constructor of"
+" the ``Controller`` class:"
 msgstr ""
+"매니퓰레이터를 실제로 유용하게 만들려면 ``컨트롤러``가 관절 힘을 제어하도록 해야 합니다. 이를 위해서는 조작자의 관절 각도가 "
+"무엇인지를 ``Controller`` 클래스에 알려야 합니다. 이는 ``Controller`` 클래스의 생성자에서 쉽게 수행됩니다."
 
 #: ../../user_guide/tutorials/dominoes.md:281 7b0a33a78ee94f909e4eed05d5b0f5e9
 msgid ""
 "The function ``Skeleton::getPositions`` will get all the generalized "
-"coordinate positions of all the joints in the Skeleton, stacked in a "
-"single vector. These Skeleton API functions are useful when commanding or"
-" controlling an entire Skeleton with a single mathematical expression."
+"coordinate positions of all the joints in the Skeleton, stacked in a single "
+"vector. These Skeleton API functions are useful when commanding or "
+"controlling an entire Skeleton with a single mathematical expression."
 msgstr ""
+"``Skeleton::getPositions`` 함수는 단일 벡터에 쌓인 Skeleton의 모든 관절의 일반화된 좌표 위치를 모두 "
+"가져옵니다. 이러한 스켈레톤 API 함수는 단일 수식으로 전체 스켈레톤에 명령을 내리거나 제어할 때 유용합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:286 78e24961cbc94540bd366da50ac2e909
 msgid "Lesson 2c: Write a stable PD controller for the manipulator"
-msgstr ""
+msgstr "2c단원: 조작기를 위한 안정적인 PD 컨트롤러 작성"
 
 #: ../../user_guide/tutorials/dominoes.md:288 a09e643268d141abb9d9ca68e50d5d4d
 msgid ""
-"Now that we know what configuration we want the manipulator to hold, we "
-"can write a PD controller that keeps them in place. Find the function "
+"Now that we know what configuration we want the manipulator to hold, we can "
+"write a PD controller that keeps them in place. Find the function "
 "``setPDForces`` in the ``Controller`` class."
 msgstr ""
+"이제 매니퓰레이터가 어떤 구성을 유지해야 하는지 알았으므로 이를 제자리에 유지하는 PD 컨트롤러를 작성할 수 있습니다. "
+"``Controller`` 클래스에서 ``setPDForces`` 함수를 찾으세요."
 
 #: ../../user_guide/tutorials/dominoes.md:292 52d75ac6ea2e4d99899510e8e199fd5b
 msgid "First, we'll grab the current positions and velocities:"
-msgstr ""
+msgstr "먼저 현재 위치와 속도를 파악합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:299 29e7bf34f28a43878406dd570742ce69
 msgid "Additionally, we'll integrate the position forward by one timestep:"
-msgstr ""
+msgstr "또한 한 단계씩 앞으로 위치를 통합합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:305 c5060c0cb9d2445c88b16ff280a64bf6
 msgid ""
-"This is not necessary for writing a regular PD controller, but instead "
-"this is to write a \"stable PD\" controller which has some better "
-"numerical stability properties than an ordinary discrete PD controller. "
-"You can try running with and without this line to see what effect it has "
-"on the stability."
+"This is not necessary for writing a regular PD controller, but instead this "
+"is to write a \"stable PD\" controller which has some better numerical "
+"stability properties than an ordinary discrete PD controller. You can try "
+"running with and without this line to see what effect it has on the "
+"stability."
 msgstr ""
+"이는 일반 PD 컨트롤러를 작성하는 데 필요하지 않지만 대신 일반 개별 PD 컨트롤러보다 수치적 안정성이 더 나은 \"안정적인 PD\" "
+"컨트롤러를 작성하는 것입니다. 이 선을 사용하거나 사용하지 않고 실행하여 안정성에 어떤 영향을 미치는지 확인할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:310 ec71733c6c3d4a0fb44dd08f8b12e26a
 msgid "Now we'll compute our joint position error:"
-msgstr ""
+msgstr "이제 관절 위치 오류를 계산하겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:316 2fa45539ed2c47c18f95caf14a2b1846
-msgid "And our joint velocity error, assuming our desired joint velocity is zero:"
-msgstr ""
+msgid ""
+"And our joint velocity error, assuming our desired joint velocity is zero:"
+msgstr "그리고 원하는 관절 속도가 0이라고 가정할 때 관절 속도 오류는 다음과 같습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:322 a689a36d2cae40d194f9bb6aa2a7d178
 msgid ""
-"Now we can grab our mass matrix, which we will use to scale our force "
-"terms:"
-msgstr ""
+"Now we can grab our mass matrix, which we will use to scale our force terms:"
+msgstr "이제 힘 항의 크기를 조정하는 데 사용할 질량 매트릭스를 얻을 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:328 e1f28f67cbcf4d519c4b2916a0234d83
 msgid ""
 "And then combine all this into a PD controller that computes forces to "
 "minimize our error:"
-msgstr ""
+msgstr "그런 다음 이 모든 것을 힘을 계산하여 오류를 최소화하는 PD 컨트롤러로 결합합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:335 40644f93a464486db80143a1c7672456
 msgid "Now we're ready to set these forces on the manipulator:"
-msgstr ""
+msgstr "이제 조작기에 이러한 힘을 설정할 준비가 되었습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:341 d99842f3571240f3b99d4a0432beb9dd
-msgid "**Feel free to give this PD controller a try to see how effective it is.**"
-msgstr ""
+msgid ""
+"**Feel free to give this PD controller a try to see how effective it is.**"
+msgstr "**이 PD 컨트롤러가 얼마나 효과적인지 직접 시험해 보십시오.**"
 
 #: ../../user_guide/tutorials/dominoes.md:343 79b0eff36428442babc8550485699b67
 msgid "Lesson 2d: Compensate for gravity and Coriolis forces"
-msgstr ""
+msgstr "2d단원: 중력과 코리올리 힘 보상"
 
 #: ../../user_guide/tutorials/dominoes.md:345 970d4fb3fe374682a4f7a577d08048ab
 msgid ""
-"One of the key features of DART is the ability to easily compute the "
-"gravity and Coriolis forces, allowing you to write much higher quality "
-"controllers than you would be able to otherwise. This is easily done like"
-" so:"
+"One of the key features of DART is the ability to easily compute the gravity"
+" and Coriolis forces, allowing you to write much higher quality controllers "
+"than you would be able to otherwise. This is easily done like so:"
 msgstr ""
+"DART의 주요 기능 중 하나는 중력과 코리올리 힘을 쉽게 계산할 수 있는 기능으로, 이를 통해 다른 방법보다 훨씬 더 높은 품질의 "
+"컨트롤러를 작성할 수 있습니다. 이는 다음과 같이 쉽게 수행됩니다."
 
 #: ../../user_guide/tutorials/dominoes.md:353 d4740c2d7cab41578be2f5d926c8370e
 msgid ""
-"And now we can update our control law by just slapping this term onto the"
-" end of the equation:"
-msgstr ""
+"And now we can update our control law by just slapping this term onto the "
+"end of the equation:"
+msgstr "이제 이 항을 방정식 끝에 추가하여 제어 법칙을 업데이트할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:360 87ce0f8926954582a9d6843d98313c3d
 msgid ""
-"**Give this new PD controller a try to see how its performance compares "
-"to the one without compensation**"
-msgstr ""
+"**Give this new PD controller a try to see how its performance compares to "
+"the one without compensation**"
+msgstr "**이 새로운 PD 컨트롤러를 보상이 없는 것과 비교하여 성능이 어떤지 확인해 보십시오**"
 
 #: ../../user_guide/tutorials/dominoes.md:363 ff06334127db4a9f99f7636bc33efcc9
 msgid "Lesson 3: Writing an operational space controller"
-msgstr ""
+msgstr "학습 3: 운영 공간 컨트롤러 작성"
 
 #: ../../user_guide/tutorials/dominoes.md:365 2c637e58dd9e4983959401fc503573d8
 msgid ""
-"While PD controllers are simply and handy, operational space controllers "
-"can be much more elegant and useful for performing tasks. Operational "
-"space controllers allow us to unify geometric tasks (like getting the end"
-" effector to a particular spot) and dynamics tasks (like applying a "
-"certain force with the end effector) all while remaining stable and "
-"smooth."
+"While PD controllers are simply and handy, operational space controllers can"
+" be much more elegant and useful for performing tasks. Operational space "
+"controllers allow us to unify geometric tasks (like getting the end effector"
+" to a particular spot) and dynamics tasks (like applying a certain force "
+"with the end effector) all while remaining stable and smooth."
 msgstr ""
+"PD 컨트롤러는 간단하고 편리하지만, 운영 공간 컨트롤러는 작업 수행에 훨씬 더 우아하고 유용할 수 있습니다. 작동 공간 컨트롤러를 "
+"사용하면 기하학적 작업(예: 엔드 이펙터를 특정 지점으로 이동하는 것)과 역학 작업(예: 엔드 이펙터에 특정 힘을 적용하는 것)을 모두 "
+"안정적이고 원활하게 유지하면서 통합할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:371 bc895c9ecce44256828386a827ed8283
 msgid "Lesson 3a: Set up the information needed for an OS controller"
-msgstr ""
+msgstr "3a단원: OS 컨트롤러에 필요한 정보 설정"
 
 #: ../../user_guide/tutorials/dominoes.md:373 0f27599933e04105b37745a39809ec53
 msgid ""
 "Unlike PD controllers, an operational space controller needs more "
 "information than just desired joint angles."
-msgstr ""
+msgstr "PD 컨트롤러와 달리 운영 공간 컨트롤러에는 원하는 관절 각도보다 더 많은 정보가 필요합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:376 e1cc716532c7412e85582de167ad35cc
 msgid ""
-"First, we'll grab the last BodyNode on the manipulator and treat it as an"
-" end effector:"
-msgstr ""
+"First, we'll grab the last BodyNode on the manipulator and treat it as an "
+"end effector:"
+msgstr "먼저 조작기의 마지막 BodyNode를 잡고 이를 엔드 이펙터로 처리합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:383 bb45e3d1d7ba4685bb64da856749cc2e
 msgid ""
-"But we don't want to use the origin of the BodyNode frame as the origin "
-"of our Operational Space controller; instead we want to use a slight "
-"offset, to get to the tool area of the last BodyNode:"
+"But we don't want to use the origin of the BodyNode frame as the origin of "
+"our Operational Space controller; instead we want to use a slight offset, to"
+" get to the tool area of the last BodyNode:"
 msgstr ""
+"그러나 우리는 BodyNode 프레임의 원점을 Operational Space 컨트롤러의 원점으로 사용하고 싶지 않습니다. 대신 마지막 "
+"BodyNode의 도구 영역에 도달하기 위해 약간의 오프셋을 사용하려고 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:391 ba60c577d3f6429099585efb9de1c0cb
 msgid ""
 "Also, our target will be the spot on top of the first domino, so we'll "
-"create a reference frame and place it there. First, create the "
-"SimpleFrame:"
+"create a reference frame and place it there. First, create the SimpleFrame:"
 msgstr ""
+"또한 우리의 목표는 첫 번째 도미노의 꼭대기 지점이 될 것이기 때문에 참조 프레임을 만들어 거기에 배치할 것입니다. 먼저 "
+"SimpleFrame을 만듭니다."
 
 #: ../../user_guide/tutorials/dominoes.md:398 3cbd20a32d5948d38baab9b35aea73bf
 msgid ""
-"Then compute the transform needed to get from the center of the domino to"
-" the top of the domino:"
-msgstr ""
+"Then compute the transform needed to get from the center of the domino to "
+"the top of the domino:"
+msgstr "그런 다음 도미노 중앙에서 도미노 꼭대기까지 이동하는 데 필요한 변환을 계산합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:407 231f7842270449e2b35580a0074841fa
 msgid ""
-"And then we should rotate the target's coordinate frame to make sure that"
-" lines up with the end effector's reference frame, otherwise the "
-"manipulator might try to push on the domino from a very strange angle:"
+"And then we should rotate the target's coordinate frame to make sure that "
+"lines up with the end effector's reference frame, otherwise the manipulator "
+"might try to push on the domino from a very strange angle:"
 msgstr ""
+"그런 다음 대상의 좌표계를 회전하여 엔드 이펙터의 참조 프레임과 일치하는지 확인해야 합니다. 그렇지 않으면 조작자가 매우 이상한 각도에서"
+" 도미노를 밀려고 할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:416 2b4e0a28086842e986d15358fe337e04
 msgid ""
 "Now we'll set the target so that it has a transform of ``target_offset`` "
 "with respect to the frame of the domino:"
-msgstr ""
+msgstr "이제 도미노의 프레임에 대해 ``target_offset`` 변환을 갖도록 대상을 설정하겠습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:423 546b1cf5865749ba990ded14d32704ba
 msgid ""
-"And this gives us all the information we need to write an Operational "
-"Space controller."
-msgstr ""
+"And this gives us all the information we need to write an Operational Space "
+"controller."
+msgstr "이는 Operational Space 컨트롤러를 작성하는 데 필요한 모든 정보를 제공합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:426 0bfab774c92a40a0938e0b2c1b84c915
 msgid "Lesson 3b: Computing forces for OS Controller"
-msgstr ""
+msgstr "3b단원: OS 컨트롤러의 컴퓨팅 성능"
 
 #: ../../user_guide/tutorials/dominoes.md:428 a39a849b2ca9403791dd1d1a22e921c9
 msgid ""
 "Find the function ``setOperationalSpaceForces()``. This is where we'll "
 "compute the forces for our operational space controller."
-msgstr ""
+msgstr "``setOperationalSpaceForces()`` 함수를 찾으세요. 여기서는 작전 공간 컨트롤러의 힘을 계산합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:431 9d2b863d1ec34cd6b25dd410917217af
 msgid ""
-"One of the key ingredients in an operational space controller is the mass"
-" matrix. We can get this easily, just like we did for the PD controller:"
-msgstr ""
+"One of the key ingredients in an operational space controller is the mass "
+"matrix. We can get this easily, just like we did for the PD controller:"
+msgstr "운영 공간 컨트롤러의 핵심 요소 중 하나는 질량 매트릭스입니다. PD 컨트롤러에서 했던 것처럼 쉽게 얻을 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:438 7a1f168048144237a05f424273c1b487
 msgid ""
-"Next we'll want the Jacobian of the tool offset in the end effector. We "
-"can get it easily with this function:"
-msgstr ""
+"Next we'll want the Jacobian of the tool offset in the end effector. We can "
+"get it easily with this function:"
+msgstr "다음으로 우리는 엔드 이펙터에서 도구 오프셋의 야코비안을 원할 것입니다. 다음 함수를 사용하면 쉽게 얻을 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:445 015acf6e12bf4d1da9c83904cf8fe112
 msgid ""
 "But operational space controllers typically use the Moore-Penrose "
 "pseudoinverse of the Jacobian rather than the Jacobian itself. There are "
-"many ways to compute the pseudoinverse of the Jacobian, but a simple way "
-"is like this:"
+"many ways to compute the pseudoinverse of the Jacobian, but a simple way is "
+"like this:"
 msgstr ""
+"그러나 운영 공간 컨트롤러는 일반적으로 야코비안 자체보다는 야코비안의 무어-펜로즈 의사 역을 사용합니다. 야코비 행렬의 의사 역행렬을 "
+"계산하는 방법은 여러 가지가 있지만 간단한 방법은 다음과 같습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:454 68310d817edb42349b64532e1ab13f95
 msgid ""
-"Note that this pseudoinverse is also damped so that it behaves better "
-"around singularities. This is method for computing the pseudoinverse is "
-"not very efficient in terms of the number of mathematical operations it "
-"performs, but it is plenty fast for our application. Consider using "
-"methods based on Singular Value Decomposition if you need to compute the "
-"pseudoinverse as fast as possible."
+"Note that this pseudoinverse is also damped so that it behaves better around"
+" singularities. This is method for computing the pseudoinverse is not very "
+"efficient in terms of the number of mathematical operations it performs, but"
+" it is plenty fast for our application. Consider using methods based on "
+"Singular Value Decomposition if you need to compute the pseudoinverse as "
+"fast as possible."
 msgstr ""
+"이 유사 역행렬도 감쇠되어 특이점 주변에서 더 잘 작동합니다. 의사 역행렬을 계산하는 이 방법은 수행하는 수학적 연산의 수 측면에서 그리"
+" 효율적이지는 않지만 우리 응용 프로그램에서는 상당히 빠릅니다. 가능한 한 빨리 유사 역행렬을 계산해야 하는 경우 특이값 "
+"분해(Singular Value Decomposition) 기반 방법을 사용하는 것이 좋습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:460 9ea7baea45fc44bf83d11a5bfedac319
 msgid ""
 "Next we'll want the time derivative of the Jacobian, as well as its "
 "pseudoinverse:"
-msgstr ""
+msgstr "다음으로 우리는 야코비 행렬의 시간 도함수와 유사 역행렬을 원할 것입니다:"
 
 #: ../../user_guide/tutorials/dominoes.md:471 3b02bf15a69d4b75b08737c125f699ad
 msgid ""
-"Notice that here we're compute the **classic** derivative, which means "
-"the derivative of the Jacobian with respect to time in classical "
-"coordinates rather than spatial coordinates. If you use spatial vector "
-"arithmetic, then you'll want to use ``BodyNode::getJacobianSpatialDeriv``"
-" instead."
+"Notice that here we're compute the **classic** derivative, which means the "
+"derivative of the Jacobian with respect to time in classical coordinates "
+"rather than spatial coordinates. If you use spatial vector arithmetic, then "
+"you'll want to use ``BodyNode::getJacobianSpatialDeriv`` instead."
 msgstr ""
+"여기서는 공간 좌표가 아닌 고전 좌표에서 시간에 대한 야코비 행렬의 도함수를 의미하는 **클래식** 도함수를 계산합니다. 공간 벡터 "
+"연산을 사용한다면 대신 ``BodyNode::getJacobianSpatialDeriv``를 사용하는 것이 좋습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:476 84fe68e7fbfe41d08e8be7008dd40a5f
 msgid "Now we can compute the linear components of error:"
-msgstr ""
+msgstr "이제 오류의 선형 구성 요소를 계산할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:484 d4902f07bd144283a4635f0c0898ef5c
 msgid "And then the angular components of error:"
-msgstr ""
+msgstr "그리고 오류의 각도 ​​구성 요소는 다음과 같습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:491 e9f2013a502d40ecb1879d83f6c32865
-msgid "Then the time derivative of error, assuming our desired velocity is zero:"
-msgstr ""
+msgid ""
+"Then the time derivative of error, assuming our desired velocity is zero:"
+msgstr "그런 다음 원하는 속도가 0이라고 가정할 때 오류의 시간 도함수는 다음과 같습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:498 96af0e091f234d439a2d08cb70f187ff
 msgid ""
-"Like with the PD controller, we can mix in terms to compensate for "
-"gravity and Coriolis forces:"
-msgstr ""
+"Like with the PD controller, we can mix in terms to compensate for gravity "
+"and Coriolis forces:"
+msgstr "PD 컨트롤러와 마찬가지로 중력과 코리올리 힘을 보상하기 위해 항을 혼합할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:505 130b68a3e501482a8a91793b91d439e6
 msgid ""
-"The gains for the operational space controller need to be in matrix form,"
-" but we're storing the gains as scalars, so we'll need to conver them:"
-msgstr ""
+"The gains for the operational space controller need to be in matrix form, "
+"but we're storing the gains as scalars, so we'll need to conver them:"
+msgstr "작동 공간 컨트롤러의 이득은 행렬 형식이어야 하지만 이득을 스칼라로 저장하므로 이를 변환해야 합니다."
 
 #: ../../user_guide/tutorials/dominoes.md:515 c29cb268b0e54e6fa044ecc42e45e59c
 msgid ""
-"And we'll need to compute the joint forces needed to achieve our desired "
-"end effector force. This is easily done using the Jacobian transpose:"
+"And we'll need to compute the joint forces needed to achieve our desired end"
+" effector force. This is easily done using the Jacobian transpose:"
 msgstr ""
+"그리고 원하는 엔드 이펙터 힘을 달성하는 데 필요한 결합 힘을 계산해야 합니다. 이는 야코비 전치(Jacobian Transpose)를 "
+"사용하여 쉽게 수행됩니다."
 
 #: ../../user_guide/tutorials/dominoes.md:524 5e0e2a5fbd264c9cbe48a7d1a40a0065
 msgid "And now we can mix everything together into the single control law:"
-msgstr ""
+msgstr "이제 모든 것을 단일 제어 법칙으로 혼합할 수 있습니다."
 
 #: ../../user_guide/tutorials/dominoes.md:532 d0367fb41ebd4b9189dde4e293a32d7c
 msgid "Then don't forget to pass the forces into the manipulator:"
-msgstr ""
+msgstr "그런 다음 조작기에 힘을 전달하는 것을 잊지 마십시오."
 
 #: ../../user_guide/tutorials/dominoes.md:538 0848b087560543d482500a700cafcc59
 msgid "**Now you're ready to try out the full dominoes app!**"
-msgstr ""
-
+msgstr "**이제 전체 도미노 앱을 사용해 볼 준비가 되었습니다!**"

@@ -104,8 +104,7 @@ because this could make for a very ugly (perhaps even broken) simulation.
 First, we'll tell the world to compute collisions:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
-    mWorld->getConstraintSolver()->getCollisionDetector();
+auto detector = mWorld->getCollisionDetector();
 detector->detectCollision(true, true);
 ```
 

@@ -21,6 +21,9 @@
   * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui-osg` is not built).
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
+* Simulation
+  * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
+  * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.
 
 * Core
   * Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1).

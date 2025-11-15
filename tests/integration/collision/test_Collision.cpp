@@ -1526,7 +1526,7 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 
   // Regression test for #666
   auto world = std::make_unique<World>();
-  world->getConstraintSolver()->setCollisionDetector(cd);
+  world->setCollisionDetector(cd);
   world->addSkeleton(boxSkeleton1);
   world->addSkeleton(boxSkeleton2);
   const collision::CollisionResult& result1 = world->getLastCollisionResult();

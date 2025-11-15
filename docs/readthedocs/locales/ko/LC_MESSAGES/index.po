@@ -4,7 +4,6 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
@@ -199,9 +198,3 @@ msgstr ""
 "  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
 "  journal = {The Journal of Open Source Software}\n"
 "}"
-
-#~ msgid "Installation"
-#~ msgstr "설치"
-
-#~ msgid "Tutorials"
-#~ msgstr "튜토리얼"

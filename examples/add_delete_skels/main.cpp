@@ -126,8 +126,7 @@ int main()
 
   // Set collision detector type
   if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    myWorld->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+    myWorld->setCollisionDetector(CollisionDetectorType::Bullet);
   }
 
   // Create event handler

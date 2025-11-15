@@ -4,7 +4,6 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
@@ -206,16 +205,3 @@ msgstr "FreeBSD (실험적)"
 #: ../../installation.rst:124 1caac1a1c174435ba1a13a724e5b2d47
 msgid "To install DART on FreeBSD, you can use the following commands:"
 msgstr "FreeBSD에서 DART를 설치하려면 다음 명령을 사용할 수 있습니다:"
-
-#~ msgid "Arch Linux (Experimental)"
-#~ msgstr ""
-
-#~ msgid "Arch Linux"
-#~ msgstr ""
-
-#~ msgid ""
-#~ "The installation instructions for Arch "
-#~ "Linux are currently experimental and may"
-#~ " not work on all systems. Use "
-#~ "at your own risk."
-#~ msgstr "Arch Linux의 설치 지침은 현재 실험적이며 모든 시스템에서 작동하지 않을 수 있습니다. 사용에 주의해 주시기 바랍니다."

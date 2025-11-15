@@ -740,7 +740,7 @@ simulation::WorldPtr readWorld(
     if (!collision_detector)
       collision_detector = createFclMeshCollisionDetector();
 
-    newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
+    newWorld->setCollisionDetector(collision_detector);
   }
 
   //--------------------------------------------------------------------------

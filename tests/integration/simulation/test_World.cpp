@@ -45,9 +45,13 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <string>
+#include <utility>
 #if HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -59,6 +63,52 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 using namespace dart::test;
+
+namespace {
+
+class ScopedCollisionFactoryDisabler
+{
+public:
+  using Factory = collision::CollisionDetector::Factory;
+  using Creator = Factory::Creator;
+
+  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+    : mFactory(collision::CollisionDetector::getFactory()),
+      mKey(std::move(key)),
+      mRestorer(std::move(restorer))
+  {
+    if (!mFactory || !mFactory->canCreate(mKey))
+      return;
+
+    mDisabled = true;
+    mFactory->unregisterCreator(mKey);
+  }
+
+  ScopedCollisionFactoryDisabler(const ScopedCollisionFactoryDisabler&)
+      = delete;
+  ScopedCollisionFactoryDisabler& operator=(
+      const ScopedCollisionFactoryDisabler&)
+      = delete;
+
+  ~ScopedCollisionFactoryDisabler()
+  {
+    if (mFactory && mDisabled && mRestorer)
+      mFactory->registerCreator(mKey, mRestorer);
+  }
+
+  bool wasDisabled() const
+  {
+    return mDisabled;
+  }
+
+private:
+  Factory* mFactory;
+  std::string mKey;
+  Creator mRestorer;
+  bool mDisabled{false};
+};
+
+} // namespace
 
 //==============================================================================
 TEST(World, AddingAndRemovingSkeletons)
@@ -307,11 +357,9 @@ TEST(World, ValidatingClones)
 
     // Set non default collision detector
 #if HAVE_BULLET
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::BulletCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
 #endif
   }
 
@@ -322,9 +370,8 @@ TEST(World, ValidatingClones)
     for (std::size_t j = 1; j < 5; ++j) {
       clones.push_back(clones[j - 1]->clone());
 
-      auto originalCD = original->getConstraintSolver()->getCollisionDetector();
-      auto cloneCD
-          = clones.back()->getConstraintSolver()->getCollisionDetector();
+      auto originalCD = original->getCollisionDetector();
+      auto cloneCD = clones.back()->getCollisionDetector();
 
       std::string originalCDType = originalCD->getType();
       std::string cloneCDType = cloneCD->getType();
@@ -332,6 +379,156 @@ TEST(World, ValidatingClones)
       EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
+}
+
+//==============================================================================
+TEST(World, SetCollisionDetectorByType)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+}
+
+//==============================================================================
+TEST(World, ConfiguresCollisionDetectorViaConfig)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  WorldConfig config;
+  config.name = "configured-world";
+  config.collisionDetector = CollisionDetectorType::Dart;
+  auto world = World::create(config);
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+}
+
+//==============================================================================
+TEST(World, DefaultWorldUsesFclMeshPrimitive)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  auto world = World::create();
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::MESH);
+}
+
+//==============================================================================
+TEST(World, TypedSetterConfiguresFclMeshPrimitive)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  world->setCollisionDetector(CollisionDetectorType::Fcl);
+
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::MESH);
+}
+
+//==============================================================================
+TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
+{
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  auto current = world->getCollisionDetector();
+  ASSERT_TRUE(current);
+  EXPECT_EQ(current->getType(), original->getType());
+}
+
+//==============================================================================
+TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
+{
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+
+  WorldConfig config;
+  config.name = "fallback-pref";
+  config.collisionDetector = CollisionDetectorType::Dart;
+
+  auto world = World::create(config);
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(
+      world->getCollisionDetector()->getType(),
+      collision::FCLCollisionDetector::getStaticType());
+}
+
+//==============================================================================
+TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
+{
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+
+  ScopedCollisionFactoryDisabler disableFcl(
+      collision::FCLCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::FCLCollisionDetector::create();
+      });
+
+  if (!disableFcl.wasDisabled())
+    GTEST_SKIP() << "fcl collision detector is not registered in this build";
+
+  WorldConfig config;
+  config.name = "no-fallback-world";
+  config.collisionDetector = CollisionDetectorType::Dart;
+
+  auto world = World::create(config);
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(
+      world->getCollisionDetector()->getType(),
+      collision::FCLCollisionDetector::getStaticType());
 }
 
 //==============================================================================
