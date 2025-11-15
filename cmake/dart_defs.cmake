@@ -1584,23 +1584,12 @@ function(dart_build_tests)
       set(target_name "${target_name}${source_name}")
     endif()
 
-    string(TOUPPER "${_ARG_TYPE}" test_type_upper)
-    set(test_name_prefix "${test_type_upper}_")
-
-    set(ctest_name ${target_name})
-    if(ctest_name MATCHES "^test_")
-      string(REGEX REPLACE "^test_" "" ctest_name "${ctest_name}")
-    endif()
-    if(NOT ctest_name MATCHES "^${test_name_prefix}")
-      set(ctest_name "${test_name_prefix}${ctest_name}")
-    endif()
-
     if(MSVC)
       add_executable(${target_name} ${source})
     else()
       add_executable(${target_name} EXCLUDE_FROM_ALL ${source})
     endif()
-    add_test(NAME ${ctest_name} COMMAND $<TARGET_FILE:${target_name}>)
+    add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
 
     # Include directories
     target_include_directories(
