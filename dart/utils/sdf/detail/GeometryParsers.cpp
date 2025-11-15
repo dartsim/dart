@@ -34,12 +34,12 @@
 
 #if HAVE_SDFORMAT
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CylinderShape.hpp>
-#include <dart/dynamics/MeshShape.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+  #include "dart/common/Uri.hpp"
 
-#include "dart/common/Uri.hpp"
+  #include <dart/dynamics/BoxShape.hpp>
+  #include <dart/dynamics/CylinderShape.hpp>
+  #include <dart/dynamics/MeshShape.hpp>
+  #include <dart/dynamics/SphereShape.hpp>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -93,7 +93,8 @@ dynamics::ShapePtr readMeshShape(
     return nullptr;
   }
 
-  return std::make_shared<dynamics::MeshShape>(scale, model, meshUri, retriever);
+  return std::make_shared<dynamics::MeshShape>(
+      scale, model, meshUri, retriever);
 }
 
 } // namespace
@@ -138,4 +139,3 @@ dynamics::ShapePtr readGeometryShape(
 } // namespace dart::utils::SdfParser::detail
 
 #endif // HAVE_SDFORMAT
-

@@ -37,30 +37,31 @@
 
 #if HAVE_SDFORMAT
 
-#include <dart/common/Logging.hpp>
-#include <dart/common/Macros.hpp>
+  #include <dart/common/Logging.hpp>
+  #include <dart/common/Macros.hpp>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+  #include <Eigen/Core>
+  #include <Eigen/Geometry>
 
-#if __has_include(<gz/math/Color.hh>)
-  #include <gz/math/Color.hh>
-  #include <gz/math/Pose3.hh>
-  #include <gz/math/Vector2.hh>
-  #include <gz/math/Vector3.hh>
-#else
-  #include <gz/math9/gz/math/Color.hh>
-  #include <gz/math9/gz/math/Pose3.hh>
-  #include <gz/math9/gz/math/Vector2.hh>
-  #include <gz/math9/gz/math/Vector3.hh>
-#endif
-#include <sdf/sdf.hh>
+  #if __has_include(<gz/math/Color.hh>)
+    #include <gz/math/Color.hh>
+    #include <gz/math/Pose3.hh>
+    #include <gz/math/Vector2.hh>
+    #include <gz/math/Vector3.hh>
+  #else
+    #include <gz/math9/gz/math/Color.hh>
+    #include <gz/math9/gz/math/Pose3.hh>
+    #include <gz/math9/gz/math/Vector2.hh>
+    #include <gz/math9/gz/math/Vector3.hh>
+  #endif
+  #include <sdf/sdf.hh>
 
-#include <algorithm>
-#include <cctype>
-#include <sstream>
-#include <string>
-#include <vector>
+  #include <algorithm>
+  #include <sstream>
+  #include <string>
+  #include <vector>
+
+  #include <cctype>
 
 namespace dart::utils::SdfParser::detail {
 
@@ -144,12 +145,10 @@ std::string getAttributeString(
 
 std::string getValueString(
     const ElementPtr& parentElement, const std::string& name);
-bool getValueBool(
-    const ElementPtr& parentElement, const std::string& name);
+bool getValueBool(const ElementPtr& parentElement, const std::string& name);
 unsigned int getValueUInt(
     const ElementPtr& parentElement, const std::string& name);
-double getValueDouble(
-    const ElementPtr& parentElement, const std::string& name);
+double getValueDouble(const ElementPtr& parentElement, const std::string& name);
 Eigen::Vector2d getValueVector2d(
     const ElementPtr& parentElement, const std::string& name);
 Eigen::Vector3d getValueVector3d(

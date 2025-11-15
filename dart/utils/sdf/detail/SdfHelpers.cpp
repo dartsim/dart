@@ -34,19 +34,17 @@
 
 #if HAVE_SDFORMAT
 
-#include <dart/common/Uri.hpp>
+  #include <dart/common/Uri.hpp>
 
-#include <gz/math/Quaternion.hh>
+  #include <gz/math/Quaternion.hh>
 
 namespace dart::utils::SdfParser::detail {
 
 std::string toLowerCopy(std::string text)
 {
-  std::transform(
-      text.begin(),
-      text.end(),
-      text.begin(),
-      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
   return text;
 }
 
@@ -189,8 +187,7 @@ std::string getValueString(
   }
 }
 
-bool getValueBool(
-    const ElementPtr& parentElement, const std::string& name)
+bool getValueBool(const ElementPtr& parentElement, const std::string& name)
 {
   bool value = false;
   if (readScalarParam(getChildValueParam(parentElement, name), value))
@@ -217,8 +214,7 @@ unsigned int getValueUInt(
   return 0u;
 }
 
-double getValueDouble(
-    const ElementPtr& parentElement, const std::string& name)
+double getValueDouble(const ElementPtr& parentElement, const std::string& name)
 {
   double value = 0.0;
   if (readScalarParam(getChildValueParam(parentElement, name), value))
@@ -334,7 +330,8 @@ Eigen::Vector3i getValueVector3i(
   }
 
   DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 3 integer values but found {}.",
+      "[SdfParser] Element <{}> under <{}> expected 3 integer values but found "
+      "{}.",
       name,
       parentElement ? parentElement->GetName() : "unknown",
       values.size());
@@ -411,7 +408,8 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
   }
 
   DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 6 pose values but found {}.",
+      "[SdfParser] Element <{}> under <{}> expected 6 pose values but found "
+      "{}.",
       name,
       parentElement ? parentElement->GetName() : "unknown",
       values.size());
@@ -420,10 +418,7 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
 
 ElementEnumerator::ElementEnumerator(
     const ElementPtr& parentElement, const std::string& name)
-  : mParent(parentElement),
-    mName(name),
-    mCurrent(nullptr),
-    mInitialized(false)
+  : mParent(parentElement), mName(name), mCurrent(nullptr), mInitialized(false)
 {
   // Do nothing
 }
@@ -451,4 +446,3 @@ ElementPtr ElementEnumerator::get() const
 } // namespace dart::utils::SdfParser::detail
 
 #endif // HAVE_SDFORMAT
-
