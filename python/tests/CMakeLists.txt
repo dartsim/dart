@@ -57,11 +57,25 @@ set(dartpy_test_utils
 set(dartpy_pybind_tests_dir ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE dartpy_pybind_tests "${dartpy_pybind_tests_dir}/test_*.py")
 
-set(dartpy_nb_tests_dir "${CMAKE_CURRENT_SOURCE_DIR}/../test_nb")
-set(dartpy_nanobind_tests "")
-if(EXISTS "${dartpy_nb_tests_dir}")
-  file(GLOB_RECURSE dartpy_nanobind_tests "${dartpy_nb_tests_dir}/test_*.py")
+# When dartpy_nb is enabled we re-use the canonical unit tests to exercise the
+# nanobind module instead of dartpy (pybind11). Skip scheduling them for the
+# pybind runner so we don't execute mismatched imports.
+if(DART_BUILD_DARTPY_NB)
+  set(dartpy_pybind_tests "")
 endif()
+
+set(dartpy_nb_tests_dirs
+  "${CMAKE_CURRENT_SOURCE_DIR}/../test_nb"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+set(dartpy_nanobind_tests "")
+foreach(_nb_dir IN LISTS dartpy_nb_tests_dirs)
+  if(EXISTS "${_nb_dir}")
+    file(GLOB_RECURSE _nb_tests "${_nb_dir}/test_*.py")
+    list(APPEND dartpy_nanobind_tests ${_nb_tests})
+  endif()
+endforeach()
+list(REMOVE_DUPLICATES dartpy_nanobind_tests)
 
 set(_pytest_dependencies)
 if(DARTPY_PYTEST_FOUND AND dartpy_pybind_tests AND TARGET dartpy)
