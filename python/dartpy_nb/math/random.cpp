@@ -32,9 +32,9 @@
 
 #include "math/random.hpp"
 
-#include <nanobind/nanobind.h>
-
 #include "dart/math/Random.hpp"
+
+#include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
 
@@ -44,12 +44,16 @@ void defRandom(nb::module_& m)
 {
   auto random = nb::class_<dart::math::Random>(m, "Random");
   random.def(nb::init<>())
-      .def_static("setSeed",
+      .def_static(
+          "setSeed",
           [](unsigned int seed) { dart::math::Random::setSeed(seed); },
           nb::arg("seed"))
       .def_static("getSeed", []() { return dart::math::Random::getSeed(); })
-      .def_static("uniform",
-          [](double min, double max) { return dart::math::Random::uniform(min, max); },
+      .def_static(
+          "uniform",
+          [](double min, double max) {
+            return dart::math::Random::uniform(min, max);
+          },
           nb::arg("min"),
           nb::arg("max"));
 }

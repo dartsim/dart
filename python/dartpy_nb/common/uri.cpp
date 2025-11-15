@@ -1,9 +1,9 @@
 #include "common/uri.hpp"
 
+#include "dart/common/Uri.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
-
-#include "dart/common/Uri.hpp"
 
 namespace nb = nanobind;
 
@@ -18,15 +18,30 @@ void defUri(nb::module_& m)
       .def(nb::init<const std::string&>(), nb::arg("input"))
       .def(nb::init<const char*>(), nb::arg("input"))
       .def("clear", &Uri::clear)
-      .def("fromString", [](Uri& self, const std::string& input) { return self.fromString(input); }, nb::arg("input"))
-      .def("fromPath", [](Uri& self, const std::string& path) { return self.fromPath(path); }, nb::arg("path"))
+      .def(
+          "fromString",
+          [](Uri& self, const std::string& input) {
+            return self.fromString(input);
+          },
+          nb::arg("input"))
+      .def(
+          "fromPath",
+          [](Uri& self, const std::string& path) {
+            return self.fromPath(path);
+          },
+          nb::arg("path"))
       .def(
           "fromStringOrPath",
-          [](Uri& self, const std::string& input) { return self.fromStringOrPath(input); },
+          [](Uri& self, const std::string& input) {
+            return self.fromStringOrPath(input);
+          },
           nb::arg("input"))
       .def(
           "fromRelativeUri",
-          [](Uri& self, const std::string& base, const std::string& relative, bool strict) {
+          [](Uri& self,
+             const std::string& base,
+             const std::string& relative,
+             bool strict) {
             return self.fromRelativeUri(base, relative, strict);
           },
           nb::arg("base"),
@@ -42,7 +57,10 @@ void defUri(nb::module_& m)
           nb::arg("strict") = false)
       .def(
           "fromRelativeUri",
-          [](Uri& self, const Uri& base, const std::string& relative, bool strict) {
+          [](Uri& self,
+             const Uri& base,
+             const std::string& relative,
+             bool strict) {
             return self.fromRelativeUri(base, relative, strict);
           },
           nb::arg("base"),
@@ -66,7 +84,9 @@ void defUri(nb::module_& m)
           nb::arg("strict") = false)
       .def("toString", [](const Uri& self) { return self.toString(); })
       .def("getPath", [](const Uri& self) { return self.getPath(); })
-      .def("getFilesystemPath", [](const Uri& self) { return self.getFilesystemPath(); })
+      .def(
+          "getFilesystemPath",
+          [](const Uri& self) { return self.getFilesystemPath(); })
       .def_static(
           "createFromString",
           [](const std::string& input) { return Uri::createFromString(input); },
@@ -77,11 +97,15 @@ void defUri(nb::module_& m)
           nb::arg("path"))
       .def_static(
           "createFromStringOrPath",
-          [](const std::string& input) { return Uri::createFromStringOrPath(input); },
+          [](const std::string& input) {
+            return Uri::createFromStringOrPath(input);
+          },
           nb::arg("input"))
       .def_static(
           "createFromRelativeUri",
-          [](const std::string& base, const std::string& relative, bool strict) {
+          [](const std::string& base,
+             const std::string& relative,
+             bool strict) {
             return Uri::createFromRelativeUri(base, relative, strict);
           },
           nb::arg("base"),
@@ -103,10 +127,15 @@ void defUri(nb::module_& m)
           nb::arg("base"),
           nb::arg("relative"),
           nb::arg("strict") = false)
-      .def_static("getUri", [](const std::string& input) { return Uri::getUri(input); }, nb::arg("input"))
+      .def_static(
+          "getUri",
+          [](const std::string& input) { return Uri::getUri(input); },
+          nb::arg("input"))
       .def_static(
           "getRelativeUri",
-          [](const std::string& base, const std::string& relative, bool strict) {
+          [](const std::string& base,
+             const std::string& relative,
+             bool strict) {
             return Uri::getRelativeUri(base, relative, strict);
           },
           nb::arg("base"),

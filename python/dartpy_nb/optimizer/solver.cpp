@@ -1,10 +1,10 @@
 #include "optimizer/solver.hpp"
 
+#include "dart/optimizer/Solver.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/ostream.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/optimizer/Solver.hpp"
 
 namespace nb = nanobind;
 
@@ -27,7 +27,10 @@ public:
 
   std::shared_ptr<dart::optimizer::Solver> clone() const override
   {
-    NB_OVERRIDE_PURE(std::shared_ptr<dart::optimizer::Solver>, dart::optimizer::Solver, clone);
+    NB_OVERRIDE_PURE(
+        std::shared_ptr<dart::optimizer::Solver>,
+        dart::optimizer::Solver,
+        clone);
   }
 };
 
@@ -37,24 +40,44 @@ void defOptimizerSolver(nb::module_& m)
 
   nb::class_<Solver::Properties>(m, "SolverProperties")
       .def(nb::init<>())
-      .def(nb::init<std::shared_ptr<dart::optimizer::Problem>>(), nb::arg("problem"))
-      .def(nb::init<std::shared_ptr<dart::optimizer::Problem>, double>(), nb::arg("problem"), nb::arg("tolerance"))
-      .def(nb::init<std::shared_ptr<dart::optimizer::Problem>, double, std::size_t>(), nb::arg("problem"), nb::arg("tolerance"), nb::arg("numMaxIterations"))
       .def(
-          nb::init<std::shared_ptr<dart::optimizer::Problem>, double, std::size_t, std::size_t>(),
+          nb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::arg("problem"))
+      .def(
+          nb::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
+          nb::arg("problem"),
+          nb::arg("tolerance"))
+      .def(
+          nb::init<
+              std::shared_ptr<dart::optimizer::Problem>,
+              double,
+              std::size_t>(),
+          nb::arg("problem"),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"))
+      .def(
+          nb::init<
+              std::shared_ptr<dart::optimizer::Problem>,
+              double,
+              std::size_t,
+              std::size_t>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
           nb::arg("numMaxIterations"),
           nb::arg("iterationsPerPrint"))
       .def_readwrite("mProblem", &Solver::Properties::mProblem)
       .def_readwrite("mTolerance", &Solver::Properties::mTolerance)
-      .def_readwrite("mNumMaxIterations", &Solver::Properties::mNumMaxIterations)
-      .def_readwrite("mIterationsPerPrint", &Solver::Properties::mIterationsPerPrint);
+      .def_readwrite(
+          "mNumMaxIterations", &Solver::Properties::mNumMaxIterations)
+      .def_readwrite(
+          "mIterationsPerPrint", &Solver::Properties::mIterationsPerPrint);
 
-  nb::class_<Solver, PySolver, std::shared_ptr<Solver>>(m, "Solver")
+  nb::class_<Solver, PySolver>(m, "Solver")
       .def(nb::init<>())
       .def(nb::init<Solver::Properties>(), nb::arg("properties"))
-      .def(nb::init<std::shared_ptr<dart::optimizer::Problem>>(), nb::arg("problem"))
+      .def(
+          nb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::arg("problem"))
       .def("solve", &Solver::solve)
       .def("getType", &Solver::getType)
       .def("clone", &Solver::clone)

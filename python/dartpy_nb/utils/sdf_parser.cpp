@@ -1,9 +1,9 @@
 #include "utils/sdf_parser.hpp"
 
+#include "dart/utils/sdf/SdfParser.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/utils/sdf/SdfParser.hpp"
 
 namespace nb = nanobind;
 
@@ -24,8 +24,10 @@ void defSdfParser(nb::module_& m)
           nb::init<common::ResourceRetrieverPtr, SdfParser::RootJointType>(),
           nb::arg("resourceRetriever") = nullptr,
           nb::arg("defaultRootJointType") = SdfParser::RootJointType::FLOATING)
-      .def_readwrite("mResourceRetriever", &SdfParser::Options::mResourceRetriever)
-      .def_readwrite("mDefaultRootJointType", &SdfParser::Options::mDefaultRootJointType);
+      .def_readwrite(
+          "mResourceRetriever", &SdfParser::Options::mResourceRetriever)
+      .def_readwrite(
+          "mDefaultRootJointType", &SdfParser::Options::mDefaultRootJointType);
 
   auto read_world = [](auto uri, const SdfParser::Options& options) {
     return SdfParser::readWorld(uri, options);

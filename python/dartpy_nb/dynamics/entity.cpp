@@ -1,10 +1,10 @@
 #include "dynamics/entity.hpp"
 
+#include "dart/dynamics/Entity.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-
-#include "dart/dynamics/Entity.hpp"
 
 namespace nb = nanobind;
 
@@ -16,24 +16,28 @@ void defEntity(nb::module_& m)
   using Detachable = dart::dynamics::Detachable;
   using Frame = dart::dynamics::Frame;
 
-  nb::class_<Entity, std::shared_ptr<Entity>>(m, "Entity")
-      .def("setName",
+  nb::class_<Entity>(m, "Entity")
+      .def(
+          "setName",
           [](Entity& self, const std::string& name) -> const std::string& {
             return self.setName(name);
           },
           nb::rv_policy::reference_internal,
           nb::arg("name"))
-      .def("getName",
+      .def(
+          "getName",
           [](const Entity& self) -> const std::string& {
             return self.getName();
           },
           nb::rv_policy::reference_internal)
-      .def("getParentFrame",
+      .def(
+          "getParentFrame",
           [](const Entity& self) -> const Frame* {
             return self.getParentFrame();
           },
           nb::rv_policy::reference_internal)
-      .def("descendsFrom",
+      .def(
+          "descendsFrom",
           [](const Entity& self, const Frame* frame) {
             return self.descendsFrom(frame);
           },
@@ -41,8 +45,9 @@ void defEntity(nb::module_& m)
       .def("isFrame", &Entity::isFrame)
       .def("isQuiet", &Entity::isQuiet);
 
-  nb::class_<Detachable, Entity, std::shared_ptr<Detachable>>(m, "Detachable")
-      .def("setParentFrame",
+  nb::class_<Detachable, Entity>(m, "Detachable")
+      .def(
+          "setParentFrame",
           [](Detachable& self, Frame* newParent) {
             self.setParentFrame(newParent);
           },

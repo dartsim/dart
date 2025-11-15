@@ -1,19 +1,18 @@
 #include "simulation/world.hpp"
 
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "simulation/constraint_solver.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/set.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
-
-#include "dart/collision/CollisionOption.hpp"
-#include "dart/collision/CollisionResult.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
-
-#include "simulation/constraint_solver.hpp"
 
 namespace nb = nanobind;
 
@@ -23,35 +22,33 @@ void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
 
-  nb::class_<World, std::shared_ptr<World>>(m, "World")
+  nb::class_<World>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
-      .def(nb::init([]() {
-        return World::create();
-      }))
-      .def(nb::init([](const std::string& name) {
-        return World::create(name);
-      }),
+      .def(nb::init([]() { return World::create(); }))
+      .def(
+          nb::init([](const std::string& name) { return World::create(name); }),
           nb::arg("name"))
-      .def("clone",
-          [](const World& self) {
-            return self.clone();
-          })
-      .def("setName",
+      .def("clone", [](const World& self) { return self.clone(); })
+      .def(
+          "setName",
           [](World& self, const std::string& new_name) -> const std::string& {
             return self.setName(new_name);
           },
           nb::arg("newName"),
           nb::rv_policy::reference_internal)
-      .def("getName",
+      .def(
+          "getName",
           [](const World& self) -> const std::string& {
             return self.getName();
           },
           nb::rv_policy::reference_internal)
-      .def("setGravity",
+      .def(
+          "setGravity",
           nb::overload_cast<const Eigen::Vector3d&>(&World::setGravity),
           nb::arg("gravity"))
-      .def("setGravity",
+      .def(
+          "setGravity",
           nb::overload_cast<double, double, double>(&World::setGravity),
           nb::arg("x"),
           nb::arg("y"),
@@ -59,107 +56,116 @@ void defWorld(nb::module_& m)
       .def("getGravity", &World::getGravity, nb::rv_policy::reference_internal)
       .def("setTimeStep", &World::setTimeStep, nb::arg("timeStep"))
       .def("getTimeStep", &World::getTimeStep)
-      .def("getSkeleton",
+      .def(
+          "getSkeleton",
           [](World& self, std::size_t index) {
             return self.getSkeleton(index);
           },
           nb::arg("index"))
-      .def("getSkeleton",
+      .def(
+          "getSkeleton",
           [](World& self, const std::string& name) {
             return self.getSkeleton(name);
           },
           nb::arg("name"))
       .def("getNumSkeletons", &World::getNumSkeletons)
-      .def("addSkeleton",
-          [](World& self, const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
+      .def(
+          "addSkeleton",
+          [](World& self,
+             const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
             return self.addSkeleton(skeleton);
           },
           nb::arg("skeleton"))
-      .def("removeSkeleton",
-          [](World& self, const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
+      .def(
+          "removeSkeleton",
+          [](World& self,
+             const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
             self.removeSkeleton(skeleton);
           },
           nb::arg("skeleton"))
-      .def("removeAllSkeletons",
-          [](World& self) {
-            return self.removeAllSkeletons();
-          })
-      .def("hasSkeleton",
-          [](World& self, const std::shared_ptr<const dart::dynamics::Skeleton>& skeleton) {
+      .def(
+          "removeAllSkeletons",
+          [](World& self) { return self.removeAllSkeletons(); })
+      .def(
+          "hasSkeleton",
+          [](World& self,
+             const std::shared_ptr<const dart::dynamics::Skeleton>& skeleton) {
             return self.hasSkeleton(skeleton);
           },
           nb::arg("skeleton"))
-      .def("hasSkeleton",
+      .def(
+          "hasSkeleton",
           [](World& self, const std::string& skeleton_name) {
             return self.hasSkeleton(skeleton_name);
           },
           nb::arg("skeletonName"))
-      .def("getIndex",
-          [](World& self, int index) {
-            return self.getIndex(index);
-          },
+      .def(
+          "getIndex",
+          [](World& self, int index) { return self.getIndex(index); },
           nb::arg("index"))
       .def("getNumSimpleFrames", &World::getNumSimpleFrames)
-      .def("getSimpleFrame",
+      .def(
+          "getSimpleFrame",
           [](World& self, std::size_t index) {
             return self.getSimpleFrame(index);
           },
           nb::arg("index"))
-      .def("getSimpleFrame",
+      .def(
+          "getSimpleFrame",
           [](World& self, const std::string& name) {
             return self.getSimpleFrame(name);
           },
           nb::arg("name"))
-      .def("addSimpleFrame",
-          [](World& self, const std::shared_ptr<dart::dynamics::SimpleFrame>& frame) {
+      .def(
+          "addSimpleFrame",
+          [](World& self,
+             const std::shared_ptr<dart::dynamics::SimpleFrame>& frame) {
             return self.addSimpleFrame(frame);
           },
           nb::arg("frame"))
-      .def("removeSimpleFrame",
-          [](World& self, const std::shared_ptr<dart::dynamics::SimpleFrame>& frame) {
+      .def(
+          "removeSimpleFrame",
+          [](World& self,
+             const std::shared_ptr<dart::dynamics::SimpleFrame>& frame) {
             self.removeSimpleFrame(frame);
           },
           nb::arg("frame"))
-      .def("removeAllSimpleFrames",
-          [](World& self) {
-            return self.removeAllSimpleFrames();
-          })
-      .def("checkCollision",
-          [](World& self) {
-            return self.checkCollision();
-          })
-      .def("checkCollision",
+      .def(
+          "removeAllSimpleFrames",
+          [](World& self) { return self.removeAllSimpleFrames(); })
+      .def("checkCollision", [](World& self) { return self.checkCollision(); })
+      .def(
+          "checkCollision",
           [](World& self, const dart::collision::CollisionOption& option) {
             return self.checkCollision(option);
           },
           nb::arg("option"))
-      .def("checkCollision",
+      .def(
+          "checkCollision",
           [](World& self,
-              const dart::collision::CollisionOption& option,
-              dart::collision::CollisionResult* result) {
+             const dart::collision::CollisionOption& option,
+             dart::collision::CollisionResult* result) {
             return self.checkCollision(option, result);
           },
           nb::arg("option"),
           nb::arg("result"))
-      .def("getLastCollisionResult",
+      .def(
+          "getLastCollisionResult",
           [](World& self) -> const dart::collision::CollisionResult& {
             return self.getLastCollisionResult();
           },
           nb::rv_policy::reference_internal)
       .def("reset", &World::reset)
-      .def("step",
-          [](World& self) {
-            self.step();
-          })
-      .def("step",
-          [](World& self, bool resetCommand) {
-            self.step(resetCommand);
-          },
+      .def("step", [](World& self) { self.step(); })
+      .def(
+          "step",
+          [](World& self, bool resetCommand) { self.step(resetCommand); },
           nb::arg("resetCommand"))
       .def("setTime", &World::setTime, nb::arg("time"))
       .def("getTime", &World::getTime)
       .def("getSimFrames", &World::getSimFrames)
-      .def("getConstraintSolver",
+      .def(
+          "getConstraintSolver",
           [](World& self) -> dart::constraint::ConstraintSolver* {
             return self.getConstraintSolver();
           },

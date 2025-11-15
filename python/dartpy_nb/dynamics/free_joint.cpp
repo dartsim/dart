@@ -1,10 +1,10 @@
 #include "dynamics/free_joint.hpp"
 
+#include "dart/dynamics/FreeJoint.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/dynamics/FreeJoint.hpp"
 
 namespace nb = nanobind;
 
@@ -21,17 +21,18 @@ void defFreeJoint(nb::module_& m)
       .def_readwrite("mT_ParentBodyToJoint", &Properties::mT_ParentBodyToJoint)
       .def_readwrite("mT_ChildBodyToJoint", &Properties::mT_ChildBodyToJoint);
 
-  nb::class_<FreeJoint, dart::dynamics::Joint, std::shared_ptr<FreeJoint>>(m, "FreeJoint")
-      .def("setTransform",
+  nb::class_<FreeJoint, dart::dynamics::Joint>(m, "FreeJoint")
+      .def(
+          "setTransform",
           [](FreeJoint& self, const Eigen::Isometry3d& tf) {
             self.setTransform(tf);
           },
           nb::arg("transform"))
-      .def("getRelativeTransform",
-          [](const FreeJoint& self) {
-            return self.getRelativeTransform();
-          })
-      .def("setPositions",
+      .def(
+          "getRelativeTransform",
+          [](const FreeJoint& self) { return self.getRelativeTransform(); })
+      .def(
+          "setPositions",
           [](FreeJoint& self, const Eigen::Vector6d& positions) {
             self.setPositions(positions);
           },

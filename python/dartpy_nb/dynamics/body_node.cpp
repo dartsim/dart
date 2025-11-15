@@ -1,15 +1,15 @@
 #include "dynamics/body_node.hpp"
 
-#include <nanobind/eigen/dense.h>
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/vector.h>
-
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+
+#include <nanobind/eigen/dense.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/vector.h>
 
 namespace nb = nanobind;
 
@@ -20,58 +20,64 @@ void defBodyNode(nb::module_& m)
   using BodyNode = dart::dynamics::BodyNode;
   using ShapePtr = dart::dynamics::ShapePtr;
 
-  nb::class_<BodyNode, dart::dynamics::Frame, std::shared_ptr<BodyNode>>(m, "BodyNode")
-      .def("getName",
+  nb::class_<BodyNode, dart::dynamics::Frame>(m, "BodyNode")
+      .def(
+          "getName",
           [](const BodyNode& self) -> const std::string& {
             return self.getName();
           },
           nb::rv_policy::reference_internal)
-      .def("createShapeNode",
-          [](BodyNode& self, const ShapePtr& shape) -> dart::dynamics::ShapeNode* {
+      .def(
+          "createShapeNode",
+          [](BodyNode& self,
+             const ShapePtr& shape) -> dart::dynamics::ShapeNode* {
             return self.createShapeNode(shape);
           },
           nb::arg("shape"),
           nb::rv_policy::reference_internal)
-      .def("getShapeNodes",
+      .def(
+          "getShapeNodes",
           [](BodyNode& self) { return self.getShapeNodes(); },
           nb::rv_policy::reference_internal)
       .def("getNumShapeNodes", &BodyNode::getNumShapeNodes)
       .def("getBodyForce", &BodyNode::getBodyForce)
       .def("getSpatialVelocity", &BodyNode::getSpatialVelocity)
-      .def("getBodyNodePtr",
+      .def(
+          "getBodyNodePtr",
           [](BodyNode& self) -> BodyNode* { return &self; },
           nb::rv_policy::reference_internal)
-      .def("getChildBodyNode",
+      .def(
+          "getChildBodyNode",
           [](BodyNode& self, std::size_t index) -> BodyNode* {
             return self.getChildBodyNode(index);
           },
           nb::rv_policy::reference_internal,
           nb::arg("index"))
-      .def("getChildJoint",
+      .def(
+          "getChildJoint",
           [](BodyNode& self, std::size_t index) -> dart::dynamics::Joint* {
             return self.getChildJoint(index);
           },
           nb::rv_policy::reference_internal,
           nb::arg("index"))
-      .def("getParentBodyNode",
-          [](BodyNode& self) -> BodyNode* {
-            return self.getParentBodyNode();
-          },
+      .def(
+          "getParentBodyNode",
+          [](BodyNode& self) -> BodyNode* { return self.getParentBodyNode(); },
           nb::rv_policy::reference_internal)
-      .def("getParentJoint",
+      .def(
+          "getParentJoint",
           [](BodyNode& self) -> dart::dynamics::Joint* {
             return self.getParentJoint();
           },
           nb::rv_policy::reference_internal)
-      .def("getInertia",
+      .def(
+          "getInertia",
           [](BodyNode& self) -> dart::dynamics::Inertia {
             return self.getInertia();
           })
-      .def("getOrCreateIK",
-          [](BodyNode& self) {
-            return self.getOrCreateIK();
-          })
-      .def("getIK",
+      .def("getOrCreateIK", [](BodyNode& self) { return self.getOrCreateIK(); })
+      .def(
+          "getIK",
           [](BodyNode& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },

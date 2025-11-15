@@ -1,10 +1,10 @@
 #include "dynamics/screw_joint.hpp"
 
+#include "dart/dynamics/ScrewJoint.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/dynamics/ScrewJoint.hpp"
 
 namespace nb = nanobind;
 
@@ -17,34 +17,37 @@ void defScrewJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "ScrewJointProperties")
       .def(nb::init<>())
-      .def_readwrite("mAxis",
-          &dart::dynamics::detail::ScrewJointUniqueProperties::mAxis)
-      .def_readwrite("mPitch",
+      .def_readwrite(
+          "mAxis", &dart::dynamics::detail::ScrewJointUniqueProperties::mAxis)
+      .def_readwrite(
+          "mPitch",
           &dart::dynamics::detail::ScrewJointUniqueProperties::mPitch);
 
-  nb::class_<ScrewJoint, dart::dynamics::Joint, std::shared_ptr<ScrewJoint>>(m, "ScrewJoint")
-      .def("getType",
+  nb::class_<ScrewJoint, dart::dynamics::Joint>(m, "ScrewJoint")
+      .def(
+          "getType",
           [](const ScrewJoint& self) -> const std::string& {
             return self.getType();
           },
           nb::rv_policy::reference_internal)
       .def("isCyclic", &ScrewJoint::isCyclic, nb::arg("index"))
-      .def("setAxis",
+      .def(
+          "setAxis",
           [](ScrewJoint& self, const Eigen::Vector3d& axis) {
             self.setAxis(axis);
           },
           nb::arg("axis"))
-      .def("getAxis",
+      .def(
+          "getAxis",
           [](const ScrewJoint& self) -> const Eigen::Vector3d& {
             return self.getAxis();
           },
           nb::rv_policy::reference_internal)
       .def("setPitch", &ScrewJoint::setPitch, nb::arg("pitch"))
       .def("getPitch", &ScrewJoint::getPitch)
-      .def_static("getStaticType",
-          []() -> const std::string& {
-            return ScrewJoint::getStaticType();
-          },
+      .def_static(
+          "getStaticType",
+          []() -> const std::string& { return ScrewJoint::getStaticType(); },
           nb::rv_policy::reference);
 }
 

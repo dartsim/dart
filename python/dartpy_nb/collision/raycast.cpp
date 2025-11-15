@@ -1,11 +1,11 @@
 #include "collision/raycast.hpp"
 
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/vector.h>
-
-#include "dart/collision/RaycastOption.hpp"
-#include "dart/collision/RaycastResult.hpp"
 
 namespace nb = nanobind;
 

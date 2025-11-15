@@ -29,10 +29,10 @@
 
 #include "math/geometry.hpp"
 
+#include "dart/math/Geometry.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
-
-#include "dart/math/Geometry.hpp"
 
 namespace nb = nanobind;
 
@@ -40,16 +40,20 @@ namespace dart::python_nb {
 
 namespace {
 
-#define DARTPY_NB_DEF_EULER_TO_MATRIX(order)                                    \
-  m.def(                                                                        \
+#define DARTPY_NB_DEF_EULER_TO_MATRIX(order)                                   \
+  m.def(                                                                       \
       "euler" #order "ToMatrix",                                               \
-      [](Eigen::Vector3d angle) { return dart::math::euler##order##ToMatrix(angle); }, \
+      [](Eigen::Vector3d angle) {                                              \
+        return dart::math::euler##order##ToMatrix(angle);                      \
+      },                                                                       \
       nb::arg("angle"));
 
-#define DARTPY_NB_DEF_MATRIX_TO_EULER(order)                                    \
-  m.def(                                                                        \
+#define DARTPY_NB_DEF_MATRIX_TO_EULER(order)                                   \
+  m.def(                                                                       \
       "matrixToEuler" #order,                                                  \
-      [](const Eigen::Matrix3d& R) { return dart::math::matrixToEuler##order(R); }, \
+      [](const Eigen::Matrix3d& R) {                                           \
+        return dart::math::matrixToEuler##order(R);                            \
+      },                                                                       \
       nb::arg("R"));
 
 } // namespace
@@ -82,33 +86,47 @@ void defGeometry(nb::module_& m)
   // DARTPY_NB_DEF_MATRIX_TO_EULER(ZXZ);
   // DARTPY_NB_DEF_MATRIX_TO_EULER(ZYZ);
 
-  m.def("expMap", [](const Eigen::Vector6d& S) { return dart::math::expMap(S); }, nb::arg("S"));
+  m.def(
+      "expMap",
+      [](const Eigen::Vector6d& S) { return dart::math::expMap(S); },
+      nb::arg("S"));
 
-  m.def("expMapJac",
-      [](const Eigen::Vector3d& expmap) { return dart::math::expMapJac(expmap); },
+  m.def(
+      "expMapJac",
+      [](const Eigen::Vector3d& expmap) {
+        return dart::math::expMapJac(expmap);
+      },
       nb::arg("expmap"));
 
-  m.def("expMapRot",
-      [](const Eigen::Vector3d& expmap) { return dart::math::expMapRot(expmap); },
+  m.def(
+      "expMapRot",
+      [](const Eigen::Vector3d& expmap) {
+        return dart::math::expMapRot(expmap);
+      },
       nb::arg("expmap"));
 
-  m.def("expToQuat",
+  m.def(
+      "expToQuat",
       [](const Eigen::Vector3d& v) { return dart::math::expToQuat(v); },
       nb::arg("v"));
 
-  m.def("quatToExp",
+  m.def(
+      "quatToExp",
       [](const Eigen::Quaterniond& q) { return dart::math::quatToExp(q); },
       nb::arg("q"));
 
-  m.def("expAngular",
+  m.def(
+      "expAngular",
       [](const Eigen::Vector3d& s) { return dart::math::expAngular(s); },
       nb::arg("s"));
 
-  m.def("verifyRotation",
+  m.def(
+      "verifyRotation",
       [](const Eigen::Matrix3d& R) { return dart::math::verifyRotation(R); },
       nb::arg("R"));
 
-  m.def("verifyTransform",
+  m.def(
+      "verifyTransform",
       [](const Eigen::Isometry3d& T) { return dart::math::verifyTransform(T); },
       nb::arg("T"));
 }

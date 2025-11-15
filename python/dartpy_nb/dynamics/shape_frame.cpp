@@ -1,12 +1,12 @@
 #include "dynamics/shape_frame.hpp"
 
-#include <nanobind/eigen/dense.h>
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
-
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+
+#include <nanobind/eigen/dense.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 namespace nb = nanobind;
 
@@ -36,54 +36,72 @@ void defShapeFrame(nb::module_& m)
 
   nb::class_<DynamicsAspect>(m, "DynamicsAspect")
       .def(nb::init<>())
-      .def("setFrictionCoeff", &DynamicsAspect::setFrictionCoeff, nb::arg("value"))
+      .def(
+          "setFrictionCoeff",
+          &DynamicsAspect::setFrictionCoeff,
+          nb::arg("value"))
       .def("getFrictionCoeff", &DynamicsAspect::getFrictionCoeff);
 
-  nb::class_<ShapeFrame, dart::dynamics::Frame, std::shared_ptr<ShapeFrame>>(m, "ShapeFrame")
-      .def("setShape",
+  nb::class_<ShapeFrame, dart::dynamics::Frame>(m, "ShapeFrame")
+      .def(
+          "setShape",
           [](ShapeFrame& self, const dart::dynamics::ShapePtr& shape) {
             self.setShape(shape);
           },
           nb::arg("shape"))
-      .def("getShape",
+      .def(
+          "getShape",
           [](ShapeFrame& self) -> dart::dynamics::ShapePtr {
             return self.getShape();
           })
-      .def("getShape",
+      .def(
+          "getShape",
           [](const ShapeFrame& self) -> dart::dynamics::ConstShapePtr {
             return self.getShape();
           })
       .def("hasVisualAspect", &ShapeFrame::hasVisualAspect)
-      .def("getVisualAspect",
+      .def(
+          "getVisualAspect",
           [](ShapeFrame& self, bool createIfNull) -> VisualAspect* {
             return self.getVisualAspect(createIfNull);
           },
           nb::arg("createIfNull") = true,
           nb::rv_policy::reference_internal)
-      .def("createVisualAspect", &ShapeFrame::createVisualAspect, nb::rv_policy::reference_internal)
+      .def(
+          "createVisualAspect",
+          &ShapeFrame::createVisualAspect,
+          nb::rv_policy::reference_internal)
       .def("hasCollisionAspect", &ShapeFrame::hasCollisionAspect)
-      .def("getCollisionAspect",
+      .def(
+          "getCollisionAspect",
           [](ShapeFrame& self, bool createIfNull) -> CollisionAspect* {
             return self.getCollisionAspect(createIfNull);
           },
           nb::arg("createIfNull") = true,
           nb::rv_policy::reference_internal)
-      .def("createCollisionAspect", &ShapeFrame::createCollisionAspect, nb::rv_policy::reference_internal)
+      .def(
+          "createCollisionAspect",
+          &ShapeFrame::createCollisionAspect,
+          nb::rv_policy::reference_internal)
       .def("hasDynamicsAspect", &ShapeFrame::hasDynamicsAspect)
-      .def("getDynamicsAspect",
+      .def(
+          "getDynamicsAspect",
           [](ShapeFrame& self, bool createIfNull) -> DynamicsAspect* {
             return self.getDynamicsAspect(createIfNull);
           },
           nb::arg("createIfNull") = true,
           nb::rv_policy::reference_internal)
-      .def("createDynamicsAspect", &ShapeFrame::createDynamicsAspect, nb::rv_policy::reference_internal)
-      .def("isShapeNode", &ShapeFrame::isShapeNode)
-      .def("asShapeNode",
-          [](ShapeFrame& self) -> ShapeNode* {
-            return self.asShapeNode();
-          },
+      .def(
+          "createDynamicsAspect",
+          &ShapeFrame::createDynamicsAspect,
           nb::rv_policy::reference_internal)
-      .def("asShapeNode",
+      .def("isShapeNode", &ShapeFrame::isShapeNode)
+      .def(
+          "asShapeNode",
+          [](ShapeFrame& self) -> ShapeNode* { return self.asShapeNode(); },
+          nb::rv_policy::reference_internal)
+      .def(
+          "asShapeNode",
           [](const ShapeFrame& self) -> const ShapeNode* {
             return self.asShapeNode();
           },

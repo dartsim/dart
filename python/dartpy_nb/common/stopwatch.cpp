@@ -1,11 +1,11 @@
 #include "common/stopwatch.hpp"
 
+#include "dart/common/Stopwatch.hpp"
+
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 
 #include <sstream>
-
-#include "dart/common/Stopwatch.hpp"
 
 namespace nb = nanobind;
 

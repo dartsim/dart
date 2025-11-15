@@ -1,9 +1,8 @@
 #include "math/eigen_geometry.hpp"
 
+#include <Eigen/Dense>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
-
-#include <Eigen/Dense>
 
 namespace nb = nanobind;
 
@@ -69,77 +68,85 @@ void defEigenGeometry(nb::module_& m)
         checkIsometry(out);
         return out;
       }))
-      .def(nb::init([](const Eigen::Matrix3d& rotation, const Eigen::Vector3d& translation) {
+      .def(nb::init([](const Eigen::Matrix3d& rotation,
+                       const Eigen::Vector3d& translation) {
         checkRotation(rotation);
         Isometry out = Isometry::Identity();
         out.linear() = rotation;
         out.translation() = translation;
         return out;
       }))
-      .def(nb::init([](const Eigen::Quaterniond& q, const Eigen::Vector3d& translation) {
-        checkQuaternion(q);
-        Isometry out = Isometry::Identity();
-        out.linear() = q.toRotationMatrix();
-        out.translation() = translation;
-        return out;
-      }))
-      .def("matrix",
-          [](const Isometry& self) {
-            return self.matrix();
-          })
+      .def(nb::init(
+          [](const Eigen::Quaterniond& q, const Eigen::Vector3d& translation) {
+            checkQuaternion(q);
+            Isometry out = Isometry::Identity();
+            out.linear() = q.toRotationMatrix();
+            out.translation() = translation;
+            return out;
+          }))
+      .def("matrix", [](const Isometry& self) { return self.matrix(); })
       .def("set_identity", [](Isometry& self) { self.setIdentity(); })
-      .def("set_matrix",
+      .def(
+          "set_matrix",
           [](Isometry& self, const Eigen::Matrix4d& matrix) {
             Isometry update(matrix);
             checkIsometry(update);
             self = update;
           },
           nb::arg("matrix"))
-      .def("translation",
+      .def(
+          "translation",
           [](const Isometry& self) { return self.translation(); })
-      .def("set_translation",
+      .def(
+          "set_translation",
           [](Isometry& self, const Eigen::Vector3d& translation) {
             self.translation() = translation;
           },
           nb::arg("translation"))
-      .def("rotation",
-          [](const Isometry& self) { return self.linear(); })
-      .def("set_rotation",
+      .def("rotation", [](const Isometry& self) { return self.linear(); })
+      .def(
+          "set_rotation",
           [](Isometry& self, const Eigen::Matrix3d& rotation) {
             checkRotation(rotation);
             self.linear() = rotation;
           },
           nb::arg("rotation"))
-      .def("quaternion",
+      .def(
+          "quaternion",
           [](const Isometry& self) {
             return Eigen::Quaterniond(self.linear());
           })
-      .def("set_quaternion",
+      .def(
+          "set_quaternion",
           [](Isometry& self, const Eigen::Quaterniond& q) {
             checkQuaternion(q);
             self.linear() = q.toRotationMatrix();
           },
           nb::arg("quaternion"))
-      .def("__str__", [](nb::handle self) {
-        return nb::str(self.attr("matrix")());
-      })
-      .def("multiply",
+      .def(
+          "__str__",
+          [](nb::handle self) { return nb::str(self.attr("matrix")()); })
+      .def(
+          "multiply",
           [](const Isometry& self, const Isometry& other) {
             return self * other;
           },
           nb::arg("other"))
-      .def("multiply",
+      .def(
+          "multiply",
           [](const Isometry& self, const Eigen::Vector3d& position) {
             return self * position;
           },
           nb::arg("position"))
       .def("inverse", [](const Isometry& self) { return self.inverse(); })
-      .def("translate",
+      .def(
+          "translate",
           [](Isometry& self, const Eigen::Vector3d& shift) {
             self.translate(shift);
           },
           nb::arg("shift"))
-      .def("pretranslate",
+      .def(
+          "pretranslate",
           [](Isometry& self, const Eigen::Vector3d& shift) {
             self.pretranslate(shift);
           },
@@ -171,46 +178,55 @@ void defEigenGeometry(nb::module_& m)
       .def("y", [](const Quaternion& self) { return self.y(); })
       .def("z", [](const Quaternion& self) { return self.z(); })
       .def("xyz", [](const Quaternion& self) { return self.vec(); })
-      .def("wxyz",
+      .def(
+          "wxyz",
           [](const Quaternion& self) {
             Eigen::Vector4d out;
             out << self.w(), self.vec();
             return out;
           })
-      .def("set_wxyz",
+      .def(
+          "set_wxyz",
           [](Quaternion& self, const Eigen::Vector4d& wxyz) {
             Quaternion update(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
             checkQuaternion(update);
             self = update;
           },
           nb::arg("wxyz"))
-      .def("rotation",
+      .def(
+          "rotation",
           [](const Quaternion& self) { return self.toRotationMatrix(); })
-      .def("set_rotation",
+      .def(
+          "set_rotation",
           [](Quaternion& self, const Eigen::Matrix3d& rotation) {
             Quaternion update(rotation);
             checkQuaternion(update);
             self = update;
           },
           nb::arg("rotation"))
-      .def("__str__", [](const Quaternion& self) {
-        return nb::str("Quaternion(w={}, x={}, y={}, z={})")
-            .format(self.w(), self.x(), self.y(), self.z());
-      })
-      .def("multiply",
+      .def(
+          "__str__",
+          [](const Quaternion& self) {
+            return nb::str("Quaternion(w={}, x={}, y={}, z={})")
+                .format(self.w(), self.x(), self.y(), self.z());
+          })
+      .def(
+          "multiply",
           [](const Quaternion& self, const Quaternion& other) {
             return self * other;
           },
           nb::arg("other"))
-      .def("multiply",
+      .def(
+          "multiply",
           [](const Quaternion& self, const Eigen::Vector3d& position) {
             return self * position;
           },
           nb::arg("position"))
       .def("inverse", [](const Quaternion& self) { return self.inverse(); })
       .def("conjugate", [](const Quaternion& self) { return self.conjugate(); })
-      .def("to_rotation_matrix",
-          [](const Quaternion& self) { return self.toRotationMatrix(); });
+      .def("to_rotation_matrix", [](const Quaternion& self) {
+        return self.toRotationMatrix();
+      });
 
   using AngleAxis = Eigen::AngleAxisd;
   nb::class_<AngleAxis>(m, "AngleAxis")
@@ -228,8 +244,9 @@ void defEigenGeometry(nb::module_& m)
       }))
       .def("angle", [](const AngleAxis& self) { return self.angle(); })
       .def("axis", [](const AngleAxis& self) { return self.axis(); })
-      .def("to_rotation_matrix",
-          [](const AngleAxis& self) { return self.toRotationMatrix(); });
+      .def("to_rotation_matrix", [](const AngleAxis& self) {
+        return self.toRotationMatrix();
+      });
 }
 
 } // namespace dart::python_nb

@@ -1,8 +1,8 @@
 #include "collision/collision_result.hpp"
 
-#include <nanobind/nanobind.h>
-
 #include "dart/collision/CollisionResult.hpp"
+
+#include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
 

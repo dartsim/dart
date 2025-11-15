@@ -1,10 +1,10 @@
 #include "dynamics/translational_joint.hpp"
 
+#include "dart/dynamics/TranslationalJoint.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/dynamics/TranslationalJoint.hpp"
 
 namespace nb = nanobind;
 
@@ -17,26 +17,32 @@ void defTranslationalJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "TranslationalJointProperties")
       .def(nb::init<>())
-      .def(nb::init<const dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>::Properties&>(),
+      .def(
+          nb::init<const dart::dynamics::GenericJoint<
+              dart::math::RealVectorSpace<3>>::Properties&>(),
           nb::arg("properties"));
 
-  nb::class_<TranslationalJoint, dart::dynamics::Joint, std::shared_ptr<TranslationalJoint>>(m, "TranslationalJoint")
-      .def("getTranslationalJointProperties",
+  nb::class_<TranslationalJoint, dart::dynamics::Joint>(m, "TranslationalJoint")
+      .def(
+          "getTranslationalJointProperties",
           [](const TranslationalJoint& self) {
             return self.getTranslationalJointProperties();
           })
-      .def("getType",
+      .def(
+          "getType",
           [](const TranslationalJoint& self) -> const std::string& {
             return self.getType();
           },
           nb::rv_policy::reference_internal)
       .def("isCyclic", &TranslationalJoint::isCyclic, nb::arg("index"))
-      .def("getRelativeJacobianStatic",
+      .def(
+          "getRelativeJacobianStatic",
           [](const TranslationalJoint& self, const Eigen::Vector3d& positions) {
             return self.getRelativeJacobianStatic(positions);
           },
           nb::arg("positions"))
-      .def_static("getStaticType",
+      .def_static(
+          "getStaticType",
           []() -> const std::string& {
             return TranslationalJoint::getStaticType();
           },

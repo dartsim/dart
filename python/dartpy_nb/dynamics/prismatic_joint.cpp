@@ -1,10 +1,10 @@
 #include "dynamics/prismatic_joint.hpp"
 
+#include "dart/dynamics/PrismaticJoint.hpp"
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
-
-#include "dart/dynamics/PrismaticJoint.hpp"
 
 namespace nb = nanobind;
 
@@ -17,23 +17,27 @@ void defPrismaticJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "PrismaticJointProperties")
       .def(nb::init<>())
-      .def_readwrite("mAxis",
+      .def_readwrite(
+          "mAxis",
           &dart::dynamics::detail::PrismaticJointUniqueProperties::mAxis);
 
-  nb::class_<PrismaticJoint, dart::dynamics::Joint, std::shared_ptr<PrismaticJoint>>(m, "PrismaticJoint")
+  nb::class_<PrismaticJoint, dart::dynamics::Joint>(m, "PrismaticJoint")
       .def("setAxis", &PrismaticJoint::setAxis, nb::arg("axis"))
-      .def("getAxis",
+      .def(
+          "getAxis",
           [](const PrismaticJoint& self) -> const Eigen::Vector3d& {
             return self.getAxis();
           },
           nb::rv_policy::reference_internal)
-      .def("setPosition",
+      .def(
+          "setPosition",
           [](PrismaticJoint& self, std::size_t index, double value) {
             self.setPosition(index, value);
           },
           nb::arg("index"),
           nb::arg("value"))
-      .def("getPosition",
+      .def(
+          "getPosition",
           [](const PrismaticJoint& self, std::size_t index) {
             return self.getPosition(index);
           },
