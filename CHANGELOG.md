@@ -18,6 +18,8 @@
 
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
+  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui-osg` is not built).
+  * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
 
 * Core
