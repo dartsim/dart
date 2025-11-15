@@ -186,8 +186,7 @@ protected:
 
     // Look through the collisions to see if the new object would start in
     // collision with something
-    auto collisionEngine
-        = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionEngine = mWorld->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
     auto newGroup = collisionEngine->createCollisionGroup(object.get());
 

@@ -483,13 +483,13 @@ int main()
   Eigen::VectorXd balancedPose = solveIK(biped);
   biped->setPositions(balancedPose);
 
-  WorldPtr world = std::make_shared<World>();
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+  WorldConfig config;
+  if (auto* factory = dart::collision::CollisionDetector::getFactory();
+      factory && factory->canCreate("bullet")) {
+    config.collisionDetector = CollisionDetectorType::Bullet;
   }
+  WorldPtr world = std::make_shared<World>(config);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   world->addSkeleton(floor);
   world->addSkeleton(biped);

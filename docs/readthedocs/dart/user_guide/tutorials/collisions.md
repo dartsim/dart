@@ -582,7 +582,7 @@ new object is collision-free:
 
 ```cpp
 auto collisionEngine
-  = mWorld->getConstraintSolver()->getCollisionDetector();
+  = mWorld->getCollisionDetector();
 ```
 
 Now we shouldn't be surprised if the *other* objects are in collision with each

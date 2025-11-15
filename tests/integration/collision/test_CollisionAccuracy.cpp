@@ -48,6 +48,7 @@
 #include <gtest/gtest.h>
 
 using namespace dart::test;
+using dart::simulation::CollisionDetectorType;
 
 //==============================================================================
 TEST(Issue1184, Accuracy)
@@ -105,7 +106,7 @@ TEST(Issue1184, Accuracy)
       for (const double halfsize : halfsizes) {
         for (const bool falling : fallingModes) {
           auto world = dart::simulation::World::create("test");
-          world->getConstraintSolver()->setCollisionDetector(
+          world->setCollisionDetector(
               dart::collision::BulletCollisionDetector::create());
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();

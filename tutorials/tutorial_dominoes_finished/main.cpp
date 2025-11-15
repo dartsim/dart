@@ -330,8 +330,7 @@ public:
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
 
     // Create a new collision group which only contains the new domino
-    auto collisionEngine
-        = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionEngine = mWorld->getCollisionDetector();
     auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 
     // Remove the floor from all things in the world, because the floor
