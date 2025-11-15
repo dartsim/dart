@@ -2355,7 +2355,11 @@ void BodyNode::updateWorldJacobian() const
     if (dof == nullptr)
       continue;
 
-    const auto* freeJoint = dynamic_cast<const FreeJoint*>(dof->getJoint());
+    const Joint* joint = dof->getJoint();
+    if (joint != mParentJoint)
+      continue;
+
+    const auto* freeJoint = dynamic_cast<const FreeJoint*>(joint);
     if (!freeJoint)
       continue;
 
