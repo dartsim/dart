@@ -1663,3 +1663,66 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     }
   }
 }
+
+//==============================================================================
+TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  Eigen::Vector6d positions = Eigen::Vector6d::Zero();
+  positions.head<3>() = Eigen::Vector3d(0.4, -0.7, 0.2);
+  positions.tail<3>() = Eigen::Vector3d(0.1, -0.2, 0.3);
+  joint->setPositions(positions);
+
+  const math::Jacobian worldJac = body->getWorldJacobian();
+  const Eigen::Matrix3d translationalBlock
+      = worldJac.bottomRows<3>().rightCols<3>();
+  EXPECT_TRUE(equals(translationalBlock, Eigen::Matrix3d::Identity()));
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.tail<3>() = Eigen::Vector3d(0.45, -0.6, 0.2);
+  joint->setVelocities(velocities);
+
+  const Eigen::Vector6d spatialVelocityFromJac = worldJac * velocities;
+  const Eigen::Vector3d actualLinearVelocity
+      = body->getLinearVelocity(Frame::World(), Frame::World());
+
+  EXPECT_TRUE(equals(velocities.tail<3>(), actualLinearVelocity));
+  EXPECT_TRUE(equals(spatialVelocityFromJac.tail<3>(), actualLinearVelocity));
+}
+
+//==============================================================================
+TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  const Frame* worldFrame = Frame::World();
+
+  const std::size_t numTests = 50;
+  for (std::size_t i = 0; i < numTests; ++i) {
+    const Eigen::Isometry3d pose = random_transform();
+    joint->setPositions(FreeJoint::convertToPositions(pose));
+
+    const Eigen::Vector6d velocities = random_vec<6>();
+    joint->setVelocities(velocities);
+
+    const math::Jacobian& J = body->getWorldJacobian();
+    EXPECT_TRUE(
+        equals(J.bottomRows<3>().rightCols<3>(), Eigen::Matrix3d::Identity()));
+
+    const Eigen::Vector6d spatialFromJac = J * velocities;
+    const Eigen::Vector6d spatialVelocity
+        = body->getSpatialVelocity(worldFrame, worldFrame);
+
+    EXPECT_TRUE(equals(spatialFromJac, spatialVelocity));
+    EXPECT_TRUE(equals(spatialFromJac.tail<3>(), velocities.tail<3>()));
+  }
+}
