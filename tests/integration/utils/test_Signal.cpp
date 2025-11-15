@@ -36,7 +36,9 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <numeric>
+#include <thread>
 
 using namespace std;
 using namespace Eigen;
@@ -389,4 +391,48 @@ TEST(Signal, SelfDisconnectDuringRaise)
     EXPECT_EQ(signal.getNumConnections(), 1u);
     EXPECT_EQ(callbackCount, 1);
   }
+}
+
+//==============================================================================
+TEST(Signal, ConcurrentUsage)
+{
+  constexpr int kNumThreads = 4;
+  constexpr int kIterationsPerThread = 250;
+
+  Signal<void()> signal;
+
+  std::atomic<bool> keepRaising{true};
+  std::atomic<int> raiseCount{0};
+  std::atomic<int> callbackCount{0};
+
+  std::thread raiser([&]() {
+    while (keepRaising.load(std::memory_order_relaxed)) {
+      signal.raise();
+      raiseCount.fetch_add(1, std::memory_order_relaxed);
+    }
+  });
+
+  std::vector<std::thread> workers;
+  workers.reserve(kNumThreads);
+  for (int t = 0; t < kNumThreads; ++t) {
+    workers.emplace_back([&]() {
+      for (int i = 0; i < kIterationsPerThread; ++i) {
+        Connection conn = signal.connect([&]() {
+          callbackCount.fetch_add(1, std::memory_order_relaxed);
+        });
+        signal.raise();
+        conn.disconnect();
+      }
+    });
+  }
+
+  for (auto& thread : workers)
+    thread.join();
+
+  keepRaising.store(false, std::memory_order_relaxed);
+  raiser.join();
+
+  EXPECT_EQ(signal.getNumConnections(), 0u);
+  EXPECT_GE(callbackCount.load(), kNumThreads * kIterationsPerThread);
+  EXPECT_GT(raiseCount.load(), 0);
 }
