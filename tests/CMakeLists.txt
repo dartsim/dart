@@ -58,8 +58,19 @@ endif()
 #   dart_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
+  set(executable_target ${target_name})
+  string(TOUPPER "${test_type}" test_type_upper)
+  set(test_name_prefix "${test_type_upper}_")
 
-  dart_property_add(DART_${test_type}_TESTS ${target_name})
+  set(ctest_name ${target_name})
+  if(ctest_name MATCHES "^test_")
+    string(REGEX REPLACE "^test_" "" ctest_name "${ctest_name}")
+  endif()
+  if(NOT ctest_name MATCHES "^${test_name_prefix}")
+    set(ctest_name "${test_name_prefix}${ctest_name}")
+  endif()
+
+  dart_property_add(DART_${test_type}_TESTS ${executable_target})
 
   if(${ARGC} GREATER 2)
     set(sources ${ARGN})
@@ -67,9 +78,9 @@ function(dart_add_test test_type target_name) # ARGN for source files
     set(sources "${target_name}.cpp")
   endif()
 
-  add_executable(${target_name} ${sources})
-  add_test(${target_name} ${target_name})
-  target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
+  add_executable(${executable_target} ${sources})
+  add_test(NAME ${ctest_name} COMMAND $<TARGET_FILE:${executable_target}>)
+  target_link_libraries(${executable_target} dart GTest::gtest GTest::gtest_main)
 
   dart_format_add(${sources})
 
