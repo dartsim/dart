@@ -29,8 +29,9 @@ def _prepend_pythonpath() -> None:
     # left-most entry from PYTHONPATH ends up at the front of sys.path.
     paths = [p for p in extra.split(os.pathsep) if p]
     for entry in reversed(paths):
-        if entry not in sys.path:
-            sys.path.insert(0, entry)
+        if entry in sys.path:
+            sys.path.remove(entry)
+        sys.path.insert(0, entry)
 
 
 _prepend_pythonpath()
