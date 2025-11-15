@@ -572,6 +572,10 @@ BUILD_TYPE={{ build_type }}
 cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
     --parallel \
+    --target dartpy
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
+    --parallel \
     --target pytest
 """,
 ], depends-on = [
