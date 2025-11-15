@@ -8,14 +8,14 @@ from __future__ import annotations
 import os
 import sys
 
-from build_helpers import get_build_dir, ninja_target_exists, run_cmake_build
+from build_helpers import cmake_target_exists, get_build_dir, run_cmake_build
 
 
 def main() -> int:
     build_type = os.environ.get("BUILD_TYPE", "Release")
     build_dir = get_build_dir(build_type)
 
-    if not ninja_target_exists(build_dir, "pytest"):
+    if not cmake_target_exists(build_dir, build_type, "pytest"):
         print(
             "Skipping python tests because the 'pytest' target "
             "was not generated in this configuration."

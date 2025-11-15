@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional, Set
 
 
 def _candidate_build_dirs(build_type: str) -> Iterable[Path]:
@@ -57,16 +57,36 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     subprocess.check_call(cmd)
 
 
-def ninja_target_exists(build_dir: Path, target: str) -> bool:
+def _locate_cache(build_dir: Path) -> Optional[Path]:
     """
-    Detect whether the provided Ninja build directory contains a target.
+    Return the nearest CMakeCache.txt for the build directory.
+    """
+    for candidate in (build_dir, build_dir.parent):
+        cache_path = candidate / "CMakeCache.txt"
+        if cache_path.is_file():
+            return cache_path
+    return None
 
-    For non-Ninja generators, the build.ninja file does not exist, so we assume
-    the target is present and let CMake perform the actual build.
-    """
+
+def _cmake_generator(build_dir: Path) -> Optional[str]:
+    cache = _locate_cache(build_dir)
+    if not cache:
+        return None
+
+    prefix = "CMAKE_GENERATOR:"
+    with cache.open("r", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            if line.startswith(prefix):
+                parts = line.split("=", maxsplit=1)
+                if len(parts) == 2:
+                    return parts[1].strip()
+    return None
+
+
+def _ninja_target_exists(build_dir: Path, target: str) -> Optional[bool]:
     ninja_file = build_dir / "build.ninja"
     if not ninja_file.is_file():
-        return True
+        return None
 
     pattern = f"build {target}:"
     with ninja_file.open("r", encoding="utf-8", errors="ignore") as handle:
@@ -74,3 +94,51 @@ def ninja_target_exists(build_dir: Path, target: str) -> bool:
             if line.startswith(pattern):
                 return True
     return False
+
+
+def _cmake_help_targets(build_dir: Path, build_type: str) -> Optional[Set[str]]:
+    cmd = [
+        "cmake",
+        "--build",
+        str(build_dir),
+        "--config",
+        build_type,
+        "--target",
+        "help",
+    ]
+    result = subprocess.run(
+        cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if result.returncode != 0:
+        return None
+
+    targets: Set[str] = set()
+    combined = f"{result.stdout}\n{result.stderr}"
+    for line in combined.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("* "):
+            name = stripped[2:].split()[0]
+            if name:
+                targets.add(name)
+    return targets
+
+
+def cmake_target_exists(build_dir: Path, build_type: str, target: str) -> bool:
+    """
+    Detect whether the requested target exists for the configured generator.
+
+    For Ninja, the lookup reads build.ninja directly. Other generators fall back
+    to `cmake --build <dir> --target help`, which lists available targets without
+    actually building anything.
+    """
+    generator = _cmake_generator(build_dir)
+    if generator and "Ninja" in generator:
+        ninja_result = _ninja_target_exists(build_dir, target)
+        if ninja_result is not None:
+            return ninja_result
+
+    help_targets = _cmake_help_targets(build_dir, build_type)
+    if help_targets is None:
+        return False
+
+    return target in help_targets

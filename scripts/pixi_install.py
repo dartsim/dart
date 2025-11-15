@@ -14,7 +14,7 @@ import os
 import sys
 from typing import List
 
-from build_helpers import get_build_dir, ninja_target_exists, run_cmake_build
+from build_helpers import cmake_target_exists, get_build_dir, run_cmake_build
 
 
 def main(argv: List[str]) -> int:
@@ -25,7 +25,7 @@ def main(argv: List[str]) -> int:
     build_dir = get_build_dir(build_type)
 
     if dartpy_flag.upper() != "OFF":
-        if ninja_target_exists(build_dir, "dartpy"):
+        if cmake_target_exists(build_dir, build_type, "dartpy"):
             run_cmake_build(build_dir, build_type, "dartpy")
         else:
             print(
