@@ -23,6 +23,8 @@
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
   * Added `libsdformat` as a required dependency so that SDF files are normalized through the official parser before being handed to DART: [#264](https://github.com/dartsim/dart/issues/264)
+  * Introduced per-target export headers (`dart/<component>/Export.hpp`) that define `DART_<COMPONENT>_API` macros. Each library now controls symbol visibility independently on Windows instead of sharing the monolithic `DART_API`, which fixes long‑standing DLL import inconsistencies.
+  * Pixi tasks and helper scripts now guard optional targets (dartpy, dartpy8, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
 * Simulation
   * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
   * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.
