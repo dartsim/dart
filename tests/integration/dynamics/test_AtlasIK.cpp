@@ -36,7 +36,7 @@
 #include "dart/config.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/utils/urdf/all.hpp"
+#include "dart/utils/urdf/All.hpp"
 
 #include <gtest/gtest.h>
 

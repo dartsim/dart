@@ -44,9 +44,9 @@
  * to see the robot adjust its posture in real-time.
  */
 
-#include <dart/gui/osg/all.hpp>
-#include <dart/utils/all.hpp>
-#include <dart/all.hpp>
+#include <dart/gui/osg/All.hpp>
+#include <dart/utils/All.hpp>
+#include <dart/All.hpp>
 
 #include <algorithm>
 #include <chrono>
