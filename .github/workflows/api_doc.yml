@@ -47,12 +47,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Detect passwordless sudo
+        shell: bash
+        run: |
+          if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            echo "HAS_SUDO=true" >> "$GITHUB_ENV"
+          else
+            echo "HAS_SUDO=false" >> "$GITHUB_ENV"
+            echo "Passwordless sudo not available; skipping apt-based dependency installation."
+          fi
+
       - name: Prework for installing packages using cache
+        if: env.HAS_SUDO == 'true'
         run: |
           sudo apt update
           sudo apt install -y cmake
 
       - name: Install Dependencies with cache
+        if: env.HAS_SUDO == 'true'
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: >
