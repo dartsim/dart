@@ -22,6 +22,7 @@ endfunction(dart_add_utils_sources)
 # Add subdirectories
 add_subdirectory(mjcf)
 add_subdirectory(sdf)
+add_subdirectory(scene)
 
 get_property(dart_utils_headers GLOBAL PROPERTY DART_UTILS_HEADERS)
 get_property(dart_utils_sources GLOBAL PROPERTY DART_UTILS_SOURCES)
@@ -87,5 +88,12 @@ dart_install_compat_headers(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+if(TARGET ${PROJECT_NAME}-utils-scene)
+  add_component_dependencies(${PROJECT_NAME} utils-scene utils)
+  if(TARGET ${PROJECT_NAME}-utils-urdf)
+    add_component_dependencies(${PROJECT_NAME} utils-scene utils-urdf)
+  endif()
+endif()
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})

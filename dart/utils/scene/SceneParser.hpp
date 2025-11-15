@@ -30,54 +30,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SKELPARSER_HPP_
-#define DART_UTILS_SKELPARSER_HPP_
+#ifndef DART_UTILS_SCENEPARSER_HPP_
+#define DART_UTILS_SCENEPARSER_HPP_
 
 #include <dart/utils/FileContents.hpp>
+#include <dart/utils/VskParser.hpp>
+#include <dart/utils/mjcf/MjcfParser.hpp>
+#include <dart/utils/sdf/SdfParser.hpp>
 
-#include <dart/simulation/World.hpp>
-
-#include <dart/common/LocalResourceRetriever.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <string>
+#if defined(DART_SCENEPARSER_HAS_URDF)
+  #include <dart/utils/urdf/DartLoader.hpp>
+#endif
 
 namespace dart {
 namespace utils {
+namespace SceneParser {
 
-/// SkelParser
-namespace SkelParser {
+/// Supported scene description formats.
+enum class Format
+{
+  Auto,
+  Skel,
+  Sdf,
+  Urdf,
+  Mjcf,
+  Vsk
+};
 
-/// Read every supported entity from a skel file.
+/// Options for the unified parser. Parser-specific options can be customized
+/// through the dedicated fields.
+struct Options
+{
+  /// Hint for the expected format. `Auto` (default) will attempt to detect the
+  /// format from the URI extension and fall back to other parsers if needed.
+  Format mFormatHint = Format::Auto;
+
+  /// Resource retriever shared across all format-specific parsers unless they
+  /// already provide one through their own options.
+  common::ResourceRetrieverPtr mResourceRetriever = nullptr;
+
+  /// Options forwarded to SdfParser.
+  utils::SdfParser::Options mSdfOptions = utils::SdfParser::Options();
+
+#if defined(DART_SCENEPARSER_HAS_URDF)
+  /// Options forwarded to DartLoader (URDF).
+  utils::DartLoader::Options mUrdfOptions = utils::DartLoader::Options();
+#endif
+
+  /// Options forwarded to MjcfParser.
+  utils::MjcfParser::Options mMjcfOptions = utils::MjcfParser::Options();
+
+  /// Options forwarded to VskParser.
+  utils::VskParser::Options mVskOptions = utils::VskParser::Options();
+};
+
+/// Parses the file referenced by \p uri using the requested options and returns
+/// every discovered object.
 FileContents readFile(
-    const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
+    const common::Uri& uri, const Options& options = Options());
 
-/// Read every supported entity from an xml-formatted string.
-FileContents readFileXML(
-    const std::string& xmlString,
-    const common::Uri& baseUri = "",
-    const common::ResourceRetrieverPtr& retriever = nullptr);
-
-/// Read World from skel file
-simulation::WorldPtr readWorld(
-    const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
-
-/// Read World from an xml-formatted string
-simulation::WorldPtr readWorldXML(
-    const std::string& xmlString,
-    const common::Uri& baseUri = "",
-    const common::ResourceRetrieverPtr& retriever = nullptr);
-
-/// Read Skeleton from skel file
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri,
-    const common::ResourceRetrieverPtr& retriever = nullptr);
-
-} // namespace SkelParser
-
+} // namespace SceneParser
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_SKELPARSER_HPP_
+#endif // DART_UTILS_SCENEPARSER_HPP_

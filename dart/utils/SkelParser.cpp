@@ -250,8 +250,12 @@ void readAspects(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-tinyxml2::XMLElement* checkFormatAndGetWorldElement(
-    tinyxml2::XMLDocument& _document);
+tinyxml2::XMLElement* getSkelRoot(tinyxml2::XMLDocument& document);
+
+FileContents readFileContents(
+    tinyxml2::XMLDocument& document,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
 
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
@@ -407,30 +411,58 @@ common::ResourceRetrieverPtr getRetriever(
 } // anonymous namespace
 
 //==============================================================================
+FileContents SkelParser::readFile(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  const common::ResourceRetrieverPtr resolvedRetriever
+      = getRetriever(retriever);
+
+  tinyxml2::XMLDocument document;
+  try {
+    openXMLFile(document, uri, resolvedRetriever);
+  } catch (const std::exception& error) {
+    DART_ERROR(
+        "[SkelParser::readFile] LoadFile [{}] Failed: {}",
+        uri.toString(),
+        error.what());
+    return {};
+  }
+
+  return readFileContents(document, uri, resolvedRetriever);
+}
+
+//==============================================================================
+FileContents SkelParser::readFileXML(
+    const std::string& xmlString,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever)
+{
+  const common::ResourceRetrieverPtr resolvedRetriever
+      = getRetriever(retriever);
+
+  tinyxml2::XMLDocument document;
+  if (document.Parse(xmlString.c_str()) != tinyxml2::XML_SUCCESS) {
+    document.PrintError();
+    return {};
+  }
+
+  return readFileContents(document, baseUri, resolvedRetriever);
+}
+
+//==============================================================================
 simulation::WorldPtr SkelParser::readWorld(
     const common::Uri& _uri, const common::ResourceRetrieverPtr& _retriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const FileContents contents = readFile(_uri, _retriever);
 
-  //--------------------------------------------------------------------------
-  // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
-  try {
-    openXMLFile(_dartFile, _uri, retriever);
-  } catch (std::exception const& e) {
+  if (contents.worlds.empty()) {
     DART_ERROR(
-        "[readWorld] LoadFile [{}] Failed: {}", _uri.toString(), e.what());
+        "[readWorld] File named [{}] does not contain any <world> element.",
+        _uri.toString());
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
-  if (!worldElement) {
-    DART_ERROR(
-        "[readWorld] File named [{}] could not be parsed!", _uri.toString());
-    return nullptr;
-  }
-
-  return ::dart::utils::readWorld(worldElement, _uri, retriever);
+  return contents.worlds.front();
 }
 
 //==============================================================================
@@ -439,67 +471,32 @@ simulation::WorldPtr SkelParser::readWorldXML(
     const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const FileContents contents = readFileXML(_xmlString, _baseUri, _retriever);
 
-  tinyxml2::XMLDocument _dartXML;
-  if (_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS) {
-    _dartXML.PrintError();
+  if (contents.worlds.empty()) {
+    DART_ERROR(
+        "[readWorldXML] XML String does not contain any <world> element!");
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
-  if (!worldElement) {
-    DART_ERROR("[readWorldXML] XML String could not be parsed!");
-    return nullptr;
-  }
-
-  return ::dart::utils::readWorld(worldElement, _baseUri, retriever);
+  return contents.worlds.front();
 }
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
     const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(nullOrRetriever);
+  const FileContents contents = readFile(uri, nullOrRetriever);
 
-  //--------------------------------------------------------------------------
-  // Load xml and create Document
-  tinyxml2::XMLDocument dartFile;
-  try {
-    openXMLFile(dartFile, uri, retriever);
-  } catch (std::exception const& e) {
-    std::cout << "LoadFile [" << uri.toString() << "] Fails: " << e.what()
-              << std::endl;
-    return nullptr;
-  }
-
-  //--------------------------------------------------------------------------
-  // Load DART
-  tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = dartFile.FirstChildElement("skel");
-  if (skelElement == nullptr) {
+  if (contents.skeletons.empty()) {
     DART_ERROR(
-        "Skel file[{}] does not contain <skel> as the element.",
-        uri.toString());
-    return nullptr;
-  }
-
-  //--------------------------------------------------------------------------
-  // Load World
-  tinyxml2::XMLElement* skeletonElement = nullptr;
-  skeletonElement = skelElement->FirstChildElement("skeleton");
-  if (skeletonElement == nullptr) {
-    DART_ERROR(
-        "Skel file[{}] does not contain <skeleton> element under <skel> "
+        "[readSkeleton] File named [{}] does not contain any <skeleton> "
         "element.",
         uri.toString());
     return nullptr;
   }
 
-  dynamics::SkeletonPtr newSkeleton
-      = ::dart::utils::readSkeleton(skeletonElement, uri, retriever);
-
-  return newSkeleton;
+  return contents.skeletons.front();
 }
 
 namespace {
@@ -637,30 +634,60 @@ void readAspects(
 }
 
 //==============================================================================
-tinyxml2::XMLElement* checkFormatAndGetWorldElement(
-    tinyxml2::XMLDocument& _document)
+tinyxml2::XMLElement* getSkelRoot(tinyxml2::XMLDocument& document)
 {
-  //--------------------------------------------------------------------------
-  // Check xml tag
-  tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _document.FirstChildElement("skel");
-  if (skelElement == nullptr) {
+  tinyxml2::XMLElement* skelElement = document.FirstChildElement("skel");
+  if (skelElement == nullptr)
     DART_ERROR("XML Document does not contain <skel> as the root element.");
-    return nullptr;
+
+  return skelElement;
+}
+
+//==============================================================================
+FileContents readFileContents(
+    tinyxml2::XMLDocument& document,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever)
+{
+  FileContents contents;
+
+  tinyxml2::XMLElement* skelElement = getSkelRoot(document);
+  if (skelElement == nullptr)
+    return contents;
+
+  for (tinyxml2::XMLElement* worldElement
+       = skelElement->FirstChildElement("world");
+       worldElement != nullptr;
+       worldElement = worldElement->NextSiblingElement("world")) {
+    auto world = ::dart::utils::readWorld(worldElement, baseUri, retriever);
+    if (!world)
+      continue;
+
+    contents.worlds.push_back(world);
+
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      auto skeleton = world->getSkeleton(i);
+      if (skeleton)
+        contents.skeletons.push_back(skeleton);
+    }
   }
 
-  //--------------------------------------------------------------------------
-  // Load World
-  tinyxml2::XMLElement* worldElement = nullptr;
-  worldElement = skelElement->FirstChildElement("world");
-  if (worldElement == nullptr) {
-    DART_ERROR(
-        "XML Document does not contain a <world> element under the <skel> "
-        "element.");
-    return nullptr;
+  for (tinyxml2::XMLElement* skeletonElement
+       = skelElement->FirstChildElement("skeleton");
+       skeletonElement != nullptr;
+       skeletonElement = skeletonElement->NextSiblingElement("skeleton")) {
+    auto skeleton
+        = ::dart::utils::readSkeleton(skeletonElement, baseUri, retriever);
+    if (!skeleton)
+      continue;
+
+    const auto duplicate = std::find(
+        contents.skeletons.begin(), contents.skeletons.end(), skeleton);
+    if (duplicate == contents.skeletons.end())
+      contents.skeletons.push_back(skeleton);
   }
 
-  return worldElement;
+  return contents;
 }
 
 //==============================================================================
