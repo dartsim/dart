@@ -123,60 +123,6 @@ TEST(AtlasIK, HandReachesTarget)
 }
 
 //==============================================================================
-TEST(AtlasIK, InfiniteBoundsProduceZeroError)
-{
-  // This test demonstrates the BUG: infinite bounds cause zero error
-
-  SkeletonPtr atlas = utils::DartLoader().parseSkeleton(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
-  ASSERT_NE(atlas, nullptr);
-
-  BodyNode* l_hand_bn = atlas->getBodyNode("l_hand");
-  EndEffector* l_hand = l_hand_bn->createEndEffector("l_hand");
-
-  Eigen::Vector3d initial_pos = l_hand->getWorldTransform().translation();
-
-  auto target = SimpleFrame::createShared(Frame::World(), "target");
-  Eigen::Isometry3d target_tf = l_hand->getWorldTransform();
-  target_tf.translation()
-      = initial_pos + Eigen::Vector3d(0.1, 0.0, 0.0); // 10cm away
-  target->setTransform(target_tf);
-
-  auto ik = l_hand->getIK(true);
-  ik->setTarget(target);
-  ik->setActive(true);
-  ik->useWholeBody(); // Uses all dependent DOFs
-
-  // Set INFINITE bounds (the bug)
-  ik->getErrorMethod().setBounds(
-      Eigen::Vector6d::Constant(-std::numeric_limits<double>::infinity()),
-      Eigen::Vector6d::Constant(std::numeric_limits<double>::infinity()));
-
-  // Compute error manually using the correct DOFs
-  const std::vector<std::size_t>& dofs = ik->getDofs();
-  Eigen::VectorXd q(dofs.size());
-  for (std::size_t i = 0; i < dofs.size(); ++i)
-    q[i] = atlas->getDof(dofs[i])->getPosition();
-
-  ik->getErrorMethod().clearCache();
-  const Eigen::Vector6d& error = ik->getErrorMethod().evalError(q);
-
-  std::cout << "Error with infinite bounds: " << error.transpose() << std::endl;
-  std::cout << "Error norm: " << error.norm() << std::endl;
-
-  // ❌ BUG: Error is ZERO even though target is 10cm away!
-  if (error.norm() < 1e-4) {
-    GTEST_SKIP()
-        << "Error remains zero due to known bug (see Atlas IK tutorial notes).";
-  }
-
-  // When the bug is fixed, the error should reflect the 10cm displacement.
-  EXPECT_GT(error.norm(), 0.01)
-      << "With infinite bounds the error should be non-zero; a near-zero value "
-         "indicates the regression has resurfaced.";
-}
-
-//==============================================================================
 TEST(AtlasIK, TightBoundsProduceNonZeroError)
 {
   // This test shows the FIX: tight bounds produce non-zero error
@@ -201,7 +147,7 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
   ik->setActive(true);
   ik->useWholeBody(); // Uses all dependent DOFs
 
-  // Set TIGHT bounds (the fix)
+  // Enforce tight bounds so the error term reflects the displacement.
   ik->getErrorMethod().setBounds(
       Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
 
@@ -217,7 +163,6 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
   std::cout << "Error with tight bounds: " << error.transpose() << std::endl;
   std::cout << "Error norm: " << error.norm() << std::endl;
 
-  // ✅ FIX: Error is NON-ZERO because displacement exceeds tight bounds!
   EXPECT_GT(error.norm(), 0.01)
       << "With tight bounds, error should be non-zero when target is far";
 }
