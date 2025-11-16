@@ -116,7 +116,13 @@ source_suffix = {
 # The master toctree document.
 root_doc = "index"
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    "dartpy/api/*",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -143,3 +149,8 @@ latex_elements = {
         \usepackage{kotex}
     """
 }
+
+# Provide easy-to-reuse substitutions in the RST files.
+rst_epilog = f"""
+.. |python_api_url| replace:: {html_context['python_api_url']}
+"""
