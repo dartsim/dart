@@ -80,6 +80,8 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - `setMomentOfInertia()`, `getMomentOfInertia()`
   - `setLocalCOM()`, `getLocalCOM()`
   - `setInertia()`, `getInertia()`
+  - `computeInertiaFromShapeNodes()` - Aggregate ShapeNode inertias given a
+    per-shape mass provider (handy for importers and tooling).
 
 - **Kinematics:**
   - `getRelativeTransform()` - Transform relative to parent
@@ -100,6 +102,9 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - `createShapeNode()` - Attach collision/visual shapes
   - `getNumShapeNodesWith<Aspect>()` / `getShapeNodeWith<Aspect>(index)` - Query shapes with specific aspects
   - `eachShapeNodeWith<Aspect>()` - Iterate over shapes
+  - `ShapeNode::computeTransformedInertia()` - Build a `dynamics::Inertia`
+    with the ShapeNode’s relative transform already applied (useful when
+    pulling mass properties from geometry).
 
 - **Specialized Nodes:**
   - EndEffector support
