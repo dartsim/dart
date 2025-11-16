@@ -39,8 +39,8 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
-#include <dart/simulation/Recording.hpp>
 #include <dart/simulation/Fwd.hpp>
+#include <dart/simulation/Recording.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
