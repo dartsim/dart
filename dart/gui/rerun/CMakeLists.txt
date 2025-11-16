@@ -3,7 +3,7 @@ set(target_name ${PROJECT_NAME}-gui-rerun)
 set(component_name gui-rerun)
 
 # Check dart component dependencies
-dart_check_dependent_target(${target_name} dart-gui)
+dart_check_dependent_target(${target_name} dart)
 
 # Check external dependencies
 if(NOT TARGET rerun_sdk)
@@ -21,12 +21,12 @@ set(dart_gui_rerun_srcs ${srcs} ${detail_srcs})
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_rerun_hdrs} ${dart_gui_rerun_srcs})
-target_link_libraries(${target_name} PUBLIC dart-gui rerun_sdk)
+target_link_libraries(${target_name} PUBLIC dart rerun_sdk)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
+add_component_dependencies(${PROJECT_NAME} ${component_name} utils)
 # add_component_dependency_packages(${PROJECT_NAME} ${component_name} rerun_sdk)
 
 # Generate header for this namespace
@@ -49,4 +49,4 @@ install(
   COMPONENT headers
 )
 
-dart_format_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
+dart_format_add(${hdrs} ${srcs} ${dart_gui_rerun_hdrs} ${dart_gui_rerun_srcs})

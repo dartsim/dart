@@ -34,6 +34,8 @@
 
 #include <algorithm>
 
+#include <cctype>
+
 namespace dart::common {
 
 //==============================================================================

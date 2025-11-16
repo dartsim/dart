@@ -32,6 +32,10 @@
 
 #include "dart/gui/rerun/Log.hpp"
 
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "dart/common/Logging.hpp"
 #include "dart/common/String.hpp"
 #include "dart/dynamics/BodyNode.hpp"

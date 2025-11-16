@@ -36,6 +36,8 @@ If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and
 ## Additional Notes
 - Documentation lives in `docs/` and `tutorials/`.
 - Examples demonstrating API usage can be found in `examples/`.
+- When introducing optional features (e.g., experimental GUIs or loggers), gate them behind a `dart_option` flag, make sure the option's dependencies exist before calling `add_subdirectory`, and keep `pixi` tasks in sync so CI and local builds use the same defaults.  CI environments often need these flags disabled (`CI` env var is available) to avoid fetching large third‑party SDKs by default.
+- Components added under `dart/gui` must link against the actual targets they consume (e.g., `dart` or `dart-utils`) and list the corresponding component dependency; otherwise the build silently skips them.  Confirm `dart_format_add` gets the correct file lists after copying from other components.
 
 ## Submitting Changes
 - Always create a fresh topic branch from `main` before making edits:
@@ -48,3 +50,6 @@ If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and
 - Review your diff (`git status`, `git diff`) and run the relevant `pixi` checks prior to committing.
 - Open a draft PR using the template in `.github/PULL_REQUEST_TEMPLATE.md`. Replace the placeholder summary text instead of leaving it quoted and tick only the checklist items you completed.
 - Convert the PR from draft once validation passes and the change is ready for review.
+
+## Living Document
+- Revisit this file at the end of every task to capture new lessons or process changes before submitting your work.  Treat AGENTS.md as part of the deliverable so future agents inherit the latest playbook instead of relearning the same pitfalls.

@@ -36,6 +36,8 @@
 
 #include <dart/simulation/simulation.hpp>
 
+#include <string_view>
+
 #include <rerun.hpp>
 #include <rerun/demo_utils.hpp>
 
