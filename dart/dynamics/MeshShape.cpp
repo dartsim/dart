@@ -41,8 +41,10 @@
 
 #include <assimp/Importer.hpp>
 #include <assimp/cimport.h>
+#include <assimp/config.h>
 #include <assimp/postprocess.h>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 
@@ -550,15 +552,59 @@ aiScene* MeshShape::cloneMesh() const
 }
 
 //==============================================================================
+namespace {
+
+bool hasColladaExtension(const std::string& path)
+{
+  const std::size_t extensionIndex = path.find_last_of('.');
+  if (extensionIndex == std::string::npos)
+    return false;
+
+  std::string extension = path.substr(extensionIndex);
+  std::transform(
+      extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".dae" || extension == ".zae";
+}
+
+bool isColladaResource(
+    const std::string& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  if (hasColladaExtension(uri))
+    return true;
+
+  if (retriever) {
+    const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+    if (parsedUri.mPath) {
+      const std::string resolvedPath = retriever->getFilePath(parsedUri);
+      if (!resolvedPath.empty())
+        return hasColladaExtension(resolvedPath);
+    }
+  }
+
+  return false;
+}
+
+} // namespace
+
 const aiScene* MeshShape::loadMesh(
     const std::string& _uri, const common::ResourceRetrieverPtr& retriever)
 {
+  const bool isCollada = isColladaResource(_uri, retriever);
+
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(
       propertyStore,
       AI_CONFIG_PP_SBP_REMOVE,
       aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
+  if (isCollada) {
+    // Keep authoring up-axis and allow us to preserve the Collada unit scale.
+    aiSetImportPropertyInteger(
+        propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
+  }
+#endif
 
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
@@ -583,24 +629,10 @@ const aiScene* MeshShape::loadMesh(
     return nullptr;
   }
 
-  // Assimp rotates collada files such that the up-axis (specified in the
-  // collada file) aligns with assimp's y-axis. Here we are reverting this
-  // rotation. We are only catching files with the .dae file ending here. We
-  // might miss files with an .xml file ending, which would need to be looked
-  // into to figure out whether they are collada files.
-  std::string extension;
-  const std::size_t extensionIndex = _uri.find_last_of('.');
-  if (extensionIndex != std::string::npos)
-    extension = _uri.substr(extensionIndex);
-
-  std::transform(
-      std::begin(extension),
-      std::end(extension),
-      std::begin(extension),
-      ::tolower);
-
-  if (extension == ".dae" || extension == ".zae")
+#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
+  if (isCollada && scene->mRootNode)
     scene->mRootNode->mTransformation = aiMatrix4x4();
+#endif
 
   // Finally, pre-transform the vertices. We can't do this as part of the
   // import process, because we may have changed mTransformation above.
