@@ -33,6 +33,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -130,6 +131,25 @@ Eigen::Vector3d ShapeNode::getRelativeTranslation() const
 Eigen::Vector3d ShapeNode::getOffset() const
 {
   return getRelativeTranslation();
+}
+
+//==============================================================================
+Inertia ShapeNode::computeTransformedInertia(double mass) const
+{
+  DART_ASSERT(getShape() != nullptr);
+
+  const Eigen::Matrix3d localMoment = getShape()->computeInertia(mass);
+  const Inertia local(mass, Eigen::Vector3d::Zero(), localMoment);
+  const math::Inertia transformedSpatial = math::transformInertia(
+      getRelativeTransform().inverse(), local.getSpatialTensor());
+
+  return Inertia(transformedSpatial);
+}
+
+//==============================================================================
+Inertia ShapeNode::computeTransformedInertiaFromDensity(double density) const
+{
+  return computeTransformedInertia(density * getShape()->getVolume());
 }
 
 //==============================================================================
