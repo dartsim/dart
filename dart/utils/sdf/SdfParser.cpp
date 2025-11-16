@@ -158,6 +158,8 @@ struct ResolvedOptions
   RootJointType defaultRootJointType;
 };
 
+struct TemporaryResourceOwner;
+
 ResolvedOptions resolveOptions(const Options& options)
 {
   ResolvedOptions resolved;

@@ -62,7 +62,7 @@ std::string getElementText(const ElementPtr& element)
     return std::string();
 
   sdf::Errors errors;
-  const auto serialized = element->ToString("", errors);
+  const auto serialized = element->ToString(errors, "");
   if (!errors.empty())
     return std::string();
 
