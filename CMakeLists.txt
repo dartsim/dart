@@ -233,7 +233,6 @@ dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
-dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
