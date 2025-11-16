@@ -100,7 +100,9 @@ TEST(SdfDetailHelpers, ParsesAttributesScalarsAndEnumerators)
             <self_collide>true</self_collide>
             <mass>1.5</mass>
             <grid>1 2 3</grid>
-        <custom_array>4 5 6 7</custom_array>
+        <custom_array>
+          4 5 6 7
+        </custom_array>
             <plane>0.3 0.4</plane>
             <unknown_vector>0.1 0.2 0.3</unknown_vector>
             <visual name='visual_one'>
