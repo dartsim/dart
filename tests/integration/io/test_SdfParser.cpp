@@ -52,6 +52,7 @@
 #include <map>
 
 #include <cstring>
+#include <filesystem>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -209,6 +210,42 @@ TEST(SdfParser, SDFJointProperties)
       testProperties(joint, 1);
     }
   });
+}
+
+//==============================================================================
+TEST(SdfParser, ResolvesMeshesRelativeToIncludedModels)
+{
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/include_relative_mesh/include_relative_mesh.world");
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+
+  bool foundMesh = false;
+  skeleton->eachBodyNode([&](dynamics::BodyNode* body) {
+    const auto numShapeNodes = body->getNumShapeNodes();
+    for (auto i = 0u; i < numShapeNodes; ++i) {
+      const auto* shapeNode = body->getShapeNode(i);
+      const auto shape = shapeNode->getShape();
+      const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
+      if (!mesh)
+        continue;
+
+      foundMesh = true;
+      const std::string meshPath = mesh->getMeshPath();
+      EXPECT_FALSE(meshPath.empty());
+      EXPECT_NE(meshPath.find("relative_box.obj"), std::string::npos);
+      EXPECT_TRUE(std::filesystem::exists(meshPath))
+          << "Mesh path [" << meshPath << "] should exist.";
+
+      const std::string meshUri = mesh->getMeshUri();
+      EXPECT_NE(meshUri.find("meshes/relative_box.obj"), std::string::npos);
+    }
+  });
+
+  EXPECT_TRUE(foundMesh);
 }
 
 //==============================================================================

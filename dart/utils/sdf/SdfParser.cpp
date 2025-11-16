@@ -199,6 +199,28 @@ NextResult getNextJointAndNodePair(
 dynamics::SkeletonPtr makeSkeleton(
     const ElementPtr& skeletonElement, Eigen::Isometry3d& skeletonFrame);
 
+common::Uri getElementBaseUri(
+    const ElementPtr& element, const common::Uri& fallbackUri)
+{
+  if (!element)
+    return fallbackUri;
+
+  const auto& filePath = element->FilePath();
+  if (filePath.empty())
+    return fallbackUri;
+
+  common::Uri elementUri;
+  if (elementUri.fromPath(filePath))
+    return elementUri;
+
+  DART_WARN(
+      "[SdfParser] Failed to parse file path [{}] for included element. "
+      "Falling back to [{}].",
+      filePath,
+      fallbackUri.toString());
+  return fallbackUri;
+}
+
 template <class NodeType>
 std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
     dynamics::SkeletonPtr skeleton,
@@ -554,8 +576,11 @@ simulation::WorldPtr readWorld(
   // Load skeletons
   ElementEnumerator skeletonElements(worldElement, "model");
   while (skeletonElements.next()) {
+    const ElementPtr skeletonElement = skeletonElements.get();
+    const common::Uri skeletonBaseUri
+        = getElementBaseUri(skeletonElement, baseUri);
     dynamics::SkeletonPtr newSkeleton
-        = readSkeleton(skeletonElements.get(), baseUri, options);
+        = readSkeleton(skeletonElement, skeletonBaseUri, options);
 
     newWorld->addSkeleton(newSkeleton);
   }
