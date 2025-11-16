@@ -195,6 +195,7 @@ function(dart_print_options)
   endif()
 
   set(group_order
+    cmake
     build
     performance
     system
@@ -203,6 +204,7 @@ function(dart_print_options)
     other
   )
   set(group_label_build "Build Outputs")
+  set(group_label_cmake "CMake Globals")
   set(group_label_performance "Performance & Debug")
   set(group_label_system "System Integrations")
   set(group_label_msvc "MSVC Toolchain")
@@ -288,13 +290,10 @@ function(dart_print_options)
     list(APPEND group_${group_key} "${option_str}")
   endforeach()
 
-  if(group_build)
-    if(BUILD_SHARED_LIBS)
-      set(_dart_lib_mode "Shared libraries (BUILD_SHARED_LIBS=ON)")
-    else()
-      set(_dart_lib_mode "Static libraries (BUILD_SHARED_LIBS=OFF)")
-    endif()
-    list(INSERT group_build 0 "- BUILD_SHARED_LIBS_MODE : ${_dart_lib_mode}")
+  if(BUILD_SHARED_LIBS)
+    set(group_cmake "- BUILD_SHARED_LIBS : ON [default]")
+  else()
+    set(group_cmake "- BUILD_SHARED_LIBS : OFF")
   endif()
 
   foreach(group IN LISTS group_order)
