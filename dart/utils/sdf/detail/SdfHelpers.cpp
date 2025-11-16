@@ -46,6 +46,46 @@ std::string toLowerCopy(std::string text)
   return text;
 }
 
+std::string trimCopy(const std::string& text)
+{
+  const auto start = text.find_first_not_of(" \t\r\n");
+  if (start == std::string::npos)
+    return std::string();
+
+  const auto end = text.find_last_not_of(" \t\r\n");
+  return text.substr(start, end - start + 1);
+}
+
+std::string getElementText(const ElementPtr& element)
+{
+  if (!element)
+    return std::string();
+
+  sdf::Errors errors;
+  const auto serialized = element->ToString("", errors);
+  if (!errors.empty())
+    return std::string();
+
+  const auto open = serialized.find('>');
+  const auto close = serialized.rfind('<');
+  if (open == std::string::npos || close == std::string::npos
+      || close <= open) {
+    return std::string();
+  }
+
+  return trimCopy(serialized.substr(open + 1, close - open - 1));
+}
+
+std::string getChildElementText(
+    const ElementPtr& parent, const std::string& name)
+{
+  if (!parent || name.empty())
+    return std::string();
+
+  const auto child = getElement(parent, name);
+  return getElementText(child);
+}
+
 sdf::ParamPtr getAttributeParam(
     const ElementPtr& element, const std::string& attributeName)
 {
@@ -246,7 +286,9 @@ Eigen::Vector2d getValueVector2d(
         name,
         parentElement ? parentElement->GetName() : "unknown",
         e.what());
-    return result;
+    text = getChildElementText(parentElement, name);
+    if (text.empty())
+      return result;
   }
 
   const auto values = parseArray<double>(text);
@@ -284,7 +326,9 @@ Eigen::Vector3d getValueVector3d(
         name,
         parentElement ? parentElement->GetName() : "unknown",
         e.what());
-    return result;
+    text = getChildElementText(parentElement, name);
+    if (text.empty())
+      return result;
   }
 
   const auto values = parseArray<double>(text);
@@ -363,7 +407,9 @@ Eigen::VectorXd getValueVectorXd(
         name,
         parentElement ? parentElement->GetName() : "unknown",
         e.what());
-    return Eigen::VectorXd();
+    text = getChildElementText(parentElement, name);
+    if (text.empty())
+      return Eigen::VectorXd();
   }
 
   const auto values = parseArray<double>(text);
@@ -394,7 +440,9 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
         name,
         parentElement ? parentElement->GetName() : "unknown",
         e.what());
-    return Eigen::Isometry3d::Identity();
+    text = getChildElementText(parentElement, name);
+    if (text.empty())
+      return Eigen::Isometry3d::Identity();
   }
 
   const auto values = parseArray<double>(text);

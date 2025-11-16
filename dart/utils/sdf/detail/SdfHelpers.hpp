@@ -66,6 +66,11 @@ namespace dart::utils::SdfParser::detail {
 using ElementPtr = sdf::ElementPtr;
 
 std::string toLowerCopy(std::string text);
+std::string trimCopy(const std::string& text);
+
+std::string getElementText(const ElementPtr& element);
+std::string getChildElementText(
+    const ElementPtr& parent, const std::string& name);
 
 template <typename T>
 bool parseScalar(const std::string& text, T& value)
