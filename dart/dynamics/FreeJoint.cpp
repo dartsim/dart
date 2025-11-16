@@ -541,25 +541,14 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Matrix6d J = getRelativeJacobianStatic();
-  const Eigen::Vector6d spatialVelocity = J * getVelocitiesStatic();
-  const Eigen::Vector6d spatialAcceleration = J * getAccelerationsStatic();
-
-  const Eigen::Isometry3d Qdiff = convertToTransform(spatialVelocity * _dt);
+  const Eigen::Isometry3d Qdiff
+      = convertToTransform(getVelocitiesStatic() * _dt);
   const Eigen::Isometry3d Qnext = getQ() * Qdiff;
   const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
 
-  const Eigen::Vector6d newSpatialVelocity
-      = math::AdR(QdiffInv, spatialVelocity);
-  const Eigen::Vector6d newSpatialAcceleration
-      = math::AdR(QdiffInv, spatialAcceleration);
-
+  setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
+  setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
   setPositionsStatic(convertToPositions(Qnext));
-
-  const Eigen::Matrix6d newJ = getRelativeJacobianStatic();
-  const Eigen::Matrix6d newJInv = newJ.inverse();
-  setVelocitiesStatic(newJInv * newSpatialVelocity);
-  setAccelerationsStatic(newJInv * newSpatialAcceleration);
 }
 
 //==============================================================================
@@ -573,27 +562,18 @@ void FreeJoint::integrateVelocities(double _dt)
   // spatial velocity at the current location of the child body frame. To
   // accomplish this, we first convert the linear portion of the spatial
   // acceleration into classical linear acceleration and apply the integration.
-  const Eigen::Matrix6d J = getRelativeJacobianStatic();
-  Eigen::Vector6d spatialAcceleration = J * getAccelerationsStatic();
-  Eigen::Vector6d spatialVelocity = J * getVelocitiesStatic();
-
-  spatialAcceleration.tail<3>()
-      += spatialVelocity.head<3>().cross(spatialVelocity.tail<3>());
-  spatialVelocity = math::integrateVelocity<math::SE3Space>(
-      spatialVelocity, spatialAcceleration, _dt);
-
-  const Eigen::Matrix6d JInv = J.inverse();
-  setVelocitiesStatic(JInv * spatialVelocity);
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
+  setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
+      getVelocitiesStatic(), accel, _dt));
 
   // Since the velocity has been updated, we use the new velocity to recompute
   // the spatial acceleration. This is needed to ensure that functions like
   // BodyNode::getLinearAcceleration work properly.
-  const Eigen::Matrix6d newJ = getRelativeJacobianStatic();
-  const Eigen::Vector6d newSpatialVelocity = newJ * getVelocitiesStatic();
-  spatialAcceleration.tail<3>()
-      -= newSpatialVelocity.head<3>().cross(newSpatialVelocity.tail<3>());
-  const Eigen::Matrix6d newJInv = newJ.inverse();
-  setAccelerationsStatic(newJInv * spatialAcceleration);
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel);
 }
 
 //==============================================================================
@@ -601,23 +581,15 @@ void FreeJoint::updateConstrainedTerms(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  const Eigen::Matrix6d J = getRelativeJacobianStatic();
-  Eigen::Vector6d spatialAcceleration = J * getAccelerationsStatic();
-  const Eigen::Vector6d spatialVelBefore = J * getVelocitiesStatic();
-  spatialAcceleration.tail<3>()
-      += spatialVelBefore.head<3>().cross(spatialVelBefore.tail<3>());
+  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
+  Eigen::Vector6d accel = getAccelerationsStatic();
+  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
 
   setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
 
-  const Eigen::Matrix6d newJ = getRelativeJacobianStatic();
-  const Eigen::Vector6d spatialVelAfter = newJ * getVelocitiesStatic();
-  spatialAcceleration.tail<3>()
-      -= spatialVelAfter.head<3>().cross(spatialVelAfter.tail<3>());
-
-  const Eigen::Vector6d spatialVelocityChange = newJ * mVelocityChanges;
-  const Eigen::Matrix6d newJInv = newJ.inverse();
-  setAccelerationsStatic(
-      newJInv * (spatialAcceleration + spatialVelocityChange * invTimeStep));
+  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
+  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
+  setAccelerationsStatic(accel + mVelocityChanges * invTimeStep);
   this->mAspectState.mForces.noalias() += mImpulses * invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
@@ -653,37 +625,15 @@ void FreeJoint::updateRelativeTransform() const
 //==============================================================================
 void FreeJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (!_mandatory)
-    return;
-
-  const Eigen::Matrix6d childBodyToJointAd
-      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
-
-  mJacobian = childBodyToJointAd;
-
-  const Eigen::Matrix3d R = getRelativeTransform().linear();
-  const Eigen::Matrix3d Rt = R.transpose();
-  mJacobian.rightCols<3>() = childBodyToJointAd.rightCols<3>() * Rt;
+  if (_mandatory)
+    mJacobian
+        = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 }
 
 //==============================================================================
 void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
-  const Eigen::Matrix6d childBodyToJointAd
-      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
-
-  mJacobianDeriv.setZero();
-
-  const Eigen::Matrix3d R = getRelativeTransform().linear();
-  const Eigen::Matrix3d Rt = R.transpose();
-
-  const Eigen::Vector6d spatialVelocity
-      = getRelativeJacobianStatic() * getVelocitiesStatic();
-  const Eigen::Vector3d omega = spatialVelocity.head<3>();
-  const Eigen::Matrix3d omegaSkew = math::makeSkewSymmetric(omega);
-
-  const Eigen::Matrix3d dRt = -omegaSkew * Rt;
-  mJacobianDeriv.rightCols<3>() = childBodyToJointAd.rightCols<3>() * dRt;
+  DART_ASSERT(Eigen::Matrix6d::Zero() == mJacobianDeriv);
 }
 
 //==============================================================================
