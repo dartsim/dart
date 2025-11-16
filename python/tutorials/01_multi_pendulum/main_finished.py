@@ -29,8 +29,10 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+"""Interactive multi-pendulum tutorial implemented with dartpy."""
+
 import math
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import dartpy as dart
 import numpy as np
@@ -54,17 +56,21 @@ delta_damping = 1.0
 
 
 def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
-    """Helper to create column-vectors for dartpy APIs."""
+    """Return a 3 × 1 numpy vector for dartpy API calls."""
     vec = np.zeros(3)
     vec[:] = values
     return vec
 
 
 class Controller:
-    def __init__(self, pendulum: dart.dynamics.Skeleton, world: dart.simulation.World):
+    """Owns the runtime state and interactions for the tutorial."""
+
+    def __init__(
+        self, pendulum: dart.dynamics.Skeleton, world: dart.simulation.World
+    ):
         self.pendulum = pendulum
         self.world = world
-        self.ball_constraint = None
+        self.ball_constraint: Optional[dart.constraint.BallJointConstraint] = None
         self.positive_sign = True
         self.apply_body_force = False
         self.force_countdown: List[int] = [0] * self.pendulum.getNumDofs()
@@ -148,58 +154,75 @@ class Controller:
         self.apply_body_force = not self.apply_body_force
 
     def update(self):
-        # Reset visuals.
+        """Advance one controller iteration."""
+        self._reset_visuals()
+        if self.apply_body_force:
+            self._apply_body_forces()
+        else:
+            self._apply_joint_torques()
+
+    def _reset_visuals(self):
+        """Lesson 1a: restore blue bodies and hide arrows."""
         for idx in range(self.pendulum.getNumBodyNodes()):
             body = self.pendulum.getBodyNode(idx)
             num_visual_nodes = body.getNumShapeNodes()
             for j in range(min(2, num_visual_nodes)):
-                visual = (
-                    body.getShapeNode(j).getVisualAspect()
-                )
+                visual = body.getShapeNode(j).getVisualAspect()
                 visual.setColor([0.0, 0.0, 1.0, 1.0])
             _, arrow_visual = self.body_force_visuals[idx]
             arrow_visual.hide()
 
-        if not self.apply_body_force:
-            for i in range(self.pendulum.getNumDofs()):
-                if self.force_countdown[i] > 0:
-                    dof = self.pendulum.getDof(i)
-                    torque = default_torque if self.positive_sign else -default_torque
-                    dof.setForce(torque)
+    def _apply_joint_torques(self):
+        """Lesson 1b: apply impulsive joint torques and highlight joints."""
+        torque = default_torque if self.positive_sign else -default_torque
+        for i in range(self.pendulum.getNumDofs()):
+            if self.force_countdown[i] <= 0:
+                continue
 
-                    child = dof.getChildBodyNode()
-                    if child.getNumShapeNodes() > 0:
-                        joint_visual = child.getShapeNode(0).getVisualAspect()
-                        joint_visual.setColor([1.0, 0.0, 0.0, 1.0])
-                    self.force_countdown[i] -= 1
-        else:
-            num_slots = min(
-                self.pendulum.getNumBodyNodes(), len(self.force_countdown)
+            dof = self.pendulum.getDof(i)
+            dof.setForce(torque)
+
+            child = dof.getChildBodyNode()
+            if child.getNumShapeNodes() > 0:
+                joint_visual = child.getShapeNode(0).getVisualAspect()
+                joint_visual.setColor([1.0, 0.0, 0.0, 1.0])
+
+            self.force_countdown[i] -= 1
+
+    def _apply_body_forces(self):
+        """Lesson 1c: apply body forces and show the arrow visuals."""
+        num_slots = min(
+            self.pendulum.getNumBodyNodes(), len(self.force_countdown)
+        )
+        tail, head = self._arrow_positions()
+        for i in range(num_slots):
+            if self.force_countdown[i] <= 0:
+                continue
+
+            body = self.pendulum.getBodyNode(i)
+            force = np.array([default_force, 0.0, 0.0])
+            location = np.array(
+                [-default_width / 2.0, 0.0, default_height / 2.0]
             )
-            for i in range(num_slots):
-                if self.force_countdown[i] > 0:
-                    body = self.pendulum.getBodyNode(i)
-                    force = np.array([default_force, 0.0, 0.0])
-                    location = np.array(
-                        [-default_width / 2.0, 0.0, default_height / 2.0]
-                    )
-                    if not self.positive_sign:
-                        force *= -1.0
-                        location[0] *= -1.0
-                    body.addExtForce(force, location, True, True)
+            if not self.positive_sign:
+                force *= -1.0
+                location[0] *= -1.0
+            body.addExtForce(force, location, True, True)
 
-                    if body.getNumShapeNodes() > 1:
-                        body_shape = body.getShapeNode(1).getVisualAspect()
-                        body_shape.setColor([1.0, 0.0, 0.0, 1.0])
+            if body.getNumShapeNodes() > 1:
+                body_shape = body.getShapeNode(1).getVisualAspect()
+                body_shape.setColor([1.0, 0.0, 0.0, 1.0])
 
-                    arrow, arrow_visual = self.body_force_visuals[i]
-                    tail, head = self._arrow_positions()
-                    arrow.setPositions(tail, head)
-                    arrow_visual.show()
-                    self.force_countdown[i] -= 1
+            arrow, arrow_visual = self.body_force_visuals[i]
+            arrow.setPositions(tail, head)
+            arrow_visual.show()
+
+            self.force_countdown[i] -= 1
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
+    """Map keyboard input to controller actions."""
+
     def __init__(self, controller: Controller):
         super().__init__()
         self.controller = controller
@@ -261,7 +284,11 @@ class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
 
 
 class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
-    def __init__(self, world, controller):
+    """Call the controller before each physics step."""
+
+    def __init__(
+        self, world: dart.simulation.World, controller: Controller
+    ):
         super().__init__(world)
         self.controller = controller
 
@@ -270,6 +297,7 @@ class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
 
 
 def set_geometry(body: dart.dynamics.BodyNode):
+    """Attach the blue box geometry plus collision/dynamics aspects."""
     box = dart.dynamics.BoxShape([default_width, default_depth, default_height])
     shape_node = body.createShapeNode(box)
     visual = shape_node.createVisualAspect()
@@ -285,6 +313,7 @@ def set_geometry(body: dart.dynamics.BodyNode):
 
 
 def make_root_body(pendulum: dart.dynamics.Skeleton, name: str):
+    """Create and return the ball-jointed root body."""
     joint_prop = dart.dynamics.BallJointProperties()
     joint_prop.mName = f"{name}_joint"
     joint_prop.mRestPositions = np.ones(3) * default_rest_position
@@ -309,6 +338,7 @@ def make_root_body(pendulum: dart.dynamics.Skeleton, name: str):
 
 
 def add_body(pendulum: dart.dynamics.Skeleton, parent, name: str):
+    """Append a revolute-jointed body and return it."""
     joint_prop = dart.dynamics.RevoluteJointProperties()
     joint_prop.mName = f"{name}_joint"
     joint_prop.mAxis = [0.0, 1.0, 0.0]
@@ -342,6 +372,7 @@ def add_body(pendulum: dart.dynamics.Skeleton, parent, name: str):
 
 
 def main():
+    """Build the pendulum demo and start the viewer."""
     pendulum = dart.dynamics.Skeleton("pendulum")
 
     body = make_root_body(pendulum, "body1")

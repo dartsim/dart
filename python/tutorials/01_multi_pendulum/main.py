@@ -29,6 +29,8 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+"""Starter scaffold for the dartpy multi-pendulum tutorial."""
+
 import math
 from typing import List, Tuple
 
@@ -54,6 +56,7 @@ delta_damping = 1.0
 
 
 def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
+    """Helper to create column-vectors for dartpy APIs."""
     vec = np.zeros(3)
     vec[:] = values
     return vec
@@ -106,23 +109,29 @@ class Controller:
             self.force_countdown[index] = default_countdown
 
     def change_rest_position(self, _delta: float):
-        # Lesson 2a
+        """Lesson 2a."""
+        # TODO: Loop over the DOFs, adjust their rest positions, clamp to ±90°,
+        # and zero the X/Z axes of the root BallJoint so the pendulum stays planar.
         pass
 
     def change_stiffness(self, _delta: float):
-        # Lesson 2b
+        """Lesson 2b."""
+        # TODO: Increment each DOF's spring stiffness by delta while clamping at zero.
         pass
 
     def change_damping(self, _delta: float):
-        # Lesson 2c
+        """Lesson 2c."""
+        # TODO: Increment each DOF's damping coefficient by delta while clamping at zero.
         pass
 
     def add_constraint(self):
-        # Lesson 3
+        """Lesson 3."""
+        # TODO: Attach a dart.constraint.BallJointConstraint from the tip to the world.
         pass
 
     def remove_constraint(self):
-        # Lesson 3
+        """Lesson 3."""
+        # TODO: Remove the constraint from the solver and clear the cached pointer.
         pass
 
     def has_constraint(self) -> bool:
@@ -132,23 +141,27 @@ class Controller:
         self.apply_body_force = not self.apply_body_force
 
     def update(self):
-        # Lesson 1a: Reset shapes to their default state.
-
-        if not self.apply_body_force:
-            # Lesson 1b: Apply joint torques and highlight joints.
-            for i in range(self.pendulum.getNumDofs()):
-                if self.force_countdown[i] > 0:
-                    # Lesson 1b
-                    pass
+        """Lesson 1."""
+        self._reset_visuals()
+        if self.apply_body_force:
+            self._apply_body_forces()
         else:
-            # Lesson 1c: Apply external body forces and visualize them.
-            num_slots = min(
-                self.pendulum.getNumBodyNodes(), len(self.force_countdown)
-            )
-            for i in range(num_slots):
-                if self.force_countdown[i] > 0:
-                    # Lesson 1c
-                    pass
+            self._apply_joint_torques()
+
+    def _reset_visuals(self):
+        """Lesson 1a."""
+        # TODO: Restore the first two visual aspects to blue and hide any arrows.
+        pass
+
+    def _apply_joint_torques(self):
+        """Lesson 1b."""
+        # TODO: For each DOF with a positive countdown, apply torque and tint shapeNode(0) red.
+        pass
+
+    def _apply_body_forces(self):
+        """Lesson 1c."""
+        # TODO: Apply external forces, recolor the body shape, and display the arrow visuals.
+        pass
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
