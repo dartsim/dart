@@ -7,8 +7,8 @@ sources to stay in sync with the code you run locally.
 
 Source links:
 
-- `tutorials/tutorial_multi_pendulum/main.cpp <https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp>`__
-- `python/tutorials/01_multi_pendulum/main.py <https://github.com/dartsim/dart/blob/main/python/tutorials/01_multi_pendulum/main.py>`__
+- [tutorials/tutorial_multi_pendulum/main.cpp](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp)
+- [python/tutorials/01_multi_pendulum/main.py](https://github.com/dartsim/dart/blob/main/python/tutorials/01_multi_pendulum/main.py)
 
 ## Lesson 1: Apply forces during simulation
 
@@ -19,7 +19,6 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
@@ -40,7 +39,6 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
@@ -61,7 +59,6 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
@@ -87,7 +84,6 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
@@ -108,7 +104,6 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
@@ -129,7 +124,6 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
-   :class: simple
 
    .. tab:: C++
 
