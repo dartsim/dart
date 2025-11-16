@@ -4,6 +4,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -17,7 +18,7 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/pair.h>
-#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 namespace nb = nanobind;
 
@@ -43,8 +44,11 @@ void defSkeleton(nb::module_& m)
   using Skeleton = dart::dynamics::Skeleton;
   using BodyNode = dart::dynamics::BodyNode;
 
-  nb::class_<Skeleton>(m, "Skeleton")
-      .def(nb::init<>())
+  nb::class_<Skeleton, dart::dynamics::MetaSkeleton>(m, "Skeleton")
+      .def(nb::new_([]() { return Skeleton::create(); }))
+      .def(
+          nb::new_([](const std::string& name) { return Skeleton::create(name); }),
+          nb::arg("name"))
       .def("getNumBodyNodes", &Skeleton::getNumBodyNodes)
       .def("getNumJoints", &Skeleton::getNumJoints)
       .def("getNumDofs", &Skeleton::getNumDofs)

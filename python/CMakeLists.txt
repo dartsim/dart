@@ -28,22 +28,12 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY8 AND NOT DART_BUILD_DARTPY_NB)
+if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY8)
   return()
-endif()
-
-if(DART_BUILD_DARTPY OR DART_BUILD_DARTPY8)
-  message(FATAL_ERROR
-    "Legacy pybind11-based dartpy builds are no longer supported in this configuration. "
-    "Keep the source for reference, but use dartpy_nb (nanobind) instead.")
 endif()
 
 set(DART_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 if(DART_BUILD_DARTPY)
-  set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy")
-  set(DART_DARTPY_RUNTIME_DIR "${DART_DARTPY_BUILD_DIR}")
-endif()
-if(DART_BUILD_DARTPY_NB)
   set(DART_DARTPY_NB_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy_nb")
   set(DART_DARTPY_NB_RUNTIME_DIR "${DART_DARTPY_NB_BUILD_DIR}")
 endif()
@@ -56,9 +46,6 @@ endif()
 
 set(_dart_pythonpath_components)
 if(DART_BUILD_DARTPY)
-  list(APPEND _dart_pythonpath_components "${DART_DARTPY_RUNTIME_DIR}")
-endif()
-if(DART_BUILD_DARTPY_NB)
   list(APPEND _dart_pythonpath_components "${DART_DARTPY_NB_RUNTIME_DIR}")
 endif()
 list(APPEND _dart_pythonpath_components "${DART_PYTHON_BUILD_DIR}")
@@ -70,7 +57,7 @@ if(WIN32)
   string(REPLACE ";" "\\;" DART_PYTHONPATH_ENV "${DART_PYTHONPATH_ENV}")
 endif()
 
-if(DART_BUILD_DARTPY_NB)
+if(DART_BUILD_DARTPY)
   add_subdirectory(dartpy_nb)
   message(STATUS "")
   message(STATUS "[ dartpy_nb ]")
@@ -80,7 +67,7 @@ if(DART_BUILD_DARTPY_NB)
   endif()
 endif()
 
-if(DART_BUILD_DARTPY_NB)
+if(DART_BUILD_DARTPY)
   add_subdirectory(tests)
   add_subdirectory(examples)
 endif()

@@ -17,7 +17,9 @@ void defBallJoint(nb::module_& m)
   nb::class_<BallJoint, dart::dynamics::Joint>(m, "BallJoint")
       .def_static(
           "convertToPositions",
-          &BallJoint::convertToPositions,
+          [](const Eigen::Matrix3d& transform) {
+            return BallJoint::convertToPositions(transform);
+          },
           nb::arg("transform"))
       .def_static(
           "convertToRotation",

@@ -22,12 +22,12 @@ void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
 
-  nb::class_<World, ::std::shared_ptr<World>>(m, "World")
+  nb::class_<World>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
-      .def(nb::init([]() { return World::create(); }))
+      .def(nb::new_([]() { return World::create(); }))
       .def(
-          nb::init([](const std::string& name) { return World::create(name); }),
+          nb::new_([](const std::string& name) { return World::create(name); }),
           nb::arg("name"))
       .def("clone", [](const World& self) { return self.clone(); })
       .def(
