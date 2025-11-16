@@ -36,6 +36,8 @@
 #include <dart/dynamics/GenericJoint.hpp>
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -48,7 +50,7 @@ class TranslationalJoint2D;
 namespace detail {
 
 //==============================================================================
-class TranslationalJoint2DUniqueProperties
+class DART_API TranslationalJoint2DUniqueProperties
 {
 public:
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
@@ -113,8 +115,9 @@ private:
 };
 
 //==============================================================================
-struct TranslationalJoint2DProperties : GenericJoint<math::R2Space>::Properties,
-                                        TranslationalJoint2DUniqueProperties
+struct DART_API TranslationalJoint2DProperties
+  : GenericJoint<math::R2Space>::Properties,
+    TranslationalJoint2DUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(TranslationalJoint2DProperties)
 

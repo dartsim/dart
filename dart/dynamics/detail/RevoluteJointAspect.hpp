@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -47,7 +49,7 @@ class RevoluteJoint;
 namespace detail {
 
 //==============================================================================
-struct RevoluteJointUniqueProperties
+struct DART_API RevoluteJointUniqueProperties
 {
   Eigen::Vector3d mAxis;
 
@@ -58,8 +60,9 @@ struct RevoluteJointUniqueProperties
 };
 
 //==============================================================================
-struct RevoluteJointProperties : GenericJoint<math::R1Space>::Properties,
-                                 RevoluteJointUniqueProperties
+struct DART_API RevoluteJointProperties
+  : GenericJoint<math::R1Space>::Properties,
+    RevoluteJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(RevoluteJointProperties)
 

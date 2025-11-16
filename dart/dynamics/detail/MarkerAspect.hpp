@@ -35,13 +35,15 @@
 
 #include <dart/math/Helpers.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Core>
 
 namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct MarkerProperties
+struct DART_API MarkerProperties
 {
   enum ConstraintType
   {

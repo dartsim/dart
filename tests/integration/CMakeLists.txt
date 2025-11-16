@@ -159,6 +159,10 @@ if(TARGET dart-utils-urdf)
     dart_add_test("integration" test_IkFast io/test_IkFast.cpp)
     target_link_libraries(test_IkFast dart-utils-urdf)
     add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    target_compile_definitions(
+      test_IkFast PRIVATE
+        DART_IKFAST_GENERATED_LIB_PATH="$<TARGET_FILE:GeneratedWamIkFast>"
+    )
   endif()
 endif()
 

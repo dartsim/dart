@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Node.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -44,7 +46,7 @@ class EntityNode;
 namespace detail {
 
 //==============================================================================
-struct EntityNodeProperties
+struct DART_API EntityNodeProperties
 {
   /// Name of the Entity/Node
   std::string mName;

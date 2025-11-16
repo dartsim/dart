@@ -46,7 +46,7 @@ namespace dynamics {
 /// to the apex is aligned with the Z-axis while the lateral and the
 /// longitudinal lengths of the base are aligned with the X-axis and Y-axis,
 /// respectively.
-class PyramidShape : public Shape
+class DART_API PyramidShape : public Shape
 {
 public:
   /// Constructor.

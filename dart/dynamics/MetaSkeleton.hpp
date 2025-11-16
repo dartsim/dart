@@ -43,6 +43,8 @@
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -60,7 +62,7 @@ class DegreeOfFreedom;
 /// MetaSkeleton is a pure abstract base class that provides a common interface
 /// for obtaining data (such as Jacobians and Mass Matrices) from groups of
 /// BodyNodes.
-class MetaSkeleton : public common::Subject
+class DART_API MetaSkeleton : public common::Subject
 {
 public:
   using NameChangedSignal = common::Signal<void(
@@ -76,7 +78,7 @@ public:
   /// Creates an identical clone of this MetaSkeleton
   virtual MetaSkeletonPtr cloneMetaSkeleton(
       const std::string& cloneName) const = 0;
-  // TODO: In DART7, rename this to clone() and change the current
+  // TODO: In DART8, rename this to clone() and change the current
   // Skeleton::clone() to override it.
 
   /// Creates an identical clone of this MetaSkeleton
@@ -85,7 +87,7 @@ public:
   /// Returns mutex.
   virtual std::unique_ptr<common::LockableReference> getLockableReference()
       const = 0;
-  // TODO: In DART7, rename this to getMutex() and change the current
+  // TODO: In DART8, rename this to getMutex() and change the current
   // Skeleton::getMutex() to override it.
 
   //----------------------------------------------------------------------------

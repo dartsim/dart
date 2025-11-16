@@ -279,17 +279,6 @@ protected:
 };
 
 //==============================================================================
-class PointNodes : public ::osg::Group
-{
-public:
-  PointNodes() = default;
-
-  virtual void refresh(bool /*firstTime*/) = 0;
-
-protected:
-};
-
-//==============================================================================
 bool shouldUseVisualAspectColor(
     const std::vector<Eigen::Vector3d>& points,
     const std::vector<

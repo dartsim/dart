@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_WORLDBODY_HPP_
 #define DART_UTILS_MJCF_DETAIL_WORLDBODY_HPP_
 
+#include <dart/utils/Export.hpp>
 #include <dart/utils/mjcf/detail/Body.hpp>
 #include <dart/utils/mjcf/detail/Compiler.hpp>
 #include <dart/utils/mjcf/detail/Error.hpp>
@@ -50,7 +51,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Worldbody final
+class DART_UTILS_API Worldbody final
 {
 public:
   /// Default constructor

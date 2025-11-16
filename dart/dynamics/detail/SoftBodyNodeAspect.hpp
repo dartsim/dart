@@ -38,6 +38,8 @@
 
 #include <dart/common/RequiresAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -63,7 +65,7 @@ struct SoftBodyNodeUniqueState
 };
 
 //==============================================================================
-struct SoftBodyNodeUniqueProperties
+struct DART_API SoftBodyNodeUniqueProperties
 {
   /// Spring stiffness for vertex deformation restoring spring force of the
   /// point masses
@@ -105,8 +107,8 @@ struct SoftBodyNodeUniqueProperties
 };
 
 //==============================================================================
-struct SoftBodyNodeProperties : BodyNode::Properties,
-                                SoftBodyNodeUniqueProperties
+struct DART_API SoftBodyNodeProperties : BodyNode::Properties,
+                                         SoftBodyNodeUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SoftBodyNodeProperties)
 

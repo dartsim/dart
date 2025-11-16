@@ -35,6 +35,8 @@
 
 #include <dart/optimizer/Function.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <vector>
@@ -44,7 +46,7 @@
 namespace dart {
 namespace optimizer {
 
-class MultiObjectiveProblem
+class DART_API MultiObjectiveProblem
 {
 public:
   /// Constructor

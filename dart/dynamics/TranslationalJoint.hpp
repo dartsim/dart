@@ -35,20 +35,22 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <string>
 
 namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public GenericJoint<math::R3Space>
+class DART_API TranslationalJoint : public GenericJoint<math::R3Space>
 {
 public:
   friend class Skeleton;
 
   using Base = GenericJoint<math::R3Space>;
 
-  struct Properties : Base::Properties
+  struct DART_API Properties : Base::Properties
   {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 

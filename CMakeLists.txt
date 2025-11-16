@@ -57,6 +57,12 @@ include(dart_defs)
 # - CONFIG_INSTALL_DIR
 initialize_component_helpers(${PROJECT_NAME})
 
+if(BUILD_SHARED_LIBS)
+  set(DART_BUILD_SHARED_VALUE 1)
+else()
+  set(DART_BUILD_SHARED_VALUE 0)
+endif()
+
 #===============================================================================
 # Project settings
 #===============================================================================
@@ -514,12 +520,19 @@ if(TARGET dart)
     else()
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
+
+    if(DART_BUILD_DART8)
+      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
+        if(NOT TARGET dart8_tests)
+          add_custom_target(dart8_tests)
+        endif()
+      endif()
+    endif()
   elseif(NOT DART_BUILD_TESTS)
     message(STATUS "Skipping tests (DART_BUILD_TESTS == OFF)")
   else()
     message(STATUS "Skipping tests (BUILD_TESTING == OFF)")
   endif()
-
   if(DART_BUILD_EXAMPLES)
     if(TARGET dart-gui-osg)
       # Add example subdirectories and an "examples" target.

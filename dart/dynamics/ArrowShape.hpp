@@ -38,10 +38,10 @@
 namespace dart {
 namespace dynamics {
 
-class ArrowShape : public MeshShape
+class DART_API ArrowShape : public MeshShape
 {
 public:
-  struct Properties
+  struct DART_API Properties
   {
     /// _radius affects the thickness of the arrow. _headRadiusScale can be
     /// [1,INFINITY) and is a multiplier that affects the wideness of the

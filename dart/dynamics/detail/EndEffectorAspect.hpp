@@ -37,6 +37,8 @@
 
 #include <dart/common/SpecializedForAspect.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Geometry>
 
 namespace dart {
@@ -93,7 +95,7 @@ struct SupportPropertiesData
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-void SupportUpdate(Support* support);
+void DART_API SupportUpdate(Support* support);
 
 using EndEffectorCompositeBase = CompositeNode<common::CompositeJoiner<
     FixedJacobianNode,

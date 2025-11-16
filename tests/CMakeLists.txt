@@ -68,8 +68,25 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(${target_name} ${target_name})
+  add_test(
+    NAME ${target_name}
+    COMMAND $<TARGET_FILE:${target_name}>
+  )
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
+
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+    set_tests_properties(
+      ${target_name}
+      PROPERTIES
+        ENVIRONMENT_MODIFICATION
+          "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+    )
+  else()
+    set_property(
+      TEST ${target_name}
+      PROPERTY ENVIRONMENT "PATH=$<TARGET_FILE_DIR:dart>;$ENV{PATH}"
+    )
+  endif()
 
   dart_format_add(${sources})
 
@@ -90,7 +107,25 @@ endfunction()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Build baseline libraries for testing (ODE reference implementation)
+set(_dart_prev_use_global_output_dirs ${DART_USE_GLOBAL_OUTPUT_DIRS})
+set(DART_USE_GLOBAL_OUTPUT_DIRS OFF)
 add_subdirectory(baseline)
+if(DEFINED _dart_prev_use_global_output_dirs)
+  set(DART_USE_GLOBAL_OUTPUT_DIRS ${_dart_prev_use_global_output_dirs})
+else()
+  unset(DART_USE_GLOBAL_OUTPUT_DIRS)
+endif()
+
+if(CMAKE_CONFIGURATION_TYPES)
+  foreach(_dart_cfg ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER "${_dart_cfg}" _dart_cfg_upper)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_dart_cfg_upper}
+        "${DART_BINARY_DIR}/bin/${_dart_cfg}"
+    )
+  endforeach()
+else()
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
+endif()
 
 # Common test utilities shared across test types
 add_subdirectory(common)

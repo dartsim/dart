@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
+
 #include <functional>
 #include <limits>
 #include <optional>
@@ -60,7 +62,7 @@ namespace dart8 {
 /// size_t dim = space.getDimension();  // 12
 /// auto bounds = space.getLowerBounds();
 /// ```
-class StateSpace
+class DART8_API StateSpace
 {
 public:
   /// Represents a single variable (or group of variables) in the state vector

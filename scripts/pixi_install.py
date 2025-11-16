@@ -11,24 +11,10 @@ across the various shells pixi may use (bash, PowerShell, deno_task_shell).
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 from typing import List
 
-
-def run_cmake_build(build_dir: str, build_type: str, target: str):
-    """Invoke `cmake --build` for the requested target."""
-    cmd: List[str] = [
-        "cmake",
-        "--build",
-        build_dir,
-        "--config",
-        build_type,
-        "--parallel",
-        "--target",
-        target,
-    ]
-    subprocess.check_call(cmd)
+from build_helpers import cmake_target_exists, get_build_dir, run_cmake_build
 
 
 def main(argv: List[str]) -> int:
@@ -36,14 +22,16 @@ def main(argv: List[str]) -> int:
     build_type = os.environ.get("BUILD_TYPE", "Release")
     pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME") or "default"
 
-    # Windows multi-config generators place configuration under a sub-folder.
-    build_dir = os.path.join("build", pixi_env, "cpp", build_type)
-    if not os.path.isdir(build_dir):
-        # Fallback to flat layout (Unix single-config builds).
-        build_dir = os.path.join("build", pixi_env, "cpp")
+    build_dir = get_build_dir(build_type)
 
     if dartpy_flag.upper() != "OFF":
-        run_cmake_build(build_dir, build_type, "dartpy")
+        if cmake_target_exists(build_dir, build_type, "dartpy"):
+            run_cmake_build(build_dir, build_type, "dartpy")
+        else:
+            print(
+                "Skipping dartpy build during install because the 'dartpy' target "
+                "was not generated in this configuration."
+            )
 
     run_cmake_build(build_dir, build_type, "install")
     return 0

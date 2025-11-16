@@ -34,6 +34,7 @@
 #define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
 #include <dart/optimizer/ipopt/BackwardCompatibility.hpp>
+#include <dart/optimizer/ipopt/Export.hpp>
 
 #include <memory>
 #if IPOPT_VERSION_GE(3, 13, 0)
@@ -53,7 +54,7 @@ class Problem;
 class DartTNLP;
 
 /// \brief class IpoptSolver
-class IpoptSolver : public Solver
+class DART_OPTIMIZER_IPOPT_API IpoptSolver : public Solver
 {
 public:
   /// Default constructor
@@ -94,7 +95,7 @@ private:
 };
 
 /// class DartTNLP
-class DartTNLP : public Ipopt::TNLP
+class DART_OPTIMIZER_IPOPT_API DartTNLP : public Ipopt::TNLP
 {
 public:
   friend class IpoptSolver;

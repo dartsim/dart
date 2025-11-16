@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
+
 #include <chrono>
 #include <limits>
 #include <string>
@@ -41,7 +43,7 @@
 namespace dart8::common {
 
 /// Simple RAII timer for profiling
-class ScopedTimer
+class DART8_API ScopedTimer
 {
 public:
   explicit ScopedTimer(std::string_view name)
@@ -82,7 +84,7 @@ private:
 ///   double elapsed_ms = sw.tock();
 ///   std::cout << "Elapsed: " << elapsed_ms << " ms\n";
 /// @endcode
-class Stopwatch
+class DART8_API Stopwatch
 {
 public:
   Stopwatch() = default;
@@ -127,7 +129,7 @@ private:
 };
 
 /// Profile statistics aggregator
-class ProfileStats
+class DART8_API ProfileStats
 {
 public:
   struct Entry
