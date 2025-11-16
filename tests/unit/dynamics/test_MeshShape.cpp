@@ -17,6 +17,49 @@ using namespace dart;
 
 namespace {
 
+class AliasUriResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  AliasUriResourceRetriever(
+      const std::string& aliasUri, const std::string& targetFilePath)
+    : mAliasUri(aliasUri),
+      mTargetUri("file://" + targetFilePath),
+      mDelegate(std::make_shared<common::LocalResourceRetriever>())
+  {
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    if (isAlias(uri))
+      return mDelegate->exists(mTargetUri);
+    return mDelegate->exists(uri);
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    if (isAlias(uri))
+      return mDelegate->retrieve(mTargetUri);
+    return mDelegate->retrieve(uri);
+  }
+
+  std::string getFilePath(const common::Uri& uri) override
+  {
+    if (isAlias(uri))
+      return mDelegate->getFilePath(mTargetUri);
+    return mDelegate->getFilePath(uri);
+  }
+
+private:
+  bool isAlias(const common::Uri& uri) const
+  {
+    return uri.toString() == mAliasUri;
+  }
+
+  std::string mAliasUri;
+  common::Uri mTargetUri;
+  common::LocalResourceRetrieverPtr mDelegate;
+};
+
 const aiScene* loadMeshWithOverrides(
     const std::string& uri,
     const common::ResourceRetrieverPtr& retriever,
@@ -101,7 +144,7 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 #endif
 
   const std::string filePath
-      = std::string(DART_DATA_PATH) + "skel/kima/l-foot.dae";
+      = dart::config::dataPath("skel/kima/l-foot.dae");
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -130,4 +173,34 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
       << "extentsWithUnits=" << extentsWithUnits.transpose()
       << ", extentsIgnoringUnits=" << extentsIgnoringUnits.transpose()
       << ", unitScale=" << unitScale;
+}
+
+TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
+{
+  const std::string filePath
+      = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string aliasUri = "collada-nodot://meshshape/lfoot";
+
+  auto aliasRetriever
+      = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
+  const aiScene* aliasScene
+      = dynamics::MeshShape::loadMesh(aliasUri, aliasRetriever);
+  ASSERT_NE(aliasScene, nullptr);
+  const auto aliasShape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), aliasScene);
+  const Eigen::Vector3d aliasExtents
+      = aliasShape->getBoundingBox().computeFullExtents();
+
+  auto canonicalRetriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* canonicalScene = dynamics::MeshShape::loadMesh(
+      common::Uri::createFromPath(filePath).toString(), canonicalRetriever);
+  ASSERT_NE(canonicalScene, nullptr);
+  const auto canonicalShape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), canonicalScene);
+  const Eigen::Vector3d canonicalExtents
+      = canonicalShape->getBoundingBox().computeFullExtents();
+
+  EXPECT_TRUE(aliasExtents.isApprox(canonicalExtents, 1e-6))
+      << "aliasExtents=" << aliasExtents.transpose()
+      << ", canonicalExtents=" << canonicalExtents.transpose();
 }
