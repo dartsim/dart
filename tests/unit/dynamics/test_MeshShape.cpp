@@ -23,7 +23,7 @@ public:
   AliasUriResourceRetriever(
       const std::string& aliasUri, const std::string& targetFilePath)
     : mAliasUri(aliasUri),
-      mTargetUri("file://" + targetFilePath),
+      mTargetUri(common::Uri::createFromPath(targetFilePath)),
       mDelegate(std::make_shared<common::LocalResourceRetriever>())
   {
   }
