@@ -57,9 +57,14 @@ void InverseKinematics(py::module& m)
               Eigen::Vector6d::Constant(-dart::dynamics::DefaultIKTolerance),
               Eigen::Vector6d::Constant(dart::dynamics::DefaultIKTolerance)),
           ::py::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
-          ::py::arg("errorWeights") = Eigen::compose(
-              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight),
-              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight)))
+          ::py::arg("errorWeights") = [] {
+            Eigen::Vector6d weights;
+            weights.head<3>().setConstant(
+                dart::dynamics::DefaultIKAngularWeight);
+            weights.tail<3>().setConstant(
+                dart::dynamics::DefaultIKLinearWeight);
+            return weights;
+          }())
       .def_readwrite(
           "mBounds",
           &dart::dynamics::InverseKinematics::ErrorMethod::Properties::mBounds)
