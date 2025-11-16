@@ -294,9 +294,7 @@ def run_python_tests() -> bool:
         return True
 
     # Check if Python bindings are enabled
-    result, _ = run_command(
-        pixi_command("test-py", build_type), "Python tests"
-    )
+    result, _ = run_command(pixi_command("test-py", build_type), "Python tests")
 
     return result
 
