@@ -66,6 +66,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -473,6 +474,55 @@ std::string resolveWithRetriever(
   }
 }
 
+bool hasUriScheme(const std::string& candidate)
+{
+  return candidate.find("://") != std::string::npos;
+}
+
+bool isWindowsAbsolutePath(const std::string& path)
+{
+#ifdef _WIN32
+  return path.size() > 1 && path[1] == ':'
+         && std::isalpha(static_cast<unsigned char>(path[0]));
+#else
+  (void)path;
+  return false;
+#endif
+}
+
+bool requiresBaseUriResolution(const std::string& requested)
+{
+  if (requested.empty())
+    return false;
+
+  if (hasUriScheme(requested))
+    return false;
+
+  if (requested.front() == '/')
+    return false;
+
+  if (isWindowsAbsolutePath(requested))
+    return false;
+
+  return true;
+}
+
+std::string resolveRequestedUri(
+    const std::string& requested, const common::Uri& baseUri)
+{
+  if (!requiresBaseUriResolution(requested))
+    return requested;
+
+  if (!baseUri.mPath)
+    return requested;
+
+  const auto merged = common::Uri::getRelativeUri(baseUri, requested);
+  if (!merged.empty())
+    return merged;
+
+  return requested;
+}
+
 void cleanupTemporaryResources(
     const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
 {
@@ -514,8 +564,11 @@ bool loadSdfRoot(
   tempFiles = std::make_shared<std::vector<std::filesystem::path>>();
   sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
   config.SetFindCallback(
-      [retriever, tempFiles](const std::string& requested) -> std::string {
-        return resolveWithRetriever(requested, retriever, tempFiles);
+      [retriever, tempFiles, baseUri = uri](
+          const std::string& requested) -> std::string {
+        const auto resolvedRequest
+            = resolveRequestedUri(requested, baseUri);
+        return resolveWithRetriever(resolvedRequest, retriever, tempFiles);
       });
 
   sdf::Errors errors;

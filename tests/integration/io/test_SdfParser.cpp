@@ -250,6 +250,66 @@ TEST(SdfParser, ResolvesMeshesRelativeToIncludedModels)
 }
 
 //==============================================================================
+TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string worldUri
+      = "memory://pkg/worlds/include_relative_include.world";
+  const std::string modelUri = "memory://pkg/models/box/model.sdf";
+
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <include>
+      <uri>../models/box/model.sdf</uri>
+    </include>
+  </world>
+</sdf>
+)";
+
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="box">
+    <static>true</static>
+    <link name="link">
+      <inertial>
+        <mass>1.0</mass>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)";
+
+  retriever->add(worldUri, worldSdf);
+  retriever->add(modelUri, modelSdf);
+
+  utils::SdfParser::Options options(retriever);
+  auto world = utils::SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  EXPECT_EQ("box", skeleton->getName());
+}
+
+//==============================================================================
 TEST(SdfParser, ParsingSDFFiles)
 {
   const auto numSteps = 10u;
