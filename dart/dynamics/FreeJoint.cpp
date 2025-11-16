@@ -628,12 +628,34 @@ void FreeJoint::updateRelativeJacobian(bool _mandatory) const
   if (_mandatory)
     mJacobian
         = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+
+  const BodyNode* childBody = getChildBodyNode();
+  Eigen::Matrix3d worldRotation = Eigen::Matrix3d::Identity();
+  if (childBody)
+    worldRotation = childBody->getWorldTransform().linear();
+
+  mJacobian.topRows<3>().rightCols<3>().setZero();
+  mJacobian.bottomRows<3>().rightCols<3>() = worldRotation.transpose();
 }
 
 //==============================================================================
 void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
-  DART_ASSERT(Eigen::Matrix6d::Zero() == mJacobianDeriv);
+  mJacobianDeriv.setZero();
+
+  const BodyNode* childBody = getChildBodyNode();
+  if (!childBody)
+    return;
+
+  const Eigen::Matrix3d worldRotation = childBody->getWorldTransform().linear();
+  const Eigen::Matrix3d rotationTranspose = worldRotation.transpose();
+
+  const Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
+  const Eigen::Vector3d omega = spatialVelocity.head<3>();
+  const Eigen::Matrix3d omegaSkew = math::makeSkewSymmetric(omega);
+
+  mJacobianDeriv.bottomRows<3>().rightCols<3>()
+      = -omegaSkew * rotationTranspose;
 }
 
 //==============================================================================
