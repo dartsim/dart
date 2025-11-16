@@ -219,6 +219,10 @@ target_include_directories(dartpy_nb
     ${CMAKE_BINARY_DIR}
 )
 
+if(BULLET_INCLUDE_DIR)
+  target_include_directories(dartpy_nb SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
+endif()
+
 set(dartpy_nb_libraries
   dart
   dart-utils
@@ -227,6 +231,12 @@ set(dartpy_nb_libraries
 foreach(lib ${dartpy_nb_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy_nb PRIVATE ${lib})
+    foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(_lib_includes ${lib} ${prop})
+      if(_lib_includes)
+        target_include_directories(dartpy_nb PRIVATE ${_lib_includes})
+      endif()
+    endforeach()
   else()
     message(FATAL_ERROR "Required DART library not found: ${lib}")
   endif()

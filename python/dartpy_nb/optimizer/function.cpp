@@ -6,6 +6,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/trampoline.h>
 
 namespace nb = nanobind;
 
@@ -14,17 +15,17 @@ namespace dart::python_nb {
 class PyFunction : public dart::optimizer::Function
 {
 public:
-  using dart::optimizer::Function::Function;
+  NB_TRAMPOLINE(dart::optimizer::Function, 1);
 
   double eval(const Eigen::VectorXd& x) override
   {
-    NB_OVERRIDE_PURE(double, dart::optimizer::Function, eval, x);
+    NB_OVERRIDE_PURE(eval, x);
   }
 
   void evalGradient(
       const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
-    NB_OVERRIDE(void, dart::optimizer::Function, evalGradient, x, grad);
+    NB_OVERRIDE(evalGradient, x, grad);
   }
 };
 
@@ -44,7 +45,7 @@ void defOptimizerFunction(nb::module_& m)
           [](const dart::optimizer::Function& self) -> const std::string& {
             return self.getName();
           },
-          nb::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 
   nb::class_<dart::optimizer::NullFunction, dart::optimizer::Function>(
       m, "NullFunction")

@@ -2,6 +2,7 @@
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionOption.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

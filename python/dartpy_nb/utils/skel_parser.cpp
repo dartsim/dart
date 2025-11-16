@@ -1,6 +1,6 @@
 #include "utils/skel_parser.hpp"
 
-#include "dart/utils/skel/SkelParser.hpp"
+#include "dart/utils/SkelParser.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
@@ -11,7 +11,7 @@ namespace dart::python_nb {
 
 void defSkelParser(nb::module_& m)
 {
-  using SkelParser = ::dart::utils::SkelParser;
+  namespace SkelParser = ::dart::utils::SkelParser;
 
   auto sm = m.def_submodule("SkelParser");
 

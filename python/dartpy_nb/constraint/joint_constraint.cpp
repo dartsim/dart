@@ -1,6 +1,7 @@
 #include "constraint/joint_constraint.hpp"
 
 #include "dart/constraint/JointConstraint.hpp"
+#include "dart/dynamics/Joint.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

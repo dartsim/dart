@@ -35,7 +35,10 @@ void defCollisionDetector(nb::module_& m)
 
   nb::class_<dart::collision::FCLCollisionDetector, CollisionDetector>(
       m, "FCLCollisionDetector")
-      .def(nb::init<>())
+      .def(nb::new_([](nb::handle)
+                    -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+            return dart::collision::FCLCollisionDetector::create();
+          }))
       .def_static(
           "getStaticType",
           []() -> const std::string& {
@@ -45,7 +48,11 @@ void defCollisionDetector(nb::module_& m)
 
   nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector>(
       m, "DARTCollisionDetector")
-      .def(nb::init<>())
+      .def(nb::new_(
+          [](nb::handle)
+              -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+            return dart::collision::DARTCollisionDetector::create();
+          }))
       .def_static(
           "getStaticType",
           []() -> const std::string& {
@@ -56,7 +63,11 @@ void defCollisionDetector(nb::module_& m)
 #ifdef HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
-      .def(nb::init<>())
+      .def(nb::new_(
+          [](nb::handle)
+              -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+            return dart::collision::BulletCollisionDetector::create();
+          }))
       .def_static(
           "getStaticType",
           []() -> const std::string& {
@@ -68,7 +79,11 @@ void defCollisionDetector(nb::module_& m)
 #ifdef HAVE_ODE
   nb::class_<dart::collision::OdeCollisionDetector, CollisionDetector>(
       m, "OdeCollisionDetector")
-      .def(nb::init<>())
+      .def(nb::new_(
+          [](nb::handle)
+              -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+            return dart::collision::OdeCollisionDetector::create();
+          }))
       .def_static(
           "getStaticType",
           []() -> const std::string& {

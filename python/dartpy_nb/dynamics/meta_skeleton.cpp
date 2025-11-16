@@ -6,7 +6,6 @@
 #include "dart/dynamics/MetaSkeleton.hpp"
 
 #include <nanobind/nanobind.h>
-#include <nanobind/stl/memory.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -85,12 +84,15 @@ void defMetaSkeleton(nb::module_& m)
           nb::rv_policy::reference_internal,
           nb::arg("index"))
       .def(
-          "getDof",
-          [](MetaSkeleton& self, const std::string& name) {
-            return self.getDof(name);
+          "getDofs",
+          [](MetaSkeleton& self) {
+            std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
+            dofs.reserve(self.getNumDofs());
+            for (std::size_t i = 0; i < self.getNumDofs(); ++i)
+              dofs.emplace_back(self.getDof(i));
+            return dofs;
           },
-          nb::rv_policy::reference_internal,
-          nb::arg("name"));
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace dart::python_nb
