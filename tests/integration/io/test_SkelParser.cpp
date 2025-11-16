@@ -203,7 +203,9 @@ TEST(SkelParser, InertiaFromShapeNodes)
   BodyNode* noShape = noShapeSkel->getBodyNode("no_shape");
   ASSERT_NE(noShape, nullptr);
   EXPECT_EQ(0u, noShape->getNumShapeNodes());
-  EXPECT_TRUE(noShape->getInertia().getMoment().isZero(1e-12));
+  const auto emptyAggregate = noShape->computeInertiaFromShapeNodes(
+      [](const ShapeNode*) -> std::optional<double> { return 1.0; });
+  EXPECT_FALSE(emptyAggregate.has_value());
 
   SkeletonPtr zeroMassSkel = world->getSkeleton("zero_mass_skel");
   ASSERT_NE(zeroMassSkel, nullptr);
@@ -211,7 +213,12 @@ TEST(SkelParser, InertiaFromShapeNodes)
   ASSERT_NE(zeroMass, nullptr);
   EXPECT_GT(zeroMass->getNumShapeNodes(), 0u);
   EXPECT_DOUBLE_EQ(0.0, zeroMass->getMass());
-  EXPECT_TRUE(zeroMass->getInertia().getMoment().isZero(1e-12));
+  const auto zeroMassAggregate = zeroMass->computeInertiaFromShapeNodes(
+      [](const ShapeNode* shapeNode) -> std::optional<double> {
+        return shapeNode->getShape()->getVolume();
+      });
+  ASSERT_TRUE(zeroMassAggregate.has_value());
+  EXPECT_GT(zeroMassAggregate->getMass(), 0.0);
 
   SkeletonPtr weightedSkel = world->getSkeleton("weighted_skel");
   ASSERT_NE(weightedSkel, nullptr);
