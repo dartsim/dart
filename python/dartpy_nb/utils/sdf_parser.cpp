@@ -11,7 +11,7 @@ namespace dart::python_nb {
 
 void defSdfParser(nb::module_& m)
 {
-  using SdfParser = utils::SdfParser;
+  using SdfParser = ::dart::utils::SdfParser;
 
   auto sm = m.def_submodule("SdfParser");
 

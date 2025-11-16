@@ -14,7 +14,7 @@ namespace dart::python_nb {
 
 void defUtilsResourceRetriever(nb::module_& m)
 {
-  using CompositeRetriever = utils::CompositeResourceRetriever;
+  using CompositeRetriever = ::dart::utils::CompositeResourceRetriever;
   nb::class_<CompositeRetriever, common::ResourceRetriever>(
       m, "CompositeResourceRetriever")
       .def(nb::init<>())
@@ -28,12 +28,12 @@ void defUtilsResourceRetriever(nb::module_& m)
           nb::arg("schema"),
           nb::arg("resourceRetriever"));
 
-  using DartRetriever = utils::DartResourceRetriever;
+  using DartRetriever = ::dart::utils::DartResourceRetriever;
   nb::class_<DartRetriever, common::ResourceRetriever>(
       m, "DartResourceRetriever")
       .def(nb::init<>());
 
-  using PackageRetriever = utils::PackageResourceRetriever;
+  using PackageRetriever = ::dart::utils::PackageResourceRetriever;
   nb::class_<PackageRetriever, common::ResourceRetriever>(
       m, "PackageResourceRetriever")
       .def(
