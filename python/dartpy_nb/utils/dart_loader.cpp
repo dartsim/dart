@@ -13,7 +13,7 @@ namespace dart::python_nb {
 
 void defDartLoader(nb::module_& m)
 {
-  using DartLoader = utils::DartLoader;
+  using DartLoader = ::dart::utils::DartLoader;
 
   auto root_joint_type
       = nb::enum_<DartLoader::RootJointType>(m, "DartLoaderRootJointType")

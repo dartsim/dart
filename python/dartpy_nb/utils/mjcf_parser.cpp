@@ -12,7 +12,7 @@ namespace dart::python_nb {
 
 void defMjcfParser(nb::module_& m)
 {
-  using MjcfParser = utils::MjcfParser;
+  using MjcfParser = ::dart::utils::MjcfParser;
 
   auto sm = m.def_submodule("MjcfParser");
 

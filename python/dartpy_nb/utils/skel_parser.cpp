@@ -11,13 +11,15 @@ namespace dart::python_nb {
 
 void defSkelParser(nb::module_& m)
 {
+  using SkelParser = ::dart::utils::SkelParser;
+
   auto sm = m.def_submodule("SkelParser");
 
   sm.def(
       "readWorld",
       [](const common::Uri& uri,
          const common::ResourceRetrieverPtr& retriever) {
-        return utils::SkelParser::readWorld(uri, retriever);
+        return SkelParser::readWorld(uri, retriever);
       },
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
@@ -25,7 +27,7 @@ void defSkelParser(nb::module_& m)
       "readWorld",
       [](const std::string& uri,
          const common::ResourceRetrieverPtr& retriever) {
-        return utils::SkelParser::readWorld(common::Uri(uri), retriever);
+        return SkelParser::readWorld(common::Uri(uri), retriever);
       },
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
@@ -34,7 +36,7 @@ void defSkelParser(nb::module_& m)
       [](const std::string& xml,
          const std::string& base,
          const common::ResourceRetrieverPtr& retriever) {
-        return utils::SkelParser::readWorldXML(xml, base, retriever);
+        return SkelParser::readWorldXML(xml, base, retriever);
       },
       nb::arg("xmlString"),
       nb::arg("baseUri") = "",
@@ -43,7 +45,7 @@ void defSkelParser(nb::module_& m)
       "readSkeleton",
       [](const common::Uri& uri,
          const common::ResourceRetrieverPtr& retriever) {
-        return utils::SkelParser::readSkeleton(uri, retriever);
+        return SkelParser::readSkeleton(uri, retriever);
       },
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
@@ -51,7 +53,7 @@ void defSkelParser(nb::module_& m)
       "readSkeleton",
       [](const std::string& uri,
          const common::ResourceRetrieverPtr& retriever) {
-        return utils::SkelParser::readSkeleton(common::Uri(uri), retriever);
+        return SkelParser::readSkeleton(common::Uri(uri), retriever);
       },
       nb::arg("uri"),
       nb::arg("retriever") = nullptr);
