@@ -17,7 +17,7 @@ The examples are based on the APIs of DART 7.0.
    :maxdepth: 1
    :caption: Contents
 
-   tutorials/biped
-   tutorials/collisions
-   tutorials/dominoes
-   tutorials/multi-pendulum
+   /tutorials/multi-pendulum
+   /tutorials/collisions
+   /tutorials/dominoes
+   /tutorials/biped
