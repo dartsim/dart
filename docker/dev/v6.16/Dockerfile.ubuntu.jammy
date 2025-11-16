@@ -87,7 +87,7 @@ RUN apt-get install -y --no-install-recommends \
     python3-pip \
     python3-setuptools
 
-RUN pip3 install pytest -U
+RUN pip3 install --no-cache-dir nanobind pytest -U
 
 # ==============================================================================
 # Clean up
