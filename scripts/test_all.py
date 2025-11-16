@@ -253,7 +253,8 @@ def run_python_tests() -> bool:
 
     # Ensure the dartpy bindings are built before running pytest
     build_result, _ = run_command(
-        pixi_command("build-py-dev", "Release"), "Build dartpy bindings"
+        pixi_command("build-py-dev", PIXI_DEFAULT_DARTPY, "Release"),
+        "Build dartpy bindings",
     )
     if not build_result:
         return False
