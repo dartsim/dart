@@ -44,6 +44,7 @@
 #include <assimp/config.h>
 #include <assimp/postprocess.h>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 
@@ -551,21 +552,43 @@ aiScene* MeshShape::cloneMesh() const
 }
 
 //==============================================================================
+namespace {
+
+bool hasColladaExtension(const std::string& path)
+{
+  const std::size_t extensionIndex = path.find_last_of('.');
+  if (extensionIndex == std::string::npos)
+    return false;
+
+  std::string extension = path.substr(extensionIndex);
+  std::transform(
+      extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".dae" || extension == ".zae";
+}
+
+bool isColladaResource(
+    const std::string& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  if (hasColladaExtension(uri))
+    return true;
+
+  if (!retriever)
+    return false;
+
+  const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+  if (!parsedUri.mPath)
+    return false;
+
+  const std::string resolvedPath = retriever->getFilePath(parsedUri);
+  return !resolvedPath.empty() && hasColladaExtension(resolvedPath);
+}
+
+} // namespace
+
 const aiScene* MeshShape::loadMesh(
     const std::string& _uri, const common::ResourceRetrieverPtr& retriever)
 {
-  std::string extension;
-  const std::size_t extensionIndex = _uri.find_last_of('.');
-  if (extensionIndex != std::string::npos)
-    extension = _uri.substr(extensionIndex);
-
-  std::transform(
-      std::begin(extension),
-      std::end(extension),
-      std::begin(extension),
-      ::tolower);
-
-  const bool isCollada = extension == ".dae" || extension == ".zae";
+  const bool isCollada = isColladaResource(_uri, retriever);
 
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
@@ -604,6 +627,11 @@ const aiScene* MeshShape::loadMesh(
     aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
+
+#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
+  if (isCollada && scene->mRootNode)
+    scene->mRootNode->mTransformation = aiMatrix4x4();
+#endif
 
   // Finally, pre-transform the vertices. We can't do this as part of the
   // import process, because we may have changed mTransformation above.
