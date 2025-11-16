@@ -253,9 +253,17 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
             new_tf = dart.math.Isometry3.Identity()
 
             # Get forward and left directions from current orientation
-            forward = old_tf.rotation()[:, 0]  # X axis
-            left = old_tf.rotation()[:, 1]  # Y axis
-            up = np.array([0, 0, 1])  # Z axis (world up)
+            forward = old_tf.rotation()[:, 0]
+            left = old_tf.rotation()[:, 1]
+            up = np.array([0, 0, 1])
+
+            # Keep motion on the ground plane
+            forward[2] = 0.0
+            left[2] = 0.0
+            if np.linalg.norm(forward) > 1e-8:
+                forward /= np.linalg.norm(forward)
+            if np.linalg.norm(left) > 1e-8:
+                left /= np.linalg.norm(left)
 
             # Movement parameters
             linear_step = 0.01
