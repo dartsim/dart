@@ -108,13 +108,42 @@ def _render_doxyfile(output_path: Path):
 
     output_path.write_text(doxyfile_contents)
 
-# Get current DART version from package.xml
-current_version = get_dart_version()
+def _read_api_versions():
+    """Return the list of published documentation versions."""
 
-# Make these available to RST files via html_context
+    versions_file = REPO_ROOT / 'scripts' / 'docs_versions.txt'
+    versions = []
+    try:
+        for line in versions_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith('DART '):
+                versions.append(line)
+    except FileNotFoundError:
+        # Fallback to a safe default when running locally without the helper.
+        versions = ['v6.16.0']
+    return versions
+
+
+current_version = get_dart_version()
+api_versions = _read_api_versions()
+if current_version in api_versions:
+    api_version_to_link = current_version
+else:
+    api_version_to_link = api_versions[0] if api_versions else current_version
+
 html_context = {
     'current_version': current_version,
+    'api_versions': api_versions,
+    'api_version_to_link': api_version_to_link,
+    'cpp_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}/',
+    'python_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}-py/',
+    'gh_pages_url': 'https://github.com/dartsim/dart/tree/gh-pages',
 }
+
+# Provide easy-to-reuse substitutions in the RST files.
+rst_epilog = f"""
+.. |python_api_url| replace:: {html_context['python_api_url']}
+"""
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -168,7 +197,13 @@ source_suffix = {
 # The master toctree document.
 root_doc = "index"
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    "dartpy/api/*",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -196,7 +231,6 @@ latex_elements = {
         \usepackage{kotex}
     """
 }
-
 
 def build_cpp_api_docs(app):
     """Generate the Doxygen HTML bundle so RTD serves versioned C++ docs."""

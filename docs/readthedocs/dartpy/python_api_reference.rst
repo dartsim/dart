@@ -1,56 +1,41 @@
 Python API Reference
-=====================
+====================
 
-The full dartpy API reference now builds directly on Read the Docs, so you no
-longer need to leave the site or rely on a separate GitHub Pages deployment.
-This page renders the documentation straight from the published ``dartpy``
-wheel, which means the members, signatures, and type hints always match the
-latest PyPI release.
+The complete ``dartpy`` API reference now lives on GitHub Pages so it can be
+rendered directly from the compiled wheels that ship with each release. Read
+the Docs focuses on the narrative guides only and therefore no longer attempts
+to import ``dartpy`` or the in-progress ``dartpy_nb`` bindings during its
+builds—this avoids the ``stbrp_pack_rects`` linker errors that cropped up when
+the binary extension was unavailable.
 
-.. admonition:: How these docs are generated
+.. note:: Why the API docs moved
 
-   * RTD installs the ``dartpy`` wheel listed in :file:`docs/readthedocs/requirements.txt`.
-   * Sphinx loads the modules under :file:`docs/python_api/` and auto-documents
-     them using the installed package.
-   * Local builds can use ``pixi run docs-build`` or ``pixi run api-docs-py``
-     for the same result.
+   * CI publishes the API reference right after each build, so the rendered
+     members always match the packaged wheel.
+   * Read the Docs does not compile the bindings, and mocking the modules would
+     result in empty pages.
+   * The nanobind port (``dartpy_nb``) shares the same public surface. Once it
+     reaches parity we will publish equivalent documentation next to ``dartpy``.
 
-Getting Started
----------------
+Where to read the API docs
+--------------------------
 
-To explore the bindings locally:
+* `Current release (|python_api_url|) <|python_api_url|>`_
+* `Latest main branch build <https://dartsim.github.io/dart/main-py/>`_
+
+Local exploration
+-----------------
+
+You can continue browsing the API locally via the published wheels:
 
 .. code-block:: bash
 
-   pip install dartpy
+   pip install --pre dartpy
    python - <<'PY'
    import dartpy as dart
    world = dart.simulation.World()
    print(world.getGravity())
    PY
 
-The sections below mirror the module layout from :file:`docs/python_api/`.
-
-Module Reference
-----------------
-
-.. toctree::
-   :maxdepth: 2
-   :titlesonly:
-
-   /dartpy/api/modules/common
-   /dartpy/api/modules/math
-   /dartpy/api/modules/dynamics
-   /dartpy/api/modules/simulation
-   /dartpy/api/modules/collision
-   /dartpy/api/modules/constraint
-   /dartpy/api/modules/optimizer
-   /dartpy/api/modules/utils
-   /dartpy/api/modules/gui
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+``pixi run api-docs-py`` produces the exact same API pages locally, which is
+especially useful when iterating on new nanobind bindings.
