@@ -309,20 +309,6 @@ build-dart8-tests = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
-build-dart7-tests = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart7_tests",
-], depends-on = [
-  { task = "config", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-
 build-math-tests = { cmd = [
   "bash",
   "-lc",
@@ -349,20 +335,6 @@ build-dartpy8 = { cmd = [
   "bash",
   "-lc",
   "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy8",
-], depends-on = [
-  { task = "config-py", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-
-build-dartpy7 = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy7",
 ], depends-on = [
   { task = "config-py", args = [
     "{{ dartpy }}",
@@ -402,8 +374,8 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_DART7=ON \
-  -DDART_BUILD_DARTPY7=${DART_BUILD_DARTPY_VALUE} \
+  -DDART_BUILD_DART8=ON \
+  -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_GUI_OSG=ON \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
@@ -560,10 +532,6 @@ test-no-plane = { cmd = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
-  { task = "build-dart7-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
@@ -579,24 +547,6 @@ test-dart8 = { cmd = [
     "{{ build_type }}",
   ] },
   { task = "build-dart8-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
-
-test-dart7 = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L dart7",
-], depends-on = [
-  { task = "build-tests", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-  { task = "build-dart7-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
