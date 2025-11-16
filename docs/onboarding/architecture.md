@@ -593,23 +593,23 @@ World (simulation environment)
 
 The main DART header that includes all modules:
 
-**File:** `dart/all.hpp`
+**File:** `dart/All.hpp`
 
 **Includes (in order):**
 ```cpp
 #include <dart/config.hpp>         // Build configuration
-#include <dart/common/all.hpp>     // Common utilities
-#include <dart/math/all.hpp>       // Math utilities
-#include <dart/integration/all.hpp> // Numerical integration
-#include <dart/collision/all.hpp>  // Collision detection
-#include <dart/lcpsolver/all.hpp>  // LCP solvers
-#include <dart/constraint/all.hpp> // Constraints
-#include <dart/optimizer/all.hpp>  // Optimization (not covered)
-#include <dart/dynamics/all.hpp>   // Dynamics
-#include <dart/simulation/all.hpp> // Simulation
+#include <dart/common/All.hpp>     // Common utilities
+#include <dart/math/All.hpp>       // Math utilities
+#include <dart/integration/All.hpp> // Numerical integration
+#include <dart/collision/All.hpp>  // Collision detection
+#include <dart/lcpsolver/All.hpp>  // LCP solvers
+#include <dart/constraint/All.hpp> // Constraints
+#include <dart/optimizer/All.hpp>  // Optimization (not covered)
+#include <dart/dynamics/All.hpp>   // Dynamics
+#include <dart/simulation/All.hpp> // Simulation
 ```
 
-Users typically include just `<dart/all.hpp>` to access all functionality.
+Users typically include just `<dart/All.hpp>` to access all functionality.
 
 ---
 
@@ -856,7 +856,7 @@ CollisionDetector
 ## Usage Example (Pseudocode)
 
 ```cpp
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 int main() {
   // 1. Create world

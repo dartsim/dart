@@ -4,7 +4,6 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
@@ -23,17 +22,18 @@ msgstr ""
 
 #: ../../who_uses_dart.rst:2 427c7f9dfa184ec3be615044b735b388
 msgid "Who Uses DART?"
-msgstr ""
+msgstr "DART를 누가 사용하나요?"
 
 #: ../../who_uses_dart.rst:5 7dc29220c6a1434590e2d8ec2a0f80c0
 msgid "Software"
-msgstr ""
+msgstr "소프트웨어"
 
 #: ../../who_uses_dart.rst:7 cedb28aa0184472782b0f2c4776d52f5
 msgid ""
 "DART serves as the backend physics engine for several software projects, "
 "including:"
 msgstr ""
+"DART는 다음과 같은 여러 소프트웨어 프로젝트에서 백엔드 물리 엔진으로 사용됩니다:"
 
 #: ../../who_uses_dart.rst:10 eff96d8a0df74eb08a521581b08a1ada
 msgid ""
@@ -42,6 +42,9 @@ msgid ""
 "Gazebo supports multiple physics engines: ODE, Bullet, DART, and Simbody."
 " website, source on bitbucket"
 msgstr ""
+"`Gazebo <https://gazebosim.org/>`_: Gazebo는 3D 환경에서 여러 로봇을 시뮬레이션하며 "
+"객체 간 동적인 상호 작용을 폭넓게 지원합니다. Gazebo는 ODE, Bullet, DART, "
+"Simbody 등 여러 물리 엔진을 지원합니다. (웹사이트, Bitbucket 소스)"
 
 #: ../../who_uses_dart.rst:14 3742b2cbc6bc44519ed0bf7241756c41
 msgid ""
@@ -50,6 +53,10 @@ msgid ""
 "decision making problems. This library is tightly integrated with DART "
 "for kinematic/dynamics calculations and OMPL for motion planning."
 msgstr ""
+"`Aikido <https://github.com/personalrobotics/aikido>`_: 로봇 동작 계획과 의사결정 문제를 "
+"해결하기 위한 C++ 라이브러리이며 Python 바인딩도 제공합니다. 이 라이브러리는 "
+"운동학/동역학 계산을 위해 DART와 밀접하게 통합되어 있으며, 동작 계획을 위해 OMPL과 "
+"결합됩니다."
 
 #: ../../who_uses_dart.rst:19 39f7c3280562488398b5f32341edb52a
 msgid ""
@@ -57,10 +64,12 @@ msgid ""
 "lightweight wrapper over DART simulator for fast and flexible robot "
 "simulations."
 msgstr ""
+"`robot_dart <https://github.com/resibots/robot_dart>`_: 빠르고 유연한 로봇 "
+"시뮬레이션을 위해 DART 시뮬레이터 위에 구축된 범용 경량 래퍼입니다."
 
 #: ../../who_uses_dart.rst:24 eb1f8fb668a34e2ebe81356a7458c633
 msgid "Research"
-msgstr ""
+msgstr "연구"
 
 #: ../../who_uses_dart.rst:26 b9bee11babce464fa424f404fd5e8c67
 msgid ""
@@ -70,86 +79,91 @@ msgid ""
 "their research include Georgia Tech, Oxford University, MIT, Disney "
 "Research, and Toyota Research Institute."
 msgstr ""
+"DART는 로보틱스, 생체역학, 컴퓨터 그래픽스, 애니메이션, 물리 기반 시뮬레이션 등 다양한 "
+"연구 분야에서 사용되어 왔습니다. 특히 Georgia Tech, Oxford University, MIT, "
+"Disney Research, Toyota Research Institute와 같은 기관 및 기업에서 연구에 활용하고 "
+"있습니다."
 
 #: ../../who_uses_dart.rst:32 df68f92f28024d3abd1bf41083d1d091
 msgid "DART has been utilized in research areas such as:"
-msgstr ""
+msgstr "DART는 다음과 같은 연구 분야에서 활용되었습니다:"
 
 #: ../../who_uses_dart.rst:34 e385308bfd0a4eb7bcf91242db2682cf
 msgid "Development of black-box priors for model-based policy search for robotics"
-msgstr ""
+msgstr "모델 기반 정책 탐색을 위한 블랙박스 사전 개발"
 
 #: ../../who_uses_dart.rst:35 a79d29f2b4294130a351e8e2d9527130
 msgid "Bayesian optimization with automatic prior selection"
-msgstr ""
+msgstr "자동 사전 선택을 활용한 베이지안 최적화"
 
 #: ../../who_uses_dart.rst:36 c45ef88dbfb24a04bda1d10cf85a9220
 msgid "Alternating optimization and quadrature for robust control"
-msgstr ""
+msgstr "강인 제어를 위한 교대 최적화 및 적분 기법"
 
 #: ../../who_uses_dart.rst:37 6254ea27d5e7406da63de5a037edceb1
 msgid "Reset-free trial-and-error learning for robot damage recovery"
-msgstr ""
+msgstr "리셋 없이 수행하는 로봇 손상 복구용 시행착오 학습"
 
 #: ../../who_uses_dart.rst:38 602152b8354c407ca549e8fa0375914b
 msgid "Data-driven approach to simulating realistic human joint constraints"
-msgstr ""
+msgstr "현실적인 인간 관절 제약을 시뮬레이션하기 위한 데이터 기반 접근법"
 
 #: ../../who_uses_dart.rst:39 15ac8e13e1e3492f84bf76c13e506249
 msgid "Multi-task learning with gradient-guided policy specialization"
-msgstr ""
+msgstr "경사 기반 정책 특화 기법을 활용한 다중 과제 학습"
 
 #: ../../who_uses_dart.rst:40 6e99c9a8ad18417b848e28c2b5e17fee
 msgid "Learning human behaviors for robot-assisted dressing"
-msgstr ""
+msgstr "로봇이 도와주는 착의 작업을 위한 인간 행동 학습"
 
 #: ../../who_uses_dart.rst:41 e647059260e241f991990089c3ae6434
 msgid "Expanding motor skills through relay neural networks"
-msgstr ""
+msgstr "릴레이 신경망을 이용한 모터 스킬 확장"
 
 #: ../../who_uses_dart.rst:42 0a16994cc85b46e3b822fdbe96c9cbd3
 msgid "Learning to navigate cloth using haptics"
-msgstr ""
+msgstr "촉각을 이용한 천 제어 학습"
 
 #: ../../who_uses_dart.rst:43 e3426e8f879d4614a4144c693f55044c
 msgid "Simulation-based design of dynamic controllers for humanoid balancing"
-msgstr ""
+msgstr "휴머노이드 균형을 위한 동적 제어기 시뮬레이션 기반 설계"
 
 #: ../../who_uses_dart.rst:44 f90d7c8b0c864bdaada88efa3c0147df
 msgid "Humanoid manipulation planning using backward-forward search"
-msgstr ""
+msgstr "전후 탐색을 이용한 휴머노이드 조작 계획"
 
 #: ../../who_uses_dart.rst:45 75f3d882a80141e0a17abf684058631e
 msgid ""
 "Evolutionary optimization for parameterized whole-body dynamic motor "
 "skills"
-msgstr ""
+msgstr "매개변수화된 전신 동적 모터 기술을 위한 진화 최적화"
 
 #: ../../who_uses_dart.rst:46 4d529ad38384402a8a845c6e1fce7800
 msgid "Dexterous manipulation of cloth"
-msgstr ""
+msgstr "천을 다루는 섬세한 조작"
 
 #: ../../who_uses_dart.rst:47 68dfe297d73445a4b36481526781c019
 msgid "Multiple contact planning for minimizing damage of humanoid falls"
-msgstr ""
+msgstr "휴머노이드 낙상 피해를 최소화하기 위한 다중 접촉 계획"
 
 #: ../../who_uses_dart.rst:48 88e361c2e94642d7a9c7eb40a5a1cbdd
 msgid "Animating human dressing"
-msgstr ""
+msgstr "인간 착의 동작 애니메이션"
 
 #: ../../who_uses_dart.rst:49 3e94b010756d4b5e88a649ad2e38c10b
 msgid "Coupling cloth and rigid bodies for dexterous manipulation"
-msgstr ""
+msgstr "섬세한 조작을 위한 천과 강체의 결합"
 
 #: ../../who_uses_dart.rst:50 af8aefc14a514f6d976a69fc2ed30f8b
 msgid ""
 "Orienting in mid-air through configuration changes to achieve a rolling "
 "landing for reducing impact after a fall"
 msgstr ""
+"낙상 충격을 줄이기 위한 공중자세 변화를 통한 회전 착지 제어"
 
 #: ../../who_uses_dart.rst:52 280520035359414d86fdb9f0961fdea7
 msgid "Dexterous manipulation using both palm and fingers"
-msgstr ""
+msgstr "손바닥과 손가락을 함께 사용하는 정교한 조작"
 
 #: ../../who_uses_dart.rst:53 4fc6d6d00dff44ba8219e32e528f5d72
 msgid ""
@@ -159,6 +173,9 @@ msgid ""
 "Evolutionary Computation, Computer Graphics Forum (Eurographics), and ACM"
 " Transactions on Graphics (presented at SIGGRAPH Asia)."
 msgstr ""
+"DART가 주로 다뤄진 학회와 저널로는 ICRA, AAAI, IEEE Transactions on "
+"Evolutionary Computation, Computer Graphics Forum(Eurographics), ACM "
+"Transactions on Graphics(SIGGRAPH Asia 발표) 등이 있습니다."
 
 #: ../../who_uses_dart.rst:59 209b2fc73dbc4c95aa5283df71286337
 msgid ""
@@ -166,20 +183,17 @@ msgid ""
 " cited over 236 times, indicating its widespread adoption and use in the "
 "research community."
 msgstr ""
+"2023년 2월 기준으로 DART는 GitHub에서 777개 이상의 스타를 받았으며, 236회 이상 인용되어 "
+"연구 커뮤니티에서 널리 사용되고 있음을 보여줍니다."
 
 #: ../../who_uses_dart.rst:63 8fdc9c843dd344618f94a720651667ef
 msgid "More research papers cited DART can be found at `Google Scholar`_."
-msgstr ""
+msgstr "DART가 인용된 더 많은 연구 논문은 `Google Scholar`_에서 확인할 수 있습니다."
 
 #: ../../who_uses_dart.rst:67 84b65730c5d6405295d4a55310a54475
 msgid ""
 "If you are using DART in your project and would like to be listed here, "
 "please send a pull request to the GitHub repository."
 msgstr ""
-
-#~ msgid ""
-#~ "DART is used by a number of "
-#~ "software projects as backend physics "
-#~ "engine."
-#~ msgstr ""
-
+"귀하의 프로젝트에서 DART를 사용하고 있고 이 목록에 추가되길 원하시면 GitHub 저장소에 풀 "
+"리퀘스트를 보내주세요."

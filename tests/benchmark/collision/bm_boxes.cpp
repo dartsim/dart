@@ -30,19 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/all.hpp>
+#include <dart/simulation/All.hpp>
 
-#include <dart/constraint/all.hpp>
+#include <dart/constraint/All.hpp>
 
-#include <dart/collision/bullet/all.hpp>
+#include <dart/collision/bullet/All.hpp>
 
-#include <dart/dynamics/all.hpp>
+#include <dart/dynamics/All.hpp>
 
-#include <dart/math/all.hpp>
+#include <dart/math/All.hpp>
 
 #include <benchmark/benchmark.h>
 
 using namespace dart;
+using dart::simulation::CollisionDetectorType;
 
 namespace {
 
@@ -83,8 +84,7 @@ namespace {
   auto world = simulation::World::create();
 
   // Set collision detector type
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+  world->setCollisionDetector(collision::BulletCollisionDetector::create());
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {

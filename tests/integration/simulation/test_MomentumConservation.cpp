@@ -36,7 +36,7 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 

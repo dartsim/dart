@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
-#include <dart/utils/urdf/all.hpp>
+#include <dart/utils/All.hpp>
+#include <dart/utils/urdf/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;

@@ -36,7 +36,7 @@
 #include "dart/common/Macros.hpp"
 #include "pybind11/pybind11.h"
 
-#include <dart/common/all.hpp>
+#include <dart/common/All.hpp>
 
 #include <cassert>
 #include <cmath>

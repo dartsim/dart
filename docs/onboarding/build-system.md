@@ -109,7 +109,7 @@ dart/
 - Integrates OpenSceneGraph
 - Integrates ImGui (system or fetched)
 - Manages render subdirectory
-- Generates component headers (`all.hpp`, `osg.hpp`)
+- Generates component headers (`All.hpp`, `osg.hpp`)
 
 **Dependencies:**
 - `dart-utils` (dependent target)

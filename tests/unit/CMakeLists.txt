@@ -8,24 +8,36 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Distance dart-collision-bullet)
 endif()
 
+dart_add_test("unit" test_DistanceFilter collision/test_DistanceFilter.cpp)
+
+dart_add_test("unit" test_CollisionGroup collision/test_CollisionGroup.cpp)
+
 dart_add_test("unit" test_Raycast collision/test_Raycast.cpp)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_Raycast dart-collision-bullet)
 endif()
 
+dart_add_test("unit" test_CollisionResult collision/test_CollisionResult.cpp)
+
+# ==============================================================================
+# Common Tests
+# ==============================================================================
 dart_build_tests(
   TYPE unit
   TARGET_PREFIX UNIT
   LINK_LIBRARIES dart
   SOURCES
     common/test_CAllocator.cpp
+    common/test_Composite.cpp
     common/test_Factory.cpp
     common/test_FreeListAllocator.cpp
     common/test_Logging.cpp
     common/test_MemoryManager.cpp
     common/test_PoolAllocator.cpp
+    common/test_Resource.cpp
     common/test_StlAllocator.cpp
     common/test_Stopwatch.cpp
+    common/test_SubjectObserver.cpp
     common/test_String.cpp
     common/test_Uri.cpp
 )
@@ -34,6 +46,10 @@ dart_build_tests(
 # Constraint Tests
 # ==============================================================================
 dart_add_test("unit" test_ConstraintSolver constraint/test_ConstraintSolver.cpp)
+dart_add_test(
+  "unit" test_JointLimitConstraint constraint/test_JointLimitConstraint.cpp)
+dart_add_test(
+  "unit" test_BalanceConstraint constraint/test_BalanceConstraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -63,6 +79,7 @@ dart_build_tests(
   TARGET_PREFIX UNIT
   LINK_LIBRARIES dart
   SOURCES
+    math/test_ConfigurationSpace.cpp
     math/test_Geometry.cpp
     math/test_Icosphere.cpp
     math/test_Math.cpp
@@ -75,3 +92,9 @@ if(TARGET dart)
   dart_add_test("unit" test_Convhull math/test_Convhull.cpp)
   target_link_libraries(test_Convhull dart)
 endif()
+
+# ==============================================================================
+# Integration Tests
+# ==============================================================================
+dart_add_test(
+  "unit" test_EulerIntegrator integration/test_EulerIntegrator.cpp)

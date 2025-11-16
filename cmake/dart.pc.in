@@ -9,4 +9,4 @@ Description: @DART_PKG_DESC@
 Version: @DART_VERSION@
 Requires: @DART_PKG_EXTERNAL_DEPS@
 Libs: -L${libdir} -ldart
-Cflags: @CMAKE_CXX_FLAGS@
+Cflags: -I${includedir}

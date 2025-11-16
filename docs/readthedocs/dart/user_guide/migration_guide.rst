@@ -9,7 +9,7 @@ DART 6 → DART 7
 Component Headers Renamed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Change**: ``<component>.hpp`` → ``all.hpp``
+**Change**: ``<component>.hpp`` → ``All.hpp``
 
 .. code-block:: cpp
 
@@ -18,8 +18,8 @@ Component Headers Renamed
    #include <dart/collision/collision.hpp>
 
    // After
-   #include <dart/dynamics/all.hpp>
-   #include <dart/collision/all.hpp>
+   #include <dart/dynamics/All.hpp>
+   #include <dart/collision/All.hpp>
 
 **Note**: Old headers still work but show deprecation warnings (removed in a future major release).
 

@@ -32,9 +32,9 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include "dart/common/all.hpp"
-#include "dart/constraint/all.hpp"
-#include "dart/dynamics/all.hpp"
+#include "dart/common/All.hpp"
+#include "dart/constraint/All.hpp"
+#include "dart/dynamics/All.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
