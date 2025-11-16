@@ -1,4 +1,4 @@
-# Multi Pendulum (Unified)
+# Multi Pendulum
 
 This walkthrough combines the original C++ and dartpy tutorials. The prose is
 shared, while the code samples are presented in tabs so you can focus on your
@@ -7,11 +7,8 @@ sources to stay in sync with the code you run locally.
 
 Source links:
 
-- C++: `tutorials/tutorial_multi_pendulum`_
-- Python: `python/tutorials/01_multi_pendulum`_
-
-.. _tutorials/tutorial_multi_pendulum: https://github.com/dartsim/dart/tree/main/tutorials/tutorial_multi_pendulum
-.. _python/tutorials/01_multi_pendulum: https://github.com/dartsim/dart/tree/main/python/tutorials/01_multi_pendulum
+- `tutorials/tutorial_multi_pendulum/main.cpp <https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp>`__
+- `python/tutorials/01_multi_pendulum/main.py <https://github.com/dartsim/dart/blob/main/python/tutorials/01_multi_pendulum/main.py>`__
 
 ## Lesson 1: Apply forces during simulation
 
@@ -22,6 +19,7 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 
@@ -42,6 +40,7 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 
@@ -62,6 +61,7 @@ body forces based on user input.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 
@@ -87,6 +87,7 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 
@@ -107,6 +108,7 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 
@@ -127,6 +129,7 @@ rest positions while the simulation is running.
 
 ```{eval-rst}
 .. tabs::
+   :class: simple
 
    .. tab:: C++
 

@@ -94,7 +94,7 @@ If you use DART in an academic publication, please consider citing this
    :hidden:
    :caption: Tutorials
 
-   tutorials/index
+   Tutorials <tutorials/index>
 
 .. toctree::
    :maxdepth: 1
