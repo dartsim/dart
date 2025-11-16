@@ -5,3 +5,4 @@ sphinx-copybutton
 sphinx-intl
 sphinx_rtd_theme
 sphinx-tabs
+dartpy==6.16.0
