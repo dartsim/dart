@@ -6,6 +6,7 @@ Shared helpers for pixi automation scripts.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Iterable, Optional, Set
@@ -107,6 +108,17 @@ def _ninja_target_exists(build_dir: Path, target: str) -> Optional[bool]:
     return False
 
 
+_HELP_SKIP_PREFIXES = (
+    "The following",
+    "Build command",
+    "Build options",
+    "For more information",
+    'Use "cmake --build"',
+)
+
+_HELP_LINE_PATTERN = re.compile(r"^(?:\*|\.\.\.|[-•])?\s*([A-Za-z0-9_./:+-]+)")
+
+
 def _cmake_help_targets(build_dir: Path, build_type: str) -> Optional[Set[str]]:
     cmd = [
         "cmake",
@@ -127,10 +139,16 @@ def _cmake_help_targets(build_dir: Path, build_type: str) -> Optional[Set[str]]:
     combined = f"{result.stdout}\n{result.stderr}"
     for line in combined.splitlines():
         stripped = line.strip()
-        if stripped.startswith("* "):
-            name = stripped[2:].split()[0]
-            if name:
-                targets.add(name)
+        if not stripped:
+            continue
+        if stripped.startswith(_HELP_SKIP_PREFIXES):
+            continue
+        match = _HELP_LINE_PATTERN.match(stripped)
+        if not match:
+            continue
+        name = match.group(1).rstrip(":")
+        if name:
+            targets.add(name)
     return targets
 
 
