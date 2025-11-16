@@ -114,6 +114,7 @@ class Controller:
             self.force_countdown[index] = default_countdown
 
     def change_rest_position(self, delta: float):
+        # snippet:py-lesson2a-rest-position-start
         for i in range(self.pendulum.getNumDofs()):
             dof = self.pendulum.getDof(i)
             q0 = dof.getRestPosition() + delta
@@ -122,30 +123,39 @@ class Controller:
         # Only curl along the middle axis of the BallJoint.
         self.pendulum.getDof(0).setRestPosition(0.0)
         self.pendulum.getDof(2).setRestPosition(0.0)
+        # snippet:py-lesson2a-rest-position-end
 
     def change_stiffness(self, delta: float):
+        # snippet:py-lesson2b-stiffness-start
         for i in range(self.pendulum.getNumDofs()):
             dof = self.pendulum.getDof(i)
             stiffness = max(0.0, dof.getSpringStiffness() + delta)
             dof.setSpringStiffness(stiffness)
+        # snippet:py-lesson2b-stiffness-end
 
     def change_damping(self, delta: float):
+        # snippet:py-lesson2c-damping-start
         for i in range(self.pendulum.getNumDofs()):
             dof = self.pendulum.getDof(i)
             damping = max(0.0, dof.getDampingCoefficient() + delta)
             dof.setDampingCoefficient(damping)
+        # snippet:py-lesson2c-damping-end
 
     def add_constraint(self):
+        # snippet:py-lesson3-add-constraint-start
         tip = self.pendulum.getBodyNode(self.pendulum.getNumBodyNodes() - 1)
         location = tip.getTransform().multiply([0.0, 0.0, default_height])
         self.ball_constraint = dart.constraint.BallJointConstraint(tip, location)
         self.world.getConstraintSolver().addConstraint(self.ball_constraint)
+        # snippet:py-lesson3-add-constraint-end
 
     def remove_constraint(self):
         if self.ball_constraint is None:
             return
+        # snippet:py-lesson3-remove-constraint-start
         self.world.getConstraintSolver().removeConstraint(self.ball_constraint)
         self.ball_constraint = None
+        # snippet:py-lesson3-remove-constraint-end
 
     def has_constraint(self) -> bool:
         return self.ball_constraint is not None
@@ -163,6 +173,7 @@ class Controller:
 
     def _reset_visuals(self):
         """Lesson 1a: restore blue bodies and hide arrows."""
+        # snippet:py-lesson1a-reset-start
         for idx in range(self.pendulum.getNumBodyNodes()):
             body = self.pendulum.getBodyNode(idx)
             num_visual_nodes = body.getNumShapeNodes()
@@ -171,9 +182,11 @@ class Controller:
                 visual.setColor([0.0, 0.0, 1.0, 1.0])
             _, arrow_visual = self.body_force_visuals[idx]
             arrow_visual.hide()
+        # snippet:py-lesson1a-reset-end
 
     def _apply_joint_torques(self):
         """Lesson 1b: apply impulsive joint torques and highlight joints."""
+        # snippet:py-lesson1b-joint-force-start
         torque = default_torque if self.positive_sign else -default_torque
         for i in range(self.pendulum.getNumDofs()):
             if self.force_countdown[i] <= 0:
@@ -188,9 +201,11 @@ class Controller:
                 joint_visual.setColor([1.0, 0.0, 0.0, 1.0])
 
             self.force_countdown[i] -= 1
+        # snippet:py-lesson1b-joint-force-end
 
     def _apply_body_forces(self):
         """Lesson 1c: apply body forces and show the arrow visuals."""
+        # snippet:py-lesson1c-body-force-start
         num_slots = min(
             self.pendulum.getNumBodyNodes(), len(self.force_countdown)
         )
@@ -218,6 +233,7 @@ class Controller:
             arrow_visual.show()
 
             self.force_countdown[i] -= 1
+        # snippet:py-lesson1c-body-force-end
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):

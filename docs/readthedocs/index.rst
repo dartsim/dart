@@ -92,6 +92,13 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Tutorials
+
+   tutorials/index
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: dartpy (Python)
 
    dartpy/user_guide/installation

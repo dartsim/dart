@@ -6,10 +6,6 @@ the python implementations. Each page explains how to run the tutorial, where
 the starter/finished code is located, and how the lessons map onto the python
 APIs.
 
-.. toctree::
-   :maxdepth: 1
-
-   tutorials/01-multi-pendulum
-   tutorials/02-collisions
-   tutorials/03-dominoes
-   tutorials/04-biped
+The dartpy and C++ tutorials now share a single set of documents. Visit
+:doc:`../tutorials/index` to choose a lesson and then toggle the code snippets
+to the language you prefer.

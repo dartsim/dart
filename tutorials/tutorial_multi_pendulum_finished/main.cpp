@@ -104,6 +104,7 @@ public:
 
   void changeRestPosition(double delta)
   {
+    // snippet:cpp-lesson2a-rest-position-start
     for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double q0 = dof->getRestPosition() + delta;
@@ -120,10 +121,12 @@ public:
     // Only curl up along one axis in the BallJoint
     mPendulum->getDof(0)->setRestPosition(0.0);
     mPendulum->getDof(2)->setRestPosition(0.0);
+    // snippet:cpp-lesson2a-rest-position-end
   }
 
   void changeStiffness(double delta)
   {
+    // snippet:cpp-lesson2b-stiffness-start
     for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
@@ -131,10 +134,12 @@ public:
         stiffness = 0.0;
       dof->setSpringStiffness(stiffness);
     }
+    // snippet:cpp-lesson2b-stiffness-end
   }
 
   void changeDamping(double delta)
   {
+    // snippet:cpp-lesson2c-damping-start
     for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
@@ -142,12 +147,13 @@ public:
         damping = 0.0;
       dof->setDampingCoefficient(damping);
     }
+    // snippet:cpp-lesson2c-damping-end
   }
 
   /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
-    // Get the last body in the pendulum
+    // snippet:cpp-lesson3-add-constraint-start
     BodyNode* tip = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
 
     // Attach the last link to the world
@@ -156,13 +162,16 @@ public:
     mBallConstraint = std::make_shared<dart::constraint::BallJointConstraint>(
         tip, location);
     mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
+    // snippet:cpp-lesson3-add-constraint-end
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
+    // snippet:cpp-lesson3-remove-constraint-start
     mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
     mBallConstraint = nullptr;
+    // snippet:cpp-lesson3-remove-constraint-end
   }
 
   bool hasConstraint() const
@@ -178,6 +187,7 @@ public:
   void update()
   {
     // Reset all the shapes to be Blue
+    // snippet:cpp-lesson1a-reset-start
     for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
       BodyNode* bn = mPendulum->getBodyNode(i);
 
@@ -192,17 +202,20 @@ public:
 
       bn->setColor(dart::Color::Blue());
     }
+    // snippet:cpp-lesson1a-reset-end
 
     if (!mBodyForce) {
       // Apply joint torques based on user input, and color the Joint shape red
       for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
         if (mForceCountDown[i] > 0) {
+          // snippet:cpp-lesson1b-joint-force-start
           DegreeOfFreedom* dof = mPendulum->getDof(i);
           dof->setForce(mPositiveSign ? default_torque : -default_torque);
 
           BodyNode* bn = dof->getChildBodyNode();
           bn->getShapeNodeWith<VisualAspect>(0)->getVisualAspect()->setColor(
               dart::Color::Red());
+          // snippet:cpp-lesson1b-joint-force-end
 
           --mForceCountDown[i];
         }
@@ -211,6 +224,7 @@ public:
       // Apply body forces based on user input, and color the body shape red
       for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
         if (mForceCountDown[i] > 0) {
+          // snippet:cpp-lesson1c-body-force-start
           BodyNode* bn = mPendulum->getBodyNode(i);
 
           Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
@@ -224,6 +238,7 @@ public:
           bn->getShapeNodeWith<VisualAspect>(1)->getVisualAspect()->setColor(
               dart::Color::Red());
           bn->createShapeNodeWith<VisualAspect>(mArrow);
+          // snippet:cpp-lesson1c-body-force-end
 
           --mForceCountDown[i];
         }

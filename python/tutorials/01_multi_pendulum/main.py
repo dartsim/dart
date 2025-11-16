@@ -108,31 +108,38 @@ class Controller:
         if 0 <= index < len(self.force_countdown):
             self.force_countdown[index] = default_countdown
 
-    def change_rest_position(self, _delta: float):
+    def change_rest_position(self, delta: float):
         """Lesson 2a."""
-        # TODO: Loop over the DOFs, adjust their rest positions, clamp to ±90°,
-        # and zero the X/Z axes of the root BallJoint so the pendulum stays planar.
-        pass
+        # snippet:py-lesson2a-rest-position-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2a-rest-position-end
 
-    def change_stiffness(self, _delta: float):
+    def change_stiffness(self, delta: float):
         """Lesson 2b."""
-        # TODO: Increment each DOF's spring stiffness by delta while clamping at zero.
-        pass
+        # snippet:py-lesson2b-stiffness-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2b-stiffness-end
 
-    def change_damping(self, _delta: float):
+    def change_damping(self, delta: float):
         """Lesson 2c."""
-        # TODO: Increment each DOF's damping coefficient by delta while clamping at zero.
-        pass
+        # snippet:py-lesson2c-damping-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2c-damping-end
 
     def add_constraint(self):
         """Lesson 3."""
-        # TODO: Attach a dart.constraint.BallJointConstraint from the tip to the world.
-        pass
+        # snippet:py-lesson3-add-constraint-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson3-add-constraint-end
 
     def remove_constraint(self):
         """Lesson 3."""
-        # TODO: Remove the constraint from the solver and clear the cached pointer.
-        pass
+        # snippet:py-lesson3-remove-constraint-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson3-remove-constraint-end
 
     def has_constraint(self) -> bool:
         return self.ball_constraint is not None
@@ -150,18 +157,21 @@ class Controller:
 
     def _reset_visuals(self):
         """Lesson 1a."""
-        # TODO: Restore the first two visual aspects to blue and hide any arrows.
-        pass
+        # snippet:py-lesson1a-reset-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1a-reset-end
 
     def _apply_joint_torques(self):
         """Lesson 1b."""
-        # TODO: For each DOF with a positive countdown, apply torque and tint shapeNode(0) red.
-        pass
+        # snippet:py-lesson1b-joint-force-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1b-joint-force-end
 
     def _apply_body_forces(self):
         """Lesson 1c."""
-        # TODO: Apply external forces, recolor the body shape, and display the arrow visuals.
-        pass
+        # snippet:py-lesson1c-body-force-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1c-body-force-end
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
