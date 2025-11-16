@@ -28,16 +28,26 @@ def get_build_dir(build_type: str) -> Path:
     Prefers per-configuration subdirectories (Ninja single-config builds),
     but gracefully falls back to the generator root (Visual Studio multi-config).
     """
+    def _has_build_system_files(path: Path) -> bool:
+        return any(
+            (path / marker).is_file() for marker in ("build.ninja", "CMakeCache.txt")
+        )
+
+    first_candidate: Optional[Path] = None
+
     for candidate in _candidate_build_dirs(build_type):
-        if candidate.is_dir():
-            if (candidate / "build.ninja").is_file():
-                return candidate
-            # Multi-config generators place build.ninja only at the root; make sure
-            # we don't select the configuration subdirectory in that case.
-            if not (candidate.parent / "build.ninja").is_file():
-                return candidate
-    # If nothing exists yet, return the first candidate so CMake can create it.
-    return next(_candidate_build_dirs(build_type))
+        if first_candidate is None:
+            first_candidate = candidate
+        if candidate.is_dir() and _has_build_system_files(candidate):
+            return candidate
+
+    # Fall back to the first existing candidate (even if not configured yet)
+    for candidate in _candidate_build_dirs(build_type):
+        if candidate.exists():
+            return candidate
+
+    # Nothing exists yet; return the preferred directory so CMake can create it.
+    return first_candidate if first_candidate is not None else Path()
 
 
 def run_cmake_build(build_dir: Path, build_type: str, target: str):
