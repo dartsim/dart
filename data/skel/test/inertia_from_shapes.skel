@@ -53,7 +53,7 @@
                     <transformation>0.03 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0 0.1 0.1</size>
+                            <size>0.01 0.1 0.1</size>
                         </box>
                     </geometry>
                 </visualization_shape>
