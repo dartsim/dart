@@ -85,10 +85,10 @@ public:
   enum class RootJointType
   {
     /// Floating joint type of URDF.
-    FLOATING = 0,
+    Floating = 0,
 
     /// Fixed joint type of URDF.
-    FIXED = 1,
+    Fixed = 1,
   };
 
   /// Options to be used in parsing URDF files.
@@ -108,7 +108,7 @@ public:
     /// Default constructor
     Options(
         common::ResourceRetrieverPtr resourceRetriever = nullptr,
-        RootJointType defaultRootJointType = RootJointType::FLOATING,
+        RootJointType defaultRootJointType = RootJointType::Floating,
         const dynamics::Inertia& defaultInertia = dynamics::Inertia());
   };
 

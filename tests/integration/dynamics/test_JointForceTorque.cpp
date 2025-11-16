@@ -54,7 +54,7 @@ using namespace dart::test;
 WorldPtr readWorld(const common::Uri& uri)
 {
   SdfParser::Options options;
-  options.mDefaultRootJointType = SdfParser::RootJointType::FIXED;
+  options.mDefaultRootJointType = SdfParser::RootJointType::Fixed;
   WorldPtr world = SdfParser::readWorld(uri, options);
   world->eachSkeleton([](Skeleton* skel) {
     skel->eachJoint([](Joint* joint) { joint->setLimitEnforcement(true); });

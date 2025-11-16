@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="relative_include">
+    <include>
+      <uri>dart://sample/sdf/test/include_relative_mesh/included_model/model.sdf</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+  </world>
+</sdf>

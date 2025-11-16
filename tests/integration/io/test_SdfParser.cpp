@@ -32,7 +32,11 @@
 
 #include "helpers/GTestUtils.hpp"
 
+#include "dart/common/Resource.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -45,7 +49,11 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
 #include <iostream>
+#include <map>
+
+#include <cstring>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -53,6 +61,86 @@ using namespace dart::test;
 using namespace math;
 using namespace simulation;
 using namespace utils;
+
+namespace {
+
+class MemoryResource final : public common::Resource
+{
+public:
+  explicit MemoryResource(std::string data) : mData(std::move(data)), mOffset(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mOffset;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    std::size_t base = 0;
+    if (origin == SEEKTYPE_CUR)
+      base = mOffset;
+    else if (origin == SEEKTYPE_END)
+      base = mData.size();
+
+    const auto next = static_cast<long long>(base) + offset;
+    if (next < 0 || next > static_cast<long long>(mData.size()))
+      return false;
+
+    mOffset = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    const std::size_t bytes = size * count;
+    if (bytes == 0)
+      return 0;
+
+    const std::size_t available = mData.size() - mOffset;
+    const std::size_t toCopy = std::min(bytes, available);
+    std::memcpy(buffer, mData.data() + mOffset, toCopy);
+    mOffset += toCopy;
+    return toCopy / size;
+  }
+
+private:
+  std::string mData;
+  std::size_t mOffset;
+};
+
+class MemoryResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  void add(const std::string& uri, std::string data)
+  {
+    mFiles.emplace(uri, std::move(data));
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return mFiles.count(uri.toString()) > 0;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    auto it = mFiles.find(uri.toString());
+    if (it == mFiles.end())
+      return nullptr;
+    return std::make_shared<MemoryResource>(it->second);
+  }
+
+private:
+  std::map<std::string, std::string> mFiles;
+};
+
+} // namespace
 
 //==============================================================================
 TEST(SdfParser, SDFSingleBodyWithoutJoint)
@@ -75,6 +163,19 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
   JointPtr joint = skel->getJoint(0);
   EXPECT_TRUE(joint != nullptr);
   EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
+}
+
+//==============================================================================
+TEST(SdfParser, ParsesHighVersionWorlds)
+{
+  WorldPtr world
+      = SdfParser::readWorld("dart://sample/sdf/test/high_version.world");
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_GT(world->getNumSkeletons(), 0u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
 }
 
 //==============================================================================
@@ -110,6 +211,147 @@ TEST(SdfParser, SDFJointProperties)
       testProperties(joint, 1);
     }
   });
+}
+
+//==============================================================================
+TEST(SdfParser, ResolvesMeshesRelativeToIncludedModels)
+{
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/include_relative_mesh/"
+      "include_relative_mesh.world");
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+
+  bool foundMesh = false;
+  skeleton->eachBodyNode([&](dynamics::BodyNode* body) {
+    const auto numShapeNodes = body->getNumShapeNodes();
+    for (auto i = 0u; i < numShapeNodes; ++i) {
+      const auto* shapeNode = body->getShapeNode(i);
+      const auto shape = shapeNode->getShape();
+      const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
+      if (!mesh)
+        continue;
+
+      foundMesh = true;
+      const std::string meshPath = mesh->getMeshPath();
+      EXPECT_FALSE(meshPath.empty());
+      EXPECT_NE(meshPath.find("relative_box.obj"), std::string::npos);
+      EXPECT_TRUE(std::filesystem::exists(meshPath))
+          << "Mesh path [" << meshPath << "] should exist.";
+
+      const std::string meshUri = mesh->getMeshUri();
+      EXPECT_NE(meshUri.find("meshes/relative_box.obj"), std::string::npos);
+    }
+  });
+
+  EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string worldUri
+      = "memory://pkg/worlds/include_relative_include.world";
+  const std::string modelUri = "memory://pkg/models/box/model.sdf";
+  const std::string meshUri = "memory://pkg/models/box/meshes/box.obj";
+
+  const std::string worldSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <include>
+      <uri>../models/box/model.sdf</uri>
+    </include>
+  </world>
+</sdf>
+)";
+
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="box">
+    <static>true</static>
+    <link name="link">
+      <inertial>
+        <mass>1.0</mass>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)";
+
+  const std::string meshObj = R"(
+o Box
+v -0.5 -0.5 -0.5
+v 0.5 -0.5 -0.5
+v 0.5 0.5 -0.5
+v -0.5 0.5 -0.5
+v -0.5 -0.5 0.5
+v 0.5 -0.5 0.5
+v 0.5 0.5 0.5
+v -0.5 0.5 0.5
+f 1 2 3
+f 1 3 4
+f 5 6 7
+f 5 7 8
+f 1 5 6
+f 1 6 2
+f 2 6 7
+f 2 7 3
+f 3 7 8
+f 3 8 4
+f 4 8 5
+f 4 5 1
+)";
+
+  retriever->add(worldUri, worldSdf);
+  retriever->add(modelUri, modelSdf);
+  retriever->add(meshUri, meshObj);
+
+  utils::SdfParser::Options options(retriever);
+  auto world = utils::SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world != nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton != nullptr);
+  EXPECT_EQ("box", skeleton->getName());
+
+  bool foundMesh = false;
+  skeleton->eachBodyNode([&](dynamics::BodyNode* body) {
+    const auto numShapeNodes = body->getNumShapeNodes();
+    for (auto i = 0u; i < numShapeNodes; ++i) {
+      const auto* shapeNode = body->getShapeNode(i);
+      const auto shape = shapeNode->getShape();
+      const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
+      if (!mesh)
+        continue;
+
+      foundMesh = true;
+      const std::string meshUriStr = mesh->getMeshUri();
+      EXPECT_NE(meshUriStr.find("meshes/box.obj"), std::string::npos);
+    }
+  });
+
+  EXPECT_TRUE(foundMesh);
 }
 
 //==============================================================================
@@ -175,4 +417,63 @@ TEST(SdfParser, ReadMaterial)
         double diff = (color - expected_color).norm();
         EXPECT_LT(diff, 1e-4);
       });
+}
+
+//==============================================================================
+TEST(SdfParser, ReadsMeshesFromCustomRetriever)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+
+  const std::string meshUri = "mem://meshes/unit_box.obj";
+  const std::string meshData = R"(o Box
+v 0 0 0
+v 1 0 0
+v 0 1 0
+v 0 0 1
+f 1 2 3
+f 1 3 4
+)";
+
+  const std::string worldUri = "mem://worlds/mesh.world";
+  const std::string worldData = R"(
+<sdf version='1.10'>
+  <world name='default'>
+    <model name='mesh_model'>
+      <static>true</static>
+      <link name='mesh_link'>
+        <visual name='mesh_visual'>
+          <geometry>
+            <mesh>
+              <uri>)" + meshUri + R"(</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>)";
+
+  retriever->add(worldUri, worldData);
+  retriever->add(meshUri, meshData);
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+
+  WorldPtr world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world);
+  ASSERT_GT(world->getNumSkeletons(), 0u);
+
+  SkeletonPtr skeleton = world->getSkeleton(0);
+  ASSERT_TRUE(skeleton);
+
+  auto* body = skeleton->getBodyNode(0);
+  ASSERT_TRUE(body);
+
+  bool foundMesh = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        if (std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape()))
+          foundMesh = true;
+      });
+  EXPECT_TRUE(foundMesh);
 }
