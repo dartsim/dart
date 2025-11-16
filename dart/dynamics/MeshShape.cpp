@@ -572,15 +572,16 @@ bool isColladaResource(
   if (hasColladaExtension(uri))
     return true;
 
-  if (!retriever)
-    return false;
+  if (retriever) {
+    const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+    if (parsedUri.mPath) {
+      const std::string resolvedPath = retriever->getFilePath(parsedUri);
+      if (!resolvedPath.empty())
+        return hasColladaExtension(resolvedPath);
+    }
+  }
 
-  const auto parsedUri = common::Uri::createFromStringOrPath(uri);
-  if (!parsedUri.mPath)
-    return false;
-
-  const std::string resolvedPath = retriever->getFilePath(parsedUri);
-  return !resolvedPath.empty() && hasColladaExtension(resolvedPath);
+  return false;
 }
 
 } // namespace
