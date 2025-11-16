@@ -1277,12 +1277,10 @@ endmacro()
 #   dart_add_library(_libname source1 [source2 ...])
 #-------------------------------------------------------------------------------
 macro(dart_add_library _name)
-  if(NOT DEFINED DART_BUILD_SHARED_VALUE)
-    if(BUILD_SHARED_LIBS)
-      set(DART_BUILD_SHARED_VALUE 1)
-    else()
-      set(DART_BUILD_SHARED_VALUE 0)
-    endif()
+  if(BUILD_SHARED_LIBS)
+    set(_dart_target_build_shared 1)
+  else()
+    set(_dart_target_build_shared 0)
   endif()
   add_library(${_name} ${ARGN})
   string(REPLACE "-" "_" _dart_export_macro "${_name}")
@@ -1292,10 +1290,11 @@ macro(dart_add_library _name)
   target_compile_definitions(
     ${_name}
     PUBLIC
-      DART_BUILD_SHARED=${DART_BUILD_SHARED_VALUE}
+      DART_BUILD_SHARED=${_dart_target_build_shared}
     PRIVATE
       DART_BUILDING_${_dart_export_macro}
   )
+  unset(_dart_target_build_shared)
 
   set(_dart_use_global_output_dirs TRUE)
   if(DEFINED DART_USE_GLOBAL_OUTPUT_DIRS)
