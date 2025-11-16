@@ -32,7 +32,7 @@
 import math
 from typing import List, Optional
 
-import dartpy as dart
+import dartpy_nb as dart
 import numpy as np
 
 default_domino_height = 0.3
