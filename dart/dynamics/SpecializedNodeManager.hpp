@@ -172,7 +172,10 @@ public:
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class T>
-  static constexpr bool isSpecializedForNode();
+  static constexpr bool isSpecializedForNode()
+  {
+    return _isSpecializedForNode(type<T>());
+  }
 
 protected:
   /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(std::size_t)
