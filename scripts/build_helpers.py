@@ -28,6 +28,7 @@ def get_build_dir(build_type: str) -> Path:
     Prefers per-configuration subdirectories (Ninja single-config builds),
     but gracefully falls back to the generator root (Visual Studio multi-config).
     """
+
     def _has_build_system_files(path: Path) -> bool:
         return any(
             (path / marker).is_file() for marker in ("build.ninja", "CMakeCache.txt")
