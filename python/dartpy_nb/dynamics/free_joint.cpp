@@ -17,9 +17,9 @@ void defFreeJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "FreeJointProperties")
       .def(nb::init<>())
-      .def_readwrite("mName", &Properties::mName)
-      .def_readwrite("mT_ParentBodyToJoint", &Properties::mT_ParentBodyToJoint)
-      .def_readwrite("mT_ChildBodyToJoint", &Properties::mT_ChildBodyToJoint);
+      .def_rw("mName", &Properties::mName)
+      .def_rw("mT_ParentBodyToJoint", &Properties::mT_ParentBodyToJoint)
+      .def_rw("mT_ChildBodyToJoint", &Properties::mT_ChildBodyToJoint);
 
   nb::class_<FreeJoint, dart::dynamics::Joint>(m, "FreeJoint")
       .def(

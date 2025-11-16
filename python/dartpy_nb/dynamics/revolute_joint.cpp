@@ -17,10 +17,10 @@ void defRevoluteJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "RevoluteJointProperties")
       .def(nb::init<>())
-      .def_readwrite("mName", &Properties::mName)
-      .def_readwrite("mAxis", &Properties::mAxis)
-      .def_readwrite("mT_ParentBodyToJoint", &Properties::mT_ParentBodyToJoint)
-      .def_readwrite("mT_ChildBodyToJoint", &Properties::mT_ChildBodyToJoint);
+      .def_rw("mName", &Properties::mName)
+      .def_rw("mAxis", &Properties::mAxis)
+      .def_rw("mT_ParentBodyToJoint", &Properties::mT_ParentBodyToJoint)
+      .def_rw("mT_ChildBodyToJoint", &Properties::mT_ChildBodyToJoint);
 
   nb::class_<RevoluteJoint, dart::dynamics::Joint>(m, "RevoluteJoint")
       .def("setAxis", &RevoluteJoint::setAxis, nb::arg("axis"))

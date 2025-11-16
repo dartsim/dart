@@ -25,11 +25,11 @@ void defMjcfParser(nb::module_& m)
           nb::arg("resourceRetretrieverOrNullptrriever") = nullptr,
           nb::arg("geomSkeletonNamePrefix") = "__geom_skel__",
           nb::arg("siteSkeletonNamePrefix") = "__site_skel__")
-      .def_readwrite("mRetriever", &MjcfParser::Options::mRetriever)
-      .def_readwrite(
+      .def_rw("mRetriever", &MjcfParser::Options::mRetriever)
+      .def_rw(
           "mGeomSkeletonNamePrefix",
           &MjcfParser::Options::mGeomSkeletonNamePrefix)
-      .def_readwrite(
+      .def_rw(
           "mSiteSkeletonNamePrefix",
           &MjcfParser::Options::mSiteSkeletonNamePrefix);
 

@@ -44,9 +44,9 @@ void defCollisionOption(nb::module_& m)
           nb::arg("enableContact") = true,
           nb::arg("maxNumContacts") = 1000u,
           nb::arg("collisionFilter") = nullptr)
-      .def_readwrite("enableContact", &CollisionOption::enableContact)
-      .def_readwrite("maxNumContacts", &CollisionOption::maxNumContacts)
-      .def_readwrite("collisionFilter", &CollisionOption::collisionFilter);
+      .def_rw("enableContact", &CollisionOption::enableContact)
+      .def_rw("maxNumContacts", &CollisionOption::maxNumContacts)
+      .def_rw("collisionFilter", &CollisionOption::collisionFilter);
 }
 
 } // namespace dart::python_nb

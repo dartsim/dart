@@ -19,20 +19,20 @@ void defRaycast(nb::module_& m)
 
   nb::class_<RaycastOption>(m, "RaycastOption")
       .def(nb::init<>())
-      .def_readwrite("mEnableAllHits", &RaycastOption::mEnableAllHits);
+      .def_rw("mEnableAllHits", &RaycastOption::mEnableAllHits);
 
   nb::class_<RayHit>(m, "RayHit")
       .def(nb::init<>())
-      .def_readwrite("mCollisionObject", &RayHit::mCollisionObject)
-      .def_readwrite("mPoint", &RayHit::mPoint)
-      .def_readwrite("mFraction", &RayHit::mFraction)
-      .def_readwrite("mNormal", &RayHit::mNormal);
+      .def_rw("mCollisionObject", &RayHit::mCollisionObject)
+      .def_rw("mPoint", &RayHit::mPoint)
+      .def_rw("mFraction", &RayHit::mFraction)
+      .def_rw("mNormal", &RayHit::mNormal);
 
   nb::class_<RaycastResult>(m, "RaycastResult")
       .def(nb::init<>())
       .def("clear", &RaycastResult::clear)
       .def("hasHit", &RaycastResult::hasHit)
-      .def_readwrite("mRayHits", &RaycastResult::mRayHits);
+      .def_rw("mRayHits", &RaycastResult::mRayHits);
 }
 
 } // namespace dart::python_nb

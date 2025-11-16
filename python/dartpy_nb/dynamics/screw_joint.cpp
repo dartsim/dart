@@ -17,9 +17,9 @@ void defScrewJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "ScrewJointProperties")
       .def(nb::init<>())
-      .def_readwrite(
+      .def_rw(
           "mAxis", &dart::dynamics::detail::ScrewJointUniqueProperties::mAxis)
-      .def_readwrite(
+      .def_rw(
           "mPitch",
           &dart::dynamics::detail::ScrewJointUniqueProperties::mPitch);
 

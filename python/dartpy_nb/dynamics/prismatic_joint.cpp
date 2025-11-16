@@ -17,7 +17,7 @@ void defPrismaticJoint(nb::module_& m)
 
   nb::class_<Properties>(m, "PrismaticJointProperties")
       .def(nb::init<>())
-      .def_readwrite(
+      .def_rw(
           "mAxis",
           &dart::dynamics::detail::PrismaticJointUniqueProperties::mAxis);
 
