@@ -13,3 +13,7 @@ APIs.
    tutorials/02-collisions
    tutorials/03-dominoes
    tutorials/04-biped
+   tutorials/wholebody-ik
+
+For general DART concepts that apply to both C++ and Python APIs, see the
+:doc:`C++ tutorials </dart/user_guide/tutorials>`.

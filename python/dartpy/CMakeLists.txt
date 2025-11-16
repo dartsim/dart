@@ -160,18 +160,22 @@ if(BUILD_SHARED_LIBS)
   )
 endif()
 
-# Install the pybind module to the wheel
-# For scikit-build-core, we use SKBUILD_PLATLIB_DIR if available,
-# otherwise fall back to PYTHON_SITE_PACKAGES for traditional builds
+# Install the pybind module and package stub. For scikit-build-core installs we
+# honor SKBUILD_PLATLIB_DIR; otherwise install into the traditional site-packages
+# directory.
 if(DEFINED SKBUILD_PLATLIB_DIR)
-  install(TARGETS ${pybind_module}
-    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}"
-  )
+  set(DARTPY_INSTALL_DIR "${SKBUILD_PLATLIB_DIR}/dartpy")
 else()
-  install(TARGETS ${pybind_module}
-    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
-  )
+  set(DARTPY_INSTALL_DIR "${PYTHON_SITE_PACKAGES}/dartpy")
 endif()
+
+install(TARGETS ${pybind_module}
+  LIBRARY DESTINATION "${DARTPY_INSTALL_DIR}"
+)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+  DESTINATION "${DARTPY_INSTALL_DIR}"
+)
 
 list(REMOVE_ITEM dartpy_headers
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h

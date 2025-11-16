@@ -5,9 +5,92 @@
 
 from pathlib import Path
 from datetime import datetime
+import shutil
+import sys
+import importlib
+import keyword
+import re
 
 # Note: API documentation is hosted on GitHub Pages, not Read the Docs
 # This configuration file is for user guides, tutorials, and developer documentation only
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _rename_placeholder(text: str, name: str) -> str:
+    pattern = re.compile(rf"([(\s,]){re.escape(name)}(?=\s*:)")
+    counter = 0
+
+    def repl(match: re.Match[str]) -> str:
+        nonlocal counter
+        counter += 1
+        return f"{match.group(1)}{name}_param_{counter}"
+
+    return pattern.sub(repl, text)
+
+
+def _sanitize_stub_source(text: str) -> str:
+    """Rename invalid identifiers originating from the stub generator."""
+
+    def _replace_keyword(match: re.Match[str]) -> str:
+        return f"{match.group('prefix')}{match.group('name')}_"
+
+    for kw in keyword.kwlist:
+        pattern = re.compile(rf"(?P<prefix>[\(\s,])(?P<name>{kw})(?=\s*:)")
+        text = pattern.sub(_replace_keyword, text)
+
+    # Replace C++ namespace separators with valid identifiers.
+    text = text.replace("::", "_")
+
+    # Handle placeholder arguments that otherwise duplicate names.
+    for placeholder in ("std", "dart"):
+        text = _rename_placeholder(text, placeholder)
+
+    return text
+
+
+def _prepare_stub_modules(package: str) -> bool:
+    """Copy *.pyi stubs into a temporary module tree so autodoc can import them."""
+
+    stubs_root = REPO_ROOT / "python" / "stubs"
+    src_pkg = stubs_root / package
+    if not src_pkg.exists():
+        return False
+
+    generated_root = Path(__file__).parent / "_generated_stubs"
+    dest_pkg = generated_root / package
+    shutil.rmtree(dest_pkg, ignore_errors=True)
+    dest_pkg.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(src_pkg, dest_pkg, dirs_exist_ok=True)
+
+    # Rename *.pyi -> *.py so CPython's import machinery can load them.
+    for stub_file in dest_pkg.rglob("*.pyi"):
+        sanitized = _sanitize_stub_source(stub_file.read_text())
+        py_path = stub_file.with_suffix(".py")
+        py_path.write_text(sanitized)
+        stub_file.unlink()
+
+    if str(generated_root) not in sys.path:
+        sys.path.insert(0, str(generated_root))
+    return True
+
+
+def _ensure_dartpy_available() -> None:
+    """Make sure `import dartpy` succeeds for autodoc, falling back to stubs."""
+
+    try:
+        importlib.import_module("dartpy")
+    except ModuleNotFoundError:
+        if _prepare_stub_modules("dartpy"):
+            sys.stderr.write("Using generated dartpy stubs for autodoc.\n")
+        else:
+            sys.stderr.write(
+                "WARNING: dartpy module and stubs are unavailable; "
+                "dartpy API pages will be empty.\n"
+            )
+
+
+_ensure_dartpy_available()
 
 # Read DART version from package.xml
 def get_dart_version():

@@ -21,3 +21,4 @@ The examples are based on the APIs of DART 7.0.
    tutorials/collisions
    tutorials/dominoes
    tutorials/multi-pendulum
+   tutorials/wholebody-ik
