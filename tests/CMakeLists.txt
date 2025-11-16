@@ -74,12 +74,19 @@ function(dart_add_test test_type target_name) # ARGN for source files
   )
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
-  set_tests_properties(
-    ${target_name}
-    PROPERTIES
-      ENVIRONMENT_MODIFICATION
-        "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart>"
-  )
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+    set_tests_properties(
+      ${target_name}
+      PROPERTIES
+        ENVIRONMENT_MODIFICATION
+          "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+    )
+  else()
+    set_property(
+      TEST ${target_name}
+      PROPERTY ENVIRONMENT "PATH=$<TARGET_FILE_DIR:dart>;$ENV{PATH}"
+    )
+  endif()
 
   dart_format_add(${sources})
 
