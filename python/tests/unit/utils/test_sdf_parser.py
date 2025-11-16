@@ -17,5 +17,13 @@ def test_read_world():
     )
 
 
+def test_read_high_version_world():
+    world = dart.utils.SdfParser.readWorld(
+        "dart://sample/sdf/test/high_version.world"
+    )
+    assert world is not None
+    assert world.getNumSkeletons() == 1
+
+
 if __name__ == "__main__":
     pytest.main()

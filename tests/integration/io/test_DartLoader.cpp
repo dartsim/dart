@@ -220,7 +220,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot1->getRootJoint()->getName(), "rootJoint");
 
   // Floating
-  options.mDefaultRootJointType = DartLoader::RootJointType::FLOATING;
+  options.mDefaultRootJointType = DartLoader::RootJointType::Floating;
   loader.setOptions(options);
   auto robot2 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot2);
@@ -229,7 +229,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot2->getRootJoint()->getName(), "rootJoint");
 
   // Fixed
-  options.mDefaultRootJointType = DartLoader::RootJointType::FIXED;
+  options.mDefaultRootJointType = DartLoader::RootJointType::Fixed;
   loader.setOptions(options);
   auto robot3 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot3);

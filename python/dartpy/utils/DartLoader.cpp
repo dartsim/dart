@@ -46,8 +46,8 @@ void DartLoader(py::module& m)
   auto dartLoaderRootJointType
       = ::py::enum_<utils::DartLoader::RootJointType>(
             m, "DartLoaderRootJointType")
-            .value("FLOATING", utils::DartLoader::RootJointType::FLOATING)
-            .value("FIXED", utils::DartLoader::RootJointType::FIXED);
+            .value("Floating", utils::DartLoader::RootJointType::Floating)
+            .value("Fixed", utils::DartLoader::RootJointType::Fixed);
 
   auto dartLoaderOptions
       = ::py::class_<utils::DartLoader::Options>(m, "DartLoaderOptions")
@@ -58,7 +58,7 @@ void DartLoader(py::module& m)
                     const dynamics::Inertia&>(),
                 ::py::arg("resourceRetriever") = nullptr,
                 ::py::arg("defaultRootJointType")
-                = utils::DartLoader::RootJointType::FLOATING,
+                = utils::DartLoader::RootJointType::Floating,
                 ::py::arg("defaultInertia") = dynamics::Inertia())
             .def_readwrite(
                 "mResourceRetriever",

@@ -7,7 +7,7 @@ import pytest
 
 def read_world(uri: dart.common.Uri):
     options = dart.utils.SdfParser.Options()
-    options.mDefaultRootJointType = dart.utils.SdfParser.RootJointType.FIXED
+    options.mDefaultRootJointType = dart.utils.SdfParser.RootJointType.Fixed
     world = dart.utils.SdfParser.readWorld(uri, options)
     for i in range(world.getNumSkeletons()):
         skel = world.getSkeleton(i)

@@ -232,7 +232,14 @@ dart/
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
-#### 14. urdfdom
+#### 14. libsdformat
+- **Version:** ≥ 16.0.0, < 17
+- **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
+- **Component:** `dart-utils`
+- **CMake Module:** `cmake/DARTFindsdformat.cmake`
+- **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
+
+#### 15. urdfdom
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
 - **Component:** `dart-utils-urdf`
@@ -241,17 +248,17 @@ dart/
 
 ### Build/Test Dependencies (Build-time only)
 
-#### 15. Google Test (gtest)
+#### 16. Google Test (gtest)
 - **Version:** ≥ 1.17.0, < 2
 - **Purpose:** Unit testing framework
 - **Option:** `DART_USE_SYSTEM_GOOGLETEST`
 
-#### 16. Google Benchmark
+#### 17. Google Benchmark
 - **Version:** ≥ 1.9.3, < 2
 - **Purpose:** Performance benchmarking
 - **Option:** `DART_USE_SYSTEM_GOOGLEBENCHMARK`
 
-#### 17. Tracy Profiler
+#### 18. Tracy Profiler
 - **Version:** ≥ 0.11.1, < 0.12
 - **Purpose:** Frame profiling
 - **Option:** `DART_USE_SYSTEM_TRACY`
@@ -370,7 +377,7 @@ Component Dependency Tree:
     │   └── depends: dart, bullet
     │
     ├── utils
-    │   └── depends: dart, tinyxml2
+    │   └── depends: dart, tinyxml2, libsdformat
     │
     ├── utils-urdf
     │   └── depends: utils, urdfdom
@@ -387,7 +394,7 @@ Component Dependency Tree:
 | `optimizer-ipopt` | `dart-optimizer-ipopt` | `dart`, `ipopt` |
 | `optimizer-nlopt` | `dart-optimizer-nlopt` | `dart`, `nlopt` |
 | `collision-bullet` | `dart-collision-bullet` | `dart`, `bullet` |
-| `utils` | `dart-utils` | `dart`, `tinyxml2` |
+| `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
 | `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL` |
@@ -675,4 +682,5 @@ build/
 <depend>libxi-dev</depend>
 <depend>libxmu-dev</depend>
 <depend>tinyxml2</depend>
+<depend>sdformat</depend>
 ```

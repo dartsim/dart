@@ -47,13 +47,13 @@ class DartLoaderRootJointType:
     """
     Members:
     
-      FLOATING
+      Floating
     
-      FIXED
+      Fixed
     """
-    FIXED: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.FIXED: 1>
-    FLOATING: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.FLOATING: 0>
-    __members__: typing.ClassVar[dict[str, DartLoaderRootJointType]]  # value = {'FLOATING': <DartLoaderRootJointType.FLOATING: 0>, 'FIXED': <DartLoaderRootJointType.FIXED: 1>}
+    Fixed: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.Fixed: 1>
+    Floating: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.Floating: 0>
+    __members__: typing.ClassVar[dict[str, DartLoaderRootJointType]]  # value = {'Floating': <DartLoaderRootJointType.Floating: 0>, 'Fixed': <DartLoaderRootJointType.Fixed: 1>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:

@@ -13,6 +13,8 @@
 #   pixi install
 #   pixi run build
 
+tap 'osrf/simulation'
+
 # Build dependencies
 brew 'cmake'
 brew 'ninja'
@@ -31,6 +33,8 @@ brew 'octomap'
 # brew 'open-scene-graph'  # disabled until 3.7.0 is released
 brew 'pagmo'
 brew 'spdlog'
+# Replace with the latest sdformat formula from the osrf/simulation tap when available.
+brew 'osrf/simulation/sdformat13'
 brew 'tinyxml2'
 brew 'urdfdom'
 
