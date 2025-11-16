@@ -33,11 +33,13 @@
 #include "dart/utils/VskParser.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/math/Geometry.hpp"
 
 // Standard Library
 #include <Eigen/Dense>
 
 #include <map>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -908,28 +910,38 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
+    const auto composite = bodyNode->computeInertiaFromShapeNodes(
+        [&](const dynamics::ShapeNode* shapeNode) -> std::optional<double> {
+          const auto shape = shapeNode->getShape();
+          if (!shape)
+            return std::nullopt;
+          const double mass = density * shape->getVolume();
+          if (mass <= 0.0)
+            return std::nullopt;
+          return mass;
+        });
+
+    Eigen::Matrix6d spatial = Eigen::Matrix6d::Zero();
     double totalMass = 0.0;
-    Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
-    auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
-
-    for (auto j = 0u; j < numShapeNodes; ++j) {
-      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(j);
-      auto shape = shapeNode->getShape();
-      const double mass = density * shape->getVolume();
-      const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
-      const Eigen::Matrix3d moi = shape->computeInertia(mass);
-
-      totalMass += mass;
-      totalMoi += math::parallelAxisTheorem(moi, localTf.translation(), mass);
-      // TODO(JS): We should take the orientation of the inertia into account,
-      // but Inertia class doens't support it for now. See #234.
+    if (composite.has_value()) {
+      spatial = composite->getSpatialTensor();
+      totalMass = composite->getMass();
     }
 
-    if (bodyNode->getMass() > 1e-5) {
+    if (bodyNode->getMass() > 1e-5 && totalMass > 0.0) {
       const double givenMass = bodyNode->getMass();
       const double ratio = givenMass / totalMass;
+      spatial *= ratio;
       totalMass = givenMass;
-      totalMoi *= ratio;
+    }
+
+    Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
+    if (totalMass > 0.0) {
+      const dynamics::Inertia combined(spatial);
+      totalMoi = combined.getMoment();
+      const Eigen::Vector3d com = combined.getLocalCOM();
+      if (!com.isZero(1e-12))
+        totalMoi = math::parallelAxisTheorem(totalMoi, com, totalMass);
     }
 
     if (totalMass <= 0.0 || totalMoi.diagonal().norm() <= 0.0) {
