@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 
 #include <dart/dynamics/MetaSkeleton.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Deprecated.hpp>
 

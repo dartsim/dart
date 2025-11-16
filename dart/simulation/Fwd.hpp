@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,38 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#ifndef DART_SIMULATION_FWD_HPP_
+#define DART_SIMULATION_FWD_HPP_
 
 #include <dart/common/SmartPointer.hpp>
 
 namespace dart {
-namespace collision {
+namespace simulation {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
-class CollisionObject;
+class World;
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+DART_COMMON_DECLARE_SHARED_WEAK(World)
 
-class DistanceFilter;
-struct DistanceOption;
-class DistanceResult;
-
-struct RaycastOption;
-class RaycastResult;
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
-
-} // namespace collision
+} // namespace simulation
 } // namespace dart
 
-#endif // DART_COLLISION_FWD_HPP_
+#endif // DART_SIMULATION_FWD_HPP_

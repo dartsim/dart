@@ -40,7 +40,7 @@
 #define DART_SIMULATION_WORLD_HPP_
 
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/SmartPointer.hpp>
+#include <dart/simulation/Fwd.hpp>
 
 #include <dart/constraint/Fwd.hpp>
 
@@ -88,8 +88,6 @@ struct WorldConfig final
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
 };
-
-DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN

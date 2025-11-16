@@ -39,7 +39,7 @@
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
 #include <dart/dynamics/detail/SkeletonAspect.hpp>

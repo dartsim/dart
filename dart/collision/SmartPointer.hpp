@@ -33,19 +33,10 @@
 #ifndef DART_COLLISION_SMARTPOINTER_HPP_
 #define DART_COLLISION_SMARTPOINTER_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#pragma message(                                                               \
+    "This header has been deprecated in DART 7.0. "                            \
+    "Please include dart/collision/Fwd.hpp instead.")
 
-namespace dart {
-namespace collision {
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
-
-} // namespace collision
-} // namespace dart
+#include <dart/collision/Fwd.hpp>
 
 #endif // DART_COLLISION_SMARTPOINTER_HPP_

@@ -34,7 +34,7 @@
 #define DART_DYNAMICS_ENTITY_HPP_
 
 #include <dart/dynamics/Shape.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Composite.hpp>
 #include <dart/common/Signal.hpp>

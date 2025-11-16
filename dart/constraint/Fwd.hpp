@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_FWD_HPP_
 #define DART_CONSTRAINT_FWD_HPP_
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/common/SmartPointer.hpp>
 
 namespace dart {
 namespace constraint {
@@ -70,6 +70,31 @@ class ServoMotorConstraint;
 class SoftContactConstraint;
 
 class WeldJointConstraint;
+
+DART_COMMON_DECLARE_SMART_POINTERS(ConstraintSolver)
+
+DART_COMMON_DECLARE_SHARED_WEAK(ConstrainedGroup)
+
+DART_COMMON_DECLARE_SHARED_WEAK(ConstraintBase)
+DART_COMMON_DECLARE_SHARED_WEAK(ClosedLoopConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(ContactConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(ContactSurfaceHandler)
+DART_COMMON_DECLARE_SHARED_WEAK(SoftContactConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(JointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
+
+DART_COMMON_DECLARE_SHARED_WEAK(LCPSolver)
+DART_COMMON_DECLARE_SHARED_WEAK(BoxedLcpSolver)
+DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
+DART_COMMON_DECLARE_SHARED_WEAK(PsorBoxedLcpSolver)
+DART_COMMON_DECLARE_SHARED_WEAK(JacobiBoxedLcpSolver)
+
+DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)
+DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
+
+DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 
 } // namespace constraint
 } // namespace dart

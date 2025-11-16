@@ -40,7 +40,7 @@
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
