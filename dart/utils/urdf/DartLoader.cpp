@@ -389,21 +389,21 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch (options.mDefaultRootJointType) {
-    case DartLoader::RootJointType::FLOATING: {
+    case DartLoader::RootJointType::Floating: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           _parent, properties, _body);
       break;
     }
-    case DartLoader::RootJointType::FIXED: {
+    case DartLoader::RootJointType::Fixed: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           _parent, basicProperties, _body);
       break;
     }
     default: {
       DART_ERROR(
-          "Unsupported RootJointType '{}'. Using FLOATING instead.",
+          "Unsupported RootJointType '{}'. Using Floating instead.",
           static_cast<int>(options.mDefaultRootJointType));
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
