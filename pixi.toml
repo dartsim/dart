@@ -123,7 +123,7 @@ cmake \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -293,7 +293,7 @@ cmake \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 build-tests = { cmd = [
@@ -306,7 +306,7 @@ build-tests = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -320,7 +320,7 @@ build-dart8-tests = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -342,7 +342,7 @@ build-py-dev = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -356,7 +356,7 @@ build-dartpy8 = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -365,7 +365,7 @@ config-py = { cmd = [
   "-lc",
   "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
 ], env = { DART_VERBOSE = "OFF" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -486,7 +486,7 @@ test = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -504,7 +504,7 @@ test-no-plane = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -522,7 +522,7 @@ test-dart8 = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -807,7 +807,7 @@ install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [
     "{{ dartpy }}",
   ] },
 ], env = { BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 config-install = { cmd = [
@@ -835,7 +835,7 @@ cmake \
     -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 tracy = { cmd = "tracy-profiler" }
@@ -1171,7 +1171,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1239,7 +1239,7 @@ build-tests = { cmd = """
     "{{ dartpy }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -1255,7 +1255,7 @@ build-dart8-tests = { cmd = """
     "{{ dartpy }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -1300,7 +1300,7 @@ test = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -1318,7 +1318,7 @@ test-no-plane = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -1336,7 +1336,7 @@ test-dart8 = { cmd = [
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -1437,7 +1437,7 @@ install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [
     "{{ dartpy }}",
   ] },
 ], env = { BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 config-install = { cmd = """
@@ -1459,7 +1459,7 @@ config-install = { cmd = """
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
 tracy = { cmd = "tracy-profiler.exe" }
