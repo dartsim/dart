@@ -67,6 +67,7 @@
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
@@ -75,8 +76,11 @@
 #include <Eigen/StdVector>
 
 #include <algorithm>
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart {
@@ -127,6 +131,75 @@ using IndexToJoint = std::map<std::size_t, std::string>;
 
 // first: Child BodyNode name | second: Order that Joint appears in file
 using JointToIndex = std::map<std::string, std::size_t>;
+
+bool isSoftMeshShape(const dynamics::Shape* shape)
+{
+  return shape && shape->getType() == dynamics::SoftMeshShape::getStaticType();
+}
+
+std::vector<dynamics::ShapeNode*> collectRigidShapeNodes(
+    dynamics::BodyNode* bodyNode)
+{
+  std::vector<dynamics::ShapeNode*> shapes;
+  const auto count = bodyNode->getNumShapeNodes();
+  shapes.reserve(count);
+
+  for (auto i = 0u; i < count; ++i) {
+    auto* shapeNode = bodyNode->getShapeNode(i);
+    if (shapeNode == nullptr || isSoftMeshShape(shapeNode->getShape().get()))
+      continue;
+    shapes.push_back(shapeNode);
+  }
+
+  return shapes;
+}
+
+bool setInertiaFromShapeNodes(dynamics::BodyNode* bodyNode)
+{
+  const double bodyMass = bodyNode->getMass();
+  if (bodyMass <= 0.0)
+    return false;
+
+  const auto shapeNodes = collectRigidShapeNodes(bodyNode);
+  if (shapeNodes.empty())
+    return false;
+
+  std::unordered_map<const dynamics::ShapeNode*, double> weights;
+  double totalWeight = 0.0;
+
+  for (const auto* shapeNode : shapeNodes) {
+    double weight = shapeNode->getShape()->getVolume();
+    if (!std::isfinite(weight) || weight <= 0.0)
+      weight = 1.0;
+    weights[shapeNode] = weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight <= 0.0)
+    totalWeight = static_cast<double>(weights.size());
+
+  const auto composite = bodyNode->computeInertiaFromShapeNodes(
+      [&](const dynamics::ShapeNode* shapeNode) -> std::optional<double> {
+        const auto it = weights.find(shapeNode);
+        if (it == weights.end())
+          return std::nullopt;
+        return bodyMass * (it->second / totalWeight);
+      });
+
+  if (!composite.has_value())
+    return false;
+
+  Eigen::Matrix3d moment = composite->getMoment();
+  const Eigen::Vector3d desiredCom = bodyNode->getInertia().getLocalCOM();
+  const Eigen::Vector3d delta = composite->getLocalCOM() - desiredCom;
+  if (!delta.isZero(1e-12))
+    moment = math::parallelAxisTheorem(moment, delta, bodyMass);
+
+  auto inertia = bodyNode->getInertia();
+  inertia.setMoment(moment);
+  bodyNode->setInertia(inertia);
+  return true;
+}
 
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
@@ -611,27 +684,8 @@ void readAspects(
     if (hasElement(bodyElement, "inertia")) {
       tinyxml2::XMLElement* inertiaElement = getElement(bodyElement, "inertia");
 
-      if (!hasElement(inertiaElement, "moment_of_inertia")) {
-        bodyNode->eachShapeNode(
-            [bodyNode](dynamics::ShapeNode* shapeNode) -> bool {
-              const auto& shapeType = shapeNode->getShape()->getType();
-              if (dynamics::SoftMeshShape::getStaticType() == shapeType)
-                return true;
-
-              auto mass = bodyNode->getMass();
-              const Eigen::Matrix3d Ic
-                  = shapeNode->getShape()->computeInertia(mass);
-              auto inertia = bodyNode->getInertia();
-              inertia.setMoment(Ic);
-              bodyNode->setInertia(inertia);
-
-              // TODO(JS): We use the inertia of the first non-soft mesh shape
-              // in a body for the body's inertia when not specified. We might
-              // want to use the summation of all the shapes' inertia instead.
-
-              return false;
-            });
-      }
+      if (!hasElement(inertiaElement, "moment_of_inertia"))
+        setInertiaFromShapeNodes(bodyNode);
     }
   }
 }
