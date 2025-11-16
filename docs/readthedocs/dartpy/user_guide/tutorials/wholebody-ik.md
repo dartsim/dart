@@ -194,6 +194,6 @@ def main():
 
 - Example: `python/examples/atlas_puppet/`
 - Tests: `python/tests/integration/test_atlas_ik.py`
-- C++ tutorial: [`docs/readthedocs/dart/user_guide/tutorials/wholebody-ik.md`](../../dart/user_guide/tutorials/wholebody-ik.md)
+- C++ tutorial: :doc:`dart/user_guide/tutorials/wholebody-ik`
 - [dartpy Installation Guide](/dartpy/user_guide/installation)
 - [DART IK Documentation](https://dartsim.github.io/)

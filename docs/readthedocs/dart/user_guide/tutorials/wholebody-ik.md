@@ -196,5 +196,5 @@ int main()
 
 - Example: `examples/atlas_puppet/`
 - Tests: `tests/integration/dynamics/test_AtlasIK.cpp`
-- Python port: [`docs/readthedocs/dartpy/user_guide/tutorials/wholebody-ik.md`](../../dartpy/user_guide/tutorials/wholebody-ik.md)
+- Python port: :doc:`dartpy/user_guide/tutorials/wholebody-ik`
 - [DART IK Documentation](https://dartsim.github.io/)
