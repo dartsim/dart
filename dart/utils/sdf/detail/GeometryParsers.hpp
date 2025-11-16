@@ -30,52 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/All.hpp>
+#ifndef DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
+#define DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
 
-#include <dart/All.hpp>
+#include "dart/utils/sdf/detail/SdfHelpers.hpp"
 
-#include <pybind11/pybind11.h>
+#include <dart/dynamics/Shape.hpp>
 
-namespace py = pybind11;
+#include <dart/common/ResourceRetriever.hpp>
 
-namespace dart {
-namespace python {
+namespace dart::utils::SdfParser::detail {
 
-void SdfParser(py::module& m)
-{
-  auto sm = m.def_submodule("SdfParser");
+dynamics::ShapePtr readGeometryShape(
+    const ElementPtr& geometryElement,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
 
-  ::py::enum_<utils::SdfParser::RootJointType>(sm, "RootJointType")
-      .value("Floating", utils::SdfParser::RootJointType::Floating)
-      .value("Fixed", utils::SdfParser::RootJointType::Fixed);
+} // namespace dart::utils::SdfParser::detail
 
-  ::py::class_<utils::SdfParser::Options>(sm, "Options")
-      .def(
-          ::py::init<
-              common::ResourceRetrieverPtr,
-              utils::SdfParser::RootJointType>(),
-          ::py::arg("resourceRetriever") = nullptr,
-          ::py::arg("defaultRootJointType")
-          = utils::SdfParser::RootJointType::Floating)
-      .def_readwrite(
-          "mResourceRetriever", &utils::SdfParser::Options::mResourceRetriever)
-      .def_readwrite(
-          "mDefaultRootJointType",
-          &utils::SdfParser::Options::mDefaultRootJointType);
-
-  sm.def(
-      "readWorld",
-      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
-          &utils::SdfParser::readWorld),
-      ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
-  sm.def(
-      "readSkeleton",
-      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
-          &utils::SdfParser::readSkeleton),
-      ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
-}
-
-} // namespace python
-} // namespace dart
+#endif // DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_

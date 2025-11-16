@@ -49,10 +49,10 @@ namespace SdfParser {
 enum class RootJointType
 {
   /// Floating joint type of URDF.
-  FLOATING = 0,
+  Floating = 0,
 
   /// Fixed joint type of URDF.
-  FIXED = 1,
+  Fixed = 1,
 };
 
 struct Options
@@ -67,7 +67,7 @@ struct Options
   /// Default constructor
   Options(
       common::ResourceRetrieverPtr resourceRetriever = nullptr,
-      RootJointType defaultRootJointType = RootJointType::FLOATING);
+      RootJointType defaultRootJointType = RootJointType::Floating);
 };
 
 simulation::WorldPtr readWorld(
