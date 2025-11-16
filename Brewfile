@@ -40,4 +40,3 @@ brew 'urdfdom'
 
 # dartpy dependencies
 brew 'python3'
-brew 'pybind11'
