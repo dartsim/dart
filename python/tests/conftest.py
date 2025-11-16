@@ -49,6 +49,12 @@ def _candidate_python_paths() -> list[str]:
             if candidate:
                 _add(candidate)
 
+    runtime = os.environ.get("DARTPY_RUNTIME_DIR")
+    if runtime:
+        runtime_path = Path(runtime)
+        _add(str(runtime_path))
+        _add(str(runtime_path.parent))
+
     # Fall back to the pixi build layout if no explicit PYTHONPATH is provided
     # (or if it missed the dartpy directories).
     repo_root = Path(__file__).resolve().parents[2]
