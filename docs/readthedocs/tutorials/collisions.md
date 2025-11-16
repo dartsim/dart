@@ -9,8 +9,10 @@ that implementation.
    .. tab:: C++
 
       .. include:: ../dart/user_guide/tutorials/collisions.md
+         :parser: myst_parser.sphinx_
 
    .. tab:: Python
 
       .. include:: ../dartpy/user_guide/tutorials/02-collisions.md
+         :parser: myst_parser.sphinx_
 ```

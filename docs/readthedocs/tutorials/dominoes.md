@@ -8,8 +8,10 @@ Use the tabs for the C++ or dartpy walkthrough.
    .. tab:: C++
 
       .. include:: ../dart/user_guide/tutorials/dominoes.md
+         :parser: myst_parser.sphinx_
 
    .. tab:: Python
 
       .. include:: ../dartpy/user_guide/tutorials/03-dominoes.md
+         :parser: myst_parser.sphinx_
 ```
