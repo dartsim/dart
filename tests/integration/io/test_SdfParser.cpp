@@ -49,11 +49,11 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
 #include <iostream>
 #include <map>
 
 #include <cstring>
-#include <filesystem>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -217,7 +217,8 @@ TEST(SdfParser, SDFJointProperties)
 TEST(SdfParser, ResolvesMeshesRelativeToIncludedModels)
 {
   WorldPtr world = SdfParser::readWorld(
-      "dart://sample/sdf/test/include_relative_mesh/include_relative_mesh.world");
+      "dart://sample/sdf/test/include_relative_mesh/"
+      "include_relative_mesh.world");
   ASSERT_TRUE(world != nullptr);
   ASSERT_EQ(world->getNumSkeletons(), 1u);
 

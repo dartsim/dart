@@ -66,7 +66,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -78,6 +77,8 @@
 #include <system_error>
 #include <unordered_map>
 #include <vector>
+
+#include <cctype>
 
 namespace dart {
 namespace utils {
@@ -615,8 +616,7 @@ bool loadSdfRoot(
        tempFiles = resources.files,
        origins = resources.origins,
        baseUri = uri](const std::string& requested) -> std::string {
-        const auto resolvedRequest
-            = resolveRequestedUri(requested, baseUri);
+        const auto resolvedRequest = resolveRequestedUri(requested, baseUri);
         return resolveWithRetriever(
             resolvedRequest, retriever, tempFiles, origins);
       });
