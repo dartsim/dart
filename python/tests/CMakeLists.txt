@@ -54,44 +54,105 @@ set(dartpy_test_utils
   util.py
 )
 
-file(GLOB_RECURSE dartpy_test_files "test_*.py")
+set(dartpy_pybind_tests_dir ${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB_RECURSE dartpy_pybind_tests "${dartpy_pybind_tests_dir}/test_*.py")
 
-# Add custom target to run the tests
-if(DARTPY_PYTEST_FOUND)
-  add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [sources]"
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+# When dartpy_nb is enabled we re-use the canonical unit tests to exercise the
+# nanobind module instead of dartpy (pybind11). Skip scheduling them for the
+# pybind runner so we don't execute mismatched imports.
+if(DART_BUILD_DARTPY_NB)
+  set(dartpy_pybind_tests "")
+endif()
+
+set(dartpy_nb_tests_dirs "${CMAKE_CURRENT_SOURCE_DIR}")
+set(dartpy_nanobind_tests "")
+foreach(_nb_dir IN LISTS dartpy_nb_tests_dirs)
+  if(EXISTS "${_nb_dir}")
+    file(GLOB_RECURSE _nb_tests "${_nb_dir}/test_*.py")
+    list(APPEND dartpy_nanobind_tests ${_nb_tests})
+  endif()
+endforeach()
+list(REMOVE_DUPLICATES dartpy_nanobind_tests)
+
+set(_pytest_dependencies)
+if(DARTPY_PYTEST_FOUND AND dartpy_pybind_tests AND TARGET dartpy)
+  add_custom_target(pytest_pybind
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [pybind11] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_pybind_tests} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+    SOURCES ${dartpy_pybind_tests} ${dartpy_test_utils}
     DEPENDS dartpy
   )
+  list(APPEND _pytest_dependencies pytest_pybind)
+elseif(dartpy_pybind_tests AND NOT TARGET dartpy)
+  add_custom_target(pytest_pybind
+    COMMAND ${CMAKE_COMMAND} -E echo "Skipping pybind11 tests because dartpy target is not built."
+  )
+  list(APPEND _pytest_dependencies pytest_pybind)
+endif()
+
+if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy_nb)
+  add_custom_target(pytest_nb
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [nanobind] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_nanobind_tests} -v
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCES ${dartpy_nanobind_tests} ${dartpy_test_utils}
+    DEPENDS dartpy_nb
+  )
+  list(APPEND _pytest_dependencies pytest_nb)
+elseif(dartpy_nanobind_tests AND NOT TARGET dartpy_nb)
+  add_custom_target(pytest_nb
+    COMMAND ${CMAKE_COMMAND} -E echo "Skipping nanobind tests because dartpy_nb target is not built."
+  )
+  list(APPEND _pytest_dependencies pytest_nb)
+endif()
+
+if(_pytest_dependencies)
+  add_custom_target(pytest DEPENDS ${_pytest_dependencies})
 else()
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E echo "Warning: Failed to run pytest because pytest is not found!"
+    COMMAND ${CMAKE_COMMAND} -E echo "Warning: No Python tests are configured for the current build."
   )
 endif()
 
 #===============================================================================
 # Usage:
-#   dartpy_add_test(test_name) # assumed source is test_name.py
-#   dartpy_add_test(test_name main.py)
+#   dartpy_add_test(test_name dep source.py [WORKING_DIRECTORY dir])
 #===============================================================================
-function(dartpy_add_test test_name) # ARGN for source file
-  if(${ARGC} GREATER 1)
-    set(source ${ARGN})
-  else()
-    set(source "${test_name}.py")
+function(dartpy_add_test test_name dependency_target source)
+  if(NOT TARGET ${dependency_target})
+    return()
+  endif()
+  set(options)
+  set(oneValueArgs WORKING_DIRECTORY)
+  cmake_parse_arguments(DARTPY_ADD_TEST "${options}" "${oneValueArgs}" "" ${ARGN})
+  set(_workdir ${DARTPY_ADD_TEST_WORKING_DIRECTORY})
+  if(NOT _workdir)
+    set(_workdir ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
   add_custom_target(${test_name}
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
     COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}" ${Python3_EXECUTABLE} ${source}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    WORKING_DIRECTORY ${_workdir}
     SOURCES ${source}
-    DEPENDS dartpy
+    DEPENDS ${dependency_target}
   )
 endfunction()
 
-foreach(dartpy_test_file ${dartpy_test_files})
-  get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
-  dartpy_add_test(py_${dartpy_test_name} ${dartpy_test_file})
-endforeach()
+if(TARGET dartpy)
+  foreach(dartpy_test_file ${dartpy_pybind_tests})
+    get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
+    dartpy_add_test(py_${dartpy_test_name} dartpy ${dartpy_test_file})
+  endforeach()
+endif()
+
+if(TARGET dartpy_nb)
+  foreach(dartpy_test_file ${dartpy_nanobind_tests})
+    file(RELATIVE_PATH _dartpy_rel_path "${CMAKE_SOURCE_DIR}/python" "${dartpy_test_file}")
+    string(REGEX REPLACE "[^A-Za-z0-9_]" "_" _dartpy_rel_path "${_dartpy_rel_path}")
+    set(_dartpy_target_name "py_nb_${_dartpy_rel_path}")
+    get_filename_component(_dartpy_workdir "${dartpy_test_file}" DIRECTORY)
+    dartpy_add_test(${_dartpy_target_name} dartpy_nb ${dartpy_test_file}
+      WORKING_DIRECTORY ${_dartpy_workdir})
+  endforeach()
+endif()

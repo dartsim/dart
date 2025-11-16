@@ -1,0 +1,56 @@
+#include "dynamics/module.hpp"
+
+#include "dynamics/ball_joint.hpp"
+#include "dynamics/body_node.hpp"
+#include "dynamics/chain.hpp"
+#include "dynamics/degree_of_freedom.hpp"
+#include "dynamics/entity.hpp"
+#include "dynamics/frame.hpp"
+#include "dynamics/free_joint.hpp"
+#include "dynamics/inertia.hpp"
+#include "dynamics/inverse_kinematics.hpp"
+#include "dynamics/joint.hpp"
+#include "dynamics/meta_skeleton.hpp"
+#include "dynamics/prismatic_joint.hpp"
+#include "dynamics/revolute_joint.hpp"
+#include "dynamics/screw_joint.hpp"
+#include "dynamics/shape.hpp"
+#include "dynamics/shape_frame.hpp"
+#include "dynamics/shape_node.hpp"
+#include "dynamics/simple_frame.hpp"
+#include "dynamics/skeleton.hpp"
+#include "dynamics/translational_joint.hpp"
+#include "dynamics/translational_joint2d.hpp"
+#include "dynamics/universal_joint.hpp"
+#include "dynamics/weld_joint.hpp"
+
+namespace dart::python_nb {
+
+void defDynamicsModule(nanobind::module_& m)
+{
+  defEntity(m);
+  defJoint(m);
+  defDegreeOfFreedom(m);
+  defFreeJoint(m);
+  defRevoluteJoint(m);
+  defTranslationalJoint2D(m);
+  defPrismaticJoint(m);
+  defTranslationalJoint(m);
+  defScrewJoint(m);
+  defUniversalJoint(m);
+  defBallJoint(m);
+  defWeldJoint(m);
+  defShape(m);
+  defFrame(m);
+  defBodyNode(m);
+  defMetaSkeleton(m);
+  defShapeFrame(m);
+  defShapeNode(m);
+  defSimpleFrame(m);
+  defInverseKinematics(m);
+  defChain(m);
+  defSkeleton(m);
+  defInertia(m);
+}
+
+} // namespace dart::python_nb
