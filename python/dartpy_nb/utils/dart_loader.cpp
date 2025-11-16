@@ -31,12 +31,12 @@ void defDartLoader(nb::module_& m)
                 nb::arg("defaultRootJointType")
                 = DartLoader::RootJointType::FLOATING,
                 nb::arg("defaultInertia") = dynamics::Inertia())
-            .def_readwrite(
+            .def_rw(
                 "mResourceRetriever", &DartLoader::Options::mResourceRetriever)
-            .def_readwrite(
+            .def_rw(
                 "mDefaultRootJointType",
                 &DartLoader::Options::mDefaultRootJointType)
-            .def_readwrite(
+            .def_rw(
                 "mDefaultInertia", &DartLoader::Options::mDefaultInertia);
 
   auto cls = nb::class_<DartLoader>(m, "DartLoader")

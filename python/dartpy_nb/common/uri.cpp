@@ -157,11 +157,11 @@ void defUri(nb::module_& m)
           nb::arg("base"),
           nb::arg("relative"),
           nb::arg("strict") = false)
-      .def_readwrite("mScheme", &Uri::mScheme)
-      .def_readwrite("mAuthority", &Uri::mAuthority)
-      .def_readwrite("mPath", &Uri::mPath)
-      .def_readwrite("mQuery", &Uri::mQuery)
-      .def_readwrite("mFragment", &Uri::mFragment);
+      .def_rw("mScheme", &Uri::mScheme)
+      .def_rw("mAuthority", &Uri::mAuthority)
+      .def_rw("mPath", &Uri::mPath)
+      .def_rw("mQuery", &Uri::mQuery)
+      .def_rw("mFragment", &Uri::mFragment);
 
   nb::implicitly_convertible<std::string, Uri>();
 }
