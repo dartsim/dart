@@ -17,8 +17,20 @@ import re
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _rename_placeholder(text: str, name: str) -> str:
+    pattern = re.compile(rf"([(\s,]){re.escape(name)}(?=\s*:)")
+    counter = 0
+
+    def repl(match: re.Match[str]) -> str:
+        nonlocal counter
+        counter += 1
+        return f"{match.group(1)}{name}_param_{counter}"
+
+    return pattern.sub(repl, text)
+
+
 def _sanitize_stub_source(text: str) -> str:
-    """Rename parameters that collide with Python keywords."""
+    """Rename invalid identifiers originating from the stub generator."""
 
     def _replace_keyword(match: re.Match[str]) -> str:
         return f"{match.group('prefix')}{match.group('name')}_"
@@ -26,6 +38,14 @@ def _sanitize_stub_source(text: str) -> str:
     for kw in keyword.kwlist:
         pattern = re.compile(rf"(?P<prefix>[\(\s,])(?P<name>{kw})(?=\s*:)")
         text = pattern.sub(_replace_keyword, text)
+
+    # Replace C++ namespace separators with valid identifiers.
+    text = text.replace("::", "_")
+
+    # Handle placeholder arguments that otherwise duplicate names.
+    for placeholder in ("std", "dart"):
+        text = _rename_placeholder(text, placeholder)
+
     return text
 
 
