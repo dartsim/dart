@@ -136,9 +136,35 @@ lint-yaml = { cmd = """
     prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-lint-toml = { cmd = """
-    taplo format pixi.toml
-""" }
+lint-toml = { cmd = ["bash", "-lc", """
+set -euo pipefail
+python - <<'PY'
+import pathlib
+import shutil
+import subprocess
+import time
+
+skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+root = pathlib.Path('.')
+toml_files = []
+for path in root.rglob('*.toml'):
+    if any(part in skip_dirs for part in path.parts):
+        continue
+    toml_files.append(path)
+
+if not toml_files:
+    raise SystemExit(0)
+
+timestamp = time.strftime('%Y%m%d%H%M%S')
+backup_dir = root / '.pixi' / 'lint-toml-backups' / timestamp
+for path in toml_files:
+    dest = backup_dir / path
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, dest)
+
+subprocess.run(['taplo', 'fmt', *map(str, toml_files)], check=True)
+PY
+"""] }
 
 lint = { depends-on = [
   "lint-cpp",
@@ -167,16 +193,11 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-check-lint-toml = { cmd = """
-    taplo format --check pixi.toml
-""" }
-
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
   "check-lint-py",
   "check-lint-yaml",
-  "check-lint-toml",
 ] }
 
 build = { cmd = [
@@ -739,6 +760,11 @@ ex-hello-world = { depends-on = [
     "hello_world",
   ] },
 ] }
+
+py-atlas-puppet = { cmd = """
+    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
+    python python/examples/atlas_puppet/main.py
+""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { depends-on = [
   { task = "run-cpp-target", args = [

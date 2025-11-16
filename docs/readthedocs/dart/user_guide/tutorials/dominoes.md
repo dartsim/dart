@@ -11,7 +11,7 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 - Write a stable PD controller w/ gravity and coriolis compensation
 - Write an operational space controller
 
-Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-Finished.cpp).
+Please reference the source code in [**tutorials/tutorial_dominoes/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes/main.cpp) and [**tutorials/tutorial_dominoes_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes_finished/main.cpp).
 
 ## Lesson 1: Cloning Skeletons
 

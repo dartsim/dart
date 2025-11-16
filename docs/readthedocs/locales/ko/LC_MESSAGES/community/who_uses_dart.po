@@ -35,14 +35,14 @@ msgstr "DART는 다음과 같은 여러 소프트웨어 프로젝트에서 백�
 
 #: ../../community/who_uses_dart.rst:10 3914c376a8ef4abb9112aee391677e0d
 msgid ""
-"`Gazebo <https://gazebosim.org/>`_: Gazebo simulates multiple robots in a 3D"
-" environment, with extensive dynamic integration between objects. Gazebo "
-"supports multiple physics engines: ODE, Bullet, DART, and Simbody. website, "
-"source on bitbucket"
+"`Gazebo (gz-sim) <https://gazebosim.org/>`_: Gazebo simulates multiple robots "
+"in a 3D environment, with extensive dynamic integration between objects. "
+"Gazebo supports multiple physics engines: ODE, Bullet, DART, and Simbody, and "
+"the project is now developed openly on GitHub (`gazebosim/gz-sim <https://github.com/gazebosim/gz-sim>`_)."
 msgstr ""
-"`Gazebo <https://gazebosim.org/>`_: Gazebo는 3D 환경에서 여러 로봇을 시뮬레이션하며 객체 간 동적인 "
-"상호 작용을 폭넓게 지원합니다. Gazebo는 ODE, Bullet, DART, Simbody 등 여러 물리 엔진을 지원합니다. "
-"(웹사이트, Bitbucket 소스)"
+"`Gazebo (gz-sim) <https://gazebosim.org/>`_: Gazebo는 3D 환경에서 여러 로봇을 시뮬레이션하며 객체 간 "
+"폭넓은 동적 상호 작용을 제공합니다. Gazebo는 ODE, Bullet, DART, Simbody 등 여러 물리 엔진을 지원하며, 현재는 "
+"GitHub(`gazebosim/gz-sim <https://github.com/gazebosim/gz-sim>`_)에서 공개적으로 개발되고 있습니다."
 
 #: ../../community/who_uses_dart.rst:14 8720840925af4553a92d05f106dc0593
 msgid ""
@@ -174,12 +174,12 @@ msgstr ""
 
 #: ../../community/who_uses_dart.rst:59 3216725273e04bd0b1500243b69951fc
 msgid ""
-"As of February 2023, DART had over 777 stars on GitHub, and DART has been "
-"cited over 236 times, indicating its widespread adoption and use in the "
-"research community."
+"As of November 2025, DART has over 1,000 stars on GitHub and nearly 300 "
+"forks, and it continues to be cited hundreds of times in the research "
+"community."
 msgstr ""
-"2023년 2월 기준으로 DART는 GitHub에서 777개 이상의 스타를 받았으며, 236회 이상 인용되어 연구 커뮤니티에서 널리 "
-"사용되고 있음을 보여줍니다."
+"2025년 11월 기준으로 DART는 GitHub에서 1,000개 이상의 스타와 약 300개의 포크를 기록했으며, 연구 커뮤니티에서 여전히 "
+"수백 편 이상 인용되고 있습니다."
 
 #: ../../community/who_uses_dart.rst:63 824e7b2808684bd4ae5933c9dff487f8
 msgid "More research papers cited DART can be found at `Google Scholar`_."
