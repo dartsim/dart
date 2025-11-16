@@ -591,7 +591,7 @@ void InverseKinematics(py::module& m)
               -> dart::dynamics::InverseKinematics::GradientMethod& {
             return self->getGradientMethod();
           },
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return the GradientMethod used by this IK instance.")
       .def(
           "getGradientMethod",
@@ -599,7 +599,7 @@ void InverseKinematics(py::module& m)
               -> const dart::dynamics::InverseKinematics::GradientMethod& {
             return self->getGradientMethod();
           },
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return the GradientMethod used by this IK instance.");
 }
 
