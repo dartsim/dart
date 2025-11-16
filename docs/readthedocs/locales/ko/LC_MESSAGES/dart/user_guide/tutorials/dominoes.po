@@ -55,14 +55,14 @@ msgstr "운영 공간 컨트롤러 작성"
 #: ../../user_guide/tutorials/dominoes.md:14 74d1cd26b2bd4395a405cd4a14e662dd
 msgid ""
 "Please reference the source code in "
-"[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)"
+"[**tutorials/tutorial_dominoes/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes/main.cpp)"
 " and [**tutorialDominoes-"
-"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorialDominoes-"
 "Finished.cpp)."
 msgstr ""
-"[**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp)의"
+"[**tutorials/tutorial_dominoes/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes/main.cpp)의"
 " 소스 코드를 참조하고 [**tutorialDominoes-"
-"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-"
+"Finished.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorialDominoes-"
 "Finished.cpp)."
 
 #: ../../user_guide/tutorials/dominoes.md:16 fcc3bac33bbe4e008dcce2f3345a4501
