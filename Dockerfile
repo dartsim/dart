@@ -60,7 +60,8 @@ RUN cd /opt/dart \
     && make install-dartpy
 
 # Install python dependencies
-RUN python3 -m pip install\
+RUN python3 -m pip install --no-cache-dir \
+    nanobind \
     numpy
 
 WORKDIR "/"
