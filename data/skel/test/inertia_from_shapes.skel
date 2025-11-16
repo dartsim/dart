@@ -1,0 +1,75 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="shape inertia coverage">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+        </physics>
+
+        <skeleton name="no_shape_skel">
+            <body name="no_shape">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>3</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+            </body>
+            <joint type="free" name="no_shape_joint">
+                <parent>world</parent>
+                <child>no_shape</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="zero_mass_skel">
+            <body name="zero_mass">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0.05 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.1 0.1</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <joint type="free" name="zero_mass_joint">
+                <parent>world</parent>
+                <child>zero_mass</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="weighted_skel">
+            <body name="weighted">
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>5</mass>
+                    <offset>0.03 -0.01 0.02</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0.03 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0 0.1 0.1</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <visualization_shape>
+                    <transformation>-0.02 0.04 -0.01 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.05 0.02 0.03</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <joint type="free" name="weighted_joint">
+                <parent>world</parent>
+                <child>weighted</child>
+            </joint>
+        </skeleton>
+    </world>
+</skel>

@@ -113,10 +113,12 @@ TEST(ShapeNodeInertia, BodyNodeAggregationMatchesManualSum)
 
   const auto combined = body->computeInertiaFromShapeNodes(
       [&](const ShapeNode* node) -> std::optional<double> {
-        if (node == nodeA)
+        if (node == nodeA) {
           return massA;
-        if (node == nodeB)
+        }
+        if (node == nodeB) {
           return massB;
+        }
         return std::nullopt;
       });
   ASSERT_TRUE(combined.has_value());
@@ -126,4 +128,50 @@ TEST(ShapeNodeInertia, BodyNodeAggregationMatchesManualSum)
         + nodeB->computeTransformedInertia(massB).getSpatialTensor();
 
   EXPECT_MATRIX_DOUBLE_EQ(expectedSpatial, combined->getSpatialTensor());
+}
+
+//==============================================================================
+TEST(ShapeNodeInertia, DensityConversionMatchesExplicitMass)
+{
+  const auto skel = makeSkeleton();
+  auto* body = skel->getBodyNode(0);
+  const auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.1, 0.2, 0.3));
+  auto* node = body->createShapeNodeWith<VisualAspect>(shape);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.05, -0.02, 0.01);
+  tf.linear() = Eigen::AngleAxisd(math::pi / 6.0, Eigen::Vector3d::UnitX())
+                    .toRotationMatrix();
+  node->setRelativeTransform(tf);
+
+  const double density = 7.5;
+  const double expectedMass = density * shape->getVolume();
+
+  const Inertia fromDensity
+      = node->computeTransformedInertiaFromDensity(density);
+  const Inertia fromMass = node->computeTransformedInertia(expectedMass);
+
+  EXPECT_DOUBLE_EQ(expectedMass, fromDensity.getMass());
+  EXPECT_VECTOR_DOUBLE_EQ(fromMass.getLocalCOM(), fromDensity.getLocalCOM());
+  EXPECT_MATRIX_DOUBLE_EQ(fromMass.getMoment(), fromDensity.getMoment());
+}
+
+//==============================================================================
+TEST(ShapeNodeInertia, BodyNodeAggregationDropsInvalidMasses)
+{
+  const auto skel = makeSkeleton();
+  auto* body = skel->getBodyNode(0);
+  const auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones() * 0.1);
+  auto* node = body->createShapeNodeWith<VisualAspect>(shape);
+
+  const auto zeroMass = body->computeInertiaFromShapeNodes(
+      [&](const ShapeNode* candidate) -> std::optional<double> {
+        EXPECT_EQ(node, candidate);
+        return 0.0;
+      });
+  EXPECT_FALSE(zeroMass.has_value());
+
+  const auto missingMass = body->computeInertiaFromShapeNodes(
+      [&](const ShapeNode*) -> std::optional<double> { return std::nullopt; });
+  EXPECT_FALSE(missingMass.has_value());
 }
