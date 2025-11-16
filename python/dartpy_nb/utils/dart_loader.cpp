@@ -36,8 +36,7 @@ void defDartLoader(nb::module_& m)
             .def_rw(
                 "mDefaultRootJointType",
                 &DartLoader::Options::mDefaultRootJointType)
-            .def_rw(
-                "mDefaultInertia", &DartLoader::Options::mDefaultInertia);
+            .def_rw("mDefaultInertia", &DartLoader::Options::mDefaultInertia);
 
   auto cls = nb::class_<DartLoader>(m, "DartLoader")
                  .def(nb::init<>())
