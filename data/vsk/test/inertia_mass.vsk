@@ -1,0 +1,11 @@
+<?xml version="1.0" standalone="yes"?>
+<KinematicModel>
+    <Skeleton NAME="coverage" DENSITY="500">
+        <Segment NAME="root" POSITION="0 0 0" ORIENTATION="0 0 0" MASS="5">
+            <JointFree />
+            <Segment NAME="offset" POSITION="200 50 0" ORIENTATION="0 0 0">
+                <JointHinge AXIS="0 0 1" />
+            </Segment>
+        </Segment>
+    </Skeleton>
+</KinematicModel>

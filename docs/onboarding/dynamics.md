@@ -3,6 +3,10 @@
 ## Overview
 This document provides an exploration of the core dynamics classes in DART (Dynamic Animation and Robotics Toolkit), located in the `dart/dynamics` directory.
 
+## Coding Conventions
+- Follow `CONTRIBUTING.md` for formatting (two-space indentation, camelCase functions, PascalCase classes, no cuddled braces).
+- Always wrap conditional bodies in braces, even when the branch contains a single statement. This keeps future edits safe and matches the repository style enforced in current work.
+
 ## Core Dynamics Classes
 
 ### 1. Skeleton (`Skeleton.hpp`)
