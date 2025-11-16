@@ -867,7 +867,7 @@ generate-stubs = { cmd = "python scripts/generate_stubs.py", depends-on = [
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 # Build Read the Docs documentation (user guides, tutorials, developer docs)
-# No longer requires dartpy since API docs are on GitHub Pages
+# Includes the embedded C++ Doxygen bundle to mirror Read the Docs
 docs-build = { cmd = """
     cd docs/readthedocs && sphinx-build -b html . _build/html
 """ }

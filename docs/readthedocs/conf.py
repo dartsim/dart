@@ -5,31 +5,52 @@
 
 from pathlib import Path
 from datetime import datetime
+import shutil
+import subprocess
 
-# Note: API documentation is hosted on GitHub Pages, not Read the Docs
-# This configuration file is for user guides, tutorials, and developer documentation only
+from sphinx.util import logging
 
-# Read DART version from package.xml
-def get_dart_version():
-    """Read DART version from package.xml."""
+logger = logging.getLogger(__name__)
+
+# Paths used during the documentation build
+DOCS_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = DOCS_ROOT.parents[1]
+DOXYFILE_TEMPLATE = REPO_ROOT / 'docs' / 'doxygen' / 'Doxyfile.in'
+GENERATED_DOXYFILE = DOCS_ROOT / '_build' / 'cpp_api_Doxyfile'
+CPP_API_OUTPUT_DIR = DOCS_ROOT / 'cpp-api'
+
+# ``cpp_api_available`` is consumed by ``sphinx.ext.ifconfig`` to decide
+# whether the embedded iframe should be rendered.
+cpp_api_available = False
+
+
+def _read_dart_semver():
+    """Return the DART semantic version as read from package.xml."""
     import xml.etree.ElementTree as ET
-    package_xml = Path(__file__).parent.parent.parent / 'package.xml'
+
+    package_xml = REPO_ROOT / 'package.xml'
     try:
         tree = ET.parse(package_xml)
         root = tree.getroot()
         version_elem = root.find('version')
         if version_elem is not None and version_elem.text:
-            # Return version with 'v' prefix to match GitHub Pages structure
-            return f"v{version_elem.text.strip()}"
+            return version_elem.text.strip()
     except (FileNotFoundError, ET.ParseError):
         pass
     # Fallback to latest stable version
-    return 'v6.16.0'
+    return '6.16.0'
+
+
+def get_dart_version(prefix_with_v: bool = True):
+    """Return the DART version and optionally prefix it with ``v``."""
+
+    semver = _read_dart_semver()
+    return f"v{semver}" if prefix_with_v else semver
 
 # Read available API documentation versions from docs_versions.txt
 def get_api_versions():
     """Read available API versions from docs_versions.txt."""
-    versions_file = Path(__file__).parent.parent.parent / 'scripts' / 'docs_versions.txt'
+    versions_file = REPO_ROOT / 'scripts' / 'docs_versions.txt'
     versions = []
     try:
         with open(versions_file, 'r') as f:
@@ -41,6 +62,36 @@ def get_api_versions():
         # Fallback if file not found
         versions = ['v6.16.0', 'v6.15.0']
     return versions
+
+
+def _posix_path(path: Path) -> str:
+    """Return a POSIX-style path string for Doxygen."""
+
+    return str(path).replace('\\', '/')
+
+
+def _render_doxyfile(output_path: Path):
+    """Render the configured Doxyfile used to build the C++ API docs."""
+
+    if not DOXYFILE_TEMPLATE.exists():
+        raise FileNotFoundError(f"Missing Doxyfile template: {DOXYFILE_TEMPLATE}")
+
+    replacements = {
+        'DART_VERSION': get_dart_version(prefix_with_v=False),
+        'DOXYGEN_EXCLUDE': _posix_path(REPO_ROOT / 'dart' / 'external'),
+        'DOXYGEN_EXTRA_INPUTS': _posix_path(REPO_ROOT / 'docs' / 'doxygen' / 'mainpage.dox'),
+        'DOXYGEN_GENERATE_TAGFILE': _posix_path(CPP_API_OUTPUT_DIR / 'dart.tag'),
+        'DOXYGEN_INCLUDE_PATH': _posix_path(REPO_ROOT),
+        'DOXYGEN_INPUT_ROOT': _posix_path(REPO_ROOT / 'dart'),
+        'DOXYGEN_OUTPUT_ROOT': _posix_path(CPP_API_OUTPUT_DIR),
+        'DOXYGEN_STRIP_FROM_PATH': _posix_path(REPO_ROOT),
+    }
+
+    doxyfile_contents = DOXYFILE_TEMPLATE.read_text()
+    for key, value in replacements.items():
+        doxyfile_contents = doxyfile_contents.replace(f"@{key}@", value)
+
+    output_path.write_text(doxyfile_contents)
 
 # Get current DART version from package.xml
 current_version = get_dart_version()
@@ -60,8 +111,6 @@ html_context = {
     'current_version': current_version,
     'api_versions': api_versions,
     'api_version_to_link': api_version_to_link,
-    'cpp_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}/',
-    'python_api_url': f'https://dartsim.github.io/dart/{api_version_to_link}-py/',
     'gh_pages_url': 'https://github.com/dartsim/dart/tree/gh-pages',
 }
 
@@ -83,6 +132,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
+    'sphinx.ext.ifconfig',
     'sphinx_tabs.tabs',
     'sphinx_copybutton',
 ]
@@ -129,6 +179,7 @@ html_favicon = "_static/img/dart_logo_32.png"
 html_theme_options = {
     "logo_only": True,
 }
+html_extra_path = ["cpp-api"]
 
 # Setting for multi language
 source_encoding = "utf-8"
@@ -143,3 +194,48 @@ latex_elements = {
         \usepackage{kotex}
     """
 }
+
+
+def build_cpp_api_docs(app):
+    """Generate the Doxygen HTML bundle so RTD serves versioned C++ docs."""
+
+    global cpp_api_available
+
+    if app.builder.format != 'html':
+        return
+
+    cpp_api_available = False
+
+    doxygen_executable = shutil.which('doxygen')
+    if not doxygen_executable:
+        logger.warning(
+            "Doxygen was not found on PATH; skipping embedded C++ API docs."
+        )
+        app.config.cpp_api_available = False
+        return
+
+    if CPP_API_OUTPUT_DIR.exists():
+        shutil.rmtree(CPP_API_OUTPUT_DIR)
+    CPP_API_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    GENERATED_DOXYFILE.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        _render_doxyfile(GENERATED_DOXYFILE)
+        subprocess.run(
+            [doxygen_executable, str(GENERATED_DOXYFILE)],
+            check=True,
+            cwd=REPO_ROOT,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        logger.warning("Failed to build C++ API docs via Doxygen: %s", exc)
+        app.config.cpp_api_available = False
+        return
+
+    cpp_api_available = True
+    app.config.cpp_api_available = True
+    logger.info("C++ API reference generated at %s", CPP_API_OUTPUT_DIR)
+
+
+def setup(app):
+    app.add_config_value('cpp_api_available', False, 'env')
+    app.connect('builder-inited', build_cpp_api_docs)
