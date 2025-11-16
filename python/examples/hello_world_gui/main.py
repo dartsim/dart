@@ -1,4 +1,4 @@
-import dartpy as dart
+import dartpy_nb as dart
 
 
 class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
