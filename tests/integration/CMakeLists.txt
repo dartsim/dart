@@ -4,21 +4,10 @@
 # Collision Tests
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_CollisionGroups.cpp)
-foreach(collision_engine dart-collision-bullet dart-collision-ode)
-  if(TARGET ${collision_engine})
-    target_link_libraries(INTEGRATION_collision_CollisionGroups ${collision_engine})
-  endif()
-endforeach()
 
 if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_collision_Collision collision/test_Collision.cpp)
   target_link_libraries(INTEGRATION_collision_Collision dart-utils)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(INTEGRATION_collision_Collision dart-collision-bullet)
-  endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(INTEGRATION_collision_Collision dart-collision-ode)
-  endif()
 endif()
 
 # Additional collision tests
@@ -27,22 +16,16 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_NoFalseContacts.cpp)
 endif()
 
-if(TARGET dart-collision-bullet)
+if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
-  target_link_libraries(INTEGRATION_collision_CollisionAccuracy dart-collision-bullet)
 endif()
 
-if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
+if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_PlaneShapeCollision.cpp)
-  target_link_libraries(INTEGRATION_collision_PlaneShapeCollision
-    dart-collision-bullet
-    dart-collision-ode
-    dart-utils)
+  target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-utils)
 
   dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_ContactGrouping.cpp)
-  target_link_libraries(INTEGRATION_collision_ContactGrouping
-    dart-collision-ode
-    dart-utils)
+  target_link_libraries(INTEGRATION_collision_ContactGrouping dart-utils)
 endif()
 
 # ==============================================================================
@@ -59,9 +42,8 @@ dart_build_tests(
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_ContactConstraint.cpp)
 
-if(TARGET dart-collision-ode)
+if(DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_ForceDependentSlip.cpp)
-  target_link_libraries(INTEGRATION_constraint_ForceDependentSlip dart-collision-ode)
 endif()
 
 # Additional constraint tests
@@ -209,9 +191,6 @@ if(TARGET dart-utils)
 
   dart_add_test("integration" INTEGRATION_simulation_World simulation/test_World.cpp)
   target_link_libraries(INTEGRATION_simulation_World dart-utils)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(INTEGRATION_simulation_World dart-collision-bullet)
-  endif()
 
   # Additional simulation tests
   dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)

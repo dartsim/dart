@@ -65,6 +65,56 @@ def patch_gz_physics_cmake(
     return True
 
 
+def patch_dart_component_requirements(cmake_file: Path) -> bool:
+    """Update the DART find_package block to match the embedded collision backends."""
+    if not cmake_file.exists():
+        print(f"Error: CMakeLists.txt not found at {cmake_file}", file=sys.stderr)
+        return False
+
+    content = cmake_file.read_text()
+    guard = "if(NOT DART_BUILD_COLLISION_BULLET)"
+    if guard in content:
+        print(
+            "✓ DART collision backend checks already present in gz-physics CMakeLists"
+        )
+        return True
+
+    old_block = """gz_find_package(DART
+  COMPONENTS
+    collision-bullet
+    collision-ode
+    utils
+    utils-urdf
+  CONFIG
+  VERSION 7.0
+  REQUIRED_BY dartsim
+  PKGCONFIG dart
+  PKGCONFIG_VER_COMPARISON >=)
+"""
+
+    new_block = """gz_find_package(DART
+  COMPONENTS
+    utils
+    utils-urdf
+  CONFIG
+  VERSION 7.0
+  REQUIRED_BY dartsim
+  PKGCONFIG dart
+  PKGCONFIG_VER_COMPARISON >=)
+"""
+
+    if old_block not in content:
+        print(
+            "Error: Failed to locate gz-physics DART find_package block to patch",
+            file=sys.stderr,
+        )
+        return False
+
+    cmake_file.write_text(content.replace(old_block, new_block, 1))
+    print("✓ Updated gz-physics DART component requirements")
+    return True
+
+
 def inject_make_and_register_overload(gtest_root: Path) -> bool:
     """
     Ensure the vendored gtest provides the std::string MakeAndRegisterTestInfo overload.
@@ -288,8 +338,10 @@ def main():
     success = patch_gz_physics_cmake(cmake_file, old_version, new_version)
 
     if success:
-        overload_success = inject_make_and_register_overload(gtest_root)
-        success = success and overload_success
+        success = patch_dart_component_requirements(cmake_file) and success
+
+    if success:
+        success = inject_make_and_register_overload(gtest_root) and success
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)

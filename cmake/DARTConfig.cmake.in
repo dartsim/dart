@@ -8,7 +8,7 @@
 #
 # and the following `IMPORTED` targets:
 #   dart     - Main target.
-#   dart-<C> - Target for specific component (e.g., dart-collision-bullet).
+#   dart-<C> - Target for specific component (e.g., dart-optimizer-ipopt).
 
 # Specify CMake minimum required version
 if(NOT CMAKE_MINIMUM_REQUIRED_VERSION)
@@ -25,6 +25,9 @@ endif()
 #===============================================================================
 
 @PACKAGE_INIT@
+
+set(DART_BUILD_COLLISION_BULLET "@DART_BUILD_COLLISION_BULLET@")
+set(DART_BUILD_COLLISION_ODE "@DART_BUILD_COLLISION_ODE@")
 
 #===============================================================================
 function(@PROJECT_NAME@_traverse_components output_variable)
