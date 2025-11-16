@@ -479,6 +479,7 @@ def setup_end_effectors(atlas):
     # Create support
     l_support = l_foot.createSupport()
     l_support.setGeometry(support)
+    l_support.setActive(True)
 
     # RIGHT FOOT
     r_foot = atlas.getBodyNode("r_foot").createEndEffector("r_foot")
@@ -501,6 +502,7 @@ def setup_end_effectors(atlas):
     # Create support
     r_support = r_foot.createSupport()
     r_support.setGeometry(support)
+    r_support.setActive(True)
 
     print(f"✓ Created {atlas.getNumEndEffectors()} end effectors")
     print(f"✓ Left hand:  IK active with interactive target")
