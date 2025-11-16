@@ -46,13 +46,14 @@ DART compilation takes 15-25 minutes per build without caching. With proper cach
 - **First build**: Normal compilation time (populates cache)
 - **Subsequent builds**: 50-70% faster (only changed files recompile)
 
-### sccache (All Platforms)
+### Compiler cache (sccache + ccache)
 
-We standardized on sccache everywhere because it:
-
-- Works with Clang, GCC, and MSVC (including PDB handling)
-- Supports remote cache backends (if we add them later)
-- Ships an official GitHub Action with built-in metrics
+We standardized on sccache everywhere and automatically fall back to ccache when
+it is the only launcher available. The detection logic lives in
+`cmake/CompilerCache.cmake`, so **plain CMake invocations, pixi tasks, and CI
+jobs all share the same configuration**. You can disable auto-detection with
+`-DDART_DISABLE_COMPILER_CACHE=ON` or force a specific launcher via the
+`DART_COMPILER_CACHE` cache variable/environment variable.
 
 **Linux/macOS setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
 
@@ -60,11 +61,17 @@ We standardized on sccache everywhere because it:
 - name: Setup sccache
   uses: mozilla-actions/sccache-action@v0.0.9
 
-- name: Configure environment for sccache
+- name: Configure environment for compiler cache
   run: |
     echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+    echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
     echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
     echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+    echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+    echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+    echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+    echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+    mkdir -p "${RUNNER_TEMP}/ccache"
 ```
 
 **Windows setup** (see `.github/workflows/ci_windows.yml`):
@@ -73,15 +80,27 @@ We standardized on sccache everywhere because it:
 - name: Setup sccache
   uses: mozilla-actions/sccache-action@v0.0.9
 
-- name: Configure environment for sccache
+- name: Configure environment for compiler cache
   shell: powershell
   run: |
     echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    $ccacheDir = Join-Path $env:RUNNER_TEMP "ccache"
+    New-Item -ItemType Directory -Force -Path $ccacheDir | Out-Null
+    echo "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "CCACHE_DIR=$ccacheDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "CCACHE_COMPRESS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "CCACHE_MAXSIZE=5G" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 ```
 
-**Local builds:** `pixi` auto-detects sccache. If the CLI finds `sccache` on PATH (and you have not overridden `CMAKE_*_COMPILER_LAUNCHER`), it sets the launchers before invoking CMake so your local builds benefit from the same cache.
+**Local builds:** Because the detection logic is inside CMake, you do not need
+to wire anything up manually. If either `sccache` or `ccache` is on your PATH,
+DART will automatically set `CMAKE_*_COMPILER_LAUNCHER` when you run `cmake`
+directly or via `pixi`. pixi still forwards `CMAKE_*_COMPILER_LAUNCHER` to any
+external CMake projects it drives (e.g., gz-physics) so nested builds benefit
+from the same cache.
 
 ## MSVC Multi-Core Compilation
 
