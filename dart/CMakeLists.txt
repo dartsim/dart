@@ -150,7 +150,6 @@ else()
 endif()
 get_property(_dart_extra_link_libs GLOBAL PROPERTY DART_EXTRA_LINK_LIBS)
 if(_dart_extra_link_libs)
-  list(REMOVE_DUPLICATES _dart_extra_link_libs)
   target_link_libraries(dart PUBLIC ${_dart_extra_link_libs})
 endif()
 
