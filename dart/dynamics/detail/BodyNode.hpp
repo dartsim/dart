@@ -334,6 +334,34 @@ void BodyNode::eachShapeNodeWith(Func func)
   }
 }
 
+//==============================================================================
+template <typename MassProvider>
+std::optional<Inertia> BodyNode::computeInertiaFromShapeNodes(
+    MassProvider&& massProvider) const
+{
+  Eigen::Matrix6d total = Eigen::Matrix6d::Zero();
+  bool used = false;
+
+  for (auto i = 0u; i < getNumShapeNodes(); ++i) {
+    const ShapeNode* shapeNode = getShapeNode(i);
+    auto maybeMass = massProvider(shapeNode);
+    if (!maybeMass.has_value())
+      continue;
+    const double mass = *maybeMass;
+    if (mass <= 0.0)
+      continue;
+
+    const Inertia transformed = shapeNode->computeTransformedInertia(mass);
+    total += transformed.getSpatialTensor();
+    used = true;
+  }
+
+  if (!used)
+    return std::nullopt;
+
+  return Inertia(total);
+}
+
 } // namespace dynamics
 } // namespace dart
 
