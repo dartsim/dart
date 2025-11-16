@@ -36,6 +36,7 @@
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -127,7 +128,7 @@ public:
     return mFiles.count(uri.toString()) > 0;
   }
 
-  ResourcePtr retrieve(const common::Uri& uri) override
+  common::ResourcePtr retrieve(const common::Uri& uri) override
   {
     auto it = mFiles.find(uri.toString());
     if (it == mFiles.end())
