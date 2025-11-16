@@ -294,7 +294,9 @@ def run_python_tests() -> bool:
         return True
 
     # Check if Python bindings are enabled
-    result, _ = run_command(pixi_command("test-py"), "Python tests")
+    result, _ = run_command(
+        pixi_command("test-py", build_type), "Python tests"
+    )
 
     return result
 
@@ -325,7 +327,7 @@ def run_dartpy8_tests() -> bool:
         return True
 
     result, _ = run_command(
-        pixi_command("test-dartpy8", "Release"), "dartpy8 smoke test"
+        pixi_command("test-dartpy8", build_type), "dartpy8 smoke test"
     )
     return result
 
