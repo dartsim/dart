@@ -35,8 +35,8 @@ void defCollisionDetector(nb::module_& m)
 
   nb::class_<dart::collision::FCLCollisionDetector, CollisionDetector>(
       m, "FCLCollisionDetector")
-      .def(nb::new_([](nb::handle)
-                    -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+      .def(nb::new_(
+          []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
             return dart::collision::FCLCollisionDetector::create();
           }))
       .def_static(
@@ -49,8 +49,7 @@ void defCollisionDetector(nb::module_& m)
   nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector>(
       m, "DARTCollisionDetector")
       .def(nb::new_(
-          [](nb::handle)
-              -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+          []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
             return dart::collision::DARTCollisionDetector::create();
           }))
       .def_static(
@@ -64,8 +63,7 @@ void defCollisionDetector(nb::module_& m)
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
       .def(nb::new_(
-          [](nb::handle)
-              -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+          []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
             return dart::collision::BulletCollisionDetector::create();
           }))
       .def_static(
@@ -80,8 +78,7 @@ void defCollisionDetector(nb::module_& m)
   nb::class_<dart::collision::OdeCollisionDetector, CollisionDetector>(
       m, "OdeCollisionDetector")
       .def(nb::new_(
-          [](nb::handle)
-              -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+          []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
             return dart::collision::OdeCollisionDetector::create();
           }))
       .def_static(

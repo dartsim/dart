@@ -117,10 +117,12 @@ set(dartpy_nb_headers
   dynamics/translational_joint2d.hpp
   dynamics/translational_joint.hpp
   dynamics/prismatic_joint.hpp
+  dynamics/linkage.hpp
   dynamics/screw_joint.hpp
   dynamics/universal_joint.hpp
   dynamics/ball_joint.hpp
   dynamics/weld_joint.hpp
+  dynamics/zero_dof_joint.hpp
   dynamics/chain.hpp
   dynamics/meta_skeleton.hpp
   dynamics/inverse_kinematics.hpp
@@ -135,6 +137,7 @@ set(dartpy_nb_headers
   simulation/world.hpp
   simulation/constraint_solver.hpp
   constraint/module.hpp
+  constraint/constraint_base.hpp
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
@@ -184,10 +187,12 @@ set(dartpy_nb_sources
   dynamics/translational_joint2d.cpp
   dynamics/translational_joint.cpp
   dynamics/prismatic_joint.cpp
+  dynamics/linkage.cpp
   dynamics/screw_joint.cpp
   dynamics/universal_joint.cpp
   dynamics/ball_joint.cpp
   dynamics/weld_joint.cpp
+  dynamics/zero_dof_joint.cpp
   dynamics/chain.cpp
   dynamics/meta_skeleton.cpp
   dynamics/inverse_kinematics.cpp
@@ -202,6 +207,7 @@ set(dartpy_nb_sources
   simulation/world.cpp
   simulation/constraint_solver.cpp
   constraint/module.cpp
+  constraint/constraint_base.cpp
   constraint/dynamic_joint_constraint.cpp
   constraint/joint_constraint.cpp
   constraint/joint_coulomb_friction_constraint.cpp
@@ -212,12 +218,19 @@ nanobind_add_module(dartpy_nb
   ${dartpy_nb_sources}
 )
 
+foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
+  if(TARGET ${_nb_target})
+    target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+  endif()
+endforeach()
+
 target_include_directories(dartpy_nb
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
+target_compile_options(dartpy_nb PRIVATE -g)
 
 if(BULLET_INCLUDE_DIR)
   target_include_directories(dartpy_nb SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
@@ -242,12 +255,48 @@ foreach(lib ${dartpy_nb_libraries})
   endif()
 endforeach()
 
+if(TARGET dart-collision-bullet)
+  target_link_libraries(dartpy_nb PRIVATE dart-collision-bullet)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_bullet_includes dart-collision-bullet ${prop})
+    if(_bullet_includes)
+      target_include_directories(dartpy_nb PRIVATE ${_bullet_includes})
+    endif()
+  endforeach()
+endif()
+
+if(TARGET dart-collision-ode)
+  target_link_libraries(dartpy_nb PRIVATE dart-collision-ode)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_ode_includes dart-collision-ode ${prop})
+    if(_ode_includes)
+      target_include_directories(dartpy_nb PRIVATE ${_ode_includes})
+    endif()
+  endforeach()
+endif()
+
 # Surface a version string to Python.
 target_compile_definitions(dartpy_nb
-  PRIVATE DARTPY_NB_VERSION_INFO="${DART_VERSION}"
+  PRIVATE
+    DARTPY_NB_VERSION_INFO="${DART_VERSION}"
 )
+target_compile_options(dartpy_nb PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
-set_target_properties(dartpy_nb PROPERTIES OUTPUT_NAME "dartpy_nb")
+set_target_properties(dartpy_nb PROPERTIES OUTPUT_NAME "_dartpy_nb")
+
+# Copy the Python package shim into the build tree so tests can import it
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+  ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  COPYONLY
+)
+add_custom_command(
+  TARGET dartpy_nb POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+          ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  COMMENT "Updating dartpy_nb __init__.py"
+)
 
 if(DEFINED DART_DARTPY_NB_RUNTIME_DIR)
   set(_dartpy_nb_output_dir "${DART_DARTPY_NB_RUNTIME_DIR}")
@@ -275,11 +324,17 @@ endif()
 
 if(DEFINED SKBUILD_PLATLIB_DIR)
   install(TARGETS dartpy_nb
-    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}"
+    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
+  )
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
   install(TARGETS dartpy_nb
-    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
+    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
+  )
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
 endif()
 
