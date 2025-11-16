@@ -111,3 +111,18 @@ TEST(VskParser, SingleStepSimulations)
   EXPECT_EQ(world->getNumSkeletons(), 1u);
   world->step();
 }
+
+//==============================================================================
+TEST(VskParser, RespectsSpecifiedMass)
+{
+  SkeletonPtr skeleton
+      = VskParser::readSkeleton("dart://sample/vsk/test/inertia_mass.vsk");
+  ASSERT_NE(skeleton, nullptr);
+
+  BodyNode* root = skeleton->getBodyNode("root");
+  ASSERT_NE(root, nullptr);
+  EXPECT_GT(root->getNumShapeNodes(), 0u);
+  EXPECT_DOUBLE_EQ(5.0, root->getMass());
+  EXPECT_TRUE(root->getInertia().getLocalCOM().isZero(1e-12));
+  EXPECT_GT(root->getInertia().getMoment().norm(), 0.0);
+}
