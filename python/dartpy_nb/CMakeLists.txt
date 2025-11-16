@@ -35,7 +35,7 @@ find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Determine Python site-packages directory if it is not already computed.
 if(NOT DEFINED PYTHON_SITE_PACKAGES)
-  execute_process(COMMAND ${Python3_EXECUTABLE} -c
+  execute_process(COMMAND ${Python_EXECUTABLE} -c
     "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -52,7 +52,7 @@ if(DART_USE_SYSTEM_NANOBIND)
 else()
   if(NOT DEFINED nanobind_DIR)
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -m nanobind --cmake_dir
+      COMMAND ${Python_EXECUTABLE} -m nanobind --cmake_dir
       OUTPUT_VARIABLE nanobind_ROOT
       OUTPUT_STRIP_TRAILING_WHITESPACE
       RESULT_VARIABLE nanobind_NOTFOUND
