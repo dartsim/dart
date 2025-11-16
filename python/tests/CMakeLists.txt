@@ -64,10 +64,7 @@ if(DART_BUILD_DARTPY_NB)
   set(dartpy_pybind_tests "")
 endif()
 
-set(dartpy_nb_tests_dirs
-  "${CMAKE_CURRENT_SOURCE_DIR}/../test_nb"
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-)
+set(dartpy_nb_tests_dirs "${CMAKE_CURRENT_SOURCE_DIR}")
 set(dartpy_nanobind_tests "")
 foreach(_nb_dir IN LISTS dartpy_nb_tests_dirs)
   if(EXISTS "${_nb_dir}")
@@ -98,7 +95,7 @@ if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy_nb)
   add_custom_target(pytest_nb
     COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [nanobind] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_nanobind_tests} -v
-    WORKING_DIRECTORY ${dartpy_nb_tests_dir}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_nanobind_tests} ${dartpy_test_utils}
     DEPENDS dartpy_nb
   )
