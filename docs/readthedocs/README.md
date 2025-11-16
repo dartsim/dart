@@ -90,10 +90,12 @@ The `docs-build` task:
 Read the Docs now installs `dartpy` prior to running Sphinx so the Python API pages
 render there as well. Because the published 7.0.0.dev0 wheels target glibc 2.39 and
 RTD's Ubuntu 22.04 images are still on glibc 2.35, the requirements file pins
-`dartpy==6.16.0` until new manylinux builds land. Local builds can continue using the
-`pip install --pre dartpy` flow for the bleeding-edge bindings. Once RTD upgrades (or
-we ship compatible wheels), update `docs/readthedocs/requirements.txt` to match and
-remove this temporary pin.
+`dartpy==6.16.0` until new manylinux builds land. Those wheels were published before
+CPython 3.12 existed, so `.readthedocs.yml` also pins the RTD runtime to Python 3.11.
+Local builds can continue using the `pip install --pre dartpy` flow for the bleeding-edge
+bindings. Once RTD upgrades (or we ship compatible wheels), update
+`docs/readthedocs/requirements.txt` and `.readthedocs.yml` to match and remove these
+temporary pins.
 
 ### Future: keep wheels fresh 🎯
 
