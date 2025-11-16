@@ -10,6 +10,35 @@ Source links:
 - [tutorials/tutorial_multi_pendulum/main.cpp](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp)
 - [python/tutorials/01_multi_pendulum/main.py](https://github.com/dartsim/dart/blob/main/python/tutorials/01_multi_pendulum/main.py)
 
+## Overview
+
+This tutorial demonstrates how to interact with DART's dynamics API during
+simulation while writing everything in both C++ and dartpy. You will learn how to:
+
+- Create a basic program to simulate a dynamic system
+- Change the colors of shapes
+- Add/remove shapes from visualization
+- Apply internal forces in the joints
+- Apply external forces to the bodies
+- Alter the implicit spring and damping properties of joints
+- Add/remove dynamic constraints
+
+## Lesson 0: Simulate a passive multi-pendulum
+
+We start with a warmup lesson that demonstrates how to set up a simulation
+program in DART. The example we use throughout this tutorial is a pendulum with
+five rigid bodies swinging under gravity. DART allows you to build articulated
+rigid/soft body systems from scratch, and it can also load models in URDF, SDF,
+and SKEL formats.
+
+An articulated dynamics model is represented by a ``Skeleton``. In ``main`` we
+first create an empty skeleton named *pendulum*. We then create a root body with
+a ``BallJoint`` attachment, append additional bodies with ``RevoluteJoint``s,
+and finally drop the skeleton into a ``World`` handled by a viewer. Those
+implementation details live in the finished tutorial sources linked above; the
+remainder of this document focuses on the interactions you will implement in
+each lesson.
+
 ## Lesson 1: Apply forces during simulation
 
 We reset each body's visuals every frame, then either apply joint torques or
