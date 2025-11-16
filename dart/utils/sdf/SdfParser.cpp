@@ -76,6 +76,7 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <unordered_map>
 #include <vector>
 
 namespace dart {
@@ -114,6 +115,40 @@ using detail::hasAttribute;
 using detail::hasElement;
 using detail::readGeometryShape;
 
+using TempResourceMap = std::unordered_map<std::string, common::Uri>;
+
+thread_local TempResourceMap* gCurrentOriginMap = nullptr;
+
+struct ScopedOriginMap
+{
+  explicit ScopedOriginMap(const std::shared_ptr<TempResourceMap>& map)
+    : mPrevious(gCurrentOriginMap)
+  {
+    if (map)
+      gCurrentOriginMap = map.get();
+  }
+
+  ~ScopedOriginMap()
+  {
+    gCurrentOriginMap = mPrevious;
+  }
+
+private:
+  TempResourceMap* mPrevious;
+};
+
+const common::Uri* findOriginalUri(const std::string& filePath)
+{
+  if (!gCurrentOriginMap || filePath.empty())
+    return nullptr;
+
+  const auto it = gCurrentOriginMap->find(filePath);
+  if (it == gCurrentOriginMap->end())
+    return nullptr;
+
+  return &it->second;
+}
+
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retriever);
 
@@ -135,7 +170,7 @@ bool loadSdfRoot(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever,
     sdf::Root& root,
-    std::shared_ptr<std::vector<std::filesystem::path>>& tempResources);
+    TemporaryResourceOwner& resources);
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 
@@ -209,6 +244,9 @@ common::Uri getElementBaseUri(
   const auto& filePath = element->FilePath();
   if (filePath.empty())
     return fallbackUri;
+
+  if (const auto* originalUri = findOriginalUri(filePath))
+    return *originalUri;
 
   common::Uri elementUri;
   if (elementUri.fromPath(filePath))
@@ -444,7 +482,8 @@ std::filesystem::path writeTemporaryResource(
 std::string resolveWithRetriever(
     const std::string& requested,
     const common::ResourceRetrieverPtr& retriever,
-    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
+    const std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles,
+    const std::shared_ptr<TempResourceMap>& origins)
 {
   if (!retriever)
     return std::string();
@@ -464,6 +503,10 @@ std::string resolveWithRetriever(
     const auto data = retriever->readAll(requestedUri);
     const auto tmp = writeTemporaryResource(data, requestedUri);
     tempFiles->push_back(tmp);
+    if (origins) {
+      auto uri = common::Uri::createFromStringOrPath(requested);
+      (*origins)[tmp.string()] = uri;
+    }
     return tmp.string();
   } catch (const std::exception& e) {
     DART_WARN(
@@ -545,13 +588,14 @@ struct TemporaryResourceOwner
   }
 
   std::shared_ptr<std::vector<std::filesystem::path>> files;
+  std::shared_ptr<TempResourceMap> origins;
 };
 
 bool loadSdfRoot(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever,
     sdf::Root& root,
-    std::shared_ptr<std::vector<std::filesystem::path>>& tempFiles)
+    TemporaryResourceOwner& resources)
 {
   if (!retriever) {
     DART_WARN(
@@ -561,14 +605,18 @@ bool loadSdfRoot(
     return false;
   }
 
-  tempFiles = std::make_shared<std::vector<std::filesystem::path>>();
+  resources.files = std::make_shared<std::vector<std::filesystem::path>>();
+  resources.origins = std::make_shared<TempResourceMap>();
   sdf::ParserConfig config = sdf::ParserConfig::GlobalConfig();
   config.SetFindCallback(
-      [retriever, tempFiles, baseUri = uri](
-          const std::string& requested) -> std::string {
+      [retriever,
+       tempFiles = resources.files,
+       origins = resources.origins,
+       baseUri = uri](const std::string& requested) -> std::string {
         const auto resolvedRequest
             = resolveRequestedUri(requested, baseUri);
-        return resolveWithRetriever(resolvedRequest, retriever, tempFiles);
+        return resolveWithRetriever(
+            resolvedRequest, retriever, tempFiles, origins);
       });
 
   sdf::Errors errors;
@@ -582,8 +630,9 @@ bool loadSdfRoot(
     } catch (const std::exception& e) {
       DART_WARN(
           "[SdfParser] Failed to read [{}]: {}.", uri.toString(), e.what());
-      cleanupTemporaryResources(tempFiles);
-      tempFiles.reset();
+      cleanupTemporaryResources(resources.files);
+      resources.files.reset();
+      resources.origins.reset();
       return false;
     }
     errors = root.LoadSdfString(content, config);
@@ -594,8 +643,9 @@ bool loadSdfRoot(
   if (root.Element() == nullptr) {
     DART_WARN(
         "[SdfParser] [{}] produced an empty SDF document.", uri.toString());
-    cleanupTemporaryResources(tempFiles);
-    tempFiles.reset();
+    cleanupTemporaryResources(resources.files);
+    resources.files.reset();
+    resources.origins.reset();
     return false;
   }
 
@@ -1696,7 +1746,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 
   sdf::Root root;
   TemporaryResourceOwner tempResources;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources.files))
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources))
     return nullptr;
 
   const ElementPtr sdfElement = root.Element();
@@ -1714,6 +1764,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
     return nullptr;
   }
 
+  ScopedOriginMap originScope(tempResources.origins);
   return readWorld(worldElement, uri, resolvedOptions);
 }
 
@@ -1725,7 +1776,7 @@ dynamics::SkeletonPtr readSkeleton(
 
   sdf::Root root;
   TemporaryResourceOwner tempResources;
-  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources.files))
+  if (!loadSdfRoot(uri, resolvedOptions.retriever, root, tempResources))
     return nullptr;
 
   const ElementPtr sdfElement = root.Element();
@@ -1743,6 +1794,7 @@ dynamics::SkeletonPtr readSkeleton(
     return nullptr;
   }
 
+  ScopedOriginMap originScope(tempResources.origins);
   return readSkeleton(modelElement, uri, resolvedOptions);
 }
 

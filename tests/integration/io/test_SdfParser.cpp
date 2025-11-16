@@ -256,6 +256,7 @@ TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
   const std::string worldUri
       = "memory://pkg/worlds/include_relative_include.world";
   const std::string modelUri = "memory://pkg/models/box/model.sdf";
+  const std::string meshUri = "memory://pkg/models/box/meshes/box.obj";
 
   const std::string worldSdf = R"(
 <?xml version="1.0" ?>
@@ -279,16 +280,16 @@ TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
       </inertial>
       <visual name="visual">
         <geometry>
-          <box>
-            <size>1 1 1</size>
-          </box>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
         </geometry>
       </visual>
       <collision name="collision">
         <geometry>
-          <box>
-            <size>1 1 1</size>
-          </box>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
         </geometry>
       </collision>
     </link>
@@ -296,8 +297,33 @@ TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
 </sdf>
 )";
 
+  const std::string meshObj = R"(
+o Box
+v -0.5 -0.5 -0.5
+v 0.5 -0.5 -0.5
+v 0.5 0.5 -0.5
+v -0.5 0.5 -0.5
+v -0.5 -0.5 0.5
+v 0.5 -0.5 0.5
+v 0.5 0.5 0.5
+v -0.5 0.5 0.5
+f 1 2 3
+f 1 3 4
+f 5 6 7
+f 5 7 8
+f 1 5 6
+f 1 6 2
+f 2 6 7
+f 2 7 3
+f 3 7 8
+f 3 8 4
+f 4 8 5
+f 4 5 1
+)";
+
   retriever->add(worldUri, worldSdf);
   retriever->add(modelUri, modelSdf);
+  retriever->add(meshUri, meshObj);
 
   utils::SdfParser::Options options(retriever);
   auto world = utils::SdfParser::readWorld(common::Uri(worldUri), options);
@@ -307,6 +333,24 @@ TEST(SdfParser, ResolvesRelativeIncludesFromRetriever)
   const auto skeleton = world->getSkeleton(0);
   ASSERT_TRUE(skeleton != nullptr);
   EXPECT_EQ("box", skeleton->getName());
+
+  bool foundMesh = false;
+  skeleton->eachBodyNode([&](dynamics::BodyNode* body) {
+    const auto numShapeNodes = body->getNumShapeNodes();
+    for (auto i = 0u; i < numShapeNodes; ++i) {
+      const auto* shapeNode = body->getShapeNode(i);
+      const auto shape = shapeNode->getShape();
+      const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
+      if (!mesh)
+        continue;
+
+      foundMesh = true;
+      const std::string meshUriStr = mesh->getMeshUri();
+      EXPECT_NE(meshUriStr.find("meshes/box.obj"), std::string::npos);
+    }
+  });
+
+  EXPECT_TRUE(foundMesh);
 }
 
 //==============================================================================
