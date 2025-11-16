@@ -87,3 +87,13 @@ TEST(StringTest, Split)
   ASSERT_EQ(common::split("ThiSisaNApPle ", "A")[0], "ThiSisaN");
   ASSERT_EQ(common::split("ThiSisaNApPle ", "A")[1], "pPle ");
 }
+
+//==============================================================================
+TEST(StringTest, RemoveWhitespace)
+{
+  EXPECT_EQ(common::removeWhitespace(" \t a  b\nc "), "abc");
+
+  std::string value = " \t a  b\nc ";
+  common::removeWhitespaceInPlace(value);
+  EXPECT_EQ(value, "abc");
+}
