@@ -71,6 +71,10 @@ std::string trimCopy(const std::string& text);
 std::string getElementText(const ElementPtr& element);
 std::string getChildElementText(
     const ElementPtr& parent, const std::string& name);
+std::string getValueText(
+    const ElementPtr& parentElement,
+    const std::string& name,
+    const sdf::ParamPtr& param);
 
 template <typename T>
 bool parseScalar(const std::string& text, T& value)

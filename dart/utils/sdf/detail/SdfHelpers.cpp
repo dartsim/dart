@@ -90,6 +90,28 @@ std::string getChildElementText(
   return getElementText(child);
 }
 
+std::string getValueText(
+    const ElementPtr& parentElement,
+    const std::string& name,
+    const sdf::ParamPtr& param)
+{
+  if (param) {
+    try {
+      std::string text = trimCopy(param->GetAsString());
+      if (text.find('<') == std::string::npos)
+        return text;
+    } catch (const std::exception& e) {
+      DART_WARN(
+          "[SdfParser] Failed to parse element <{}> under <{}> as string: {}",
+          name,
+          parentElement ? parentElement->GetName() : "unknown",
+          e.what());
+    }
+  }
+
+  return getChildElementText(parentElement, name);
+}
+
 sdf::ParamPtr getAttributeParam(
     const ElementPtr& element, const std::string& attributeName)
 {
@@ -281,19 +303,9 @@ Eigen::Vector2d getValueVector2d(
   if (param->Get(vec2))
     return toEigen(vec2);
 
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
-    text = getChildElementText(parentElement, name);
-    if (text.empty())
-      return result;
-  }
+  const auto text = getValueText(parentElement, name, param);
+  if (text.empty())
+    return result;
 
   const auto values = parseArray<double>(text);
   if (values.size() >= 2) {
@@ -321,19 +333,9 @@ Eigen::Vector3d getValueVector3d(
   if (param->Get(vec3))
     return toEigen(vec3);
 
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
-    text = getChildElementText(parentElement, name);
-    if (text.empty())
-      return result;
-  }
+  const auto text = getValueText(parentElement, name, param);
+  if (text.empty())
+    return result;
 
   const auto values = parseArray<double>(text);
   if (values.size() >= 3) {
@@ -357,17 +359,9 @@ Eigen::Vector3i getValueVector3i(
   if (!param)
     return result;
 
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
+  const auto text = getValueText(parentElement, name, param);
+  if (text.empty())
     return result;
-  }
 
   const auto values = parseArray<int>(text);
   if (values.size() >= 3) {
@@ -402,19 +396,9 @@ Eigen::VectorXd getValueVectorXd(
     return result;
   }
 
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
-    text = getChildElementText(parentElement, name);
-    if (text.empty())
-      return Eigen::VectorXd();
-  }
+  const auto text = getValueText(parentElement, name, param);
+  if (text.empty())
+    return Eigen::VectorXd();
 
   const auto values = parseArray<double>(text);
   Eigen::VectorXd result(values.size());
@@ -435,19 +419,9 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
   if (param->Get(pose))
     return poseToIsometry(pose);
 
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}>: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
-    text = getChildElementText(parentElement, name);
-    if (text.empty())
-      return Eigen::Isometry3d::Identity();
-  }
+  const auto text = getValueText(parentElement, name, param);
+  if (text.empty())
+    return Eigen::Isometry3d::Identity();
 
   const auto values = parseArray<double>(text);
   if (values.size() == 6) {
