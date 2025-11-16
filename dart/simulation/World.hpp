@@ -45,6 +45,7 @@
 #include <dart/constraint/SmartPointer.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/SmartPointer.hpp>
 
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
@@ -57,6 +58,7 @@
 
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dart {
@@ -79,6 +81,28 @@ class CollisionResult;
 
 namespace simulation {
 
+/// Available collision detector backends for a World.
+enum class CollisionDetectorType
+{
+  Dart,
+  Fcl,
+  Bullet,
+  Ode,
+};
+
+/// Configuration bundle used when constructing a World.
+struct WorldConfig final
+{
+  /// Friendly name for the world.
+  std::string name = "world";
+
+  /// Preferred collision detector for the world.
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  WorldConfig() = default;
+  explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
+};
+
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
@@ -100,8 +124,14 @@ public:
   /// Creates a World
   static std::shared_ptr<World> create(const std::string& name = "world");
 
+  /// Creates a World using a configuration bundle.
+  static std::shared_ptr<World> create(const WorldConfig& config);
+
   /// Constructor
   World(const std::string& _name = "world");
+
+  /// Constructor with configuration bundle
+  explicit World(const WorldConfig& config);
 
   /// Destructor
   virtual ~World();
@@ -207,6 +237,19 @@ public:
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
   const collision::CollisionResult& getLastCollisionResult() const;
+
+  /// Sets the collision detector used by the world's constraint solver.
+  void setCollisionDetector(
+      const collision::CollisionDetectorPtr& collisionDetector);
+
+  /// Sets the collision detector via a typed backend selection.
+  void setCollisionDetector(CollisionDetectorType collisionDetector);
+
+  /// Returns the collision detector used by the world.
+  collision::CollisionDetectorPtr getCollisionDetector();
+
+  /// Returns the collision detector used by the world (const).
+  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
 
   //--------------------------------------------------------------------------
   // Simulation

@@ -34,7 +34,7 @@
 #include "eigen_pybind.h"
 #include "pointers.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

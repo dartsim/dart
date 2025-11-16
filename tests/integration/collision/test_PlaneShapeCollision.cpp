@@ -39,13 +39,13 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
+#include <dart/dynamics/All.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
-#include <dart/dynamics/all.hpp>
 
 #include <gtest/gtest.h>
 #include <helpers/GTestUtils.hpp>

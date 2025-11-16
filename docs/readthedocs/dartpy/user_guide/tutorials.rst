@@ -1,15 +1,15 @@
 Tutorials
 =========
 
-Python-specific tutorials and examples for dartpy.
+The dartpy tutorials mirror the structure of the C++ guides while pointing to
+the python implementations. Each page explains how to run the tutorial, where
+the starter/finished code is located, and how the lessons map onto the python
+APIs.
 
-For additional Python examples, you can find the example code at:
-https://github.com/dartsim/dart/tree/main/python/examples
+.. toctree::
+   :maxdepth: 1
 
-Coming Soon
------------
-
-Python-specific tutorials are under development. In the meantime, please refer to the
-:doc:`examples </dartpy/user_guide/examples>` page for getting started with dartpy, and
-the C++ tutorials in the :doc:`dart (C++) section </dart/user_guide/tutorials>` for
-general DART concepts that apply to both C++ and Python APIs.
+   tutorials/01-multi-pendulum
+   tutorials/02-collisions
+   tutorials/03-dominoes
+   tutorials/04-biped

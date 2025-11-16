@@ -34,7 +34,7 @@
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
@@ -52,8 +52,7 @@ TEST(Issue1624, ContactGrouping)
   auto world
       = SdfParser::readWorld("dart://sample/sdf/test/issue1624_cubes.sdf");
   ASSERT_TRUE(world != nullptr);
-  world->getConstraintSolver()->setCollisionDetector(
-      OdeCollisionDetector::create());
+  world->setCollisionDetector(OdeCollisionDetector::create());
   const double dt = 0.001;
   world->setTimeStep(dt);
   std::size_t maxSteps = 1000;

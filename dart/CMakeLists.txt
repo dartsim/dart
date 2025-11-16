@@ -105,7 +105,7 @@ endif()
 
 # Set header and source files
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
-get_filename_component(dart_all_hpp "all.hpp" ABSOLUTE)
+get_filename_component(dart_all_hpp "All.hpp" ABSOLUTE)
 dart_add_core_headers(${dart_hpp} ${dart_all_hpp})
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)

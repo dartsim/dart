@@ -28,7 +28,7 @@ env:
 
 jobs:
   ubuntu:
-    name: ubuntu
+    name: Docker | Ubuntu ${{ matrix.distro }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

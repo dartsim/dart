@@ -34,7 +34,7 @@ dart_generate_component_headers(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
   DESTINATION include/dart/collision/ode
   COMPONENT headers
 )

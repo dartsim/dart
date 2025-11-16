@@ -1150,7 +1150,7 @@ dart_gui/
 
 **C++ API**:
 ```cpp
-#include <dart/all.hpp>              // Core DART
+#include <dart/All.hpp>              // Core DART
 #include <dart/gui/osg/osg.hpp>       // OSG GUI
 #include <dart/utils/urdf/urdf.hpp>   // URDF parsing
 ```

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <random>
 
@@ -186,8 +186,7 @@ protected:
 
     // Look through the collisions to see if the new object would start in
     // collision with something
-    auto collisionEngine
-        = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionEngine = mWorld->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
     auto newGroup = collisionEngine->createCollisionGroup(object.get());
 

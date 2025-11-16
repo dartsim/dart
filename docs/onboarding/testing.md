@@ -153,7 +153,7 @@ Performance benchmarks measure execution time and resource usage:
 3. **Write your test** using GoogleTest framework:
    ```cpp
    #include <gtest/gtest.h>
-   #include "dart/dynamics/all.hpp"
+   #include "dart/dynamics/All.hpp"
 
    TEST(YourTestSuite, YourTestCase)
    {
@@ -357,10 +357,10 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 **Problem:** Warnings treated as errors when using deprecated aggregate headers.
 
 **Solution:** Use modern header names:
-- `dart/utils/utils.hpp` → `dart/utils/all.hpp`
-- `dart/simulation/simulation.hpp` → `dart/simulation/all.hpp`
-- `dart/constraint/constraint.hpp` → `dart/constraint/all.hpp`
-- `dart/collision/bullet/bullet.hpp` → `dart/collision/bullet/all.hpp`
+- `dart/utils/utils.hpp` → `dart/utils/All.hpp`
+- `dart/simulation/simulation.hpp` → `dart/simulation/All.hpp`
+- `dart/constraint/constraint.hpp` → `dart/constraint/All.hpp`
+- `dart/collision/bullet/bullet.hpp` → `dart/collision/bullet/All.hpp`
 
 ## Design Principles
 

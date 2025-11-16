@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -330,8 +330,7 @@ public:
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
 
     // Create a new collision group which only contains the new domino
-    auto collisionEngine
-        = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionEngine = mWorld->getCollisionDetector();
     auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 
     // Remove the floor from all things in the world, because the floor

@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   test_gazebo:
-    name: ubuntu-latest
+    name: GZ Physics Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

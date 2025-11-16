@@ -52,7 +52,7 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/all.hpp")
+list(APPEND header_names "render/All.hpp")
 dart_generate_component_headers(
   COMPONENT_NAME osg
   TARGET_DIR "dart/gui/osg/"
@@ -61,10 +61,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${render_hdrs}
 )
 
-# Install (includes all.hpp, osg.hpp for component compatibility,
+# Install (includes All.hpp, osg.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )
