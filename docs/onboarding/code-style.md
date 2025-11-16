@@ -80,6 +80,7 @@ DART now maintains two naming schemes in parallel:
 - **Indentation**: 2 spaces
 - **Functions**: camelCase
 - **Classes**: PascalCase
+- **Enum members**: PascalCase (e.g., `enum class Mode { Disabled, Enabled };`)
 - **Member variables**: Prefixed with `m` (e.g., `mExampleMember`)
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
 - **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake_case everywhere in `dart8/`, `python/dartpy8/`, and their dependents; legacy `tests/` use `test_` + PascalCase while dart8-era tests stay fully snake_case

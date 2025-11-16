@@ -50,6 +50,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
+include(CompilerCache)
 
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
@@ -179,6 +180,8 @@ dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF 
 if(DART_BUILD_DARTPY8)
   set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
 endif()
+
+dart_configure_compiler_cache()
 
 #===============================================================================
 # Print intro
