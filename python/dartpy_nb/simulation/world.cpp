@@ -22,7 +22,7 @@ void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
 
-  nb::class_<World>(m, "World")
+  nb::class_<World, ::std::shared_ptr<World>>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(nb::init([]() { return World::create(); }))
