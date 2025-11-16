@@ -180,8 +180,10 @@ class Controller:
             for j in range(min(2, num_visual_nodes)):
                 visual = body.getShapeNode(j).getVisualAspect()
                 visual.setColor([0.0, 0.0, 1.0, 1.0])
+            # snippet:py-lesson1a-remove-arrow-start
             _, arrow_visual = self.body_force_visuals[idx]
             arrow_visual.hide()
+            # snippet:py-lesson1a-remove-arrow-end
         # snippet:py-lesson1a-reset-end
 
     def _apply_joint_torques(self):

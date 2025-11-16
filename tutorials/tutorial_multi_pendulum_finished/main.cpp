@@ -194,11 +194,13 @@ public:
       // If we have three visualization shapes, that means the arrow is
       // attached. We should remove it in case this body is no longer
       // experiencing a force
+      // snippet:cpp-lesson1a-remove-arrow-start
       if (bn->getNumShapeNodesWith<VisualAspect>() == 3u) {
         DART_ASSERT(
             bn->getShapeNodeWith<VisualAspect>(2)->getShape() == mArrow);
         bn->getShapeNodeWith<VisualAspect>(2)->remove();
       }
+      // snippet:cpp-lesson1a-remove-arrow-end
 
       bn->setColor(dart::Color::Blue());
     }
