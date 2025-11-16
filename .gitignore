@@ -77,6 +77,10 @@ build/
 # pixi environments
 .pixi
 
+# API docs build artifacts
+dart_docs/
+gh-pages/
+
 # ImGui configuration
 imgui.ini
 
