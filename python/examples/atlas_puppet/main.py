@@ -603,6 +603,10 @@ def main():
     node = TeleoperationWorld(world, atlas, interactive_targets, target_displays)
     viewer.addWorldNode(node)
 
+    # Visualize the support polygon, centroid, and COM just like the C++ demo.
+    support_visual = dart.gui.osg.SupportPolygonVisual(atlas, DISPLAY_ELEVATION)
+    viewer.addAttachment(support_visual)
+
     # Add custom instructions for atlas_puppet
     viewer.addInstructionText(
         "Alt + Click:   Try to translate a body without changing its orientation\n"
