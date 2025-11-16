@@ -83,23 +83,18 @@ function(dart_add_test test_type target_name) # ARGN for source files
     )
   else()
     if(WIN32)
-      set(_dart_test_path_sep ";")
+      set(_dart_test_path_sep "%3B")
     else()
       set(_dart_test_path_sep ":")
     endif()
-    set(
-      _dart_test_path_env
-      "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$ENV{PATH}"
-    )
-    string(REPLACE ";" "\\;" _dart_test_path_env "${_dart_test_path_env}")
     set_property(
       TEST ${target_name}
-      PROPERTY ENVIRONMENT "PATH=${_dart_test_path_env}"
+      PROPERTY
+        ENVIRONMENT
+        "PATH=$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$ENV{PATH}"
     )
-    unset(_dart_test_path_env)
     unset(_dart_test_path_sep)
   endif()
-
   dart_format_add(${sources})
 
 endfunction()
