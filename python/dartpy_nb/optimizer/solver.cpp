@@ -67,10 +67,8 @@ void defOptimizerSolver(nb::module_& m)
           nb::arg("iterationsPerPrint"))
       .def_rw("mProblem", &Solver::Properties::mProblem)
       .def_rw("mTolerance", &Solver::Properties::mTolerance)
-      .def_rw(
-          "mNumMaxIterations", &Solver::Properties::mNumMaxIterations)
-      .def_rw(
-          "mIterationsPerPrint", &Solver::Properties::mIterationsPerPrint);
+      .def_rw("mNumMaxIterations", &Solver::Properties::mNumMaxIterations)
+      .def_rw("mIterationsPerPrint", &Solver::Properties::mIterationsPerPrint);
 
   nb::class_<Solver, PySolver>(m, "Solver")
       .def(nb::init<>())
