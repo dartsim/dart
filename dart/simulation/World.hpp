@@ -42,13 +42,16 @@
 #include <dart/simulation/Recording.hpp>
 #include <dart/simulation/SmartPointer.hpp>
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/SmartPointer.hpp>
+#include <dart/collision/Fwd.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/integration/Fwd.hpp>
 
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
@@ -62,23 +65,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace integration {
-class Integrator;
-} // namespace integration
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
-namespace constraint {
-class ConstraintSolver;
-} // namespace constraint
-
-namespace collision {
-class CollisionResult;
-} // namespace collision
-
 namespace simulation {
 
 /// Available collision detector backends for a World.
