@@ -816,9 +816,8 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DARTPY_NB={{ dartpy }} \
         -DDART_BUILD_DART8={{ dartpy }} \
-        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -832,10 +831,10 @@ config-install = { cmd = """
 tracy = { cmd = "tracy-profiler" }
 
 # Python package build
-build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_SKIP_pagmo=ON -DDART_USE_SYSTEM_IMGUI=ON" } }
+build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=OFF -DDART_BUILD_DARTPY_NB=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_SKIP_pagmo=ON -DDART_USE_SYSTEM_IMGUI=ON" } }
 
 # Build wheel package (without installing)
-build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
+build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=OFF -DDART_BUILD_DARTPY_NB=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
 
 # Verify wheel contains dartpy module
 verify-wheel = { cmd = "bash -c 'python scripts/verify_wheel.py dist/dartpy-*.whl'", depends-on = [
@@ -848,7 +847,7 @@ test-installation = { cmd = "python scripts/test_installation.py" }
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "pip wheel . --no-deps -w dist/ -v", args = [
   { arg = "use_system_imgui", default = "ON" },
-], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
+], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=OFF -DDART_BUILD_DARTPY_NB=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
   { arg = "python_tag" },
@@ -1002,9 +1001,9 @@ cmake \
   -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-  -DDART_BUILD_DARTPY=ON \
+  -DDART_BUILD_DARTPY=OFF \
+  -DDART_BUILD_DARTPY_NB=ON \
   -DDART_BUILD_DART8=ON \
-  -DDART_BUILD_DARTPY8=ON \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=ON \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1148,9 +1147,8 @@ config = { cmd = """
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DARTPY_NB={{ dartpy }} \
         -DDART_BUILD_DART8=ON \
-        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
@@ -1255,7 +1253,7 @@ build-py-dev = { cmd = """
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
         --parallel \
-        --target dartpy
+        --target dartpy_nb
 """, depends-on = [
   "config-py",
 ], args = [
@@ -1270,7 +1268,8 @@ config-py = { cmd = """
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_DARTPY=OFF \
+        -DDART_BUILD_DARTPY_NB=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1438,9 +1437,8 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
+        -DDART_BUILD_DARTPY_NB={{ dartpy }} \
         -DDART_BUILD_DART8={{ dartpy }} \
-        -DDART_BUILD_DARTPY8={{ dartpy }} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \

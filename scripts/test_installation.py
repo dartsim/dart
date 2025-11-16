@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Test script to verify dartpy installation works correctly.
+Test script to verify dartpy_nb installation works correctly.
 
-This script performs basic sanity checks on a dartpy installation:
-1. Import dartpy module
+This script performs basic sanity checks on a dartpy_nb installation:
+1. Import dartpy_nb module
 2. Check basic functionality
 3. Verify key components are available
 """
@@ -13,22 +13,22 @@ import sys
 
 
 def test_import():
-    """Test that dartpy can be imported."""
+    """Test that dartpy_nb can be imported."""
     try:
-        import dartpy  # type: ignore
+        import dartpy_nb  # type: ignore
 
-        print("✓ dartpy module imported successfully")
-        print(f"  Location: {dartpy.__file__}")
+        print("✓ dartpy_nb module imported successfully")
+        print(f"  Location: {dartpy_nb.__file__}")
         return True
     except ImportError as e:
-        print(f"✗ Failed to import dartpy: {e}")
+        print(f"✗ Failed to import dartpy_nb: {e}")
         return False
 
 
 def test_basic_functionality():
-    """Test basic dartpy functionality."""
+    """Test basic dartpy_nb functionality."""
     try:
-        import dartpy as dart  # type: ignore
+        import dartpy_nb as dart
 
         # Test creating a world
         world = dart.simulation.World()
@@ -53,9 +53,9 @@ def test_basic_functionality():
 
 
 def test_available_modules():
-    """Check which dartpy modules are available."""
+    """Check which dartpy_nb modules are available."""
     try:
-        import dartpy  # type: ignore
+        import dartpy_nb as dartpy  # type: ignore
 
         modules = [
             "common",
@@ -88,7 +88,7 @@ def test_available_modules():
 
 def main():
     """Run all tests."""
-    print("Testing dartpy installation...\n")
+    print("Testing dartpy_nb installation...\n")
 
     tests = [
         ("Import", test_import),
