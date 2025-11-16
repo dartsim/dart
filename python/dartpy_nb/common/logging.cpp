@@ -13,27 +13,27 @@ void defLogging(nb::module_& m)
 {
   m.def(
       "trace",
-      [](const std::string& message) { common::trace(message); },
+      [](const std::string& message) { ::dart::common::trace(message); },
       nb::arg("message"));
   m.def(
       "debug",
-      [](const std::string& message) { common::debug(message); },
+      [](const std::string& message) { ::dart::common::debug(message); },
       nb::arg("message"));
   m.def(
       "info",
-      [](const std::string& message) { common::info(message); },
+      [](const std::string& message) { ::dart::common::info(message); },
       nb::arg("message"));
   m.def(
       "warn",
-      [](const std::string& message) { common::warn(message); },
+      [](const std::string& message) { ::dart::common::warn(message); },
       nb::arg("message"));
   m.def(
       "error",
-      [](const std::string& message) { common::error(message); },
+      [](const std::string& message) { ::dart::common::error(message); },
       nb::arg("message"));
   m.def(
       "fatal",
-      [](const std::string& message) { common::fatal(message); },
+      [](const std::string& message) { ::dart::common::fatal(message); },
       nb::arg("message"));
 }
 

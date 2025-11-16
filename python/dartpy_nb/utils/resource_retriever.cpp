@@ -15,7 +15,7 @@ namespace dart::python_nb {
 void defUtilsResourceRetriever(nb::module_& m)
 {
   using CompositeRetriever = ::dart::utils::CompositeResourceRetriever;
-  nb::class_<CompositeRetriever, common::ResourceRetriever>(
+  nb::class_<CompositeRetriever, ::dart::common::ResourceRetriever>(
       m, "CompositeResourceRetriever")
       .def(nb::init<>())
       .def(
@@ -29,15 +29,15 @@ void defUtilsResourceRetriever(nb::module_& m)
           nb::arg("resourceRetriever"));
 
   using DartRetriever = ::dart::utils::DartResourceRetriever;
-  nb::class_<DartRetriever, common::ResourceRetriever>(
+  nb::class_<DartRetriever, ::dart::common::ResourceRetriever>(
       m, "DartResourceRetriever")
       .def(nb::init<>());
 
   using PackageRetriever = ::dart::utils::PackageResourceRetriever;
-  nb::class_<PackageRetriever, common::ResourceRetriever>(
+  nb::class_<PackageRetriever, ::dart::common::ResourceRetriever>(
       m, "PackageResourceRetriever")
       .def(
-          nb::init<const common::ResourceRetrieverPtr&>(),
+          nb::init<const ::dart::common::ResourceRetrieverPtr&>(),
           nb::arg("localRetriever"))
       .def(
           "addPackageDirectory",
