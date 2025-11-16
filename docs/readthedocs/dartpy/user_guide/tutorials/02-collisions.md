@@ -180,56 +180,230 @@ if parent is not None:
 If this BodyNode has a parent BodyNode, then we set damping coefficients of its
 Joint to a default value.
 
-## Lesson 2 – Creating a soft body
+## Lesson 2: Creating a soft body
 
-Python bindings for DART’s true soft body helpers are still in progress, so this
-tutorial implements the suggested approximation: a chain of light rigid bodies
-with translucent visuals. `add_soft_body()` simply calls `add_rigid_body()`,
-zeros out the mass and inertia, and sets `BodyNode.setAlpha(0.4)`.  The helper
-accepts a `SoftShapeType` enumeration that decides whether to build a box,
-cylinder, or sphere. `create_soft_body()` uses it to assemble a flexible ring
-while `create_hybrid_body()` welds a rigid box onto the soft chain so you can
-see the hybrid behavior from Lesson 2f in the C++ doc.
+At the time of writing, the dartpy bindings do not expose
+``SoftBodyNodeHelper`` yet, so the tutorial follows the recommended approximation:
+build a chain of light rigid bodies, tint them transparent, and give their parent
+joint very soft springs/dampers.
 
-## Lesson 3 – Setting initial conditions with frames
+### Lesson 2a: Set the Joint properties
 
-Lesson 3 explains how to place and launch new objects.  `add_object()` clones a
-template skeleton, positions it above the ground, and then sets up two
-`SimpleFrame`s:
+This portion is exactly the same as Lesson 1a because ``add_soft_body`` simply
+delegates to ``add_rigid_body``. The helper decides whether to create a box,
+cylinder, or sphere based on ``SoftShapeType`` and passes that through to
+``add_rigid_body``. This keeps the joint creation logic identical for rigid and
+soft segments.
 
-1. `center` is attached to the world and positioned at the object’s COM.  Its
-   linear/ angular velocities are filled using either the deterministic defaults
-   or the randomized values generated when the user toggles randomization.
-2. `root_reference` is parented to `center` and matches the transform of the
-   skeleton’s root body.  Calling `ref.getSpatialVelocity()` produces the
-   correct twist in world coordinates, which is then passed to
-   `obj.getJoint(0).setVelocities(...)`.
+### Lesson 2b: Zero the mass/inertia
 
-These frames mirror the ones used in `tutorialCollisions.cpp`, so the python
-version produces the same launch trajectories.
+After ``add_rigid_body`` returns, ``add_soft_body`` removes almost all of its
+inertia so the resulting bodies move like a soft skin:
 
-## Lesson 4 – Setting joint spring and damping properties
+```python
+inertia = dart.dynamics.Inertia()
+inertia.setMass(1e-8)
+inertia.setMoment(np.eye(3) * 1e-8)
+body.setInertia(inertia)
+```
 
-`setupRing(ring)` iterates over every DOF past the translational DOFs and
-assigns the spring/damping coefficients specified in the tutorial.  It also
-computes the rest positions required to keep the ring closed.  All of the math
-matches the “Lesson 4” section from the C++ document, but it is expressed with
-python arrays (`Eigen::Vector3d` equivalents are simple NumPy arrays).
+### Lesson 2c: Fade the visuals
 
-Randomization (`r` key) is also implemented here. The handler draws a random
-multiplier in `[−1, 1]` and scales the spawn offset, speed, launch angle, and
-angular velocity accordingly. That reproduces the “random toss” mode from the
-original tutorial.
+Soft parts should be visually distinct from rigid parts, so we lower their alpha:
 
-## Lesson 5 – Creating a closed kinematic chain
+```python
+body.setAlpha(0.4)
+```
 
-Closing the chain is the final step. After calling `setupRing()` and launching
-the rigid ring, the handler computes an anchor position using
-`tail.getWorldTransform().multiply([0, 0, default_shape_height/2])` and creates a
-`dart.constraint.BallJointConstraint` between the first and last body. The
-constraint is stored in `self.joint_constraints` so that deleting the ring later
-removes the constraint from the solver (otherwise the solver would keep a
-dangling pointer).
+### Lesson 2d: Assemble a pseudo-soft chain
+
+``create_soft_body`` calls ``add_soft_body`` to create a root body, then adds a
+couple of ball-jointed links:
+
+```python
+soft = dart.dynamics.Skeleton("soft_approx")
+body = add_soft_body(soft, "free", "soft_core", SOFT_BOX)
+for i in range(2):
+    body = add_soft_body(soft, "ball", f"soft_link_{i}", SOFT_ELLIPSOID, body)
+    joint = body.getParentJoint()
+    for dof_idx in range(joint.getNumDofs()):
+        dof = joint.getDof(dof_idx)
+        dof.setSpringStiffness(5.0)
+        dof.setDampingCoefficient(0.1)
+```
+
+Those light springs/dampers approximate the compliance that would normally come
+from a true SoftBodyNode.
+
+### Lesson 2e: Create a hybrid body
+
+``create_hybrid_body`` combines the “soft” chain with an attached rigid chunk:
+
+```python
+hybrid = dart.dynamics.Skeleton("hybrid")
+body = add_soft_body(hybrid, "free", "soft_base", SOFT_ELLIPSOID)
+body = add_soft_body(hybrid, "ball", "soft_link", SOFT_BOX, body)
+_, rigid = hybrid.createWeldJointAndBodyNodePair(body)
+rigid.setName("rigid_box")
+```
+
+The welded body receives a green box visual plus a physically meaningful inertia,
+so you can see both behaviors in one chain.
+
+## Lesson 3: Setting initial conditions with frames
+
+Lesson 3 explains how to place and launch new objects. ``add_object`` clones a
+template skeleton, positions it above the ground, performs a collision check,
+and then tosses it at the wall.
+
+### Lesson 3a: Set the starting pose
+
+``CollisionsEventHandler._initial_position`` returns a six-element vector
+containing the desired FreeJoint pose. Randomization toggles the lateral offset:
+
+```python
+positions = np.zeros(6)
+if self.randomize:
+    positions[4] = default_spawn_range * self.rng.uniform(-1.0, 1.0)
+positions[5] = default_start_height
+obj.getJoint(0).setPositions(positions)
+```
+
+### Lesson 3b: Give the copy a unique name
+
+The tutorial appends a monotonically increasing suffix so each spawned skeleton
+is easy to track:
+
+```python
+obj.setName(f"{obj.getName()}_{self.spawn_index}")
+self.spawn_index += 1
+```
+
+### Lesson 3c: Reject objects that start in collision
+
+Before inserting the skeleton into the world we collide it against the current
+scene:
+
+```python
+solver = self.world.getConstraintSolver()
+detector = solver.getCollisionDetector()
+world_group = solver.getCollisionGroup()
+new_group = detector.createCollisionGroup(obj)
+collision = world_group.collide(new_group, option, result)
+if collision:
+    return False
+```
+
+### Lesson 3d: Create reference frames for the COM
+
+Once the skeleton is considered safe to add, ``_launch_object`` creates two
+``SimpleFrame`` instances:
+
+1. ``center`` is a world-attached frame placed at the object’s COM. Its classic
+   linear/angular derivatives store the launch velocities.
+2. ``ref`` is a child frame that matches the transform of the root BodyNode.
+
+```python
+center_tf = dart.math.Isometry3()
+center_tf.set_translation(obj.getCOM())
+center = dart.dynamics.SimpleFrame(
+    dart.dynamics.Frame.World(), "center", center_tf
+)
+ref = dart.dynamics.SimpleFrame(center, "root_reference")
+ref.setRelativeTransform(obj.getBodyNode(0).getTransform(center))
+```
+
+### Lesson 3e: Compute the launch velocity
+
+Randomization perturbs the launch angle, linear speed, and angular speed:
+
+```python
+angle = default_launch_angle
+speed = default_start_v
+angular_speed = default_start_w
+if self.randomize:
+    angle = self.rng.uniform(
+        minimum_launch_angle, maximum_launch_angle
+    )
+    speed = self.rng.uniform(minimum_start_v, maximum_start_v)
+    angular_speed = self.rng.uniform(-maximum_start_w, maximum_start_w)
+
+linear = np.array([math.cos(angle), 0.0, math.sin(angle)]) * speed
+angular = np.array([0.0, 1.0, 0.0]) * angular_speed
+center.setClassicDerivatives(linear, angular)
+```
+
+### Lesson 3f: Apply the velocity to the root joint
+
+Finally, the root FreeJoint receives the spatial velocity stored in ``ref``:
+
+```python
+obj.getJoint(0).setVelocities(ref.getSpatialVelocity())
+```
+
+## Lesson 4: Setting joint spring and damping properties
+
+``setup_ring`` configures the rigid chain so it behaves like a closed ring with
+reasonable compliance.
+
+### Lesson 4a: Set the spring and damping coefficients
+
+The first six DOFs correspond to the root FreeJoint, so we skip them when
+assigning spring and damping values:
+
+```python
+for idx in range(6, ring.getNumDofs()):
+    dof = ring.getDof(idx)
+    dof.setSpringStiffness(ring_spring_stiffness)
+    dof.setDampingCoefficient(ring_damping_coefficient)
+```
+
+### Lesson 4b: Set the rest positions of the joints
+
+Each BallJoint needs to curl by the exterior angle of an N-sided polygon. We
+convert that desired rotation into BallJoint coordinates:
+
+```python
+num_edges = ring.getNumBodyNodes()
+angle = 2 * math.pi / num_edges
+for i in range(1, ring.getNumJoints()):
+    joint = ring.getJoint(i)
+    rotation = dart.math.eulerXYZToMatrix([0.0, angle, 0.0])
+    rest = dart.dynamics.BallJoint.convertToPositions(rotation)
+    for axis in range(3):
+        joint.setRestPosition(axis, rest[axis])
+```
+
+### Lesson 4c: Initialize the ring at its rest pose
+
+Once the rest positions are stored, the same DOFs are set to those values so
+the ring starts in equilibrium:
+
+```python
+for idx in range(6, ring.getNumDofs()):
+    dof = ring.getDof(idx)
+    dof.setPosition(dof.getRestPosition())
+```
+
+## Lesson 5: Creating a closed kinematic chain
+
+Closing the chain is the final step. After calling ``setup_ring`` and launching
+the rigid ring, ``add_ring`` binds the first and last bodies with a
+``dart.constraint.BallJointConstraint``.
+
+```python
+head = ring.getBodyNode(0)
+tail = ring.getBodyNode(ring.getNumBodyNodes() - 1)
+offset = np.array([0.0, 0.0, default_shape_height / 2.0])
+offset = tail.getWorldTransform().multiply(offset)
+constraint = dart.constraint.BallJointConstraint(head, tail, offset)
+self.world.getConstraintSolver().addConstraint(constraint)
+self.joint_constraints.append(constraint)
+```
+
+Constraints are removed when a skeleton is deleted by scanning ``joint_constraints``
+and calling ``removeConstraint`` on any entry that references the departing
+skeleton.
 
 ## Keyboard reference
 
@@ -248,7 +422,7 @@ dangling pointer).
 - Let objects settle before tossing a new one, otherwise the collision solver
   can accumulate large impulses.
 - Experiment with the ring spring/damping values to see how stiffness affects
-  the constrainted loop.
+  the constrained loop.
 - Because everything is implemented in Python, you can easily add new templates
   (e.g., textured boxes or meshes) or collect statistics about impact forces by
   instrumenting `CollisionsEventHandler`.
