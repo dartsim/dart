@@ -131,6 +131,22 @@ constexpr bool SpecializedForAspect<SpecAspect>::isSpecializedFor()
 //==============================================================================
 template <class SpecAspect>
 template <class T>
+constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(type<T>)
+{
+  return false;
+}
+
+//==============================================================================
+template <class SpecAspect>
+constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(
+    type<SpecAspect>)
+{
+  return true;
+}
+
+//==============================================================================
+template <class SpecAspect>
+template <class T>
 bool SpecializedForAspect<SpecAspect>::_has(type<T>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
