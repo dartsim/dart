@@ -34,6 +34,8 @@
 
 #include <dart/common/Uri.hpp>
 
+#include <cmath>
+
 #if __has_include(<gz/math/Quaternion.hh>)
   #include <gz/math/Quaternion.hh>
 #else
@@ -41,6 +43,20 @@
 #endif
 
 namespace dart::utils::SdfParser::detail {
+
+namespace {
+
+double sanitizeParsedValue(double value)
+{
+  constexpr double roundingScale = 1e6;
+  constexpr double tolerance = 1e-7;
+  const double rounded = std::round(value * roundingScale) / roundingScale;
+  if (std::abs(value - rounded) <= tolerance)
+    return rounded;
+  return value;
+}
+
+} // namespace
 
 std::string toLowerCopy(std::string text)
 {
@@ -95,6 +111,10 @@ std::string getValueText(
     const std::string& name,
     const sdf::ParamPtr& param)
 {
+  const auto directText = getChildElementText(parentElement, name);
+  if (!directText.empty())
+    return directText;
+
   if (param) {
     try {
       std::string text = trimCopy(param->GetAsString());
@@ -385,6 +405,18 @@ Eigen::VectorXd getValueVectorXd(
   if (!param)
     return Eigen::VectorXd();
 
+  const auto text = getValueText(parentElement, name, param);
+  if (!text.empty()) {
+    const auto values = parseArray<double>(text);
+    if (!values.empty()) {
+      Eigen::VectorXd result(values.size());
+      for (std::size_t i = 0; i < values.size(); ++i) {
+        result[static_cast<Eigen::Index>(i)] = sanitizeParsedValue(values[i]);
+      }
+      return result;
+    }
+  }
+
   gz::math::Color color;
   if (param->Get(color))
     return colorToVector(color);
@@ -392,20 +424,12 @@ Eigen::VectorXd getValueVectorXd(
   gz::math::Vector3d vec3;
   if (param->Get(vec3)) {
     Eigen::VectorXd result(3);
-    result << vec3.X(), vec3.Y(), vec3.Z();
+    result << sanitizeParsedValue(vec3.X()), sanitizeParsedValue(vec3.Y()),
+        sanitizeParsedValue(vec3.Z());
     return result;
   }
 
-  const auto text = getValueText(parentElement, name, param);
-  if (text.empty())
-    return Eigen::VectorXd();
-
-  const auto values = parseArray<double>(text);
-  Eigen::VectorXd result(values.size());
-  for (std::size_t i = 0; i < values.size(); ++i)
-    result[static_cast<Eigen::Index>(i)] = values[i];
-
-  return result;
+  return Eigen::VectorXd();
 }
 
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(

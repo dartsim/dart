@@ -187,3 +187,48 @@ TEST(SdfDetailHelpers, ParsesAttributesScalarsAndEnumerators)
   EXPECT_DOUBLE_EQ(color[0], 0.2);
   EXPECT_DOUBLE_EQ(color[3], 0.8);
 }
+
+TEST(SdfDetailHelpers, SanitizesFloatingPointVectors)
+{
+  const std::string xml = R"(
+    <sdf version='1.9'>
+      <model name='demo'>
+        <link name='demo_link'>
+          <visual name='visual'>
+            <material>
+              <diffuse>0.200000003 0.400000006 0.600000024 0.800000012</diffuse>
+            </material>
+          </visual>
+          <unknown_vector>0.200000003 0.400000006 0.600000024</unknown_vector>
+        </link>
+      </model>
+    </sdf>)";
+
+  const sdf::ElementPtr sdfElement = loadElement(xml);
+  ASSERT_TRUE(sdfElement);
+
+  const auto modelElement = detail::getElement(sdfElement, "model");
+  ASSERT_TRUE(modelElement);
+  const auto linkElement = detail::getElement(modelElement, "link");
+  ASSERT_TRUE(linkElement);
+
+  const auto visualElement = detail::getElement(linkElement, "visual");
+  ASSERT_TRUE(visualElement);
+  const auto materialElement = detail::getElement(visualElement, "material");
+  ASSERT_TRUE(materialElement);
+
+  const Eigen::VectorXd color
+      = detail::getValueVectorXd(materialElement, "diffuse");
+  ASSERT_EQ(color.size(), 4);
+  EXPECT_DOUBLE_EQ(color[0], 0.2);
+  EXPECT_DOUBLE_EQ(color[1], 0.4);
+  EXPECT_DOUBLE_EQ(color[2], 0.6);
+  EXPECT_DOUBLE_EQ(color[3], 0.8);
+
+  const Eigen::VectorXd vec
+      = detail::getValueVectorXd(linkElement, "unknown_vector");
+  ASSERT_EQ(vec.size(), 3);
+  EXPECT_DOUBLE_EQ(vec[0], 0.2);
+  EXPECT_DOUBLE_EQ(vec[1], 0.4);
+  EXPECT_DOUBLE_EQ(vec[2], 0.6);
+}
