@@ -42,7 +42,7 @@ void defChain(nb::module_& m)
 
   nb::class_<Chain, dart::dynamics::Linkage>(m, "Chain")
       .def(
-          nb::init([](dart::dynamics::BodyNode* start,
+          nb::new_([](dart::dynamics::BodyNode* start,
                       dart::dynamics::BodyNode* target,
                       bool includeUpstreamParentJoint,
                       const std::string& name) {

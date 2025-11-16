@@ -1,6 +1,7 @@
 #include "dynamics/entity.hpp"
 
 #include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/Frame.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

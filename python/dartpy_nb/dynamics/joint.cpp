@@ -1,6 +1,7 @@
 #include "dynamics/joint.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Joint.hpp"
 
 #include <nanobind/eigen/dense.h>
@@ -23,7 +24,11 @@ void defJoint(nb::module_& m)
             return self.getName();
           },
           nb::rv_policy::reference_internal)
-      .def("setName", &Joint::setName, nb::arg("name"))
+      .def(
+          "setName",
+          &Joint::setName,
+          nb::arg("name"),
+          nb::arg("preserveName") = true)
       .def(
           "getType",
           [](const Joint& self) -> const std::string& {
@@ -33,18 +38,10 @@ void defJoint(nb::module_& m)
       .def("getNumDofs", &Joint::getNumDofs)
       .def(
           "getDof",
-          [](Joint& self,
-             std::size_t index) -> dart::dynamics::DegreeOfFreedom* {
-            return self.getDof(index);
-          },
+          static_cast<dart::dynamics::DegreeOfFreedom* (Joint::*)(std::size_t)>(
+              &Joint::getDof),
           nb::rv_policy::reference_internal,
           nb::arg("index"))
-      .def(
-          "getDof",
-          [](Joint& self, const std::string& name)
-              -> dart::dynamics::DegreeOfFreedom* { return self.getDof(name); },
-          nb::rv_policy::reference_internal,
-          nb::arg("name"))
       .def(
           "setDofName",
           [](Joint& self, std::size_t index, const std::string& name)
@@ -152,12 +149,6 @@ void defJoint(nb::module_& m)
       .def("resetVelocities", [](Joint& self) { self.resetVelocities(); })
       .def("getRelativeTransform", &Joint::getRelativeTransform)
       .def(
-          "setRelativeTransform",
-          [](Joint& self, const Eigen::Isometry3d& tf) {
-            self.setRelativeTransform(tf);
-          },
-          nb::arg("transform"))
-      .def(
           "getRelativeJacobian",
           [](Joint& self, const Eigen::VectorXd& positions) {
             return self.getRelativeJacobian(positions);
@@ -183,16 +174,16 @@ void defJoint(nb::module_& m)
           nb::arg("transform"))
       .def(
           "getWrenchToParentBodyNode",
-          [](Joint& self, const dart::dynamics::Frame& frame) {
+          [](Joint& self, const dart::dynamics::Frame* frame) {
             return self.getWrenchToParentBodyNode(frame);
           },
-          nb::arg("frame"))
+          nb::arg("frame") = nullptr)
       .def(
           "getWrenchToChildBodyNode",
-          [](Joint& self, const dart::dynamics::Frame& frame) {
+          [](Joint& self, const dart::dynamics::Frame* frame) {
             return self.getWrenchToChildBodyNode(frame);
           },
-          nb::arg("frame"))
+          nb::arg("frame") = nullptr)
       .def(
           "setLimitEnforcement",
           &Joint::setLimitEnforcement,

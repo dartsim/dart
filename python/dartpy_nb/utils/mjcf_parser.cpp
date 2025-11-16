@@ -12,11 +12,9 @@ namespace dart::python_nb {
 
 void defMjcfParser(nb::module_& m)
 {
-  using MjcfParser = ::dart::utils::MjcfParser;
-
   auto sm = m.def_submodule("MjcfParser");
 
-  nb::class_<MjcfParser::Options>(sm, "Options")
+  nb::class_<::dart::utils::MjcfParser::Options>(sm, "Options")
       .def(
           nb::init<
               const common::ResourceRetrieverPtr&,
@@ -25,28 +23,31 @@ void defMjcfParser(nb::module_& m)
           nb::arg("resourceRetretrieverOrNullptrriever") = nullptr,
           nb::arg("geomSkeletonNamePrefix") = "__geom_skel__",
           nb::arg("siteSkeletonNamePrefix") = "__site_skel__")
-      .def_rw("mRetriever", &MjcfParser::Options::mRetriever)
+      .def_rw(
+          "mRetriever", &::dart::utils::MjcfParser::Options::mRetriever)
       .def_rw(
           "mGeomSkeletonNamePrefix",
-          &MjcfParser::Options::mGeomSkeletonNamePrefix)
+          &::dart::utils::MjcfParser::Options::mGeomSkeletonNamePrefix)
       .def_rw(
           "mSiteSkeletonNamePrefix",
-          &MjcfParser::Options::mSiteSkeletonNamePrefix);
+          &::dart::utils::MjcfParser::Options::mSiteSkeletonNamePrefix);
 
   sm.def(
       "readWorld",
-      [](const common::Uri& uri, const MjcfParser::Options& options) {
-        return MjcfParser::readWorld(uri, options);
+      [](const common::Uri& uri,
+         const ::dart::utils::MjcfParser::Options& options) {
+        return ::dart::utils::MjcfParser::readWorld(uri, options);
       },
       nb::arg("uri"),
-      nb::arg("options") = MjcfParser::Options());
+      nb::arg("options") = ::dart::utils::MjcfParser::Options());
   sm.def(
       "readWorld",
-      [](const std::string& uri, const MjcfParser::Options& options) {
-        return MjcfParser::readWorld(common::Uri(uri), options);
+      [](const std::string& uri,
+         const ::dart::utils::MjcfParser::Options& options) {
+        return ::dart::utils::MjcfParser::readWorld(common::Uri(uri), options);
       },
       nb::arg("uri"),
-      nb::arg("options") = MjcfParser::Options());
+      nb::arg("options") = ::dart::utils::MjcfParser::Options());
 }
 
 } // namespace dart::python_nb

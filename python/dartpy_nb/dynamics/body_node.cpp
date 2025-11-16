@@ -37,11 +37,18 @@ void defBodyNode(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "getShapeNodes",
-          [](BodyNode& self) { return self.getShapeNodes(); },
+          [](BodyNode& self) {
+            std::vector<dart::dynamics::ShapeNode*> nodes;
+            self.eachShapeNode(
+                [&](dart::dynamics::ShapeNode* node) { nodes.push_back(node); });
+            return nodes;
+          },
           nb::rv_policy::reference_internal)
       .def("getNumShapeNodes", &BodyNode::getNumShapeNodes)
       .def("getBodyForce", &BodyNode::getBodyForce)
-      .def("getSpatialVelocity", &BodyNode::getSpatialVelocity)
+      .def(
+          "getSpatialVelocity",
+          [](const BodyNode& self) { return self.getSpatialVelocity(); })
       .def(
           "getBodyNodePtr",
           [](BodyNode& self) -> BodyNode* { return &self; },

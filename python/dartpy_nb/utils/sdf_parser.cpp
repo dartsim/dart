@@ -11,58 +11,61 @@ namespace dart::python_nb {
 
 void defSdfParser(nb::module_& m)
 {
-  using SdfParser = ::dart::utils::SdfParser;
+  namespace SdfParserNs = ::dart::utils::SdfParser;
 
   auto sm = m.def_submodule("SdfParser");
 
-  nb::enum_<SdfParser::RootJointType>(sm, "RootJointType")
-      .value("FLOATING", SdfParser::RootJointType::FLOATING)
-      .value("FIXED", SdfParser::RootJointType::FIXED);
+  nb::enum_<SdfParserNs::RootJointType>(sm, "RootJointType")
+      .value("FLOATING", SdfParserNs::RootJointType::FLOATING)
+      .value("FIXED", SdfParserNs::RootJointType::FIXED);
 
-  nb::class_<SdfParser::Options>(sm, "Options")
+  nb::class_<SdfParserNs::Options>(sm, "Options")
       .def(
-          nb::init<common::ResourceRetrieverPtr, SdfParser::RootJointType>(),
+          nb::init<common::ResourceRetrieverPtr, SdfParserNs::RootJointType>(),
           nb::arg("resourceRetriever") = nullptr,
-          nb::arg("defaultRootJointType") = SdfParser::RootJointType::FLOATING)
-      .def_rw("mResourceRetriever", &SdfParser::Options::mResourceRetriever)
+          nb::arg("defaultRootJointType")
+          = SdfParserNs::RootJointType::FLOATING)
       .def_rw(
-          "mDefaultRootJointType", &SdfParser::Options::mDefaultRootJointType);
+          "mResourceRetriever", &SdfParserNs::Options::mResourceRetriever)
+      .def_rw(
+          "mDefaultRootJointType",
+          &SdfParserNs::Options::mDefaultRootJointType);
 
-  auto read_world = [](auto uri, const SdfParser::Options& options) {
-    return SdfParser::readWorld(uri, options);
+  auto read_world = [](auto uri, const SdfParserNs::Options& options) {
+    return SdfParserNs::readWorld(uri, options);
   };
-  auto read_skeleton = [](auto uri, const SdfParser::Options& options) {
-    return SdfParser::readSkeleton(uri, options);
+  auto read_skeleton = [](auto uri, const SdfParserNs::Options& options) {
+    return SdfParserNs::readSkeleton(uri, options);
   };
 
   sm.def(
       "readWorld",
-      [=](const common::Uri& uri, const SdfParser::Options& options) {
+      [=](const common::Uri& uri, const SdfParserNs::Options& options) {
         return read_world(uri, options);
       },
       nb::arg("uri"),
-      nb::arg("options") = SdfParser::Options());
+      nb::arg("options") = SdfParserNs::Options());
   sm.def(
       "readWorld",
-      [=](const std::string& uri, const SdfParser::Options& options) {
+      [=](const std::string& uri, const SdfParserNs::Options& options) {
         return read_world(common::Uri(uri), options);
       },
       nb::arg("uri"),
-      nb::arg("options") = SdfParser::Options());
+      nb::arg("options") = SdfParserNs::Options());
   sm.def(
       "readSkeleton",
-      [=](const common::Uri& uri, const SdfParser::Options& options) {
+      [=](const common::Uri& uri, const SdfParserNs::Options& options) {
         return read_skeleton(uri, options);
       },
       nb::arg("uri"),
-      nb::arg("options") = SdfParser::Options());
+      nb::arg("options") = SdfParserNs::Options());
   sm.def(
       "readSkeleton",
-      [=](const std::string& uri, const SdfParser::Options& options) {
+      [=](const std::string& uri, const SdfParserNs::Options& options) {
         return read_skeleton(common::Uri(uri), options);
       },
       nb::arg("uri"),
-      nb::arg("options") = SdfParser::Options());
+      nb::arg("options") = SdfParserNs::Options());
 }
 
 } // namespace dart::python_nb

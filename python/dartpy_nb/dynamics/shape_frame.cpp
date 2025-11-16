@@ -69,7 +69,7 @@ void defShapeFrame(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "createVisualAspect",
-          &ShapeFrame::createVisualAspect,
+          [](ShapeFrame& self) { return self.createVisualAspect(); },
           nb::rv_policy::reference_internal)
       .def("hasCollisionAspect", &ShapeFrame::hasCollisionAspect)
       .def(
@@ -81,7 +81,7 @@ void defShapeFrame(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "createCollisionAspect",
-          &ShapeFrame::createCollisionAspect,
+          [](ShapeFrame& self) { return self.createCollisionAspect(); },
           nb::rv_policy::reference_internal)
       .def("hasDynamicsAspect", &ShapeFrame::hasDynamicsAspect)
       .def(
@@ -93,7 +93,7 @@ void defShapeFrame(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "createDynamicsAspect",
-          &ShapeFrame::createDynamicsAspect,
+          [](ShapeFrame& self) { return self.createDynamicsAspect(); },
           nb::rv_policy::reference_internal)
       .def("isShapeNode", &ShapeFrame::isShapeNode)
       .def(

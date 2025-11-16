@@ -1,6 +1,7 @@
 #include "collision/raycast.hpp"
 
 #include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/RaycastResult.hpp"
 
 #include <nanobind/eigen/dense.h>

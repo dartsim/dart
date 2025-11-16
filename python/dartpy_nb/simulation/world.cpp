@@ -6,6 +6,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 #include "simulation/constraint_solver.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

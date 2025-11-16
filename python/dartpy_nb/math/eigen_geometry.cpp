@@ -30,7 +30,8 @@ void checkRotation(const Eigen::Matrix<T, 3, 3>& R)
 template <typename T>
 void checkIsometry(const Eigen::Transform<T, 3, Eigen::Isometry>& X)
 {
-  checkRotation(X.linear());
+  Eigen::Matrix<T, 3, 3> rotation = X.linear();
+  checkRotation(rotation);
   Eigen::Matrix<T, 1, 4> bottom_expected;
   bottom_expected << 0, 0, 0, 1;
   const T bottom_error
@@ -61,29 +62,34 @@ void defEigenGeometry(nb::module_& m)
 {
   using Isometry = Eigen::Transform<double, 3, Eigen::Isometry>;
   nb::class_<Isometry>(m, "Isometry3")
-      .def(nb::init([]() { return Isometry::Identity(); }))
+      .def(nb::new_([]() { return Isometry::Identity(); }))
       .def_static("Identity", []() { return Isometry::Identity(); })
-      .def(nb::init([](const Eigen::Matrix4d& matrix) {
-        Isometry out(matrix);
-        checkIsometry(out);
-        return out;
-      }))
-      .def(nb::init([](const Eigen::Matrix3d& rotation,
-                       const Eigen::Vector3d& translation) {
-        checkRotation(rotation);
-        Isometry out = Isometry::Identity();
-        out.linear() = rotation;
-        out.translation() = translation;
-        return out;
-      }))
-      .def(nb::init(
-          [](const Eigen::Quaterniond& q, const Eigen::Vector3d& translation) {
-            checkQuaternion(q);
-            Isometry out = Isometry::Identity();
-            out.linear() = q.toRotationMatrix();
-            out.translation() = translation;
-            return out;
-          }))
+      .def(nb::new_([](const Eigen::Matrix4d& matrix) {
+             Isometry out(matrix);
+             checkIsometry(out);
+             return out;
+           }),
+           nb::arg("matrix"))
+      .def(nb::new_( [](const Eigen::Matrix3d& rotation,
+                        const Eigen::Vector3d& translation) {
+             checkRotation(rotation);
+             Isometry out = Isometry::Identity();
+             out.linear() = rotation;
+             out.translation() = translation;
+             return out;
+           }),
+           nb::arg("rotation"),
+           nb::arg("translation"))
+      .def(nb::new_( [](const Eigen::Quaterniond& q,
+                        const Eigen::Vector3d& translation) {
+             checkQuaternion(q);
+             Isometry out = Isometry::Identity();
+             out.linear() = q.toRotationMatrix();
+             out.translation() = translation;
+             return out;
+           }),
+           nb::arg("rotation"),
+           nb::arg("translation"))
       .def("matrix", [](const Isometry& self) { return self.matrix(); })
       .def("set_identity", [](Isometry& self) { self.setIdentity(); })
       .def(
@@ -156,23 +162,29 @@ void defEigenGeometry(nb::module_& m)
 
   using Quaternion = Eigen::Quaterniond;
   nb::class_<Quaternion>(m, "Quaternion")
-      .def(nb::init([]() { return Quaternion::Identity(); }))
+      .def(nb::new_([]() { return Quaternion::Identity(); }))
       .def_static("Identity", []() { return Quaternion::Identity(); })
-      .def(nb::init([](const Eigen::Vector4d& wxyz) {
-        Quaternion out(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
-        checkQuaternion(out);
-        return out;
-      }))
-      .def(nb::init([](double w, double x, double y, double z) {
-        Quaternion out(w, x, y, z);
-        checkQuaternion(out);
-        return out;
-      }))
-      .def(nb::init([](const Eigen::Matrix3d& rotation) {
-        Quaternion out(rotation);
-        checkQuaternion(out);
-        return out;
-      }))
+      .def(nb::new_([](const Eigen::Vector4d& wxyz) {
+             Quaternion out(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+             checkQuaternion(out);
+             return out;
+           }),
+           nb::arg("wxyz"))
+      .def(nb::new_([](double w, double x, double y, double z) {
+             Quaternion out(w, x, y, z);
+             checkQuaternion(out);
+             return out;
+           }),
+           nb::arg("w"),
+           nb::arg("x"),
+           nb::arg("y"),
+           nb::arg("z"))
+      .def(nb::new_([](const Eigen::Matrix3d& rotation) {
+             Quaternion out(rotation);
+             checkQuaternion(out);
+             return out;
+           }),
+           nb::arg("rotation"))
       .def("w", [](const Quaternion& self) { return self.w(); })
       .def("x", [](const Quaternion& self) { return self.x(); })
       .def("y", [](const Quaternion& self) { return self.y(); })
@@ -230,18 +242,21 @@ void defEigenGeometry(nb::module_& m)
 
   using AngleAxis = Eigen::AngleAxisd;
   nb::class_<AngleAxis>(m, "AngleAxis")
-      .def(nb::init([]() { return AngleAxis::Identity(); }))
+      .def(nb::new_([]() { return AngleAxis::Identity(); }))
       .def_static("Identity", []() { return AngleAxis::Identity(); })
-      .def(nb::init([](double angle, const Eigen::Vector3d& axis) {
-        AngleAxis out(angle, axis);
-        checkAngleAxis(out);
-        return out;
-      }))
-      .def(nb::init([](const Quaternion& q) {
-        AngleAxis out(q);
-        checkAngleAxis(out);
-        return out;
-      }))
+      .def(nb::new_([](double angle, const Eigen::Vector3d& axis) {
+             AngleAxis out(angle, axis);
+             checkAngleAxis(out);
+             return out;
+           }),
+           nb::arg("angle"),
+           nb::arg("axis"))
+      .def(nb::new_([](const Quaternion& q) {
+             AngleAxis out(q);
+             checkAngleAxis(out);
+             return out;
+           }),
+           nb::arg("quaternion"))
       .def("angle", [](const AngleAxis& self) { return self.angle(); })
       .def("axis", [](const AngleAxis& self) { return self.axis(); })
       .def("to_rotation_matrix", [](const AngleAxis& self) {
