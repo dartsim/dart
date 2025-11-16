@@ -34,7 +34,11 @@
 
 #include <dart/common/Uri.hpp>
 
-#include <gz/math/Quaternion.hh>
+#if __has_include(<gz/math/Quaternion.hh>)
+  #include <gz/math/Quaternion.hh>
+#else
+  #include <gz/math9/gz/math/Quaternion.hh>
+#endif
 
 namespace dart::utils::SdfParser::detail {
 
