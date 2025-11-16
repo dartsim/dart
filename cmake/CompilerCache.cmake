@@ -65,6 +65,8 @@ function(dart_configure_compiler_cache)
 
   _dart_collect_compiler_cache_candidates(_dart_cache_candidates)
   foreach(_candidate IN LISTS _dart_cache_candidates)
+    unset(_cache_executable CACHE)
+    unset(_cache_executable)
     find_program(_cache_executable NAMES ${_candidate})
     if(_cache_executable)
       set(
