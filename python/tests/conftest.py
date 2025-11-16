@@ -78,5 +78,12 @@ def _prepend_pythonpath() -> None:
             sys.path.remove(entry)
         sys.path.insert(0, entry)
 
+    # De-prioritize the source tree so compiled bindings are always used.
+    source_python = Path(__file__).resolve().parents[1]
+    source_str = str(source_python)
+    if source_str in sys.path:
+        sys.path.remove(source_str)
+        sys.path.append(source_str)
+
 
 _prepend_pythonpath()
