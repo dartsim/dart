@@ -102,6 +102,7 @@ class SoftBodyNode;
 class SoftMeshShape;
 class SpecializedNodeManager;
 class SphereShape;
+template <class NodeType>
 class TemplatedJacobianNode;
 class TranslationalJoint;
 class TranslationalJoint2D;
