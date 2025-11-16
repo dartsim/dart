@@ -12,22 +12,18 @@ description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-2-Clause"
-authors = [
-    {name = "Jeongseok Lee", email = "jslee02@gmail.com"}
-]
+authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
 keywords = ["dartsim", "robotics"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
-    "Framework :: Robot Framework",
-    "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: MacOS",
-    "Operating System :: POSIX :: Linux",
+  "Development Status :: 2 - Pre-Alpha",
+  "Framework :: Robot Framework",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
 ]
-dependencies = [
-    "numpy",
-]
+dependencies = ["numpy"]
 
 [project.optional-dependencies]
 test = ["pytest>=6.0"]

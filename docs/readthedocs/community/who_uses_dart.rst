@@ -7,10 +7,10 @@ Software
 DART serves as the backend physics engine for several software projects,
 including:
 
-* `Gazebo <https://gazebosim.org/>`_: Gazebo simulates multiple robots in a 3D
+* `Gazebo (gz-sim) <https://gazebosim.org/>`_: Gazebo simulates multiple robots in a 3D
   environment, with extensive dynamic integration between objects. Gazebo
-  supports multiple physics engines: ODE, Bullet, DART, and Simbody. website,
-  source on bitbucket
+  supports multiple physics engines: ODE, Bullet, DART, and Simbody, and the
+  project is now developed openly on GitHub (`gazebosim/gz-sim <https://github.com/gazebosim/gz-sim>`_).
 * `Aikido <https://github.com/personalrobotics/aikido>`_: a C++ library,
   complete with Python bindings, for solving robotic
   motion planning and decision making problems. This library is tightly
@@ -56,9 +56,8 @@ DART has been utilized in research areas such as:
   Computation, Computer Graphics Forum (Eurographics), and ACM Transactions on
   Graphics (presented at SIGGRAPH Asia).
 
-As of February 2023, DART had over 777 stars on GitHub, and DART has been cited
-over 236 times, indicating its widespread adoption and use in the research
-community.
+As of November 2025, DART has over 1,000 stars on GitHub and nearly 300 forks,
+and it continues to be cited hundreds of times in the research community.
 
 More research papers cited DART can be found at `Google Scholar`_.
 
