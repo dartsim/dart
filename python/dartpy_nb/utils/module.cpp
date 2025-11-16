@@ -10,12 +10,11 @@ namespace dart::python_nb {
 
 void defUtilsModule(nanobind::module_& m)
 {
-  auto sm = m.def_submodule("utils");
-  defUtilsResourceRetriever(sm);
-  defDartLoader(sm);
-  defSkelParser(sm);
-  defSdfParser(sm);
-  defMjcfParser(sm);
+  defUtilsResourceRetriever(m);
+  defDartLoader(m);
+  defSkelParser(m);
+  defSdfParser(m);
+  defMjcfParser(m);
 }
 
 } // namespace dart::python_nb

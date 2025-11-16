@@ -44,7 +44,7 @@
 
 namespace nb = nanobind;
 
-NB_MODULE(dartpy_nb, m)
+NB_MODULE(_dartpy_nb, m)
 {
   m.doc() = "dartpy_nb: Experimental nanobind bindings for DART";
 

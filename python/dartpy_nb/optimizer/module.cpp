@@ -9,11 +9,10 @@ namespace dart::python_nb {
 
 void defOptimizerModule(nanobind::module_& m)
 {
-  auto sm = m.def_submodule("optimizer");
-  defOptimizerFunction(sm);
-  defOptimizerProblem(sm);
-  defOptimizerSolver(sm);
-  defGradientDescentSolver(sm);
+  defOptimizerFunction(m);
+  defOptimizerProblem(m);
+  defOptimizerSolver(m);
+  defGradientDescentSolver(m);
 }
 
 } // namespace dart::python_nb

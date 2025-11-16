@@ -16,15 +16,15 @@ void defSdfParser(nb::module_& m)
   auto sm = m.def_submodule("SdfParser");
 
   nb::enum_<SdfParserNs::RootJointType>(sm, "RootJointType")
-      .value("FLOATING", SdfParserNs::RootJointType::FLOATING)
-      .value("FIXED", SdfParserNs::RootJointType::FIXED);
+      .value("FLOATING", SdfParserNs::RootJointType::Floating)
+      .value("FIXED", SdfParserNs::RootJointType::Fixed);
 
   nb::class_<SdfParserNs::Options>(sm, "Options")
       .def(
           nb::init<common::ResourceRetrieverPtr, SdfParserNs::RootJointType>(),
           nb::arg("resourceRetriever") = nullptr,
           nb::arg("defaultRootJointType")
-          = SdfParserNs::RootJointType::FLOATING)
+          = SdfParserNs::RootJointType::Floating)
       .def_rw(
           "mResourceRetriever", &SdfParserNs::Options::mResourceRetriever)
       .def_rw(

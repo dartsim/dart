@@ -10,13 +10,11 @@ namespace dart::python_nb {
 
 void defCollisionModule(nanobind::module_& m)
 {
-  auto collision = m.def_submodule("collision");
-
-  defCollisionOption(collision);
-  defCollisionResult(collision);
-  defRaycast(collision);
-  defCollisionDetector(collision);
-  defCollisionGroup(collision);
+  defCollisionOption(m);
+  defCollisionResult(m);
+  defRaycast(m);
+  defCollisionDetector(m);
+  defCollisionGroup(m);
 }
 
 } // namespace dart::python_nb

@@ -17,8 +17,8 @@ void defDartLoader(nb::module_& m)
 
   auto root_joint_type
       = nb::enum_<DartLoader::RootJointType>(m, "DartLoaderRootJointType")
-            .value("FLOATING", DartLoader::RootJointType::FLOATING)
-            .value("FIXED", DartLoader::RootJointType::FIXED);
+            .value("FLOATING", DartLoader::RootJointType::Floating)
+            .value("FIXED", DartLoader::RootJointType::Fixed);
 
   auto options
       = nb::class_<DartLoader::Options>(m, "DartLoaderOptions")
@@ -29,7 +29,7 @@ void defDartLoader(nb::module_& m)
                     const dynamics::Inertia&>(),
                 nb::arg("resourceRetriever") = nullptr,
                 nb::arg("defaultRootJointType")
-                = DartLoader::RootJointType::FLOATING,
+                = DartLoader::RootJointType::Floating,
                 nb::arg("defaultInertia") = dynamics::Inertia())
             .def_rw(
                 "mResourceRetriever", &DartLoader::Options::mResourceRetriever)
