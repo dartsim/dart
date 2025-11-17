@@ -16,10 +16,10 @@ The examples are based on the APIs of DART 7.0.
 The unified tutorials live under :doc:`../../tutorials/index`. They present a
 single narrative with tabbed code snippets for C++ and dartpy. Start with:
 
-- :doc:`../../tutorials/multi-pendulum`
-- :doc:`../../tutorials/collisions`
-- :doc:`../../tutorials/dominoes`
-- :doc:`../../tutorials/biped`
+- :doc:`../../tutorials/multi-pendulum` (01)
+- :doc:`../../tutorials/collisions` (02)
+- :doc:`../../tutorials/dominoes` (03)
+- :doc:`../../tutorials/biped` (04)
 
 The original per-language walkthroughs are still available in the repository
 history if you need them, but future updates will flow through the shared pages.

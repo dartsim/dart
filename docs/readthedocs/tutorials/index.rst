@@ -8,7 +8,7 @@ gradually ported to this format.
 .. toctree::
    :maxdepth: 1
 
-   Multi Pendulum <multi-pendulum>
-   Collisions <collisions>
-   Dominoes <dominoes>
-   Biped <biped>
+   01. Multi Pendulum <multi-pendulum>
+   02. Collisions <collisions>
+   03. Dominoes <dominoes>
+   04. Biped <biped>
