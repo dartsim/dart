@@ -552,9 +552,8 @@ void testSphereSphere(
     // TODO(JS): BulletCollisionDetector includes a bug related to this.
     // (see #876)
 
-    constexpr auto hasOde = (HAVE_ODE == 1);
     constexpr auto hasBullet = (HAVE_BULLET == 1);
-    if constexpr (!hasOde && !hasBullet) {
+    if constexpr (!hasBullet) {
       EXPECT_EQ(result.getNumContacts(), 1u);
     }
     for (auto i = 0u; i < result.getNumContacts(); ++i) {
