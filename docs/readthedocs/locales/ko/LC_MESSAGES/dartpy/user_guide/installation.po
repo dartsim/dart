@@ -9,98 +9,158 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-26 00:00-0800\n"
-"PO-Revision-Date: 2025-01-26 00:00-0800\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: 2025-11-17 17:49+0000\n"
+"Last-Translator: Codex Agent <codex@example.com>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.17.0\n"
 
-#: ../../dartpy/user_guide/installation.rst:2
+#: ../../dartpy/user_guide/installation.rst:2 b11ff2f1994f4167abf0869635bc4868
 msgid "Installation"
 msgstr "설치"
 
-#: ../../dartpy/user_guide/installation.rst:4
+#: ../../dartpy/user_guide/installation.rst:5 9f9c635e08364687bf6fc41031124372
+msgid "Quick install commands"
+msgstr "빠른 설치 명령"
+
+#: ../../dartpy/user_guide/installation.rst:7 8f17e3464f864e11bec53dec713d3f4d
 msgid ""
-"To install the Python bindings for DART using the `dartpy` package from "
-"PyPI, you can use the following command:"
-msgstr ""
-"PyPI의 `dartpy` 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 "
-"다음 명령어를 사용하세요:"
+"Use your preferred package manager to add ``dartpy`` to an existing "
+"environment:"
+msgstr "선호하는 패키지 관리자를 사용해 기존 환경에 ``dartpy`` 를 추가하세요:"
 
-#: ../../dartpy/user_guide/installation.rst:11
-msgid "The following operating systems are currently supported:"
-msgstr "현재 다음 운영 체제가 지원됩니다:"
+#: ../../dartpy/user_guide/installation.rst:17 7d0bf1c3471c44ceb0976fbdc858e850
+msgid "Supported platforms"
+msgstr "지원 플랫폼"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Operating System"
-msgstr "운영 체제"
+#: ../../dartpy/user_guide/installation.rst:19 6a0fd1ef7da74fd098f949082666b216
+msgid "Pre-built wheels on PyPI currently cover the following configurations:"
+msgstr "PyPI에 올라온 사전 빌드 wheel은 현재 다음 구성을 지원합니다:"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.7"
-msgstr "Python 3.7"
+#: ../../dartpy/user_guide/installation.rst:25 6a3077d802504af1b161d8f9828b2955
+msgid "Platform / Python"
+msgstr "플랫폼 / Python"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.8"
-msgstr "Python 3.8"
+#: ../../dartpy/user_guide/installation.rst:26 293dca6600ce416e92d2271c74ba0648
+msgid "Status"
+msgstr "상태"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.9"
-msgstr "Python 3.9"
+#: ../../dartpy/user_guide/installation.rst:27 5c4c6b721d844f6581b98eb46bf03fd8
+msgid "Linux x86_64 / CPython 3.12–3.14"
+msgstr "Linux x86_64 / CPython 3.12–3.14"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.10"
-msgstr "Python 3.10"
+#: ../../dartpy/user_guide/installation.rst:28 2211e39506e84dd988b921353772a301
+msgid "✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)"
+msgstr "✅ ``dartpy`` wheel(7.0.0.dev0, ``pip install --pre``)로 배포됨"
 
-#: ../../dartpy/user_guide/installation.rst:14
-msgid "Python 3.11"
-msgstr "Python 3.11"
+#: ../../dartpy/user_guide/installation.rst:29 2710c37377da444799da1a3df45ff860
+msgid "Other CPython versions and platforms"
+msgstr "그 외 CPython 버전 및 플랫폼"
 
-#: ../../dartpy/user_guide/installation.rst:17
-msgid "Linux x86_64"
-msgstr "Linux x86_64"
+#: ../../dartpy/user_guide/installation.rst:30 8a63603caf114f3ba22d961fe5941878
+msgid "⚠️ Use conda-forge, pixi, or build from source (no recent wheels yet)"
+msgstr "⚠️ 최신 wheel이 없으므로 conda-forge, pixi 또는 소스 빌드를 사용하세요"
 
-#: ../../dartpy/user_guide/installation.rst:17
-msgid "O"
-msgstr "O"
-
-#: ../../dartpy/user_guide/installation.rst:19
-msgid "Linux arm64"
-msgstr "Linux arm64"
-
-#: ../../dartpy/user_guide/installation.rst:19
-msgid "X"
-msgstr "X"
-
-#: ../../dartpy/user_guide/installation.rst:21
-msgid "macOS x86_64"
-msgstr "macOS x86_64"
-
-#: ../../dartpy/user_guide/installation.rst:23
-msgid "macOS arm64"
-msgstr "macOS arm64"
-
-#: ../../dartpy/user_guide/installation.rst:25
-msgid "Windows x86_64"
-msgstr "Windows x86_64"
-
-#: ../../dartpy/user_guide/installation.rst:27
-msgid "Windows arm64"
-msgstr "Windows arm64"
-
-#: ../../dartpy/user_guide/installation.rst:32
+#: ../../dartpy/user_guide/installation.rst:34 5fdec7a0bf334ae78eb2dbaf1cf59966
 msgid ""
-"This table may not be up-to-date. For the latest information on the "
-"availability of the Python bindings for DART, please refer to the dartpy "
-"package on PyPI: https://pypi.org/project/dartpy/. If you would like to "
-"use dartpy on an unsupported OS or Python version, please let us know so "
-"we can consider adding support."
+"The latest PyPI upload is a pre-release (``7.0.0.dev0``). Use the "
+"``--pre`` flag with ``pip`` if you want that build; otherwise pip falls "
+"back to the last stable 0.2.x wheel. For the most up-to-date "
+"availability, check the `dartpy project page on PyPI "
+"<https://pypi.org/project/dartpy/>`_."
 msgstr ""
-"이 표는 최신 정보가 아닐 수 있습니다. DART Python 바인딩의 가용성에 대한 "
-"최신 정보는 PyPI의 dartpy 패키지를 참조하세요: https://pypi.org/project/dartpy/. "
-"지원되지 않는 OS 또는 Python 버전에서 dartpy를 사용하고 싶으시다면 "
-"알려주시면 지원 추가를 고려하겠습니다."
+"현재 PyPI에 올라간 최신 패키지는 프리릴리스(``7.0.0.dev0``)입니다. 해당 빌드를 사용하려면 ``pip`` 명령에 "
+"``--pre`` 플래그를 추가해야 하며, 그렇지 않으면 pip가 마지막 안정 버전(0.2.x) wheel로 되돌아갑니다. 최신 "
+"배포 현황은 `PyPI의 dartpy 프로젝트 페이지 <https://pypi.org/project/dartpy/>`_에서 확인하세요."
+
+#: ../../dartpy/user_guide/installation.rst:37 8f77d75e85194531abaf5a64621b62fd
+msgid "Building from source"
+msgstr "소스에서 빌드"
+
+#: ../../dartpy/user_guide/installation.rst:39 c969a67821a54868a44134a38b9e271a
+msgid ""
+"If you need a configuration that is not covered by the pre-built "
+"packages, build the Python bindings locally by following the instructions"
+" in :doc:`../python_api_reference` or the developer onboarding guide. "
+"Building requires a full DART build with pybind11 enabled and a matching "
+"Python toolchain."
+msgstr ""
+"사전 빌드 패키지가 지원하지 않는 구성이 필요하다면 :doc:`../python_api_reference` 또는 개발자 온보딩 "
+"가이드를 참고해 로컬에서 Python 바인딩을 빌드하세요. 빌드에는 pybind11이 활성화된 전체 DART 빌드와 호환되는 "
+"Python 도구체인이 필요합니다."
+
+#~ msgid ""
+#~ "To install the Python bindings for "
+#~ "DART using the `dartpy` package from "
+#~ "PyPI, you can use the following "
+#~ "command:"
+#~ msgstr "PyPI의 `dartpy` 패키지를 사용하여 DART의 Python 바인딩을 설치하려면 다음 명령어를 사용하세요:"
+
+#~ msgid "The following operating systems are currently supported:"
+#~ msgstr "현재 다음 운영 체제가 지원됩니다:"
+
+#~ msgid "Operating System"
+#~ msgstr "운영 체제"
+
+#~ msgid "Python 3.7"
+#~ msgstr "Python 3.7"
+
+#~ msgid "Python 3.8"
+#~ msgstr "Python 3.8"
+
+#~ msgid "Python 3.9"
+#~ msgstr "Python 3.9"
+
+#~ msgid "Python 3.10"
+#~ msgstr "Python 3.10"
+
+#~ msgid "Python 3.11"
+#~ msgstr "Python 3.11"
+
+#~ msgid "Linux x86_64"
+#~ msgstr "Linux x86_64"
+
+#~ msgid "O"
+#~ msgstr "O"
+
+#~ msgid "Linux arm64"
+#~ msgstr "Linux arm64"
+
+#~ msgid "X"
+#~ msgstr "X"
+
+#~ msgid "macOS x86_64"
+#~ msgstr "macOS x86_64"
+
+#~ msgid "macOS arm64"
+#~ msgstr "macOS arm64"
+
+#~ msgid "Windows x86_64"
+#~ msgstr "Windows x86_64"
+
+#~ msgid "Windows arm64"
+#~ msgstr "Windows arm64"
+
+#~ msgid ""
+#~ "This table may not be up-to-"
+#~ "date. For the latest information on "
+#~ "the availability of the Python bindings"
+#~ " for DART, please refer to the "
+#~ "dartpy package on PyPI: "
+#~ "https://pypi.org/project/dartpy/. If you would "
+#~ "like to use dartpy on an "
+#~ "unsupported OS or Python version, please"
+#~ " let us know so we can consider"
+#~ " adding support."
+#~ msgstr ""
+#~ "이 표는 최신 정보가 아닐 수 있습니다. DART"
+#~ " Python 바인딩의 가용성에 대한 최신 정보는 "
+#~ "PyPI의 dartpy 패키지를 참조하세요: "
+#~ "https://pypi.org/project/dartpy/. 지원되지 않는 OS "
+#~ "또는 Python 버전에서 dartpy를 사용하고 싶으시다면 "
+#~ "알려주시면 지원 추가를 고려하겠습니다."

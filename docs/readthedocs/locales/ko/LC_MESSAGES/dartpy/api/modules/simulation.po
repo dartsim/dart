@@ -1,0 +1,126 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../../python_api/modules/simulation.rst:2
+#: 64c98ddfb67148fca7f9d8e6de31a0b0
+msgid "dartpy.simulation"
+msgstr ""
+
+#: ../../docstring acc1651fda4e4de38f4f702947800223 dartpy.simulation.World:1
+#: of
+msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgstr ""
+
+#: ../../docstring 075c8453c45746868f95ff4bf1721463
+#: 07ef79cb15ef48ceaca068bf9786327d 2d50f353072048ff89a6a0e9d78b1454
+#: 87fec6e38805488d96bd3b0a12b25862 d7d1cd4b60304c27aaddaa0830548715
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.checkCollision:1
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSimpleFrame:1
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSkeleton:1
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setGravity:1
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.step:1
+#: of
+msgid "Overloaded function."
+msgstr ""
+
+#: ../../docstring 14f3c34ceb6b450f93bbad196610a84f
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.checkCollision:3
+#: of
+msgid "checkCollision(self: dartpy.simulation.World) -> bool"
+msgstr ""
+
+#: ../../docstring d52837cbadf14513b950bcb0085b9483
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.checkCollision:5
+#: of
+msgid ""
+"checkCollision(self: dartpy.simulation.World, option: "
+"dartpy.collision.CollisionOption) -> bool"
+msgstr ""
+
+#: ../../docstring 0f3094c7b25e459c8a073ff555406cc4
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.checkCollision:7
+#: of
+msgid ""
+"checkCollision(self: dartpy.simulation.World, option: "
+"dartpy.collision.CollisionOption, result: "
+"dartpy.collision.CollisionResult) -> bool"
+msgstr ""
+
+#: ../../docstring 98c96941c2054fde9d96ecbddf72dd29
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSimpleFrame:3
+#: of
+msgid ""
+"getSimpleFrame(self: dartpy.simulation.World, index: typing.SupportsInt) "
+"-> dartpy.dynamics.SimpleFrame"
+msgstr ""
+
+#: ../../docstring 86d1833f9f2540fdafd3fe25603ae7f6
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSimpleFrame:5
+#: of
+msgid ""
+"getSimpleFrame(self: dartpy.simulation.World, name: str) -> "
+"dartpy.dynamics.SimpleFrame"
+msgstr ""
+
+#: ../../docstring 69f97dde6f4b4395ae5d6b4598369626
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSkeleton:3
+#: of
+msgid ""
+"getSkeleton(self: dartpy.simulation.World, index: typing.SupportsInt) -> "
+"dartpy.dynamics.Skeleton"
+msgstr ""
+
+#: ../../docstring 63f89c35f830486e9772183c4fdd2f82
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getSkeleton:5
+#: of
+msgid ""
+"getSkeleton(self: dartpy.simulation.World, name: str) -> "
+"dartpy.dynamics.Skeleton"
+msgstr ""
+
+#: ../../docstring 45d420e284a34d9dae15dfedb99f9b76
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setGravity:3
+#: of
+msgid ""
+"setGravity(self: dartpy.simulation.World, gravity: "
+"typing.Annotated[numpy.typing.ArrayLike, numpy.float64, \"[3, 1]\"]) -> "
+"None"
+msgstr ""
+
+#: ../../docstring b4fbae2faf1c48cf9089603fcd6af093
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setGravity:5
+#: of
+msgid ""
+"setGravity(self: dartpy.simulation.World, x: typing.SupportsFloat, y: "
+"typing.SupportsFloat, z: typing.SupportsFloat) -> None"
+msgstr ""
+
+#: ../../docstring c7925a5e83e24b039a6969eec0aeb616
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.step:3
+#: of
+msgid "step(self: dartpy.simulation.World) -> None"
+msgstr ""
+
+#: ../../docstring 2c649182bb464fbeaf619d3a07bd83e0
+#: dartpy.simulation.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.step:5
+#: of
+msgid "step(self: dartpy.simulation.World, resetCommand: bool) -> None"
+msgstr ""
+
