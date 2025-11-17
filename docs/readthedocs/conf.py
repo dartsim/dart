@@ -262,5 +262,4 @@ def build_cpp_api_docs(app):
 
 
 def setup(app):
-    app.add_config_value('cpp_api_available', False, 'env')
     app.connect('builder-inited', build_cpp_api_docs)
