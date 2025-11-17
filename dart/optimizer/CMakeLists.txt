@@ -21,6 +21,3 @@ install(
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )
-
-# Add subdirectories (components)
-add_subdirectory(nlopt)

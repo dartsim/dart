@@ -94,9 +94,6 @@ endforeach()
 target_link_libraries(${pybind_module}
   PUBLIC ${dartpy_libraries}
 )
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
-endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
 endif()

@@ -49,9 +49,6 @@
 #include <sstream>
 
 #include <cstdio>
-#if HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.hpp"
-#endif
 
 using namespace std;
 using namespace Eigen;
@@ -138,39 +135,6 @@ TEST(Optimizer, GradientDescent)
   EXPECT_NEAR(optX[0], 1.234, 0.0);
   EXPECT_NEAR(optX[1], 0.0, solver.getTolerance());
 }
-
-//==============================================================================
-#if HAVE_NLOPT
-TEST(Optimizer, BasicNlopt)
-{
-  // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
-
-  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
-
-  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
-
-  FunctionPtr obj = std::make_shared<SampleObjFunc>();
-  prob->setObjective(obj);
-
-  FunctionPtr const1 = std::make_shared<SampleConstFunc>(2, 0);
-  FunctionPtr const2 = std::make_shared<SampleConstFunc>(-1, 1);
-  prob->addIneqConstraint(const1);
-  prob->addIneqConstraint(const2);
-
-  NloptSolver solver(prob, NloptSolver::LD_MMA);
-  EXPECT_TRUE(solver.solve());
-
-  double minF = prob->getOptimumValue();
-  Eigen::VectorXd optX = prob->getOptimalSolution();
-
-  EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(static_cast<std::size_t>(optX.size()), prob->getDimension());
-  EXPECT_NEAR(optX[0], 0.333334, 1e-6);
-  EXPECT_NEAR(optX[1], 0.296296, 1e-6);
-}
-#endif
-
 
 //==============================================================================
 bool compareStringAndFile(

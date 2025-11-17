@@ -202,17 +202,9 @@ dart/
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Optimizer Dependencies (Optional Components)
-
-#### 10. NLopt
-- **Version:** ≥ 2.10.0, < 3
-- **Purpose:** Nonlinear optimization library
-- **Component:** `dart-optimizer-nlopt`
-- **CMake Module:** `cmake/DARTFindNLOPT.cmake`
-
 ### Collision Engine Dependencies (Optional Components)
 
-#### 11. Bullet Physics
+#### 10. Bullet Physics
 - **Version:** ≥ 3.25, < 4
 - **Purpose:** Alternative collision detection
 - **Component:** `dart-collision-bullet`
@@ -220,20 +212,20 @@ dart/
 
 ### Utility Dependencies
 
-#### 12. tinyxml2
+#### 11. tinyxml2
 - **Version:** ≥ 11.0.0, < 12
 - **Purpose:** XML parsing (for SDF)
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
-#### 13. libsdformat
+#### 12. libsdformat
 - **Version:** ≥ 16.0.0, < 17
 - **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindsdformat.cmake`
 - **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
-#### 14. urdfdom
+#### 13. urdfdom
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
 - **Component:** `dart-utils-urdf`
@@ -242,17 +234,17 @@ dart/
 
 ### Build/Test Dependencies (Build-time only)
 
-#### 15. Google Test (gtest)
+#### 14. Google Test (gtest)
 - **Version:** ≥ 1.17.0, < 2
 - **Purpose:** Unit testing framework
 - **Option:** `DART_USE_SYSTEM_GOOGLETEST`
 
-#### 16. Google Benchmark
+#### 15. Google Benchmark
 - **Version:** ≥ 1.9.3, < 2
 - **Purpose:** Performance benchmarking
 - **Option:** `DART_USE_SYSTEM_GOOGLEBENCHMARK`
 
-#### 17. Tracy Profiler
+#### 16. Tracy Profiler
 - **Version:** ≥ 0.11.1, < 0.12
 - **Purpose:** Frame profiling
 - **Option:** `DART_USE_SYSTEM_TRACY`
@@ -361,9 +353,6 @@ Component Dependency Tree:
     ├── spdlog (optional)
     └── octomap (optional)
 
-    ├── optimizer-nlopt
-    │   └── depends: dart, nlopt
-    │
     ├── collision-bullet
     │   └── depends: dart, bullet
     │
@@ -382,7 +371,6 @@ Component Dependency Tree:
 | Component | Library Target | Dependencies |
 |-----------|---------------|--------------|
 | `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` |
-| `optimizer-nlopt` | `dart-optimizer-nlopt` | `dart`, `nlopt` |
 | `collision-bullet` | `dart-collision-bullet` | `dart`, `bullet` |
 | `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
@@ -398,7 +386,6 @@ dart/
 ├── integration/     # Numerical integration methods
 ├── lcpsolver/       # Linear Complementarity Problem solver
 ├── optimizer/       # Optimization framework
-│   └── nlopt/      # NLopt optimizer plugin
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
@@ -436,7 +423,6 @@ dart/
   - Install: No (local build only)
 
 #### Component Libraries
-- **`dart-optimizer-nlopt`** - NLopt optimizer plugin
 - **`dart-collision-bullet`** - Bullet collision plugin
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
