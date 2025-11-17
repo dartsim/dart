@@ -37,6 +37,10 @@
 
 #include <ode/ode.h>
 
+#include <deque>
+#include <utility>
+#include <vector>
+
 #define MAX_COLLIDE_RETURNS 250
 
 namespace dart {
@@ -132,6 +136,9 @@ private:
     CollObjPair pair;
     std::deque<Contact> history;
   };
+  void clearContactHistoryFor(const CollisionObject* object);
+  void clearContactHistory();
+  void pruneContactHistory(const CollisionResult& result);
 
 private:
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];

@@ -102,11 +102,28 @@ std::deque<Contact>& FindPairInHist(
       return item.history;
     }
   }
-  auto newItem = OdeCollisionDetector::ContactHistoryItem{
-      pair, std::deque<Contact>()};
+  auto newItem
+      = OdeCollisionDetector::ContactHistoryItem{pair, std::deque<Contact>()};
   cache.push_back(newItem);
 
   return cache.back().history;
+}
+
+void eraseHistoryForObject(
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
+    const CollisionObject* object)
+{
+  if (!object)
+    return;
+
+  cache.erase(
+      std::remove_if(
+          cache.begin(),
+          cache.end(),
+          [object](const OdeCollisionDetector::ContactHistoryItem& item) {
+            return item.pair.first == object || item.pair.second == object;
+          }),
+      cache.end());
 }
 struct OdeCollisionCallbackData
 {
@@ -117,6 +134,7 @@ struct OdeCollisionCallbackData
 
   /// Collision result of DART
   CollisionResult* result;
+  std::vector<OdeCollisionDetector::ContactHistoryItem>* history;
 
   /// Whether the collision iteration can stop
   bool done;
@@ -128,7 +146,11 @@ struct OdeCollisionCallbackData
 
   OdeCollisionCallbackData(
       const CollisionOption& option, CollisionResult* result)
-    : option(option), result(result), done(false), numContacts(0u)
+    : option(option),
+      result(result),
+      history(nullptr),
+      done(false),
+      numContacts(0u)
   {
     // Do nothing
   }
@@ -196,24 +218,12 @@ bool OdeCollisionDetector::collide(
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
+  data.history = &mContactHistory;
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
   if (result) {
-    for (auto& past_contact : pastContacts) {
-      bool clear = true;
-      for (const auto& curr_result : result->getContacts()) {
-        auto current_pair = MakeNewPair(
-            curr_result.collisionObject1, curr_result.collisionObject2);
-        if (past_contact.pair == current_pair) {
-          clear = false;
-          break;
-        }
-      }
-      if (clear) {
-        past_contact.history.clear();
-      }
-    }
+    pruneContactHistory(*result);
   }
 
   return data.numContacts > 0;
@@ -234,12 +244,17 @@ bool OdeCollisionDetector::collide(
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
+  data.history = &mContactHistory;
 
   dSpaceCollide2(
       reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
       reinterpret_cast<dGeomID>(odeGroup2->getOdeSpaceId()),
       &data,
       CollisionCallback);
+
+  if (result) {
+    pruneContactHistory(*result);
+  }
 
   return data.numContacts > 0;
 }
@@ -344,7 +359,8 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   cdData->numContacts += numc;
 
   if (result) {
-    reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
+    reportContacts(
+        numc, odeResult, collObj1, collObj2, option, *result, cdData->history);
   }
 }
 
@@ -355,7 +371,8 @@ void reportContacts(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option,
-    CollisionResult& result)
+    CollisionResult& result,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history)
 {
   if (0u == numContacts)
     return;
@@ -385,12 +402,12 @@ void reportContacts(
     return;
   }
 
-  if (!shouldUseContactHistory(b1, b2)) {
+  if (!history || !shouldUseContactHistory(b1, b2)) {
     return;
   }
 
   const auto pair = MakeNewPair(b1, b2);
-  auto& pastContacsVec = FindPairInHist(mContactHistory, pair);
+  auto& pastContacsVec = FindPairInHist(*history, pair);
   auto results_vec_copy = result.getContacts();
 
   bool sliding = false;
@@ -555,6 +572,41 @@ bool shouldUseContactHistory(
 }
 
 } // anonymous namespace
+
+//==============================================================================
+void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
+{
+  if (mContactHistory.empty())
+    return;
+
+  const auto& contacts = result.getContacts();
+  for (auto& pastContact : mContactHistory) {
+    bool clear = true;
+    for (const auto& current : contacts) {
+      auto currentPair
+          = MakeNewPair(current.collisionObject1, current.collisionObject2);
+      if (pastContact.pair == currentPair) {
+        clear = false;
+        break;
+      }
+    }
+    if (clear) {
+      pastContact.history.clear();
+    }
+  }
+}
+
+//==============================================================================
+void OdeCollisionDetector::clearContactHistoryFor(const CollisionObject* object)
+{
+  eraseHistoryForObject(mContactHistory, object);
+}
+
+//==============================================================================
+void OdeCollisionDetector::clearContactHistory()
+{
+  mContactHistory.clear();
+}
 
 } // namespace collision
 } // namespace dart
