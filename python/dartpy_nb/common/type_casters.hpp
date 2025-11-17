@@ -9,6 +9,7 @@
 
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 namespace nanobind::detail {
 
@@ -107,8 +108,8 @@ struct type_caster<dart::dynamics::Frame>
 };
 
 template <>
-struct type_caster<dart::dynamics::Joint>
-    : polymorphic_type_caster<dart::dynamics::Joint>
+struct type_caster<dart::dynamics::ShapeFrame>
+    : polymorphic_type_caster<dart::dynamics::ShapeFrame>
 {
 };
 

@@ -36,6 +36,7 @@ void defShapeNode(nb::module_& m)
       .def("getOffset", &ShapeNode::getOffset);
 
   registerPolymorphicCaster<dart::dynamics::Frame, ShapeNode>();
+  registerPolymorphicCaster<dart::dynamics::ShapeFrame, ShapeNode>();
 }
 
 } // namespace dart::python_nb

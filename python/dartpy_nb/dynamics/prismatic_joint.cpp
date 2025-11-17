@@ -30,20 +30,7 @@ void defPrismaticJoint(nb::module_& m)
           [](const PrismaticJoint& self) -> const Eigen::Vector3d& {
             return self.getAxis();
           },
-          nb::rv_policy::reference_internal)
-      .def(
-          "setPosition",
-          [](PrismaticJoint& self, std::size_t index, double value) {
-            self.setPosition(index, value);
-          },
-          nb::arg("index"),
-          nb::arg("value"))
-      .def(
-          "getPosition",
-          [](const PrismaticJoint& self, std::size_t index) {
-            return self.getPosition(index);
-          },
-          nb::arg("index"));
+          nb::rv_policy::reference_internal);
 
   registerPolymorphicCaster<dart::dynamics::Joint, PrismaticJoint>();
 }

@@ -211,6 +211,7 @@ void defSimpleFrame(nb::module_& m)
           nb::arg("someFrame") = nullptr);
 
   registerPolymorphicCaster<Frame, SimpleFrame>();
+  registerPolymorphicCaster<dart::dynamics::ShapeFrame, SimpleFrame>();
 }
 
 } // namespace dart::python_nb

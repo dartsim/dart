@@ -26,20 +26,7 @@ void defRevoluteJoint(nb::module_& m)
 
   nb::class_<RevoluteJoint, dart::dynamics::Joint>(m, "RevoluteJoint")
       .def("setAxis", &RevoluteJoint::setAxis, nb::arg("axis"))
-      .def("getAxis", &RevoluteJoint::getAxis)
-      .def(
-          "setPosition",
-          [](RevoluteJoint& self, std::size_t idx, double val) {
-            self.setPosition(idx, val);
-          },
-          nb::arg("index"),
-          nb::arg("value"))
-      .def(
-          "getPosition",
-          [](const RevoluteJoint& self, std::size_t idx) {
-            return self.getPosition(idx);
-          },
-          nb::arg("index"));
+      .def("getAxis", &RevoluteJoint::getAxis);
 
   registerPolymorphicCaster<dart::dynamics::Joint, RevoluteJoint>();
 }
