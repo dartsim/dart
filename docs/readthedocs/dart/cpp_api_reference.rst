@@ -13,27 +13,23 @@ tree and publishes the generated HTML bundle alongside the rest of the pages.
    * The HTML bundle is staged under ``_generated/cpp-api/`` (ignored by git)
      and then copied to ``cpp-api/`` so it is served by RTD under the current
      version.
-   * The iframe below loads ``../cpp-api/index.html`` to keep the docs inside
-     the main navigation shell while also exposing a direct link for the
-     full-width experience.
+   * This page immediately redirects to ``../cpp-api/index.html`` so the
+     Doxygen-rendered reference opens as a standalone documentation section.
 
-Embedded Viewer
----------------
+Direct View
+-----------
 
 .. ifconfig:: cpp_api_available
 
    .. raw:: html
 
-      <div class="dart-api-frame" style="width: 100%; height: 1200px; border: 1px solid #dfe2e5; border-radius: 4px; overflow: hidden;">
-        <iframe
-          src="../cpp-api/index.html"
-          title="DART C++ API Reference"
-          loading="lazy"
-          style="width: 100%; height: 100%; border: 0;"
-        ></iframe>
-      </div>
-
-   Prefer a dedicated tab? `Open the full Doxygen site <../cpp-api/index.html>`_.
+      <p>Loading the generated C++ API reference…</p>
+      <script>
+        window.location.replace("../cpp-api/index.html");
+      </script>
+      <noscript>
+        <p>JavaScript is disabled. <a href="../cpp-api/index.html">Open the C++ API reference manually.</a></p>
+      </noscript>
 
 .. ifconfig:: not cpp_api_available
 
