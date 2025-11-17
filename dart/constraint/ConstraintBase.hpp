@@ -34,7 +34,7 @@
 #define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
 #include <dart/Export.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <cstddef>
 

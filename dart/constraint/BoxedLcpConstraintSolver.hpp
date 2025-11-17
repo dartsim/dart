@@ -34,7 +34,7 @@
 #define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
 
 #include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/Export.hpp>
 

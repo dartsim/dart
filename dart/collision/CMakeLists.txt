@@ -14,6 +14,7 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision headers" ${hdrs})
+list(REMOVE_ITEM header_names SmartPointer.hpp)
 set(
   header_names
   ${header_names}
