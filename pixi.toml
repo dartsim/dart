@@ -577,7 +577,13 @@ test-capsule-ground-contact = { cmd = """
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
         -R test_capsule_ground_contact
-""", depends-on = [{ task = "build-tests", args = ["{{ dartpy }}"] }], env = { BUILD_TYPE = "Release" }, args = [{ arg = "dartpy", default = "ON" }] }
+""", depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+  ] },
+], env = { BUILD_TYPE = "Release" }, args = [
+  { arg = "dartpy", default = "ON" },
+] }
 
 config-coverage = { cmd = [
   "bash",
