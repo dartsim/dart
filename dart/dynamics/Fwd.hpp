@@ -52,6 +52,7 @@ class BoxShape;
 class Branch;
 class CapsuleShape;
 class Chain;
+template <class Base>
 class CompositeNode;
 class ConeShape;
 class CylinderShape;
@@ -59,12 +60,14 @@ class DegreeOfFreedom;
 class EllipsoidShape;
 class EndEffector;
 class Entity;
+template <class Base>
 class EntityNode;
 class EulerJoint;
 class FixedFrame;
 class FixedJacobianNode;
 class Frame;
 class FreeJoint;
+template <class ConfigSpaceT>
 class GenericJoint;
 class Group;
 class HeightmapShape;
@@ -82,7 +85,6 @@ class MetaSkeleton;
 struct MimicDofProperties;
 class MultiSphereConvexHullShape;
 class Node;
-class NodeManagerJoiner;
 class PlanarJoint;
 class PlaneShape;
 class PointCloudShape;
@@ -100,7 +102,6 @@ class SimpleFrame;
 class Skeleton;
 class SoftBodyNode;
 class SoftMeshShape;
-class SpecializedNodeManager;
 class SphereShape;
 template <class NodeType>
 class TemplatedJacobianNode;
