@@ -1033,7 +1033,7 @@ sequenceDiagram
 **Optional**:
 - Python ≥ 3.7 (for dartpy bindings)
 - Bullet, ODE (alternative collision backends)
-- IPOPT, NLopt (optimization)
+- NLopt (optimization)
 - urdfdom (URDF parsing)
 
 ### Quick Start with pixi

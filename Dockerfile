@@ -21,7 +21,6 @@ RUN apt-get update \
     libfcl-dev \
     libfmt-dev \
     libnlopt-cxx-dev \
-    coinor-libipopt-dev \
     libbullet-dev \
     libode-dev \
     liboctomap-dev \

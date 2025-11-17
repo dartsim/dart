@@ -16,7 +16,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # integration
 # lcpsolver
 # optimizer
-#   ipopt
 #   nlopt
 # dynamics
 # collision
@@ -38,7 +37,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
 #        fcl, fmt]
-# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
@@ -49,7 +47,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
-# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
 # optimizer-nlopt - (dart), {dart-optimizer-nlopt}
 # collision-bullet - (dart), {dart-collision-bullet}
 # utils - (collision-bullet), {dart-utils}

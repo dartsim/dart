@@ -37,7 +37,7 @@ Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
+  freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
   libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
@@ -58,7 +58,7 @@ brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install bullet freeglut ipopt nlopt octomap ode \
+brew install bullet freeglut nlopt octomap ode \
   open-scene-graph --HEAD \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
@@ -76,7 +76,7 @@ Install optional dependencies:
 ```bash
 vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
-  opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
+  opencl opengl osg pybind11 tinyxml2 urdfdom yaml-cpp
 ```
 
 ### Arch Linux (experimental)
@@ -91,8 +91,8 @@ Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt freeglut nlopt octomap ode opencl-clhpp \
-  opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
+  bullet freeglut nlopt octomap ode opencl-clhpp \
+  opencl-headers opencl-icd-loader openscenegraph spdlog tinyxml2 \
   urdfdom pybind11
 ```
 

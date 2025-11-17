@@ -23,10 +23,4 @@ install(
 )
 
 # Add subdirectories (components)
-add_subdirectory(ipopt)
 add_subdirectory(nlopt)
-# Skip pagmo when building wheels to avoid dependency issues
-if(NOT DART_BUILD_WHEELS)
-  add_subdirectory(pagmo)
-endif()
-add_subdirectory(snopt)
