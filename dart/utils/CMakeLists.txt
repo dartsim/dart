@@ -2,6 +2,27 @@
 dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+dart_find_package(sdformat)
+dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
+if(NOT HAVE_SDFORMAT)
+  message(
+    FATAL_ERROR
+    "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
+    "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake.")
+endif()
+if(TARGET sdformat::sdformat)
+  set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
+else()
+  message(
+    FATAL_ERROR
+    "libsdformat was found but the sdformat::sdformat imported target is "
+    "missing. Please install the CMake config package that exports this "
+    "target.")
+endif()
+
+find_package(CURL)
+dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -29,7 +50,15 @@ set(component_name utils)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
-target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2)
+target_link_libraries(${target_name} PUBLIC dart tinyxml2::tinyxml2 sdformat::sdformat)
+
+if(HAVE_CURL)
+  target_include_directories(${target_name} PRIVATE ${CURL_INCLUDE_DIRS})
+  target_link_libraries(${target_name} PRIVATE CURL::libcurl)
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_CURL=1)
+else()
+  target_compile_definitions(${target_name} PUBLIC DART_HAS_CURL=0)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
@@ -40,13 +69,13 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2)
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils headers" ${hdrs})
 if(urdfdom_FOUND)
-  list(APPEND header_names "urdf/all.hpp")
+  list(APPEND header_names "urdf/All.hpp")
 endif()
 set(
   header_names
   ${header_names}
-  mjcf/all.hpp
-  sdf/all.hpp
+  mjcf/All.hpp
+  sdf/All.hpp
 )
 dart_generate_component_headers(
   COMPONENT_NAME utils
@@ -56,10 +85,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${dart_utils_headers}
 )
 
-# Install (includes all.hpp, utils.hpp for component compatibility,
+# Install (includes All.hpp, utils.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
   DESTINATION include/dart/utils
   COMPONENT headers
 )

@@ -1150,7 +1150,7 @@ dart_gui/
 
 **C++ API**:
 ```cpp
-#include <dart/all.hpp>              // Core DART
+#include <dart/All.hpp>              // Core DART
 #include <dart/gui/osg/osg.hpp>       // OSG GUI
 #include <dart/utils/urdf/urdf.hpp>   // URDF parsing
 ```
@@ -1244,9 +1244,9 @@ world->addSimpleFrame(manipulator);
 viewer.enableDragAndDrop(manipulator.get());
 
 // Enable drag-and-drop for robot bodies with IK
-for (auto bodyNode : robot->getBodyNodes()) {
+robot->eachBodyNode([&](BodyNode* bodyNode) {
   viewer.enableDragAndDrop(bodyNode);
-}
+});
 ```
 
 ### Pattern 5: Loading Robot Models
@@ -1294,7 +1294,7 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 ## 8. Additional Resources
 
 ### Documentation
-- **Main Website**: https://dartsim.github.io/
+- **Main Website**: https://docs.dartsim.org/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
 - **Tutorials**: [`tutorials/`](tutorials/)
 - **Examples**: [`examples/`](examples/)

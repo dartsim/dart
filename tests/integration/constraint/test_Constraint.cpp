@@ -124,12 +124,12 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // std::size_t testCount = 1;
 #endif
 
-  WorldPtr world = World::create();
+  WorldConfig config;
+  config.collisionDetector = CollisionDetectorType::Dart;
+  WorldPtr world = World::create(config);
   EXPECT_TRUE(world != nullptr);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
-  world->getConstraintSolver()->setCollisionDetector(
-      DARTCollisionDetector::create());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
@@ -161,8 +161,8 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
   // Lower and upper bound of configuration for system
-  // double lb = -1.5 * constantsd::pi();
-  // double ub =  1.5 * constantsd::pi();
+  // double lb = -1.5 * pi;
+  // double ub =  1.5 * pi;
 
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i) {

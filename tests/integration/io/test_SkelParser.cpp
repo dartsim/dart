@@ -34,13 +34,17 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/utils/all.hpp"
+#include "dart/utils/All.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <optional>
+#include <vector>
+
+#include <cmath>
 
 using namespace dart;
 using namespace math;
@@ -185,6 +189,81 @@ TEST(SkelParser, RigidAndSoftBodies)
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
+}
+
+//==============================================================================
+TEST(SkelParser, InertiaFromShapeNodes)
+{
+  WorldPtr world = SkelParser::readWorld(
+      "dart://sample/skel/test/inertia_from_shapes.skel");
+  ASSERT_NE(world, nullptr);
+
+  SkeletonPtr noShapeSkel = world->getSkeleton("no_shape_skel");
+  ASSERT_NE(noShapeSkel, nullptr);
+  BodyNode* noShape = noShapeSkel->getBodyNode("no_shape");
+  ASSERT_NE(noShape, nullptr);
+  EXPECT_EQ(0u, noShape->getNumShapeNodes());
+  const auto emptyAggregate = noShape->computeInertiaFromShapeNodes(
+      [](const ShapeNode*) -> std::optional<double> { return 1.0; });
+  EXPECT_FALSE(emptyAggregate.has_value());
+
+  SkeletonPtr zeroMassSkel = world->getSkeleton("zero_mass_skel");
+  ASSERT_NE(zeroMassSkel, nullptr);
+  BodyNode* zeroMass = zeroMassSkel->getBodyNode("zero_mass");
+  ASSERT_NE(zeroMass, nullptr);
+  EXPECT_GT(zeroMass->getNumShapeNodes(), 0u);
+  EXPECT_DOUBLE_EQ(0.0, zeroMass->getMass());
+  const auto zeroMassAggregate = zeroMass->computeInertiaFromShapeNodes(
+      [](const ShapeNode* shapeNode) -> std::optional<double> {
+        return shapeNode->getShape()->getVolume();
+      });
+  ASSERT_TRUE(zeroMassAggregate.has_value());
+  EXPECT_GT(zeroMassAggregate->getMass(), 0.0);
+
+  SkeletonPtr weightedSkel = world->getSkeleton("weighted_skel");
+  ASSERT_NE(weightedSkel, nullptr);
+  BodyNode* weighted = weightedSkel->getBodyNode("weighted");
+  ASSERT_NE(weighted, nullptr);
+  ASSERT_GE(weighted->getNumShapeNodes(), 2u);
+
+  const Eigen::Vector3d desiredCom(0.03, -0.01, 0.02);
+  EXPECT_VECTOR_DOUBLE_EQ(desiredCom, weighted->getInertia().getLocalCOM());
+
+  std::vector<const ShapeNode*> nodes;
+  std::vector<double> weights;
+  double totalWeight = 0.0;
+  for (auto i = 0u; i < weighted->getNumShapeNodes(); ++i) {
+    const ShapeNode* node = weighted->getShapeNode(i);
+    ASSERT_NE(node, nullptr);
+    nodes.push_back(node);
+    double weight = node->getShape()->getVolume();
+    if (!std::isfinite(weight) || weight <= 0.0) {
+      weight = 1.0;
+    }
+    weights.push_back(weight);
+    totalWeight += weight;
+  }
+  ASSERT_GT(totalWeight, 0.0);
+
+  const double bodyMass = weighted->getMass();
+  const auto combined = weighted->computeInertiaFromShapeNodes(
+      [&](const ShapeNode* shapeNode) -> std::optional<double> {
+        for (std::size_t i = 0; i < nodes.size(); ++i) {
+          if (nodes[i] == shapeNode) {
+            return bodyMass * (weights[i] / totalWeight);
+          }
+        }
+        return std::nullopt;
+      });
+  ASSERT_TRUE(combined.has_value());
+
+  Eigen::Matrix3d expectedMoment = combined->getMoment();
+  const Eigen::Vector3d delta = combined->getLocalCOM() - desiredCom;
+  if (!delta.isZero(1e-12)) {
+    expectedMoment = math::parallelAxisTheorem(expectedMoment, delta, bodyMass);
+  }
+
+  EXPECT_MATRIX_DOUBLE_EQ(expectedMoment, weighted->getInertia().getMoment());
 }
 
 //==============================================================================
@@ -348,12 +427,12 @@ TEST(SkelParser, DofAttributes)
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
-  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -constantsd::inf());
-  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(), constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -inf);
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(), inf);
   EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
 
-  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -constantsd::inf());
-  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(), constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -inf);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(), inf);
   EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
 
   EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());

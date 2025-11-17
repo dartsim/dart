@@ -35,11 +35,12 @@ msgstr ""
 #: ../../dartpy/user_guide/examples.rst:8
 msgid ""
 "In order to load the URDF, please clone dart repository and set the "
-"`DART_DATA_LOCAL_PATH` environment variable to where the `data` folder is in "
-"the cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)"
+"`DART_DATA_PATH` environment variable to where the `data` folder is in the "
+"cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)"
 msgstr ""
-"URDF를 로드하려면 dart 저장소를 복제하고 `DART_DATA_LOCAL_PATH` 환경 변수를 "
-"복제된 저장소의 `data` 폴더 위치로 설정하세요 (예: `C:/ws/dart/`에 복제한 경우 `C:/ws/dart/data/`)"
+"URDF를 로드하려면 dart 저장소를 복제하고 `DART_DATA_PATH` 환경 변수를 복제된 "
+"저장소의 `data` 폴더 위치로 설정하세요 (예: `C:/ws/dart/`에 복제한 경우 "
+"`C:/ws/dart/data/`)"
 
 #: ../../dartpy/user_guide/examples.rst:36
 msgid ""

@@ -34,12 +34,12 @@
 #include "AtlasSimbiconWidget.hpp"
 #include "AtlasSimbiconWorldNode.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
-#include <dart/utils/urdf/all.hpp>
+#include <dart/utils/All.hpp>
+#include <dart/utils/urdf/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 int main()
 {
@@ -55,7 +55,7 @@ int main()
   world->addSkeleton(atlas);
 
   // Set initial configuration for Atlas robot
-  atlas->setPosition(0, -0.5 * dart::math::constantsd::pi());
+  atlas->setPosition(0, -0.5 * dart::math::pi);
 
   // Set gravity of the world
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));

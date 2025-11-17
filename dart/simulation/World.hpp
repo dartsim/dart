@@ -39,15 +39,19 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/SmartPointer.hpp>
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/Fwd.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/integration/Fwd.hpp>
 
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
@@ -57,29 +61,33 @@
 
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dart {
-
-namespace integration {
-class Integrator;
-} // namespace integration
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
-namespace constraint {
-class ConstraintSolver;
-} // namespace constraint
-
-namespace collision {
-class CollisionResult;
-} // namespace collision
-
 namespace simulation {
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
+/// Available collision detector backends for a World.
+enum class CollisionDetectorType
+{
+  Dart,
+  Fcl,
+  Bullet,
+  Ode,
+};
+
+/// Configuration bundle used when constructing a World.
+struct WorldConfig final
+{
+  /// Friendly name for the world.
+  std::string name = "world";
+
+  /// Preferred collision detector for the world.
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  WorldConfig() = default;
+  explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
+};
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -100,8 +108,14 @@ public:
   /// Creates a World
   static std::shared_ptr<World> create(const std::string& name = "world");
 
+  /// Creates a World using a configuration bundle.
+  static std::shared_ptr<World> create(const WorldConfig& config);
+
   /// Constructor
   World(const std::string& _name = "world");
+
+  /// Constructor with configuration bundle
+  explicit World(const WorldConfig& config);
 
   /// Destructor
   virtual ~World();
@@ -207,6 +221,19 @@ public:
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
   const collision::CollisionResult& getLastCollisionResult() const;
+
+  /// Sets the collision detector used by the world's constraint solver.
+  void setCollisionDetector(
+      const collision::CollisionDetectorPtr& collisionDetector);
+
+  /// Sets the collision detector via a typed backend selection.
+  void setCollisionDetector(CollisionDetectorType collisionDetector);
+
+  /// Returns the collision detector used by the world.
+  collision::CollisionDetectorPtr getCollisionDetector();
+
+  /// Returns the collision detector used by the world (const).
+  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
 
   //--------------------------------------------------------------------------
   // Simulation

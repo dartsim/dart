@@ -185,10 +185,8 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf);
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 }
 
@@ -222,7 +220,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot1->getRootJoint()->getName(), "rootJoint");
 
   // Floating
-  options.mDefaultRootJointType = DartLoader::RootJointType::FLOATING;
+  options.mDefaultRootJointType = DartLoader::RootJointType::Floating;
   loader.setOptions(options);
   auto robot2 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot2);
@@ -231,7 +229,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot2->getRootJoint()->getName(), "rootJoint");
 
   // Fixed
-  options.mDefaultRootJointType = DartLoader::RootJointType::FIXED;
+  options.mDefaultRootJointType = DartLoader::RootJointType::Fixed;
   loader.setOptions(options);
   auto robot3 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot3);
@@ -318,10 +316,8 @@ TEST(DartLoader, mimicJoint)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf);
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 
   EXPECT_TRUE(joint2->getActuatorType() == dart::dynamics::Joint::MIMIC);
@@ -408,10 +404,8 @@ TEST(DartLoader, badMimicJoint)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 
   auto joint2 = robot->getJoint(2);
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
-  EXPECT_DOUBLE_EQ(
-      joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::inf);
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 
   EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::MIMIC);

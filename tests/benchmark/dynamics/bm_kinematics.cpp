@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/simulation/all.hpp>
+#include <dart/simulation/All.hpp>
 
-#include <dart/dynamics/all.hpp>
+#include <dart/dynamics/All.hpp>
 
 #include <dart/math/Random.hpp>
 

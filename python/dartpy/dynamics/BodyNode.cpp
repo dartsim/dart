@@ -34,7 +34,7 @@
 #include "eigen_pybind.h"
 #include "pointers.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -925,10 +925,13 @@ void BodyNode(py::module& m)
       .def(
           "getShapeNodes",
           +[](dart::dynamics::BodyNode* self)
-              -> const std::vector<dart::dynamics::ShapeNode*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getShapeNodes();
-            DART_SUPPRESS_DEPRECATED_END
+              -> std::vector<dart::dynamics::ShapeNode*> {
+            std::vector<dart::dynamics::ShapeNode*> shapeNodes;
+            const auto numShapeNodes = self->getNumShapeNodes();
+            shapeNodes.reserve(numShapeNodes);
+            for (std::size_t i = 0; i < numShapeNodes; ++i)
+              shapeNodes.emplace_back(self->getShapeNode(i));
+            return shapeNodes;
           },
           ::py::return_value_policy::reference_internal)
       .def(

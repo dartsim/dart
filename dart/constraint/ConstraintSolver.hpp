@@ -35,11 +35,9 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
-
-#include <dart/common/Deprecated.hpp>
 
 #include <Eigen/Dense>
 
@@ -110,18 +108,6 @@ public:
 
   /// Returns a constraint by index.
   constraint::ConstConstraintBasePtr getConstraint(std::size_t index) const;
-
-  /// Returns all the constraints added to this ConstraintSolver.
-  ///
-  /// \deprecated Use eachConstraint() instead
-  DART_DEPRECATED(6.13)
-  std::vector<constraint::ConstraintBasePtr> getConstraints();
-
-  /// Returns all the constraints added to this ConstraintSolver.
-  ///
-  /// \deprecated Use eachConstraint() instead
-  DART_DEPRECATED(6.13)
-  std::vector<constraint::ConstConstraintBasePtr> getConstraints() const;
 
   /// Iterates all the constraints and invokes the callback function.
   ///
@@ -216,12 +202,6 @@ public:
 protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
-
-  /// Checks if the skeleton is contained in this solver
-  ///
-  /// \deprecated Use hasSkeleton() instead.
-  DART_DEPRECATED(6.13)
-  bool containSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
   /// Checks if the skeleton is contained in this solver
   bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;

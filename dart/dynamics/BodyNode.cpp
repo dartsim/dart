@@ -887,10 +887,9 @@ DART_BAKE_SPECIALIZED_NODE_DEFINITIONS(BodyNode, ShapeNode)
 const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 {
   const auto numShapeNodes = getNumShapeNodes();
-
   std::vector<ShapeNode*> shapeNodes(numShapeNodes);
 
-  for (auto i = 0u; i < numShapeNodes; ++i)
+  for (std::size_t i = 0; i < numShapeNodes; ++i)
     shapeNodes[i] = getShapeNode(i);
 
   return shapeNodes;
@@ -900,10 +899,9 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
 {
   const auto numShapeNodes = getNumShapeNodes();
-
   std::vector<const ShapeNode*> shapeNodes(numShapeNodes);
 
-  for (auto i = 0u; i < numShapeNodes; ++i)
+  for (std::size_t i = 0; i < numShapeNodes; ++i)
     shapeNodes[i] = getShapeNode(i);
 
   return shapeNodes;

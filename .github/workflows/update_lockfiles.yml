@@ -15,10 +15,11 @@ concurrency:
 
 jobs:
   pixi-update:
+    name: Maintenance | Update pixi.lock (${{ matrix.base }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base: [main, release-6.15]
+        base: [main, release-6.16]
     steps:
       - uses: actions/checkout@v5
         with:

@@ -37,9 +37,10 @@
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
@@ -53,6 +54,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -211,6 +213,12 @@ public:
 
   /// Get the inertia data for this BodyNode
   const Inertia& getInertia() const;
+
+  /// Sum transformed inertias of all ShapeNodes using the provided mass
+  /// provider. The callable should return an optional mass for each ShapeNode.
+  template <typename MassProvider>
+  std::optional<Inertia> computeInertiaFromShapeNodes(
+      MassProvider&& massProvider) const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;
@@ -483,15 +491,17 @@ public:
   ShapeNode* createShapeNode(
       const std::shared_ptr<ShapeType>& shape, StringType&& name);
 
-  /// Return the list of ShapeNodes
+  /// Return the list of ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead.
+  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodes();
 
-  /// Return the list of (const) ShapeNodes
+  /// Return the list of (const) ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead.
+  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodes() const;
 
@@ -514,14 +524,16 @@ public:
 
   /// Return the list of ShapeNodes containing given Aspect
   ///
-  /// \deprecated Use eachShapeNodeWith() instead.
+  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodesWith();
 
-  /// Return the list of ShapeNodes containing given Aspect
+  /// Return the list of ShapeNodes containing given Aspect (const)
   ///
-  /// \deprecated Use eachShapeNodeWith() instead.
+  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodesWith() const;

@@ -32,11 +32,11 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 const double default_speed_increment = 0.5;
 
@@ -66,6 +66,7 @@ public:
     mKp = Eigen::MatrixXd::Identity(nDofs, nDofs);
     mKd = Eigen::MatrixXd::Identity(nDofs, nDofs);
 
+    // snippet:cpp-biped-lesson2-controller-gains-start
     for (std::size_t i = 0; i < 6; ++i) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
@@ -75,14 +76,19 @@ public:
       mKp(i, i) = 1000;
       mKd(i, i) = 50;
     }
+    // snippet:cpp-biped-lesson2-controller-gains-end
 
+    // snippet:cpp-biped-lesson2-controller-target-start
     setTargetPositions(mBiped->getPositions());
+    // snippet:cpp-biped-lesson2-controller-target-end
   }
 
   /// Reset the desired dof position to the current position
   void setTargetPositions(const Eigen::VectorXd& pose)
   {
+    // snippet:cpp-biped-lesson2-target-set-start
     mTargetPositions = pose;
+    // snippet:cpp-biped-lesson2-target-set-end
   }
 
   /// Clear commanding forces
@@ -94,6 +100,7 @@ public:
   /// Add commanding forces from PD controllers (Lesson 2 Answer)
   void addPDForces()
   {
+    // snippet:cpp-biped-lesson2-pd-start
     Eigen::VectorXd q = mBiped->getPositions();
     Eigen::VectorXd dq = mBiped->getVelocities();
 
@@ -102,11 +109,13 @@ public:
 
     mForces += p + d;
     mBiped->setForces(mForces);
+    // snippet:cpp-biped-lesson2-pd-end
   }
 
   /// Add commanind forces from Stable-PD controllers (Lesson 3 Answer)
   void addSPDForces()
   {
+    // snippet:cpp-biped-lesson3-spd-start
     Eigen::VectorXd q = mBiped->getPositions();
     Eigen::VectorXd dq = mBiped->getVelocities();
 
@@ -121,22 +130,27 @@ public:
 
     mForces += p + d - mKd * qddot * mBiped->getTimeStep();
     mBiped->setForces(mForces);
+    // snippet:cpp-biped-lesson3-spd-end
   }
 
   /// add commanding forces from ankle strategy (Lesson 4 Answer)
   void addAnkleStrategyForces()
   {
+    // snippet:cpp-biped-lesson4-deviation-start
     Eigen::Vector3d COM = mBiped->getCOM();
     // Approximated center of pressure in sagittal axis
     Eigen::Vector3d offset(0.05, 0, 0);
     Eigen::Vector3d COP
         = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
     double diff = COM[0] - COP[0];
+    // snippet:cpp-biped-lesson4-deviation-end
 
+    // snippet:cpp-biped-lesson4-velocity-start
     Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
     Eigen::Vector3d dCOP
         = mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
     double dDiff = dCOM[0] - dCOP[0];
+    // snippet:cpp-biped-lesson4-velocity-end
 
     int lHeelIndex = mBiped->getDof("j_heel_left_1")->getIndexInSkeleton();
     int rHeelIndex = mBiped->getDof("j_heel_right_1")->getIndexInSkeleton();
@@ -167,6 +181,7 @@ public:
   // Send velocity commands on wheel actuators (Lesson 6 Answer)
   void setWheelCommands()
   {
+    // snippet:cpp-biped-lesson6-wheel-commands-start
     int wheelFirstIndex
         = mBiped->getDof("joint_front_left_1")->getIndexInSkeleton();
     for (std::size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i) {
@@ -182,6 +197,7 @@ public:
     mBiped->setCommand(index2, mSpeed);
     mBiped->setCommand(index3, mSpeed);
     mBiped->setCommand(index4, mSpeed);
+    // snippet:cpp-biped-lesson6-wheel-commands-end
   }
 
   void changeWheelSpeed(double increment)
@@ -316,6 +332,7 @@ protected:
 // (Lesson 1 Answer)
 SkeletonPtr loadBiped()
 {
+  // snippet:cpp-biped-lesson1-load-start
   // Create the world with a skeleton
   WorldPtr world = SkelParser::readWorld("dart://sample/skel/biped.skel");
   DART_ASSERT(world != nullptr);
@@ -323,12 +340,17 @@ SkeletonPtr loadBiped()
   SkeletonPtr biped = world->getSkeleton("biped");
 
   // Set joint limits
+  // snippet:cpp-biped-lesson1-limits-start
   for (std::size_t i = 0; i < biped->getNumJoints(); ++i)
     biped->getJoint(i)->setLimitEnforcement(true);
+  // snippet:cpp-biped-lesson1-limits-end
 
   // Enable self collision check but ignore adjacent bodies
+  // snippet:cpp-biped-lesson1-self-start
   biped->enableSelfCollisionCheck();
   biped->disableAdjacentBodyCheck();
+  // snippet:cpp-biped-lesson1-self-end
+  // snippet:cpp-biped-lesson1-load-end
 
   return biped;
 }
@@ -336,6 +358,7 @@ SkeletonPtr loadBiped()
 // Set initial configuration (Lesson 2 Answer)
 void setInitialPose(SkeletonPtr biped)
 {
+  // snippet:cpp-biped-lesson2-initial-pose-start
   biped->setPosition(
       biped->getDof("j_thigh_left_z")->getIndexInSkeleton(), 0.15);
   biped->setPosition(
@@ -346,12 +369,14 @@ void setInitialPose(SkeletonPtr biped)
       biped->getDof("j_heel_left_1")->getIndexInSkeleton(), 0.25);
   biped->setPosition(
       biped->getDof("j_heel_right_1")->getIndexInSkeleton(), 0.25);
+  // snippet:cpp-biped-lesson2-initial-pose-end
 }
 
 // Load a skateboard model and connect it to the biped model via an Euler joint
 // (Lesson 5 Answer)
 void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
+  // snippet:cpp-biped-lesson5-skateboard-start
   // Load the Skeleton from a file
   WorldPtr world = SkelParser::readWorld("dart://sample/skel/skateboard.skel");
 
@@ -362,11 +387,13 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 
   skateboard->getRootBodyNode()->moveTo<EulerJoint>(
       biped->getBodyNode("h_heel_left"), properties);
+  // snippet:cpp-biped-lesson5-skateboard-end
 }
 
 // Set the actuator type for four wheel joints to "VELOCITY" (Lesson 6 Answer)
 void setVelocityActuators(SkeletonPtr biped)
 {
+  // snippet:cpp-biped-lesson6-velocity-actuators-start
   Joint* wheel1 = biped->getJoint("joint_front_left");
   Joint* wheel2 = biped->getJoint("joint_front_right");
   Joint* wheel3 = biped->getJoint("joint_back_left");
@@ -375,11 +402,13 @@ void setVelocityActuators(SkeletonPtr biped)
   wheel2->setActuatorType(Joint::VELOCITY);
   wheel3->setActuatorType(Joint::VELOCITY);
   wheel4->setActuatorType(Joint::VELOCITY);
+  // snippet:cpp-biped-lesson6-velocity-actuators-end
 }
 
 // Solve for a balanced pose using IK (Lesson 7 Answer)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
+  // snippet:cpp-biped-lesson7-ik-start
   // Modify the intial pose to one-foot stance before IK
   biped->setPosition(biped->getDof("j_shin_right")->getIndexInSkeleton(), -1.4);
   biped->setPosition(
@@ -433,6 +462,7 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
     biped->setPositions(newPose);
     biped->computeForwardKinematics(true, false, false);
   }
+  // snippet:cpp-biped-lesson7-ik-end
   return newPose;
 }
 
@@ -483,13 +513,13 @@ int main()
   Eigen::VectorXd balancedPose = solveIK(biped);
   biped->setPositions(balancedPose);
 
-  WorldPtr world = std::make_shared<World>();
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+  WorldConfig config;
+  if (auto* factory = dart::collision::CollisionDetector::getFactory();
+      factory && factory->canCreate("bullet")) {
+    config.collisionDetector = CollisionDetectorType::Bullet;
   }
+  WorldPtr world = std::make_shared<World>(config);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   world->addSkeleton(floor);
   world->addSkeleton(biped);

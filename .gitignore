@@ -58,6 +58,7 @@ docs/doxygen/html/
 # Sphinx documentation
 docs/readthedocs/site
 docs/readthedocs/_build/
+docs/readthedocs/_generated/
 docs/python_api/_build/
 
 # Data files
@@ -76,6 +77,10 @@ build/
 
 # pixi environments
 .pixi
+
+# API docs build artifacts
+dart_docs/
+gh-pages/
 
 # ImGui configuration
 imgui.ini

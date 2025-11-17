@@ -42,9 +42,9 @@
 
 #include "HardcodedEventHandler.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <osg/PolygonMode>
 
@@ -67,8 +67,8 @@ dart::dynamics::SkeletonPtr createSkeleton()
   dart::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
   joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
-  joint.mPositionLowerLimits[0] = -dart::math::constantsd::pi();
-  joint.mPositionUpperLimits[0] = dart::math::constantsd::pi();
+  joint.mPositionLowerLimits[0] = -dart::math::pi;
+  joint.mPositionUpperLimits[0] = dart::math::pi;
 
   // You can get the newly created Joint and BodyNode pointers like this
   std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair

@@ -32,6 +32,8 @@
 
 #include "Helpers.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/utils/urdf/urdf.hpp>
 
 #include <sstream>
@@ -67,9 +69,9 @@ dart::dynamics::SkeletonPtr createWam()
 {
   dart::utils::DartLoader urdfParser;
   urdfParser.addPackageDirectory(
-      "herb_description", DART_DATA_PATH "/urdf/wam");
+      "herb_description", dart::config::dataPath("urdf/wam"));
   dart::dynamics::SkeletonPtr wam
-      = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+      = urdfParser.parseSkeleton(dart::config::dataPath("urdf/wam/wam.urdf"));
 
   return wam;
 }

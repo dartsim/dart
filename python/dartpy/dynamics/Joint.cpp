@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
@@ -935,7 +935,10 @@ void Joint(py::module& m)
           ::py::arg("withRespectTo") = nullptr)
       .def(
           "getWrenchToParentBodyNode",
-          &dart::dynamics::Joint::getWrenchToParentBodyNode,
+          +[](const dart::dynamics::Joint* self,
+              const dart::dynamics::Frame* withRespectTo) -> Eigen::Vector6d {
+            return -self->getWrenchToChildBodyNode(withRespectTo);
+          },
           ::py::arg("withRespectTo") = nullptr)
       .def(
           "notifyPositionUpdated",

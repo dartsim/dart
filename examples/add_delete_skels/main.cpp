@@ -32,13 +32,13 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/collision/bullet/all.hpp>
+#include <dart/collision/bullet/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <iostream>
 
@@ -126,8 +126,7 @@ int main()
 
   // Set collision detector type
   if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    myWorld->getConstraintSolver()->setCollisionDetector(
-        dart::collision::CollisionDetector::getFactory()->create("bullet"));
+    myWorld->setCollisionDetector(CollisionDetectorType::Bullet);
   }
 
   // Create event handler

@@ -33,7 +33,7 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -152,22 +152,6 @@ void MetaSkeleton(py::module& m)
           ::py::arg("name"))
       .def(
           "getJoints",
-          +[](dart::dynamics::MetaSkeleton* self)
-              -> std::vector<dart::dynamics::Joint*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getJoints();
-            DART_SUPPRESS_DEPRECATED_END
-          })
-      .def(
-          "getJoints",
-          +[](const dart::dynamics::MetaSkeleton* self)
-              -> std::vector<const dart::dynamics::Joint*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getJoints();
-            DART_SUPPRESS_DEPRECATED_END
-          })
-      .def(
-          "getJoints",
           +[](dart::dynamics::MetaSkeleton* self,
               const std::string& name) -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints(name);
@@ -220,9 +204,12 @@ void MetaSkeleton(py::module& m)
           "getDofs",
           +[](dart::dynamics::MetaSkeleton* self)
               -> std::vector<dart::dynamics::DegreeOfFreedom*> {
-            DART_SUPPRESS_DEPRECATED_BEGIN
-            return self->getDofs();
-            DART_SUPPRESS_DEPRECATED_END
+            std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
+            const auto numDofs = self->getNumDofs();
+            dofs.reserve(numDofs);
+            for (std::size_t i = 0; i < numDofs; ++i)
+              dofs.emplace_back(self->getDof(i));
+            return dofs;
           },
           ::py::return_value_policy::reference_internal)
       .def(

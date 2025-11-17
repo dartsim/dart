@@ -7,6 +7,7 @@
 * Breaking Changes
   * Increased required C++ standard from C++17 to C++20
     * See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  * Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
 
 * Minimum Compiler Requirements
   * Linux: GCC 11.0+
@@ -18,20 +19,66 @@
 
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
+  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui-osg` is not built).
+  * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
+  * Added `libsdformat` as a required dependency so that SDF files are normalized through the official parser before being handed to DART: [#264](https://github.com/dartsim/dart/issues/264)
+* Simulation
+  * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
+  * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.
 
 * Core
+  * Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1).
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
   * Removed all APIs deprecated in DART 6.7 (legacy math random helpers, `Skeleton::clone()` overloads, and `ConstraintSolver::set/getLCPSolver()`).
   * Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias).
+  * Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   * Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
   * Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   * Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   * Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
   * Removed all APIs deprecated in DART 6.11 (`DartLoader::Flags` and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
   * Removed all APIs deprecated in DART 6.12 (the `SdfParser::readWorld`/`readSkeleton` overloads that accepted direct `ResourceRetriever` parameters).
+  * Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
+  * Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
+  * Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
+  * Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
+
+* Tutorials
+  * Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
 
 ## DART 6
+
+### [DART 6.16.0 (2025-11-09)](https://github.com/dartsim/dart/milestone/83?closed=1)
+
+* Tested Platforms
+
+  * Linux
+    * Ubuntu 22.04 LTS / GCC 11.4 / x86_64
+    * Ubuntu 24.04 LTS / GCC 13.2 / x86_64
+  * macOS 14 / Clang 15 / arm64
+  * Windows / MSVC 19.40 / x86_64
+
+* Simulation
+  * Allow servo joints to recover from position limits: [#2086](https://github.com/dartsim/dart/pull/2086)
+  * Fix passive joint commands to respect joint actuation limits: [#1997](https://github.com/dartsim/dart/pull/1997)
+
+* Core
+  * Replace legacy `assert` macros with `DART_ASSERT` on release-6.16 (backport of #2109): [#2117](https://github.com/dartsim/dart/pull/2117)
+
+* Build
+  * Fix pybind11 detection and assert include handling with pixi builds: [#2118](https://github.com/dartsim/dart/pull/2118)
+  * Port Eigen compatibility guard to keep 3.4+ builds working on release-6.16: [#2108](https://github.com/dartsim/dart/pull/2108)
+  * Add `DART_USE_SYSTEM_TRACY`, `DART_USE_SYSTEM_PYBIND11`, and `DART_USE_SYSTEM_GOOGLEBENCHMARK` toggles: [#1911](https://github.com/dartsim/dart/pull/1911), [#1907](https://github.com/dartsim/dart/pull/1907), [#1904](https://github.com/dartsim/dart/pull/1904)
+  * Fix absolute install directory handling in CMake exports: [#2006](https://github.com/dartsim/dart/pull/2006)
+
+* Tooling and Docs
+  * Use system `googletest` and `googlebenchmark` in pixi environments and upgrade bundled dependencies: [#1905](https://github.com/dartsim/dart/pull/1905)
+  * Switch coverage and API docs workflows to pixi tasks and GitHub Pages deploy actions: [#2036](https://github.com/dartsim/dart/pull/2036), [#2032](https://github.com/dartsim/dart/pull/2032)
+  * Install OpenSceneGraph from source on macOS builds to avoid flaky CI: [#2037](https://github.com/dartsim/dart/pull/2037)
+  * Restructure documentation to clearly separate C++ and Python guidance: [#2040](https://github.com/dartsim/dart/pull/2040)
+  * Add pixi-powered developer tasks (including Python workflows) and refresh GitHub templates: [#2034](https://github.com/dartsim/dart/pull/2034), [#2039](https://github.com/dartsim/dart/pull/2039)
+  * Add gz-physics integration tests to CI to guard the public plugin: [#2000](https://github.com/dartsim/dart/pull/2000)
 
 ### [DART 6.15.0 (2024-11-15)](https://github.com/dartsim/dart/milestone/77?closed=1)
 
@@ -392,7 +439,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 * Build and testing
 
   * Fixed compiler warnings from GCC 9.1: [#1366](https://github.com/dartsim/dart/pull/1366)
-  * Replaced M_PI with dart::math::constantsd::pi(): [#1367](https://github.com/dartsim/dart/pull/1367)
+  * Replaced M_PI with dart::math::pi: [#1367](https://github.com/dartsim/dart/pull/1367)
   * Enabled octomap support on macOS: [#1078](https://github.com/dartsim/dart/pull/1078)
   * Removed dependency on Boost::regex: [#1412](https://github.com/dartsim/dart/pull/1412)
   * Added support new if() IN_LIST operator in DARTConfig.cmake: [#1434](https://github.com/dartsim/dart/pull/1434)

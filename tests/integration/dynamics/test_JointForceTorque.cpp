@@ -37,9 +37,9 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/utils/sdf/all.hpp"
+#include "dart/utils/sdf/All.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
@@ -54,7 +54,7 @@ using namespace dart::test;
 WorldPtr readWorld(const common::Uri& uri)
 {
   SdfParser::Options options;
-  options.mDefaultRootJointType = SdfParser::RootJointType::FIXED;
+  options.mDefaultRootJointType = SdfParser::RootJointType::Fixed;
   WorldPtr world = SdfParser::readWorld(uri, options);
   world->eachSkeleton([](Skeleton* skel) {
     skel->eachJoint([](Joint* joint) { joint->setLimitEnforcement(true); });
@@ -330,7 +330,7 @@ TEST(JointForceTorqueTest, ForceTorqeAtJointLimitsWithExternalForces)
   const double kp1 = 5e+4;
   const double kp2 = 1e+4;
   const double target1 = 0;
-  const double target2 = -0.25 * math::constantsd::pi();
+  const double target2 = -0.25 * math::pi;
   const auto steps = 4500u;
   for (auto i = 0u; i < steps; ++i) {
     // PD control

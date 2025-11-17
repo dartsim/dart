@@ -32,12 +32,12 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <cmath>
 
@@ -636,8 +636,7 @@ dynamics::SkeletonPtr createGround()
   Eigen::Isometry3d ground_tf
       = ground->getJoint(0)->getTransformFromParentBodyNode();
   ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
-  ground_tf.rotate(
-      Eigen::AngleAxisd(constantsd::pi() / 2, Eigen::Vector3d(1, 0, 0)));
+  ground_tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(1, 0, 0)));
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   return ground;

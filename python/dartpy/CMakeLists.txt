@@ -127,6 +127,25 @@ endif()
 # Remove debug postfix for dartpy
 set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
 
+# Emit the dartpy extension directly into the configured runtime directory so
+# multi-config generators (MSVC/Xcode) don't append config subfolders.
+set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
+foreach(_type LIBRARY RUNTIME ARCHIVE)
+  set_target_properties(${pybind_module} PROPERTIES
+    ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
+  )
+endforeach()
+if(CMAKE_CONFIGURATION_TYPES)
+  foreach(_config ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${_config} _config_upper)
+    foreach(_type LIBRARY RUNTIME ARCHIVE)
+      set_target_properties(${pybind_module} PROPERTIES
+        ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
+      )
+    endforeach()
+  endforeach()
+endif()
+
 # Get the path to the bind module
 set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
 

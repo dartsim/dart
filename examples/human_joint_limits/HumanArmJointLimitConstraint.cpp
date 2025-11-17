@@ -39,9 +39,11 @@
 
 #include <dart/common/Logging.hpp>
 
+#include <dart/config.hpp>
 #include <dart/lcpsolver/dantzig/lcp.h>
 
 #include <iostream>
+#include <limits>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -83,7 +85,7 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
   mActive = false;
 
   // load neural net weights from external file
-  mNet.load(DART_DATA_PATH "/humanJointLimits/neuralnets/net-larm");
+  mNet.load(dart::config::dataPath("humanJointLimits/neuralnets/net-larm"));
 }
 
 //==============================================================================
@@ -204,7 +206,7 @@ void HumanArmJointLimitConstraint::update()
          sin(qz),
          cos(qx),
          sin(qx),
-         cos(qy + 2 * math::constantsd::pi() / 3),
+         cos(qy + 2 * math::pi / 3),
          cos(qe)};
   vec_t input;
   input.assign(qsin, qsin + 6);
@@ -258,7 +260,7 @@ void HumanArmJointLimitConstraint::update()
 
     mJacobian[0] = out_grad[0] * (-sin(qz)) + out_grad[1] * (cos(qz));
     mJacobian[1] = out_grad[2] * (-sin(qx)) + out_grad[3] * (cos(qx));
-    mJacobian[2] = out_grad[4] * (-sin(qy + 2 * math::constantsd::pi() / 3));
+    mJacobian[2] = out_grad[4] * (-sin(qy + 2 * math::pi / 3));
     mJacobian[3] = out_grad[5] * (-sin(qe));
 
     // note that we also need to take the mirror of the NN gradient for
@@ -275,7 +277,7 @@ void HumanArmJointLimitConstraint::update()
     mNegativeVel = -mJacobian.dot(q_d);
 
     mLowerBound = 0.0;
-    mUpperBound = dInfinity;
+    mUpperBound = std::numeric_limits<double>::infinity();
     mDim = 1;
   }
 }

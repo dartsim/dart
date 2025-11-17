@@ -32,6 +32,7 @@
 
 #include <dart/dynamics/Inertia.hpp>
 
+#include <dart/math/Geometry.hpp>
 #include <dart/math/Random.hpp>
 
 #include <gtest/gtest.h>
@@ -57,5 +58,52 @@ TEST(Inertia, Verification)
         mass, com[0], com[1], com[2], i_xx, i_yy, i_zz, i_xy, i_xz, i_yz);
 
     EXPECT_TRUE(inertia.verify());
+  }
+}
+
+//==============================================================================
+TEST(Inertia, Transformations)
+{
+  const int numIter = 25;
+  const double tol = 1e-9;
+
+  for (int i = 0; i < numIter; ++i) {
+    const auto mass = math::Random::uniform<double>(0.1, 10.0);
+    const auto com = math::Random::uniform<Eigen::Vector3d>(-1.0, 1.0);
+    const auto moment
+        = Eigen::Matrix3d::Identity() * math::Random::uniform<double>(0.1, 2.0);
+    dynamics::Inertia inertia(mass, com, moment);
+
+    Eigen::Vector3d axis = math::Random::uniform<Eigen::Vector3d>(-1.0, 1.0);
+    if (axis.norm() < 1e-6)
+      axis = Eigen::Vector3d::UnitX();
+    axis.normalize();
+    const double angle = math::Random::uniform<double>(-3.14, 3.14);
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.linear() = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
+    T.translation() = math::Random::uniform<Eigen::Vector3d>(-0.5, 0.5);
+
+    const dynamics::Inertia transformed = inertia.transformed(T);
+    dynamics::Inertia inPlace = inertia;
+    dynamics::Inertia& inPlaceRef = inPlace.transform(T);
+    EXPECT_EQ(&inPlaceRef, &inPlace);
+
+    const Eigen::Matrix6d adjoint = math::getAdTMatrix(T.inverse());
+    const Eigen::Matrix6d expected
+        = adjoint.transpose() * inertia.getSpatialTensor() * adjoint;
+    EXPECT_TRUE(expected.isApprox(transformed.getSpatialTensor(), tol));
+    EXPECT_TRUE(expected.isApprox(inPlace.getSpatialTensor(), tol));
+    EXPECT_NEAR(transformed.getMass(), inertia.getMass(), tol);
+    EXPECT_NEAR(inPlace.getMass(), inertia.getMass(), tol);
+
+    const Eigen::Vector3d expectedCom
+        = T.linear() * inertia.getLocalCOM() + T.translation();
+    EXPECT_TRUE(transformed.getLocalCOM().isApprox(expectedCom, tol));
+    EXPECT_TRUE(inPlace.getLocalCOM().isApprox(expectedCom, tol));
+
+    const dynamics::Inertia identityTransformed
+        = inertia.transformed(Eigen::Isometry3d::Identity());
+    EXPECT_TRUE(identityTransformed.getSpatialTensor().isApprox(
+        inertia.getSpatialTensor(), tol));
   }
 }

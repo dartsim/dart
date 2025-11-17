@@ -49,7 +49,4 @@ struct Name
   std::string name;
 };
 
-// Backward compatibility alias (to be removed in future)
-using NameComponent [[deprecated("Use dart8::comps::Name instead")]] = Name;
-
 } // namespace dart8::comps

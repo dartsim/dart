@@ -32,7 +32,6 @@
 
 #include "dart/dynamics/Skeleton.hpp"
 
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -990,6 +989,26 @@ bool Skeleton::hasBodyNode(const BodyNode* bodyNode) const
 }
 
 //==============================================================================
+std::vector<Joint*> Skeleton::getJoints()
+{
+  std::vector<Joint*> joints;
+  joints.reserve(getNumJoints());
+  for (std::size_t i = 0; i < getNumJoints(); ++i)
+    joints.push_back(getJoint(i));
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints() const
+{
+  std::vector<const Joint*> joints;
+  joints.reserve(getNumJoints());
+  for (std::size_t i = 0; i < getNumJoints(); ++i)
+    joints.push_back(getJoint(i));
+  return joints;
+}
+
+//==============================================================================
 template <class ObjectT, std::size_t (ObjectT::*getIndexInSkeleton)() const>
 static std::size_t templatedGetIndexOf(
     const Skeleton* _skel,
@@ -1095,31 +1114,6 @@ const Joint* Skeleton::getJoint(const std::string& name) const
 }
 
 //==============================================================================
-std::vector<Joint*> Skeleton::getJoints()
-{
-  const auto& bodyNodes = getBodyNodes();
-
-  std::vector<Joint*> joints;
-  joints.reserve(bodyNodes.size());
-  for (const auto& bodyNode : bodyNodes)
-    joints.emplace_back(bodyNode->getParentJoint());
-
-  return joints;
-}
-
-//==============================================================================
-std::vector<const Joint*> Skeleton::getJoints() const
-{
-  const auto& bodyNodes = getBodyNodes();
-
-  std::vector<const Joint*> joints;
-  joints.reserve(bodyNodes.size());
-  for (const auto& bodyNode : bodyNodes)
-    joints.emplace_back(bodyNode->getParentJoint());
-
-  return joints;
-}
-
 //==============================================================================
 std::vector<Joint*> Skeleton::getJoints(const std::string& name)
 {

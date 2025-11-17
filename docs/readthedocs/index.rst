@@ -27,7 +27,7 @@ Articulated Body Algorithm to compute motion dynamics.
 Updates
 -------
 
-* 2024-11-15: DART version 6.15.0 released. See :doc:`overview` and :doc:`dart/cpp_api_reference` for links to the API reference.
+* 2025-11-09: DART version 6.16.0 released. See :doc:`overview` and :doc:`dart/cpp_api_reference` for links to the API reference.
 * 2022-12-31: DART version 6.13.0 released.
 
 Social Media
@@ -92,12 +92,18 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Tutorials
+
+   Tutorials <tutorials/index>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: dartpy (Python)
 
    dartpy/user_guide/installation
    dartpy/user_guide/examples
-   dartpy/user_guide/tutorials
-   dartpy/python_api_reference
+   API Reference <dartpy/python_api_reference>
 
 .. toctree::
    :maxdepth: 1
@@ -105,9 +111,8 @@ If you use DART in an academic publication, please consider citing this
    :caption: DART (C++)
 
    dart/user_guide/installation
-   dart/user_guide/tutorials
    dart/user_guide/migration_guide
-   dart/cpp_api_reference
+   API Reference <dart/cpp_api_reference>
 
 .. toctree::
    :maxdepth: 1

@@ -27,8 +27,11 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfcl-dev libfmt-dev
+  libeigen3-dev libfcl-dev libfmt-dev \
+  libsdformat15 libgz-math8 libgz-utils2
 ```
+
+> **Note:** Replace the `libsdformat15`/`libgz-*` package names with the versions available on your distribution. These packages are published via [packages.osrfoundation.org](https://packages.osrfoundation.org).
 
 Install optional dependencies:
 
@@ -43,11 +46,14 @@ sudo apt install \
 
 ### macOS
 
-Install required dependencies using `brew`:
+Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
-brew install assimp cmake eigen fmt fcl
+brew tap osrf/simulation
+brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 ```
+
+> **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
 
 Install optional dependencies:
 
@@ -62,7 +68,7 @@ brew install bullet freeglut ipopt nlopt octomap ode \
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fcl fmt spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
 ```
 
 Install optional dependencies:
@@ -78,7 +84,7 @@ vcpkg install --triplet x64-windows \
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fcl fmt
+yay -S assimp cmake eigen fcl fmt sdformat
 ```
 
 Install optional dependencies:
@@ -141,6 +147,9 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI
+- `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
+- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
+- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
 
 ### Platform-Specific Configuration Examples
 

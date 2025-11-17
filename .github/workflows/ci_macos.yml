@@ -9,12 +9,24 @@ on:
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "**"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
@@ -26,7 +38,7 @@ concurrency:
 
 jobs:
   build-release:
-    name: arm64-Release
+    name: Release Tests (arm64)
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -40,11 +52,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for sccache
+      - name: Configure environment for compiler cache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
 
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation
@@ -62,7 +80,7 @@ jobs:
           pixi run install
 
   build-debug:
-    name: arm64-Debug
+    name: Debug Tests (arm64)
     runs-on: macos-latest
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
@@ -77,11 +95,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for sccache
+      - name: Configure environment for compiler cache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Test DART and dartpy
         run: |

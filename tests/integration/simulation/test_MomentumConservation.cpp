@@ -36,7 +36,7 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
@@ -88,24 +88,24 @@ const int g_iters = 100000;
 Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {
   Eigen::Vector3d angMomentum = Eigen::Vector3d::Zero();
-  for (auto* bn : skel->getBodyNodes()) {
+  skel->eachBodyNode([&](BodyNode* bn) {
     angMomentum += dart::math::dAdInvT(
                        bn->getWorldTransform(),
                        bn->getSpatialInertia() * bn->getSpatialVelocity())
                        .head<3>();
-  }
+  });
   return angMomentum;
 }
 
 Eigen::Vector3d computeWorldLinearMomentum(const SkeletonPtr skel)
 {
   Eigen::Vector3d linearMomentum = Eigen::Vector3d::Zero();
-  for (auto* bn : skel->getBodyNodes()) {
+  skel->eachBodyNode([&](BodyNode* bn) {
     linearMomentum += dart::math::dAdInvT(
                           bn->getWorldTransform(),
                           bn->getSpatialInertia() * bn->getSpatialVelocity())
                           .tail<3>();
-  }
+  });
   return linearMomentum;
 }
 

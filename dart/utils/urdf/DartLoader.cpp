@@ -389,21 +389,21 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch (options.mDefaultRootJointType) {
-    case DartLoader::RootJointType::FLOATING: {
+    case DartLoader::RootJointType::Floating: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           _parent, properties, _body);
       break;
     }
-    case DartLoader::RootJointType::FIXED: {
+    case DartLoader::RootJointType::Fixed: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           _parent, basicProperties, _body);
       break;
     }
     default: {
       DART_ERROR(
-          "Unsupported RootJointType '{}'. Using FLOATING instead.",
+          "Unsupported RootJointType '{}'. Using Floating instead.",
           static_cast<int>(options.mDefaultRootJointType));
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
@@ -478,8 +478,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // We overwrite joint position limits to negative/positive infinities
       // for "continuous" joint. The URDF parser, by default, either reads
       // the limits, if specified for this joint, or sets them to 0.
-      singleDof.mPositionLowerLimits[0] = -math::constantsd::inf();
-      singleDof.mPositionUpperLimits[0] = math::constantsd::inf();
+      singleDof.mPositionLowerLimits[0] = -math::inf;
+      singleDof.mPositionUpperLimits[0] = math::inf;
 
       // This joint is still revolute but with no joint limits
       dynamics::RevoluteJoint::Properties properties(

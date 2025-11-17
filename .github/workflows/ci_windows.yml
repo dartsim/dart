@@ -9,12 +9,24 @@ on:
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "**"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
     - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
@@ -26,7 +38,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.build_type }}
+    name: Tests (${{ matrix.build_type }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -44,12 +56,19 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for sccache
+      - name: Configure environment for compiler cache
         shell: powershell
         run: |
           echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $ccacheDir = Join-Path $env:RUNNER_TEMP "ccache"
+          New-Item -ItemType Directory -Force -Path $ccacheDir | Out-Null
+          echo "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CCACHE_DIR=$ccacheDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CCACHE_COMPRESS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CCACHE_MAXSIZE=5G" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation

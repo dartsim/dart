@@ -33,7 +33,7 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/pybind11.h>
 
@@ -109,7 +109,21 @@ void ShapeNode(py::module& m)
           "getOffset",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Vector3d {
             return self->getOffset();
-          });
+          })
+      .def(
+          "computeTransformedInertia",
+          +[](const dart::dynamics::ShapeNode* self,
+              double mass) -> dart::dynamics::Inertia {
+            return self->computeTransformedInertia(mass);
+          },
+          ::py::arg("mass"))
+      .def(
+          "computeTransformedInertiaFromDensity",
+          +[](const dart::dynamics::ShapeNode* self,
+              double density) -> dart::dynamics::Inertia {
+            return self->computeTransformedInertiaFromDensity(density);
+          },
+          ::py::arg("density"));
 }
 
 } // namespace python

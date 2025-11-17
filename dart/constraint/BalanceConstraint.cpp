@@ -181,7 +181,7 @@ void BalanceConstraint::evalGradient(
     return;
 
   // If eval(_x) was non-zero, then the IK and Skeleton should still exist, so
-  // we shouldn't need to test their existance.
+  // we shouldn't need to test their existence.
   const dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
 

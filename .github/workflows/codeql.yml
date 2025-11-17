@@ -6,9 +6,23 @@ on:
   push:
     branches:
       - "main"
+    paths-ignore:
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "main"
+    paths-ignore:
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     - cron: "0 6 * * 1" # Weekly on Mondays at 06:00 UTC
   workflow_dispatch:
@@ -24,7 +38,7 @@ concurrency:
 
 jobs:
   analyze:
-    name: CodeQL (${{ matrix.language }})
+    name: Security | CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
     env:
       BUILD_TYPE: Release
@@ -51,6 +65,21 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Configure environment for compiler cache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

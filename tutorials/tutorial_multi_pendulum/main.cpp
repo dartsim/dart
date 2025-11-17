@@ -32,9 +32,9 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
@@ -101,31 +101,44 @@ public:
       mForceCountDown[index] = default_countdown;
   }
 
-  void changeRestPosition(double /*delta*/)
+  void changeRestPosition(double delta)
   {
-    // Lesson 2a
+    // snippet:lesson2a-rest-position-start
+    (void)delta;
+    // Lesson 2a implementation lives in the finished tutorial.
+    // snippet:lesson2a-rest-position-end
   }
 
-  void changeStiffness(double /*delta*/)
+  void changeStiffness(double delta)
   {
-    // Lesson 2b
+    // snippet:lesson2b-stiffness-start
+    (void)delta;
+    // Lesson 2b implementation lives in the finished tutorial.
+    // snippet:lesson2b-stiffness-end
   }
 
-  void changeDamping(double /*delta*/)
+  void changeDamping(double delta)
   {
-    // Lesson 2c
+    // snippet:lesson2c-damping-start
+    (void)delta;
+    // Lesson 2c implementation lives in the finished tutorial.
+    // snippet:lesson2c-damping-end
   }
 
   /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
-    // Lesson 3
+    // snippet:lesson3-add-constraint-start
+    // Lesson 3 implementation lives in the finished tutorial.
+    // snippet:lesson3-add-constraint-end
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    // Lesson 3
+    // snippet:lesson3-remove-constraint-start
+    // Lesson 3 implementation lives in the finished tutorial.
+    // snippet:lesson3-remove-constraint-end
   }
 
   bool hasConstraint() const
@@ -141,13 +154,17 @@ public:
   void update()
   {
     // Reset all the shapes to be Blue
-    // Lesson 1a
+    // snippet:lesson1a-reset-start
+    // Lesson 1a implementation lives in the finished tutorial.
+    // snippet:lesson1a-reset-end
 
     if (!mBodyForce) {
       // Apply joint torques based on user input, and color the Joint shape red
       for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
         if (mForceCountDown[i] > 0) {
-          // Lesson 1b
+          // snippet:lesson1b-joint-force-start
+          // Lesson 1b implementation lives in the finished tutorial.
+          // snippet:lesson1b-joint-force-end
 
           --mForceCountDown[i];
         }
@@ -156,7 +173,9 @@ public:
       // Apply body forces based on user input, and color the body shape red
       for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
         if (mForceCountDown[i] > 0) {
-          // Lesson 1c
+          // snippet:lesson1c-body-force-start
+          // Lesson 1c implementation lives in the finished tutorial.
+          // snippet:lesson1c-body-force-end
 
           --mForceCountDown[i];
         }

@@ -2,222 +2,149 @@
 
 ## Overview
 
-DART documentation lives on two publishing surfaces, each with a dedicated purpose:
+DART now ships every piece of documentation—user guides, tutorials, developer
+notes, and the C++ API reference—through a single Sphinx project under
+`docs/readthedocs`. The Read the Docs (RTD) build runs `sphinx-build` against
+that tree, renders the prose content, and executes Doxygen during the
+`builder-inited` hook to generate the HTML C++ API bundle. The generated
+artifacts are staged inside ``docs/readthedocs/_generated/cpp-api`` and copied
+into the built site so each RTD version automatically receives the matching API
+reference with no dependency on GitHub Pages.
 
-1. **Read the Docs (RTD)** – user guides, tutorials, community docs, and developer narratives.
-2. **GitHub Pages** – versioned API references for both C++ (Doxygen) and Python (Sphinx).
+The Python API reference (`docs/python_api`) remains a dedicated Sphinx project.
+It still requires a compiled `dartpy` module, so it is primarily useful for
+local development until prebuilt wheels become available on RTD.
 
 ### Architecture Diagram
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    DART Documentation System                     │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                    DART Documentation System                    │
+└────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────┐        ┌─────────────────────────────┐
-│   Read the Docs (RTD)        │        │    GitHub Pages             │
-│   docs.dartsim.org           │        │    dartsim.github.io/dart/  │
-├──────────────────────────────┤        ├─────────────────────────────┤
-│ Source: /docs/readthedocs/   │        │ Built by: build_docs.py     │
-│                              │        │                             │
-│ Contains:                    │        │ Contains (per version):     │
-│ • User Guides                │        │ • C++ API (Doxygen)         │
-│ • Tutorials                  │        │   {version}/                │
-│ • Developer Docs             │        │ • Python API (Sphinx)       │
-│ • Links to API docs →        │        │   {version}-py/             │
-│                              │        │                             │
-│                              │        │ Examples:                   │
-│ Build: Sphinx                │        │ • <version>/   (C++)        │
-│ Trigger: Push to main        │        │ • <version>-py/ (Python)    │
-└──────────────────────────────┘        └─────────────────────────────┘
-         │                                        │
-         │                                        │
-         ▼                                        ▼
-┌──────────────────────────────┐        ┌─────────────────────────────┐
-│ Local Build (pixi)           │        │ GitHub Actions              │
-│                              │        │                             │
-│ Commands:                    │        │ Workflow: api_doc.yml       │
-│ • pixi run docs-build        │        │ Trigger: Push to main       │
-│ • pixi run docs-serve        │        │ Runs: build_docs.py         │
-│                              │        │ Deploys: To gh-pages branch │
-│ Result: Same as RTD          │        │                             │
-│ Output: _build/html          │        │ Builds ALL versions         │
-└──────────────────────────────┘        └─────────────────────────────┘
+┌──────────────────────────────┐
+│   Read the Docs build        │
+│   docs/readthedocs/          │
+├──────────────────────────────┤
+│ Contains:                    │
+│ • User guides & tutorials    │
+│ • Developer docs             │
+│ • C++ API (Doxygen bundle)   │
+│                              │
+│ Build: pixi run docs-build   │
+│ Deploy: RTD (docs.dartsim.org│
+└──────────────────────────────┘
+
+┌──────────────────────────────┐
+│ Local API helpers            │
+├──────────────────────────────┤
+│ docs/python_api/ (Sphinx)    │
+│   → pixi run api-docs-py     │
+│ C++ Doxygen target           │
+│   → pixi run api-docs-cpp    │
+└──────────────────────────────┘
 ```
 
-## Documentation Sites
+## Documentation Surfaces
 
-### Read the Docs
+### Read the Docs (primary site)
 
 - **URL:** <https://docs.dartsim.org>
 - **Source:** `docs/readthedocs/`
-- **Contains:** user guides, tutorials, community content, and links to the API reference hosted elsewhere.
+- **Contents:**
+  - User, tutorial, and community guides
+  - Developer onboarding and workflow docs
+  - `dart/cpp_api_reference` which immediately redirects to
+    `../cpp-api/index.html`, the freshly generated Doxygen site.
+- **Key details:**
+  - `docs/readthedocs/conf.py` renders a tailored Doxyfile and runs Doxygen
+    during `builder-inited`.
+  - Output lands in `_generated/cpp-api/`, is ignored by git, and then copied
+    into the `html_extra_path` when Sphinx finishes.
+  - Every RTD version therefore contains the matching C++ API bundle without an
+    iframe.
 
-**Why no API reference on RTD?** C++ and dartpy must be compiled before Sphinx can introspect them, and RTD’s build environment does not support the full toolchain. RTD remains focused on narrative docs and links out to the generated API reference.
+### Python API reference (local project)
 
-### GitHub Pages
-
-- **URL:** <https://dartsim.github.io/dart/>
-- **Contains per version:**
-  - ✅ C++ API documentation (Doxygen): `{version}/`
-  - ✅ Python API documentation (Sphinx): `{version}-py/`
-- **Examples:**
-  - C++ latest published: <https://dartsim.github.io/dart/v6.13.2/>
-  - Python latest published: <https://dartsim.github.io/dart/v6.13.2-py/>
-
-**Why GitHub Pages?**
-
-1. **Compilation required** – both doc sets compile against DART.
-2. **Version management** – each release gets its own directory.
-3. **Build resources** – GitHub Actions can run full CMake/Sphinx/Doxygen pipelines.
-4. **Consistency** – a single, versioned source of truth for API reference content.
-
-## Architecture
-
-### C++ API Documentation
-
-- **Location:** GitHub Pages only.
-- **Source:** generated by Doxygen from C++ headers.
-- **Build command:** `cmake --build … --target docs` (wrapped by pixi task below).
-- **Published URL:** `https://dartsim.github.io/dart/{version}/`
-
-```bash
-pixi run api-docs-cpp          # Build C++ API locally
-pixi run api-docs-serve-cpp    # Serve at http://localhost:8002
-```
-
-### Python API Documentation
-
-- **Location:** GitHub Pages only.
 - **Source:** `docs/python_api/`
-- **Build tool:** Sphinx with autodoc against the compiled `dartpy` module.
-- **Published URL:** `https://dartsim.github.io/dart/{version}-py/`
-
-```bash
-pixi run api-docs-py           # Build Python API locally
-pixi run api-docs-serve-py     # Serve at http://localhost:8003
-```
+- **Build tool:** `pixi run api-docs-py`
+- **Status:** Requires a compiled `dartpy`, so it is built locally for now. Once
+  dartpy wheels are available we can consider importing it into RTD.
+- **Serving:** `pixi run api-docs-serve-py` hosts the generated site on port
+  8003 for quick inspection.
 
 ## Building Locally
 
-### Main documentation (Read the Docs equivalent)
+### Read the Docs equivalent
 
 ```bash
-pixi run docs-build        # Build documentation
+pixi run docs-build        # Build the RTD site (includes C++ Doxygen bundle)
 pixi run docs-serve        # Serve at http://localhost:8000
 ```
 
-### API documentation (GitHub Pages equivalent)
+### API documentation helpers
 
 ```bash
-pixi run api-docs-cpp      # C++ API docs, serves at 8002 with api-docs-serve-cpp
-pixi run api-docs-py       # Python API docs, serves at 8003 with api-docs-serve-py
-pixi run api-docs-build    # Convenience task to build both
+pixi run api-docs-cpp      # Build the standalone Doxygen site (docs target)
+pixi run api-docs-serve-cpp
+pixi run api-docs-py       # Build docs/python_api against the local dartpy build
+pixi run api-docs-serve-py
+pixi run api-docs-build    # Convenience task that runs both builders
 ```
-
-### Full GitHub Pages pipeline (all versions)
-
-> **Warning:** pulls every tag listed in `scripts/docs_versions.txt` and builds each variant.
-
-```bash
-pixi run api-docs-test-gh      # Build all published versions
-pixi run api-docs-serve-gh     # Serve aggregate site at http://localhost:8004
-pixi run api-docs-clean-gh     # Remove build artifacts
-```
-
-### Build consistency checkpoints
-
-- `pixi run docs-build` → identical to RTD output.
-- `pixi run api-docs-build` → matches the single-version build deployed to GitHub Pages.
-- `pixi run api-docs-test-gh` → mirrors the GitHub Actions workflow across every listed version.
 
 ## Configuration Files
 
 | File | Purpose |
 | ---- | ------- |
 | `.readthedocs.yml` | RTD build definition |
-| `docs/readthedocs/conf.py` | Sphinx configuration for the core docs site |
-| `docs/python_api/conf.py` | Sphinx configuration for the standalone Python API |
-| `scripts/build_docs.py` | Multi-version builder invoked by CI |
-| `scripts/docs_versions.txt` | Ordered list of versions to publish on GitHub Pages |
-| `.github/workflows/api_doc.yml` | CI workflow that builds and deploys the API docs |
+| `docs/readthedocs/conf.py` | Sphinx configuration for the main documentation site (runs Doxygen) |
+| `docs/python_api/conf.py` | Standalone Python API Sphinx configuration |
 | `pixi.toml` | Local task definitions (`docs-build`, `api-docs-*`, etc.) |
 
-## Deployment Pipelines
+## Deployment Pipeline
 
 ### Read the Docs
 
-- **Trigger:** push to `main` or manual rebuild.
+- **Trigger:** push to `main` or manual rebuilds from the RTD dashboard.
 - **Steps:**
   1. RTD reads `.readthedocs.yml`.
-  2. Installs `docs/readthedocs/requirements.txt`.
-  3. Runs `sphinx-build` against `docs/readthedocs/`.
-  4. Publishes HTML to <https://docs.dartsim.org>.
+  2. The pixi environment installs the full toolchain (including Doxygen).
+  3. `sphinx-build` runs inside `docs/readthedocs/`. When the builder fires the
+     `builder-inited` event, `conf.py` renders `Doxyfile.in`, runs Doxygen, and
+     stages the HTML bundle inside `_generated/cpp-api/`.
+  4. Sphinx copies `_generated/cpp-api/` into the output tree so the RTD site
+     serves the API reference next to the rest of the pages.
 
 ### GitHub Pages
 
-- **Triggers:**
-  - Push to `main`.
-  - Scheduled runs (twice a week).
-  - Manual dispatch.
-- **Workflow (`.github/workflows/api_doc.yml`):**
-  1. Execute `scripts/build_docs.py build`.
-  2. Iterate over every entry in `scripts/docs_versions.txt`:
-     - Clone the repository and check out the tag.
-     - Build C++ docs via Doxygen.
-     - Build Python docs via Sphinx.
-  3. Publish the aggregated site to the `gh-pages` branch.
-
-## Version Retention Policy
-
-To balance coverage with maintenance cost we publish two tiers of API documentation builds:
-
-1. **Latest release for each major line** – ensures we always have a single, well-tested reference for every supported major (currently v6.13.2 for the DART 6 line; v6.15.0 is pending publication on GitHub Pages).
-2. **Latest patch for active minor lines** – keeps a single patch-level build for any older minor that still receives fixes (currently v6.12.2).
-
-Update `scripts/docs_versions.txt` when the set of supported majors or minors changes. The GitHub Pages workflow consumes that file directly, so trimming the list immediately reduces CI time and storage for historical builds.
-
-## Adding New Versions
-
-1. Tag the release:
-
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-
-2. Update `scripts/docs_versions.txt` by inserting `vX.Y.Z` near the top.
-
-3. Commit and push:
-
-   ```bash
-   git commit -am "Add vX.Y.Z to API documentation"
-   git push origin main
-   ```
-
-GitHub Actions picks up the change and deploys both `vX.Y.Z/` and `vX.Y.Z-py/` to GitHub Pages.
+The GitHub Pages workflow and the `gh-pages` branch are no longer part of the
+documentation pipeline. Historical builds remain available at their existing
+URLs, but new changes are exclusively published via Read the Docs.
 
 ## Troubleshooting
 
 ### Python API appears empty on RTD
 
-- **Cause:** the RTD build cannot compile `dartpy`.
-- **Current status:** expected until prebuilt wheels are published.
-- **Workaround:** browse the Python API at <https://dartsim.github.io/dart/v6.13.2-py/>.
-- **Long-term fix:** publish wheels so RTD can `pip install dartpy`.
+- **Cause:** RTD cannot `pip install dartpy` yet, so autodoc stubs fail.
+- **Workaround:** build the Python API docs locally with `pixi run api-docs-py`
+  and serve them via `pixi run api-docs-serve-py`.
+- **Long-term fix:** publish wheels so RTD can import dartpy directly.
 
 ### Python API appears empty locally
 
 - **Cause:** missing `PYTHONPATH` reference to the compiled `dartpy`.
-- **Fix:** use the pixi helpers — they export the correct path before invoking Sphinx.
+- **Fix:** use the pixi helpers—they export the correct path before invoking
+  Sphinx.
 
 ```bash
 pixi run docs-build        # RTD-style docs (sets PYTHONPATH)
-pixi run api-docs-py       # GitHub Pages-style Python API docs
+pixi run api-docs-py       # Standalone Python API docs
 ```
 
 ### C++ API missing on RTD
 
-- **Status:** by design — RTD does not run Doxygen.
-- **Solution:** view the C++ API at <https://dartsim.github.io/dart/v6.13.2/>.
-*** End Patch
+- **Cause:** Doxygen is not installed in the active environment or failed during
+  the build.
+- **Fix:** ensure `doxygen` is listed in the pixi dependencies (already true for
+  the default environment). When testing locally run `pixi run docs-build` to
+  confirm `_generated/cpp-api/index.html` exists before pushing.

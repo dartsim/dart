@@ -10,12 +10,24 @@ name: Publish dartpy
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   pull_request:
     branches:
       - "**"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
+      - "docs/**"
+      - "tutorials/**"
+      - "**/*.md"
+      - "**/*.rst"
+      - "**/*.po"
+      - "**/*.pot"
   schedule:
     - cron: "0 10 * * 0,3"
   workflow_dispatch:
@@ -26,7 +38,7 @@ concurrency:
 
 jobs:
   build_wheels:
-    name: ${{ matrix.os }}-py${{ matrix.python-version }}
+    name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     # Note: No manylinux container used. All platforms use pixi environments.
     # Linux wheels: auditwheel auto-detects manylinux tag based on glibc symbols.
@@ -64,6 +76,23 @@ jobs:
           pixi-version: latest
           cache: true
 
+      - name: Setup sccache
+        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Configure environment for compiler cache
+        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
+
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
@@ -87,6 +116,7 @@ jobs:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
 
   upload_pypi:
+    name: Wheels | Publish to PyPI
     needs: [build_wheels]
     runs-on: ubuntu-latest
     # Publish all tagged versions (stable and dev) to production PyPI

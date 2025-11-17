@@ -30,28 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/all.hpp"
-#include "dart/collision/fcl/all.hpp"
-#include "dart/common/all.hpp"
+#include "dart/collision/All.hpp"
+#include "dart/collision/fcl/All.hpp"
+#include "dart/common/All.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/all.hpp"
-#include "dart/math/all.hpp"
+#include "dart/dynamics/All.hpp"
+#include "dart/math/All.hpp"
 
 #include <gtest/gtest.h>
 
 #include <iostream>
 #include <limits>
 #if HAVE_ODE
-  #include "dart/collision/ode/all.hpp"
+  #include "dart/collision/ode/All.hpp"
 #endif
 #if HAVE_BULLET
-  #include "dart/collision/bullet/all.hpp"
+  #include "dart/collision/bullet/All.hpp"
 #endif
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/simulation/all.hpp"
-#include "dart/utils/all.hpp"
+#include "dart/simulation/All.hpp"
+#include "dart/utils/All.hpp"
 
 using namespace dart;
 using namespace common;
@@ -1526,7 +1526,7 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 
   // Regression test for #666
   auto world = std::make_unique<World>();
-  world->getConstraintSolver()->setCollisionDetector(cd);
+  world->setCollisionDetector(cd);
   world->addSkeleton(boxSkeleton1);
   world->addSkeleton(boxSkeleton2);
   const collision::CollisionResult& result1 = world->getLastCollisionResult();
@@ -1633,12 +1633,12 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   for (std::size_t i = 0; i < numFrames; ++i) {
     const double time = world->getTime();
 
-    joint1->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint2->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint3->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint4->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
-    joint5->setCommand(0, -0.5 * constantsd::pi() * std::sin(time));
-    joint6->setCommand(0, -0.5 * constantsd::pi() * std::sin(time)); // ignored
+    joint1->setCommand(0, -0.5 * pi * std::cos(time));
+    joint2->setCommand(0, -0.5 * pi * std::cos(time));
+    joint3->setCommand(0, -0.5 * pi * std::cos(time));
+    joint4->setCommand(0, -0.5 * pi * std::cos(time));
+    joint5->setCommand(0, -0.5 * pi * std::sin(time));
+    joint6->setCommand(0, -0.5 * pi * std::sin(time)); // ignored
 
     world->step(false);
 

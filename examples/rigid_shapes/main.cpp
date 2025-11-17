@@ -38,11 +38,11 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <fcl/config.h>
 
@@ -104,8 +104,7 @@ private:
   {
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
-    const Eigen::Vector3d rotation
-        = Random::uniform<Eigen::Vector3d>(-constantsd::pi(), constantsd::pi());
+    const Eigen::Vector3d rotation = Random::uniform<Eigen::Vector3d>(-pi, pi);
     const Eigen::Vector3d position = Eigen::Vector3d(
         Random::uniform(-1.0, 1.0),
         Random::uniform(0.5, 1.0),

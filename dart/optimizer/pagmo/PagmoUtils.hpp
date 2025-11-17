@@ -35,7 +35,7 @@
 
 #include <dart/optimizer/MultiObjectiveSolver.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/common/Diagnostics.hpp>
 
 DART_SUPPRESS_CPP_WARNING_BEGIN
 #include <pagmo/pagmo.hpp>

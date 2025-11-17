@@ -4,7 +4,50 @@ import dartpy.constraint
 import dartpy.dynamics
 import numpy
 import typing
-__all__: list[str] = ['World']
+__all__: list[str] = ['CollisionDetectorType', 'World']
+class CollisionDetectorType:
+    """
+    Members:
+    
+      DART
+    
+      FCL
+    
+      BULLET
+    
+      ODE
+    """
+    BULLET: typing.ClassVar[CollisionDetectorType]  # value = <CollisionDetectorType.BULLET: 2>
+    DART: typing.ClassVar[CollisionDetectorType]  # value = <CollisionDetectorType.DART: 0>
+    FCL: typing.ClassVar[CollisionDetectorType]  # value = <CollisionDetectorType.FCL: 1>
+    ODE: typing.ClassVar[CollisionDetectorType]  # value = <CollisionDetectorType.ODE: 3>
+    __members__: typing.ClassVar[dict[str, CollisionDetectorType]]  # value = {'DART': <CollisionDetectorType.DART: 0>, 'FCL': <CollisionDetectorType.FCL: 1>, 'BULLET': <CollisionDetectorType.BULLET: 2>, 'ODE': <CollisionDetectorType.ODE: 3>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: int) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: int) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
 class World:
     @typing.overload
     def __init__(self) -> None:
@@ -42,6 +85,8 @@ class World:
     def getIndex(self, index: int) -> int:
         ...
     def getLastCollisionResult(self) -> dartpy.collision.CollisionResult:
+        ...
+    def getCollisionDetector(self) -> dartpy.collision.CollisionDetector:
         ...
     def getName(self) -> str:
         ...
@@ -86,6 +131,12 @@ class World:
     def setGravity(self, x: float, y: float, z: float) -> None:
         ...
     def setName(self, newName: str) -> str:
+        ...
+    @typing.overload
+    def setCollisionDetector(self, collisionDetector: dartpy.collision.CollisionDetector) -> None:
+        ...
+    @typing.overload
+    def setCollisionDetector(self, collisionDetectorType: CollisionDetectorType) -> None:
         ...
     def setTime(self, time: float) -> None:
         ...

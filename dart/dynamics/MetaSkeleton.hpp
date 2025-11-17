@@ -38,6 +38,7 @@
 
 #include <dart/math/Geometry.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/LockableReference.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
@@ -124,15 +125,13 @@ public:
   /// \return The body node of given name.
   virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
 
-  /// Get all the BodyNodes that are held by this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
+  /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
   virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
 
-  /// Get all the BodyNodes that are held by this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
+  /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
@@ -176,18 +175,6 @@ public:
   /// \return The joint of given name.
   virtual const Joint* getJoint(const std::string& name) const = 0;
 
-  /// Returns all the joints that are held by this MetaSkeleton.
-  ///
-  /// \deprecated Use eachJoint() instead.
-  DART_DEPRECATED(6.13)
-  virtual std::vector<Joint*> getJoints() = 0;
-
-  /// Returns all the joints that are held by this MetaSkeleton.
-  ///
-  /// \deprecated Use eachJoint() instead.
-  DART_DEPRECATED(6.13)
-  virtual std::vector<const Joint*> getJoints() const = 0;
-
   /// Returns all the Joint of given name.
   ///
   /// This MetaSkeleton can contain multiple Joints with the same name when
@@ -206,6 +193,16 @@ public:
   /// \return The list of joints of given name.
   virtual std::vector<const Joint*> getJoints(
       const std::string& name) const = 0;
+
+  /// Deprecated joint list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual std::vector<Joint*> getJoints() = 0;
+
+  /// Deprecated joint list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
+  DART_DEPRECATED(6.13)
+  virtual std::vector<const Joint*> getJoints() const = 0;
 
   /// Returns whether this Skeleton contains \c join.
   virtual bool hasJoint(const Joint* joint) const = 0;
@@ -226,15 +223,13 @@ public:
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   virtual const DegreeOfFreedom* getDof(std::size_t _idx) const = 0;
 
-  /// Get the vector of DegreesOfFreedom for this MetaSkeleton
-  ///
-  /// \deprecated Use eachDof() instead.
+  /// Deprecated DOF list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
   virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
 
-  /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
-  ///
-  /// \deprecated Use eachBodyNode() instead.
+  /// Deprecated DOF list getter kept for downstream consumers (e.g.,
+  /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
   virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
 

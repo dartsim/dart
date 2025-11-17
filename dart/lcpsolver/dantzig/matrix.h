@@ -72,8 +72,7 @@ namespace dart::lcpsolver {
 template <typename Scalar>
 Scalar Dot(const Scalar* a, const Scalar* b, int n);
 
-/// Legacy dReal version for backward compatibility
-/// @deprecated Use template version Dot<Scalar>
+/// Legacy dReal overload for backward compatibility
 inline double dDot(const double* a, const double* b, int n)
 {
   return Dot<double>(a, b, n);
@@ -344,9 +343,8 @@ inline void VectorScale(
   a.array() *= d.array();
 }
 
-/// @deprecated Use Eigen version - will be removed
+/// Legacy pointer overload retained for compatibility.
 /// Element-wise vector scaling: a[i] = a[i] * d[i] (pointer version)
-/// Phase 12: Use Eigen for SIMD optimization
 template <typename Scalar>
 inline void VectorScale(Scalar* a, const Scalar* d, int n)
 {
@@ -367,7 +365,7 @@ inline void CopyVector(
   dst = src;
 }
 
-/// @deprecated Use Eigen version - will be removed
+/// Legacy pointer overload retained for compatibility.
 /// Copy n elements from src to dst (pointer version)
 template <typename Scalar>
 inline void CopyVector(Scalar* dst, const Scalar* src, int n)
@@ -388,7 +386,7 @@ inline void VectorAdd(
   a += b;
 }
 
-/// @deprecated Use Eigen version - will be removed
+/// Legacy pointer overload retained for compatibility.
 /// Add vector b to vector a: a = a + b (pointer version)
 template <typename Scalar>
 inline void VectorAdd(Scalar* a, const Scalar* b, int n)
@@ -409,7 +407,7 @@ inline void VectorSubtract(
   a -= b;
 }
 
-/// @deprecated Use Eigen version - will be removed
+/// Legacy pointer overload retained for compatibility.
 /// Subtract vector b from vector a: a = a - b (pointer version)
 template <typename Scalar>
 inline void VectorSubtract(Scalar* a, const Scalar* b, int n)
@@ -428,7 +426,7 @@ inline void VectorNegate(Eigen::MatrixBase<Derived>& a)
   a = -a;
 }
 
-/// @deprecated Use Eigen version - will be removed
+/// Legacy pointer overload retained for compatibility.
 /// Negate vector: a = -a (pointer version)
 template <typename Scalar>
 inline void VectorNegate(Scalar* a, int n)

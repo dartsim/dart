@@ -49,11 +49,11 @@ DartResourceRetriever::DartResourceRetriever()
   : mLocalRetriever(std::make_shared<common::LocalResourceRetriever>())
 {
   // 1. Search the local build directory
-  addDataDirectory(DART_DATA_LOCAL_PATH);
+  addDataDirectory(dart::config::dataLocalPath());
 
   // 2. Search the designated install directory. This should work if you build
   // and install DART from source.
-  addDataDirectory(DART_DATA_GLOBAL_PATH);
+  addDataDirectory(dart::config::dataGlobalPath());
 
   // 3. Search the directory set by the environment variable, DART_DATA_PATH.
   // Method 2 can fail because some package manager use temporary install

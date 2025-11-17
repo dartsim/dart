@@ -36,11 +36,33 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+#include <string_view>
+
 using dart::common::Resource;
 using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
 using dart::common::Uri;
 using dart::utils::PackageResourceRetriever;
+
+namespace {
+
+std::string makeFileUri(std::string_view relative)
+{
+#ifdef _WIN32
+  constexpr std::string_view kScheme = "file:///";
+#else
+  constexpr std::string_view kScheme = "file://";
+#endif
+  return std::string(kScheme) + dart::config::dataLocalPath(relative);
+}
+
+std::string makeLocalPath(std::string_view relative)
+{
+  return dart::config::dataLocalPath(relative);
+}
+
+} // namespace
 
 TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 {
@@ -58,15 +80,11 @@ TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
   // Additional slash is required for Windows because Windows file system
   // doesn't have a leading slash for an absolute path.
   // Reference: https://en.wikipedia.org/wiki/File_URI_scheme#Windows
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
@@ -79,7 +97,7 @@ TEST(PackageResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
 {
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_FALSE(retriever.exists(Uri::createFromString("foo://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
@@ -89,15 +107,11 @@ TEST(PackageResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
 
 TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test/");
+  retriever.addPackageDirectory("test", makeLocalPath("test/"));
 
   EXPECT_TRUE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
@@ -108,16 +122,12 @@ TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
 
 TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-#endif
+  const std::string expected = makeFileUri("test1/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_TRUE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
@@ -128,18 +138,13 @@ TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
 
 TEST(PackageResourceRetriever, exists_FallsBackOnSecondUri)
 {
-#ifdef _WIN32
-  const char* expected1 = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file:///" DART_DATA_LOCAL_PATH "test2/foo";
-#else
-  const char* expected1 = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file://" DART_DATA_LOCAL_PATH "test2/foo";
-#endif
+  const std::string expected1 = makeFileUri("test1/foo");
+  const std::string expected2 = makeFileUri("test2/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(2u, mockRetriever->mExists.size());
@@ -164,15 +169,11 @@ TEST(PackageResourceRetriever, getFilePath_UnableToResolve_ReturnsEmptyString)
 TEST(PackageResourceRetriever, getFilePath_DelegateFails_ReturnsEmptyString)
 {
   // GTest breaks the string concatenation.
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")), "");
@@ -186,7 +187,7 @@ TEST(PackageResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
 {
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_EQ(retriever.getFilePath(Uri::createFromString("foo://test/foo")), "");
   EXPECT_TRUE(mockRetriever->mExists.empty());
@@ -196,15 +197,11 @@ TEST(PackageResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
 
 TEST(PackageResourceRetriever, getFilePath_StripsTrailingSlash)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test/");
+  retriever.addPackageDirectory("test", makeLocalPath("test/"));
 
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")),
@@ -217,16 +214,12 @@ TEST(PackageResourceRetriever, getFilePath_StripsTrailingSlash)
 
 TEST(PackageResourceRetriever, getFilePath_FirstUriSucceeds)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-#endif
+  const std::string expected = makeFileUri("test1/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")),
@@ -239,18 +232,13 @@ TEST(PackageResourceRetriever, getFilePath_FirstUriSucceeds)
 
 TEST(PackageResourceRetriever, getFilePath_FallsBackOnSecondUri)
 {
-#ifdef _WIN32
-  const char* expected1 = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file:///" DART_DATA_LOCAL_PATH "test2/foo";
-#else
-  const char* expected1 = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file://" DART_DATA_LOCAL_PATH "test2/foo";
-#endif
+  const std::string expected1 = makeFileUri("test1/foo");
+  const std::string expected2 = makeFileUri("test2/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")), "");
@@ -275,15 +263,11 @@ TEST(PackageResourceRetriever, retrieve_UnableToResolve_ReturnsNull)
 TEST(PackageResourceRetriever, retrieve_DelegateFails_ReturnsNull)
 {
   // GTest breaks the string concatenation.
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_EQ(
       nullptr, retriever.retrieve(Uri::createFromString("package://test/foo")));
@@ -296,7 +280,7 @@ TEST(PackageResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
 {
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test");
+  retriever.addPackageDirectory("test", makeLocalPath("test"));
 
   EXPECT_EQ(
       nullptr, retriever.retrieve(Uri::createFromString("foo://test/foo")));
@@ -306,15 +290,11 @@ TEST(PackageResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
 
 TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test/foo";
-#endif
+  const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test/");
+  retriever.addPackageDirectory("test", makeLocalPath("test/"));
 
   EXPECT_TRUE(
       retriever.retrieve(Uri::createFromString("package://test/foo"))
@@ -326,16 +306,12 @@ TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
 
 TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
 {
-#ifdef _WIN32
-  const char* expected = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-#else
-  const char* expected = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-#endif
+  const std::string expected = makeFileUri("test1/foo");
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_TRUE(
       retriever.retrieve(Uri::createFromString("package://test/foo"))
@@ -347,18 +323,13 @@ TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
 
 TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
 {
-#ifdef _WIN32
-  const char* expected1 = "file:///" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file:///" DART_DATA_LOCAL_PATH "test2/foo";
-#else
-  const char* expected1 = "file://" DART_DATA_LOCAL_PATH "test1/foo";
-  const char* expected2 = "file://" DART_DATA_LOCAL_PATH "test2/foo";
-#endif
+  const std::string expected1 = makeFileUri("test1/foo");
+  const std::string expected2 = makeFileUri("test2/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test1");
-  retriever.addPackageDirectory("test", DART_DATA_LOCAL_PATH "test2");
+  retriever.addPackageDirectory("test", makeLocalPath("test1"));
+  retriever.addPackageDirectory("test", makeLocalPath("test2"));
 
   EXPECT_EQ(
       nullptr, retriever.retrieve(Uri::createFromString("package://test/foo")));

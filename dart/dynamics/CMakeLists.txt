@@ -8,8 +8,7 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "dynamics headers" ${hdrs})
-# TODO: remove below line once the files are completely removed.
-list(REMOVE_ITEM header_names "MultiSphereShape.hpp")
+list(REMOVE_ITEM header_names SmartPointer.hpp)
 dart_generate_component_headers(
   COMPONENT_NAME dynamics
   TARGET_DIR "dart/dynamics/"
@@ -18,10 +17,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs} ${detail_hdrs}
 )
 
-# Install (includes all.hpp, dynamics.hpp for component compatibility,
+# Install (includes All.hpp, dynamics.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/all.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp ikfast.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp ikfast.h
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )

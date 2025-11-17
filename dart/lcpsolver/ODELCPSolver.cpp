@@ -89,10 +89,11 @@ bool ODELCPSolver::Solve(
         A[i * nSkip + j] = _A(i, j);
       }
     }
+    const double inf = ScalarTraits<double>::inf();
     for (int i = 0; i < n; ++i) {
       b[i] = -_b[i];
       x[i] = w[i] = lo[i] = 0;
-      hi[i] = dInfinity;
+      hi[i] = inf;
       findex[i] = -1;
     }
     for (int i = 0; i < _numContacts; ++i) {

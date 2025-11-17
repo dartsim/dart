@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_BODYNODE_HPP_
 
 #include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <utility>
@@ -220,12 +221,10 @@ template <class AspectT>
 const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 {
   std::vector<ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
 
-  auto numShapeNode = getNumShapeNodes();
-
-  for (auto i = 0u; i < numShapeNode; ++i) {
-    auto shapeNode = getShapeNode(i);
-
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    auto* shapeNode = getShapeNode(i);
     if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }
@@ -238,12 +237,10 @@ template <class AspectT>
 const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 {
   std::vector<const ShapeNode*> shapeNodes;
+  const auto numShapeNode = getNumShapeNodes();
 
-  auto numShapeNode = getNumShapeNodes();
-
-  for (auto i = 0u; i < numShapeNode; ++i) {
-    const auto shapeNode = getShapeNode(i);
-
+  for (std::size_t i = 0; i < numShapeNode; ++i) {
+    const auto* shapeNode = getShapeNode(i);
     if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }
@@ -336,6 +333,34 @@ void BodyNode::eachShapeNodeWith(Func func)
       }
     }
   }
+}
+
+//==============================================================================
+template <typename MassProvider>
+std::optional<Inertia> BodyNode::computeInertiaFromShapeNodes(
+    MassProvider&& massProvider) const
+{
+  Eigen::Matrix6d total = Eigen::Matrix6d::Zero();
+  bool used = false;
+
+  for (auto i = 0u; i < getNumShapeNodes(); ++i) {
+    const ShapeNode* shapeNode = getShapeNode(i);
+    auto maybeMass = massProvider(shapeNode);
+    if (!maybeMass.has_value())
+      continue;
+    const double mass = *maybeMass;
+    if (mass <= 0.0)
+      continue;
+
+    const Inertia transformed = shapeNode->computeTransformedInertia(mass);
+    total += transformed.getSpatialTensor();
+    used = true;
+  }
+
+  if (!used)
+    return std::nullopt;
+
+  return Inertia(total);
 }
 
 } // namespace dynamics

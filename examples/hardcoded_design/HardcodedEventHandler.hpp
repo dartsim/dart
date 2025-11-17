@@ -33,9 +33,9 @@
 #ifndef EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 #define EXAMPLES_HARDCODEDDESIGN_HARDCODEDEVENTHANDLER_HPP_
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <osgGA/GUIEventHandler>
 

@@ -34,11 +34,12 @@
 #include "dart/common/Macros.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
-#include <dart/gui/osg/all.hpp>
-#include <dart/utils/all.hpp>
-#include <dart/collision/bullet/all.hpp>
+#include <dart/config.hpp>
+#include <dart/gui/osg/All.hpp>
+#include <dart/utils/All.hpp>
+#include <dart/collision/bullet/All.hpp>
 #include <dart/collision/ode/ode.hpp>
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <cmath>
 
@@ -125,13 +126,13 @@ public:
 int main()
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH "/skel/kima/kima_human_edited.skel");
+      dart::config::dataPath("skel/kima/kima_human_edited.skel"));
   DART_ASSERT(world != nullptr);
 
   auto skel = world->getSkeleton("human");
-  for (auto joint : skel->getJoints()) {
+  skel->eachJoint([](dart::dynamics::Joint* joint) {
     joint->setLimitEnforcement(true);
-  }
+  });
 
   // Create the world node
   ::osg::ref_ptr<HumanJointLimitsWorldNode> node

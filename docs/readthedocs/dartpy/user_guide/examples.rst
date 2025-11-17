@@ -5,7 +5,7 @@ Once you have installed dartpy using pip install -U dartpy, you can run the foll
 
 .. note::
 
-   In order to load the URDF, please clone dart repository and set the `DART_DATA_LOCAL_PATH` environment variable to where the `data` folder is in the cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)
+   In order to load the URDF, please clone dart repository and set the `DART_DATA_PATH` environment variable to where the `data` folder is in the cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)
 
 .. code-block:: python
 

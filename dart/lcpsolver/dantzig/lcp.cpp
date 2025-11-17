@@ -167,6 +167,12 @@ rows/columns and manipulate C.
 namespace dart {
 namespace lcpsolver {
 
+namespace {
+
+constexpr dReal kInfinity = ScalarTraits<dReal>::inf();
+
+} // namespace
+
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
@@ -382,7 +388,7 @@ bool dSolveLCP(
         int si = 0;  // si = index to switch if cmd>3
         dReal s = -w[i] / delta_w[i];
         if (dir > 0) {
-          if (hi[i] < dInfinity) {
+          if (hi[i] < kInfinity) {
             dReal s2 = (hi[i] - x[i])
                        * dirf; // was (hi[i]-x[i])/dirf	// step to x(i)=hi(i)
             if (s2 < s) {
@@ -391,7 +397,7 @@ bool dSolveLCP(
             }
           }
         } else {
-          if (lo[i] > -dInfinity) {
+          if (lo[i] > -kInfinity) {
             dReal s2 = (lo[i] - x[i])
                        * dirf; // was (lo[i]-x[i])/dirf	// step to x(i)=lo(i)
             if (s2 < s) {
@@ -424,7 +430,7 @@ bool dSolveLCP(
           const int numC = lcp.numC();
           for (int k = adj_nub; k < numC; ++k) {
             const int indexC_k = lcp.indexC(k);
-            if (delta_x[indexC_k] < 0 && lo[indexC_k] > -dInfinity) {
+            if (delta_x[indexC_k] < 0 && lo[indexC_k] > -kInfinity) {
               dReal s2 = (lo[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
               if (s2 < s) {
                 s = s2;
@@ -432,7 +438,7 @@ bool dSolveLCP(
                 si = indexC_k;
               }
             }
-            if (delta_x[indexC_k] > 0 && hi[indexC_k] < dInfinity) {
+            if (delta_x[indexC_k] > 0 && hi[indexC_k] < kInfinity) {
               dReal s2 = (hi[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
               if (s2 < s) {
                 s = s2;

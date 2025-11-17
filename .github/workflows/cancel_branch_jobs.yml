@@ -1,0 +1,181 @@
+# Cancel queued or running workflow runs for a branch once its PR is merged or the branch is deleted.
+name: Cancel PR Branch Jobs
+
+on:
+  pull_request:
+    types:
+      - closed
+  delete:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-jobs:
+    name: Automation | Cancel branch workflows
+    if: github.event_name == 'pull_request' || github.event_name == 'delete'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel runs for branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const currentRunId = context.runId;
+            const payload = context.payload;
+
+            let branch;
+            let headRepo;
+
+            if (eventName === 'pull_request') {
+              const pr = payload.pull_request;
+
+              if (!pr) {
+                core.warning(
+                  'Missing pull request details; skip cancellation to avoid affecting other forks.',
+                );
+                return;
+              }
+
+              if (pr.merged !== true) {
+                core.info(
+                  `Pull request #${pr.number ?? 'unknown'} was closed without merge; skipping cancellation.`,
+                );
+                return;
+              }
+
+              branch = pr.head?.ref;
+              headRepo = pr.head?.repo;
+              const baseRepo = pr.base?.repo;
+
+              if (!headRepo || !baseRepo) {
+                core.warning(
+                  'Head/base repository information is unavailable; skip cancellation to avoid affecting other forks.',
+                );
+                return;
+              }
+
+              const headOwnerLogin = headRepo?.owner?.login?.toLowerCase();
+              const baseOwnerLogin = baseRepo?.owner?.login?.toLowerCase();
+              const headOwnerId =
+                typeof headRepo?.owner?.id === 'number'
+                  ? headRepo.owner.id
+                  : undefined;
+              const baseOwnerId =
+                typeof baseRepo?.owner?.id === 'number'
+                  ? baseRepo.owner.id
+                  : undefined;
+
+              const ownersDiffer =
+                (typeof headOwnerId === 'number' &&
+                  typeof baseOwnerId === 'number' &&
+                  headOwnerId !== baseOwnerId) ||
+                (headOwnerLogin &&
+                  baseOwnerLogin &&
+                  headOwnerLogin !== baseOwnerLogin);
+
+              if (ownersDiffer) {
+                core.info(
+                  `Skipping cancellation: PR head repo owner (${headOwnerLogin ??
+                    headOwnerId}) differs from base repo owner (${baseOwnerLogin ??
+                    baseOwnerId}).`,
+                );
+                return;
+              }
+            } else if (eventName === 'delete') {
+              if (payload.ref_type !== 'branch') {
+                core.info(
+                  `Delete event for ref type "${payload.ref_type}"; skipping.`,
+                );
+                return;
+              }
+
+              branch = payload.ref;
+              headRepo = payload.repository;
+
+              if (!branch || !headRepo) {
+                core.warning(
+                  'Repository or branch information missing from delete event; skipping cancellation.',
+                );
+                return;
+              }
+            } else {
+              core.info(`Unsupported event "${eventName}"; skipping.`);
+              return;
+            }
+
+            if (!branch) {
+              core.warning(
+                'Branch information is unavailable; nothing to cancel.',
+              );
+              return;
+            }
+
+            const headRepoId =
+              typeof headRepo?.id === 'number' ? headRepo.id : undefined;
+            const headRepoFullName = headRepo?.full_name?.toLowerCase();
+            const headRepoLabel =
+              headRepoFullName ?? (headRepoId ? String(headRepoId) : 'unknown');
+
+            core.info(
+              `Searching for unfinished runs on branch "${branch}" from repo "${headRepoLabel}"...`,
+            );
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner,
+                repo,
+                branch,
+                per_page: 100,
+              },
+            );
+
+            const cancellableStatuses = new Set(['in_progress', 'queued']);
+            const targets = runs.filter((run) => {
+              if (!cancellableStatuses.has(run.status)) return false;
+              if (run.id === currentRunId) return false;
+              if (run.head_branch !== branch) return false;
+              if (!run.head_repository) return false;
+
+              const matchesId =
+                typeof headRepoId === 'number' &&
+                run.head_repository.id === headRepoId;
+              const matchesFullName =
+                headRepoFullName &&
+                run.head_repository.full_name?.toLowerCase() ===
+                  headRepoFullName;
+
+              return matchesId || matchesFullName;
+            });
+
+            if (targets.length === 0) {
+              core.info('No queued or in-progress runs found for this branch.');
+              return;
+            }
+
+            for (const run of targets) {
+              core.info(
+                `Canceling ${run.name} (run #${run.id}) [status=${run.status}]`,
+              );
+              try {
+                await github.rest.actions.cancelWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    `Insufficient permissions to cancel run #${run.id}; skipping remaining cancellations.`,
+                  );
+                  return;
+                }
+                throw error;
+              }
+            }
+
+            core.info(`Canceled ${targets.length} workflow run(s).`)

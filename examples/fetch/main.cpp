@@ -32,15 +32,16 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/all.hpp>
+#include <dart/gui/osg/All.hpp>
 
-#include <dart/utils/all.hpp>
+#include <dart/utils/All.hpp>
 
-#include <dart/collision/bullet/all.hpp>
+#include <dart/collision/bullet/All.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 using namespace dart;
+using dart::simulation::CollisionDetectorType;
 
 class FetchWorldNode : public gui::osg::RealTimeWorldNode
 {
@@ -157,8 +158,7 @@ int main()
   auto world = utils::MjcfParser::readWorld(
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
   DART_ASSERT(world);
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
+  world->setCollisionDetector(CollisionDetectorType::Bullet);
 
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");

@@ -32,7 +32,7 @@
 
 #include <dart/simulation/World.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
@@ -44,6 +44,14 @@ namespace python {
 
 void World(py::module& m)
 {
+  ::py::enum_<dart::simulation::CollisionDetectorType>(
+      m, "CollisionDetectorType")
+      .value("DART", dart::simulation::CollisionDetectorType::Dart)
+      .value("FCL", dart::simulation::CollisionDetectorType::Fcl)
+      .value("BULLET", dart::simulation::CollisionDetectorType::Bullet)
+      .value("ODE", dart::simulation::CollisionDetectorType::Ode)
+      .export_values();
+
   ::py::class_<
       dart::simulation::World,
       std::shared_ptr<dart::simulation::World>>(m, "World")
@@ -222,6 +230,26 @@ void World(py::module& m)
           +[](dart::simulation::World* self)
               -> const collision::CollisionResult& {
             return self->getLastCollisionResult();
+          })
+      .def(
+          "setCollisionDetector",
+          +[](dart::simulation::World* self,
+              const collision::CollisionDetectorPtr& detector) {
+            self->setCollisionDetector(detector);
+          },
+          ::py::arg("collisionDetector"))
+      .def(
+          "setCollisionDetector",
+          +[](dart::simulation::World* self,
+              dart::simulation::CollisionDetectorType type) {
+            self->setCollisionDetector(type);
+          },
+          ::py::arg("collisionDetectorType"))
+      .def(
+          "getCollisionDetector",
+          +[](dart::simulation::World* self)
+              -> dart::collision::CollisionDetectorPtr {
+            return self->getCollisionDetector();
           })
       .def(
           "reset",

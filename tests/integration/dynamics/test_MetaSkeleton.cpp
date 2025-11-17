@@ -118,10 +118,12 @@ TEST(MetaSkeleton, Referential)
   for (std::size_t i = 0; i < skeletons.size(); ++i) {
     SkeletonPtr skeleton = skeletons[i];
 
-    const auto& skelJoints = skeleton->getJoints();
-    EXPECT_TRUE(skeleton->getNumJoints() == skelJoints.size());
-    for (auto* joint : skelJoints)
+    std::size_t countedJoints = 0;
+    skeleton->eachJoint([&](Joint* joint) {
       EXPECT_TRUE(skeleton->hasJoint(joint));
+      ++countedJoints;
+    });
+    EXPECT_TRUE(skeleton->getNumJoints() == countedJoints);
 
     for (std::size_t j = 0; j < skeleton->getNumTrees(); ++j) {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
@@ -719,8 +721,8 @@ TEST(MetaSkeleton, GetJointsAndBodyNodes)
   EXPECT_TRUE(skelA->getNumBodyNodes() == 3u);
   EXPECT_TRUE(skelB->getNumBodyNodes() == 3u);
 
-  EXPECT_TRUE(skelA->getJoints().size() == 3u);
-  EXPECT_TRUE(skelB->getJoints().size() == 3u);
+  EXPECT_TRUE(skelA->getNumJoints() == 3u);
+  EXPECT_TRUE(skelB->getNumJoints() == 3u);
 
   bodyNodeA0->setName("bodyNode0");
   bodyNodeA1->setName("bodyNode1");

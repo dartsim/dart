@@ -11,7 +11,7 @@
 
 #include <fstream>
 #if HAVE_PAGMO
-  #include <dart/optimizer/pagmo/all.hpp>
+  #include <dart/optimizer/pagmo/All.hpp>
 #endif
 
 using namespace dart;

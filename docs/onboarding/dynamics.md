@@ -3,6 +3,10 @@
 ## Overview
 This document provides an exploration of the core dynamics classes in DART (Dynamic Animation and Robotics Toolkit), located in the `dart/dynamics` directory.
 
+## Coding Conventions
+- Follow `CONTRIBUTING.md` for formatting (two-space indentation, camelCase functions, PascalCase classes, no cuddled braces).
+- Always wrap conditional bodies in braces, even when the branch contains a single statement. This keeps future edits safe and matches the repository style enforced in current work.
+
 ## Core Dynamics Classes
 
 ### 1. Skeleton (`Skeleton.hpp`)
@@ -80,6 +84,8 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - `setMomentOfInertia()`, `getMomentOfInertia()`
   - `setLocalCOM()`, `getLocalCOM()`
   - `setInertia()`, `getInertia()`
+  - `computeInertiaFromShapeNodes()` - Aggregate ShapeNode inertias given a
+    per-shape mass provider (handy for importers and tooling).
 
 - **Kinematics:**
   - `getRelativeTransform()` - Transform relative to parent
@@ -98,8 +104,11 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 
 - **ShapeNode Management:**
   - `createShapeNode()` - Attach collision/visual shapes
-  - `getShapeNodesWith<Aspect>()` - Query shapes with specific aspects
+  - `getNumShapeNodesWith<Aspect>()` / `getShapeNodeWith<Aspect>(index)` - Query shapes with specific aspects
   - `eachShapeNodeWith<Aspect>()` - Iterate over shapes
+  - `ShapeNode::computeTransformedInertia()` - Build a `dynamics::Inertia`
+    with the ShapeNode’s relative transform already applied (useful when
+    pulling mass properties from geometry).
 
 - **Specialized Nodes:**
   - EndEffector support
@@ -272,20 +281,16 @@ double pos = dof->getPosition();
 - **Spatial Inertia Tensor:** 6x6 matrix representation for spatial dynamics
 - **Validation:** Methods to verify physical validity of inertia parameters
 
-**Key Methods:**
-- **Parameter Access:**
-  - `setParameter()`, `getParameter()` - Generic parameter access
-  - `setMass()`, `getMass()`
-  - `setLocalCOM()`, `getLocalCOM()`
-  - `setMoment()`, `getMoment()` - Moment of inertia matrix
-
-- **Spatial Tensor:**
-  - `setSpatialTensor()`, `getSpatialTensor()` - 6x6 spatial inertia
-
-- **Validation:**
-  - `verify()` - Check if inertia is physically valid
-  - `verifyMoment()` - Static method to check moment of inertia
-  - `verifySpatialTensor()` - Static method to check spatial tensor
+**Key Capabilities:**
+- Manage minimal mass properties (mass, COM, moment of inertia) or work directly
+  with the 6x6 spatial inertia tensor for Featherstone-style algorithms.
+- Convert between parameter sets on demand; the class keeps the spatial tensor
+  and scalar parameters in sync regardless of which representation is modified.
+- Re-express an inertia in another frame using a provided transform, which
+  internally applies the spatial adjoint to the tensor and updates the derived
+  COM and moment quantities.
+- Validate inputs (moments/spatial tensor) against physical constraints so that
+  downstream dynamics code can safely assume well-formed inertias.
 
 **Physical Constraints:**
 - Mass must be positive
@@ -300,7 +305,7 @@ double pos = dof->getPosition();
 **Purpose:** Abstract base class for geometric shapes used for collision detection and visualization.
 
 **Key Features:**
-- **Shape Types:** (enumeration, deprecated - use `getType()` instead)
+- **Shape Types:** (legacy enumeration; prefer `Shape::getType()` for new code)
   - Primitive shapes: Sphere, Box, Ellipsoid, Cylinder, Capsule, Cone, Pyramid
   - Complex shapes: Mesh, SoftMesh, MultiSphere, HeightMap, LineSegment, Plane
 
