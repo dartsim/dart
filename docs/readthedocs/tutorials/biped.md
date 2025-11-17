@@ -11,7 +11,7 @@ consists of seven Lessons covering the following topics:
 - APIs for dynamic quantities.
 - Skeleton editing.
 
-Please reference the source code in [**tutorial_biped/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped/main.cpp) and [**tutorial_biped_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped_finished/main.cpp).
+Please reference the source code in [**tutorial_biped/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped/main.cpp), [**tutorial_biped_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped_finished/main.cpp), and the dartpy variant [**python/tutorials/04_biped/main_finished.py**](https://github.com/dartsim/dart/blob/main/python/tutorials/04_biped/main_finished.py).
 
 ## Lesson 1: Joint limits and self-collision
 Let's start by locating the ``main`` function in tutorials/tutorial_biped/main.cpp. We first create a floor
@@ -21,15 +21,22 @@ describes a ``World`` with one or more ``Skeleton``s in it. Here we
 load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/main/data/skel/biped.skel) and assign the bipedal figure to a
 ``Skeleton`` pointer called *biped*.
 
-```cpp
-SkeletonPtr loadBiped()
-{
-...
-    WorldPtr world = SkelParser::readWorld(
-        dart::config::dataLocalPath("skel/biped.skel"));
-    SkeletonPtr biped = world->getSkeleton("biped");
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson1-load-start
+         :end-before: // snippet:cpp-biped-lesson1-load-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson1-load-start
+         :end-before: # snippet:py-biped-lesson1-load-end
 ```
 
 Running the skeleton code (hit the spacebar) without any modification, you should see a
@@ -62,25 +69,42 @@ in the code using
 In either case, the joint limits on the biped will not be activated
 until you call ``setPositionLimited``:
 
-```cpp
-SkeletonPtr loadBiped()
-{
-...
-    for(size_t i = 0; i < biped->getNumJoints(); ++i)
-        biped->getJoint(i)->setLimitEnforcement(true);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson1-limits-start
+         :end-before: // snippet:cpp-biped-lesson1-limits-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson1-limits-start
+         :end-before: # snippet:py-biped-lesson1-limits-end
 ```
 Once the joint limits are set, the next task is to enforce
 self-collision. By default, DART does not check self-collision within
 a skeleton. You can enable self-collision checking on the biped by
-```cpp
-SkeletonPtr loadBiped()
-{
-...
-    biped->enableSelfCollisionCheck();
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson1-self-start
+         :end-before: // snippet:cpp-biped-lesson1-self-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson1-self-start
+         :end-before: # snippet:py-biped-lesson1-self-end
 ```
 This function will enable self-collision on every pair of
 body nodes. If you wish to disable self-collisions on adjacent body
@@ -109,13 +133,22 @@ be found [here](https://en.wikipedia.org/wiki/PID_controller).
 The first task is to set the biped to a particular configuration. You
 can use ``setPosition`` to set each degree of freedom individually:
 
-```cpp
-void setInitialPose(SkeletonPtr biped)
-{
-...
-    biped->setPosition(biped->getDof("j_thigh_left_z")->getIndexInSkeleton(), 0.15);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson2-initial-pose-start
+         :end-before: // snippet:cpp-biped-lesson2-initial-pose-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson2-initial-pose-start
+         :end-before: # snippet:py-biped-lesson2-initial-pose-end
 ```
 Here the degree of freedom named "j_thigh_left_z" is set to 0.15
 radian. Note that each degree of freedom in a skeleton has a numerical
@@ -142,24 +175,22 @@ this configuration as soon as the simulation starts. We need a
 controller to make this happen. Let's take a look at the constructor of our ``Controller`` in the
 skeleton code:
 
-```cpp
-Controller(const SkeletonPtr& biped)
-{
-...
-    for(size_t i = 0; i < 6; ++i)
-    {
-        mKp(i, i) = 0.0;
-        mKd(i, i) = 0.0;
-    }
+```{eval-rst}
+.. tabs::
 
-    for(size_t i = 6; i < mBiped->getNumDofs(); ++i)
-    {
-        mKp(i, i) = 1000;
-        mKd(i, i) = 50;
-    }
+   .. tab:: C++
 
-    setTargetPositions(mBiped->getPositions());
-}    
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson2-controller-gains-start
+         :end-before: // snippet:cpp-biped-lesson2-controller-target-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson2-controller-gains-start
+         :end-before: # snippet:py-biped-lesson2-controller-target-end
 ```
 
 Here we arbitrarily define the stiffness and damping coefficients to
@@ -173,18 +204,22 @@ controller to the current configuration of the biped.
 With these settings, we can compute the forces generated by the PD
 controller and add them to the internal forces of biped using ``setForces``:
 
-```cpp
-void addPDForces()
-{
-    math::VectorXd q = mBiped->getPositions();
-    math::VectorXd dq = mBiped->getVelocities();
-    
-    math::VectorXd p = -mKp * (q - mTargetPositions);
-    math::VectorXd d = -mKd * dq;
-    
-    mForces += p + d;
-    mBiped->setForces(mForces);
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson2-pd-start
+         :end-before: // snippet:cpp-biped-lesson2-pd-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson2-pd-start
+         :end-before: # snippet:py-biped-lesson2-pd-end
 ```
 Note that the PD control force is *added* to the current internal force
 stored in mForces instead of overriding it.
@@ -220,20 +255,22 @@ quantities in Lagrange's equations of motion. Fortunately, these
 quantities are readily available via DART API, which makes the full
 implementation of SPD simple and concise:
 
-```cpp
-void addSPDForces()
-{
-    math::VectorXd q = mBiped->getPositions();
-    math::VectorXd dq = mBiped->getVelocities();
+```{eval-rst}
+.. tabs::
 
-    math::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
-    math::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
-    math::VectorXd d = -mKd * dq;
-    math::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
+   .. tab:: C++
 
-    mForces += p + d - mKd * qddot * mBiped->getTimeStep();
-    mBiped->setForces(mForces);
-}
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson3-spd-start
+         :end-before: // snippet:cpp-biped-lesson3-spd-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson3-spd-start
+         :end-before: # snippet:py-biped-lesson3-spd-end
 ```
 
 You can get mass matrix, Coriolis force, gravitational force, and
@@ -272,15 +309,22 @@ To implement ankle strategy, let's first compute the deviation between
 the center of mass and an approximated center of pressure in the
 anterior-posterior axis:
 
-```cpp
-void addAnkleStrategyForces()
-{
-    math::Vector3d COM = mBiped->getCOM();
-    math::Vector3d offset(0.05, 0, 0);
-    math::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
-    double diff = COM[0] - COP[0];
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson4-deviation-start
+         :end-before: // snippet:cpp-biped-lesson4-deviation-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson4-deviation-start
+         :end-before: # snippet:py-biped-lesson4-deviation-end
 ```
 
 DART provides various APIs to access useful kinematic information. For
@@ -290,15 +334,22 @@ respect to any coordinate frame specified by the parameter (world
 coordinate frame as default). DART APIs also come in handy when
 computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 
-```cpp
-void addAnkleStrategyForces()
-{
-...
-    math::Vector3d dCOM = mBiped->getCOMLinearVelocity();
-    math::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
-    double dDiff = dCOM[0] - dCOP[0];
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson4-velocity-start
+         :end-before: // snippet:cpp-biped-lesson4-velocity-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson4-velocity-start
+         :end-before: # snippet:py-biped-lesson4-velocity-end
 ```
 
 The linear/angular velocity/acceleration of any point in any coordinate
@@ -329,14 +380,22 @@ robot.
 
 We first load a skateboard from **skateboard.skel**:
 
-```cpp
-void modifyBipedWithSkateboard(SkeletonPtr biped)
-{
-    WorldPtr world = SkelParser::readWorld(
-        dart::config::dataLocalPath("skel/skateboard.skel"));
-    SkeletonPtr skateboard = world->getSkeleton(0);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson5-skateboard-start
+         :end-before: // snippet:cpp-biped-lesson5-skateboard-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson5-skateboard-start
+         :end-before: # snippet:py-biped-lesson5-skateboard-end
 ```
 
 Our goal is to make the skateboard Skeleton a subtree of the biped
@@ -344,28 +403,9 @@ Skeleton connected to the left heel BodyNode via a newly created
 Euler joint. To do so, you need to first create an instance of
 ``EulerJoint::Properties`` for this new joint.
 
-```cpp
-void modifyBipedWithSkateboard(SkeletonPtr biped)
-{
-...
-    EulerJoint::Properties properties = EulerJoint::Properties();
-    properties.mT_ChildBodyToJoint.translation() = math::Vector3d(0, 0.1, 0);
-...
-}
-```
-
 Here we increase the vertical distance between the child BodyNode and
 the joint by 0.1m to give some space between the skateboard and the
-left foot. Now you can merge the skateboard and the biped using this new Euler
-joint by
-
-```cpp
-void modifyBipedWithSkateboard(SkeletonPtr biped)
-{
-...
-    skateboard->getRootBodyNode()->moveTo<EulerJoint>(biped->getBodyNode("h_heel_left"), properties);
-}
-```
+left foot before merging it with the biped.
 
 There are many other functions you can use to edit skeletons. Here is
 a table of some relevant functions for quick references.
@@ -404,26 +444,43 @@ joint kinematically.
 In this Lesson, we will switch the actuator type of the wheels
 from the default FORCE type to VELOCITY type.
 
-```cpp
-void setVelocityActuators(SkeletonPtr biped)
-{
-    Joint* wheel1 = biped->getJoint("joint_front_left");
-    wheel1->setActuatorType(Joint::VELOCITY);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson6-velocity-actuators-start
+         :end-before: // snippet:cpp-biped-lesson6-velocity-actuators-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson6-velocity-actuators-start
+         :end-before: # snippet:py-biped-lesson6-velocity-actuators-end
 ```
 
 Once all four wheels are set to VELOCITY actuator type, you can
 command them by directly setting the desired velocity:
 
-```cpp
-void setWheelCommands()
-{
-...
-    int index1 = mBiped->getDof("joint_front_left_2")->getIndexInSkeleton();
-    mBiped->setCommand(index1, mSpeed);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson6-wheel-commands-start
+         :end-before: // snippet:cpp-biped-lesson6-wheel-commands-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson6-wheel-commands-start
+         :end-before: # snippet:py-biped-lesson6-wheel-commands-end
 ```
 
 Note that ``setCommand`` only exerts commanding force in the current time step. If you wish the
@@ -484,14 +541,22 @@ the objective function requires the Jacobian of the
 center of mass of the Skeleton, as well as the Jacobian of the center
 of mass of a BodyNode:
 
-```cpp
-math::VectorXd solveIK(SkeletonPtr biped)
-{
-...
-    math::Vector3d localCOM = leftHeel->getCOM(leftHeel);
-    LinearJacobian jacobian = biped->getCOMLinearJacobian() - biped->getLinearJacobian(leftHeel, localCOM);
-...
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_biped_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-biped-lesson7-ik-start
+         :end-before: // snippet:cpp-biped-lesson7-ik-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/04_biped/main_finished.py
+         :language: python
+         :start-after: # snippet:py-biped-lesson7-ik-start
+         :end-before: # snippet:py-biped-lesson7-ik-end
 ```
 
 ``getCOMLinearJacobian`` returns the linear Jacobian of the

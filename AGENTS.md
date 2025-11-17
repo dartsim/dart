@@ -1,50 +1,15 @@
 # Agent Guidelines for DART
 
-This file provides conventions and tips for agents working in this repository.  Read it before modifying code or documentation.
+This file is a pointer board for agents working in this repository.  Keep it concise and expand other documents instead.
 
-## Overview
-- DART (Dynamic Animation and Robotics Toolkit) is a mixed C++/Python project that offers kinematic and dynamic algorithms for robotics and animation.
-- The core library lives under `dart/` (C++).  Python bindings are built in `python/` and exposed as `dartpy`.
+## Read First
 
-## Repository Practices
-- Prefer [`rg`](https://github.com/BurntSushi/ripgrep) for searching the code base.
-- Keep commits focused and run the relevant checks before committing.
-- Follow the style guide in `CONTRIBUTING.md` (two‑space indent, camelCase functions, PascalCase classes, no cuddled braces).
+- Architectural, build, and workflow expectations live in `docs/onboarding` (start with `docs/onboarding/ci-cd.md` and `docs/onboarding/build-system.md`).
+- Coding standards, formatting, and contribution flow are in `CONTRIBUTING.md`.
+- Feature‑specific notes belong beside the code (e.g., README in the component directory) or in `docs/`.
 
-## Building for Codex
-These steps configure and compile DART from source in the Codex environment.
-1. Configure the build (defaults to Release):
-   ```bash
-   pixi run config
-   ```
-2. Build the C++ library and utilities:
-   ```bash
-   pixi run build
-   ```
-3. Build the Python bindings (`dartpy`):
-   ```bash
-   pixi run build-dartpy
-   ```
-4. Run the test suites:
-   ```bash
-   pixi run test        # C++ tests
-   pixi run test-dartpy # Python tests
-   ```
+## Daily Reminders
 
-If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and ensure the toolchain dependencies in `pixi.toml` are met.  The build system uses CMake and Ninja under the hood, so you can fall back to manual CMake builds if necessary.
-
-## Additional Notes
-- Documentation lives in `docs/` and `tutorials/`.
-- Examples demonstrating API usage can be found in `examples/`.
-
-## Submitting Changes
-- Always create a fresh topic branch from `main` before making edits:
-  ```bash
-  git checkout main
-  git pull --rebase
-  git checkout -b <topic-branch-name>
-  ```
-- Keep work in progress off `main`. Commit locally with focused messages, then push the branch (`git push origin <topic-branch-name>`).
-- Review your diff (`git status`, `git diff`) and run the relevant `pixi` checks prior to committing.
-- Open a draft PR using the template in `.github/PULL_REQUEST_TEMPLATE.md`. Replace the placeholder summary text instead of leaving it quoted and tick only the checklist items you completed.
-- Convert the PR from draft once validation passes and the change is ready for review.
+- Use the existing tooling (`pixi run …`) described in the onboarding docs; do not invent new entry points.
+- When you learn something new, update the relevant document (usually under `docs/onboarding/` or the component README) and then add a short pointer here only if discoverability is still lacking.
+- Treat AGENTS.md as a TODO list for missing documentation: if this file grows beyond pointers, migrate the details to the appropriate doc and shrink this file again before you finish the task.

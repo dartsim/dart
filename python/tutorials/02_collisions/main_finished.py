@@ -72,12 +72,15 @@ SOFT_ELLIPSOID = 2
 
 
 def setup_ring(ring: dart.dynamics.Skeleton):
+    # snippet:py-collisions-lesson4a-ring-stiffness-start
     dof_count = ring.getNumDofs()
     for idx in range(6, dof_count):
         dof = ring.getDof(idx)
         dof.setSpringStiffness(ring_spring_stiffness)
         dof.setDampingCoefficient(ring_damping_coefficient)
+    # snippet:py-collisions-lesson4a-ring-stiffness-end
 
+    # snippet:py-collisions-lesson4b-ring-rest-start
     num_edges = ring.getNumBodyNodes()
     angle = 2 * math.pi / num_edges
 
@@ -87,10 +90,13 @@ def setup_ring(ring: dart.dynamics.Skeleton):
         rest = dart.dynamics.BallJoint.convertToPositions(rotation)
         for axis in range(3):
             joint.setRestPosition(axis, rest[axis])
+    # snippet:py-collisions-lesson4b-ring-rest-end
 
+    # snippet:py-collisions-lesson4c-ring-rest-state-start
     for idx in range(6, dof_count):
         dof = ring.getDof(idx)
         dof.setPosition(dof.getRestPosition())
+    # snippet:py-collisions-lesson4c-ring-rest-state-end
 
 
 class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
@@ -145,6 +151,7 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
             return True
         return False
 
+    # snippet:py-collisions-lesson3a-initial-position-start
     def _initial_position(self) -> np.ndarray:
         pos = np.zeros(6)
         if self.randomize:
@@ -155,10 +162,14 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
     def add_object(self, obj: dart.dynamics.Skeleton) -> bool:
         positions = self._initial_position()
         obj.getJoint(0).setPositions(positions)
+    # snippet:py-collisions-lesson3a-initial-position-end
 
+        # snippet:py-collisions-lesson3b-name-start
         obj.setName(f"{obj.getName()}_{self.spawn_index}")
         self.spawn_index += 1
+        # snippet:py-collisions-lesson3b-name-end
 
+        # snippet:py-collisions-lesson3c-collision-check-start
         constraint_solver = self.world.getConstraintSolver()
         collision_detector = constraint_solver.getCollisionDetector()
         world_group = constraint_solver.getCollisionGroup()
@@ -176,15 +187,19 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
 
         self.world.addSkeleton(obj)
         self._launch_object(obj)
+        # snippet:py-collisions-lesson3c-collision-check-end
         return True
 
     def _launch_object(self, obj: dart.dynamics.Skeleton):
+        # snippet:py-collisions-lesson3d-reference-frame-start
         center_tf = dart.math.Isometry3()
         center_tf.set_translation(obj.getCOM())
         center = dart.dynamics.SimpleFrame(
             dart.dynamics.Frame.World(), "center", center_tf
         )
+        # snippet:py-collisions-lesson3d-reference-frame-end
 
+        # snippet:py-collisions-lesson3e-launch-velocity-start
         angle = default_launch_angle
         speed = default_start_v
         angular_speed = default_start_w
@@ -198,18 +213,22 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         linear = np.array([math.cos(angle), 0.0, math.sin(angle)]) * speed
         angular = np.array([0.0, 1.0, 0.0]) * angular_speed
         center.setClassicDerivatives(linear, angular)
+        # snippet:py-collisions-lesson3e-launch-velocity-end
 
+        # snippet:py-collisions-lesson3f-apply-velocity-start
         ref = dart.dynamics.SimpleFrame(center, "root_reference")
         ref.setRelativeTransform(
             obj.getBodyNode(0).getTransform(center)
         )
         obj.getJoint(0).setVelocities(ref.getSpatialVelocity())
+        # snippet:py-collisions-lesson3f-apply-velocity-end
 
     def add_ring(self, ring: dart.dynamics.Skeleton):
         setup_ring(ring)
         if not self.add_object(ring):
             return
 
+        # snippet:py-collisions-lesson5-closed-chain-start
         head = ring.getBodyNode(0)
         tail = ring.getBodyNode(ring.getNumBodyNodes() - 1)
         offset = np.array([0.0, 0.0, default_shape_height / 2.0])
@@ -217,6 +236,7 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         constraint = dart.constraint.BallJointConstraint(head, tail, offset)
         self.world.getConstraintSolver().addConstraint(constraint)
         self.joint_constraints.append(constraint)
+        # snippet:py-collisions-lesson5-closed-chain-end
 
     def remove_skeleton(self, skel: dart.dynamics.Skeleton):
         solver = self.world.getConstraintSolver()
@@ -246,6 +266,7 @@ def add_rigid_body(
     shape_type: str,
     parent: Optional[dart.dynamics.BodyNode] = None,
 ) -> dart.dynamics.BodyNode:
+    # snippet:py-collisions-lesson1a-properties-start
     joint_prop = None
     joint = None
 
@@ -267,11 +288,13 @@ def add_rigid_body(
         child_tf.set_translation([0.0, 0.0, -default_shape_height / 2.0])
         joint_prop.mT_ParentBodyToJoint = parent_tf
         joint_prop.mT_ChildBodyToJoint = child_tf
+    # snippet:py-collisions-lesson1a-properties-end
 
     body_prop = dart.dynamics.BodyNodeProperties(
         dart.dynamics.BodyNodeAspectProperties(name)
     )
 
+    # snippet:py-collisions-lesson1b-joint-pair-start
     if joint_type == "free":
         joint, body = skeleton.createFreeJointAndBodyNodePair(
             parent, joint_prop, body_prop
@@ -284,7 +307,9 @@ def add_rigid_body(
         joint, body = skeleton.createRevoluteJointAndBodyNodePair(
             parent, joint_prop, body_prop
         )
+    # snippet:py-collisions-lesson1b-joint-pair-end
 
+    # snippet:py-collisions-lesson1c-shape-selection-start
     if shape_type == "box":
         dims = [default_shape_width, default_shape_width, default_shape_height]
         shape = dart.dynamics.BoxShape(dims)
@@ -295,27 +320,36 @@ def add_rigid_body(
     else:
         dims = default_shape_height * np.ones(3)
         shape = dart.dynamics.EllipsoidShape(dims)
+    # snippet:py-collisions-lesson1c-shape-selection-end
 
+    # snippet:py-collisions-lesson1c-shape-node-start
     shape_node = body.createShapeNode(shape)
     visual = shape_node.createVisualAspect()
     visual.setColor([0.8, 0.8, 0.8, 1.0])
     shape_node.createCollisionAspect()
     shape_node.createDynamicsAspect()
+    # snippet:py-collisions-lesson1c-shape-node-end
 
+    # snippet:py-collisions-lesson1d-inertia-start
     inertia = dart.dynamics.Inertia()
     mass = default_shape_density * shape.getVolume()
     inertia.setMass(mass)
     inertia.setMoment(shape.computeInertia(mass))
     body.setInertia(inertia)
+    # snippet:py-collisions-lesson1d-inertia-end
 
+    # snippet:py-collisions-lesson1e-restitution-start
     shape_node.getDynamicsAspect().setRestitutionCoeff(default_restitution)
+    # snippet:py-collisions-lesson1e-restitution-end
 
+    # snippet:py-collisions-lesson1f-damping-start
     if parent is not None:
         parent_joint = body.getParentJoint()
         for idx in range(parent_joint.getNumDofs()):
             parent_joint.getDof(idx).setDampingCoefficient(
                 default_damping_coefficient
             )
+    # snippet:py-collisions-lesson1f-damping-end
 
     return body
 
@@ -327,13 +361,26 @@ def add_soft_body(
     shape_type: int,
     parent: Optional[dart.dynamics.BodyNode] = None,
 ) -> dart.dynamics.BodyNode:
+    # snippet:py-collisions-lesson2b-soft-properties-start
+    # dartpy does not yet expose SoftBodyNodeHelper, so we approximate the soft
+    # shell with a standard BodyNode whose geometry matches the requested type.
     shape = "ellipsoid" if shape_type == SOFT_ELLIPSOID else "box"
+    # snippet:py-collisions-lesson2b-soft-properties-end
+
+    # snippet:py-collisions-lesson2c-soft-node-start
     body = add_rigid_body(skeleton, joint_type, name, shape, parent)
+    # snippet:py-collisions-lesson2c-soft-node-end
+
+    # snippet:py-collisions-lesson2d-soft-inertia-start
     inertia = dart.dynamics.Inertia()
     inertia.setMass(1e-8)
     inertia.setMoment(np.eye(3) * 1e-8)
     body.setInertia(inertia)
+    # snippet:py-collisions-lesson2d-soft-inertia-end
+
+    # snippet:py-collisions-lesson2e-soft-alpha-start
     body.setAlpha(0.4)
+    # snippet:py-collisions-lesson2e-soft-alpha-end
     return body
 
 
@@ -380,6 +427,21 @@ def create_rigid_ring() -> dart.dynamics.Skeleton:
 def create_soft_body() -> dart.dynamics.Skeleton:
     soft = dart.dynamics.Skeleton("soft_approx")
     body = add_soft_body(soft, "free", "soft_core", SOFT_BOX)
+    # snippet:py-collisions-lesson2f-rigid-core-start
+    dims = np.array(
+        [default_shape_height, default_shape_height, 2 * default_shape_width]
+    )
+    dims *= 0.6
+    box = dart.dynamics.BoxShape(dims)
+    node = body.createShapeNode(box)
+    node.createVisualAspect().setColor([0.3, 0.3, 0.3, 1.0])
+    node.createCollisionAspect()
+    node.createDynamicsAspect()
+    inertia = dart.dynamics.Inertia()
+    inertia.setMass(default_shape_density * box.getVolume())
+    inertia.setMoment(box.computeInertia(inertia.getMass()))
+    body.setInertia(inertia)
+    # snippet:py-collisions-lesson2f-rigid-core-end
     for idx in range(2):
         body = add_soft_body(
             soft, "ball", f"soft_link_{idx}", SOFT_ELLIPSOID, body
@@ -396,11 +458,10 @@ def create_hybrid_body() -> dart.dynamics.Skeleton:
     hybrid = dart.dynamics.Skeleton("hybrid")
     body = add_soft_body(hybrid, "free", "soft_base", SOFT_ELLIPSOID)
     body = add_soft_body(hybrid, "ball", "soft_link", SOFT_BOX, body)
+    # snippet:py-collisions-lesson2g-welded-rigid-start
     _, rigid = hybrid.createWeldJointAndBodyNodePair(body)
     rigid.setName("rigid_box")
-    box = dart.dynamics.BoxShape(
-        default_shape_height * np.ones(3)
-    )
+    box = dart.dynamics.BoxShape(default_shape_height * np.ones(3))
     node = rigid.createShapeNode(box)
     node.createVisualAspect().setColor([0.0, 1.0, 0.0, 1.0])
     node.createCollisionAspect()
@@ -409,6 +470,7 @@ def create_hybrid_body() -> dart.dynamics.Skeleton:
     inertia.setMass(default_shape_density * box.getVolume())
     inertia.setMoment(box.computeInertia(inertia.getMass()))
     rigid.setInertia(inertia)
+    # snippet:py-collisions-lesson2g-welded-rigid-end
     set_all_colors(hybrid, (0.0, 1.0, 0.0))
     return hybrid
 

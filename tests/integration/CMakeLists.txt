@@ -110,6 +110,9 @@ if(TARGET dart-utils)
     dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_ForwardKinematics.cpp)
     target_link_libraries(INTEGRATION_dynamics_ForwardKinematics dart-utils-urdf)
 
+    dart_add_test("integration" INTEGRATION_dynamics_AtlasIK dynamics/test_AtlasIK.cpp)
+    target_link_libraries(INTEGRATION_dynamics_AtlasIK dart-utils-urdf)
+
     # Additional dynamics tests
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonState dynamics/test_SkeletonState.cpp)
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonTopology dynamics/test_SkeletonTopology.cpp)

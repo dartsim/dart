@@ -33,14 +33,10 @@
 #ifndef DART_SIMULATION_SMARTPOINTER_HPP_
 #define DART_SIMULATION_SMARTPOINTER_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#pragma message(                                                               \
+    "This header has been deprecated in DART 7.0. "                            \
+    "Please include dart/simulation/Fwd.hpp instead.")
 
-namespace dart {
-namespace simulation {
-
-DART_COMMON_DECLARE_SHARED_WEAK(World)
-
-} // namespace simulation
-} // namespace dart
+#include <dart/simulation/Fwd.hpp>
 
 #endif // DART_SIMULATION_SMARTPOINTER_HPP_

@@ -92,12 +92,18 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Tutorials
+
+   Tutorials <tutorials/index>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: dartpy (Python)
 
    dartpy/user_guide/installation
    dartpy/user_guide/examples
-   dartpy/user_guide/tutorials
-   dartpy/python_api_reference
+   API Reference <dartpy/python_api_reference>
 
 .. toctree::
    :maxdepth: 1
@@ -105,9 +111,8 @@ If you use DART in an academic publication, please consider citing this
    :caption: DART (C++)
 
    dart/user_guide/installation
-   dart/user_guide/tutorials
    dart/user_guide/migration_guide
-   dart/cpp_api_reference
+   API Reference <dart/cpp_api_reference>
 
 .. toctree::
    :maxdepth: 1

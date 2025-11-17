@@ -35,7 +35,7 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
 

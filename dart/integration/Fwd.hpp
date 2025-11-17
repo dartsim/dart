@@ -30,61 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
-#define DART_COLLISION_COLLISIONOBJECT_HPP_
-
-#include <dart/collision/Fwd.hpp>
-
-#include <dart/dynamics/Fwd.hpp>
-
-#include <Eigen/Dense>
+#ifndef DART_INTEGRATION_FWD_HPP_
+#define DART_INTEGRATION_FWD_HPP_
 
 namespace dart {
-namespace collision {
+namespace integration {
 
-class CollisionObject
-{
-public:
-  friend class CollisionGroup;
+class EulerIntegrator;
+class Integrator;
+class RK4Integrator;
+class SemiImplicitEulerIntegrator;
 
-  /// Destructor
-  virtual ~CollisionObject() = default;
-
-  /// Return collision detection engine associated with this CollisionObject
-  CollisionDetector* getCollisionDetector();
-
-  /// Return collision detection engine associated with this CollisionObject
-  const CollisionDetector* getCollisionDetector() const;
-
-  /// Return the associated ShapeFrame
-  const dynamics::ShapeFrame* getShapeFrame() const;
-
-  /// Return the associated Shape
-  dynamics::ConstShapePtr getShape() const;
-
-  /// Return the transformation of this CollisionObject in world coordinates
-  const Eigen::Isometry3d& getTransform() const;
-
-protected:
-  /// Contructor
-  CollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  /// Update the collision object of the collision detection engine. This
-  /// function will be called ahead of every collision checking by
-  /// CollisionGroup.
-  virtual void updateEngineData() = 0;
-
-protected:
-  /// Collision detector
-  CollisionDetector* mCollisionDetector;
-
-  /// ShapeFrame
-  const dynamics::ShapeFrame* mShapeFrame;
-};
-
-} // namespace collision
+} // namespace integration
 } // namespace dart
 
-#endif // DART_COLLISION_COLLISIONOBJECT_HPP_
+#endif // DART_INTEGRATION_FWD_HPP_

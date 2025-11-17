@@ -14,7 +14,6 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 | `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule         |
 | `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule         |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule         |
-| `api_doc.yml`        | API documentation     | Ubuntu         | Push to main, docs changes |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule, tags       |
 
 ### Design Principles
@@ -175,29 +174,15 @@ build_wheels:
 
 ### Documentation Builds
 
-API docs only need rebuilding when documentation or public headers change.
+Read the Docs now owns all documentation publishing. GitHub Actions no longer
+generates or deploys the API references, so doc validation happens locally:
 
-**Pattern** (see `api_doc.yml`):
-
-```yaml
-on:
-  push:
-    branches: ["main"]
-    paths:
-      - "docs/**"
-      - "dart/**/*.hpp"
-      - ".github/workflows/api_doc.yml"
-  pull_request:
-    paths:
-      - "docs/**"
-      - ".github/workflows/api_doc.yml"
-```
-
-**Behavior:**
-
-- **PRs**: Only runs if docs/headers change
-- **Main branch**: Only runs if docs/headers change
-- **Savings**: 20-30 minutes on most PRs
+- Run `pixi run docs-build` to render the RTD site (including the C++ Doxygen
+  bundle).
+- Committers can optionally run `pixi run api-docs-cpp` or `pixi run api-docs-py`
+  if they need to inspect the standalone builders.
+- RTD rebuilds automatically whenever `main` changes, keeping the hosted docs in
+  sync without consuming CI minutes.
 
 ## Lint Check Strategy
 
