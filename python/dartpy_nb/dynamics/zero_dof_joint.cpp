@@ -7,6 +7,8 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -27,7 +29,8 @@ void defZeroDofJoint(nb::module_& m)
           [](const ZeroDofJoint& self) {
             return self.getZeroDofJointProperties();
           });
+
+  registerPolymorphicCaster<dart::dynamics::Joint, ZeroDofJoint>();
 }
 
 } // namespace dart::python_nb
-

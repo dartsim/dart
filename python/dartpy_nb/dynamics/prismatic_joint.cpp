@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -42,6 +44,8 @@ void defPrismaticJoint(nb::module_& m)
             return self.getPosition(index);
           },
           nb::arg("index"));
+
+  registerPolymorphicCaster<dart::dynamics::Joint, PrismaticJoint>();
 }
 
 } // namespace dart::python_nb

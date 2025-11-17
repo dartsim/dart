@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -49,6 +51,8 @@ void defScrewJoint(nb::module_& m)
           "getStaticType",
           []() -> const std::string& { return ScrewJoint::getStaticType(); },
           nb::rv_policy::reference);
+
+  registerPolymorphicCaster<dart::dynamics::Joint, ScrewJoint>();
 }
 
 } // namespace dart::python_nb

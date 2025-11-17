@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -37,6 +39,8 @@ void defFreeJoint(nb::module_& m)
             self.setPositions(positions);
           },
           nb::arg("positions"));
+
+  registerPolymorphicCaster<dart::dynamics::Joint, FreeJoint>();
 }
 
 } // namespace dart::python_nb

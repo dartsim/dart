@@ -8,12 +8,15 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
 
 void defShapeFrame(nb::module_& m)
 {
+  using Frame = dart::dynamics::Frame;
   using ShapeFrame = dart::dynamics::ShapeFrame;
   using ShapeNode = dart::dynamics::ShapeNode;
   using VisualAspect = dart::dynamics::VisualAspect;
@@ -106,6 +109,8 @@ void defShapeFrame(nb::module_& m)
             return self.asShapeNode();
           },
           nb::rv_policy::reference_internal);
+
+  registerPolymorphicCaster<Frame, ShapeFrame>();
 }
 
 } // namespace dart::python_nb

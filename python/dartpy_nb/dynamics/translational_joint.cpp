@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -47,6 +49,8 @@ void defTranslationalJoint(nb::module_& m)
             return TranslationalJoint::getStaticType();
           },
           nb::rv_policy::reference);
+
+  registerPolymorphicCaster<dart::dynamics::Joint, TranslationalJoint>();
 }
 
 } // namespace dart::python_nb

@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -58,6 +60,8 @@ void defFrame(nb::module_& m)
       .def("isShapeFrame", &Frame::isShapeFrame)
       .def("isWorld", &Frame::isWorld)
       .def_static("World", []() { return Frame::WorldShared(); });
+
+  registerPolymorphicCaster<Frame, Frame>();
 }
 
 } // namespace dart::python_nb

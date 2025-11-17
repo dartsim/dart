@@ -9,6 +9,8 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -207,6 +209,8 @@ void defSimpleFrame(nb::module_& m)
             return self.descendsFrom(someFrame);
           },
           nb::arg("someFrame") = nullptr);
+
+  registerPolymorphicCaster<Frame, SimpleFrame>();
 }
 
 } // namespace dart::python_nb

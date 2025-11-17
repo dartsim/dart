@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -29,6 +31,8 @@ void defBallJoint(nb::module_& m)
           "convertToTransform",
           &BallJoint::convertToTransform,
           nb::arg("positions"));
+
+  registerPolymorphicCaster<dart::dynamics::Joint, BallJoint>();
 }
 
 } // namespace dart::python_nb

@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -71,6 +73,8 @@ void defUniversalJoint(nb::module_& m)
             return UniversalJoint::getStaticType();
           },
           nb::rv_policy::reference);
+
+  registerPolymorphicCaster<dart::dynamics::Joint, UniversalJoint>();
 }
 
 } // namespace dart::python_nb

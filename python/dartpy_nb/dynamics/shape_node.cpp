@@ -5,6 +5,9 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+
+#include "common/type_casters.hpp"
 
 namespace nb = nanobind;
 
@@ -31,6 +34,8 @@ void defShapeNode(nb::module_& m)
       .def("getRelativeRotation", &ShapeNode::getRelativeRotation)
       .def("setOffset", &ShapeNode::setOffset, nb::arg("offset"))
       .def("getOffset", &ShapeNode::getOffset);
+
+  registerPolymorphicCaster<dart::dynamics::Frame, ShapeNode>();
 }
 
 } // namespace dart::python_nb

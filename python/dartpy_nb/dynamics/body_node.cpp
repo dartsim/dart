@@ -9,7 +9,10 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
+
+#include "common/type_casters.hpp"
 
 namespace nb = nanobind;
 
@@ -89,6 +92,8 @@ void defBodyNode(nb::module_& m)
             return self.getIK(createIfNull);
           },
           nb::arg("createIfNull") = false);
+
+  registerPolymorphicCaster<dart::dynamics::Frame, BodyNode>();
 }
 
 } // namespace dart::python_nb

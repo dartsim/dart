@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -38,6 +40,8 @@ void defRevoluteJoint(nb::module_& m)
             return self.getPosition(idx);
           },
           nb::arg("index"));
+
+  registerPolymorphicCaster<dart::dynamics::Joint, RevoluteJoint>();
 }
 
 } // namespace dart::python_nb

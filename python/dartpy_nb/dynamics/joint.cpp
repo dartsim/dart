@@ -9,9 +9,42 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include <utility>
+
+#include "common/polymorphic_utils.hpp"
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+namespace {
+
+inline dart::dynamics::Joint& joint_ref(nb::handle self)
+{
+  return refFromHandle<dart::dynamics::Joint>(self);
+}
+
+template <typename Func>
+auto joint_method(Func&& func)
+{
+  return [fn = std::forward<Func>(func)](nb::handle self, auto&&... args)
+             -> decltype(auto) {
+    return fn(joint_ref(self), std::forward<decltype(args)>(args)...);
+  };
+}
+
+template <typename Func>
+auto joint_const_method(Func&& func)
+{
+  return [fn = std::forward<Func>(func)](nb::handle self, auto&&... args)
+             -> decltype(auto) {
+    const auto& joint = joint_ref(self);
+    return fn(joint, std::forward<decltype(args)>(args)...);
+  };
+}
+
+} // namespace
 
 void defJoint(nb::module_& m)
 {
@@ -20,231 +53,319 @@ void defJoint(nb::module_& m)
   nb::class_<Joint>(m, "Joint")
       .def(
           "getName",
-          [](const Joint& self) -> const std::string& {
+          joint_const_method([](const Joint& self) -> const std::string& {
             return self.getName();
-          },
+          }),
+          nb::is_method(),
           nb::rv_policy::reference_internal)
       .def(
           "setName",
-          &Joint::setName,
+          joint_method(
+              [](Joint& self, const std::string& name, bool preserve)
+                  -> const std::string& { return self.setName(name, preserve); }),
+          nb::is_method(),
+          nb::rv_policy::reference_internal,
           nb::arg("name"),
           nb::arg("preserveName") = true)
       .def(
           "getType",
-          [](const Joint& self) -> const std::string& {
+          joint_const_method([](const Joint& self) -> const std::string& {
             return self.getType();
-          },
+          }),
+          nb::is_method(),
           nb::rv_policy::reference_internal)
-      .def("getNumDofs", &Joint::getNumDofs)
+      .def(
+          "getNumDofs",
+          joint_const_method([](const Joint& self) { return self.getNumDofs(); }),
+          nb::is_method())
       .def(
           "getDof",
-          static_cast<dart::dynamics::DegreeOfFreedom* (Joint::*)(std::size_t)>(
-              &Joint::getDof),
+          joint_method(
+              [](Joint& self, std::size_t index) -> dart::dynamics::DegreeOfFreedom* {
+                return self.getDof(index);
+              }),
+          nb::is_method(),
           nb::rv_policy::reference_internal,
           nb::arg("index"))
       .def(
           "setDofName",
-          [](Joint& self, std::size_t index, const std::string& name)
-              -> const std::string& { return self.setDofName(index, name); },
+          joint_method(
+              [](Joint& self, std::size_t index, const std::string& name)
+                  -> const std::string& { return self.setDofName(index, name); }),
+          nb::is_method(),
           nb::rv_policy::reference_internal,
           nb::arg("index"),
           nb::arg("name"))
       .def(
           "setDofName",
-          [](Joint& self,
-             std::size_t index,
-             const std::string& name,
-             bool preserve) -> const std::string& {
-            return self.setDofName(index, name, preserve);
-          },
+          joint_method(
+              [](Joint& self,
+                 std::size_t index,
+                 const std::string& name,
+                 bool preserve) -> const std::string& {
+                return self.setDofName(index, name, preserve);
+              }),
+          nb::is_method(),
           nb::rv_policy::reference_internal,
           nb::arg("index"),
           nb::arg("name"),
           nb::arg("preserveName"))
       .def(
           "getDofName",
-          [](const Joint& self, std::size_t index) -> const std::string& {
-            return self.getDofName(index);
-          },
+          joint_const_method(
+              [](const Joint& self, std::size_t index) -> const std::string& {
+                return self.getDofName(index);
+              }),
+          nb::is_method(),
           nb::rv_policy::reference_internal,
           nb::arg("index"))
       .def(
           "preserveDofName",
-          [](Joint& self, std::size_t index, bool preserve) {
+          joint_method([](Joint& self, std::size_t index, bool preserve) {
             self.preserveDofName(index, preserve);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("preserve"))
       .def(
           "isDofNamePreserved",
-          [](const Joint& self, std::size_t index) -> bool {
+          joint_const_method([](const Joint& self, std::size_t index) -> bool {
             return self.isDofNamePreserved(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
           "setCommand",
-          [](Joint& self, std::size_t index, double command) {
+          joint_method([](Joint& self, std::size_t index, double command) {
             self.setCommand(index, command);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("command"))
       .def(
           "getCommand",
-          [](const Joint& self, std::size_t index) -> double {
+          joint_const_method([](const Joint& self, std::size_t index) -> double {
             return self.getCommand(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
           "setCommands",
-          [](Joint& self, const Eigen::VectorXd& commands) {
+          joint_method([](Joint& self, const Eigen::VectorXd& commands) {
             self.setCommands(commands);
-          },
+          }),
+          nb::is_method(),
           nb::arg("commands"))
-      .def("getCommands", [](const Joint& self) { return self.getCommands(); })
-      .def("resetCommands", [](Joint& self) { self.resetCommands(); })
+      .def(
+          "getCommands",
+          joint_const_method([](const Joint& self) { return self.getCommands(); }),
+          nb::is_method())
+      .def(
+          "resetCommands",
+          joint_method([](Joint& self) { self.resetCommands(); }),
+          nb::is_method())
       .def(
           "setPosition",
-          [](Joint& self, std::size_t index, double value) {
+          joint_method([](Joint& self, std::size_t index, double value) {
             self.setPosition(index, value);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("value"))
       .def(
           "setPositions",
-          [](Joint& self, const Eigen::VectorXd& positions) {
+          joint_method([](Joint& self, const Eigen::VectorXd& positions) {
             self.setPositions(positions);
-          },
+          }),
+          nb::is_method(),
           nb::arg("positions"))
       .def(
           "getPosition",
-          [](const Joint& self, std::size_t index) -> double {
+          joint_const_method([](const Joint& self, std::size_t index) -> double {
             return self.getPosition(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
-          "getPositions", [](const Joint& self) { return self.getPositions(); })
-      .def("resetPositions", [](Joint& self) { self.resetPositions(); })
+          "getPositions",
+          joint_const_method([](const Joint& self) { return self.getPositions(); }),
+          nb::is_method())
+      .def(
+          "resetPositions",
+          joint_method([](Joint& self) { self.resetPositions(); }),
+          nb::is_method())
       .def(
           "setVelocity",
-          [](Joint& self, std::size_t index, double value) {
+          joint_method([](Joint& self, std::size_t index, double value) {
             self.setVelocity(index, value);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("value"))
       .def(
           "setVelocities",
-          [](Joint& self, const Eigen::VectorXd& velocities) {
+          joint_method([](Joint& self, const Eigen::VectorXd& velocities) {
             self.setVelocities(velocities);
-          },
+          }),
+          nb::is_method(),
           nb::arg("velocities"))
       .def(
           "getVelocity",
-          [](const Joint& self, std::size_t index) -> double {
+          joint_const_method([](const Joint& self, std::size_t index) -> double {
             return self.getVelocity(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
           "getVelocities",
-          [](const Joint& self) { return self.getVelocities(); })
-      .def("resetVelocities", [](Joint& self) { self.resetVelocities(); })
-      .def("getRelativeTransform", &Joint::getRelativeTransform)
+          joint_const_method([](const Joint& self) { return self.getVelocities(); }),
+          nb::is_method())
+      .def(
+          "resetVelocities",
+          joint_method([](Joint& self) { self.resetVelocities(); }),
+          nb::is_method())
+      .def(
+          "getRelativeTransform",
+          joint_method([](Joint& self) { return self.getRelativeTransform(); }),
+          nb::is_method())
       .def(
           "getRelativeJacobian",
-          [](Joint& self, const Eigen::VectorXd& positions) {
+          joint_method([](Joint& self, const Eigen::VectorXd& positions) {
             return self.getRelativeJacobian(positions);
-          },
+          }),
+          nb::is_method(),
           nb::arg("positions"))
       .def(
           "getRelativeJacobian",
-          [](Joint& self) { return self.getRelativeJacobian(); })
-      .def("getRelativeJacobianTimeDeriv", &Joint::getRelativeJacobianTimeDeriv)
+          joint_method([](Joint& self) { return self.getRelativeJacobian(); }),
+          nb::is_method())
+      .def(
+          "getRelativeJacobianTimeDeriv",
+          joint_method([](Joint& self) { return self.getRelativeJacobianTimeDeriv(); }),
+          nb::is_method())
       .def(
           "getTransformFromChildBodyNode",
-          &Joint::getTransformFromChildBodyNode)
+          joint_method([](Joint& self) { return self.getTransformFromChildBodyNode(); }),
+          nb::is_method())
       .def(
           "getTransformFromParentBodyNode",
-          &Joint::getTransformFromParentBodyNode)
+          joint_method([](Joint& self) { return self.getTransformFromParentBodyNode(); }),
+          nb::is_method())
       .def(
           "setTransformFromChildBodyNode",
-          &Joint::setTransformFromChildBodyNode,
+          joint_method(
+              [](Joint& self, const Eigen::Isometry3d& transform) {
+                self.setTransformFromChildBodyNode(transform);
+              }),
+          nb::is_method(),
           nb::arg("transform"))
       .def(
           "setTransformFromParentBodyNode",
-          &Joint::setTransformFromParentBodyNode,
+          joint_method(
+              [](Joint& self, const Eigen::Isometry3d& transform) {
+                self.setTransformFromParentBodyNode(transform);
+              }),
+          nb::is_method(),
           nb::arg("transform"))
       .def(
           "getWrenchToParentBodyNode",
-          [](Joint& self, const dart::dynamics::Frame* frame) {
-            return self.getWrenchToParentBodyNode(frame);
-          },
+          joint_method(
+              [](Joint& self, const dart::dynamics::Frame* frame) {
+                return self.getWrenchToParentBodyNode(frame);
+              }),
+          nb::is_method(),
           nb::arg("frame") = nullptr)
       .def(
           "getWrenchToChildBodyNode",
-          [](Joint& self, const dart::dynamics::Frame* frame) {
-            return self.getWrenchToChildBodyNode(frame);
-          },
+          joint_method(
+              [](Joint& self, const dart::dynamics::Frame* frame) {
+                return self.getWrenchToChildBodyNode(frame);
+              }),
+          nb::is_method(),
           nb::arg("frame") = nullptr)
       .def(
           "setLimitEnforcement",
-          &Joint::setLimitEnforcement,
+          joint_method(
+              [](Joint& self, bool enforce) { self.setLimitEnforcement(enforce); }),
+          nb::is_method(),
           nb::arg("enforce"))
       .def(
           "setAcceleration",
-          [](Joint& self, std::size_t index, double value) {
+          joint_method([](Joint& self, std::size_t index, double value) {
             self.setAcceleration(index, value);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("value"))
       .def(
           "getAcceleration",
-          [](const Joint& self, std::size_t index) -> double {
+          joint_const_method([](const Joint& self, std::size_t index) -> double {
             return self.getAcceleration(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
           "setAccelerations",
-          [](Joint& self, const Eigen::VectorXd& accelerations) {
+          joint_method([](Joint& self, const Eigen::VectorXd& accelerations) {
             self.setAccelerations(accelerations);
-          },
+          }),
+          nb::is_method(),
           nb::arg("accelerations"))
       .def(
           "getAccelerations",
-          [](Joint& self) { return self.getAccelerations(); })
-      .def("resetAccelerations", [](Joint& self) { self.resetAccelerations(); })
+          joint_const_method([](const Joint& self) { return self.getAccelerations(); }),
+          nb::is_method())
+      .def(
+          "resetAccelerations",
+          joint_method([](Joint& self) { self.resetAccelerations(); }),
+          nb::is_method())
       .def(
           "setForce",
-          [](Joint& self, std::size_t index, double value) {
+          joint_method([](Joint& self, std::size_t index, double value) {
             self.setForce(index, value);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("value"))
       .def(
           "getForce",
-          [](const Joint& self, std::size_t index) -> double {
+          joint_const_method([](const Joint& self, std::size_t index) -> double {
             return self.getForce(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"))
       .def(
           "setForces",
-          [](Joint& self, const Eigen::VectorXd& forces) {
+          joint_method([](Joint& self, const Eigen::VectorXd& forces) {
             self.setForces(forces);
-          },
+          }),
+          nb::is_method(),
           nb::arg("forces"))
-      .def("getForces", [](Joint& self) { return self.getForces(); })
-      .def("resetForces", [](Joint& self) { self.resetForces(); })
+      .def(
+          "getForces",
+          joint_const_method([](const Joint& self) { return self.getForces(); }),
+          nb::is_method())
+      .def(
+          "resetForces",
+          joint_method([](Joint& self) { self.resetForces(); }),
+          nb::is_method())
       .def(
           "setDampingCoefficient",
-          [](Joint& self, std::size_t index, double coefficient) {
+          joint_method([](Joint& self, std::size_t index, double coefficient) {
             self.setDampingCoefficient(index, coefficient);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"),
           nb::arg("coefficient"))
       .def(
           "getDampingCoefficient",
-          [](const Joint& self, std::size_t index) {
+          joint_const_method([](const Joint& self, std::size_t index) {
             return self.getDampingCoefficient(index);
-          },
+          }),
+          nb::is_method(),
           nb::arg("index"));
+
+  registerPolymorphicCaster<Joint, Joint>();
 }
 
 } // namespace dart::python_nb

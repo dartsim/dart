@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "common/type_casters.hpp"
+
 #include "collision/module.hpp"
 #include "common/module.hpp"
 #include "constraint/module.hpp"
