@@ -29,6 +29,8 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+"""Starter scaffold for the dartpy multi-pendulum tutorial."""
+
 import math
 from typing import List, Tuple
 
@@ -54,6 +56,7 @@ delta_damping = 1.0
 
 
 def _to_vector(values: Tuple[float, float, float]) -> np.ndarray:
+    """Helper to create column-vectors for dartpy APIs."""
     vec = np.zeros(3)
     vec[:] = values
     return vec
@@ -105,25 +108,38 @@ class Controller:
         if 0 <= index < len(self.force_countdown):
             self.force_countdown[index] = default_countdown
 
-    def change_rest_position(self, _delta: float):
-        # Lesson 2a
-        pass
+    def change_rest_position(self, delta: float):
+        """Lesson 2a."""
+        # snippet:py-lesson2a-rest-position-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2a-rest-position-end
 
-    def change_stiffness(self, _delta: float):
-        # Lesson 2b
-        pass
+    def change_stiffness(self, delta: float):
+        """Lesson 2b."""
+        # snippet:py-lesson2b-stiffness-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2b-stiffness-end
 
-    def change_damping(self, _delta: float):
-        # Lesson 2c
-        pass
+    def change_damping(self, delta: float):
+        """Lesson 2c."""
+        # snippet:py-lesson2c-damping-start
+        _ = delta
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson2c-damping-end
 
     def add_constraint(self):
-        # Lesson 3
-        pass
+        """Lesson 3."""
+        # snippet:py-lesson3-add-constraint-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson3-add-constraint-end
 
     def remove_constraint(self):
-        # Lesson 3
-        pass
+        """Lesson 3."""
+        # snippet:py-lesson3-remove-constraint-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson3-remove-constraint-end
 
     def has_constraint(self) -> bool:
         return self.ball_constraint is not None
@@ -132,23 +148,30 @@ class Controller:
         self.apply_body_force = not self.apply_body_force
 
     def update(self):
-        # Lesson 1a: Reset shapes to their default state.
-
-        if not self.apply_body_force:
-            # Lesson 1b: Apply joint torques and highlight joints.
-            for i in range(self.pendulum.getNumDofs()):
-                if self.force_countdown[i] > 0:
-                    # Lesson 1b
-                    pass
+        """Lesson 1."""
+        self._reset_visuals()
+        if self.apply_body_force:
+            self._apply_body_forces()
         else:
-            # Lesson 1c: Apply external body forces and visualize them.
-            num_slots = min(
-                self.pendulum.getNumBodyNodes(), len(self.force_countdown)
-            )
-            for i in range(num_slots):
-                if self.force_countdown[i] > 0:
-                    # Lesson 1c
-                    pass
+            self._apply_joint_torques()
+
+    def _reset_visuals(self):
+        """Lesson 1a."""
+        # snippet:py-lesson1a-reset-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1a-reset-end
+
+    def _apply_joint_torques(self):
+        """Lesson 1b."""
+        # snippet:py-lesson1b-joint-force-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1b-joint-force-end
+
+    def _apply_body_forces(self):
+        """Lesson 1c."""
+        # snippet:py-lesson1c-body-force-start
+        # Implementation lives in main_finished.py
+        # snippet:py-lesson1c-body-force-end
 
 
 class PendulumEventHandler(dart.gui.osg.GUIEventHandler):

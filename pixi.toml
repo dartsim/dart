@@ -577,6 +577,9 @@ config-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
+PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
+rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
+echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
@@ -596,7 +599,7 @@ fi
 cmake \
     -G Ninja \
     -S . \
-    -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+    -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -639,7 +642,9 @@ coverage-report = { cmd = """
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info
-""", depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+""", depends-on = [
+  "build-coverage",
+], env = { BUILD_TYPE = "Debug" } }
 
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
