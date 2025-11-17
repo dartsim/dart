@@ -7,12 +7,14 @@ dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
 set(DART_MATH_LCP_PUBLIC_HEADERS "")
+set(DART_MATH_LCP_PUBLIC_HEADER_NAMES "")
 set(DART_MATH_LCP_DETAIL_HEADERS "")
 add_subdirectory(lcp)
 
 # Generate header for this namespace
 set(math_component_headers ${hdrs} ${DART_MATH_LCP_PUBLIC_HEADERS})
-dart_get_filename_components(header_names "math headers" ${math_component_headers})
+dart_get_filename_components(header_names "math headers" ${hdrs})
+list(APPEND header_names ${DART_MATH_LCP_PUBLIC_HEADER_NAMES})
 dart_generate_component_headers(
   COMPONENT_NAME math
   TARGET_DIR "dart/math/"

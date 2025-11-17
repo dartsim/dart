@@ -105,7 +105,9 @@ inline constexpr T sqrt1_2 = T(0.7071067811865475244008443621048490L);
 
 /* floating point data type, vector, matrix and quaternion types */
 
-#define dDOUBLE 1
+#if !defined(dSINGLE) && !defined(dDOUBLE)
+  #define dDOUBLE 1
+#endif
 
 namespace dart::math::lcp {
 
