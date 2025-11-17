@@ -753,6 +753,18 @@ Recording* World::getRecording()
 }
 
 //==============================================================================
+entt::registry& World::getEcsRegistry()
+{
+  return mEcsRegistry;
+}
+
+//==============================================================================
+const entt::registry& World::getEcsRegistry() const
+{
+  return mEcsRegistry;
+}
+
+//==============================================================================
 void World::handleSkeletonNameChange(
     const dynamics::ConstMetaSkeletonPtr& _skeleton)
 {

@@ -58,6 +58,7 @@
 #include <dart/common/Subject.hpp>
 
 #include <Eigen/Dense>
+#include <entt/entt.hpp>
 
 #include <set>
 #include <string>
@@ -417,6 +418,15 @@ public:
   // Slot registers
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
+
+private:
+  //--------------------------------------------------------------------------
+  // ECS integration (experimental)
+  //--------------------------------------------------------------------------
+  entt::registry& getEcsRegistry();
+  const entt::registry& getEcsRegistry() const;
+
+  entt::registry mEcsRegistry;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

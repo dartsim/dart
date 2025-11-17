@@ -124,6 +124,7 @@ target_link_libraries(
   PUBLIC
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
+    EnTT::EnTT
     fcl
     assimp
 )
