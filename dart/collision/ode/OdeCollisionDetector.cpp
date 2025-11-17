@@ -71,7 +71,8 @@ void reportContacts(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option,
-    CollisionResult& result);
+    CollisionResult& result,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history);
 
 Contact convertContact(
     const dContactGeom& fclContact,

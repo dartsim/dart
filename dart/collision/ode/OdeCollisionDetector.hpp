@@ -67,6 +67,12 @@ public:
   friend class OdeCollisionGroup;
   using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
 
+  struct ContactHistoryItem
+  {
+    CollObjPair pair;
+    std::deque<Contact> history;
+  };
+
   static std::shared_ptr<OdeCollisionDetector> create();
 
   /// Constructor
@@ -131,11 +137,6 @@ protected:
 private:
   dGeomID createOdeCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
-  struct ContactHistoryItem
-  {
-    CollObjPair pair;
-    std::deque<Contact> history;
-  };
   void clearContactHistoryFor(const CollisionObject* object);
   void clearContactHistory();
   void pruneContactHistory(const CollisionResult& result);
