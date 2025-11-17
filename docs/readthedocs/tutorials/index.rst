@@ -9,3 +9,4 @@ gradually ported to this format.
    :maxdepth: 1
 
    Multi Pendulum <multi-pendulum>
+   Collisions <collisions>

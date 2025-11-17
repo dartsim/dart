@@ -17,6 +17,7 @@ The unified tutorials live under :doc:`../tutorials/index`. They present a
 single narrative with tabbed code snippets for C++ and dartpy. Start with:
 
 - :doc:`../tutorials/multi-pendulum`
+- :doc:`../tutorials/collisions`
 
 The original per-language walkthroughs are still available in the repository
 history if you need them, but future updates will flow through the shared pages.
