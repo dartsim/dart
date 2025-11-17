@@ -479,13 +479,16 @@ void reportContacts(
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
         continue;
-      } else {
-        if (result.getNumContacts() >= option.maxNumContacts) {
-          return;
-        }
-        result.addContact(past_cont);
-        --missing;
       }
+      if (result.getNumContacts() >= option.maxNumContacts) {
+        return;
+      }
+      result.addContact(past_cont);
+      if (--missing == 0u)
+        break;
+    }
+    if (missing == 0u) {
+      break;
     }
   }
   for (const auto& item : results_vec_copy) {
