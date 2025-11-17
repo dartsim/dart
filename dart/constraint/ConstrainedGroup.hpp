@@ -35,7 +35,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <Eigen/Dense>
 

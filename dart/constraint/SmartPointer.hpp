@@ -33,37 +33,10 @@
 #ifndef DART_CONSTRAINT_SMARTPOINTER_HPP_
 #define DART_CONSTRAINT_SMARTPOINTER_HPP_
 
-#include <dart/common/SmartPointer.hpp>
+#pragma message(                                                               \
+    "This header has been deprecated in DART 7.0. "                            \
+    "Please include dart/constraint/Fwd.hpp instead.")
 
-namespace dart {
-namespace constraint {
-
-DART_COMMON_DECLARE_SMART_POINTERS(ConstraintSolver)
-
-DART_COMMON_DECLARE_SHARED_WEAK(ConstrainedGroup)
-
-DART_COMMON_DECLARE_SHARED_WEAK(ConstraintBase)
-DART_COMMON_DECLARE_SHARED_WEAK(ClosedLoopConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(ContactConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(ContactSurfaceHandler)
-DART_COMMON_DECLARE_SHARED_WEAK(SoftContactConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(JointConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(MimicMotorConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(JointCoulombFrictionConstraint)
-
-DART_COMMON_DECLARE_SHARED_WEAK(LCPSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(BoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(PgsBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(PsorBoxedLcpSolver)
-DART_COMMON_DECLARE_SHARED_WEAK(JacobiBoxedLcpSolver)
-
-DART_COMMON_DECLARE_SHARED_WEAK(DynamicJointConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(BallJointConstraint)
-DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
-
-DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
-
-} // namespace constraint
-} // namespace dart
+#include <dart/constraint/Fwd.hpp>
 
 #endif // DART_CONSTRAINT_SMARTPOINTER_HPP_
