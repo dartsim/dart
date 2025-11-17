@@ -79,23 +79,6 @@ def get_dart_version(prefix_with_v: bool = True):
     semver = _read_dart_semver()
     return f"v{semver}" if prefix_with_v else semver
 
-# Read available API documentation versions from docs_versions.txt
-def get_api_versions():
-    """Read available API versions from docs_versions.txt."""
-    versions_file = REPO_ROOT / 'scripts' / 'docs_versions.txt'
-    versions = []
-    try:
-        with open(versions_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('DART '):
-                    versions.append(line)
-    except FileNotFoundError:
-        # Fallback if file not found
-        versions = ['v6.16.0', 'v6.15.0']
-    return versions
-
-
 def _posix_path(path: Path) -> str:
     """Return a POSIX-style path string for Doxygen."""
 
@@ -128,22 +111,9 @@ def _render_doxyfile(output_path: Path):
 # Get current DART version from package.xml
 current_version = get_dart_version()
 
-# Get list of all available API versions
-api_versions = get_api_versions()
-
-# Use current version if available, otherwise use latest from docs_versions.txt
-if current_version in api_versions:
-    api_version_to_link = current_version
-else:
-    # For development versions, link to latest stable
-    api_version_to_link = api_versions[0] if api_versions else 'v6.16.0'
-
 # Make these available to RST files via html_context
 html_context = {
     'current_version': current_version,
-    'api_versions': api_versions,
-    'api_version_to_link': api_version_to_link,
-    'gh_pages_url': 'https://github.com/dartsim/dart/tree/gh-pages',
 }
 
 # -- Project information -----------------------------------------------------

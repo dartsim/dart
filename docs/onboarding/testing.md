@@ -427,4 +427,4 @@ If you have questions about the test suite or where to add a new test, please:
 - Check this README first
 - Review existing tests in the same category
 - Ask in the DART development forum or GitHub discussions
-- Consult the main DART documentation at https://dartsim.github.io/
+- Consult the main DART documentation at https://docs.dartsim.org/
