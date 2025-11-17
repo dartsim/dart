@@ -70,6 +70,7 @@ class FreeJoint;
 template <class ConfigSpaceT>
 class GenericJoint;
 class Group;
+template <typename S_>
 class HeightmapShape;
 class HierarchicalIK;
 class IkFast;
