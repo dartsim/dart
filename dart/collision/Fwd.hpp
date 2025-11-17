@@ -47,12 +47,12 @@ struct CollisionOption;
 class CollisionResult;
 struct Contact;
 
-class DistanceFilter;
+struct DistanceFilter;
 struct DistanceOption;
-class DistanceResult;
+struct DistanceResult;
 
 struct RaycastOption;
-class RaycastResult;
+struct RaycastResult;
 
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
