@@ -576,7 +576,7 @@ test-capsule-ground-contact = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
-        -R test_capsule_ground_contact
+        -R INTEGRATION_collision_CapsuleGroundContact
 """, depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",

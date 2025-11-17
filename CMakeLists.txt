@@ -742,7 +742,6 @@ if(DART_VERBOSE)
   message(STATUS "[ Code Formatting ]")
 endif()
 
-unset(CLANG_FORMAT_EXECUTABLE CACHE)
 find_program(
   CLANG_FORMAT_EXECUTABLE
   NAMES clang-format-14

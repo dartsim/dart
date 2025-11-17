@@ -56,7 +56,6 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
-#include <unordered_map>
 #include <utility>
 
 namespace dart {
@@ -99,8 +98,6 @@ struct ContactHistoryItem
   }
 };
 
-// using ContactManifold = std::unordered_map<CollObjPair, std::deque<Contact>,
-// obj_pair_hash>;
 std::vector<ContactHistoryItem> pastContacts;
 
 CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
