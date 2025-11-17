@@ -186,8 +186,7 @@ int main()
 {
   auto world = World::create();
   world->setTimeStep(0.001);
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::OdeCollisionDetector::create());
+  world->setCollisionDetector(CollisionDetectorType::Ode);
 
   world->addSkeleton(makeGround());
   auto capsule = makeCapsuleSkeleton();
