@@ -72,13 +72,6 @@ def patch_dart_component_requirements(cmake_file: Path) -> bool:
         return False
 
     content = cmake_file.read_text()
-    guard = "if(NOT DART_BUILD_COLLISION_BULLET)"
-    if guard in content:
-        print(
-            "✓ DART collision backend checks already present in gz-physics CMakeLists"
-        )
-        return True
-
     old_block = """gz_find_package(DART
   COMPONENTS
     collision-bullet
@@ -104,6 +97,9 @@ def patch_dart_component_requirements(cmake_file: Path) -> bool:
 """
 
     if old_block not in content:
+        if new_block in content:
+            print("✓ gz-physics DART components already patched")
+            return True
         print(
             "Error: Failed to locate gz-physics DART find_package block to patch",
             file=sys.stderr,
