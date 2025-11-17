@@ -15,6 +15,11 @@ set(BUILD_SHARED_LIBS OFF)
 dart_add_library(dart-baseline-ode ${baseline_ode_srcs} ${baseline_ode_hdrs})
 set(BUILD_SHARED_LIBS ${_dart_prev_build_shared_libs})
 unset(_dart_prev_build_shared_libs)
+# Prevent the INTERNAL DART_BUILD_SHARED flag from leaking into consumers.
+# Tests link this baseline library alongside the shared DART targets, so we
+# strip the interface definition to avoid conflicting values like
+# -DDART_BUILD_SHARED=0 and =1 on the same compile command.
+set_property(TARGET dart-baseline-ode PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 
 # Set include directories - use PROJECT_SOURCE_DIR so consumers can include as "tests/baseline/odelcpsolver/..."
 target_include_directories(dart-baseline-ode
