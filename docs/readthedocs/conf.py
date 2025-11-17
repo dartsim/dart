@@ -14,7 +14,32 @@ logger = logging.getLogger(__name__)
 
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
-REPO_ROOT = DOCS_ROOT.parents[1]
+
+
+def _find_repo_root(docs_root: Path) -> Path:
+    """Locate the repository root by walking up until package.xml is found."""
+
+    for candidate in (docs_root, *docs_root.parents):
+        if (candidate / 'package.xml').exists():
+            return candidate
+
+    parents = docs_root.parents
+    if len(parents) > 1:
+        fallback = parents[1]
+    elif parents:
+        fallback = parents[0]
+    else:
+        fallback = docs_root
+    logger.warning(
+        "Unable to locate package.xml when resolving repository root from %s; "
+        "falling back to %s",
+        docs_root,
+        fallback,
+    )
+    return fallback
+
+
+REPO_ROOT = _find_repo_root(DOCS_ROOT)
 DOXYFILE_TEMPLATE = REPO_ROOT / 'docs' / 'doxygen' / 'Doxyfile.in'
 GENERATED_DOXYFILE = DOCS_ROOT / '_build' / 'cpp_api_Doxyfile'
 CPP_API_OUTPUT_DIR = DOCS_ROOT / 'cpp-api'
