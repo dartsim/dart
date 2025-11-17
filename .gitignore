@@ -58,7 +58,7 @@ docs/doxygen/html/
 # Sphinx documentation
 docs/readthedocs/site
 docs/readthedocs/_build/
-docs/readthedocs/cpp-api/
+docs/readthedocs/_generated/
 docs/python_api/_build/
 
 # Data files

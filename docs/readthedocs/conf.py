@@ -42,11 +42,18 @@ def _find_repo_root(docs_root: Path) -> Path:
 REPO_ROOT = _find_repo_root(DOCS_ROOT)
 DOXYFILE_TEMPLATE = REPO_ROOT / 'docs' / 'doxygen' / 'Doxyfile.in'
 GENERATED_DOXYFILE = DOCS_ROOT / '_build' / 'cpp_api_Doxyfile'
-CPP_API_OUTPUT_DIR = DOCS_ROOT / 'cpp-api'
+GENERATED_ASSETS_DIR = DOCS_ROOT / '_generated'
+CPP_API_OUTPUT_DIR = GENERATED_ASSETS_DIR / 'cpp-api'
 
 # ``cpp_api_available`` is consumed by ``sphinx.ext.ifconfig`` to decide
 # whether the embedded iframe should be rendered.
 cpp_api_available = False
+
+
+def _ensure_cpp_api_extra_path(_app, _config):
+    """Create the ``html_extra_path`` target before validation prunes it."""
+
+    CPP_API_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _read_dart_semver():
@@ -204,7 +211,7 @@ html_favicon = "_static/img/dart_logo_32.png"
 html_theme_options = {
     "logo_only": True,
 }
-html_extra_path = ["cpp-api"]
+html_extra_path = ["_generated"]
 
 # Setting for multi language
 source_encoding = "utf-8"
@@ -262,4 +269,5 @@ def build_cpp_api_docs(app):
 
 
 def setup(app):
+    app.connect('config-inited', _ensure_cpp_api_extra_path, priority=700)
     app.connect('builder-inited', build_cpp_api_docs)

@@ -10,8 +10,9 @@ tree and publishes the generated HTML bundle alongside the rest of the pages.
 
    * ``conf.py`` renders a dedicated Doxyfile and executes Doxygen during the
      ``builder-inited`` step.
-   * The HTML bundle is copied to ``cpp-api/`` so it is served by RTD under the
-     current version.
+   * The HTML bundle is staged under ``_generated/cpp-api/`` (ignored by git)
+     and then copied to ``cpp-api/`` so it is served by RTD under the current
+     version.
    * The iframe below loads ``../cpp-api/index.html`` to keep the docs inside
      the main navigation shell while also exposing a direct link for the
      full-width experience.
@@ -54,4 +55,4 @@ To preview these docs locally, make sure ``pixi`` has installed the toolchain
 
 The command above mirrors Read the Docs by executing ``sphinx-build`` from
 ``docs/readthedocs/`` and drops the Doxygen site into
-``docs/readthedocs/cpp-api``.
+``docs/readthedocs/_generated/cpp-api``.
