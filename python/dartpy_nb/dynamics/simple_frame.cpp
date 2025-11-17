@@ -1,6 +1,5 @@
 #include "dynamics/simple_frame.hpp"
 
-#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -8,10 +7,6 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-
-#include <memory>
-
-#include <memory>
 
 namespace nb = nanobind;
 
@@ -22,41 +17,12 @@ void defSimpleFrame(nb::module_& m)
   using SimpleFrame = dart::dynamics::SimpleFrame;
   using Frame = dart::dynamics::Frame;
 
-  auto resolveFrame = [](nb::handle handle) -> Frame* {
-    if (!handle || handle.is_none())
-      return Frame::World();
-    if (nb::isinstance(handle, nb::type<dart::dynamics::BodyNode>()))
-      return static_cast<Frame*>(nb::cast<dart::dynamics::BodyNode*>(handle));
-    if (nb::isinstance(handle, nb::type<SimpleFrame>()))
-      return static_cast<Frame*>(nb::cast<SimpleFrame*>(handle));
-    if (nb::isinstance(handle, nb::type<Frame>()))
-      return nb::cast<Frame*>(handle);
-    throw nb::type_error("SimpleFrame parent must be a Frame or None");
-  };
-
   nb::class_<SimpleFrame, dart::dynamics::ShapeFrame>(m, "SimpleFrame")
       .def(
-          nb::new_([resolveFrame](nb::handle refFrame) {
-            return std::make_shared<SimpleFrame>(resolveFrame(refFrame));
-          }),
-          nb::arg("refFrame") = nb::none())
-      .def(
-          nb::new_([resolveFrame](nb::handle refFrame,
-                                  const std::string& name) {
-            return std::make_shared<SimpleFrame>(resolveFrame(refFrame), name);
-          }),
-          nb::arg("refFrame"),
-          nb::arg("name"))
-      .def(
-          nb::new_([resolveFrame](nb::handle refFrame,
-                                  const std::string& name,
-                                  const Eigen::Isometry3d& relativeTransform) {
-            return std::make_shared<SimpleFrame>(
-                resolveFrame(refFrame), name, relativeTransform);
-          }),
-          nb::arg("refFrame"),
-          nb::arg("name"),
-          nb::arg("relativeTransform"))
+          nb::init<Frame*, const std::string&, const Eigen::Isometry3d&>(),
+          nb::arg("refFrame") = nullptr,
+          nb::arg("name") = "simple_frame",
+          nb::arg("relativeTransform") = Eigen::Isometry3d::Identity())
       .def(
           "isShapeFrame",
           [](const SimpleFrame& self) { return self.isShapeFrame(); })
