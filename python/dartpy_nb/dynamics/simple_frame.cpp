@@ -18,26 +18,31 @@ void defSimpleFrame(nb::module_& m)
   using SimpleFrame = dart::dynamics::SimpleFrame;
   using Frame = dart::dynamics::Frame;
 
-  auto resolveFrame = [](nb::handle input) -> Frame* {
-    if (!input || input.is_none())
-      return Frame::World();
-    if (nb::isinstance(input, nb::type<dart::dynamics::BodyNode>()))
-      return static_cast<Frame*>(nb::cast<dart::dynamics::BodyNode*>(input));
-    if (nb::isinstance(input, nb::type<SimpleFrame>()))
-      return static_cast<Frame*>(nb::cast<SimpleFrame*>(input));
-    return nb::cast<Frame*>(input);
-  };
-
   nb::class_<SimpleFrame, dart::dynamics::ShapeFrame>(m, "SimpleFrame")
       .def(
-          nb::new_([resolveFrame](nb::handle refFrame,
-                                  const std::string& name,
-                                  const Eigen::Isometry3d& relativeTransform) {
-            Frame* parent = resolveFrame(refFrame);
-            return std::make_shared<SimpleFrame>(parent, name, relativeTransform);
+          nb::new_([]() { return std::make_shared<SimpleFrame>(); }))
+      .def(
+          nb::new_([](Frame* refFrame) {
+            return std::make_shared<SimpleFrame>(
+                refFrame ? refFrame : Frame::World());
           }),
-          nb::arg("refFrame") = nb::none(),
-          nb::arg("name") = "simple_frame",
+          nb::arg("refFrame"))
+      .def(
+          nb::new_([](Frame* refFrame, const std::string& name) {
+            return std::make_shared<SimpleFrame>(
+                refFrame ? refFrame : Frame::World(), name);
+          }),
+          nb::arg("refFrame"),
+          nb::arg("name"))
+      .def(
+          nb::new_([](Frame* refFrame,
+                      const std::string& name,
+                      const Eigen::Isometry3d& relativeTransform) {
+            return std::make_shared<SimpleFrame>(
+                refFrame ? refFrame : Frame::World(), name, relativeTransform);
+          }),
+          nb::arg("refFrame"),
+          nb::arg("name"),
           nb::arg("relativeTransform") = Eigen::Isometry3d::Identity())
       .def(
           "isShapeFrame",
