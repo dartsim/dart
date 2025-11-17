@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/All.hpp>
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/all.hpp>
+#include <dart/All.hpp>
 
 using namespace dart;
 using namespace dart::dynamics;
