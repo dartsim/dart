@@ -5,10 +5,11 @@
 
 #if !defined(DART_LCPSOLVER_SUPPRESS_DEPRECATED_HEADER_WARNING)
   #if defined(_MSC_VER)
-    #pragma message(                                                      \
+    #pragma message(                                                           \
         __FILE__ " is deprecated; include dart/math/lcp equivalents instead")
   #else
-    #warning "dart/lcpsolver headers are deprecated; include dart/math/lcp equivalents instead"
+    #warning                                                                   \
+        "dart/lcpsolver headers are deprecated; include dart/math/lcp equivalents instead"
   #endif
 #endif
 

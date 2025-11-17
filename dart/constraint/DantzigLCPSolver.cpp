@@ -42,8 +42,8 @@
 #include "dart/common/Logging.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/math/lcp/Lemke.hpp"
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/Lemke.hpp"
 
 namespace dart {
 namespace constraint {
