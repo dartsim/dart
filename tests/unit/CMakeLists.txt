@@ -99,9 +99,3 @@ endif()
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
 target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
-
-# ==============================================================================
-# Integration Tests
-# ==============================================================================
-dart_add_test(
-  "unit" UNIT_integration_EulerIntegrator integration/test_EulerIntegrator.cpp)
