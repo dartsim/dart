@@ -1,5 +1,6 @@
 #include "dynamics/simple_frame.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -17,10 +18,25 @@ void defSimpleFrame(nb::module_& m)
   using SimpleFrame = dart::dynamics::SimpleFrame;
   using Frame = dart::dynamics::Frame;
 
+  auto resolveFrame = [](nb::handle input) -> Frame* {
+    if (!input || input.is_none())
+      return Frame::World();
+    if (nb::isinstance(input, nb::type<dart::dynamics::BodyNode>()))
+      return static_cast<Frame*>(nb::cast<dart::dynamics::BodyNode*>(input));
+    if (nb::isinstance(input, nb::type<SimpleFrame>()))
+      return static_cast<Frame*>(nb::cast<SimpleFrame*>(input));
+    return nb::cast<Frame*>(input);
+  };
+
   nb::class_<SimpleFrame, dart::dynamics::ShapeFrame>(m, "SimpleFrame")
       .def(
-          nb::init<Frame*, const std::string&, const Eigen::Isometry3d&>(),
-          nb::arg("refFrame") = nullptr,
+          nb::new_([resolveFrame](nb::handle refFrame,
+                                  const std::string& name,
+                                  const Eigen::Isometry3d& relativeTransform) {
+            Frame* parent = resolveFrame(refFrame);
+            return std::make_shared<SimpleFrame>(parent, name, relativeTransform);
+          }),
+          nb::arg("refFrame") = nb::none(),
           nb::arg("name") = "simple_frame",
           nb::arg("relativeTransform") = Eigen::Isometry3d::Identity())
       .def(
