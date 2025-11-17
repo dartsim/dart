@@ -33,8 +33,9 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 #define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
-#include <dart/Export.hpp>
 #include <dart/dynamics/Fwd.hpp>
+
+#include <dart/Export.hpp>
 
 #include <cstddef>
 
