@@ -67,18 +67,19 @@ SkeletonPtr makeGround()
   auto ground = Skeleton::create("ground");
   auto pair = ground->createJointAndBodyNodePair<WeldJoint>();
 
-  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, 0.1));
-  auto node = pair.second->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(shape);
-  const Eigen::Vector3d groundColor = Eigen::Vector3d::Constant(0.7);
-  node->getVisualAspect()->setColor(groundColor);
-  node->getVisualAspect()->setShadowed(false);
+  // Collide with an infinite plane so the demo specifically exercises capsule /
+  // plane contacts.
+  auto planeShape
+      = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(planeShape);
 
-  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  pose.translate(Eigen::Vector3d(0, 0, -0.05));
-  pair.first->setTransformFromParentBodyNode(pose);
+  // Use a thin box purely for visualization so users can see the ground plane.
+  auto visualShape = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, 0.1));
+  auto visualNode = pair.second->createShapeNodeWith<VisualAspect>(visualShape);
+  const Eigen::Vector3d groundColor = Eigen::Vector3d::Constant(0.7);
+  visualNode->getVisualAspect()->setColor(groundColor);
+  visualNode->getVisualAspect()->setShadowed(false);
+
   ground->setMobile(false);
 
   return ground;
