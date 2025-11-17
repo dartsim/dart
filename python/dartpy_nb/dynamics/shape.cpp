@@ -8,6 +8,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include <memory>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -26,7 +28,11 @@ void defShape(nb::module_& m)
       .def("computeInertia", &Shape::computeInertia, nb::arg("mass"));
 
   nb::class_<dart::dynamics::SphereShape, Shape>(m, "SphereShape")
-      .def(nb::init<double>(), nb::arg("radius"))
+      .def(
+          nb::new_([](double radius) {
+            return std::make_shared<dart::dynamics::SphereShape>(radius);
+          }),
+          nb::arg("radius"))
       .def(
           "setRadius",
           &dart::dynamics::SphereShape::setRadius,
@@ -59,7 +65,11 @@ void defShape(nb::module_& m)
           nb::arg("mass"));
 
   nb::class_<dart::dynamics::BoxShape, Shape>(m, "BoxShape")
-      .def(nb::init<const Eigen::Vector3d&>(), nb::arg("size"))
+      .def(
+          nb::new_([](const Eigen::Vector3d& size) {
+            return std::make_shared<dart::dynamics::BoxShape>(size);
+          }),
+          nb::arg("size"))
       .def("setSize", &dart::dynamics::BoxShape::setSize, nb::arg("size"))
       .def(
           "getSize",

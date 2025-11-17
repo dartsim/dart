@@ -7,9 +7,8 @@ namespace dart::python_nb {
 
 void defSimulationModule(nanobind::module_& m)
 {
-  auto simulation = m.def_submodule("simulation");
-  defWorld(simulation);
-  defConstraintSolver(simulation);
+  defWorld(m);
+  defConstraintSolver(m);
 }
 
 } // namespace dart::python_nb

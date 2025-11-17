@@ -10,6 +10,7 @@
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/array.h>
 #include <nanobind/stl/set.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -47,6 +48,12 @@ void defWorld(nb::module_& m)
       .def(
           "setGravity",
           nb::overload_cast<const Eigen::Vector3d&>(&World::setGravity),
+          nb::arg("gravity"))
+      .def(
+          "setGravity",
+          [](World& self, const std::array<double, 3>& gravity) {
+            self.setGravity(Eigen::Vector3d(gravity.data()));
+          },
           nb::arg("gravity"))
       .def(
           "setGravity",

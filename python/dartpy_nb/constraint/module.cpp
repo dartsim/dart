@@ -9,11 +9,10 @@ namespace dart::python_nb {
 
 void defConstraintModule(nanobind::module_& m)
 {
-  auto constraint = m.def_submodule("constraint");
-  defConstraintBase(constraint);
-  defDynamicJointConstraint(constraint);
-  defJointConstraint(constraint);
-  defJointCoulombFrictionConstraint(constraint);
+  defConstraintBase(m);
+  defDynamicJointConstraint(m);
+  defJointConstraint(m);
+  defJointCoulombFrictionConstraint(m);
 }
 
 } // namespace dart::python_nb

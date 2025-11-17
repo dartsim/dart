@@ -15,9 +15,12 @@ void defSdfParser(nb::module_& m)
 
   auto sm = m.def_submodule("SdfParser");
 
-  nb::enum_<SdfParserNs::RootJointType>(sm, "RootJointType")
-      .value("FLOATING", SdfParserNs::RootJointType::Floating)
-      .value("FIXED", SdfParserNs::RootJointType::Fixed);
+  auto root_joint_type
+      = nb::enum_<SdfParserNs::RootJointType>(sm, "RootJointType")
+            .value("Floating", SdfParserNs::RootJointType::Floating)
+            .value("Fixed", SdfParserNs::RootJointType::Fixed);
+  root_joint_type.attr("FLOATING") = root_joint_type.attr("Floating");
+  root_joint_type.attr("FIXED") = root_joint_type.attr("Fixed");
 
   nb::class_<SdfParserNs::Options>(sm, "Options")
       .def(

@@ -1,5 +1,6 @@
 #include "dynamics/simple_frame.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -7,6 +8,10 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+
+#include <memory>
+
+#include <memory>
 
 namespace nb = nanobind;
 
@@ -17,15 +22,38 @@ void defSimpleFrame(nb::module_& m)
   using SimpleFrame = dart::dynamics::SimpleFrame;
   using Frame = dart::dynamics::Frame;
 
+  auto resolveFrame = [](nb::handle handle) -> Frame* {
+    if (!handle || handle.is_none())
+      return Frame::World();
+    if (nb::isinstance(handle, nb::type<dart::dynamics::BodyNode>()))
+      return static_cast<Frame*>(nb::cast<dart::dynamics::BodyNode*>(handle));
+    if (nb::isinstance(handle, nb::type<SimpleFrame>()))
+      return static_cast<Frame*>(nb::cast<SimpleFrame*>(handle));
+    if (nb::isinstance(handle, nb::type<Frame>()))
+      return nb::cast<Frame*>(handle);
+    throw nb::type_error("SimpleFrame parent must be a Frame or None");
+  };
+
   nb::class_<SimpleFrame, dart::dynamics::ShapeFrame>(m, "SimpleFrame")
-      .def(nb::init<>())
-      .def(nb::init<Frame*>(), nb::arg("refFrame"))
       .def(
-          nb::init<Frame*, const std::string&>(),
+          nb::new_([resolveFrame](nb::handle refFrame) {
+            return std::make_shared<SimpleFrame>(resolveFrame(refFrame));
+          }),
+          nb::arg("refFrame") = nb::none())
+      .def(
+          nb::new_([resolveFrame](nb::handle refFrame,
+                                  const std::string& name) {
+            return std::make_shared<SimpleFrame>(resolveFrame(refFrame), name);
+          }),
           nb::arg("refFrame"),
           nb::arg("name"))
       .def(
-          nb::init<Frame*, const std::string&, const Eigen::Isometry3d&>(),
+          nb::new_([resolveFrame](nb::handle refFrame,
+                                  const std::string& name,
+                                  const Eigen::Isometry3d& relativeTransform) {
+            return std::make_shared<SimpleFrame>(
+                resolveFrame(refFrame), name, relativeTransform);
+          }),
           nb::arg("refFrame"),
           nb::arg("name"),
           nb::arg("relativeTransform"))
@@ -67,6 +95,58 @@ void defSimpleFrame(nb::module_& m)
           },
           nb::arg("name"),
           nb::arg("relativeTransform"))
+      .def(
+          "setShape",
+          [](SimpleFrame& self, const dart::dynamics::ShapePtr& shape) {
+            self.setShape(shape);
+          },
+          nb::arg("shape"))
+      .def(
+          "getShape",
+          [](SimpleFrame& self) -> dart::dynamics::ShapePtr {
+            return self.getShape();
+          })
+      .def(
+          "getShape",
+          [](const SimpleFrame& self) -> dart::dynamics::ConstShapePtr {
+            return self.getShape();
+          })
+      .def("hasVisualAspect", &SimpleFrame::hasVisualAspect)
+      .def(
+          "getVisualAspect",
+          [](SimpleFrame& self, bool createIfNull) {
+            return self.getVisualAspect(createIfNull);
+          },
+          nb::arg("createIfNull") = true,
+          nb::rv_policy::reference_internal)
+      .def(
+          "createVisualAspect",
+          [](SimpleFrame& self) { return self.createVisualAspect(); },
+          nb::rv_policy::reference_internal)
+      .def("hasCollisionAspect", &SimpleFrame::hasCollisionAspect)
+      .def(
+          "getCollisionAspect",
+          [](SimpleFrame& self, bool createIfNull) {
+            return self.getCollisionAspect(createIfNull);
+          },
+          nb::arg("createIfNull") = true,
+          nb::rv_policy::reference_internal)
+      .def(
+          "createCollisionAspect",
+          [](SimpleFrame& self) { return self.createCollisionAspect(); },
+          nb::rv_policy::reference_internal)
+      .def("hasDynamicsAspect", &SimpleFrame::hasDynamicsAspect)
+      .def(
+          "getDynamicsAspect",
+          [](SimpleFrame& self, bool createIfNull) {
+            return self.getDynamicsAspect(createIfNull);
+          },
+          nb::arg("createIfNull") = true,
+          nb::rv_policy::reference_internal)
+      .def(
+          "createDynamicsAspect",
+          [](SimpleFrame& self) { return self.createDynamicsAspect(); },
+          nb::rv_policy::reference_internal)
       .def(
           "setRelativeTranslation",
           [](SimpleFrame& self, const Eigen::Vector3d& translation) {

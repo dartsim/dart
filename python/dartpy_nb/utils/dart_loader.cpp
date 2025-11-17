@@ -17,8 +17,10 @@ void defDartLoader(nb::module_& m)
 
   auto root_joint_type
       = nb::enum_<DartLoader::RootJointType>(m, "DartLoaderRootJointType")
-            .value("FLOATING", DartLoader::RootJointType::Floating)
-            .value("FIXED", DartLoader::RootJointType::Fixed);
+            .value("Floating", DartLoader::RootJointType::Floating)
+            .value("Fixed", DartLoader::RootJointType::Fixed);
+  root_joint_type.attr("FLOATING") = root_joint_type.attr("Floating");
+  root_joint_type.attr("FIXED") = root_joint_type.attr("Fixed");
 
   auto options
       = nb::class_<DartLoader::Options>(m, "DartLoaderOptions")

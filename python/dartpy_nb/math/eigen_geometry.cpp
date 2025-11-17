@@ -102,7 +102,7 @@ void defEigenGeometry(nb::module_& m)
           nb::arg("matrix"))
       .def(
           "translation",
-          [](const Isometry& self) { return self.translation(); })
+          [](const Isometry& self) { return Eigen::Vector3d(self.translation()); })
       .def(
           "set_translation",
           [](Isometry& self, const Eigen::Vector3d& translation) {
