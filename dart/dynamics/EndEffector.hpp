@@ -78,10 +78,10 @@ public:
 };
 
 //==============================================================================
-class EndEffector final : public common::EmbedPropertiesOnTopOf<
-                              EndEffector,
-                              detail::EndEffectorProperties,
-                              detail::EndEffectorCompositeBase>
+class DART_API EndEffector final : public common::EmbedPropertiesOnTopOf<
+                                       EndEffector,
+                                       detail::EndEffectorProperties,
+                                       detail::EndEffectorCompositeBase>
 {
 public:
   friend class Skeleton;
