@@ -642,7 +642,9 @@ coverage-report = { cmd = """
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info
-""", depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+""", depends-on = [
+  "build-coverage",
+], env = { BUILD_TYPE = "Debug" } }
 
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
