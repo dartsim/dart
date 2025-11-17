@@ -53,40 +53,42 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
-#include "dart/lcpsolver/dantzig/misc.h"
+/* miscellaneous math functions. these are mostly useful for testing */
 
-namespace dart::lcpsolver {
+#pragma once
+
+#include "dart/math/lcp/Dantzig/Common.hpp"
+
+namespace dart::math::lcp {
 
 //==============================================================================
-// Random number generation
+// Random Number Generation (Used by tests and benchmarks)
 //==============================================================================
 
-static unsigned long rng_seed = 0;
+/// Return next 32-bit random number using linear congruential method
+unsigned long dRand();
 
-unsigned long dRand()
+/// Get current random number seed
+unsigned long dRandGetSeed();
+
+/// Set random number seed
+void dRandSetSeed(unsigned long s);
+
+/// Return a random integer between 0..n-1
+int dRandInt(int n);
+
+/// Return a random real number between 0..1
+dReal dRandReal();
+
+/// Template version of random real number generation
+template <typename Scalar>
+inline Scalar RandReal()
 {
-  rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
-  return rng_seed;
+  return static_cast<Scalar>(dRandReal());
 }
 
-unsigned long dRandGetSeed()
-{
-  return rng_seed;
-}
+} // namespace dart::math::lcp
 
-void dRandSetSeed(unsigned long s)
-{
-  rng_seed = s;
-}
-
-int dRandInt(int n)
-{
-  return static_cast<int>(dRandReal() * n);
-}
-
-dReal dRandReal()
-{
-  return static_cast<dReal>(dRand()) / static_cast<dReal>(0xffffffff);
-}
-
-} // namespace dart::lcpsolver
+namespace dart::math {
+using namespace lcp;
+} // namespace dart::math

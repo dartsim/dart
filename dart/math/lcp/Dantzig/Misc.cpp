@@ -53,78 +53,40 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
-#include "dart/lcpsolver/dantzig/matrix.h"
+#include "dart/math/lcp/Dantzig/Misc.hpp"
 
-namespace dart::lcpsolver {
+namespace dart::math::lcp {
 
-int dFactorCholesky(dReal* A, int n, void* tmpbuf)
+//==============================================================================
+// Random number generation
+//==============================================================================
+
+static unsigned long rng_seed = 0;
+
+unsigned long dRand()
 {
-  return dFactorCholesky<dReal>(A, n, tmpbuf);
+  rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
+  return rng_seed;
 }
 
-void dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf)
+unsigned long dRandGetSeed()
 {
-  dSolveCholesky<dReal>(L, b, n, tmpbuf);
+  return rng_seed;
 }
 
-void dLDLTAddTL(
-    dReal* L, dReal* d, const dReal* a, int n, int nskip, void* tmpbuf)
+void dRandSetSeed(unsigned long s)
 {
-  dLDLTAddTL<dReal>(L, d, a, n, nskip, tmpbuf);
+  rng_seed = s;
 }
 
-void dRemoveRowCol(dReal* A, int n, int nskip, int r)
+int dRandInt(int n)
 {
-  dRemoveRowCol<dReal>(A, n, nskip, r);
+  return static_cast<int>(dRandReal() * n);
 }
 
-void dFactorLDLT(dReal* A, dReal* d, int n, int nskip)
+dReal dRandReal()
 {
-  dFactorLDLT<dReal>(A, d, n, nskip);
+  return static_cast<dReal>(dRand()) / static_cast<dReal>(0xffffffff);
 }
 
-void dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip)
-{
-  dSolveLDLT<dReal>(L, d, b, n, nskip);
-}
-
-void dSolveL1(const dReal* L, dReal* b, int n, int nskip)
-{
-  dSolveL1<dReal>(L, b, n, nskip);
-}
-
-void dSolveL1T(const dReal* L, dReal* b, int n, int nskip)
-{
-  dSolveL1T<dReal>(L, b, n, nskip);
-}
-
-void dLDLTRemove(
-    dReal** A,
-    const int* p,
-    dReal* L,
-    dReal* d,
-    int n1,
-    int n2,
-    int r,
-    int nskip,
-    void* tmpbuf)
-{
-  dLDLTRemove<dReal>(A, p, L, d, n1, n2, r, nskip, tmpbuf);
-}
-
-void dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
-{
-  dMultiply0<dReal>(A, B, C, p, q, r);
-}
-
-void dMultiply1(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
-{
-  dMultiply1<dReal>(A, B, C, p, q, r);
-}
-
-void dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r)
-{
-  dMultiply2<dReal>(A, B, C, p, q, r);
-}
-
-} // namespace dart::lcpsolver
+} // namespace dart::math::lcp

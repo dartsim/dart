@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/lcpsolver/dantzig/matrix.h>
+#include <dart/math/lcp/Dantzig/Matrix.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
@@ -40,7 +40,7 @@
 
 #include <cstring>
 
-using namespace dart::lcpsolver;
+using namespace dart::math;
 
 class MatrixMultiplyFixture : public benchmark::Fixture
 {

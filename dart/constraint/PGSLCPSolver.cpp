@@ -43,8 +43,8 @@
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/lcpsolver/Lemke.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 namespace dart {
 namespace constraint {
@@ -66,7 +66,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
   // Build LCP terms by aggregating them from constraints
   std::size_t n = _group->getTotalDimension();
-  int nSkip = lcpsolver::padding(n);
+  int nSkip = math::padding(n);
   double* A = new double[n * nSkip];
   double* x = new double[n];
   double* b = new double[n];
@@ -189,7 +189,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 #if DART_BUILD_MODE_DEBUG
 bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A)
 {
-  std::size_t nSkip = lcpsolver::padding(_n);
+  std::size_t nSkip = math::padding(_n);
   for (std::size_t i = 0; i < _n; ++i) {
     for (std::size_t j = 0; j < _n; ++j) {
       if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
@@ -217,7 +217,7 @@ bool PGSLCPSolver::isSymmetric(std::size_t _n, double* _A)
 bool PGSLCPSolver::isSymmetric(
     std::size_t _n, double* _A, std::size_t _begin, std::size_t _end)
 {
-  std::size_t nSkip = lcpsolver::padding(_n);
+  std::size_t nSkip = math::padding(_n);
   for (std::size_t i = _begin; i <= _end; ++i) {
     for (std::size_t j = _begin; j <= _end; ++j) {
       if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
@@ -252,7 +252,7 @@ void PGSLCPSolver::print(
     double* w,
     int* findex)
 {
-  std::size_t nSkip = lcpsolver::padding(_n);
+  std::size_t nSkip = math::padding(_n);
   std::cout << "A: " << std::endl;
   for (std::size_t i = 0; i < _n; ++i) {
     for (std::size_t j = 0; j < nSkip; ++j) {

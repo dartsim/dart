@@ -48,8 +48,8 @@
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
-#include "dart/lcpsolver/Lemke.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 namespace dart {
 namespace constraint {
@@ -142,7 +142,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (0u == n)
     return;
 
-  const int nSkip = lcpsolver::padding(n);
+  const int nSkip = math::padding(n);
 #if DART_BUILD_MODE_RELEASE
   mA.resize(n, nSkip);
 #else // debug
@@ -312,7 +312,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 #if DART_BUILD_MODE_DEBUG
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
-  std::size_t nSkip = lcpsolver::padding(n);
+  std::size_t nSkip = math::padding(n);
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -340,7 +340,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 bool BoxedLcpConstraintSolver::isSymmetric(
     std::size_t n, double* A, std::size_t begin, std::size_t end)
 {
-  std::size_t nSkip = lcpsolver::padding(n);
+  std::size_t nSkip = math::padding(n);
   for (std::size_t i = begin; i <= end; ++i) {
     for (std::size_t j = begin; j <= end; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -375,7 +375,7 @@ void BoxedLcpConstraintSolver::print(
     double* w,
     int* findex)
 {
-  std::size_t nSkip = lcpsolver::padding(n);
+  std::size_t nSkip = math::padding(n);
   std::cout << "A: " << std::endl;
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < nSkip; ++j) {

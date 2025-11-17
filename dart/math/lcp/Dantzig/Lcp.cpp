@@ -152,11 +152,11 @@ rows/columns and manipulate C.
 
 #define NUB_OPTIMIZATIONS
 
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/lcpsolver/dantzig/matrix.h"
-#include "dart/lcpsolver/dantzig/misc.h"
+#include "dart/math/lcp/Dantzig/Matrix.hpp"
+#include "dart/math/lcp/Dantzig/Misc.hpp"
 
 #include <memory>
 #include <vector>
@@ -164,8 +164,7 @@ rows/columns and manipulate C.
 //***************************************************************************
 // code generation parameters
 
-namespace dart {
-namespace lcpsolver {
+namespace dart::math::lcp {
 
 namespace {
 
@@ -621,7 +620,6 @@ template bool SolveLCP<float>(
     int* findex,
     bool earlyTermination);
 
-} // namespace lcpsolver
-} // namespace dart
+} // namespace dart::math::lcp
 
 // Note: Template implementations are in lcp-impl.hpp (included via lcp.h)

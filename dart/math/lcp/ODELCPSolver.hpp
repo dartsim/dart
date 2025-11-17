@@ -30,60 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
+#define DART_MATH_LCP_ODELCPSOLVER_HPP_
 
-#include "dart/common/Profile.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include <Eigen/Dense>
 
-namespace dart {
-namespace constraint {
+namespace dart::math::lcp {
 
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
+/// \brief
+class ODELCPSolver
 {
-  return getStaticType();
-}
+public:
+  /// \brief
+  ODELCPSolver();
 
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
-{
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
-}
+  /// \brief
+  virtual ~ODELCPSolver();
 
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
+  /// \brief
+  bool Solve(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::VectorXd* _x,
+      int numContacts,
+      double mu = 0,
+      int numDir = 0,
+      bool bUseODESolver = false);
 
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
+private:
+  /// \brief
+  void transferToODEFormulation(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::MatrixXd* _AOut,
+      Eigen::VectorXd* _bOut,
+      int _numDir,
+      int _numContacts);
 
-  bool result = math::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+  /// \brief
+  void transferSolFromODEFormulation(
+      const Eigen::VectorXd& _x,
+      Eigen::VectorXd* _xOut,
+      int _numDir,
+      int _numContacts);
 
-  delete[] w;
-  return result;
-}
+  /// \brief
+  bool checkIfSolution(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      const Eigen::VectorXd& _x);
+};
 
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
-#endif
+} // namespace dart::math::lcp
 
-} // namespace constraint
-} // namespace dart
+namespace dart::math {
+using namespace lcp;
+} // namespace dart::math
+
+#endif // DART_MATH_LCP_ODELCPSOLVER_HPP_
