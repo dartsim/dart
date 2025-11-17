@@ -803,12 +803,6 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
-export BULLET_ROOT="$CONDA_PREFIX"
-export Bullet_ROOT="$CONDA_PREFIX"
-export ODE_ROOT="$CONDA_PREFIX"
-export Octomap_DIR="$CONDA_PREFIX/lib/cmake/octomap"
-export octomap_DIR="$Octomap_DIR"
-export PKG_CONFIG_PATH="$CONDA_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 cmake \
     -G Ninja \
     -S . \
