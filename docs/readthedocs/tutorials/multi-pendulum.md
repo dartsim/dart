@@ -28,8 +28,20 @@ In DART, an articulated dynamics model is represented by a
 ``Skeleton``. In the ``main`` function, we first create an empty
 skeleton named *pendulum*.
 
-```cpp
-SkeletonPtr pendulum = Skeleton::create("pendulum");
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         SkeletonPtr pendulum = Skeleton::create("pendulum");
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         pendulum = dart.dynamics.Skeleton("pendulum")
 ```
 
 A Skeleton is a structure that consists of ``BodyNode``s (bodies) which are 
@@ -39,9 +51,29 @@ World. In the function ``makeRootBody``, we create a pair of a
 ``BallJoint``  and a BodyNode, and attach this pair to the currently
 empty pendulum skeleton.
 
-```cpp
-BodyNodePtr bn = pendulum->createJointAndBodyNodePair<BallJoint>(
-      nullptr, properties, BodyNode::AspectProperties(name)).second;
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         BodyNodePtr bn = pendulum->createJointAndBodyNodePair<BallJoint>(
+               nullptr, properties, BodyNode::AspectProperties(name)).second;
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         joint_prop = dart.dynamics.BallJointProperties()
+         joint_prop.mName = f"{name}_joint"
+         joint, body = pendulum.createBallJointAndBodyNodePair(
+             None,
+             joint_prop,
+             dart.dynamics.BodyNodeProperties(
+                 dart.dynamics.BodyNodeAspectProperties(name)
+             ),
+         )
 ```
 
 Note that the first parameters is a nullptr, which indicates that
@@ -51,9 +83,31 @@ we can do so by passing the pointer of the existing BodyNode as
 the first parameter. In fact, this is how we add more BodyNodes to
 the pendulum in the function ``addBody``:
 
-```cpp
-BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
-      parent, properties, BodyNode::AspectProperties(name)).second;
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
+               parent, properties, BodyNode::AspectProperties(name)).second;
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         joint_prop = dart.dynamics.RevoluteJointProperties()
+         joint_prop.mName = f"{name}_joint"
+         joint_prop.mAxis = [0.0, 1.0, 0.0]
+         joint_prop.mT_ParentBodyToJoint.set_translation([0.0, 0.0, default_height])
+         joint, body = pendulum.createRevoluteJointAndBodyNodePair(
+             parent,
+             joint_prop,
+             dart.dynamics.BodyNodeProperties(
+                 dart.dynamics.BodyNodeAspectProperties(name)
+             ),
+         )
 ```
 The simplest way to set up a simulation program in DART is to use
 ``SimWindow`` class. A SimWindow owns an instance of ``World``  and
@@ -61,10 +115,25 @@ simulates all the Skeletons in the World. In this example, we create a World wit
 pendulum skeleton in it, and assign the World to an instance of
 ``MyWindow``, a subclass derived from SimWindow.
 
-```cpp
-WorldPtr world(new World);
-world->addSkeleton(pendulum);
-MyWindow window(world);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         WorldPtr world(new World);
+         world->addSkeleton(pendulum);
+         MyWindow window(world);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         world = dart.simulation.World()
+         world.addSkeleton(pendulum)
+         controller = Controller(pendulum, world)
+         node = CustomWorldNode(world, controller)
 ```
 
 Every single time step, the ``MyWindow::timeStepping`` function will be called
@@ -99,19 +168,22 @@ simulation. In our case, each BodyNode has two shapes:
 The default appearance for everything is to be colored blue, so we'll want to
 iterate through these two Shapes in each BodyNode, setting their colors to blue.
 
-```cpp
-for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
-{
-  BodyNode* bn = mPendulum->getBodyNode(i);
-  const auto numVisualShapeNodes = bn->getNumShapeNodesWith<VisualAspect>();
-  for(std::size_t j = 0; j < 2 && j < numVisualShapeNodes; ++j)
-  {
-    auto* visualShapeNode = bn->getShapeNodeWith<VisualAspect>(j);
-    visualShapeNode->getVisualAspect()->setColor(dart::Color::Blue());
-  }
+```{eval-rst}
+.. tabs::
 
-  // TODO: Remove any arrows
-}
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson1a-reset-start
+         :end-before: // snippet:cpp-lesson1a-reset-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson1a-reset-start
+         :end-before: # snippet:py-lesson1a-reset-end
 ```
 
 Additionally, there is the possibility that some BodyNodes will have an arrow
@@ -119,11 +191,22 @@ shape attached if the user had been applying an external body force to it. By
 default, this arrow should not be attached, so in the outer for-loop, we should
 check for arrows and remove them:
 
-```cpp
-if(numVisualShapeNodes == 3)
-{
-  bn->getShapeNodeWith<VisualAspect>(2)->remove();
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson1a-remove-arrow-start
+         :end-before: // snippet:cpp-lesson1a-remove-arrow-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson1a-remove-arrow-start
+         :end-before: # snippet:py-lesson1a-remove-arrow-end
 ```
 
 Now everything will be reset to the default appearance.
@@ -146,9 +229,22 @@ through each ``DegreeOfFreedom`` using ``getNumDofs()``, there is an
 if-statement for ``mForceCountDown``. In that if-statement, we'll grab the
 relevant DegreeOfFreedom and set its generalized (joint) force:
 
-```cpp
-DegreeOfFreedom* dof = mPendulum->getDof(i);
-dof->setForce( mPositiveSign? default_torque : -default_torque );
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson1b-joint-force-start
+         :end-before: // snippet:cpp-lesson1b-joint-force-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson1b-joint-force-start
+         :end-before: # snippet:py-lesson1b-joint-force-end
 ```
 
 The ``mPositiveSign`` boolean gets toggled when the user presses the minus sign
@@ -159,17 +255,42 @@ Now we'll want to visualize the fact that a Joint force is being applied. We'll
 do this by highlighting the joint with the color red. First we'll grab the Shape
 that corresponds to this Joint:
 
-```cpp
-BodyNode* bn = dof->getChildBodyNode();
-auto* shapeNode = bn->getShapeNodeWith<VisualAspect>(0);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         BodyNode* bn = dof->getChildBodyNode();
+         auto* shapeNode = bn->getShapeNodeWith<VisualAspect>(0);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         child = dof.getChildBodyNode()
+         joint_visual = child.getShapeNode(0).getVisualAspect()
 ```
 
 Because of the way the pendulum bodies were constructed, we trust that the
 zeroth indexed visualization shape will be the shape that depicts the joint.
 So now we will color it red:
 
-```cpp
-shapeNode->getVisualAspect()->setColor(dart::Color::Red());
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         shapeNode->getVisualAspect()->setColor(dart::Color::Red());
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         joint_visual.setColor([1.0, 0.0, 0.0, 1.0])
 ```
 
 ### Lesson 1c: Apply body forces based on user input
@@ -179,8 +300,20 @@ of an internal force in the joint. First, inside the for-loop that iterates
 through each ``BodyNode`` using ``getNumBodyNodes()``, there is an if-statement
 for ``mForceCountDown``. In that if-statement, we'll grab the relevant BodyNode:
 
-```cpp
-BodyNode* bn = mPendulum->getBodyNode(i);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         BodyNode* bn = mPendulum->getBodyNode(i);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         body = self.pendulum.getBodyNode(i)
 ```
 
 Now we'll create an ``math::Vector3d`` that describes the force and another one
@@ -190,9 +323,22 @@ C++ library's version of a three-dimensional mathematical vector. Note that the
 math::Vector3f would be a three-dimensional vector of floats, and an
 math::Vector3i would be a three-dimensional vector of integers.
 
-```cpp
-math::Vector3d force = default_force * math::Vector3d::UnitX();
-math::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         math::Vector3d force = default_force * math::Vector3d::UnitX();
+         math::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         force = np.array([default_force, 0.0, 0.0])
+         location = np.array([-default_width / 2.0, 0.0, default_height / 2.0])
 ```
 
 The force will have a magnitude of ``default_force`` and it will point in the
@@ -200,20 +346,46 @@ positive x-direction. The location of the force will be in the center of the
 negative x side of the body, as if a finger on the negative side is pushing the
 body in the positive direction. However, we need to account for sign changes:
 
-```cpp
-if(!mPositiveSign)
-{
-  force = -force;
-  location[0] = -location[0];
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         if(!mPositiveSign)
+         {
+           force = -force;
+           location[0] = -location[0];
+         }
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         if not self.positive_sign:
+             force *= -1.0
+             location[0] *= -1.0
 ```
 
 That will flip the signs whenever the user is requesting a negative force.
 
 Now we can add the external force:
 
-```cpp
-bn->addExtForce(force, location, true, true);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         bn->addExtForce(force, location, true, true);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         body.addExtForce(force, location, True, True)
 ```
 
 The two ``true`` booleans at the end are indicating to DART that both the force
@@ -222,9 +394,22 @@ and the location vectors are being expressed with respect to the body frame.
 Now we'll want to visualize the force being applied to the body. First, we'll
 grab the Shape for the body and color it red:
 
-```cpp
-auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
-shapeNodes[1]->getVisualAspect()->setColor(dart::Color::Red());
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+         shapeNodes[1]->getVisualAspect()->setColor(dart::Color::Red());
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         body_visual = body.getShapeNode(1).getVisualAspect()
+         body_visual.setColor([1.0, 0.0, 0.0, 1.0])
 ```
 
 Last time we grabbed the 0-index visualization shape, because we trusted that
@@ -236,8 +421,21 @@ Now we'll want to add an arrow to the visualization shapes of the body to
 represent the applied force. The ``MyWindow`` class already provides the arrow
 shape; we just need to add it:
 
-```cpp
-bn->createShapeNodeWith<VisualAspect>(mArrow);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         bn->createShapeNodeWith<VisualAspect>(mArrow);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         arrow, arrow_visual = self.body_force_visuals[i]
+         arrow_visual.show()
 ```
 
 ## Lesson 2: Set spring and damping properties for joints
@@ -260,23 +458,44 @@ those buttons to curl and uncurl the rest positions for the pendulum. To start,
 we'll go through all the generalized coordinates and change their rest positions
 by ``delta``:
 
-```cpp
-for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-{
-  DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double q0 = dof->getRestPosition() + delta;
+```{eval-rst}
+.. tabs::
 
-  dof->setRestPosition(q0);
-}
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson2a-rest-position-start
+         :end-before: // snippet:cpp-lesson2a-rest-position-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson2a-rest-position-start
+         :end-before: # snippet:py-lesson2a-rest-position-end
 ```
 
 However, it's important to note that the system can become somewhat unstable if
 we allow it to curl up too much, so let's put a limit on the magnitude of the
 rest angle. Right before ``dof->setRestPosition(q0);`` we can put:
 
-```cpp
-if(std::abs(q0) > 90.0 * M_PI / 180.0)
-  q0 = (q0 > 0)? (90.0 * M_PI / 180.0) : -(90.0 * M_PI / 180.0);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // The system becomes numerically unstable
+         :end-before:       dof->setRestPosition(q0);
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: q0 = dof.getRestPosition() + delta
+         :end-before:         dof.setRestPosition(q0)
 ```
 
 And there's one last thing to consider: the first joint of the pendulum is a
@@ -286,9 +505,22 @@ pendulum will end up curling out of the x-z plane. You can allow this to happen
 if you want, or you can prevent it from happening by zeroing out the rest
 positions of the BallJoint's other two degrees of freedom:
 
-```cpp
-mPendulum->getDof(0)->setRestPosition(0.0);
-mPendulum->getDof(2)->setRestPosition(0.0);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. code-block:: cpp
+
+         mPendulum->getDof(0)->setRestPosition(0.0);
+         mPendulum->getDof(2)->setRestPosition(0.0);
+
+   .. tab:: Python
+
+      .. code-block:: python
+
+         self.pendulum.getDof(0).setRestPosition(0.0)
+         self.pendulum.getDof(2).setRestPosition(0.0)
 ```
 
 ### Lesson 2b: Set joint spring stiffness
@@ -296,13 +528,22 @@ mPendulum->getDof(2)->setRestPosition(0.0);
 Changing the rest position does not accomplish anything without having any
 spring stiffness. We can change the spring stiffness as follows:
 
-```cpp
-for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-{
-  DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double stiffness = dof->getSpringStiffness() + delta;
-  dof->setSpringStiffness(stiffness);
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson2b-stiffness-start
+         :end-before: // snippet:cpp-lesson2b-stiffness-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson2b-stiffness-start
+         :end-before: # snippet:py-lesson2b-stiffness-end
 ```
 
 However, it's important to realize that if the spring stiffness were ever to
@@ -324,15 +565,22 @@ results in more stable behavior.
 
 The API for getting and setting the damping is just like the API for stiffness:
 
-```cpp
-for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
-{
-  DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double damping = dof->getDampingCoefficient() + delta;
-  if(damping < 0.0)
-    damping = 0.0;
-  dof->setDampingCoefficient(damping);
-}
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson2c-damping-start
+         :end-before: // snippet:cpp-lesson2c-damping-end
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson2c-damping-start
+         :end-before: # snippet:py-lesson2c-damping-end
 ```
 
 Again, we want to make sure that the damping coefficient is never negative. In
@@ -351,37 +599,104 @@ In our case, we want to attach the last BodyNode to the World with a BallJoint
 style constraint whenever the function ``addConstraint()`` gets called. First,
 let's grab the last BodyNode in the pendulum:
 
-```cpp
-BodyNode* tip  = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // snippet:cpp-lesson3-add-constraint-start
+         :end-before: Eigen::Vector3d location
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: # snippet:py-lesson3-add-constraint-start
+         :end-before: location = tip.getTransform()
 ```
 
 Now we'll want to compute the location that the constraint should have. We want
 to connect the very end of the tip to the world, so the location would be:
 
-```cpp
-math::Vector3d location =
-    tip->getTransform() * math::Vector3d(0.0, 0.0, default_height);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: // Attach the last link to the world
+         :end-before: mBallConstraint =
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: location = tip.getTransform().multiply
+         :end-before: self.ball_constraint = dart.constraint.BallJointConstraint
 ```
 
 Now we can create the BallJointConstraint:
 
-```cpp
-mBallConstraint =
-    std::make_shared<dart::dynamics::BallJointConstraint>(tip, location);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: Eigen::Vector3d location
+         :end-before: mWorld->getConstraintSolver()->addConstraint
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: self.ball_constraint = dart.constraint.BallJointConstraint
+         :end-before: self.world.getConstraintSolver().addConstraint
 ```
 
 And then add it to the world:
 
-```cpp
-mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: mBallConstraint =
+         :end-before: /// Remove any existing constraint
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: self.world.getConstraintSolver().addConstraint
+         :end-before: def remove_constraint
 ```
 
 Now we also want to be able to remove this constraint. In the function
 ``removeConstraint()``, we can put the following code:
 
-```cpp
-mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
-mBallConstraint = nullptr;
+```{eval-rst}
+.. tabs::
+
+   .. tab:: C++
+
+      .. literalinclude:: ../../../tutorials/tutorial_multi_pendulum_finished/main.cpp
+         :language: cpp
+         :start-after: /// Remove any existing constraint
+         :end-before: bool hasConstraint() const
+
+   .. tab:: Python
+
+      .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
+         :language: python
+         :start-after: def remove_constraint
+         :end-before: def has_constraint
 ```
 
 Setting mBallConstraint to a nullptr will allow its smart pointer to delete it.

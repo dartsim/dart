@@ -11,10 +11,10 @@
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,13 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_SMARTPOINTER_HPP_
-#define DART_COLLISION_SMARTPOINTER_HPP_
+#ifndef DART_SIMULATION_FWD_HPP_
+#define DART_SIMULATION_FWD_HPP_
 
-#pragma message(                                                               \
-    "This header has been deprecated in DART 7.0. "                            \
-    "Please include dart/collision/Fwd.hpp instead.")
+#include <dart/common/SmartPointer.hpp>
 
-#include <dart/collision/Fwd.hpp>
+namespace dart {
+namespace simulation {
 
-#endif // DART_COLLISION_SMARTPOINTER_HPP_
+class World;
+
+DART_COMMON_DECLARE_SHARED_WEAK(World)
+
+} // namespace simulation
+} // namespace dart
+
+#endif // DART_SIMULATION_FWD_HPP_

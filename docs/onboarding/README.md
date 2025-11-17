@@ -1294,7 +1294,7 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 ## 8. Additional Resources
 
 ### Documentation
-- **Main Website**: https://dartsim.github.io/
+- **Main Website**: https://docs.dartsim.org/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
 - **Tutorials**: [`tutorials/`](tutorials/)
 - **Examples**: [`examples/`](examples/)
