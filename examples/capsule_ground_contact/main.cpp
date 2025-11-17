@@ -50,8 +50,7 @@ Eigen::Isometry3d makeHorizontalPose()
 {
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translate(Eigen::Vector3d(0, 0, kCapsuleRadius + 0.1));
-  pose.rotate(Eigen::AngleAxisd(
-      dart::math::constantsd::half_pi(), Eigen::Vector3d::UnitY()));
+  pose.rotate(Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitY()));
   return pose;
 }
 

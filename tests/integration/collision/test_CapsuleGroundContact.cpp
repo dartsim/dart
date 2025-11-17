@@ -81,8 +81,7 @@ void runCapsuleGroundContactTest(const DetectorFactory& factory)
 
   Eigen::Isometry3d placement
       = Eigen::Translation3d(0, 0, 0.5)
-        * Eigen::AngleAxisd(
-            dart::math::constantsd::half_pi(), Eigen::Vector3d::UnitY());
+        * Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitY());
   joint->setRelativeTransform(placement);
 
   auto capsuleShape
