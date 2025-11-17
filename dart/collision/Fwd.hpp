@@ -30,61 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
-#define DART_COLLISION_COLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_FWD_HPP_
+#define DART_COLLISION_FWD_HPP_
 
-#include <dart/collision/Fwd.hpp>
-
-#include <dart/dynamics/Fwd.hpp>
-
-#include <Eigen/Dense>
+#include <dart/common/SmartPointer.hpp>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject
-{
-public:
-  friend class CollisionGroup;
+class CollisionDetector;
+class CollisionFilter;
+class CollisionGroup;
+class CollisionObject;
 
-  /// Destructor
-  virtual ~CollisionObject() = default;
+struct CollisionOption;
+class CollisionResult;
+struct Contact;
 
-  /// Return collision detection engine associated with this CollisionObject
-  CollisionDetector* getCollisionDetector();
+struct DistanceFilter;
+struct DistanceOption;
+struct DistanceResult;
 
-  /// Return collision detection engine associated with this CollisionObject
-  const CollisionDetector* getCollisionDetector() const;
+struct RaycastOption;
+struct RaycastResult;
 
-  /// Return the associated ShapeFrame
-  const dynamics::ShapeFrame* getShapeFrame() const;
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
 
-  /// Return the associated Shape
-  dynamics::ConstShapePtr getShape() const;
-
-  /// Return the transformation of this CollisionObject in world coordinates
-  const Eigen::Isometry3d& getTransform() const;
-
-protected:
-  /// Contructor
-  CollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  /// Update the collision object of the collision detection engine. This
-  /// function will be called ahead of every collision checking by
-  /// CollisionGroup.
-  virtual void updateEngineData() = 0;
-
-protected:
-  /// Collision detector
-  CollisionDetector* mCollisionDetector;
-
-  /// ShapeFrame
-  const dynamics::ShapeFrame* mShapeFrame;
-};
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
 
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_COLLISIONOBJECT_HPP_
+#endif // DART_COLLISION_FWD_HPP_

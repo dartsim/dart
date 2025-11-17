@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/Contact.hpp>
 
