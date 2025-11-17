@@ -101,11 +101,6 @@ void OdeCollisionGroup::addCollisionObjectsToEngine(
 //==============================================================================
 void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
-  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
-          getCollisionDetector())) {
-    detector->clearContactHistoryFor(object);
-  }
-
   auto casted = static_cast<OdeCollisionObject*>(object);
   auto geomId = casted->getOdeGeomId();
   dSpaceRemove(mSpaceId, geomId);
@@ -116,11 +111,6 @@ void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 //==============================================================================
 void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  if (auto detector = std::static_pointer_cast<OdeCollisionDetector>(
-          getCollisionDetector())) {
-    detector->clearContactHistory();
-  }
-
   dSpaceClean(mSpaceId);
 
   initializeEngineData();

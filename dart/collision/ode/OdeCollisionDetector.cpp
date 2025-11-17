@@ -84,23 +84,8 @@ double computeTangentialSpeed(const Contact& contact);
 bool shouldUseContactHistory(
     const CollisionObject* object1, const CollisionObject* object2);
 
-using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
-
-struct ContactHistoryItem
-{
-  CollObjPair pair;
-  std::deque<Contact> history;
-  ContactHistoryItem() = delete;
-  ContactHistoryItem(CollObjPair newPair, std::deque<Contact> newHistory)
-    : pair(std::move(newPair)), history(std::move(newHistory))
-  {
-    // Do nothing
-  }
-};
-
-std::vector<ContactHistoryItem> pastContacts;
-
-CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
+OdeCollisionDetector::CollObjPair MakeNewPair(
+    CollisionObject* o1, CollisionObject* o2)
 {
   if (std::less<CollisionObject*>()(o2, o1)) {
     std::swap(o1, o2);
@@ -108,33 +93,21 @@ CollObjPair MakeNewPair(CollisionObject* o1, CollisionObject* o2)
   return std::make_pair(o1, o2);
 }
 
-std::deque<Contact>& FindPairInHist(const CollObjPair& pair)
+std::deque<Contact>& FindPairInHist(
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
+    const OdeCollisionDetector::CollObjPair& pair)
 {
-  for (auto& item : pastContacts) {
+  for (auto& item : cache) {
     if (pair.first == item.pair.first && pair.second == item.pair.second) {
       return item.history;
     }
   }
-  auto newItem = ContactHistoryItem{pair, std::deque<Contact>()};
-  pastContacts.push_back(newItem);
+  auto newItem = OdeCollisionDetector::ContactHistoryItem{
+      pair, std::deque<Contact>()};
+  cache.push_back(newItem);
 
-  return pastContacts.back().history;
+  return cache.back().history;
 }
-void eraseHistoryForObject(const CollisionObject* object)
-{
-  if (!object)
-    return;
-
-  pastContacts.erase(
-      std::remove_if(
-          pastContacts.begin(),
-          pastContacts.end(),
-          [object](const ContactHistoryItem& item) {
-            return item.pair.first == object || item.pair.second == object;
-          }),
-      pastContacts.end());
-}
-
 struct OdeCollisionCallbackData
 {
   dContactGeom* contactGeoms;
@@ -335,17 +308,6 @@ dWorldID OdeCollisionDetector::getOdeWorldId() const
 }
 
 //==============================================================================
-void OdeCollisionDetector::clearContactHistoryFor(const CollisionObject* object)
-{
-  eraseHistoryForObject(object);
-}
-
-//==============================================================================
-void OdeCollisionDetector::clearContactHistory()
-{
-  pastContacts.clear();
-}
-
 namespace {
 
 //==============================================================================
@@ -428,7 +390,7 @@ void reportContacts(
   }
 
   const auto pair = MakeNewPair(b1, b2);
-  auto& pastContacsVec = FindPairInHist(pair);
+  auto& pastContacsVec = FindPairInHist(mContactHistory, pair);
   auto results_vec_copy = result.getContacts();
 
   bool sliding = false;
