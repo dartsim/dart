@@ -10,3 +10,4 @@ gradually ported to this format.
 
    Multi Pendulum <multi-pendulum>
    Collisions <collisions>
+   Dominoes <dominoes>
