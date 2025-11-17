@@ -624,6 +624,11 @@ build-coverage = { cmd = """
 
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
 coverage-report = { cmd = """
+    # Drop coverage artifacts for directories we filter out later so that
+    # stale gcda files without matching gcno files do not break lcov.
+    find build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        '(' -path '*/tests/*' -o -path '*/examples/*' -o -path '*/tutorials/*' ')' \
+        '(' -name '*.gcda' -o -name '*.gcno' ')' -delete
     lcov \
         --capture \
         --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
