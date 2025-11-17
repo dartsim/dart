@@ -92,35 +92,14 @@
 
 /* constants */
 
-/* Modern C++ constant for 1/sqrt(2) - replaces M_SQRT1_2 macro */
+/* Modern C++ constant for 1/sqrt(2) */
 namespace dart::math::lcp::constants {
 template <typename T>
-inline constexpr T sqrt1_2 = T(0.7071067811865475244008443621048490L);
+inline constexpr T sqrt1_2 = static_cast<T>(
+    0.707106781186547524400844362104849039284835937688474036588339868999782L);
 } // namespace dart::math::lcp::constants
 
-// Legacy M_SQRT1_2 macro for backward compatibility
-#ifndef M_SQRT1_2
-  #define M_SQRT1_2 REAL(0.7071067811865475244008443621048490)
-#endif
-
-/* floating point data type, vector, matrix and quaternion types */
-
-#if !defined(dSINGLE) && !defined(dDOUBLE)
-  #define dDOUBLE 1
-#endif
-
 namespace dart::math::lcp {
-
-#if defined(dSINGLE)
-using dReal = float;
-  #ifdef dDOUBLE
-    #error You can only #define dSINGLE or dDOUBLE, not both.
-  #endif // dDOUBLE
-#elif defined(dDOUBLE)
-using dReal = double;
-#else
-  #error You must #define dSINGLE or dDOUBLE
-#endif
 
 //==============================================================================
 // Template Type Traits for Scalar Types
@@ -209,20 +188,6 @@ inline constexpr S reciprocal(S x)
 {
   return S(1) / x;
 }
-
-/* precision dependent scalar math functions */
-
-#if defined(dSINGLE)
-
-  #define REAL(x) (x##f) /* form a constant */
-
-#elif defined(dDOUBLE)
-
-  #define REAL(x) (x)
-
-#else
-  #error You must #define dSINGLE or dDOUBLE
-#endif
 
 //==============================================================================
 // Matrix Multiplication Functions (Phase 14.3 - SIMD Optimization)

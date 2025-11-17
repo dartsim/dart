@@ -364,7 +364,7 @@ struct LCP
   void transfer_i_from_C_to_N(int i, void* tmpbuf);
   static size_t estimate_transfer_i_from_C_to_N_mem_req(int nC, int nskip)
   {
-    return dEstimateLDLTRemoveTmpbufSize(nC, nskip);
+    return dEstimateLDLTRemoveTmpbufSize<Scalar>(nC, nskip);
   }
   int numC() const
   {

@@ -78,7 +78,7 @@ void dRandSetSeed(unsigned long s);
 int dRandInt(int n);
 
 /// Return a random real number between 0..1
-dReal dRandReal();
+double dRandReal();
 
 /// Template version of random real number generation
 template <typename Scalar>

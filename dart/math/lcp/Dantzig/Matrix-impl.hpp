@@ -109,7 +109,7 @@ int dFactorCholesky(Scalar* A, int n, void* tmpbuf /*[n]*/)
       for (; a != aend; ++a) {
         sum -= (*a) * (*a);
       }
-      if (sum <= REAL(0.0)) {
+      if (sum <= static_cast<Scalar>(0.0)) {
         failure = true;
         break;
       }
@@ -130,7 +130,7 @@ void dSolveCholesky(const Scalar* L, Scalar* b, int n, void* tmpbuf /*[n]*/)
   {
     const Scalar* ll = L;
     for (int i = 0; i < n; ll += nskip, ++i) {
-      Scalar sum = REAL(0.0);
+      Scalar sum = static_cast<Scalar>(0.0);
       for (int k = 0; k < i; ++k) {
         sum += ll[k] * y[k];
       }
@@ -141,7 +141,7 @@ void dSolveCholesky(const Scalar* L, Scalar* b, int n, void* tmpbuf /*[n]*/)
   {
     const Scalar* ll = L + (n - 1) * (nskip + 1);
     for (int i = n - 1; i >= 0; ll -= nskip + 1, --i) {
-      Scalar sum = REAL(0.0);
+      Scalar sum = static_cast<Scalar>(0.0);
       const Scalar* l = ll + nskip;
       for (int k = i + 1; k < n; l += nskip, ++k) {
         sum += (*l) * b[k];
@@ -158,8 +158,8 @@ int dInvertPDMatrix(
 {
   DART_ASSERT(n > 0 && A && Ainv);
   bool success = false;
-  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize(n);
-  size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize(n);
+  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
+  size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize<Scalar>(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size
                                 ? FactorCholesky_size
                                 : SolveCholesky_size;
@@ -178,7 +178,7 @@ int dInvertPDMatrix(
     Scalar *aa = Ainv, *xi = X, *xiend = X + n;
     for (; xi != xiend; ++aa, ++xi) {
       SetZero(X, n);
-      *xi = REAL(1.0);
+      *xi = static_cast<Scalar>(1.0);
       dSolveCholesky(L, X, n, tmp);
       Scalar* a = aa;
       const Scalar *x = X, *xend = X + n;
@@ -195,7 +195,7 @@ template <typename Scalar>
 int dIsPositiveDefinite(const Scalar* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
 {
   DART_ASSERT(n > 0 && A);
-  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize(n);
+  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
   DART_ASSERT(FactorCholesky_size % sizeof(Scalar) == 0);
   const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
@@ -239,16 +239,18 @@ void dLDLTAddTL(
                       : (Scalar*)ALLOCA((2 * nskip) * sizeof(Scalar));
   Scalar* W2 = W1 + nskip;
 
-  W1[0] = REAL(0.0);
-  W2[0] = REAL(0.0);
+  W1[0] = static_cast<Scalar>(0.0);
+  W2[0] = static_cast<Scalar>(0.0);
   for (int j = 1; j < n; ++j) {
-    W1[j] = W2[j] = (Scalar)(a[j] * M_SQRT1_2);
+    W1[j] = W2[j] = (Scalar)(a[j] * constants::sqrt1_2<Scalar>);
   }
-  Scalar W11 = (Scalar)((REAL(0.5) * a[0] + 1) * M_SQRT1_2);
-  Scalar W21 = (Scalar)((REAL(0.5) * a[0] - 1) * M_SQRT1_2);
+  Scalar W11
+      = (Scalar)((static_cast<Scalar>(0.5) * a[0] + 1) * constants::sqrt1_2<Scalar>);
+  Scalar W21
+      = (Scalar)((static_cast<Scalar>(0.5) * a[0] - 1) * constants::sqrt1_2<Scalar>);
 
-  Scalar alpha1 = REAL(1.0);
-  Scalar alpha2 = REAL(1.0);
+  Scalar alpha1 = static_cast<Scalar>(1.0);
+  Scalar alpha2 = static_cast<Scalar>(1.0);
 
   {
     Scalar dee = d[0];
@@ -261,7 +263,7 @@ void dLDLTAddTL(
     alphanew = alpha2 - (W21 * W21) * dee;
     dee /= alphanew;
     alpha2 = alphanew;
-    Scalar k1 = REAL(1.0) - W21 * gamma1;
+    Scalar k1 = static_cast<Scalar>(1.0) - W21 * gamma1;
     Scalar k2 = W21 * gamma1 * W11 - W21;
     Scalar* ll = L + nskip;
     for (int p = 1; p < n; ll += nskip, ++p) {
@@ -339,7 +341,7 @@ void dLDLTRemove(
   if (r == n2 - 1) {
     return;
   } else {
-    size_t LDLTAddTL_size = dEstimateLDLTAddTLTmpbufSize(nskip);
+    size_t LDLTAddTL_size = dEstimateLDLTAddTLTmpbufSize<Scalar>(nskip);
     DART_ASSERT(LDLTAddTL_size % sizeof(Scalar) == 0);
     Scalar* tmp = tmpbuf
                       ? (Scalar*)tmpbuf
@@ -350,7 +352,7 @@ void dLDLTRemove(
       for (int i = 0; i < n2; ++i) {
         a[i] = -GETA(p[i], p_0);
       }
-      a[0] += REAL(1.0);
+      a[0] += static_cast<Scalar>(1.0);
       dLDLTAddTL(L, d, a, n2, nskip, tmp);
     } else {
       Scalar* t = (Scalar*)((char*)tmp + LDLTAddTL_size);
@@ -370,7 +372,7 @@ void dLDLTRemove(
           a[i] = Dot(Lcurr, t, r) - GETA(pp_r[i], p_r);
         }
       }
-      a[0] += REAL(1.0);
+      a[0] += static_cast<Scalar>(1.0);
       dLDLTAddTL(L + r * nskip + r, d + r, a, n2 - r, nskip, tmp);
     }
   }

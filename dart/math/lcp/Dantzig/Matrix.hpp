@@ -72,7 +72,7 @@ namespace dart::math::lcp {
 template <typename Scalar>
 Scalar Dot(const Scalar* a, const Scalar* b, int n);
 
-/// Legacy dReal overload for backward compatibility
+/// Legacy double overload for backward compatibility
 inline double dDot(const double* a, const double* b, int n)
 {
   return Dot<double>(a, b, n);
@@ -85,8 +85,8 @@ inline double dDot(const double* a, const double* b, int n)
  */
 
 /* NOT INCLUDED in the library for now.
-void dMultidot2 (const dReal *a0, const dReal *a1,
-     const dReal *b, dReal *outsum, int n);
+void dMultidot2 (const double *a0, const double *a1,
+     const double *b, double *outsum, int n);
 */
 
 /* matrix multiplication. all matrices are stored in standard row format.
@@ -98,9 +98,15 @@ void dMultidot2 (const dReal *a0, const dReal *a1,
  * B or C are stored in standard column format.
  */
 
-void dMultiply0(dReal* A, const dReal* B, const dReal* C, int p, int q, int r);
-void dMultiply1(dReal* A, const dReal* B, const dReal* C, int p, int q, int r);
-void dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r);
+template <typename Scalar>
+void dMultiply0(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r);
+template <typename Scalar>
+void dMultiply1(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r);
+template <typename Scalar>
+void dMultiply2(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r);
 
 /* do an in-place cholesky decomposition on the lower triangle of the n*n
  * symmetric matrix A (which is stored by rows). the resulting lower triangle
@@ -109,14 +115,16 @@ void dMultiply2(dReal* A, const dReal* B, const dReal* C, int p, int q, int r);
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
 
-int dFactorCholesky(dReal* A, int n, void* tmpbuf = nullptr);
+template <typename Scalar>
+int dFactorCholesky(Scalar* A, int n, void* tmpbuf = nullptr);
 
 /* solve for x: L*L'*x = b, and put the result back into x.
  * L is size n*n, b is size n*1. only the lower triangle of L is considered.
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
 
-void dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf = nullptr);
+template <typename Scalar>
+void dSolveCholesky(const Scalar* L, Scalar* b, int n, void* tmpbuf = nullptr);
 
 /* compute the inverse of the n*n positive definite matrix A and put it in
  * Ainv. this is not especially fast. this returns 1 on success (A was
@@ -124,7 +132,9 @@ void dSolveCholesky(const dReal* L, dReal* b, int n, void* tmpbuf = nullptr);
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
 
-int dInvertPDMatrix(const dReal* A, dReal* Ainv, int n, void* tmpbuf = nullptr);
+template <typename Scalar>
+int dInvertPDMatrix(
+    const Scalar* A, Scalar* Ainv, int n, void* tmpbuf = nullptr);
 
 /* check whether an n*n matrix A is positive definite, return 1/0 (yes/no).
  * positive definite means that x'*A*x > 0 for any x. this performs a
@@ -133,7 +143,8 @@ int dInvertPDMatrix(const dReal* A, dReal* Ainv, int n, void* tmpbuf = nullptr);
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
 
-int dIsPositiveDefinite(const dReal* A, int n, void* tmpbuf = nullptr);
+template <typename Scalar>
+int dIsPositiveDefinite(const Scalar* A, int n, void* tmpbuf = nullptr);
 
 /* factorize a matrix A into L*D*L', where L is lower triangular with ones on
  * the diagonal, and D is diagonal.
@@ -142,15 +153,13 @@ int dIsPositiveDefinite(const dReal* A, int n, void* tmpbuf = nullptr);
  * written) and the reciprocal of the diagonal elements of D are written into
  * d.
  */
-void dFactorLDLT(dReal* A, dReal* d, int n, int nskip);
+template <typename Scalar>
+void dFactorLDLT(Scalar* A, Scalar* d, int n, int nskip);
 
 /* solve L*x=b, where L is n*n lower triangular with ones on the diagonal,
  * and x,b are n*1. b is overwritten with x.
  * the leading dimension of L is `nskip'.
  */
-void dSolveL1(const dReal* L, dReal* b, int n, int nskip);
-
-/// Template version of dSolveL1
 template <typename Scalar>
 void dSolveL1(const Scalar* L, Scalar* b, int n, int nskip);
 
@@ -158,15 +167,13 @@ void dSolveL1(const Scalar* L, Scalar* b, int n, int nskip);
  * and x,b are n*1. b is overwritten with x.
  * the leading dimension of L is `nskip'.
  */
-void dSolveL1T(const dReal* L, dReal* b, int n, int nskip);
-
-/// Template version of dSolveL1T
 template <typename Scalar>
 void dSolveL1T(const Scalar* L, Scalar* b, int n, int nskip);
 
 /* in matlab syntax: a(1:n) = a(1:n) .* d(1:n) */
 
-void dVectorScale(dReal* a, const dReal* d, int n);
+template <typename Scalar>
+void dVectorScale(Scalar* a, const Scalar* d, int n);
 
 /* given `L', a n*n lower triangular matrix with ones on the diagonal,
  * and `d', a n*1 vector of the reciprocal diagonal elements of an n*n matrix
@@ -174,9 +181,6 @@ void dVectorScale(dReal* a, const dReal* d, int n);
  * the leading dimension of L is `nskip'.
  */
 
-void dSolveLDLT(const dReal* L, const dReal* d, dReal* b, int n, int nskip);
-
-/// Template version of dSolveLDLT
 template <typename Scalar>
 void dSolveLDLT(const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip);
 
@@ -194,10 +198,11 @@ void dSolveLDLT(const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip);
  * are not actually modified. see ldltaddTL.m for further comments.
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
+template <typename Scalar>
 void dLDLTAddTL(
-    dReal* L,
-    dReal* d,
-    const dReal* a,
+    Scalar* L,
+    Scalar* d,
+    const Scalar* a,
     int n,
     int nskip,
     void* tmpbuf = nullptr);
@@ -220,11 +225,12 @@ void dLDLTAddTL(
  * a fast O(n^2) algorithm is used. see ldltremove.m for further comments.
  * @param tmpbuf Optional temporary buffer for performance (can be nullptr)
  */
+template <typename Scalar>
 void dLDLTRemove(
-    dReal** A,
+    Scalar** A,
     const int* p,
-    dReal* L,
-    dReal* d,
+    Scalar* L,
+    Scalar* d,
     int n1,
     int n2,
     int r,
@@ -235,46 +241,54 @@ void dLDLTRemove(
  * and column by moving elements. the new matrix will have the same leading
  * dimension. the last row and column of A are untouched on exit.
  */
-void dRemoveRowCol(dReal* A, int n, int nskip, int r);
+template <typename Scalar>
+void dRemoveRowCol(Scalar* A, int n, int nskip, int r);
 
 /// Templated version of dRemoveRowCol
 template <typename Scalar>
 void dRemoveRowCol(Scalar* A, int n, int nskip, int r);
 
 /// Memory size estimation functions for temporary buffer allocation
+template <typename Scalar>
 inline constexpr size_t dEstimateFactorCholeskyTmpbufSize(int n)
 {
-  return padding(n) * sizeof(dReal);
+  return padding(n) * sizeof(Scalar);
 }
 
+template <typename Scalar>
 inline constexpr size_t dEstimateSolveCholeskyTmpbufSize(int n)
 {
-  return padding(n) * sizeof(dReal);
+  return padding(n) * sizeof(Scalar);
 }
 
+template <typename Scalar>
 inline constexpr size_t dEstimateInvertPDMatrixTmpbufSize(int n)
 {
-  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize(n);
-  size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize(n);
+  size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
+  size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize<Scalar>(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size
                                 ? FactorCholesky_size
                                 : SolveCholesky_size;
-  return padding(n) * (n + 1) * sizeof(dReal) + MaxCholesky_size;
+  return padding(n) * (n + 1) * sizeof(Scalar) + MaxCholesky_size;
 }
 
+template <typename Scalar>
 inline constexpr size_t dEstimateIsPositiveDefiniteTmpbufSize(int n)
 {
-  return padding(n) * n * sizeof(dReal) + dEstimateFactorCholeskyTmpbufSize(n);
+  return padding(n) * n * sizeof(Scalar)
+         + dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
 }
 
+template <typename Scalar>
 inline constexpr size_t dEstimateLDLTAddTLTmpbufSize(int nskip)
 {
-  return nskip * 2 * sizeof(dReal);
+  return nskip * 2 * sizeof(Scalar);
 }
 
+template <typename Scalar>
 inline constexpr size_t dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 {
-  return n2 * sizeof(dReal) + dEstimateLDLTAddTLTmpbufSize(nskip);
+  return n2 * sizeof(Scalar) + dEstimateLDLTAddTLTmpbufSize<Scalar>(nskip);
 }
 
 //==============================================================================

@@ -84,9 +84,9 @@ int dRandInt(int n)
   return static_cast<int>(dRandReal() * n);
 }
 
-dReal dRandReal()
+double dRandReal()
 {
-  return static_cast<dReal>(dRand()) / static_cast<dReal>(0xffffffff);
+  return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
 }
 
 } // namespace dart::math::lcp
