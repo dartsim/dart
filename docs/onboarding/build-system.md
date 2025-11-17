@@ -91,7 +91,8 @@ dart/
 ├── math/           # Math utilities
 ├── integration/    # Numerical integration
 ├── lcpsolver/      # LCP solver
-├── optimizer/      # Optimization algorithms
+├── math/
+│   └── optimization/   # Optimization helpers
 ├── dynamics/       # Dynamics engine
 ├── collision/      # Collision detection
 ├── constraint/     # Constraint handling
@@ -385,7 +386,7 @@ dart/
 ├── math/            # Mathematical utilities (vectors, matrices, transforms)
 ├── integration/     # Numerical integration methods
 ├── lcpsolver/       # Linear Complementarity Problem solver
-├── optimizer/       # Optimization framework
+├── math/optimization/       # Optimization framework
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine

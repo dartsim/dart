@@ -37,9 +37,9 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/optimizer/Function.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
-#include "dart/optimizer/Problem.hpp"
+#include "dart/math/optimization/Function.hpp"
+#include "dart/math/optimization/GradientDescentSolver.hpp"
+#include "dart/math/optimization/Problem.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -52,7 +52,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart::optimizer;
+using namespace dart::math;
 using namespace dart::dynamics;
 
 //==============================================================================

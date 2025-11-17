@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Function.hpp"
+#include "dart/math/optimization/Function.hpp"
 
 #include "dart/common/Logging.hpp"
 
 namespace dart {
-namespace optimizer {
+namespace math {
 
 //==============================================================================
 Function::Function(const std::string& _name) : mName(_name)
@@ -220,5 +220,5 @@ MultiFunction::~MultiFunction()
   // Do nothing
 }
 
-} // namespace optimizer
+} // namespace math
 } // namespace dart

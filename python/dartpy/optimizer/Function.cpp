@@ -43,7 +43,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class PyFunction : public dart::optimizer::Function
+class PyFunction : public dart::math::Function
 {
 public:
   // Inherit the constructors
@@ -75,94 +75,88 @@ public:
 void Function(py::module& m)
 {
   ::py::class_<
-      dart::optimizer::Function,
+      dart::math::Function,
       PyFunction,
-      std::shared_ptr<dart::optimizer::Function>>(m, "Function")
+      std::shared_ptr<dart::math::Function>>(m, "Function")
       .def(::py::init<>())
       .def(::py::init<const std::string&>(), ::py::arg("name"))
       .def(
           "setName",
-          +[](dart::optimizer::Function* self, const std::string& newName) {
+          +[](dart::math::Function* self, const std::string& newName) {
             self->setName(newName);
           },
           ::py::arg("newName"))
       .def(
           "getName",
-          +[](const dart::optimizer::Function* self) -> const std::string& {
+          +[](const dart::math::Function* self) -> const std::string& {
             return self->getName();
           },
           ::py::return_value_policy::reference_internal);
 
   ::py::class_<
-      dart::optimizer::NullFunction,
-      dart::optimizer::Function,
-      std::shared_ptr<dart::optimizer::NullFunction>>(m, "NullFunction")
+      dart::math::NullFunction,
+      dart::math::Function,
+      std::shared_ptr<dart::math::NullFunction>>(m, "NullFunction")
       //      .def(::py::init<>())
       //      .def(::py::init<const std::string &>(),
       //      ::py::arg("name"))
       .def(
           "eval",
-          +[](dart::optimizer::NullFunction* self,
-              const Eigen::VectorXd& _arg0_) -> double {
-            return self->eval(_arg0_);
-          },
+          +[](dart::math::NullFunction* self, const Eigen::VectorXd& _arg0_)
+              -> double { return self->eval(_arg0_); },
           ::py::arg("arg0_"));
 
   ::py::class_<
-      dart::optimizer::MultiFunction,
-      std::shared_ptr<dart::optimizer::MultiFunction>>(m, "MultiFunction");
+      dart::math::MultiFunction,
+      std::shared_ptr<dart::math::MultiFunction>>(m, "MultiFunction");
 
   ::py::class_<
-      dart::optimizer::ModularFunction,
-      dart::optimizer::Function,
-      std::shared_ptr<dart::optimizer::ModularFunction>>(m, "ModularFunction")
+      dart::math::ModularFunction,
+      dart::math::Function,
+      std::shared_ptr<dart::math::ModularFunction>>(m, "ModularFunction")
       //      .def(::py::init<>())
       //      .def(::py::init<const std::string &>(),
       //      ::py::arg("name"))
       .def(
           "eval",
-          +[](dart::optimizer::ModularFunction* self,
+          +[](dart::math::ModularFunction* self,
               const Eigen::VectorXd& _x) -> double { return self->eval(_x); },
           ::py::arg("x"))
       .def(
           "setCostFunction",
-          +[](dart::optimizer::ModularFunction* self,
-              dart::optimizer::CostFunction _cost) {
-            self->setCostFunction(_cost);
-          },
+          +[](dart::math::ModularFunction* self,
+              dart::math::CostFunction _cost) { self->setCostFunction(_cost); },
           ::py::arg("cost"))
       .def(
           "clearCostFunction",
-          +[](dart::optimizer::ModularFunction* self) {
-            self->clearCostFunction();
-          })
+          +[](dart::math::ModularFunction* self) { self->clearCostFunction(); })
       .def(
           "clearCostFunction",
-          +[](dart::optimizer::ModularFunction* self, bool _printWarning) {
+          +[](dart::math::ModularFunction* self, bool _printWarning) {
             self->clearCostFunction(_printWarning);
           },
           ::py::arg("printWarning"))
       .def(
           "setGradientFunction",
-          +[](dart::optimizer::ModularFunction* self,
-              dart::optimizer::GradientFunction _gradient) {
+          +[](dart::math::ModularFunction* self,
+              dart::math::GradientFunction _gradient) {
             self->setGradientFunction(_gradient);
           },
           ::py::arg("gradient"))
       .def(
           "clearGradientFunction",
-          +[](dart::optimizer::ModularFunction* self) {
+          +[](dart::math::ModularFunction* self) {
             self->clearGradientFunction();
           })
       .def(
           "setHessianFunction",
-          +[](dart::optimizer::ModularFunction* self,
-              dart::optimizer::HessianFunction _hessian) {
+          +[](dart::math::ModularFunction* self,
+              dart::math::HessianFunction _hessian) {
             self->setHessianFunction(_hessian);
           },
           ::py::arg("hessian"))
       .def(
-          "clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
+          "clearHessianFunction", +[](dart::math::ModularFunction* self) {
             self->clearHessianFunction();
           });
 }

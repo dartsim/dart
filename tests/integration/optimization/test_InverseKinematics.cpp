@@ -80,7 +80,7 @@ TEST(InverseKinematics, SolveForFreeJoint)
 }
 
 //==============================================================================
-class FailingSolver : public optimizer::Solver
+class FailingSolver : public math::Solver
 {
 public:
   FailingSolver(double constant) : mConstant(constant)
@@ -92,7 +92,7 @@ public:
 
   bool solve() override
   {
-    std::shared_ptr<optimizer::Problem> problem = mProperties.mProblem;
+    std::shared_ptr<math::Problem> problem = mProperties.mProblem;
     if (nullptr == problem) {
       DART_WARN("Attempting to solve a nullptr problem! We will return false.");
       return false;

@@ -604,7 +604,7 @@ The main DART header that includes all modules:
 #include <dart/collision/All.hpp>  // Collision detection
 #include <dart/lcpsolver/All.hpp>  // LCP solvers
 #include <dart/constraint/All.hpp> // Constraints
-#include <dart/optimizer/All.hpp>  // Optimization (not covered)
+#include <dart/math/optimization/All.hpp> // Optimization (not covered)
 #include <dart/dynamics/All.hpp>   // Dynamics
 #include <dart/simulation/All.hpp> // Simulation
 ```
@@ -956,7 +956,7 @@ This architecture makes DART suitable for:
 │   ├── dynamics/             # Articulated body dynamics
 │   ├── constraint/           # Constraint solving
 │   ├── simulation/           # World and simulation loop
-│   ├── optimizer/            # Optimization algorithms
+│   ├── math/optimization/    # Optimization helpers
 │   └── gui/                  # Visualization (OSG, ImGui)
 ├── CMakeLists.txt            # Build configuration
 └── README.md                 # Project overview
