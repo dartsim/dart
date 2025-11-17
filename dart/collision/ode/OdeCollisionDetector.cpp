@@ -554,21 +554,10 @@ double computeTangentialSpeed(const Contact& contact)
 bool shouldUseContactHistory(
     const CollisionObject* object1, const CollisionObject* object2)
 {
-  if (!object1 || !object2)
-    return false;
-
-  const auto shape1 = object1->getShape();
-  const auto shape2 = object2->getShape();
-
-  const bool hasCapsule
-      = (shape1
-         && dynamic_cast<const dynamics::CapsuleShape*>(shape1.get())
-                != nullptr)
-        || (shape2
-            && dynamic_cast<const dynamics::CapsuleShape*>(shape2.get())
-                   != nullptr);
-
-  return hasCapsule;
+  // Persist contacts for any shape pair so resting contacts stay stable across
+  // detector runs. The sliding/tangential-speed checks later will filter cases
+  // where the cache should not be re-used.
+  return object1 != nullptr && object2 != nullptr;
 }
 
 } // anonymous namespace
