@@ -23,6 +23,12 @@ struct polymorphic_type_caster : type_caster_base_tag {
   NB_INLINE bool from_python(
       handle src, uint8_t flags, cleanup_list* cleanup) noexcept
   {
+    if (src.is_none()) {
+      raw_ = nullptr;
+      value_ = nullptr;
+      return true;
+    }
+
     PyObject* obj = src.ptr();
     const std::type_info* info = nanobind::detail::nb_type_info(
         reinterpret_cast<PyObject*>(Py_TYPE(obj)));
@@ -111,6 +117,39 @@ template <>
 struct type_caster<dart::dynamics::ShapeFrame>
     : polymorphic_type_caster<dart::dynamics::ShapeFrame>
 {
+};
+
+template <>
+struct type_caster<dart::dynamics::BodyNode>
+    : polymorphic_type_caster<dart::dynamics::BodyNode>
+{
+  template <typename T>
+  NB_INLINE static handle from_cpp(
+      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+  {
+    if (std::getenv("DARTPY_NB_TRACE_BODYNODE_CAST")) {
+      std::fprintf(
+          stderr, "[dartpy_nb][bodynode] forcing reference policy\n");
+    }
+    return polymorphic_type_caster<dart::dynamics::BodyNode>::from_cpp(
+        std::forward<T>(value), rv_policy::reference, cleanup);
+  }
+};
+
+template <>
+struct type_caster<dart::dynamics::Joint>
+    : polymorphic_type_caster<dart::dynamics::Joint>
+{
+  template <typename T>
+  NB_INLINE static handle from_cpp(
+      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+  {
+    if (std::getenv("DARTPY_NB_TRACE_JOINT_CAST")) {
+      std::fprintf(stderr, "[dartpy_nb][joint] forcing reference policy\n");
+    }
+    return polymorphic_type_caster<dart::dynamics::Joint>::from_cpp(
+        std::forward<T>(value), rv_policy::reference, cleanup);
+  }
 };
 
 } // namespace nanobind::detail

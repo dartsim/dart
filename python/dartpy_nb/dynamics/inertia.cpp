@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/eigen_utils.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -16,10 +18,20 @@ void defInertia(nb::module_& m)
 
   nb::class_<Inertia>(m, "Inertia")
       .def(
-          nb::init<double, const Eigen::Vector3d&, const Eigen::Matrix3d&>(),
+          nb::new_([](double mass,
+                      const nb::handle& com,
+                      const nb::handle& moment) {
+            const Eigen::Vector3d comVec = com.is_none()
+                                               ? Eigen::Vector3d::Zero()
+                                               : toVector3(com);
+            const Eigen::Matrix3d momentMat = moment.is_none()
+                                                  ? Eigen::Matrix3d::Identity()
+                                                  : toMatrix3(moment);
+            return Inertia(mass, comVec, momentMat);
+          }),
           nb::arg("mass") = 1.0,
-          nb::arg("com") = Eigen::Vector3d::Zero(),
-          nb::arg("momentOfInertia") = Eigen::Matrix3d::Identity())
+          nb::arg("com") = nb::none(),
+          nb::arg("momentOfInertia") = nb::none())
       .def(nb::init<const Eigen::Matrix6d&>(), nb::arg("spatialInertiaTensor"))
       .def("setMass", &Inertia::setMass, nb::arg("mass"))
       .def("getMass", &Inertia::getMass)

@@ -6,9 +6,12 @@
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/array.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include "common/eigen_utils.hpp"
 #include "common/type_casters.hpp"
 
 namespace nb = nanobind;
@@ -106,7 +109,7 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, bool createIfNull) {
             return self.getVisualAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("createIfNull") = false,
           nb::rv_policy::reference_internal)
       .def(
           "createVisualAspect",
@@ -118,7 +121,7 @@ void defSimpleFrame(nb::module_& m)
           [](SimpleFrame& self, bool createIfNull) {
             return self.getCollisionAspect(createIfNull);
           },
-          nb::arg("createIfNull") = true,
+          nb::arg("createIfNull") = false,
           nb::rv_policy::reference_internal)
       .def(
           "createCollisionAspect",
@@ -138,8 +141,8 @@ void defSimpleFrame(nb::module_& m)
           nb::rv_policy::reference_internal)
       .def(
           "setRelativeTranslation",
-          [](SimpleFrame& self, const Eigen::Vector3d& translation) {
-            self.setRelativeTranslation(translation);
+          [](SimpleFrame& self, const nb::handle& translation) {
+            self.setRelativeTranslation(toVector3(translation));
           },
           nb::arg("newTranslation"))
       .def(
@@ -156,18 +159,18 @@ void defSimpleFrame(nb::module_& m)
           nb::arg("newRelTransform"))
       .def(
           "setTranslation",
-          [](SimpleFrame& self, const Eigen::Vector3d& translation) {
-            self.setTranslation(translation);
+          [](SimpleFrame& self, const nb::handle& translation) {
+            self.setTranslation(toVector3(translation));
           },
           nb::arg("newTranslation"))
       .def(
           "setTranslation",
           [](SimpleFrame& self,
-             const Eigen::Vector3d& translation,
+             const nb::handle& translation,
              const Frame* withRespectTo) {
             const Frame* target
                 = withRespectTo ? withRespectTo : Frame::World();
-            self.setTranslation(translation, target);
+            self.setTranslation(toVector3(translation), target);
           },
           nb::arg("newTranslation"),
           nb::arg("withRespectTo"))

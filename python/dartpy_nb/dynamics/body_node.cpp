@@ -18,17 +18,12 @@ namespace nb = nanobind;
 
 namespace dart::python_nb {
 
-namespace {
-void bodyNodeSetSelfPy(dart::dynamics::BodyNode*, PyObject*) noexcept {}
-}
-
 void defBodyNode(nb::module_& m)
 {
   using BodyNode = dart::dynamics::BodyNode;
   using ShapePtr = dart::dynamics::ShapePtr;
 
-  nb::class_<BodyNode, dart::dynamics::Frame>(
-      m, "BodyNode", nb::intrusive_ptr(&bodyNodeSetSelfPy))
+  nb::class_<BodyNode, dart::dynamics::Frame>(m, "BodyNode")
       .def(
           "getName",
           [](const BodyNode& self) -> const std::string& {

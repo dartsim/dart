@@ -1,5 +1,6 @@
 #include "dynamics/joint.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -149,6 +150,18 @@ void defJoint(nb::module_& m)
           "getVelocities",
           [](const Joint& self) { return self.getVelocities(); })
       .def("resetVelocities", [](Joint& self) { self.resetVelocities(); })
+      .def(
+          "getParentBodyNode",
+          [](Joint& self) -> dart::dynamics::BodyNode* {
+            return self.getParentBodyNode();
+          },
+          nb::rv_policy::reference_internal)
+      .def(
+          "getChildBodyNode",
+          [](Joint& self) -> dart::dynamics::BodyNode* {
+            return self.getChildBodyNode();
+          },
+          nb::rv_policy::reference_internal)
       .def("getRelativeTransform", &Joint::getRelativeTransform)
       .def(
           "getRelativeJacobian",

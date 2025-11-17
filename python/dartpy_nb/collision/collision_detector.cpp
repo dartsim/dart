@@ -7,6 +7,7 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 #ifdef HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif

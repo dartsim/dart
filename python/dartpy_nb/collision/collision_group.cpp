@@ -12,6 +12,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/eigen_utils.hpp"
 #include "common/type_casters.hpp"
 
 namespace nb = nanobind;
@@ -63,12 +64,12 @@ void defCollisionGroup(nb::module_& m)
       .def(
           "raycast",
           [](CollisionGroup& self,
-             const Eigen::Vector3d& from,
-             const Eigen::Vector3d& to,
+             const nb::handle& from,
+             const nb::handle& to,
              const dart::collision::RaycastOption& option,
              dart::collision::RaycastResult* result) {
             return self.getCollisionDetector()->raycast(
-                &self, from, to, option, result);
+                &self, toVector3(from), toVector3(to), option, result);
           },
           nb::arg("from"),
           nb::arg("to"),

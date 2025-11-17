@@ -6,6 +6,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include "common/eigen_utils.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -25,8 +27,18 @@ void defOptimizerProblem(nb::module_& m)
           [](Problem& self) { return self.getInitialGuess(); })
       .def("addSeed", &Problem::addSeed, nb::arg("seed"))
       .def("clearAllSeeds", &Problem::clearAllSeeds)
-      .def("setLowerBounds", &Problem::setLowerBounds, nb::arg("lb"))
-      .def("setUpperBounds", &Problem::setUpperBounds, nb::arg("ub"))
+      .def(
+          "setLowerBounds",
+          [](Problem& self, const nb::handle& lb) {
+            self.setLowerBounds(toVector(lb));
+          },
+          nb::arg("lb"))
+      .def(
+          "setUpperBounds",
+          [](Problem& self, const nb::handle& ub) {
+            self.setUpperBounds(toVector(ub));
+          },
+          nb::arg("ub"))
       .def("setObjective", &Problem::setObjective, nb::arg("function"))
       .def("getObjective", &Problem::getObjective)
       .def("addEqConstraint", &Problem::addEqConstraint, nb::arg("constraint"))

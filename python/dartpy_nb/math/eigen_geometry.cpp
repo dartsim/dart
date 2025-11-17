@@ -4,6 +4,8 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 
+#include "common/eigen_utils.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -105,8 +107,8 @@ void defEigenGeometry(nb::module_& m)
           [](const Isometry& self) { return Eigen::Vector3d(self.translation()); })
       .def(
           "set_translation",
-          [](Isometry& self, const Eigen::Vector3d& translation) {
-            self.translation() = translation;
+          [](Isometry& self, const nb::handle& translation) {
+            self.translation() = toVector3(translation);
           },
           nb::arg("translation"))
       .def("rotation", [](const Isometry& self) { return self.linear(); })
@@ -140,21 +142,21 @@ void defEigenGeometry(nb::module_& m)
           nb::arg("other"))
       .def(
           "multiply",
-          [](const Isometry& self, const Eigen::Vector3d& position) {
-            return self * position;
+          [](const Isometry& self, const nb::handle& position) {
+            return self * toVector3(position);
           },
           nb::arg("position"))
       .def("inverse", [](const Isometry& self) { return self.inverse(); })
       .def(
           "translate",
-          [](Isometry& self, const Eigen::Vector3d& shift) {
-            self.translate(shift);
+          [](Isometry& self, const nb::handle& shift) {
+            self.translate(toVector3(shift));
           },
           nb::arg("shift"))
       .def(
           "pretranslate",
-          [](Isometry& self, const Eigen::Vector3d& shift) {
-            self.pretranslate(shift);
+          [](Isometry& self, const nb::handle& shift) {
+            self.pretranslate(toVector3(shift));
           },
           nb::arg("shift"));
 
