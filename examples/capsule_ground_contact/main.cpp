@@ -69,12 +69,18 @@ SkeletonPtr makeGround()
 
   // Collide with an infinite plane so the demo specifically exercises capsule /
   // plane contacts.
-  auto planeShape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  const Eigen::Vector3d planeNormal = Eigen::Vector3d::UnitZ();
+  auto planeShape = std::make_shared<PlaneShape>(planeNormal, 0.0);
   pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(planeShape);
 
   // Use a thin box purely for visualization so users can see the ground plane.
-  auto visualShape = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, 0.1));
+  constexpr double kVisualThickness = 0.1;
+  auto visualShape
+      = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, kVisualThickness));
   auto visualNode = pair.second->createShapeNodeWith<VisualAspect>(visualShape);
+  Eigen::Isometry3d visualOffset = Eigen::Isometry3d::Identity();
+  visualOffset.translate(planeNormal.normalized() * (-0.5 * kVisualThickness));
+  visualNode->setRelativeTransform(visualOffset);
   const Eigen::Vector3d groundColor = Eigen::Vector3d::Constant(0.7);
   visualNode->getVisualAspect()->setColor(groundColor);
   visualNode->getVisualAspect()->setShadowed(false);
@@ -184,9 +190,20 @@ private:
 
 int main()
 {
+#if !HAVE_ODE
+  DART_ERROR(
+      "capsule_ground_contact requires DART to be built with ODE support.\n");
+  return 1;
+#endif
+
   auto world = World::create();
   world->setTimeStep(0.001);
-  world->setCollisionDetector(CollisionDetectorType::Ode);
+  auto odeDetector = collision::OdeCollisionDetector::create();
+  if (!odeDetector) {
+    DART_ERROR("Failed to create the ODE collision detector.\n");
+    return 1;
+  }
+  world->setCollisionDetector(odeDetector);
 
   world->addSkeleton(makeGround());
   auto capsule = makeCapsuleSkeleton();
