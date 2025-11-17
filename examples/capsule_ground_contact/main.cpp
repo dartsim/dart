@@ -69,8 +69,7 @@ SkeletonPtr makeGround()
 
   // Collide with an infinite plane so the demo specifically exercises capsule /
   // plane contacts.
-  auto planeShape
-      = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto planeShape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
   pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(planeShape);
 
   // Use a thin box purely for visualization so users can see the ground plane.
