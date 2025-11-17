@@ -577,8 +577,9 @@ config-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
-BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-rm -rf "$BUILD_DIR"
+PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
+rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
+echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if command -v sccache >/dev/null 2>&1; then
     CMAKE_C_COMPILER_LAUNCHER=sccache
@@ -598,7 +599,7 @@ fi
 cmake \
     -G Ninja \
     -S . \
-    -B "$BUILD_DIR" \
+    -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
