@@ -872,7 +872,7 @@ generate-stubs = { cmd = "python scripts/generate_stubs.py", depends-on = [
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 # Build Read the Docs documentation (user guides, tutorials, developer docs)
-# No longer requires dartpy since API docs are on GitHub Pages
+# Includes the embedded C++ Doxygen bundle to mirror Read the Docs
 docs-build = { cmd = """
     cd docs/readthedocs && sphinx-build -b html . _build/html
 """ }
@@ -927,22 +927,6 @@ api-docs-serve-py = { cmd = """
     echo "Python API documentation at: http://localhost:8003" && \
     python -m http.server --directory docs/python_api/_build/html 8003
 """, depends-on = ["api-docs-py"] }
-
-# Test the full GitHub Pages API doc build process locally (WARNING: clones full repo)
-api-docs-test-gh = { cmd = """
-    python scripts/build_docs.py build --verbose
-""" }
-
-# Clean GitHub Pages API doc build artifacts
-api-docs-clean-gh = { cmd = """
-    python scripts/build_docs.py clean
-""" }
-
-# Serve GitHub Pages API docs locally (after api-docs-test-gh)
-api-docs-serve-gh = { cmd = """
-    echo "GitHub Pages API documentation at: http://localhost:8004" && \
-    python -m http.server --directory gh-pages 8004
-""" }
 
 test-all = { cmd = """
     python scripts/test_all.py
