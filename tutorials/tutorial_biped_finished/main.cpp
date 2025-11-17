@@ -181,6 +181,7 @@ public:
   // Send velocity commands on wheel actuators (Lesson 6 Answer)
   void setWheelCommands()
   {
+    // snippet:cpp-biped-lesson6-wheel-commands-start
     int wheelFirstIndex
         = mBiped->getDof("joint_front_left_1")->getIndexInSkeleton();
     for (std::size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i) {
@@ -196,6 +197,7 @@ public:
     mBiped->setCommand(index2, mSpeed);
     mBiped->setCommand(index3, mSpeed);
     mBiped->setCommand(index4, mSpeed);
+    // snippet:cpp-biped-lesson6-wheel-commands-end
   }
 
   void changeWheelSpeed(double increment)
