@@ -95,6 +95,14 @@ private:
 template <typename Base, typename Derived>
 inline void registerPolymorphicCaster()
 {
+  const char* trace = std::getenv("DARTPY_NB_TRACE_POLY_REGISTER");
+  if (trace) {
+    std::fprintf(
+        stderr,
+        "[dartpy_nb][poly][register] base=%s derived=%s\n",
+        typeid(Base).name(),
+        typeid(Derived).name());
+  }
   detail::PolymorphicCasterRegistry<Base>::registerType(
       typeid(Derived),
       [](void* ptr) -> Base* {
@@ -106,8 +114,8 @@ inline void registerPolymorphicCaster()
       [](Base* base) -> void* {
         if (base == nullptr)
           return nullptr;
-        auto* typed = static_cast<Derived*>(base);
-        return static_cast<void*>(typed);
+        auto* typed = dynamic_cast<Derived*>(base);
+        return typed ? static_cast<void*>(typed) : static_cast<void*>(base);
       });
 }
 

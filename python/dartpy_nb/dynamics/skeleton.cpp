@@ -23,6 +23,9 @@
 
 #include "common/type_casters.hpp"
 
+#include <cstdio>
+#include <utility>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -37,7 +40,20 @@ auto create_pair(
 {
   auto pair = self.createJointAndBodyNodePair<JointT, dart::dynamics::BodyNode>(
       parent, properties);
-  return pair;
+  return std::make_pair(
+      static_cast<dart::dynamics::Joint*>(pair.first), pair.second);
+}
+
+template <typename JointT>
+auto create_pair_with_default(
+    dart::dynamics::Skeleton& self,
+    dart::dynamics::BodyNode* parent,
+    const nb::handle& propsHandle)
+{
+  using Properties = typename JointT::Properties;
+  Properties props
+      = propsHandle.is_none() ? Properties() : nb::cast<Properties>(propsHandle);
+  return create_pair<JointT>(self, parent, props);
 }
 
 } // namespace
@@ -46,6 +62,14 @@ void defSkeleton(nb::module_& m)
 {
   using Skeleton = dart::dynamics::Skeleton;
   using BodyNode [[maybe_unused]] = dart::dynamics::BodyNode;
+
+  const bool trace = std::getenv("DARTPY_NB_TRACE_SKELETON") != nullptr;
+  auto log = [&](const char* stage) {
+    if (trace)
+      std::fprintf(stderr, "[dartpy_nb][skeleton] %s\n", stage);
+  };
+
+  log("begin");
 
   auto skeletonClass
       = nb::class_<Skeleton, dart::dynamics::MetaSkeleton>(m, "Skeleton");
@@ -107,131 +131,128 @@ void defSkeleton(nb::module_& m)
       .def("disableAdjacentBodyCheck", &Skeleton::disableAdjacentBodyCheck)
       .def("isEnabledAdjacentBodyCheck", &Skeleton::isEnabledAdjacentBodyCheck);
 
+  log("createFreeJointAndBodyNodePair");
   skeletonClass.def(
       "createFreeJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::FreeJoint::Properties& props) {
-        return create_pair<dart::dynamics::FreeJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::FreeJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::FreeJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createBallJointAndBodyNodePair");
   skeletonClass.def(
       "createBallJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::BallJoint::Properties& props) {
-        return create_pair<dart::dynamics::BallJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::BallJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::BallJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createEulerJointAndBodyNodePair");
   skeletonClass.def(
       "createEulerJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::EulerJoint::Properties& props) {
-        return create_pair<dart::dynamics::EulerJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::EulerJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::EulerJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createRevoluteJointAndBodyNodePair");
   skeletonClass.def(
       "createRevoluteJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::RevoluteJoint::Properties& props) {
-        return create_pair<dart::dynamics::RevoluteJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::RevoluteJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::RevoluteJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createPrismaticJointAndBodyNodePair");
   skeletonClass.def(
       "createPrismaticJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::PrismaticJoint::Properties& props) {
-       return create_pair<dart::dynamics::PrismaticJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::PrismaticJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::PrismaticJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createScrewJointAndBodyNodePair");
   skeletonClass.def(
       "createScrewJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::ScrewJoint::Properties& props) {
-        return create_pair<dart::dynamics::ScrewJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::ScrewJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::ScrewJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createPlanarJointAndBodyNodePair");
   skeletonClass.def(
       "createPlanarJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::PlanarJoint::Properties& props) {
-        return create_pair<dart::dynamics::PlanarJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::PlanarJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::PlanarJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createUniversalJointAndBodyNodePair");
   skeletonClass.def(
       "createUniversalJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::UniversalJoint::Properties& props) {
-       return create_pair<dart::dynamics::UniversalJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::UniversalJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::UniversalJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createTranslationalJointAndBodyNodePair");
   skeletonClass.def(
       "createTranslationalJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::TranslationalJoint::Properties& props) {
-        return create_pair<dart::dynamics::TranslationalJoint>(
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::TranslationalJoint>(
             self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties")
-      = dart::dynamics::TranslationalJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createTranslationalJoint2DAndBodyNodePair");
   skeletonClass.def(
       "createTranslationalJoint2DAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::TranslationalJoint2D::Properties& props) {
-        return create_pair<dart::dynamics::TranslationalJoint2D>(
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::TranslationalJoint2D>(
             self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties")
-      = dart::dynamics::TranslationalJoint2D::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("createWeldJointAndBodyNodePair");
   skeletonClass.def(
       "createWeldJointAndBodyNodePair",
-      [](Skeleton& self,
-         BodyNode* parent,
-         const dart::dynamics::WeldJoint::Properties& props) {
-        return create_pair<dart::dynamics::WeldJoint>(self, parent, props);
+      [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
+        return create_pair_with_default<dart::dynamics::WeldJoint>(
+            self, parent, props);
       },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
-      nb::arg("jointProperties") = dart::dynamics::WeldJoint::Properties());
+      nb::arg("jointProperties") = nb::none());
 
+  log("end");
 }
 
 } // namespace dart::python_nb

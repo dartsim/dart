@@ -54,7 +54,8 @@ void defInverseKinematics(nb::module_& m)
           [](IK& self, const std::shared_ptr<dart::optimizer::Solver>& solver) {
             self.setSolver(solver);
           },
-          nb::arg("solver"))
+          nb::arg("solver"),
+          nb::keep_alive<1, 2>())
       .def("getProblem", [](IK& self) { return self.getProblem(); })
       .def(
           "solveAndApply",

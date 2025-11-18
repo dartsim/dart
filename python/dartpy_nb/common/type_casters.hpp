@@ -81,8 +81,27 @@ struct polymorphic_type_caster : type_caster_base_tag {
     using BareT = std::remove_reference_t<std::remove_cv_t<T>>;
 
     if constexpr (std::is_pointer_v<BareT>) {
-      return type_caster_base<Type>::from_cpp(
-          std::forward<T>(value), policy, cleanup);
+      Type* ptr = (Type*) value;
+      policy = infer_policy<T>(policy);
+      const std::type_info* actual_type = ptr ? &typeid(*ptr) : nullptr;
+      void* adjusted = static_cast<void*>(ptr);
+      if (ptr != nullptr && actual_type != nullptr) {
+        adjusted = dart::python_nb::restorePolymorphicPointer<Type>(
+            ptr, *actual_type);
+      }
+      const char* trace = std::getenv("DARTPY_NB_TRACE_POLY_FROM_CPP");
+      if (trace) {
+        (void) trace;
+        std::fprintf(
+            stderr,
+            "[dartpy_nb][poly][from_cpp] base=%s actual=%s raw=%p adjusted=%p\n",
+            typeid(Type).name(),
+            actual_type ? actual_type->name() : "(null)",
+            static_cast<void*>(ptr),
+            adjusted);
+      }
+      return nb_type_put_p(
+          &typeid(Type), actual_type, adjusted, policy, cleanup, nullptr);
     } else if constexpr (std::is_lvalue_reference_v<T>) {
       return from_cpp(&value, policy, cleanup);
     } else {
