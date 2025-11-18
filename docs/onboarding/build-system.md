@@ -86,18 +86,15 @@ BUILD_SHARED_LIBS           = ON   # Build shared libraries (Linux/macOS)
 **Component Hierarchy:**
 ```
 dart/
-├── external/       # Bundled dependencies
 ├── common/         # Common utilities
-├── math/           # Math utilities
-├── integration/    # Numerical integration
+├── math/           # Math utilities (includes math/optimization/)
 ├── lcpsolver/      # LCP solver
-├── math/
-│   └── optimization/   # Optimization helpers
+├── optimizer/      # Deprecated alias headers that forward to math/optimization
 ├── dynamics/       # Dynamics engine
-├── collision/      # Collision detection
+├── collision/      # Collision detection (FCL + optional Bullet/ODE)
 ├── constraint/     # Constraint handling
-├── simulation/     # Simulation framework
-├── utils/          # Utility functions
+├── simulation/     # Simulation framework + time stepping
+├── utils/          # Parsers and helpers (URDF/SDF)
 └── gui/            # GUI components
     └── osg/        # OpenSceneGraph GUI
 ```
@@ -386,22 +383,25 @@ Component Dependency Tree:
 
 > Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
 
+> Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
+
 ### Source Directory Structure
 
 ```
 dart/
 ├── common/          # Common utilities and definitions
 ├── math/            # Mathematical utilities (vectors, matrices, transforms)
-├── integration/     # Numerical integration methods
+│   └── optimization/       # Gradient-descent + IK helpers
+├── optimizer/       # Deprecated alias headers (forwards to math/optimization)
 ├── lcpsolver/       # Linear Complementarity Problem solver
-├── math/optimization/       # Optimization framework
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
 │   ├── fcl/        # FCL collision engine
-│   └── bullet/     # Bullet collision engine
+│   ├── bullet/     # Bullet collision engine (optional)
+│   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
-├── simulation/      # Simulation world and framework
+├── simulation/      # Simulation world, integration, and time stepping
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
