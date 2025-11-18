@@ -39,7 +39,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-#if DART_BUILD_GUI_OSG
+#if DART_BUILD_GUI
 void dart_gui_osg(py::module& m);
 #endif
 
@@ -47,7 +47,7 @@ void dart_gui(py::module& m)
 {
   auto sm = m.def_submodule("gui");
 
-#if DART_BUILD_GUI_OSG
+#if DART_BUILD_GUI
   dart_gui_osg(sm);
 #endif
 }

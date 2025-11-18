@@ -69,6 +69,7 @@ function(@PROJECT_NAME@_traverse_components output_variable)
 
         include("${target_include}")
 
+
         # This is not necessary in recent versions of cmake, which supports
         # transitive includes via INTERFACE_INCLUDE_DIRECTORIES.
         foreach(dependency ${@PROJECT_NAME@_${component}_DEPENDENCIES})

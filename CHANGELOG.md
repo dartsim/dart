@@ -11,6 +11,7 @@
   * Removed all optional optimizer plugins (`dart-optimizer-ipopt`, `dart-optimizer-nlopt`, `dart-optimizer-pagmo`, and `dart-optimizer-snopt`) along with the pagmo-based multi-objective optimization APIs since they were only exercised by tests.
   * Moved the generic optimization primitives (`Function`, `Problem`, `Solver`, `GradientDescentSolver`) under `dart/math/optimization`; the legacy `<dart/optimizer/...>` headers and `dart::optimizer::*` namespace now forward (with deprecation notices) to the new `dart::math::*` definitions.
   * Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
+  * Renamed the OpenSceneGraph GUI component/target to `gui`/`dart-gui` (previously `gui-osg`/`dart-gui-osg`) and replaced the `DART_BUILD_GUI_OSG` toggle with `DART_BUILD_GUI`.
 
 * Minimum Compiler Requirements
   * Linux: GCC 11.0+
@@ -22,7 +23,7 @@
 
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
-  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui-osg` is not built).
+  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui` is not built).
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
   * Added `libsdformat` as a required dependency so that SDF files are normalized through the official parser before being handed to DART: [#264](https://github.com/dartsim/dart/issues/264)
@@ -981,7 +982,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 
 * Misc
 
-  * Fixed build of dart-gui-osg that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
+  * Fixed build of the OpenSceneGraph GUI library (`dart-gui`, historically `dart-gui-osg`) that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
   * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
   * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
   * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)

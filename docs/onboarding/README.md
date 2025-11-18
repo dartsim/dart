@@ -1067,7 +1067,7 @@ mkdir build && cd build
 # Configure
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
-  -DDART_BUILD_GUI_OSG=ON \
+  -DDART_BUILD_GUI=ON \
   -DDART_BUILD_DARTPY=ON
 
 # Build

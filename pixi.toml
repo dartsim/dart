@@ -72,7 +72,7 @@ DART_BUILD_DARTPY8_VALUE=${DART_BUILD_DARTPY8_OVERRIDE:-${DART_BUILD_DARTPY_VALU
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
 DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
-DART_BUILD_GUI_OSG_VALUE=${DART_BUILD_GUI_OSG_OVERRIDE:-ON}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -104,7 +104,7 @@ cmake \
   -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY8_VALUE} \
   -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_VALUE} \
   -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
-  -DDART_BUILD_GUI_OSG=${DART_BUILD_GUI_OSG_VALUE} \
+  -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -854,7 +854,7 @@ test-installation = { cmd = "python scripts/test_installation.py" }
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "pip wheel . --no-deps -w dist/ -v", args = [
   { arg = "use_system_imgui", default = "ON" },
-], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
+], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
   { arg = "python_tag" },
@@ -1608,9 +1608,9 @@ PY
 # IMPORTANT NOTES:
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
-# - DART_BUILD_GUI_OSG controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
+# - DART_BUILD_GUI controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
 # - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI_OSG=ON enables dartpy.gui.osg Python bindings on all platforms
+# - DART_BUILD_GUI=ON enables dartpy.gui.osg Python bindings on all platforms
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
