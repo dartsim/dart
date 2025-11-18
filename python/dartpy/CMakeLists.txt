@@ -44,7 +44,7 @@ file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
 # Exclude GUI OSG bindings if GUI is not built
-if(NOT DART_BUILD_GUI_OSG)
+if(NOT DART_BUILD_GUI)
   list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
   list(FILTER dartpy_sources EXCLUDE REGEX ".*/gui/osg/.*")
 endif()
@@ -94,8 +94,17 @@ endforeach()
 target_link_libraries(${pybind_module}
   PUBLIC ${dartpy_libraries}
 )
-if(TARGET dart-gui-osg)
-  target_link_libraries(${pybind_module} PUBLIC dart-gui-osg)
+if(TARGET dart-optimizer-nlopt)
+  target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
+endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
+endif()
+if(TARGET dart-gui)
+  target_link_libraries(${pybind_module} PUBLIC dart-gui)
 endif()
 
 target_compile_definitions(${pybind_module}
@@ -108,11 +117,11 @@ if(DART_PYBIND11_EXTRA_DEFINITIONS)
   )
 endif()
 
-# Pass DART_BUILD_GUI_OSG to Python bindings so they can conditionally compile OSG support
-if(DART_BUILD_GUI_OSG)
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+# Pass DART_BUILD_GUI to Python bindings so they can conditionally compile OSG support
+if(DART_BUILD_GUI)
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
 else()
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=0)
+  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=0)
 endif()
 
 # Remove debug postfix for dartpy
