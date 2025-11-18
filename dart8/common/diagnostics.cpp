@@ -139,7 +139,7 @@ void printErrorHelp(const std::string& section, const std::string& error)
       "║                                                                ║\n"
       "║ Quick fixes to try:                                            ║\n"
       "║ 1. Clean rebuild:                                              ║\n"
-      "║    pixi run clean && pixi run build-dartpy8                    ║\n"
+      "║    pixi run clean && pixi run build                           ║\n"
       "║                                                                ║\n"
       "║ 2. Check library dependencies:                                 ║\n"
       "║    ldd <path-to-library>                                       ║\n"

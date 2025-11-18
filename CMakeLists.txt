@@ -233,11 +233,6 @@ dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
-dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
-
-if(DART_BUILD_DARTPY8)
-  set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
-endif()
 
 dart_configure_compiler_cache()
 
@@ -643,9 +638,6 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
-if(DART_BUILD_DARTPY8)
-  list(APPEND all_target_candidates dartpy8)
-endif()
 if(DART_BUILD_TESTS AND BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)
 endif()

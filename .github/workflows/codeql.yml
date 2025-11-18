@@ -93,7 +93,6 @@ jobs:
         env:
           DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
           DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
-          DART_BUILD_DARTPY8_OVERRIDE: ${{ matrix.dartpy }}
         run: |
           pixi run config
 
@@ -102,7 +101,6 @@ jobs:
         env:
           DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
           DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
-          DART_BUILD_DARTPY8_OVERRIDE: ${{ matrix.dartpy }}
         run: |
           pixi run build
 
