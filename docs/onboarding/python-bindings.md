@@ -31,7 +31,7 @@
 **Choice**: pixi-based wheel building (not cibuildwheel + Docker)
 
 **Rationale**:
-- **No Docker maintenance**: No custom manylinux images to maintain
+- **No Docker maintenance**: No custom container images to maintain
 - **Local reproducibility**: Same commands work locally and in CI
 - **Unified tooling**: pixi handles both development and distribution
 - **Cross-platform**: Consistent environment via conda-forge
@@ -140,7 +140,7 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 pixi run -e py312-wheel wheel-build
 pixi run -e py313-wheel wheel-build
 
-# Repair (Linux only - convert to manylinux)
+# Repair (Linux only - run auditwheel)
 pixi run -e py312-wheel wheel-repair
 pixi run -e py313-wheel wheel-repair
 
