@@ -213,7 +213,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
 }
 
 /******************************************************************************/
-TEST(LIE_GROUP_OPERATORS, EULER_ANGLES)
+TEST(LieGroupOperators, EulerAngles)
 {
   // TODO: Special angles such as (PI, 0, 0)
 
@@ -227,7 +227,7 @@ TEST(LIE_GROUP_OPERATORS, EULER_ANGLES)
 
 /******************************************************************************/
 #define EPSILON_EXPMAP_THETA 1.0e-3
-TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
+TEST(LieGroupOperators, ExponentialMappings)
 {
   int numTest = 100;
 
@@ -352,7 +352,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 }
 
 /******************************************************************************/
-TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
+TEST(LieGroupOperators, AdjointMappings)
 {
   int numTest = 100;
 

@@ -167,7 +167,7 @@ TEST(Issue1234, Bullet)
 }
 
 //==============================================================================
-TEST(Issue1234, ODE)
+TEST(Issue1234, Ode)
 {
   runIssue1234Test(
       [] { return dart::collision::OdeCollisionDetector::create(); });
