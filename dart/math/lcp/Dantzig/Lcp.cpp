@@ -529,7 +529,7 @@ bool SolveLCP(
 }
 
 // Explicit template instantiations
-template bool SolveLCP<float>(
+template DART_API bool SolveLCP<float>(
     int n,
     float* A,
     float* x,
@@ -541,7 +541,7 @@ template bool SolveLCP<float>(
     int* findex,
     bool earlyTermination);
 
-template bool SolveLCP<double>(
+template DART_API bool SolveLCP<double>(
     int n,
     double* A,
     double* x,

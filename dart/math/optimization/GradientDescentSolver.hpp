@@ -53,7 +53,7 @@ class DART_API GradientDescentSolver : public Solver
 public:
   static const std::string Type;
 
-  struct UniqueProperties
+  struct DART_API UniqueProperties
   {
     /// Value of the fixed step size
     double mStepSize;
@@ -112,7 +112,7 @@ public:
         Eigen::VectorXd _ineqConstraintWeights = Eigen::VectorXd());
   };
 
-  struct Properties : Solver::Properties, UniqueProperties
+  struct DART_API Properties : Solver::Properties, UniqueProperties
   {
     Properties(
         const Solver::Properties& _solverProperties = Solver::Properties(),
