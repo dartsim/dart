@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/dantzig/common.h"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Common.hpp"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 // Undefine assertion macros from dantzig to avoid conflicts with baseline
 #undef dIASSERT
@@ -52,8 +52,8 @@
 #include <cmath>
 
 // Types from both implementations
-using dart::lcpsolver::dReal; // From Dantzig solver (in
-                              // dart/lcpsolver/dantzig/)
+using dReal = double; // Compatibility alias for tests
+                      // dart/math/lcp/Dantzig/)
 
 // Forward declare the baseline function
 namespace dart {
@@ -129,7 +129,7 @@ bool solutionsMatch(
 void testDantzigVsODE(dart::test::LCPProblem problem)
 {
   const int n = problem.dimension;
-  const int stride = dart::lcpsolver::padding(n);
+  const int stride = dart::math::padding(n);
 
   // Prepare data for ODE baseline
   std::vector<dReal> A_ode(stride * n, 0.0);
@@ -173,8 +173,8 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
       nullptr,
       false);
 
-  // Solve with Dantzig solver (from dart/lcpsolver/dantzig/)
-  bool success_dantzig = dart::lcpsolver::SolveLCP<double>(
+  // Solve with Dantzig solver (from dart/math/lcp/Dantzig/)
+  bool success_dantzig = dart::math::SolveLCP<double>(
       n,
       A_dantzig.data(),
       x_dantzig.data(),

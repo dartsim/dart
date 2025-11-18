@@ -4,18 +4,12 @@
 # Collision Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_collision_Distance collision/test_Distance.cpp)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(UNIT_collision_Distance dart-collision-bullet)
-endif()
 
 dart_add_test("unit" UNIT_collision_DistanceFilter collision/test_DistanceFilter.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_CollisionGroup.cpp)
 
 dart_add_test("unit" UNIT_collision_Raycast collision/test_Raycast.cpp)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(UNIT_collision_Raycast dart-collision-bullet)
-endif()
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResult.cpp)
 
@@ -99,9 +93,3 @@ endif()
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
 target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
-
-# ==============================================================================
-# Integration Tests
-# ==============================================================================
-dart_add_test(
-  "unit" UNIT_integration_EulerIntegrator integration/test_EulerIntegrator.cpp)

@@ -37,7 +37,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include <iostream>
 

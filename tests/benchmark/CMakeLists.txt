@@ -44,10 +44,10 @@ endif()
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(TARGET dart-collision-bullet)
+if(DART_BUILD_COLLISION_BULLET)
   add_executable(bm_boxes collision/bm_boxes.cpp)
   target_link_libraries(bm_boxes
-    dart-collision-bullet
+    dart
     benchmark::benchmark
     benchmark::benchmark_main
   )

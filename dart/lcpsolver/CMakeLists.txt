@@ -1,37 +1,24 @@
-# Search all header and source files in lcpsolver directory
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-dart_add_core_headers(${hdrs})
-dart_add_core_sources(${srcs})
+# Compatibility headers that forward to dart/math/lcp
+file(GLOB compat_hdrs "*.hpp" "*.h")
+file(GLOB compat_dantzig_hdrs "dantzig/*.h" "dantzig/*.hpp")
+file(GLOB compat_detail_hdrs "detail/*.hpp")
 
-# Add dantzig LCP solver sources and headers
-# Include both .h and .hpp files since public headers include implementation headers
-file(GLOB dantzig_hdrs "dantzig/*.h" "dantzig/*.hpp")
-file(GLOB dantzig_srcs "dantzig/*.cpp")
-dart_add_core_headers(${dantzig_hdrs})
-dart_add_core_sources(${dantzig_srcs})
+dart_add_core_headers(${compat_hdrs} ${compat_dantzig_hdrs} ${compat_detail_hdrs})
 
-# Generate header for this namespace
-dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})
-dart_generate_component_headers(
-  COMPONENT_NAME lcpsolver
-  TARGET_DIR "dart/lcpsolver/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs}
-)
-
-# Install (includes All.hpp, lcpsolver.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp ${DART_GENERATED_COMPAT_HEADERS}
+  FILES ${compat_hdrs}
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )
 
-# Install dantzig headers
 install(
-  FILES ${dantzig_hdrs}
+  FILES ${compat_dantzig_hdrs}
   DESTINATION include/dart/lcpsolver/dantzig
+  COMPONENT headers
+)
+
+install(
+  FILES ${compat_detail_hdrs}
+  DESTINATION include/dart/lcpsolver/detail
   COMPONENT headers
 )

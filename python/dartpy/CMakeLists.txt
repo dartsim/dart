@@ -94,12 +94,6 @@ endforeach()
 target_link_libraries(${pybind_module}
   PUBLIC ${dartpy_libraries}
 )
-if(TARGET dart-collision-bullet)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
-endif()
-if(TARGET dart-collision-ode)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
-endif()
 if(TARGET dart-gui-osg)
   target_link_libraries(${pybind_module} PUBLIC dart-gui-osg)
 endif()

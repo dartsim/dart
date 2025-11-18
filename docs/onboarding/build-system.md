@@ -208,25 +208,37 @@ dart/
 #### 10. Bullet Physics
 - **Version:** ≥ 3.25, < 4
 - **Purpose:** Alternative collision detection
-- **Component:** `dart-collision-bullet`
+- **Option:** `DART_BUILD_COLLISION_BULLET`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
+- **Disable:** There is no `DART_SKIP_Bullet`; set `DART_BUILD_COLLISION_BULLET=OFF` to omit the backend entirely.
+
+#### 11. Open Dynamics Engine (ODE)
+- **Version:** ≥ 0.13, < 1
+- **Purpose:** Alternative collision detection
+- **Option:** `DART_BUILD_COLLISION_ODE`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
+- **CMake Module:** `cmake/DARTFindODE.cmake`
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
+- **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF` to omit the backend entirely.
 
 ### Utility Dependencies
 
-#### 11. tinyxml2
+#### 12. tinyxml2
 - **Version:** ≥ 11.0.0, < 12
 - **Purpose:** XML parsing (for SDF)
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
-#### 12. libsdformat
+#### 13. libsdformat
 - **Version:** ≥ 16.0.0, < 17
 - **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindsdformat.cmake`
 - **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
-#### 13. urdfdom
+#### 14. urdfdom
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
 - **Component:** `dart-utils-urdf`
@@ -235,17 +247,17 @@ dart/
 
 ### Build/Test Dependencies (Build-time only)
 
-#### 14. Google Test (gtest)
+#### 15. Google Test (gtest)
 - **Version:** ≥ 1.17.0, < 2
 - **Purpose:** Unit testing framework
 - **Option:** `DART_USE_SYSTEM_GOOGLETEST`
 
-#### 15. Google Benchmark
+#### 16. Google Benchmark
 - **Version:** ≥ 1.9.3, < 2
 - **Purpose:** Performance benchmarking
 - **Option:** `DART_USE_SYSTEM_GOOGLEBENCHMARK`
 
-#### 16. Tracy Profiler
+#### 17. Tracy Profiler
 - **Version:** ≥ 0.11.1, < 0.12
 - **Purpose:** Frame profiling
 - **Option:** `DART_USE_SYSTEM_TRACY`
@@ -256,11 +268,7 @@ dart/
 ### Additional Platform Dependencies
 
 #### Linux (linux-64)
-- **freeglut:** ≥ 3.2.2, < 3.3
 - **lcov:** ≥ 1.16, < 2 (coverage reports)
-
-#### Windows (win-64)
-- **freeglut:** ≥ 3.2.2
 
 #### macOS
 - **Cocoa Framework** (linked with ImGui)
@@ -352,11 +360,10 @@ Component Dependency Tree:
     ├── assimp
     ├── fmt
     ├── spdlog (optional)
-    └── octomap (optional)
+    ├── octomap (optional)
+    ├── Bullet (optional; via `DART_BUILD_COLLISION_BULLET`)
+    └── ODE (optional; via `DART_BUILD_COLLISION_ODE`)
 
-    ├── collision-bullet
-    │   └── depends: dart, bullet
-    │
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat
     │
@@ -371,12 +378,13 @@ Component Dependency Tree:
 
 | Component | Library Target | Dependencies |
 |-----------|---------------|--------------|
-| `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` |
-| `collision-bullet` | `dart-collision-bullet` | `dart`, `bullet` |
+| `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
 | `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
 | `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL` |
+
+> Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
 
 ### Source Directory Structure
 
@@ -424,7 +432,6 @@ dart/
   - Install: No (local build only)
 
 #### Component Libraries
-- **`dart-collision-bullet`** - Bullet collision plugin
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
 - **`dart-gui-osg`** - OpenSceneGraph GUI
@@ -652,10 +659,7 @@ build/
 <depend>bullet</depend>
 <depend>eigen</depend>
 <depend>libfcl-dev</depend>
-<depend>glut</depend>
 <depend>liburdfdom-dev</depend>
-<depend>libxi-dev</depend>
-<depend>libxmu-dev</depend>
 <depend>tinyxml2</depend>
 <depend>sdformat</depend>
 ```

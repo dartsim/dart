@@ -8,8 +8,7 @@ CHECK_DIRS="#../dart/collision\
             ../dart/constraint\
             #../dart/dynamics\
             #../dart/gui\
-            #../dart/integration\
-            #../dart/lcpsolver\
+            #../dart/math/lcp\
             #../dart/math\
             #../dart/optimizer\
             #../dart/renderer\
