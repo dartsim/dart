@@ -178,6 +178,12 @@ public:
   /// joint.
   const std::vector<MimicDofProperties>& getMimicDofProperties() const;
 
+  /// Sets the constraint type used to enforce the mimic relationship.
+  void setMimicConstraintType(MimicConstraintType type);
+
+  /// Returns the constraint type used to enforce the mimic relationship.
+  MimicConstraintType getMimicConstraintType() const;
+
   /// Enable or disable the CouplerConstraint enforcement for this joint.
   void setUseCouplerConstraint(bool enable);
 
