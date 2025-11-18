@@ -185,11 +185,8 @@ build = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel ${DART_PARALLEL_JOBS} \
-  --target all
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -203,11 +200,8 @@ cmake \
 build-debug = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel ${DART_PARALLEL_JOBS} \
-  --target all
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 """], depends-on = ["config-debug"] }
 
 config-debug = { cmd = [
@@ -273,10 +267,8 @@ build-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \\
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --parallel ${DART_PARALLEL_JOBS} \\
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --target tests
 """,
 ], depends-on = [
@@ -295,10 +287,8 @@ build-dart8-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \\
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --parallel ${DART_PARALLEL_JOBS} \\
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --target dart8_tests
 """,
 ], depends-on = [
@@ -314,10 +304,8 @@ cmake \\
 build-math-tests = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Release}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \\
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  -j ${DART_PARALLEL_JOBS} \\
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --target UNIT_math_Convhull \\
   --target UNIT_math_Geometry \\
   --target UNIT_math_Icosphere \\
@@ -332,10 +320,8 @@ build-py-dev = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \\
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --parallel ${DART_PARALLEL_JOBS} \\
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --target dartpy
 """,
 ], depends-on = [
@@ -354,10 +340,8 @@ build-dartpy8 = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \\
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --parallel ${DART_PARALLEL_JOBS} \\
+python scripts/cmake_build.py \\
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --target dartpy8
 """,
 ], depends-on = [
@@ -572,10 +556,8 @@ test-py = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \
-    --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-    --parallel ${DART_PARALLEL_JOBS} \
+python scripts/cmake_build.py \
+    --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
     --target pytest
 """,
 ], depends-on = [
@@ -647,9 +629,13 @@ build-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j ${DART_PARALLEL_JOBS} --target all tests \\
-  && ctest --output-on-failure -j ${DART_PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+PARALLEL_JOBS=$(python scripts/parallel_jobs.py)
+python scripts/cmake_build.py \
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+  --parallel ${PARALLEL_JOBS} \
+  --target all \
+  --target tests \
+  && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """,
 ], depends-on = [
   "config-coverage",
@@ -682,10 +668,8 @@ lcov \
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
 run-cpp-target = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} \
-        --parallel ${DART_PARALLEL_JOBS} \
+    python scripts/cmake_build.py \\
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} \\
         --target {{ target }} \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/bin/{{ target }}
 """, depends-on = [
@@ -763,11 +747,9 @@ bm-convhull = { depends-on = [
 ] }
 
 bm-lcpsolver = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+    python scripts/cmake_build.py \\
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \\
         --target BM_LCPSOLVER \
-        --parallel ${DART_PARALLEL_JOBS} \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
 """, depends-on = [
   "config",
@@ -1049,10 +1031,8 @@ cmake \
 build-asan = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel ${DART_PARALLEL_JOBS} \
+python scripts/cmake_build.py \
+  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --target tests
 """], depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
 
@@ -1114,8 +1094,8 @@ config-osg = { cmd = """
 
 build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake --build .deps/OpenSceneGraph/build -j ${DART_PARALLEL_JOBS}
+python scripts/cmake_build.py \
+  --build-dir .deps/OpenSceneGraph/build
 """], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
@@ -1154,8 +1134,8 @@ config-osg = { cmd = """
 
 build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake --build .deps/OpenSceneGraph/build -j ${DART_PARALLEL_JOBS}
+python scripts/cmake_build.py \
+  --build-dir .deps/OpenSceneGraph/build
 """], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
@@ -1231,11 +1211,9 @@ check-lint = { depends-on = [
 
 build = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel ${DART_PARALLEL_JOBS}
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE
 """, depends-on = [
   { task = "config", args = [
     "ON",
@@ -1245,21 +1223,17 @@ build = { cmd = """
 ] }
 
 build-debug = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config Debug \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target all
 """, depends-on = ["config-debug"] }
 
 build-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target tests
 """, depends-on = [
   { task = "config", args = [
@@ -1272,11 +1246,9 @@ build-tests = { cmd = """
 
 build-dart8-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target dart8_tests
 """, depends-on = [
   { task = "config", args = [
@@ -1289,11 +1261,9 @@ build-dart8-tests = { cmd = """
 
 build-py-dev = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target dartpy
 """, depends-on = [
   "config-py",
@@ -1371,11 +1341,9 @@ test-dart8 = { cmd = [
 
 test-py = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target pytest
 """, depends-on = [
   { task = "config", args = [
@@ -1392,11 +1360,9 @@ test-all = { cmd = """
 # Windows helper to match the single-config generator layout. As above, configure
 # alternative build types explicitly before invoking with a different configuration.
 run-cpp-target-win = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+    python scripts/cmake_build.py \
+        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config {{ build_type }} \
-        --parallel ${DART_PARALLEL_JOBS} \
         --target {{ target }} \
     && build/{{ build_type }}/{{ run_target }}.exe
 """, depends-on = [
@@ -1594,8 +1560,9 @@ cmake \
 
 build-gz = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-cmake --build .deps/gz-physics/build -j ${DART_PARALLEL_JOBS} --target all
+python scripts/cmake_build.py \
+  --build-dir .deps/gz-physics/build \
+  --target all
 """], depends-on = ["config-gz"] }
 
 test-gz = { cmd = """
@@ -1607,7 +1574,7 @@ test-gz = { cmd = """
         export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
         export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
         cd .deps/gz-physics/build
-        cmake --build . -j ${DART_PARALLEL_JOBS} --target all
+        python scripts/cmake_build.py --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         python <<\"PY\"
 import os
 import subprocess
