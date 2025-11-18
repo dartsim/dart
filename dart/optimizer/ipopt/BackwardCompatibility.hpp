@@ -33,11 +33,42 @@
 #ifndef DART_OPTIMIZER_IPOPT_BACKWARDCOMPATIBILITY_HPP_
 #define DART_OPTIMIZER_IPOPT_BACKWARDCOMPATIBILITY_HPP_
 
-// clang-format off
-#define IPOPT_VERSION_GE(x,y,z) \
-  (IPOPT_VERSION_MAJOR > x || (IPOPT_VERSION_MAJOR >= x && \
-  (IPOPT_VERSION_MINOR > y || (IPOPT_VERSION_MINOR >= y && \
-  IPOPT_VERSION_PATCH >= z))))
-// clang-format on
+#ifndef __has_include
+  #define __has_include(x) 0
+#endif
+
+#if __has_include(<IpoptConfig.h>)
+  #include <IpoptConfig.h>
+#elif __has_include(<coin/IpoptConfig.h>)
+  #include <coin/IpoptConfig.h>
+#else
+  #error "IpoptConfig.h not found. Please install Ipopt headers."
+#endif
+
+#ifndef IPOPT_VERSION_PATCH
+  #ifdef IPOPT_VERSION_RELEASE
+    #define IPOPT_VERSION_PATCH IPOPT_VERSION_RELEASE
+  #else
+    #define IPOPT_VERSION_PATCH 0
+  #endif
+#endif
+
+#if __has_include(<IpIpoptApplication.hpp>) && __has_include(<IpTNLP.hpp>)
+  #define DART_IPOPT_USE_COIN_NAMESPACE 0
+  #include <IpIpoptApplication.hpp>
+  #include <IpTNLP.hpp>
+#elif __has_include(<coin/IpIpoptApplication.hpp>) && __has_include(<coin/IpTNLP.hpp>)
+  #define DART_IPOPT_USE_COIN_NAMESPACE 1
+  #include <coin/IpIpoptApplication.hpp>
+  #include <coin/IpTNLP.hpp>
+#else
+  #error "Failed to locate Ipopt headers. Ensure Ipopt is installed."
+#endif
+
+#define IPOPT_VERSION_GE(x, y, z)                                              \
+  (IPOPT_VERSION_MAJOR > x                                                     \
+   || (IPOPT_VERSION_MAJOR == x                                                \
+       && (IPOPT_VERSION_MINOR > y                                             \
+           || (IPOPT_VERSION_MINOR == y && IPOPT_VERSION_PATCH >= z))))
 
 #endif // DART_OPTIMIZER_IPOPT_BACKWARDCOMPATIBILITY_HPP_

@@ -1,0 +1,86 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: 2025-11-17 17:49+0000\n"
+"Last-Translator: Codex Agent <codex@example.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../dart/cpp_api_reference.rst:2 9e35454062fa46e982c95ad38c5ed28f
+msgid "C++ API Reference"
+msgstr "C++ API 레퍼런스"
+
+#: ../../dart/cpp_api_reference.rst:4 0b8c58456f7d40979e8af1da2ae1dd9c
+msgid ""
+"The full Doxygen site for the C++ API now builds directly inside Read the"
+" Docs, so it inherits the same branch and tag versioning controls as the "
+"rest of this documentation set. Each RTD build runs Doxygen against the "
+"checked-out source tree and publishes the generated HTML bundle alongside"
+" the rest of the pages."
+msgstr ""
+"이제 C++ API 전체 Doxygen 사이트가 Read the Docs 내부에서 직접 빌드되어 다른 문서와 동일한 브랜치·태그 "
+"버전 관리 흐름을 그대로 따릅니다. RTD 빌드가 실행될 때마다 체크아웃된 소스 트리에 대해 Doxygen을 돌리고, 생성된 "
+"HTML 번들을 나머지 페이지와 함께 배포합니다."
+
+#: ../../dart/cpp_api_reference.rst:9 015257733ea14506bea303473645a1c0
+msgid "How this page works"
+msgstr "동작 방식"
+
+#: ../../dart/cpp_api_reference.rst:11 4ef81271ac7d49359cf2cb4e220324f4
+msgid ""
+"``conf.py`` renders a dedicated Doxyfile and executes Doxygen during the "
+"``builder-inited`` step."
+msgstr "``conf.py`` 가 별도의 Doxyfile을 생성하고 ``builder-inited`` 단계에서 Doxygen을 실행합니다."
+
+#: ../../dart/cpp_api_reference.rst:13 2117bbe7b1c34492b179b1d7a3f7a9ac
+msgid ""
+"The HTML bundle is staged under ``_generated/cpp-api/`` (ignored by git) "
+"and then copied to ``cpp-api/`` so it is served by RTD under the current "
+"version."
+msgstr ""
+"생성된 HTML 번들은 ``_generated/cpp-api/``(git에서 무시됨)에 임시 저장한 다음 ``cpp-api/`` 로 "
+"복사되어 현재 버전에 맞춰 RTD가 서비스합니다."
+
+#: ../../dart/cpp_api_reference.rst:16 3a2b59823c0242a99f397f765605dbe5
+msgid ""
+"This page immediately redirects to ``../cpp-api/index.html`` so the "
+"Doxygen-rendered reference opens as a standalone documentation section."
+msgstr ""
+"이 페이지는 즉시 ``../cpp-api/index.html`` 로 리디렉션하여 Doxygen이 렌더링한 레퍼런스를 별도 문서 "
+"섹션으로 열어 줍니다."
+
+#: ../../dart/cpp_api_reference.rst:20 ab6020fdcea746a3843a50141b8d2757
+msgid "Direct View"
+msgstr "직접 보기"
+
+#: ../../dart/cpp_api_reference.rst:43 e6419db63454422482c48ebc2fd51082
+msgid "Local Builds"
+msgstr "로컬 빌드"
+
+#: ../../dart/cpp_api_reference.rst:45 5b5760c1d36e4c59a5e343f5ee3a37d6
+msgid ""
+"To preview these docs locally, make sure ``pixi`` has installed the "
+"toolchain (``pixi run config``) and then run:"
+msgstr ""
+"로컬에서 미리 보려면 ``pixi run config`` 로 도구체인이 설치되어 있는지 확인한 뒤 다음 명령을 실행하세요:"
+
+#: ../../dart/cpp_api_reference.rst:52 46464cc4cb834717b9bf719162430bc8
+msgid ""
+"The command above mirrors Read the Docs by executing ``sphinx-build`` "
+"from ``docs/readthedocs/`` and drops the Doxygen site into "
+"``docs/readthedocs/_generated/cpp-api``."
+msgstr ""
+"위 명령은 ``docs/readthedocs/`` 디렉터리에서 ``sphinx-build`` 를 실행해 Read the Docs와 동일한 "
+"방식으로 동작하며, 결과 Doxygen 사이트를 ``docs/readthedocs/_generated/cpp-api`` 에 생성합니다."
