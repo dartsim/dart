@@ -1,0 +1,307 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../../python_api/modules/optimizer.rst:2 03f260ed6b2c4f09b568ea8305be3dc9
+msgid "dartpy.optimizer"
+msgstr ""
+
+#: ../../docstring 1badff08c16d410fbce0c5ccc763e8ad
+#: 2380bbd2024a46f286671e68a57abaff 2ab92f96a9fc4b2680953e294935b052
+#: 86d4a07955d645c6a39b8114bee7b2b4 b68f04c2cf344854a319c0060ea661af
+#: bcaefd98049d4437bd2739c6857160e8 dartpy.optimizer.Function:1
+#: dartpy.optimizer.GradientDescentSolverUniqueProperties:1
+#: dartpy.optimizer.MultiFunction:1 dartpy.optimizer.NloptSolver.Algorithm:1
+#: dartpy.optimizer.Problem:1 dartpy.optimizer.Solver:1
+#: dartpy.optimizer.SolverProperties:1 dcbb65198ec0456aae295d851f11edc5 of
+msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgstr ""
+
+#: ../../docstring 9edd2b8bb3ad4fba857c2215beeecde2
+#: caa47a20956e4279843b5b77041b3bbf dartpy.optimizer.GradientDescentSolver:1
+#: dartpy.optimizer.NloptSolver:1 of
+msgid "Bases: :py:class:`~dartpy.optimizer.Solver`"
+msgstr ""
+
+#: ../../docstring 7737982fec4648e1bc58f3ed49418267
+#: 9ab40a38400d489a92a812a052cede18
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:1
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:1
+#: of
+msgid "Overloaded function."
+msgstr ""
+
+#: ../../docstring
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:3
+#: e31629d0372340b48617d70db7df5527 of
+msgid ""
+"setProperties(self: dartpy.optimizer.GradientDescentSolver, properties: "
+"dartpy.optimizer.GradientDescentSolverProperties) -> None"
+msgstr ""
+
+#: ../../docstring 3fa798ef71b04e8e91a32168f43762cb
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:5
+#: of
+msgid ""
+"setProperties(self: dartpy.optimizer.GradientDescentSolver, properties: "
+"dartpy.optimizer.GradientDescentSolverUniqueProperties) -> None"
+msgstr ""
+
+#: ../../docstring 0550b4006dc042a681feb1c71d40c46d
+#: dartpy.optimizer.GradientDescentSolverProperties:1 of
+msgid ""
+"Bases: :py:class:`~dartpy.optimizer.SolverProperties`, "
+":py:class:`~dartpy.optimizer.GradientDescentSolverUniqueProperties`"
+msgstr ""
+
+#: ../../docstring 1a1b1dd6465a497aad6969930630bc87
+#: d785c79daf704a9283493ac1ac8dbd56 dartpy.optimizer.ModularFunction:1
+#: dartpy.optimizer.NullFunction:1 of
+msgid "Bases: :py:class:`~dartpy.optimizer.Function`"
+msgstr ""
+
+#: ../../docstring 300fe81d82ac416cadd1d4bfb9c83060
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:3
+#: of
+msgid "clearCostFunction(self: dartpy.optimizer.ModularFunction) -> None"
+msgstr ""
+
+#: ../../docstring
+#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:5
+#: df5ff29d8e1f47ab803fd0dc6f176b0e of
+msgid ""
+"clearCostFunction(self: dartpy.optimizer.ModularFunction, printWarning: "
+"bool) -> None"
+msgstr ""
+
+#: ../../docstring 157d2bef1d244e5ca331a6778b176ca5
+#: dartpy.optimizer.NloptSolver.Algorithm:1 of
+msgid "Members:"
+msgstr ""
+
+#: ../../docstring a98b1fe439a74a8c9789597ccb4e8d9e
+#: dartpy.optimizer.NloptSolver.Algorithm:3 of
+msgid "GN_DIRECT"
+msgstr ""
+
+#: ../../docstring c340619047bd48b08a8abb57abe65b2c
+#: dartpy.optimizer.NloptSolver.Algorithm:5 of
+msgid "GN_DIRECT_L"
+msgstr ""
+
+#: ../../docstring 197debec790948298da0bc84d384bc1c
+#: dartpy.optimizer.NloptSolver.Algorithm:7 of
+msgid "GN_DIRECT_L_RAND"
+msgstr ""
+
+#: ../../docstring d45dd6df02d74d49ac8e5ea39a8d9d65
+#: dartpy.optimizer.NloptSolver.Algorithm:9 of
+msgid "GN_DIRECT_NOSCAL"
+msgstr ""
+
+#: ../../docstring 423f7b3ed9b64d0a85f23259cae3f5a3
+#: dartpy.optimizer.NloptSolver.Algorithm:11 of
+msgid "GN_DIRECT_L_NOSCAL"
+msgstr ""
+
+#: ../../docstring 4daa54783deb4187bdd5592892d2c058
+#: dartpy.optimizer.NloptSolver.Algorithm:13 of
+msgid "GN_DIRECT_L_RAND_NOSCAL"
+msgstr ""
+
+#: ../../docstring a8072c385efd4735b0c9727c9558b9e1
+#: dartpy.optimizer.NloptSolver.Algorithm:15 of
+msgid "GN_ORIG_DIRECT"
+msgstr ""
+
+#: ../../docstring 0f8d091e07e64202bfe90e07f06cc22c
+#: dartpy.optimizer.NloptSolver.Algorithm:17 of
+msgid "GN_ORIG_DIRECT_L"
+msgstr ""
+
+#: ../../docstring 1e177bcb65414ce7bf1fabc0e8acca1a
+#: dartpy.optimizer.NloptSolver.Algorithm:19 of
+msgid "GD_STOGO"
+msgstr ""
+
+#: ../../docstring 216b24b7bffd485f9effc264f47636a9
+#: dartpy.optimizer.NloptSolver.Algorithm:21 of
+msgid "GD_STOGO_RAND"
+msgstr ""
+
+#: ../../docstring dartpy.optimizer.NloptSolver.Algorithm:23
+#: e7e0bac58b924ad297634d0e3f52c4b8 of
+msgid "LD_LBFGS"
+msgstr ""
+
+#: ../../docstring c0861429cf334b319e719087caccf931
+#: dartpy.optimizer.NloptSolver.Algorithm:25 of
+msgid "LN_PRAXIS"
+msgstr ""
+
+#: ../../docstring 7f47ef83d5224851b64cd8c6f3161976
+#: dartpy.optimizer.NloptSolver.Algorithm:27 of
+msgid "LD_VAR1"
+msgstr ""
+
+#: ../../docstring ca581a8ef27049b7ab98d29c26193c49
+#: dartpy.optimizer.NloptSolver.Algorithm:29 of
+msgid "LD_VAR2"
+msgstr ""
+
+#: ../../docstring 1711fe958fc047d1894a49e19394d31d
+#: dartpy.optimizer.NloptSolver.Algorithm:31 of
+msgid "LD_TNEWTON"
+msgstr ""
+
+#: ../../docstring 7bb5b1a0e557496fb951cdb1a74716c7
+#: dartpy.optimizer.NloptSolver.Algorithm:33 of
+msgid "LD_TNEWTON_RESTART"
+msgstr ""
+
+#: ../../docstring d0793d76eba84299af927ecc0790b8e8
+#: dartpy.optimizer.NloptSolver.Algorithm:35 of
+msgid "LD_TNEWTON_PRECOND"
+msgstr ""
+
+#: ../../docstring b31bb6a356f348a4a3ada62c7776fff7
+#: dartpy.optimizer.NloptSolver.Algorithm:37 of
+msgid "LD_TNEWTON_PRECOND_RESTART"
+msgstr ""
+
+#: ../../docstring bb8feececf67494a8f4b41507a16eee4
+#: dartpy.optimizer.NloptSolver.Algorithm:39 of
+msgid "GN_CRS2_LM"
+msgstr ""
+
+#: ../../docstring 6bed4724f0c54a6f87289f660ef84798
+#: dartpy.optimizer.NloptSolver.Algorithm:41 of
+msgid "GN_MLSL"
+msgstr ""
+
+#: ../../docstring b7acb766042446ccb4f9401100e200ce
+#: dartpy.optimizer.NloptSolver.Algorithm:43 of
+msgid "GD_MLSL"
+msgstr ""
+
+#: ../../docstring 6e4f22e3cfda4c86b8e95a42b7f9497e
+#: dartpy.optimizer.NloptSolver.Algorithm:45 of
+msgid "GN_MLSL_LDS"
+msgstr ""
+
+#: ../../docstring 2f2c056926fc409ba869158cf3885b0b
+#: dartpy.optimizer.NloptSolver.Algorithm:47 of
+msgid "GD_MLSL_LDS"
+msgstr ""
+
+#: ../../docstring afee6ea16de24942893e430c4987e00e
+#: dartpy.optimizer.NloptSolver.Algorithm:49 of
+msgid "LD_MMA"
+msgstr ""
+
+#: ../../docstring 78530295294f4010964ef53b902a5868
+#: dartpy.optimizer.NloptSolver.Algorithm:51 of
+msgid "LN_COBYLA"
+msgstr ""
+
+#: ../../docstring dartpy.optimizer.NloptSolver.Algorithm:53
+#: dd48c6a0ef534e40948493f37ba906c7 of
+msgid "LN_NEWUOA"
+msgstr ""
+
+#: ../../docstring dartpy.optimizer.NloptSolver.Algorithm:55
+#: f1b3096584604f33918117f0d2252dea of
+msgid "LN_NEWUOA_BOUND"
+msgstr ""
+
+#: ../../docstring 2026169307ca4075b7d497d70a47beb4
+#: dartpy.optimizer.NloptSolver.Algorithm:57 of
+msgid "LN_NELDERMEAD"
+msgstr ""
+
+#: ../../docstring 14714532a5034e4b8ed9c5e9c4028c03
+#: dartpy.optimizer.NloptSolver.Algorithm:59 of
+msgid "LN_SBPLX"
+msgstr ""
+
+#: ../../docstring 7f64ebdf0c7e4fb8be6892408eb0c79a
+#: dartpy.optimizer.NloptSolver.Algorithm:61 of
+msgid "LN_AUGLAG"
+msgstr ""
+
+#: ../../docstring 093ed22df7844205959a26c28e3e2f70
+#: dartpy.optimizer.NloptSolver.Algorithm:63 of
+msgid "LD_AUGLAG"
+msgstr ""
+
+#: ../../docstring 9b2bae7b306a430f9e80af20d2cc62de
+#: dartpy.optimizer.NloptSolver.Algorithm:65 of
+msgid "LN_AUGLAG_EQ"
+msgstr ""
+
+#: ../../docstring a3be14c5d3994d71bbb31995b34fe9b5
+#: dartpy.optimizer.NloptSolver.Algorithm:67 of
+msgid "LD_AUGLAG_EQ"
+msgstr ""
+
+#: ../../docstring dartpy.optimizer.NloptSolver.Algorithm:69
+#: e189cd61ed04416192058cd6d0233384 of
+msgid "LN_BOBYQA"
+msgstr ""
+
+#: ../../docstring 094b0a5905f145aaa0a9bd87259547b2
+#: dartpy.optimizer.NloptSolver.Algorithm:71 of
+msgid "GN_ISRES"
+msgstr ""
+
+#: ../../docstring 7fd5fb055d34470bbf66dcedd097f89e
+#: dartpy.optimizer.NloptSolver.Algorithm:73 of
+msgid "AUGLAG"
+msgstr ""
+
+#: ../../docstring 1fcfe5d837f84043b2ac802a012f176d
+#: dartpy.optimizer.NloptSolver.Algorithm:75 of
+msgid "AUGLAG_EQ"
+msgstr ""
+
+#: ../../docstring 97800d7384b34e76b980e81e530f353d
+#: dartpy.optimizer.NloptSolver.Algorithm:77 of
+msgid "G_MLSL"
+msgstr ""
+
+#: ../../docstring ae47be44924247dab7502d47095bd5a7
+#: dartpy.optimizer.NloptSolver.Algorithm:79 of
+msgid "G_MLSL_LDS"
+msgstr ""
+
+#: ../../docstring 1fa62bdd8e9449c390841ad56f8bf2b0
+#: dartpy.optimizer.NloptSolver.Algorithm:81 of
+msgid "LD_SLSQP"
+msgstr ""
+
+#: ../../docstring 66b6b941c0b54e408bc21b42ed14f630
+#: dartpy.optimizer.NloptSolver.Algorithm:83 of
+msgid "LD_CCSAQ"
+msgstr ""
+
+#: ../../docstring 4805d62ffe8b49b588e421dcc7f3b8be
+#: dartpy.optimizer.NloptSolver.Algorithm:85 of
+msgid "GN_ESCH"
+msgstr ""
+
