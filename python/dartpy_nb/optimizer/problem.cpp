@@ -21,7 +21,12 @@ void defOptimizerProblem(nb::module_& m)
       .def(nb::init<std::size_t>(), nb::arg("dim"))
       .def("setDimension", &Problem::setDimension, nb::arg("dim"))
       .def("getDimension", &Problem::getDimension)
-      .def("setInitialGuess", &Problem::setInitialGuess, nb::arg("guess"))
+      .def(
+          "setInitialGuess",
+          [](Problem& self, const nb::handle& guess) {
+            self.setInitialGuess(toVector(guess));
+          },
+          nb::arg("guess"))
       .def(
           "getInitialGuess",
           [](Problem& self) { return self.getInitialGuess(); })

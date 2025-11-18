@@ -2,7 +2,6 @@
 
 #include <nanobind/nanobind.h>
 
-#include <mutex>
 #include <typeindex>
 #include <unordered_map>
 
@@ -16,27 +15,53 @@ class PolymorphicCasterRegistry
 public:
   using Pointer = Base*;
   using Caster = Pointer (*)(void*);
+  using Downcaster = void* (*)(Pointer);
 
-  static void registerType(const std::type_info& info, Caster caster)
+  struct Entry
   {
-    std::lock_guard<std::mutex> lock(getMutex());
-    getMap()[std::type_index(info)] = caster;
+    Caster upcast = nullptr;
+    Downcaster downcast = nullptr;
+  };
+
+  static void registerType(
+      const std::type_info& info, Caster caster, Downcaster downcaster)
+  {
+    getMap()[std::type_index(info)] = Entry{caster, downcaster};
   }
 
   static bool hasType(const std::type_info& info)
   {
-    std::lock_guard<std::mutex> lock(getMutex());
     return getMap().contains(std::type_index(info));
   }
 
   static Pointer convert(void* raw, const std::type_info& info)
   {
-    std::lock_guard<std::mutex> lock(getMutex());
+    if (raw == nullptr)
+      return nullptr;
+
     auto& map = getMap();
     auto it = map.find(std::type_index(info));
     if (it == map.end())
       return static_cast<Pointer>(raw);
-    return it->second(raw);
+    auto* caster = it->second.upcast;
+    if (caster == nullptr)
+      return static_cast<Pointer>(raw);
+    return caster(raw);
+  }
+
+  static void* restore(Pointer raw, const std::type_info& info)
+  {
+    if (raw == nullptr)
+      return static_cast<void*>(raw);
+
+    auto& map = getMap();
+    auto it = map.find(std::type_index(info));
+    if (it == map.end())
+      return static_cast<void*>(raw);
+    auto* downcaster = it->second.downcast;
+    if (downcaster == nullptr)
+      return static_cast<void*>(raw);
+    return downcaster(raw);
   }
 
   static Pointer adjust(PyObject* source, Pointer raw)
@@ -57,17 +82,12 @@ public:
   }
 
 private:
-  static std::unordered_map<std::type_index, Caster>& getMap()
+  static std::unordered_map<std::type_index, Entry>& getMap()
   {
-    static std::unordered_map<std::type_index, Caster> map;
+    static std::unordered_map<std::type_index, Entry> map;
     return map;
   }
 
-  static std::mutex& getMutex()
-  {
-    static std::mutex mutex;
-    return mutex;
-  }
 };
 
 } // namespace detail
@@ -78,8 +98,16 @@ inline void registerPolymorphicCaster()
   detail::PolymorphicCasterRegistry<Base>::registerType(
       typeid(Derived),
       [](void* ptr) -> Base* {
+        if (ptr == nullptr)
+          return nullptr;
         auto* typed = static_cast<Derived*>(ptr);
         return static_cast<Base*>(typed);
+      },
+      [](Base* base) -> void* {
+        if (base == nullptr)
+          return nullptr;
+        auto* typed = static_cast<Derived*>(base);
+        return static_cast<void*>(typed);
       });
 }
 
@@ -99,6 +127,12 @@ template <typename Base>
 inline Base* convertPolymorphicPointer(void* raw, const std::type_info& info)
 {
   return detail::PolymorphicCasterRegistry<Base>::convert(raw, info);
+}
+
+template <typename Base>
+inline void* restorePolymorphicPointer(Base* raw, const std::type_info& info)
+{
+  return detail::PolymorphicCasterRegistry<Base>::restore(raw, info);
 }
 
 } // namespace dart::python_nb

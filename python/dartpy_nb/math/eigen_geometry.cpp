@@ -253,6 +253,16 @@ void defEigenGeometry(nb::module_& m)
            }),
            nb::arg("angle"),
            nb::arg("axis"))
+      .def(nb::new_([](double angle, const nb::handle& axis) {
+             Eigen::VectorXd vec = toVector(axis);
+             if (vec.size() != 3)
+               throw nb::value_error("AngleAxis axis must have length 3");
+             AngleAxis out(angle, Eigen::Vector3d(vec));
+             checkAngleAxis(out);
+             return out;
+           }),
+           nb::arg("angle"),
+           nb::arg("axis"))
       .def(nb::new_([](const Quaternion& q) {
              AngleAxis out(q);
              checkAngleAxis(out);

@@ -78,8 +78,17 @@ struct polymorphic_type_caster : type_caster_base_tag {
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
-    return type_caster_base<Type>::from_cpp(
-        std::forward<T>(value), policy, cleanup);
+    using BareT = std::remove_reference_t<std::remove_cv_t<T>>;
+
+    if constexpr (std::is_pointer_v<BareT>) {
+      return type_caster_base<Type>::from_cpp(
+          std::forward<T>(value), policy, cleanup);
+    } else if constexpr (std::is_lvalue_reference_v<T>) {
+      return from_cpp(&value, policy, cleanup);
+    } else {
+      return type_caster_base<Type>::from_cpp(
+          std::forward<T>(value), policy, cleanup);
+    }
   }
 
   template <typename T_>
@@ -148,6 +157,29 @@ struct type_caster<dart::dynamics::Joint>
       std::fprintf(stderr, "[dartpy_nb][joint] forcing reference policy\n");
     }
     return polymorphic_type_caster<dart::dynamics::Joint>::from_cpp(
+        std::forward<T>(value), rv_policy::reference, cleanup);
+  }
+};
+
+template <typename JointT>
+struct type_caster<
+    JointT,
+    std::enable_if_t<
+        std::is_base_of_v<dart::dynamics::Joint, JointT>
+        && !std::is_same_v<dart::dynamics::Joint, JointT>>>
+    : polymorphic_type_caster<JointT>
+{
+  template <typename T>
+  NB_INLINE static handle from_cpp(
+      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+  {
+    if (std::getenv("DARTPY_NB_TRACE_JOINT_CAST")) {
+      std::fprintf(
+          stderr,
+          "[dartpy_nb][joint][derived] forcing reference policy for %s\n",
+          typeid(JointT).name());
+    }
+    return polymorphic_type_caster<JointT>::from_cpp(
         std::forward<T>(value), rv_policy::reference, cleanup);
   }
 };

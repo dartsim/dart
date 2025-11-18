@@ -16,6 +16,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include "common/type_casters.hpp"
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -66,18 +68,14 @@ void defWorld(nb::module_& m)
       .def("getTimeStep", &World::getTimeStep)
       .def(
           "getSkeleton",
-          [](World& self, std::size_t index)
-              -> std::shared_ptr<dart::dynamics::Skeleton> {
-            auto* skeleton = self.getSkeleton(index);
-            return skeleton ? skeleton->getPtr() : nullptr;
+          [](World& self, std::size_t index) {
+            return self.getSkeleton(index);
           },
           nb::arg("index"))
       .def(
           "getSkeleton",
-          [](World& self, const std::string& name)
-              -> std::shared_ptr<dart::dynamics::Skeleton> {
-            auto* skeleton = self.getSkeleton(name);
-            return skeleton ? skeleton->getPtr() : nullptr;
+          [](World& self, const std::string& name) {
+            return self.getSkeleton(name);
           },
           nb::arg("name"))
       .def("getNumSkeletons", &World::getNumSkeletons)
