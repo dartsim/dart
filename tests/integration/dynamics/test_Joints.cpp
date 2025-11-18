@@ -66,6 +66,14 @@ using namespace dart::test;
 
 #define JOINT_TOL 0.01
 
+class CouplerConstraintTestHelper : public dart::constraint::CouplerConstraint
+{
+public:
+  using CouplerConstraint::applyImpulse;
+  using CouplerConstraint::CouplerConstraint;
+  using CouplerConstraint::update;
+};
+
 //==============================================================================
 class Joints : public testing::Test
 {
@@ -1302,7 +1310,7 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
   referenceJoint->setPosition(0, 0.1);
   followerJoint->setPosition(0, 0.0);
 
-  dart::constraint::CouplerConstraint constraint(
+  CouplerConstraintTestHelper constraint(
       followerJoint, followerJoint->getMimicDofProperties());
   constraint.update();
   ASSERT_GT(constraint.getDimension(), 0u);
