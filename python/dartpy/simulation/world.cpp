@@ -1,6 +1,8 @@
 #include "simulation/world.hpp"
 
 #include "common/type_casters.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -105,6 +107,16 @@ void defWorld(nb::module_& m)
             return self.createSkeleton(properties);
           },
           nb::arg("properties"),
+          nb::rv_policy::reference_internal)
+      .def(
+          "createSkeletonFromUri",
+          [](World& self,
+             const dart::common::Uri& uri,
+             const dart::common::ResourceRetrieverPtr& retriever) {
+            return self.createSkeletonFromUri(uri, retriever);
+          },
+          nb::arg("uri"),
+          nb::arg("retriever") = nullptr,
           nb::rv_policy::reference_internal)
       .def(
           "destroySkeleton",
