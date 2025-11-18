@@ -1,0 +1,49 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: 2025-11-17 17:49+0000\n"
+"Last-Translator: Codex Agent <codex@example.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../tutorials/index.rst:8
+msgid "01. Multi Pendulum"
+msgstr "01. 다중 진자"
+
+#: ../../tutorials/index.rst:8
+msgid "02. Collisions"
+msgstr "02. 충돌"
+
+#: ../../tutorials/index.rst:8
+msgid "03. Dominoes"
+msgstr "03. 도미노"
+
+#: ../../tutorials/index.rst:8
+msgid "04. Biped"
+msgstr "04. 이족 보행"
+
+#: ../../tutorials/index.rst:2 1b269c21494548fba1192c15b5d859b2
+msgid "Tutorials"
+msgstr "튜토리얼"
+
+#: ../../tutorials/index.rst:4 4e3069c51d964340a3aa4613ad7c3c23
+msgid ""
+"These pages consolidate the classic C++ and dartpy tutorials so you can "
+"read a single narrative while switching snippets per language. More "
+"tutorials will be gradually ported to this format."
+msgstr ""
+"이 페이지들은 기존 C++ 및 dartpy 튜토리얼을 통합해 하나의 이야기 흐름을 "
+"따르면서 언어별 코드 조각만 전환할 수 있도록 구성되었습니다. 앞으로 더 많은 "
+"튜토리얼을 이 형식으로 순차적으로 이전할 예정입니다."

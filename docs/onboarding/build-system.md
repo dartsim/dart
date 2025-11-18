@@ -281,11 +281,7 @@ dart/
 ### Additional Platform Dependencies
 
 #### Linux (linux-64)
-- **freeglut:** ≥ 3.2.2, < 3.3
 - **lcov:** ≥ 1.16, < 2 (coverage reports)
-
-#### Windows (win-64)
-- **freeglut:** ≥ 3.2.2
 
 #### macOS
 - **Cocoa Framework** (linked with ImGui)
@@ -688,10 +684,7 @@ build/
 <depend>bullet</depend>
 <depend>eigen</depend>
 <depend>libfcl-dev</depend>
-<depend>glut</depend>
 <depend>liburdfdom-dev</depend>
-<depend>libxi-dev</depend>
-<depend>libxmu-dev</depend>
 <depend>tinyxml2</depend>
 <depend>sdformat</depend>
 ```

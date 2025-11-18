@@ -40,7 +40,7 @@
 #include <dart/common/Logging.hpp>
 
 #include <dart/config.hpp>
-#include <dart/lcpsolver/dantzig/lcp.h>
+#include <dart/math/lcp/Dantzig/Lcp.hpp>
 
 #include <iostream>
 #include <limits>

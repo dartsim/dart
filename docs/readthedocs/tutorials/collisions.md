@@ -785,8 +785,8 @@ root BodyNode) start out in their rest positions:
 
 ## Lesson 5: Create a closed kinematic chain
 
-Find the ``addRing`` function in ``MyWindow``. In here, we'll want to create a
-dynamic constraint that attaches the first and last BodyNodes of the chain
+Find the ``CollisionsEventHandler::addRing`` function. In here, we'll want to
+create a dynamic constraint that attaches the first and last BodyNodes of the chain
 together by a BallJoint-style constraint.
 
 First we'll grab the BodyNodes that we care about, compute the offset where the
