@@ -36,7 +36,9 @@
 #include <dart/config.hpp>
 #include <dart/common/All.hpp>
 #include <dart/math/All.hpp>
+#define DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
 #include <dart/optimizer/All.hpp>
+#undef DART_SUPPRESS_OPTIMIZER_DEPRECATED_HEADER_WARNING
 #include <dart/collision/All.hpp>
 #include <dart/constraint/All.hpp>
 #include <dart/dynamics/All.hpp>
