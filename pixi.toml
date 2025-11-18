@@ -709,8 +709,8 @@ set -euo pipefail
 cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
     --parallel \
-    --target test_Joints
-./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/test_Joints
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints
 """], depends-on = ["config"] }
 
 test-joints-coupler = { cmd = ["bash", "-lc", """
@@ -718,8 +718,8 @@ set -euo pipefail
 cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
     --parallel \
-    --target test_Joints
-./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/test_Joints --gtest_filter=JOINTS.MIMIC_JOINT:JOINTS.MIMIC_JOINT_COUPLER
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints --gtest_filter=JOINTS.MIMIC_JOINT:JOINTS.MIMIC_JOINT_COUPLER
 """], depends-on = ["config"] }
 
 bm-boxes = { depends-on = [

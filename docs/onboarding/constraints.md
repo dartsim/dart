@@ -24,6 +24,7 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 - JointCoulombFrictionConstraint.hpp/cpp - Joint friction
 - ServoMotorConstraint.hpp/cpp - Servo motor control
 - MimicMotorConstraint.hpp/cpp - Mimic motor behavior
+- CouplerConstraint.hpp/cpp - Bilateral mimic coupling
 - BalanceConstraint.hpp/cpp - Balance constraints
 - BallJointConstraint.hpp/cpp - Ball joint constraints
 - WeldJointConstraint.hpp/cpp - Weld joint constraints
@@ -109,7 +110,7 @@ struct ConstraintInfo {
    - Soft contact constraints
    - Joint limit constraints
    - Joint Coulomb friction constraints
-   - Mimic motor constraints
+   - Mimic joint constraints (CouplerConstraint or MimicMotorConstraint)
 
 2. **Manual Constraints** (user-added):
    - Custom constraints added via `addConstraint()`
@@ -250,6 +251,27 @@ where each x[i], w[i] satisfies:
 
 **Use Case:** Enables PD-style control through constraint framework.
 
+#### CouplerConstraint
+
+**File:** `dart/constraint/CouplerConstraint.hpp`
+
+**Role:** Bilaterally enforces a mimic relationship between two joints by
+applying equal-and-opposite impulses. Unlike `MimicMotorConstraint`, both the
+reference joint and the dependent joint participate in the constraint solve, so
+reaction torques propagate through the articulated system.
+
+**Key Features:**
+- Shares the same `MimicDofProperties` multipliers/offsets as mimic motors
+- Activated by `Joint::setUseCouplerConstraint(true)` (per mimic joint)
+- Couples multiple skeletons when reference and dependent joints belong to
+  different rigs
+- Uses the same LCP infrastructure (lifetime, impulse bounds, CFM/Coulomb
+  handling) as the other joint constraints
+
+**Recommended Use:** Gearbox-style mimic joints that require reaction forces
+on both shafts (e.g., Gazebo gearbox joints). Leave the flag disabled to keep
+the legacy servo-style behavior when bilateral coupling is not required.
+
 ### 6. LCP Solvers
 
 #### BoxedLcpSolver Interface
@@ -324,7 +346,7 @@ ConstraintSolver::solve()
   |     ├─> Detect collisions → ContactConstraints
   |     ├─> Check joint limits → JointLimitConstraints
   |     ├─> Check joint friction → JointCoulombFrictionConstraints
-  |     ├─> Check mimic motors → MimicMotorConstraints
+  |     ├─> Check mimic joints → CouplerConstraints or MimicMotorConstraints
   |     └─> Update manual constraints
   |
   ├─> [2] buildConstrainedGroups()
