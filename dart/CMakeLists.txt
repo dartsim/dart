@@ -213,7 +213,7 @@ endif()
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 fcl fmt
+  assimp Eigen3 EnTT fcl fmt
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)

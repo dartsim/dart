@@ -186,6 +186,13 @@ public:
 };
 
 //==============================================================================
+/// ShapeFrame is the generic frame that anchors a Shape plus its aspects.
+///
+/// Unlike ShapeNode (which must live inside a BodyNode), a ShapeFrame can be
+/// attached to any Frame hierarchy: SimpleFrames, BodyNodes, or world-level
+/// frames. ShapeNode embeds a ShapeFrame when the owning BodyNode needs to
+/// manage the shape; standalone utilities can use ShapeFrame directly for
+/// visualization or collision queries without creating a BodyNode node.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class ShapeFrame : public virtual common::VersionCounter,
                    public detail::ShapeFrameCompositeBase,

@@ -47,6 +47,13 @@ class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
 
+/// ShapeNode is the BodyNode-owned view of a Shape.
+///
+/// A ShapeFrame can exist anywhere in the kinematic tree (even outside
+/// Skeletons) whereas a ShapeNode always belongs to a BodyNode and therefore
+/// participates in the node/component APIs (Signals, cloning, Jacobians, etc.).
+/// ShapeNode wraps the underlying ShapeFrame so callers that operate on the
+/// BodyNode graph can add/remove shapes without managing free-standing frames.
 class ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:

@@ -37,78 +37,83 @@
 
 #include <dart/common/Composite.hpp>
 
-namespace dart {
-namespace dynamics {
+namespace dart::dynamics {
 
-//==============================================================================
+/// Mix-in that wires Node state/properties to common::Composite helpers.
 template <class Base>
-class CompositeStateNode : public Base
+class CompositeNode : public Base
 {
 public:
-  using State = Node::MakeState<common::Composite::State>;
+  using CompositeState = Node::MakeState<common::Composite::State>;
+  using CompositeProperties = Node::MakeProperties<common::Composite::Properties>;
 
-  /// Forwarding constructor
   template <typename... Args>
-  CompositeStateNode(Args&&... args) : Base(std::forward<Args>(args)...)
+  explicit CompositeNode(Args&&... args) : Base(std::forward<Args>(args)...)
   {
-    // Do nothing
   }
 
-  // Documentation inherited from Node
-  void setNodeState(const Node::State& otherState) override final;
-
-  // Documentation inherited from Node
-  std::unique_ptr<Node::State> getNodeState() const override final;
-
-  // Documentation inherited from Node
+  void setNodeState(const Node::State& otherState) override;
+  std::unique_ptr<Node::State> getNodeState() const override;
   void copyNodeStateTo(
-      std::unique_ptr<Node::State>& outputState) const override final;
-};
+      std::unique_ptr<Node::State>& outputState) const override;
 
-//==============================================================================
-template <class Base>
-class CompositePropertiesNode : public Base
-{
-public:
-  using Properties = Node::MakeProperties<common::Composite::Properties>;
-
-  /// Forwarding constructor
-  template <typename... Args>
-  CompositePropertiesNode(Args&&... args) : Base(std::forward<Args>(args)...)
-  {
-    // Do nothing
-  }
-
-  // Documentation inherited from Node
-  void setNodeProperties(
-      const Node::Properties& otherProperties) override final;
-
-  // Documentation inherited from Node
-  std::unique_ptr<Node::Properties> getNodeProperties() const override final;
-
-  // Documentation inherited from Node
+  void setNodeProperties(const Node::Properties& otherProperties) override;
+  std::unique_ptr<Node::Properties> getNodeProperties() const override;
   void copyNodePropertiesTo(
-      std::unique_ptr<Node::Properties>& outputProperties) const override final;
+      std::unique_ptr<Node::Properties>& outputProperties) const override;
 };
 
 //==============================================================================
 template <class Base>
-class CompositeNode : public CompositePropertiesNode<CompositeStateNode<Base>>
+void CompositeNode<Base>::setNodeState(const Node::State& otherState)
 {
-public:
-  /// Forwarding constructor
-  template <typename... Args>
-  CompositeNode(Args&&... args)
-    : CompositePropertiesNode<CompositeStateNode<Base>>(
-        std::forward<Args>(args)...)
-  {
-    // Do nothing
-  }
-};
+  common::Composite::setCompositeState(
+      static_cast<const CompositeState&>(otherState));
+}
 
-} // namespace dynamics
-} // namespace dart
+//==============================================================================
+template <class Base>
+std::unique_ptr<Node::State> CompositeNode<Base>::getNodeState() const
+{
+  return std::make_unique<CompositeState>(
+      common::Composite::getCompositeState());
+}
 
-#include <dart/dynamics/detail/CompositeNode.hpp>
+//==============================================================================
+template <class Base>
+void CompositeNode<Base>::copyNodeStateTo(
+    std::unique_ptr<Node::State>& outputState) const
+{
+  common::Composite::copyCompositeStateTo(
+      static_cast<CompositeState&>(*outputState));
+}
+
+//==============================================================================
+template <class Base>
+void CompositeNode<Base>::setNodeProperties(
+    const Node::Properties& otherProperties)
+{
+  common::Composite::setCompositeProperties(
+      static_cast<const CompositeProperties&>(otherProperties));
+}
+
+//==============================================================================
+template <class Base>
+std::unique_ptr<Node::Properties> CompositeNode<Base>::getNodeProperties() const
+{
+  return std::make_unique<CompositeProperties>(
+      common::Composite::getCompositeProperties());
+}
+
+//==============================================================================
+template <class Base>
+void CompositeNode<Base>::copyNodePropertiesTo(
+    std::unique_ptr<Node::Properties>& outputProperties) const
+{
+  common::Composite::copyCompositePropertiesTo(
+      static_cast<CompositeProperties&>(*outputProperties));
+}
+
+} // namespace dart::dynamics
 
 #endif // DART_DYNAMICS_COMPOSITENODE_HPP_
