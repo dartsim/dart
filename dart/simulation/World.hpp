@@ -55,10 +55,8 @@
 
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/NameManager.hpp>
-#include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/common/Uri.hpp>
 
 #include <dart/dynamics/SimulationMode.hpp>
 
@@ -179,13 +177,6 @@ public:
   /// properties.
   dynamics::Skeleton* createSkeleton(
       const dynamics::Skeleton::AspectPropertiesData& properties);
-
-  /// Create a Skeleton from a URI and add it to this world. The returned pointer
-  /// is non-owning and remains valid as long as the skeleton stays in the
-  /// world.
-  dynamics::Skeleton* createSkeletonFromUri(
-      const common::Uri& uri,
-      const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Get the indexed skeleton
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
