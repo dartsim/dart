@@ -183,7 +183,7 @@ build = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --parallel ${DART_PARALLEL_JOBS} \
@@ -198,21 +198,15 @@ cmake \
   { arg = "build_type", default = "Release" },
 ] }
 
-build-debug = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-debug = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --parallel ${DART_PARALLEL_JOBS} \
   --target all
-""",
-], depends-on = [
-  "config-debug",
-] }
+"""], depends-on = ["config-debug"] }
 
 config-debug = { cmd = [
   "bash",
@@ -276,7 +270,7 @@ build-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \\
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --parallel ${DART_PARALLEL_JOBS} \\
@@ -298,7 +292,7 @@ build-dart8-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \\
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   --parallel ${DART_PARALLEL_JOBS} \\
@@ -314,13 +308,10 @@ cmake \\
   { arg = "build_type", default = "Release" },
 ] }
 
-build-math-tests = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-math-tests = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Release}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \\
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
   -j ${DART_PARALLEL_JOBS} \\
@@ -330,10 +321,7 @@ cmake \\
   --target UNIT_math_Math \\
   --target UNIT_math_Random \\
   --target UNIT_math_TriMesh
-""",
-], depends-on = [
-  "config",
-] }
+"""], depends-on = ["config"] }
 
 build-py-dev = { cmd = [
   "bash",
@@ -556,7 +544,7 @@ test-py = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
     --parallel ${DART_PARALLEL_JOBS} \
@@ -631,7 +619,7 @@ build-coverage = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j ${DART_PARALLEL_JOBS} --target all tests \\
   && ctest --output-on-failure -j ${DART_PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """,
@@ -666,7 +654,7 @@ lcov \
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
 run-cpp-target = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} \
         --parallel ${DART_PARALLEL_JOBS} \
@@ -747,7 +735,7 @@ bm-convhull = { depends-on = [
 ] }
 
 bm-lcpsolver = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target BM_LCPSOLVER \
@@ -1026,21 +1014,15 @@ cmake \
 """,
 ], env = { BUILD_TYPE = "asan", CMAKE_BUILD_TYPE = "RelWithDebInfo", DART_BUILD_PROFILE = "OFF", DART_VERBOSE = "OFF" } }
 
-build-asan = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-asan = { cmd = ["bash", "-lc", """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c "import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake \
   --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --parallel ${DART_PARALLEL_JOBS} \
   --target tests
-""",
-], depends-on = [
-  "config-asan",
-], env = { BUILD_TYPE = "asan" } }
+"""], depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
 
 test-asan = { cmd = [
   "bash",
@@ -1098,17 +1080,11 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake --build .deps/OpenSceneGraph/build -j ${DART_PARALLEL_JOBS}
-""",
-], depends-on = [
-  "config-osg",
-] }
+"""], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
   "build-osg",
@@ -1144,17 +1120,11 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake --build .deps/OpenSceneGraph/build -j ${DART_PARALLEL_JOBS}
-""",
-], depends-on = [
-  "config-osg",
-] }
+"""], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
   "build-osg",
@@ -1228,7 +1198,7 @@ check-lint = { depends-on = [
 
 build = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
@@ -1242,19 +1212,17 @@ build = { cmd = """
 ] }
 
 build-debug = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config Debug \
         --parallel ${DART_PARALLEL_JOBS} \
         --target all
-""", depends-on = [
-  "config-debug",
-] }
+""", depends-on = ["config-debug"] }
 
 build-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
@@ -1271,7 +1239,7 @@ build-tests = { cmd = """
 
 build-dart8-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
@@ -1288,7 +1256,7 @@ build-dart8-tests = { cmd = """
 
 build-py-dev = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
@@ -1370,7 +1338,7 @@ test-dart8 = { cmd = [
 
 test-py = { cmd = """
     BUILD_TYPE={{ build_type }}
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config $BUILD_TYPE \
@@ -1391,7 +1359,7 @@ test-all = { cmd = """
 # Windows helper to match the single-config generator layout. As above, configure
 # alternative build types explicitly before invoking with a different configuration.
 run-cpp-target-win = { cmd = """
-    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+    DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp \
         --config {{ build_type }} \
@@ -1590,22 +1558,16 @@ cmake \
   ] },
 ] }
 
-build-gz = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-gz = { cmd = ["bash", "-lc", """
 set -euo pipefail
-DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c \"import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))\")}
+DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 cmake --build .deps/gz-physics/build -j ${DART_PARALLEL_JOBS} --target all
-""",
-], depends-on = [
-  "config-gz",
-] }
+"""], depends-on = ["config-gz"] }
 
 test-gz = { cmd = """
     bash -c '
         set -euo pipefail
-        DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python -c 'import os; cpus=os.cpu_count() or 1; print(cpus if cpus <= 8 else max(1, (cpus * 3) // 4))')}
+        DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
         export DART_PARALLEL_JOBS
         export CTEST_OUTPUT_ON_FAILURE=1
         export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
