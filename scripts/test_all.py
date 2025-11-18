@@ -257,16 +257,6 @@ def run_python_tests() -> bool:
     return result
 
 
-def run_dartpy8_tests() -> bool:
-    """Run dartpy8 smoke test."""
-    print_header("DARTPY8 SMOKE TEST")
-
-    result, _ = run_command(
-        pixi_command("test-dartpy8", "Release"), "dartpy8 smoke test"
-    )
-    return result
-
-
 def run_docs_tests() -> bool:
     """Run documentation build tests"""
     print_header("DOCUMENTATION")
@@ -329,9 +319,6 @@ def main():
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
         "--skip-dart8", action="store_true", help="Skip dart8 C++ tests"
-    )
-    parser.add_argument(
-        "--skip-dartpy8", action="store_true", help="Skip dartpy8 smoke tests"
     )
     parser.add_argument(
         "--skip-debug",
@@ -401,12 +388,6 @@ def main():
         run_step("Python Tests", run_python_tests)
     else:
         print_warning("Skipping Python tests")
-
-    # Run dartpy8 tests
-    if not args.skip_dartpy8:
-        run_step("dartpy8 Tests", run_dartpy8_tests)
-    else:
-        print_warning("Skipping dartpy8 tests")
 
     # Run documentation build
     if not args.skip_docs:
