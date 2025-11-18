@@ -45,7 +45,8 @@ class CompositeNode : public Base
 {
 public:
   using CompositeState = Node::MakeState<common::Composite::State>;
-  using CompositeProperties = Node::MakeProperties<common::Composite::Properties>;
+  using CompositeProperties
+      = Node::MakeProperties<common::Composite::Properties>;
 
   template <typename... Args>
   explicit CompositeNode(Args&&... args) : Base(std::forward<Args>(args)...)

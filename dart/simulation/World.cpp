@@ -753,15 +753,15 @@ Recording* World::getRecording()
 }
 
 //==============================================================================
-entt::registry& World::getEcsRegistry()
+entt::registry& World::getEntityManager()
 {
-  return mEcsRegistry;
+  return mEntityManager;
 }
 
 //==============================================================================
-const entt::registry& World::getEcsRegistry() const
+const entt::registry& World::getEntityManager() const
 {
-  return mEcsRegistry;
+  return mEntityManager;
 }
 
 //==============================================================================

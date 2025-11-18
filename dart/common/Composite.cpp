@@ -43,6 +43,30 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+Composite::Storage& Composite::storage()
+{
+  if (mEntityRegistry && mEntityRegistry->valid(mEntityHandle)) {
+    if (!mEntityRegistry->any_of<Storage>(mEntityHandle)) {
+      return mLocalStorage;
+    }
+    return mEntityRegistry->get<Storage>(mEntityHandle);
+  }
+  return mLocalStorage;
+}
+
+//==============================================================================
+const Composite::Storage& Composite::storage() const
+{
+  if (mEntityRegistry && mEntityRegistry->valid(mEntityHandle)) {
+    if (!mEntityRegistry->any_of<Storage>(mEntityHandle)) {
+      return mLocalStorage;
+    }
+    return mEntityRegistry->get<Storage>(mEntityHandle);
+  }
+  return mLocalStorage;
+}
+
+//==============================================================================
 /// Type maps are std::map containers which map an object's Type Info to some
 /// instance or trait of that type. For example, an ObjectMap will map an
 /// object's type to a std::unique_ptr of an instance of that object. a StateMap
@@ -141,7 +165,7 @@ static void setObjectsFromDataTypeMap(
 void Composite::setCompositeState(const State& newStates)
 {
   setObjectsFromDataTypeMap<Aspect, Aspect::State, &Aspect::setAspectState>(
-      mAspectMap, newStates.getMap());
+      storage().aspects, newStates.getMap());
 }
 
 //==============================================================================
@@ -158,7 +182,7 @@ void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
   auto& states = outgoingStates.getMap();
   extractDataFromObjectTypeMap<Aspect, Aspect::State, &Aspect::getAspectState>(
-      states, mAspectMap);
+      states, storage().aspects);
 }
 
 //==============================================================================
@@ -167,7 +191,7 @@ void Composite::setCompositeProperties(const Properties& newProperties)
   setObjectsFromDataTypeMap<
       Aspect,
       Aspect::Properties,
-      &Aspect::setAspectProperties>(mAspectMap, newProperties.getMap());
+      &Aspect::setAspectProperties>(storage().aspects, newProperties.getMap());
 }
 
 //==============================================================================
@@ -186,7 +210,7 @@ void Composite::copyCompositePropertiesTo(Properties& outgoingProperties) const
   extractDataFromObjectTypeMap<
       Aspect,
       Aspect::Properties,
-      &Aspect::getAspectProperties>(properties, mAspectMap);
+      &Aspect::getAspectProperties>(properties, storage().aspects);
 }
 
 //==============================================================================
@@ -203,13 +227,13 @@ void Composite::duplicateAspects(const Composite* fromComposite)
   if (this == fromComposite)
     return;
 
-  const AspectMap& otherMap = fromComposite->mAspectMap;
+  const AspectMap& otherMap = fromComposite->storage().aspects;
 
-  AspectMap::iterator receiving = mAspectMap.begin();
+  AspectMap::iterator receiving = storage().aspects.begin();
   AspectMap::const_iterator incoming = otherMap.begin();
 
   while (otherMap.end() != incoming) {
-    if (mAspectMap.end() == receiving) {
+    if (storage().aspects.end() == receiving) {
       // If we've reached the end of this Composite's AspectMap, then we should
       // just add each entry
       _set(incoming->first, incoming->second.get());
@@ -242,7 +266,7 @@ void Composite::matchAspects(const Composite* otherComposite)
     return;
   }
 
-  for (auto& aspect : mAspectMap)
+  for (auto& aspect : storage().aspects)
     aspect.second = nullptr;
 
   duplicateAspects(otherComposite);
@@ -266,18 +290,54 @@ void Composite::removeFromComposite(Aspect* aspect)
 void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
   if (aspect) {
-    mAspectMap[type_idx] = aspect->cloneAspect();
-    addToComposite(mAspectMap[type_idx].get());
+    storage().aspects[type_idx] = aspect->cloneAspect();
+    addToComposite(storage().aspects[type_idx].get());
   } else {
-    mAspectMap[type_idx] = nullptr;
+    storage().aspects[type_idx] = nullptr;
   }
 }
 
 //==============================================================================
 void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
-  mAspectMap[type_idx] = std::move(aspect);
-  addToComposite(mAspectMap[type_idx].get());
+  storage().aspects[type_idx] = std::move(aspect);
+  addToComposite(storage().aspects[type_idx].get());
+}
+
+//==============================================================================
+void Composite::bindEntity(entt::registry& registry, entt::entity entity)
+{
+  mEntityRegistry = &registry;
+  mEntityHandle = entity;
+  if (mEntityRegistry && mEntityRegistry->valid(mEntityHandle)
+      && !mEntityRegistry->any_of<Storage>(mEntityHandle)) {
+    mEntityRegistry->emplace<Storage>(mEntityHandle);
+  }
+}
+
+//==============================================================================
+void Composite::unbindEntity()
+{
+  mEntityRegistry = nullptr;
+  mEntityHandle = entt::null;
+}
+
+//==============================================================================
+entt::entity Composite::getEntityHandle() const
+{
+  return mEntityHandle;
+}
+
+//==============================================================================
+entt::registry* Composite::getEntityRegistry()
+{
+  return mEntityRegistry;
+}
+
+//==============================================================================
+const entt::registry* Composite::getEntityRegistry() const
+{
+  return mEntityRegistry;
 }
 
 } // namespace common

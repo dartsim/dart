@@ -61,8 +61,9 @@ bool Composite::has() const
 template <class T>
 T* Composite::get()
 {
-  AspectMap::iterator it = mAspectMap.find(typeid(T));
-  if (mAspectMap.end() == it)
+  auto& aspects = storage().aspects;
+  AspectMap::iterator it = aspects.find(typeid(T));
+  if (aspects.end() == it)
     return nullptr;
 
   return static_cast<T*>(it->second.get());
@@ -94,7 +95,7 @@ template <class T, typename... Args>
 T* Composite::createAspect(Args&&... args)
 {
   T* aspect = new T(std::forward<Args>(args)...);
-  mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
+  storage().aspects[typeid(T)] = std::unique_ptr<T>(aspect);
   addToComposite(aspect);
 
   return aspect;
@@ -104,9 +105,10 @@ T* Composite::createAspect(Args&&... args)
 template <class T>
 void Composite::removeAspect()
 {
-  AspectMap::iterator it = mAspectMap.find(typeid(T));
+  auto& aspects = storage().aspects;
+  AspectMap::iterator it = aspects.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(removeAspect, T, DART_BLANK)
-  if (mAspectMap.end() != it) {
+  if (aspects.end() != it) {
     removeFromComposite(it->second.get());
     it->second = nullptr;
   }
@@ -117,9 +119,10 @@ template <class T>
 std::unique_ptr<T> Composite::releaseAspect()
 {
   std::unique_ptr<T> extraction = nullptr;
-  AspectMap::iterator it = mAspectMap.find(typeid(T));
+  auto& aspects = storage().aspects;
+  AspectMap::iterator it = aspects.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(releaseAspect, T, nullptr)
-  if (mAspectMap.end() != it) {
+  if (aspects.end() != it) {
     removeFromComposite(it->second.get());
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
   }
@@ -138,7 +141,7 @@ constexpr bool Composite::isSpecializedFor()
 template <class T>
 bool Composite::requiresAspect() const
 {
-  return (mRequiredAspects.find(typeid(T)) != mRequiredAspects.end());
+  return storage().required.find(typeid(T)) != storage().required.end();
 }
 
 //==============================================================================

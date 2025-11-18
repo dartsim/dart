@@ -423,10 +423,10 @@ private:
   //--------------------------------------------------------------------------
   // ECS integration (experimental)
   //--------------------------------------------------------------------------
-  entt::registry& getEcsRegistry();
-  const entt::registry& getEcsRegistry() const;
+  entt::registry& getEntityManager();
+  const entt::registry& getEntityManager() const;
 
-  entt::registry mEcsRegistry;
+  entt::registry mEntityManager;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

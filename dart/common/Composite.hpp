@@ -36,6 +36,8 @@
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/detail/CompositeData.hpp>
 
+#include <entt/entt.hpp>
+
 namespace dart {
 namespace common {
 
@@ -162,6 +164,23 @@ public:
   /// erased.
   void matchAspects(const Composite* otherComposite);
 
+  //--------------------------------------------------------------------------
+  // ECS integration helpers (optional)
+  //--------------------------------------------------------------------------
+
+  /// Associate this Composite with an entity managed by @p registry.
+  void bindEntity(entt::registry& registry, entt::entity entity);
+
+  /// Clear any currently bound entity handle.
+  void unbindEntity();
+
+  /// Returns the bound entity or entt::null if the Composite is standalone.
+  entt::entity getEntityHandle() const;
+
+  /// Access the registry that owns the entity (nullptr if unbound).
+  entt::registry* getEntityRegistry();
+  const entt::registry* getEntityRegistry() const;
+
 protected:
   /// Add this Aspect to the Composite. This allows derived Composite types to
   /// call the protected Aspect::setComposite function.
@@ -177,12 +196,19 @@ protected:
   /// Non-templated version of set(std::unqiue_ptr<T>&&)
   void _set(std::type_index type_idx, std::unique_ptr<Aspect> aspect);
 
-  /// A map that relates the type of Aspect to its pointer
-  AspectMap mAspectMap;
+  struct Storage
+  {
+    AspectMap aspects;
+    RequiredAspectSet required;
+  };
 
-  /// A set containing type information for Aspects which are not allowed to
-  /// leave this composite.
-  RequiredAspectSet mRequiredAspects;
+  Storage& storage();
+  const Storage& storage() const;
+
+  Storage mLocalStorage;
+
+  entt::registry* mEntityRegistry{nullptr};
+  entt::entity mEntityHandle{entt::null};
 };
 
 //==============================================================================

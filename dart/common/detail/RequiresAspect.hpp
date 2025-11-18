@@ -42,7 +42,7 @@ namespace common {
 template <class ReqAspect>
 RequiresAspect<ReqAspect>::RequiresAspect()
 {
-  Composite::mRequiredAspects.insert(typeid(ReqAspect));
+  this->storage().required.insert(typeid(ReqAspect));
 }
 
 } // namespace common
