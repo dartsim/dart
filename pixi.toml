@@ -47,8 +47,8 @@ sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
 sphinx_rtd_theme = "*"
+taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
-taplo = ">=0.9.0,<1"
 tinyxml2 = ">=11.0.0,<12"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
@@ -464,6 +464,12 @@ py-tu-biped-fi = { depends-on = [
   ] },
 ] }
 
+py-ex-atlas-puppet = { depends-on = [
+  { task = "py-ex", args = [
+    "atlas_puppet",
+  ] },
+] }
+
 test = { cmd = [
   "bash",
   "-lc",
@@ -768,6 +774,18 @@ tu-multi-pendulum = { depends-on = [
 tu-multi-pendulum-fi = { depends-on = [
   { task = "run-cpp-target", args = [
     "tutorial_multi_pendulum_finished",
+  ] },
+] }
+
+tu-wholebody-ik = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "tutorial_wholebody_ik",
+  ] },
+] }
+
+tu-wholebody-ik-fi = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "tutorial_wholebody_ik_finished",
   ] },
 ] }
 

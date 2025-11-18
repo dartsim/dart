@@ -541,6 +541,19 @@ void Skeleton(py::module& m)
           })
       .def(
           "getIK",
+          +[](dart::dynamics::Skeleton* self)
+              -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
+            return self->getIK();
+          })
+      .def(
+          "getIK",
+          +[](dart::dynamics::Skeleton* self, bool createIfNull)
+              -> std::shared_ptr<dart::dynamics::WholeBodyIK> {
+            return self->getIK(createIfNull);
+          },
+          ::py::arg("createIfNull"))
+      .def(
+          "getIK",
           +[](const dart::dynamics::Skeleton* self)
               -> std::shared_ptr<const dart::dynamics::WholeBodyIK> {
             return self->getIK();
@@ -595,6 +608,32 @@ void Skeleton(py::module& m)
           +[](const dart::dynamics::Skeleton* self, std::size_t treeIndex)
               -> std::size_t { return self->getNumEndEffectors(treeIndex); },
           ::py::arg("treeIndex"))
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::Skeleton* self,
+              std::size_t index) -> dart::dynamics::EndEffector* {
+            return self->getEndEffector(index);
+          },
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("index"))
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::Skeleton* self,
+              std::size_t treeIndex,
+              std::size_t nodeIndex) -> dart::dynamics::EndEffector* {
+            return self->getEndEffector(treeIndex, nodeIndex);
+          },
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("treeIndex"),
+          ::py::arg("nodeIndex"))
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::Skeleton* self,
+              const std::string& name) -> dart::dynamics::EndEffector* {
+            return self->getEndEffector(name);
+          },
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name"))
       .def(
           "integratePositions",
           +[](dart::dynamics::Skeleton* self, double _dt) -> void {
