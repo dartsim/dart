@@ -147,23 +147,16 @@ Used by constraint solvers to compute contact forces, joint limits, and other co
 
 ---
 
-#### 1.4 Integration Module (`dart/integration/`)
+#### 1.4 Time Integration (Simulation Internals)
 
-**Purpose:** Numerical integration of differential equations.
+**Purpose:** Advance the world state each tick after dynamics and constraints are resolved.
 
-**Architecture:**
-- **Integrator** (base class) - Abstract interface
-- **IntegrableSystem** - Interface for systems to integrate
+**Implementation Notes:**
+- Integration happens inside `dart::simulation::World::step()`.
+- The solver integrates generalized velocities using computed accelerations, then integrates positions using the updated velocities (semi-implicit Euler).
+- The integrator is no longer a standalone module; downstream code does not plug in custom schemes.
 
-**Available Integrators:**
-
-| Integrator | Method | Order | Stability | Use Case |
-|------------|--------|-------|-----------|----------|
-| **EulerIntegrator** | Forward Euler | 1st | Low | Simple, fast but unstable |
-| **SemiImplicitEulerIntegrator** | Symplectic Euler | 1st | Good | **Default choice**, good for mechanics |
-| **RK4Integrator** | Runge-Kutta 4 | 4th | High | High accuracy, 4x cost per step |
-
-**Default:** SemiImplicitEuler balances speed and stability for rigid body dynamics.
+**Default Scheme:** Semi-implicit (symplectic) Euler chosen for its stability on rigid-body problems without incurring RK4 cost.
 
 ---
 
@@ -508,8 +501,8 @@ World::step()
   │     │     ├─> Solve LCP → constraint impulses
   │     │     └─> Apply impulses → update velocities
   │     └─> Update positions using corrected velocities
-  ├─> 3. Integrator::integrate()
-  │     └─> Update positions from velocities
+  ├─> 3. Integrate state (semi-implicit Euler)
+  │     └─> Update velocities then positions
   └─> 4. Record state (if recording enabled)
 ```
 
@@ -534,7 +527,7 @@ World (simulation environment)
     ├── Skeleton (multiple articulated systems)
     ├── SimpleFrame (independent frames)
     ├── ConstraintSolver (constraint handling)
-    ├── Integrator (numerical integration)
+    ├── Internal integrator (semi-implicit Euler)
     └── Recording (state history)
 ```
 
@@ -600,7 +593,6 @@ The main DART header that includes all modules:
 #include <dart/config.hpp>         // Build configuration
 #include <dart/common/All.hpp>     // Common utilities
 #include <dart/math/All.hpp>       // Math utilities
-#include <dart/integration/All.hpp> // Numerical integration
 #include <dart/collision/All.hpp>  // Collision detection
 #include <dart/lcpsolver/All.hpp>  // LCP solvers
 #include <dart/constraint/All.hpp> // Constraints
@@ -650,10 +642,9 @@ User calls: world->step()
     │     │
     │     └─> Update positions from corrected velocities
     │
-    ├─> [4] Integrator::integrate()
-    │     └─> SemiImplicitEuler (default):
-    │           v_{n+1} = v_n + a_n * dt
-    │           q_{n+1} = q_n + v_{n+1} * dt
+    ├─> [4] Integrate state (semi-implicit Euler)
+    │     ├─> v_{n+1} = v_n + a_n * dt
+    │     └─> q_{n+1} = q_n + v_{n+1} * dt
     │
     ├─> [5] Update world time and frame counter
     │     time += dt
@@ -675,7 +666,6 @@ DART employs numerous software design patterns throughout:
    - Enables runtime polymorphism and plugin architectures
 
 ### 2. **Strategy Pattern**
-   - `Integrator` - Different integration methods (Euler, RK4, etc.)
    - `CollisionDetector` - Different collision engines (FCL, Bullet, etc.)
    - `BoxedLcpSolver` - Different LCP solvers (Dantzig, PGS)
    - Allows swapping algorithms at runtime
@@ -728,7 +718,7 @@ World
   ├─ Contains ──> SimpleFrame(s)
   ├─ Uses ────┬─> ConstraintSolver
   │           └─> CollisionDetector (via ConstraintSolver)
-  └─ Uses ──────> Integrator
+  └─ Integrates state internally (semi-implicit Euler)
 
 Skeleton
   ├─ Contains ──> BodyNode tree
@@ -802,7 +792,7 @@ CollisionDetector
      q_{n+1} = q_n + v_{n+1} * dt  (uses new velocity!)
      ```
    - **Benefits:** Energy conservation, symplectic
-   - **Implementation:** `SemiImplicitEulerIntegrator`
+   - **Implementation:** `World::step()` (built-in)
 
 ---
 
@@ -828,7 +818,7 @@ CollisionDetector
 3. **LCP Caching** - Reuse LCP structure across frames
 4. **Broadphase Collision** - Reduce collision pairs (AABB trees)
 5. **Independent Groups** - Solve disconnected systems separately
-6. **Choice of Integrator** - SemiImplicit is faster than RK4
+6. **Time Step Tuning** - Semi-implicit scheme stays stable if dt is kept modest
 
 ---
 

@@ -13,7 +13,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # common
 # math
-# integration
 # lcpsolver
 # optimizer
 #   ipopt
@@ -35,7 +34,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
+# dart - common, math, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
 #        fcl, fmt]
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
@@ -69,7 +68,6 @@ endfunction()
 
 add_subdirectory(common)
 add_subdirectory(math)
-add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(optimizer)
 add_subdirectory(dynamics)
