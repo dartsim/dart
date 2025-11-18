@@ -36,7 +36,6 @@
 #include <dart/config.hpp>
 #include <dart/common/All.hpp>
 #include <dart/math/All.hpp>
-#include <dart/math/optimization/All.hpp>
 #include <dart/collision/All.hpp>
 #include <dart/constraint/All.hpp>
 #include <dart/dynamics/All.hpp>
