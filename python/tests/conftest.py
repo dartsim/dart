@@ -85,11 +85,28 @@ def _prepend_pythonpath() -> None:
         sys.path.insert(0, entry)
 
     # De-prioritize the source tree so compiled bindings are always used.
+    def _demote(path: Path) -> None:
+        """Move any sys.path entries matching ``path`` to the end."""
+
+        target = path.resolve()
+        reordered = []
+        matches = []
+        for entry in sys.path:
+            entry_path = Path(entry or os.curdir).resolve()
+            if entry_path == target:
+                matches.append(entry)
+            else:
+                reordered.append(entry)
+        if matches:
+            sys.path[:] = reordered + matches
+
     source_python = Path(__file__).resolve().parents[1]
-    source_str = str(source_python)
-    if source_str in sys.path:
-        sys.path.remove(source_str)
-        sys.path.append(source_str)
+    repo_root = source_python.parent
+    _demote(source_python)
+    _demote(repo_root)
+
+    if os.environ.get("DARTPY_SYS_PATH_DEBUG") == "1":
+        print("dartpy sys.path head:", sys.path[:5])
 
 
 _prepend_pythonpath()
