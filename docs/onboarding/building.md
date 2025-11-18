@@ -122,8 +122,7 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
-   DART_BUILD_DARTPY8_OVERRIDE=OFF pixi run config-debug
-   DART_BUILD_GUI_OSG_OVERRIDE=OFF pixi run config
+   DART_BUILD_GUI_OVERRIDE=OFF pixi run config
    ```
 
 3. Build and test:
@@ -132,11 +131,10 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run build                 # cmake --build … --target all
    pixi run build-tests           # builds the C++ test targets
    pixi run test                  # ctest -LE dart8
-   pixi run test-dartpy8          # runs the dartpy8 smoke test (skips automatically when bindings are disabled)
    pixi run test-all              # helper script that runs lint + build + tests
    ```
 
-Pixi automatically detects whether Ninja targets such as `pytest`, `dartpy8`, or GUI tutorials were generated. If a target is missing (for example because `DART_BUILD_DARTPY` is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
+Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
 
 ## Clone the Repository
 
@@ -178,10 +176,10 @@ DART uses CMake as its build system. CMake generates build files for various bui
 For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI
+- `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
-- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
-- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
+- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 
 ### Platform-Specific Configuration Examples
 

@@ -33,9 +33,9 @@ if(OPENSCENEGRAPH_FOUND AND OSG_FOUND)
     message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
   endif()
 else()
-  # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
+  # dart-gui requires both OSG and OpenThreads. This section attempts to
   # identify which of those are missing from the building machine and offer
-  # advice to the user for getting dart-gui-osg to build.
+  # advice to the user for getting dart-gui to build.
   find_package(OpenThreads QUIET)
   if(OPENTHREADS_FOUND)
     set(warning_msg "Could NOT find OpenSceneGraph")
@@ -48,7 +48,7 @@ else()
   endif()
   message(
     STATUS
-    "${warning_msg} -- we will skip dart-gui-osg\n"
+    "${warning_msg} -- we will skip dart-gui\n"
     "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR"
   )
   return()
@@ -58,7 +58,7 @@ endif()
 # module.
 #
 # This is required to make the DART module that uses OpenSceneGraph relocatable.
-# For that, any DART targets (e.g., dart-gui-osg) should use "osg::osg" instead
+# For that, any DART targets (e.g., dart-gui) should use "osg::osg" instead
 # of OPENSCENEGRAPH_INCLUDE_DIRS and OPENSCENEGRAPH_LIBRARIES because the
 # variables contain absolute paths of OpenSceneGraph that could be different in
 # where the system that DART is built and where the system that consumes DART.

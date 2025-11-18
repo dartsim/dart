@@ -37,7 +37,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -45,7 +45,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - {dart}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui-osg - (utils), {dart-gui-osg}
+# gui - (utils), {dart-gui}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)

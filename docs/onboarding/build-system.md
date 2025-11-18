@@ -36,7 +36,7 @@
 
 ### Key Build Options
 ```cmake
-DART_BUILD_GUI_OSG          = ON   # Build OpenSceneGraph GUI
+DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -103,7 +103,7 @@ dart/
 **File:** `dart/gui/osg/CMakeLists.txt`
 
 **Responsibilities:**
-- Builds `dart-gui-osg` library
+- Builds `dart-gui` library
 - Integrates OpenSceneGraph
 - Integrates ImGui (system or fetched)
 - Manages render subdirectory
@@ -323,7 +323,7 @@ DART includes several dependencies as part of the source tree under `dart/extern
 
 **Installation:** NOT installed (local build only)
 
-**Linked By:** `dart-gui-osg` library
+**Linked By:** `dart-gui` library
 
 ### 3. ConvHull 3D
 **Location:** `dart/external/convhull_3d/`
@@ -367,7 +367,7 @@ Component Dependency Tree:
     ├── utils-urdf
     │   └── depends: utils, urdfdom
     │
-    └── gui-osg
+    └── gui
         └── depends: utils, OpenSceneGraph, ImGui, OpenGL
 ```
 
@@ -378,7 +378,7 @@ Component Dependency Tree:
 | `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
 | `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
-| `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
+| `gui` | `dart-gui` | `dart-utils`, `osg::osg`, `imgui::imgui` |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL` |
 
 > Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
@@ -434,7 +434,7 @@ dart/
 #### Component Libraries
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
-- **`dart-gui-osg`** - OpenSceneGraph GUI
+- **`dart-gui`** - OpenSceneGraph GUI
 
 ### Python Bindings Target
 - **`dartpy`** - Python bindings

@@ -299,37 +299,6 @@ def run_python_tests() -> bool:
     return result
 
 
-def run_dartpy8_tests() -> bool:
-    """Run dartpy8 smoke test."""
-    print_header("DARTPY8 SMOKE TEST")
-
-    build_type = os.environ.get("BUILD_TYPE", "Release")
-    cmake_flag = _cmake_option_enabled("DART_BUILD_DARTPY8")
-    if cmake_flag is False:
-        print_warning(
-            "Skipping dartpy8 smoke test because DART_BUILD_DARTPY8 is OFF in build"
-        )
-        return True
-
-    if not _env_flag_enabled("DART_BUILD_DARTPY8_OVERRIDE", PIXI_DEFAULT_DARTPY):
-        print_warning(
-            "Skipping dartpy8 smoke test because DART_BUILD_DARTPY8_OVERRIDE is OFF"
-        )
-        return True
-
-    build_dir = get_build_dir(build_type)
-    if not cmake_target_exists(build_dir, build_type, "dartpy8"):
-        print_warning(
-            "Skipping dartpy8 smoke test because target 'dartpy8' was not generated"
-        )
-        return True
-
-    result, _ = run_command(
-        pixi_command("test-dartpy8", build_type), "dartpy8 smoke test"
-    )
-    return result
-
-
 def run_docs_tests() -> bool:
     """Run documentation build tests"""
     print_header("DOCUMENTATION")
@@ -392,9 +361,6 @@ def main():
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
         "--skip-dart8", action="store_true", help="Skip dart8 C++ tests"
-    )
-    parser.add_argument(
-        "--skip-dartpy8", action="store_true", help="Skip dartpy8 smoke tests"
     )
     parser.add_argument(
         "--skip-debug",
@@ -464,12 +430,6 @@ def main():
         run_step("Python Tests", run_python_tests)
     else:
         print_warning("Skipping Python tests")
-
-    # Run dartpy8 tests
-    if not args.skip_dartpy8:
-        run_step("dartpy8 Tests", run_dartpy8_tests)
-    else:
-        print_warning("Skipping dartpy8 tests")
 
     # Run documentation build
     if not args.skip_docs:
