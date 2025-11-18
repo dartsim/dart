@@ -32,6 +32,7 @@
 
 #include "dart/utils/sdf/SdfParser.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -714,7 +715,9 @@ simulation::WorldPtr readWorld(
     dynamics::SkeletonPtr newSkeleton
         = readSkeleton(skeletonElement, skeletonBaseUri, options);
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     newWorld->addSkeleton(newSkeleton);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   return newWorld;

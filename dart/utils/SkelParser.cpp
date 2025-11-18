@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
@@ -804,7 +805,9 @@ simulation::WorldPtr readWorld(
     dynamics::SkeletonPtr newSkeleton = ::dart::utils::readSkeleton(
         SkeletonElements.get(), _baseUri, _retriever);
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     newWorld->addSkeleton(newSkeleton);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   return newWorld;

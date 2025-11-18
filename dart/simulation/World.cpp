@@ -41,6 +41,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -49,10 +50,6 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
-#include "dart/utils/SkelParser.hpp"
-#include "dart/utils/VskParser.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
-#include "dart/utils/urdf/DartLoader.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -158,44 +155,6 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
-//------------------------------------------------------------------------------
-dynamics::SkeletonPtr loadSkeletonUsingParser(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
-{
-  std::string path = uri.getPath();
-  if (path.empty()) {
-    path = uri.toString();
-  }
-
-  std::string extension;
-  const auto dot = path.find_last_of('.');
-  if (dot != std::string::npos && dot + 1 < path.size()) {
-    extension = common::toLower(path.substr(dot + 1));
-  }
-
-  if (extension == "skel") {
-    return utils::SkelParser::readSkeleton(uri, retriever);
-  }
-
-  if (extension == "sdf" || extension == "world" || extension == "model") {
-    utils::SdfParser::Options options;
-    options.mResourceRetriever = retriever;
-    return utils::SdfParser::readSkeleton(uri, options);
-  }
-
-  if (extension == "vsk") {
-    utils::VskParser::Options options(retriever);
-    return utils::VskParser::readSkeleton(uri, options);
-  }
-
-  if (extension == "urdf") {
-    utils::DartLoader loader(utils::DartLoader::Options(retriever));
-    return loader.parseSkeleton(uri);
-  }
-
-  return nullptr;
-}
-
 } // namespace
 
 //==============================================================================
@@ -262,7 +221,9 @@ WorldPtr World::clone() const
 
   // Clone and add each Skeleton
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
     worldClone->addSkeleton(mSkeletons[i]->cloneSkeleton());
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   // Clone and add each SimpleFrame
@@ -489,23 +450,9 @@ dynamics::Skeleton* World::createSkeleton(
 {
   auto skeleton = dynamics::Skeleton::createStandalone(properties);
   auto* raw = skeleton.get();
+  DART_SUPPRESS_DEPRECATED_BEGIN
   addSkeleton(skeleton);
-  return raw;
-}
-
-//==============================================================================
-dynamics::Skeleton* World::createSkeletonFromUri(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
-{
-  auto skeleton = loadSkeletonUsingParser(uri, retriever);
-  if (!skeleton) {
-    DART_WARN(
-        "Failed to create Skeleton from URI '{}'.", uri.toString());
-    return nullptr;
-  }
-
-  auto* raw = skeleton.get();
-  addSkeleton(skeleton);
+  DART_SUPPRESS_DEPRECATED_END
   return raw;
 }
 

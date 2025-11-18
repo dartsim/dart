@@ -198,7 +198,7 @@ public:
   /// Get the number of skeletons
   std::size_t getNumSkeletons() const;
 
-  /// Add a skeleton to this world
+  /// Add a skeleton to this world.
   DART_DEPRECATED(7.0)
   std::string addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 

@@ -32,6 +32,7 @@
 
 #include "dart/utils/urdf/UrdfParser.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -206,7 +207,9 @@ simulation::WorldPtr UrdfParser::parseWorldString(
     else
       rootJoint->setTransformFromParentBodyNode(transform);
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     world->addSkeleton(skeleton);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   return world;

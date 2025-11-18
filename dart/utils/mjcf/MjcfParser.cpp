@@ -34,6 +34,7 @@
 
 #include "dart/collision/All.hpp"
 #include "dart/common/All.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/All.hpp"
@@ -664,7 +665,9 @@ simulation::WorldPtr createWorld(
         world->getName(),
         skel->getName());
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     world->addSkeleton(skel);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   // Parse root <geom> elements
@@ -698,7 +701,9 @@ simulation::WorldPtr createWorld(
     // Root <geom>s are meant to be kinematic objects.
     skel->setMobile(false);
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     world->addSkeleton(skel);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   // Parse root <site> elements
@@ -730,7 +735,9 @@ simulation::WorldPtr createWorld(
     // Root <site>s are meant to be kinematic objects.
     skel->setMobile(false);
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     world->addSkeleton(skel);
+    DART_SUPPRESS_DEPRECATED_END
   }
 
   return world;
