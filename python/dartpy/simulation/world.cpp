@@ -26,6 +26,11 @@ namespace dart::python_nb {
 void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
+  using SimulationMode = dart::simulation::SimulationMode;
+
+  nb::enum_<SimulationMode>(m, "WorldSimulationMode")
+      .value("Design", SimulationMode::Design)
+      .value("Simulation", SimulationMode::Simulation);
 
   nb::class_<World>(m, "World")
       .def(nb::init<>())
@@ -64,6 +69,16 @@ void defWorld(nb::module_& m)
       .def("setTimeStep", &World::setTimeStep, nb::arg("timeStep"))
       .def("getTimeStep", &World::getTimeStep)
       .def(
+          "setSimulationMode",
+          [](World& self, SimulationMode mode) { self.setSimulationMode(mode); },
+          nb::arg("mode"))
+      .def(
+          "getSimulationMode",
+          [](const World& self) { return self.getSimulationMode(); })
+      .def(
+          "isSimulationMode",
+          [](const World& self) { return self.isSimulationMode(); })
+      .def(
           "getSkeleton",
           [](World& self, std::size_t index) {
             return self.getSkeleton(index);
@@ -77,17 +92,24 @@ void defWorld(nb::module_& m)
           nb::arg("name"))
       .def("getNumSkeletons", &World::getNumSkeletons)
       .def(
-          "addSkeleton",
-          [](World& self,
-             const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
-            return self.addSkeleton(skeleton);
+          "createSkeleton",
+          [](World& self, const std::string& name) {
+            return self.createSkeleton(name);
           },
-          nb::arg("skeleton"))
+          nb::arg("name") = "Skeleton",
+          nb::rv_policy::reference_internal)
       .def(
-          "removeSkeleton",
+          "createSkeleton",
           [](World& self,
-             const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
-            self.removeSkeleton(skeleton);
+             const dart::dynamics::Skeleton::AspectPropertiesData& properties) {
+            return self.createSkeleton(properties);
+          },
+          nb::arg("properties"),
+          nb::rv_policy::reference_internal)
+      .def(
+          "destroySkeleton",
+          [](World& self, dart::dynamics::Skeleton* skeleton) {
+            self.destroySkeleton(skeleton);
           },
           nb::arg("skeleton"))
       .def(

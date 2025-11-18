@@ -219,7 +219,8 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
     const common::ResourceRetrieverPtr& resourceRetriever,
     const Options& options)
 {
-  dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
+  dynamics::SkeletonPtr skeleton
+      = dynamics::Skeleton::createStandalone(model->getName());
 
   const urdf::Link* root = model->getRoot().get();
 

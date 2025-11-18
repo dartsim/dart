@@ -386,13 +386,25 @@ bool Skeleton::Configuration::operator!=(const Configuration& other) const
 }
 
 //==============================================================================
-SkeletonPtr Skeleton::create(const std::string& _name)
+SkeletonPtr Skeleton::create(const std::string& name)
 {
-  return create(AspectPropertiesData(_name));
+  return createStandalone(name);
 }
 
 //==============================================================================
 SkeletonPtr Skeleton::create(const AspectPropertiesData& properties)
+{
+  return createStandalone(properties);
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::createStandalone(const std::string& name)
+{
+  return createStandalone(AspectPropertiesData(name));
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::createStandalone(const AspectPropertiesData& properties)
 {
   SkeletonPtr skel(new Skeleton(properties));
   skel->setPtr(skel);
@@ -453,7 +465,7 @@ SkeletonPtr Skeleton::cloneSkeleton() const
 //==============================================================================
 SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
 {
-  SkeletonPtr skelClone = Skeleton::create(cloneName);
+  SkeletonPtr skelClone = Skeleton::createStandalone(cloneName);
 
   for (std::size_t i = 0; i < getNumBodyNodes(); ++i) {
     // Create a clone of the parent Joint
@@ -535,6 +547,42 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
   }
 
   return skelClone;
+}
+
+//==============================================================================
+void Skeleton::setSimulationMode(SimulationMode mode)
+{
+  mSimulationMode = mode;
+}
+
+//==============================================================================
+SimulationMode Skeleton::getSimulationMode() const
+{
+  return mSimulationMode;
+}
+
+//==============================================================================
+bool Skeleton::isSimulationMode() const
+{
+  return mSimulationMode == SimulationMode::Simulation;
+}
+
+//==============================================================================
+bool Skeleton::isDesignMode() const
+{
+  return mSimulationMode == SimulationMode::Design;
+}
+
+//==============================================================================
+void Skeleton::setWorldOwned(bool owned)
+{
+  mIsWorldOwned = owned;
+}
+
+//==============================================================================
+bool Skeleton::isWorldOwned() const
+{
+  return mIsWorldOwned;
 }
 
 //==============================================================================

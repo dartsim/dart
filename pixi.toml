@@ -432,6 +432,72 @@ py-ex-operational-space-control = { depends-on = [
   ] },
 ] }
 
+ensure-dartpy = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nTARGET_DIR=\"build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/python\"\nif [ ! -f \"$TARGET_DIR/dartpy/__init__.py\" ]; then\n  cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} --parallel --target dartpy\nfi",
+], depends-on = [
+  { task = "config-py", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], inputs = [
+  "pixi.toml",
+  "CMakeLists.txt",
+], outputs = [
+  "build/default/cpp/{{ build_type }}/python/dartpy/__init__.py",
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+ensure-dartpy-force = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} --parallel --target dartpy",
+], depends-on = [
+  { task = "config-py", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], inputs = [
+  "pixi.toml",
+  "CMakeLists.txt",
+], outputs = [
+  "build/default/cpp/{{ build_type }}/python/dartpy/__init__.py",
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+shell-dartpy = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nPY_BUILD_DIR=\"$PWD/build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/python\"\nexport PYTHONPATH=\"$PY_BUILD_DIR${PYTHONPATH:+:$PYTHONPATH}\"\npython",
+], depends-on = [
+  { task = "ensure-dartpy", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+shell-dartpy-force = { cmd = [
+  "bash",
+  "-lc",
+  "set -euo pipefail\nPY_BUILD_DIR=\"$PWD/build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/python\"\nexport PYTHONPATH=\"$PY_BUILD_DIR${PYTHONPATH:+:$PYTHONPATH}\"\npython",
+], depends-on = [
+  { task = "ensure-dartpy-force", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
 py-tu = { cmd = "python python/tutorials/{{ tutorial }}/{{ entry }}.py", depends-on = [
   "build-py-dev",
 ], args = [

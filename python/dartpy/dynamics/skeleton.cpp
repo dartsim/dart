@@ -82,10 +82,12 @@ void defSkeleton(nb::module_& m)
   auto skeletonClass
       = nb::class_<Skeleton, dart::dynamics::MetaSkeleton>(m, "Skeleton");
 
-  skeletonClass.def(nb::new_([]() { return Skeleton::create(); }))
+  skeletonClass.def(nb::new_([]() { return Skeleton::createStandalone(); }))
       .def(
           nb::new_(
-              [](const std::string& name) { return Skeleton::create(name); }),
+              [](const std::string& name) {
+                return Skeleton::createStandalone(name);
+              }),
           nb::arg("name"))
       .def("getNumBodyNodes", &Skeleton::getNumBodyNodes)
       .def("getNumJoints", &Skeleton::getNumJoints)

@@ -298,7 +298,7 @@ bool readSkeletonElement(
     dynamics::SkeletonPtr& skel,
     VskData& vskData)
 {
-  skel = dynamics::Skeleton::create();
+  skel = dynamics::Skeleton::createStandalone();
 
   if (hasAttribute(skeletonEle, "DENSITY")) {
     double density = getAttributeDouble(skeletonEle, "DENSITY");

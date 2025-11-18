@@ -777,17 +777,26 @@ SkeletonPtr BodyNode::remove(const std::string& _name)
 //==============================================================================
 bool BodyNode::moveTo(BodyNode* _newParent)
 {
-  if (nullptr == _newParent)
+  if (!canModifyStructure("move to a new parent")) {
+    return false;
+  }
+
+  if (nullptr == _newParent) {
     return getSkeleton()->moveBodyNodeTree(
         getParentJoint(), this, getSkeleton(), nullptr);
-  else
+  } else {
     return getSkeleton()->moveBodyNodeTree(
         getParentJoint(), this, _newParent->getSkeleton(), _newParent);
+  }
 }
 
 //==============================================================================
 bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 {
+  if (!canModifyStructure("move to a different Skeleton")) {
+    return false;
+  }
+
   if (checkSkeletonNodeAgreement(
           this, _newSkeleton, _newParent, "moveTo", "move")) {
     return getSkeleton()->moveBodyNodeTree(
@@ -800,8 +809,12 @@ bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 //==============================================================================
 SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 {
+  if (!canModifyStructure("split into a new Skeleton")) {
+    return nullptr;
+  }
+
   const SkeletonPtr& skel
-      = Skeleton::create(getSkeleton()->getAspectProperties());
+      = Skeleton::createStandalone(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   moveTo(skel, nullptr);
   return skel;
@@ -811,12 +824,13 @@ SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 std::pair<Joint*, BodyNode*> BodyNode::copyTo(
     BodyNode* _newParent, bool _recursive)
 {
-  if (nullptr == _newParent)
+  if (nullptr == _newParent) {
     return getSkeleton()->cloneBodyNodeTree(
         nullptr, this, getSkeleton(), nullptr, _recursive);
-  else
+  } else {
     return getSkeleton()->cloneBodyNodeTree(
         nullptr, this, _newParent->getSkeleton(), _newParent, _recursive);
+  }
 }
 
 //==============================================================================
@@ -839,7 +853,7 @@ SkeletonPtr BodyNode::copyAs(
     const std::string& _skeletonName, bool _recursive) const
 {
   const SkeletonPtr& skel
-      = Skeleton::create(getSkeleton()->getAspectProperties());
+      = Skeleton::createStandalone(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   copyTo(skel, nullptr, _recursive);
   return skel;

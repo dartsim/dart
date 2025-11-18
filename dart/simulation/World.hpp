@@ -49,8 +49,11 @@
 
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/SimulationMode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/integration/Fwd.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
@@ -67,7 +70,8 @@
 namespace dart {
 namespace simulation {
 
-/// Available collision detector backends for a World.
+using SimulationMode = dynamics::SimulationMode;
+
 enum class CollisionDetectorType
 {
   Dart,
@@ -149,9 +153,28 @@ public:
   /// Get time step
   double getTimeStep() const;
 
+  /// Set whether this world is in design or simulation mode. Switching to
+  /// simulation mode locks world-owned Skeletons against structural edits.
+  void setSimulationMode(SimulationMode mode);
+
+  /// Returns the current simulation mode.
+  SimulationMode getSimulationMode() const;
+
+  /// Returns true if this world is currently in simulation mode.
+  bool isSimulationMode() const;
+
   //--------------------------------------------------------------------------
   // Structural Properties
   //--------------------------------------------------------------------------
+
+  /// Create a Skeleton that is owned by this World. The returned pointer is
+  /// non-owning and remains valid as long as the Skeleton stays in this World.
+  dynamics::Skeleton* createSkeleton(const std::string& name = "Skeleton");
+
+  /// Create a Skeleton that is owned by this World using preconfigured aspect
+  /// properties.
+  dynamics::Skeleton* createSkeleton(
+      const dynamics::Skeleton::AspectPropertiesData& properties);
 
   /// Get the indexed skeleton
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
@@ -165,10 +188,15 @@ public:
   std::size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
+  DART_DEPRECATED(7.0)
   std::string addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Remove a skeleton from this world
   void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
+
+  /// Destroy a Skeleton that was created by createSkeleton(). The pointer must
+  /// be one returned by this world and becomes invalid after this call.
+  void destroySkeleton(const dynamics::Skeleton* skeleton);
 
   /// Remove all the skeletons in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
@@ -359,7 +387,10 @@ protected:
   /// Skeletons in this world
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
-  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>
+  /// Current design/simulation state for the world.
+  SimulationMode mMode = SimulationMode::Design;
+
+  std::map<const dynamics::MetaSkeleton*, dynamics::SkeletonPtr>
       mMapForSkeletons;
 
   /// Connections for noticing changes in Skeleton names
@@ -379,6 +410,9 @@ protected:
   /// Map from raw SimpleFrame pointers to their shared_ptrs
   std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>
       mSimpleFrameToShared;
+
+  /// Applies the world's current simulation mode to a Skeleton.
+  void applyModeToSkeleton(const dynamics::SkeletonPtr& skeleton) const;
 
   /// NameManager for keeping track of Entities
   dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;

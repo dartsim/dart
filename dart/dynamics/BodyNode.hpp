@@ -49,6 +49,7 @@
 
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
+#include <dart/common/Logging.hpp>
 #include <dart/common/Signal.hpp>
 
 #include <dart/Export.hpp>
@@ -58,6 +59,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dart {
@@ -1276,6 +1278,10 @@ private:
   friend class CollisionAspect;
   friend class ShapeNode;
   friend class ShapeFrame;
+
+  /// Returns false if the owning Skeleton is in simulation mode. This is used
+  /// to guard structure-changing APIs that should not run during simulation.
+  bool canModifyStructure(std::string_view context) const;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
@@ -1283,5 +1289,31 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 } // namespace dart
 
 #include <dart/dynamics/detail/BodyNode.hpp>
+
+inline bool dart::dynamics::BodyNode::canModifyStructure(
+    std::string_view context) const
+{
+  auto skeleton = mSkeleton.lock();
+  if (skeleton && skeleton->isWorldOwned()) {
+    DART_ERROR(
+        "Cannot {} BodyNode '{}' while Skeleton '{}' is owned by a World. "
+        "Detach it from the World before modifying its structure.",
+        context,
+        getName(),
+        skeleton->getName());
+    return false;
+  }
+
+  if (!skeleton || !skeleton->isSimulationMode()) {
+    return true;
+  }
+
+  DART_ERROR(
+      "Cannot {} BodyNode '{}' while Skeleton '{}' is in simulation mode.",
+      context,
+      getName(),
+      skeleton->getName());
+  return false;
+}
 
 #endif // DART_DYNAMICS_BODYNODE_HPP_

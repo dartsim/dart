@@ -40,6 +40,7 @@
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/SimulationMode.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
 #include <dart/dynamics/detail/SkeletonAspect.hpp>
@@ -144,11 +145,23 @@ public:
   /// \{ @name Constructor and Destructor
   //----------------------------------------------------------------------------
 
-  /// Create a new Skeleton inside of a shared_ptr
-  static SkeletonPtr create(const std::string& _name = "Skeleton");
+  /// Create a new Skeleton inside of a shared_ptr. Prefer World::createSkeleton
+  /// when the Skeleton will belong to a simulation::World.
+  DART_DEPRECATED(7.0)
+  static SkeletonPtr create(const std::string& name = "Skeleton");
 
-  /// Create a new Skeleton inside of a shared_ptr
+  /// Create a new Skeleton inside of a shared_ptr. Prefer World::createSkeleton
+  /// when the Skeleton will belong to a simulation::World.
+  DART_DEPRECATED(7.0)
   static SkeletonPtr create(const AspectPropertiesData& properties);
+
+  /// Creates a standalone Skeleton that owns its lifetime. This factory should
+  /// be used for tests, tooling, and other contexts where the Skeleton does not
+  /// belong to a World.
+  static SkeletonPtr createStandalone(const std::string& name = "Skeleton");
+
+  /// Creates a standalone Skeleton from preconfigured aspect properties.
+  static SkeletonPtr createStandalone(const AspectPropertiesData& properties);
 
   /// Get the shared_ptr that manages this Skeleton
   SkeletonPtr getPtr();
@@ -184,6 +197,25 @@ public:
 
   /// Creates and returns a clone of this Skeleton.
   SkeletonPtr cloneSkeleton(const std::string& cloneName) const;
+
+  /// Switch between design and simulation modes. Simulation mode disallows
+  /// topology-changing operations.
+  void setSimulationMode(SimulationMode mode);
+
+  /// Returns the current simulation mode.
+  SimulationMode getSimulationMode() const;
+
+  /// Returns true if this Skeleton is currently in simulation mode.
+  bool isSimulationMode() const;
+
+  /// Returns true if this Skeleton is currently in design mode.
+  bool isDesignMode() const;
+
+  /// Marks this Skeleton as owned by a simulation::World.
+  void setWorldOwned(bool owned);
+
+  /// Returns true if this Skeleton is owned by a simulation::World.
+  bool isWorldOwned() const;
 
   // Documentation inherited
   MetaSkeletonPtr cloneMetaSkeleton(
@@ -1295,6 +1327,12 @@ protected:
   bool mIsImpulseApplied;
 
   mutable std::mutex mMutex;
+
+  /// Indicates whether structural edits are allowed.
+  SimulationMode mSimulationMode = SimulationMode::Design;
+
+  /// Indicates whether this Skeleton currently belongs to a simulation::World.
+  bool mIsWorldOwned = false;
 
 public:
   //--------------------------------------------------------------------------

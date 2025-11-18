@@ -98,6 +98,18 @@ DART now maintains two naming schemes in parallel:
 - **New/modified code**: Use camelCase names for function parameters (e.g., `void setMass(double mass)`).
 - **Legacy code**: Many functions in `dart/dynamics` still use `_param` conventions. Avoid mass renames—update these opportunistically when touching the surrounding code, and prefer camelCase for any new APIs.
 
+### Control Flow Braces
+
+Always wrap the bodies of `if`/`else`, loop, and switch clauses in braces, even
+when the body is a single statement. This prevents dangling statements and makes
+future edits safer.
+
+```cpp
+if (!skeleton) {
+  return;
+}
+```
+
 ### Header Style
 
 **Rules:**

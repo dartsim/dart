@@ -613,7 +613,7 @@ bool populateSkeletonRecurse(
 dynamics::SkeletonPtr createSkeleton(
     const detail::Body& mjcfBody, const detail::Asset& mjcfAsset)
 {
-  dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
+  dynamics::SkeletonPtr skel = dynamics::Skeleton::createStandalone();
 
   const bool success
       = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
@@ -671,7 +671,7 @@ simulation::WorldPtr createWorld(
   for (std::size_t i = 0; i < mjcfWorldbody.getNumGeoms(); ++i) {
     const detail::Geom& mjcfGeom = mjcfWorldbody.getGeom(i);
 
-    dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
+    dynamics::SkeletonPtr skel = dynamics::Skeleton::createStandalone();
 
     dynamics::BodyNode* body;
     dynamics::WeldJoint* joint;
@@ -705,7 +705,7 @@ simulation::WorldPtr createWorld(
   for (std::size_t i = 0; i < mjcfWorldbody.getNumSites(); ++i) {
     const detail::Site& mjcfSite = mjcfWorldbody.getSite(i);
 
-    dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
+    dynamics::SkeletonPtr skel = dynamics::Skeleton::createStandalone();
 
     dynamics::BodyNode* body;
     dynamics::WeldJoint* joint;

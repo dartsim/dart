@@ -958,7 +958,7 @@ dynamics::SkeletonPtr makeSkeleton(
 {
   DART_ASSERT(_skeletonElement != nullptr);
 
-  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
+  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::createStandalone();
 
   //--------------------------------------------------------------------------
   // Name attribute

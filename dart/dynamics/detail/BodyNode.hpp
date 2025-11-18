@@ -72,7 +72,12 @@ SkeletonPtr BodyNode::split(
     const std::string& _skeletonName,
     const typename JointType::Properties& _joint)
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
+  if (!canModifyStructure("split")) {
+    return nullptr;
+  }
+
+  SkeletonPtr skel
+      = Skeleton::createStandalone(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   moveTo<JointType>(skel, nullptr, _joint);
   return skel;
@@ -93,12 +98,13 @@ std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     const typename JointType::Properties& _joint,
     bool _recursive)
 {
-  if (nullptr == _newParent)
+  if (nullptr == _newParent) {
     return getSkeleton()->cloneBodyNodeTree<JointType>(
         this, getSkeleton(), nullptr, _joint, _recursive);
-  else
+  } else {
     return getSkeleton()->cloneBodyNodeTree<JointType>(
         this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
+  }
 }
 
 //==============================================================================
@@ -120,7 +126,12 @@ SkeletonPtr BodyNode::copyAs(
     const typename JointType::Properties& _joint,
     bool _recursive) const
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
+  if (!canModifyStructure("copy BodyNode into a new Skeleton")) {
+    return nullptr;
+  }
+
+  SkeletonPtr skel
+      = Skeleton::createStandalone(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   copyTo<JointType>(skel, nullptr, _joint, _recursive);
   return skel;

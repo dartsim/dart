@@ -206,6 +206,7 @@ World::~World()
 WorldPtr World::clone() const
 {
   WorldPtr worldClone = World::create(mName);
+  worldClone->setSimulationMode(mMode);
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
@@ -265,6 +266,31 @@ void World::setTimeStep(double _timeStep)
 double World::getTimeStep() const
 {
   return mTimeStep;
+}
+
+//==============================================================================
+void World::setSimulationMode(SimulationMode mode)
+{
+  if (mMode == mode) {
+    return;
+  }
+
+  mMode = mode;
+  for (const auto& skeleton : mSkeletons) {
+    applyModeToSkeleton(skeleton);
+  }
+}
+
+//==============================================================================
+SimulationMode World::getSimulationMode() const
+{
+  return mMode;
+}
+
+//==============================================================================
+bool World::isSimulationMode() const
+{
+  return mMode == SimulationMode::Simulation;
 }
 
 //==============================================================================
@@ -408,6 +434,22 @@ std::size_t World::getNumSkeletons() const
 }
 
 //==============================================================================
+dynamics::Skeleton* World::createSkeleton(const std::string& name)
+{
+  return createSkeleton(dynamics::Skeleton::AspectPropertiesData(name));
+}
+
+//==============================================================================
+dynamics::Skeleton* World::createSkeleton(
+    const dynamics::Skeleton::AspectPropertiesData& properties)
+{
+  auto skeleton = dynamics::Skeleton::createStandalone(properties);
+  auto* raw = skeleton.get();
+  addSkeleton(skeleton);
+  return raw;
+}
+
+//==============================================================================
 std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   if (nullptr == _skeleton) {
@@ -424,7 +466,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
-  mMapForSkeletons[_skeleton] = _skeleton;
+  mMapForSkeletons[_skeleton.get()] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
       [this](
@@ -437,6 +479,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   _skeleton->setTimeStep(mTimeStep);
   _skeleton->setGravity(mGravity);
+  applyModeToSkeleton(_skeleton);
+  _skeleton->setWorldOwned(true);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
@@ -498,7 +542,28 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mNameMgrForSkeletons.removeName(_skeleton->getName());
 
   // Remove from the pointer map
-  mMapForSkeletons.erase(_skeleton);
+  mMapForSkeletons.erase(_skeleton.get());
+
+  // Allow the skeleton to be edited again outside the world.
+  _skeleton->setSimulationMode(dynamics::SimulationMode::Design);
+  _skeleton->setWorldOwned(false);
+}
+
+//==============================================================================
+void World::destroySkeleton(const dynamics::Skeleton* skeleton)
+{
+  if (skeleton == nullptr) {
+    DART_WARN("Attempting to remove a nullptr Skeleton from the world!");
+    return;
+  }
+
+  const auto it = mMapForSkeletons.find(skeleton);
+  if (it == mMapForSkeletons.end()) {
+    DART_WARN("Skeleton [{}] is not in the world.", skeleton->getName());
+    return;
+  }
+
+  removeSkeleton(it->second);
 }
 
 //==============================================================================
@@ -767,8 +832,7 @@ void World::handleSkeletonNameChange(
   const std::string& newName = _skeleton->getName();
 
   // Find the shared version of the Skeleton
-  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>::iterator it
-      = mMapForSkeletons.find(_skeleton);
+  const auto it = mMapForSkeletons.find(_skeleton.get());
   if (it == mMapForSkeletons.end()) {
     DART_ERROR(
         "Could not find Skeleton named [{}] in the shared_ptr map of World "
@@ -798,6 +862,19 @@ void World::handleSkeletonNameChange(
     DART_ASSERT(false);
     return;
   }
+}
+
+//==============================================================================
+void World::applyModeToSkeleton(const dynamics::SkeletonPtr& skeleton) const
+{
+  if (!skeleton) {
+    return;
+  }
+
+  const auto skeletonMode = mMode == SimulationMode::Simulation
+                                ? dynamics::SimulationMode::Simulation
+                                : dynamics::SimulationMode::Design;
+  skeleton->setSimulationMode(skeletonMode);
 }
 
 //==============================================================================

@@ -998,7 +998,7 @@ dynamics::SkeletonPtr readSkeleton(
 {
   DART_ASSERT(_skeletonElement != nullptr);
 
-  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
+  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::createStandalone();
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------
