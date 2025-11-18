@@ -53,9 +53,9 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
-#include "dart/lcpsolver/dantzig/misc.h"
+#include "dart/math/lcp/Dantzig/Misc.hpp"
 
-namespace dart::lcpsolver {
+namespace dart::math::lcp {
 
 //==============================================================================
 // Random number generation
@@ -84,9 +84,9 @@ int dRandInt(int n)
   return static_cast<int>(dRandReal() * n);
 }
 
-dReal dRandReal()
+double dRandReal()
 {
-  return static_cast<dReal>(dRand()) / static_cast<dReal>(0xffffffff);
+  return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
 }
 
-} // namespace dart::lcpsolver
+} // namespace dart::math::lcp

@@ -30,60 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#ifndef DART_MATH_LCP_LEMKE_HPP_
+#define DART_MATH_LCP_LEMKE_HPP_
 
-#include "dart/common/Profile.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include <Eigen/Dense>
 
-namespace dart {
-namespace constraint {
+namespace dart::math::lcp {
 
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
-{
-  return getStaticType();
-}
+/// \brief
+int Lemke(
+    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
-//==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
-{
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
-}
+/// \brief
+bool validate(
+    const Eigen::MatrixXd& _M,
+    const Eigen::VectorXd& _z,
+    const Eigen::VectorXd& _q);
 
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
+} // namespace dart::math::lcp
 
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
+namespace dart::math {
+using namespace lcp;
+} // namespace dart::math
 
-  bool result = math::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
-
-  delete[] w;
-  return result;
-}
-
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
-#endif
-
-} // namespace constraint
-} // namespace dart
+#endif // DART_MATH_LCP_LEMKE_HPP_

@@ -128,7 +128,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 ---
 
-#### 1.3 LCP Solver Module (`dart/lcpsolver/`)
+#### 1.3 LCP Solver Module (`dart/math/lcp/`)
 
 **Purpose:** Solve Linear Complementarity Problems (LCP) for constraint-based dynamics.
 
@@ -594,7 +594,7 @@ The main DART header that includes all modules:
 #include <dart/common/All.hpp>     // Common utilities
 #include <dart/math/All.hpp>       // Math utilities
 #include <dart/collision/All.hpp>  // Collision detection
-#include <dart/lcpsolver/All.hpp>  // LCP solvers
+#include <dart/math/lcp/All.hpp>  // LCP solvers
 #include <dart/constraint/All.hpp> // Constraints
 #include <dart/optimizer/All.hpp>  // Optimization (not covered)
 #include <dart/dynamics/All.hpp>   // Dynamics
@@ -782,7 +782,7 @@ CollisionDetector
    - **Solvers:**
      - Lemke/Dantzig (pivoting method)
      - PGS (iterative method)
-   - **Implementation:** `lcpsolver::Lemke()`, `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`
+   - **Implementation:** `math::Lemke()`, `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`
 
 ### 5. **Semi-Implicit Euler Integration**
    - **Purpose:** Numerical time integration

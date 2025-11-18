@@ -152,11 +152,11 @@ rows/columns and manipulate C.
 
 #define NUB_OPTIMIZATIONS
 
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/lcpsolver/dantzig/matrix.h"
-#include "dart/lcpsolver/dantzig/misc.h"
+#include "dart/math/lcp/Dantzig/Matrix.hpp"
+#include "dart/math/lcp/Dantzig/Misc.hpp"
 
 #include <memory>
 #include <vector>
@@ -164,31 +164,26 @@ rows/columns and manipulate C.
 //***************************************************************************
 // code generation parameters
 
-namespace dart {
-namespace lcpsolver {
-
-namespace {
-
-constexpr dReal kInfinity = ScalarTraits<dReal>::inf();
-
-} // namespace
+namespace dart::math::lcp {
 
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
-bool dSolveLCP(
+template <typename Scalar>
+bool SolveLCP(
     int n,
-    dReal* A,
-    dReal* x,
-    dReal* b,
-    dReal* outer_w /*=nullptr*/,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* outer_w /*=nullptr*/,
     int nub,
-    dReal* lo,
-    dReal* hi,
+    Scalar* lo,
+    Scalar* hi,
     int* findex,
     bool earlyTermination)
 {
   DART_ASSERT(n > 0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
+  const Scalar kInfinity = ScalarTraits<Scalar>::inf();
 #ifndef NDEBUG
   {
     // check restrictions on lo and hi
@@ -201,16 +196,16 @@ bool dSolveLCP(
   // and return
   if (nub >= n) {
     const int nskip = padding(n);
-    auto d = std::make_unique<dReal[]>(n);
+    auto d = std::make_unique<Scalar[]>(n);
     SetZero(d.get(), n);
 
-    std::unique_ptr<dReal[]> A_storage;
-    dReal* A_work = nullptr;
+    std::unique_ptr<Scalar[]> A_storage;
+    Scalar* A_work = nullptr;
 
     if (n != nskip) {
-      A_storage.reset(new dReal[n * nskip]);
+      A_storage.reset(new Scalar[n * nskip]);
       for (int i = 0; i < n; ++i) {
-        memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(dReal));
+        memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
       }
       A_work = A_storage.get();
     } else {
@@ -219,20 +214,20 @@ bool dSolveLCP(
 
     dFactorLDLT(A_work, d.get(), n, nskip);
     dSolveLDLT(A_work, d.get(), b, n, nskip);
-    memcpy(x, b, n * sizeof(dReal));
+    memcpy(x, b, n * sizeof(Scalar));
 
     return true;
   }
 
   const int nskip = padding(n);
 
-  std::unique_ptr<dReal[]> A_storage;
-  dReal* A_work = nullptr;
+  std::unique_ptr<Scalar[]> A_storage;
+  Scalar* A_work = nullptr;
 
   if (n != nskip) {
-    A_storage.reset(new dReal[n * nskip]);
+    A_storage.reset(new Scalar[n * nskip]);
     for (int i = 0; i < n; ++i) {
-      memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(dReal));
+      memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
     }
     A_work = A_storage.get();
   } else {
@@ -240,27 +235,27 @@ bool dSolveLCP(
   }
 
   // Create PivotMatrix from work array
-  PivotMatrix<dReal> A_pivot(n, n, A_work, nskip);
+  PivotMatrix<Scalar> A_pivot(n, n, A_work, nskip);
 
-  auto L = std::make_unique<dReal[]>(n * nskip);
-  auto d = std::make_unique<dReal[]>(n);
-  std::unique_ptr<dReal[]> wStorage;
-  dReal* w = outer_w;
+  auto L = std::make_unique<Scalar[]>(n * nskip);
+  auto d = std::make_unique<Scalar[]>(n);
+  std::unique_ptr<Scalar[]> wStorage;
+  Scalar* w = outer_w;
   if (!w) {
-    wStorage.reset(new dReal[n]);
+    wStorage.reset(new Scalar[n]);
     w = wStorage.get();
   }
-  auto delta_w = std::make_unique<dReal[]>(n);
-  auto delta_x = std::make_unique<dReal[]>(n);
-  auto Dell = std::make_unique<dReal[]>(n);
-  auto ell = std::make_unique<dReal[]>(n);
+  auto delta_w = std::make_unique<Scalar[]>(n);
+  auto delta_x = std::make_unique<Scalar[]>(n);
+  auto Dell = std::make_unique<Scalar[]>(n);
+  auto ell = std::make_unique<Scalar[]>(n);
   auto p = std::make_unique<int[]>(n);
   auto C = std::make_unique<int[]>(n);
   auto state = std::make_unique<bool[]>(n);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
-  LCP<dReal> lcp(
+  LCP<Scalar> lcp(
       n,
       nskip,
       nub,
@@ -313,7 +308,7 @@ bool dSolveLCP(
 
       // set lo and hi values
       for (int k = i; k < n; ++k) {
-        dReal wfk = delta_w[findex[k]];
+        Scalar wfk = delta_w[findex[k]];
         if (wfk == 0) {
           hi[k] = 0;
           lo[k] = 0;
@@ -359,14 +354,14 @@ bool dSolveLCP(
       // we must push x(i) and w(i)
       for (;;) {
         int dir;
-        dReal dirf;
+        Scalar dirf;
         // find direction to push on x(i)
         if (w[i] <= 0) {
           dir = 1;
-          dirf = REAL(1.0);
+          dirf = static_cast<Scalar>(1.0);
         } else {
           dir = -1;
-          dirf = REAL(-1.0);
+          dirf = static_cast<Scalar>(-1.0);
         }
 
         // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
@@ -386,11 +381,11 @@ bool dSolveLCP(
 
         int cmd = 1; // index switching command
         int si = 0;  // si = index to switch if cmd>3
-        dReal s = -w[i] / delta_w[i];
+        Scalar s = -w[i] / delta_w[i];
         if (dir > 0) {
           if (hi[i] < kInfinity) {
-            dReal s2 = (hi[i] - x[i])
-                       * dirf; // was (hi[i]-x[i])/dirf	// step to x(i)=hi(i)
+            Scalar s2 = (hi[i] - x[i])
+                        * dirf; // was (hi[i]-x[i])/dirf	// step to x(i)=hi(i)
             if (s2 < s) {
               s = s2;
               cmd = 3;
@@ -398,8 +393,8 @@ bool dSolveLCP(
           }
         } else {
           if (lo[i] > -kInfinity) {
-            dReal s2 = (lo[i] - x[i])
-                       * dirf; // was (lo[i]-x[i])/dirf	// step to x(i)=lo(i)
+            Scalar s2 = (lo[i] - x[i])
+                        * dirf; // was (lo[i]-x[i])/dirf	// step to x(i)=lo(i)
             if (s2 < s) {
               s = s2;
               cmd = 2;
@@ -416,7 +411,7 @@ bool dSolveLCP(
               // don't bother checking if lo=hi=0
               if (lo[indexN_k] == 0 && hi[indexN_k] == 0)
                 continue;
-              dReal s2 = -w[indexN_k] / delta_w[indexN_k];
+              Scalar s2 = -w[indexN_k] / delta_w[indexN_k];
               if (s2 < s) {
                 s = s2;
                 cmd = 4;
@@ -431,7 +426,7 @@ bool dSolveLCP(
           for (int k = adj_nub; k < numC; ++k) {
             const int indexC_k = lcp.indexC(k);
             if (delta_x[indexC_k] < 0 && lo[indexC_k] > -kInfinity) {
-              dReal s2 = (lo[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
+              Scalar s2 = (lo[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
               if (s2 < s) {
                 s = s2;
                 cmd = 5;
@@ -439,7 +434,7 @@ bool dSolveLCP(
               }
             }
             if (delta_x[indexC_k] > 0 && hi[indexC_k] < kInfinity) {
-              dReal s2 = (hi[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
+              Scalar s2 = (hi[indexC_k] - x[indexC_k]) / delta_x[indexC_k];
               if (s2 < s) {
                 s = s2;
                 cmd = 6;
@@ -456,7 +451,7 @@ bool dSolveLCP(
         // if s <= 0 then we've got a problem. if we just keep going then
         // we're going to get stuck in an infinite loop. instead, just cross
         // our fingers and exit with the current solution.
-        if (s <= REAL(0.0)) {
+        if (s <= static_cast<Scalar>(0.0)) {
           if (earlyTermination) {
             return false;
           }
@@ -465,7 +460,9 @@ bool dSolveLCP(
           // because sometimes it gets spammed if s is just a tiny bit beneath
           // 0.0. Rely on the *_ONCE helper so we only emit the first instance.
           DART_WARN_ONCE_IF(
-              s < REAL(-1e-6), "LCP internal error, s <= 0 (s={:.4e})", s);
+              s < static_cast<Scalar>(-1e-6),
+              "LCP internal error, s <= 0 (s={:.4e})",
+              s);
 
           if (i < n) {
             SetZero(x + i, n - i);
@@ -531,83 +528,6 @@ bool dSolveLCP(
   return true;
 }
 
-// Specialization for double - no conversion needed (must be before
-// instantiation)
-template <>
-bool SolveLCP<double>(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    double* w,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  // Call dSolveLCP directly without conversion
-  return dSolveLCP(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
-}
-
-// Template version of SolveLCP - generic implementation with type conversion
-template <typename Scalar>
-bool SolveLCP(
-    int n,
-    Scalar* A,
-    Scalar* x,
-    Scalar* b,
-    Scalar* w,
-    int nub,
-    Scalar* lo,
-    Scalar* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  // Convert to dReal (double) for computation
-  std::vector<dReal> A_d(n * n);
-  std::vector<dReal> x_d(n);
-  std::vector<dReal> b_d(n);
-  std::vector<dReal> w_d(n);
-  std::vector<dReal> lo_d(n);
-  std::vector<dReal> hi_d(n);
-
-  // Copy input to double
-  for (int i = 0; i < n * n; ++i)
-    A_d[i] = static_cast<dReal>(A[i]);
-  for (int i = 0; i < n; ++i) {
-    b_d[i] = static_cast<dReal>(b[i]);
-    lo_d[i] = static_cast<dReal>(lo[i]);
-    hi_d[i] = static_cast<dReal>(hi[i]);
-  }
-
-  // Solve using double precision
-  bool success = dSolveLCP(
-      n,
-      A_d.data(),
-      x_d.data(),
-      b_d.data(),
-      w_d.data(),
-      nub,
-      lo_d.data(),
-      hi_d.data(),
-      findex,
-      earlyTermination);
-
-  // Copy results back
-  for (int i = 0; i < n; ++i) {
-    x[i] = static_cast<Scalar>(x_d[i]);
-    if (w)
-      w[i] = static_cast<Scalar>(w_d[i]);
-  }
-
-  // Copy modified A back
-  for (int i = 0; i < n * n; ++i)
-    A[i] = static_cast<Scalar>(A_d[i]);
-
-  return success;
-}
-
 // Explicit template instantiations
 template bool SolveLCP<float>(
     int n,
@@ -621,7 +541,18 @@ template bool SolveLCP<float>(
     int* findex,
     bool earlyTermination);
 
-} // namespace lcpsolver
-} // namespace dart
+template bool SolveLCP<double>(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    double* w,
+    int nub,
+    double* lo,
+    double* hi,
+    int* findex,
+    bool earlyTermination);
+
+} // namespace dart::math::lcp
 
 // Note: Template implementations are in lcp-impl.hpp (included via lcp.h)

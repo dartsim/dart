@@ -35,8 +35,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
 #include "dart/math/Constants.hpp"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 namespace dart {
 namespace constraint {
