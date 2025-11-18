@@ -37,7 +37,7 @@
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/math/optimization/GradientDescentSolver.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -124,40 +124,39 @@ bool HierarchicalIK::solveAndApply(
 
 //==============================================================================
 void HierarchicalIK::setObjective(
-    const std::shared_ptr<optimizer::Function>& _objective)
+    const std::shared_ptr<math::Function>& _objective)
 {
   mObjective = _objective;
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Function>& HierarchicalIK::getObjective()
+const std::shared_ptr<math::Function>& HierarchicalIK::getObjective()
 {
   return mObjective;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Function> HierarchicalIK::getObjective() const
+std::shared_ptr<const math::Function> HierarchicalIK::getObjective() const
 {
   return mObjective;
 }
 
 //==============================================================================
 void HierarchicalIK::setNullSpaceObjective(
-    const std::shared_ptr<optimizer::Function>& _nsObjective)
+    const std::shared_ptr<math::Function>& _nsObjective)
 {
   mNullSpaceObjective = _nsObjective;
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Function>&
-HierarchicalIK::getNullSpaceObjective()
+const std::shared_ptr<math::Function>& HierarchicalIK::getNullSpaceObjective()
 {
   return mNullSpaceObjective;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Function>
-HierarchicalIK::getNullSpaceObjective() const
+std::shared_ptr<const math::Function> HierarchicalIK::getNullSpaceObjective()
+    const
 {
   return mNullSpaceObjective;
 }
@@ -169,13 +168,13 @@ bool HierarchicalIK::hasNullSpaceObjective() const
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Problem>& HierarchicalIK::getProblem()
+const std::shared_ptr<math::Problem>& HierarchicalIK::getProblem()
 {
   return mProblem;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Problem> HierarchicalIK::getProblem() const
+std::shared_ptr<const math::Problem> HierarchicalIK::getProblem() const
 {
   return mProblem;
 }
@@ -196,8 +195,7 @@ void HierarchicalIK::resetProblem(bool _clearSeeds)
 }
 
 //==============================================================================
-void HierarchicalIK::setSolver(
-    const std::shared_ptr<optimizer::Solver>& _newSolver)
+void HierarchicalIK::setSolver(const std::shared_ptr<math::Solver>& _newSolver)
 {
   mSolver = _newSolver;
   if (nullptr == mSolver)
@@ -207,13 +205,13 @@ void HierarchicalIK::setSolver(
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Solver>& HierarchicalIK::getSolver()
+const std::shared_ptr<math::Solver>& HierarchicalIK::getSolver()
 {
   return mSolver;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Solver> HierarchicalIK::getSolver() const
+std::shared_ptr<const math::Solver> HierarchicalIK::getSolver() const
 {
   return mSolver;
 }
@@ -360,7 +358,7 @@ HierarchicalIK::Objective::Objective(const std::shared_ptr<HierarchicalIK>& _ik)
 }
 
 //==============================================================================
-optimizer::FunctionPtr HierarchicalIK::Objective::clone(
+math::FunctionPtr HierarchicalIK::Objective::clone(
     const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Objective>(_newIK);
@@ -435,7 +433,7 @@ HierarchicalIK::Constraint::Constraint(
 }
 
 //==============================================================================
-optimizer::FunctionPtr HierarchicalIK::Constraint::clone(
+math::FunctionPtr HierarchicalIK::Constraint::clone(
     const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Constraint>(_newIK);
@@ -546,18 +544,18 @@ void HierarchicalIK::initialize(const std::shared_ptr<HierarchicalIK>& my_ptr)
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
 
-  mProblem = std::make_shared<optimizer::Problem>();
+  mProblem = std::make_shared<math::Problem>();
   resetProblem();
 
-  std::shared_ptr<optimizer::GradientDescentSolver> solver
-      = std::make_shared<optimizer::GradientDescentSolver>(mProblem);
+  std::shared_ptr<math::GradientDescentSolver> solver
+      = std::make_shared<math::GradientDescentSolver>(mProblem);
   solver->setStepSize(1.0);
   mSolver = solver;
 }
 
 //==============================================================================
-static std::shared_ptr<optimizer::Function> cloneIkFunc(
-    const std::shared_ptr<optimizer::Function>& _function,
+static std::shared_ptr<math::Function> cloneIkFunc(
+    const std::shared_ptr<math::Function>& _function,
     const std::shared_ptr<HierarchicalIK>& _ik)
 {
   std::shared_ptr<HierarchicalIK::Function> ikFunc
@@ -575,8 +573,7 @@ void HierarchicalIK::copyOverSetup(
 {
   _otherIK->setSolver(mSolver->clone());
 
-  const std::shared_ptr<optimizer::Problem>& newProblem
-      = _otherIK->getProblem();
+  const std::shared_ptr<math::Problem>& newProblem = _otherIK->getProblem();
   newProblem->setObjective(cloneIkFunc(mProblem->getObjective(), _otherIK));
 
   newProblem->removeAllEqConstraints();

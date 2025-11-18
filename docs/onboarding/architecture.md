@@ -40,7 +40,7 @@ DART follows a **modular layered architecture** with clear separation of concern
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │                   Foundation Layer                          │
-│ (Math, Common utilities, Integration) - math/, common/      │
+│ (Math, Common utilities, LCP) - math/, common/, lcpsolver/  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,7 +48,8 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 ## Core Modules
 
-### 1. **Foundation Layer** (common/, math/, lcpsolver/, integration/)
+### 1. **Foundation Layer** (common/, math/, lcpsolver/)
+> Legacy `dart/integration` has been removed; time stepping now lives alongside the world/simulator code. Advanced optimizers moved into `dart/math/optimization/` with deprecated shims in `dart/optimizer/`.
 
 #### 1.1 Common Module (`dart/common/`)
 
@@ -592,11 +593,10 @@ The main DART header that includes all modules:
 ```cpp
 #include <dart/config.hpp>         // Build configuration
 #include <dart/common/All.hpp>     // Common utilities
-#include <dart/math/All.hpp>       // Math utilities
+#include <dart/math/All.hpp>       // Math utilities (includes math/optimization)
+#include <dart/optimizer/All.hpp>  // Deprecated aliases forwarding to math/optimization
 #include <dart/collision/All.hpp>  // Collision detection
-#include <dart/math/lcp/All.hpp>  // LCP solvers
 #include <dart/constraint/All.hpp> // Constraints
-#include <dart/optimizer/All.hpp>  // Optimization (not covered)
 #include <dart/dynamics/All.hpp>   // Dynamics
 #include <dart/simulation/All.hpp> // Simulation
 ```
@@ -935,8 +935,7 @@ This architecture makes DART suitable for:
 │   ├── dart.hpp              # Main entry point
 │   ├── dart.cpp              # Empty implementation file
 │   ├── common/               # Utilities, patterns, memory
-│   ├── math/                 # Mathematical utilities
-│   ├── integration/          # Numerical integrators
+│   ├── math/                 # Mathematical utilities (includes math/optimization/)
 │   ├── lcpsolver/            # LCP solvers
 │   ├── collision/            # Collision detection
 │   │   ├── fcl/             # FCL backend
@@ -945,8 +944,9 @@ This architecture makes DART suitable for:
 │   │   └── ode/             # ODE backend
 │   ├── dynamics/             # Articulated body dynamics
 │   ├── constraint/           # Constraint solving
-│   ├── simulation/           # World and simulation loop
-│   ├── optimizer/            # Optimization algorithms
+│   ├── simulation/           # World and simulation loop / time stepping
+│   ├── math/optimization/    # Optimization helpers
+│   ├── optimizer/            # Deprecated headers forwarding to math/optimization
 │   └── gui/                  # Visualization (OSG, ImGui)
 ├── CMakeLists.txt            # Build configuration
 └── README.md                 # Project overview

@@ -36,7 +36,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/math/optimization/GradientDescentSolver.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -126,9 +126,8 @@ bool InverseKinematics::solveAndApply(
 }
 
 //==============================================================================
-static std::shared_ptr<optimizer::Function> cloneIkFunc(
-    const std::shared_ptr<optimizer::Function>& _function,
-    InverseKinematics* _ik)
+static std::shared_ptr<math::Function> cloneIkFunc(
+    const std::shared_ptr<math::Function>& _function, InverseKinematics* _ik)
 {
   std::shared_ptr<InverseKinematics::Function> ikFunc
       = std::dynamic_pointer_cast<InverseKinematics::Function>(_function);
@@ -167,7 +166,7 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 
   newIK->setSolver(mSolver->clone());
 
-  const std::shared_ptr<optimizer::Problem>& newProblem = newIK->getProblem();
+  const std::shared_ptr<math::Problem>& newProblem = newIK->getProblem();
   newProblem->setObjective(cloneIkFunc(mProblem->getObjective(), newIK.get()));
 
   newProblem->removeAllEqConstraints();
@@ -1357,41 +1356,40 @@ const std::vector<int>& InverseKinematics::getDofMap() const
 
 //==============================================================================
 void InverseKinematics::setObjective(
-    const std::shared_ptr<optimizer::Function>& _objective)
+    const std::shared_ptr<math::Function>& _objective)
 {
   mObjective = _objective;
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Function>& InverseKinematics::getObjective()
+const std::shared_ptr<math::Function>& InverseKinematics::getObjective()
 {
   return mObjective;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Function> InverseKinematics::getObjective()
-    const
+std::shared_ptr<const math::Function> InverseKinematics::getObjective() const
 {
   return mObjective;
 }
 
 //==============================================================================
 void InverseKinematics::setNullSpaceObjective(
-    const std::shared_ptr<optimizer::Function>& _nsObjective)
+    const std::shared_ptr<math::Function>& _nsObjective)
 {
   mNullSpaceObjective = _nsObjective;
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Function>&
+const std::shared_ptr<math::Function>&
 InverseKinematics::getNullSpaceObjective()
 {
   return mNullSpaceObjective;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Function>
-InverseKinematics::getNullSpaceObjective() const
+std::shared_ptr<const math::Function> InverseKinematics::getNullSpaceObjective()
+    const
 {
   return mNullSpaceObjective;
 }
@@ -1440,13 +1438,13 @@ const InverseKinematics::Analytical* InverseKinematics::getAnalytical() const
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Problem>& InverseKinematics::getProblem()
+const std::shared_ptr<math::Problem>& InverseKinematics::getProblem()
 {
   return mProblem;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Problem> InverseKinematics::getProblem() const
+std::shared_ptr<const math::Problem> InverseKinematics::getProblem() const
 {
   return mProblem;
 }
@@ -1468,7 +1466,7 @@ void InverseKinematics::resetProblem(bool _clearSeeds)
 
 //==============================================================================
 void InverseKinematics::setSolver(
-    const std::shared_ptr<optimizer::Solver>& _newSolver)
+    const std::shared_ptr<math::Solver>& _newSolver)
 {
   mSolver = _newSolver;
   if (nullptr == mSolver)
@@ -1478,13 +1476,13 @@ void InverseKinematics::setSolver(
 }
 
 //==============================================================================
-const std::shared_ptr<optimizer::Solver>& InverseKinematics::getSolver()
+const std::shared_ptr<math::Solver>& InverseKinematics::getSolver()
 {
   return mSolver;
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Solver> InverseKinematics::getSolver() const
+std::shared_ptr<const math::Solver> InverseKinematics::getSolver() const
 {
   return mSolver;
 }
@@ -1619,7 +1617,7 @@ InverseKinematics::Objective::Objective(InverseKinematics* _ik) : mIK(_ik)
 }
 
 //==============================================================================
-optimizer::FunctionPtr InverseKinematics::Objective::clone(
+math::FunctionPtr InverseKinematics::Objective::clone(
     InverseKinematics* _newIK) const
 {
   return std::make_shared<Objective>(_newIK);
@@ -1685,7 +1683,7 @@ InverseKinematics::Constraint::Constraint(InverseKinematics* _ik) : mIK(_ik)
 }
 
 //==============================================================================
-optimizer::FunctionPtr InverseKinematics::Constraint::clone(
+math::FunctionPtr InverseKinematics::Constraint::clone(
     InverseKinematics* _newIK) const
 {
   return std::make_shared<Constraint>(_newIK);
@@ -1738,7 +1736,7 @@ void InverseKinematics::initialize()
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
 
-  mProblem = std::make_shared<optimizer::Problem>();
+  mProblem = std::make_shared<math::Problem>();
   resetProblem();
 
   // The default error method is the one based on Task Space Regions
@@ -1761,8 +1759,8 @@ void InverseKinematics::initialize()
   useChain();
 
   // Default to the native DART gradient descent solver
-  std::shared_ptr<optimizer::GradientDescentSolver> solver
-      = std::make_shared<optimizer::GradientDescentSolver>(mProblem);
+  std::shared_ptr<math::GradientDescentSolver> solver
+      = std::make_shared<math::GradientDescentSolver>(mProblem);
   solver->setStepSize(1.0);
   mSolver = solver;
 }

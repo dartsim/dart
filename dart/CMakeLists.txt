@@ -14,9 +14,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # common
 # math
 # lcpsolver
-# optimizer
-#   ipopt
-#   nlopt
+# optimizer (legacy alias headers for backward compatibility)
 # dynamics
 # collision
 #   dart
@@ -34,11 +32,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, lcpsolver, optimizer, dynamics, collision,
-#        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
-#        fcl, fmt]
-# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
-# dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
+# dart - common, math (including math/optimization), lcpsolver, dynamics,
+#        collision (fcl + optional Bullet/ODE), constraint, simulation, utils,
+#        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
@@ -47,8 +43,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
-# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
-# optimizer-nlopt - (dart), {dart-optimizer-nlopt}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui-osg - (utils), {dart-gui-osg}

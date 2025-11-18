@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/math/optimization/GradientDescentSolver.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/optimizer/Problem.hpp"
+#include "dart/math/optimization/Problem.hpp"
 
 #include <iostream>
 
 namespace dart {
-namespace optimizer {
+namespace math {
 
 //==============================================================================
 const std::string GradientDescentSolver::Type = "GradientDescentSolver";
@@ -473,5 +473,5 @@ std::size_t GradientDescentSolver::getLastNumIterations() const
   return mLastNumIterations;
 }
 
-} // namespace optimizer
+} // namespace math
 } // namespace dart

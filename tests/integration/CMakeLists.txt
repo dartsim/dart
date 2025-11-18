@@ -170,17 +170,6 @@ dart_build_tests(
 )
 
 dart_add_test("integration" INTEGRATION_optimization_Optimizer optimization/test_Optimizer.cpp)
-if(TARGET dart-optimizer-ipopt)
-  target_link_libraries(INTEGRATION_optimization_Optimizer dart-optimizer-ipopt)
-endif()
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(INTEGRATION_optimization_Optimizer dart-optimizer-nlopt)
-endif()
-
-if(TARGET dart-optimizer-pagmo)
-  dart_add_test("integration" INTEGRATION_optimization_MultiObjectiveOptimization optimization/test_MultiObjectiveOptimization.cpp)
-  target_link_libraries(INTEGRATION_optimization_MultiObjectiveOptimization dart-optimizer-pagmo)
-endif()
 
 # ==============================================================================
 # Simulation Tests

@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Solver.hpp"
+#include "dart/math/optimization/Solver.hpp"
 
-#include "dart/optimizer/Problem.hpp"
+#include "dart/math/optimization/Problem.hpp"
 
 namespace dart {
-namespace optimizer {
+namespace math {
 
 //==============================================================================
 Solver::Properties::Properties(
@@ -186,5 +186,5 @@ const std::string& Solver::getResultFileName() const
   return mProperties.mResultFile;
 }
 
-} // namespace optimizer
+} // namespace math
 } // namespace dart

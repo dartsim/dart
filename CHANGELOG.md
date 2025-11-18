@@ -8,6 +8,9 @@
   * Increased required C++ standard from C++17 to C++20
     * See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   * Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
+  * Removed all optional optimizer plugins (`dart-optimizer-ipopt`, `dart-optimizer-nlopt`, `dart-optimizer-pagmo`, and `dart-optimizer-snopt`) along with the pagmo-based multi-objective optimization APIs since they were only exercised by tests.
+  * Moved the generic optimization primitives (`Function`, `Problem`, `Solver`, `GradientDescentSolver`) under `dart/math/optimization`; the legacy `<dart/optimizer/...>` headers and `dart::optimizer::*` namespace now forward (with deprecation notices) to the new `dart::math::*` definitions.
+  * Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
 
 * Minimum Compiler Requirements
   * Linux: GCC 11.0+
