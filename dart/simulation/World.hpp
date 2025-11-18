@@ -51,8 +51,6 @@
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/integration/Fwd.hpp>
-
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>

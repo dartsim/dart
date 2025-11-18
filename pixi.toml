@@ -572,6 +572,19 @@ cmake \
   { arg = "build_type", default = "Release" },
 ] }
 
+test-capsule-ground-contact = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure \
+        -R INTEGRATION_collision_CapsuleGroundContact
+""", depends-on = [
+  { task = "build-tests", args = [
+    "{{ dartpy }}",
+  ] },
+], env = { BUILD_TYPE = "Release" }, args = [
+  { arg = "dartpy", default = "ON" },
+] }
+
 config-coverage = { cmd = [
   "bash",
   "-lc",
@@ -1032,10 +1045,11 @@ ctest \
 ################################################################################
 
 [target.linux-64.dependencies]
-freeglut = ">=3.2.2,<3.3"
 lcov = ">=1.16,<2"
 mesalib = ">=24"
 libglvnd = ">=1.7"
+libgl-devel = ">=1.7"
+libglu = ">=9.0"
 
 ################################################################################
 # osx-64
@@ -1118,7 +1132,6 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 ################################################################################
 
 [target.win-64.dependencies]
-freeglut = ">=3.2.2"
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
 

@@ -551,10 +551,9 @@ void testSphereSphere(
     EXPECT_TRUE(group->collide(option, &result));
     // TODO(JS): BulletCollisionDetector includes a bug related to this.
     // (see #876)
-#if HAVE_BULLET
-    if (cd->getType() != BulletCollisionDetector::getStaticType())
-#endif
-    {
+
+    constexpr auto hasBullet = (HAVE_BULLET == 1);
+    if constexpr (!hasBullet) {
       EXPECT_EQ(result.getNumContacts(), 1u);
     }
     for (auto i = 0u; i < result.getNumContacts(); ++i) {
@@ -1714,6 +1713,127 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
 #endif
 }
+
+#if HAVE_ODE
+//==============================================================================
+TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto otherGroup = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  CollisionResult result;
+
+  // Initial collision using SimpleFrames to populate the cache.
+  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World(), "f1");
+  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World(), "f2");
+  auto sphere = std::make_shared<SphereShape>(1.0);
+  simpleFrame1->setShape(sphere);
+  simpleFrame2->setShape(sphere);
+  simpleFrame2->setTranslation(Eigen::Vector3d::UnitX() * 0.5);
+
+  group->addShapeFrame(simpleFrame1.get());
+  group->addShapeFrame(simpleFrame2.get());
+
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_FALSE(result.getContacts().empty());
+
+  group->removeAllShapeFrames();
+  otherGroup->removeAllShapeFrames();
+  result.clear();
+
+  // Recreate collision objects using BodyNodes (mirroring the Python repro).
+  auto skeleton1 = Skeleton::create("reuse1");
+  auto skeleton2 = Skeleton::create("reuse2");
+
+  auto pair1 = skeleton1->createJointAndBodyNodePair<FreeJoint>();
+  auto pair2 = skeleton2->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint1 = pair1.first;
+  auto* body1 = pair1.second;
+  auto* joint2 = pair2.first;
+  auto* body2 = pair2.second;
+
+  auto bodySphere = std::make_shared<SphereShape>(1.0);
+  body1->createShapeNodeWith<CollisionAspect>(bodySphere);
+  body2->createShapeNodeWith<CollisionAspect>(bodySphere);
+
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d pose2 = Eigen::Isometry3d::Identity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 0.4);
+  joint1->setRelativeTransform(pose1);
+  joint2->setRelativeTransform(pose2);
+
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  // Collide within a single group using the new objects.
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  // Cross-group collision should also remain stable.
+  result.clear();
+  group->removeAllShapeFrames();
+  otherGroup->removeAllShapeFrames();
+
+  group->addShapeFramesOf(body1);
+  otherGroup->addShapeFramesOf(body2);
+
+  EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  // Move bodies apart to ensure history drops them cleanly.
+  pose2.setIdentity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 3.0);
+  joint2->setRelativeTransform(pose2);
+  result.clear();
+  EXPECT_FALSE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_TRUE(result.getContacts().empty());
+
+  // Move back into contact and verify we still collide without crashing.
+  pose2.setIdentity();
+  pose2.translate(Eigen::Vector3d::UnitX() * 0.25);
+  joint2->setRelativeTransform(pose2);
+  result.clear();
+  EXPECT_TRUE(group->collide(otherGroup.get(), option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+}
+
+//==============================================================================
+TEST(Issue1654, OdeHonorsMaxNumContacts)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto capsuleFrame = std::make_shared<SimpleFrame>(Frame::World(), "capsule");
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+
+  auto capsuleShape = std::make_shared<CapsuleShape>(0.2, 0.6);
+  capsuleFrame->setShape(capsuleShape);
+  capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  auto planeShape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  planeFrame->setShape(planeShape);
+
+  group->addShapeFrame(capsuleFrame.get());
+  group->addShapeFrame(planeFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1u;
+  CollisionResult result;
+
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+}
+#endif // HAVE_ODE
 
 //==============================================================================
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP

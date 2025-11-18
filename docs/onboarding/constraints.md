@@ -1,8 +1,8 @@
-# DART Constraint and Integration Modules Analysis
+# DART Constraint Module Analysis
 
 ## Overview
 
-This document provides a comprehensive analysis of the constraint and integration modules in the DART (Dynamic Animation and Robotics Toolkit) simulation library. These modules form critical components of the physics simulation pipeline.
+This document provides a comprehensive analysis of the constraint subsystem in the DART (Dynamic Animation and Robotics Toolkit) simulation library. The legacy `dart/integration` module was removed in DART 7; time integration now runs inside `dart::simulation::World::step()` using a built-in semi-implicit Euler scheme.
 
 ---
 
@@ -47,16 +47,9 @@ See code for implementation details.
 - ContactSurface.hpp/cpp - Contact surface parameters
 - SmartPointer.hpp - Smart pointer definitions
 
-### Integration Module (`dart/integration`)
+### Time Integration
 
-**Core Components:**
-- Integrator.hpp/cpp - Base integrator class and interface
-- IntegrableSystem - Interface for systems that can be integrated
-
-**Integration Methods:**
-- EulerIntegrator.hpp/cpp - Forward Euler integration
-- SemiImplicitEulerIntegrator.hpp/cpp - Semi-implicit Euler (symplectic)
-- RK4Integrator.hpp/cpp - 4th order Runge-Kutta integration
+Time integration is no longer a standalone module. `dart::simulation::World::step()` advances states directly using a semi-implicit Euler update (compute accelerations, update velocities, then update positions). The legacy `dart/integration` headers/sources have been removed.
 
 ---
 
@@ -283,104 +276,11 @@ bool solve(int n, double* A, double* x, double* b,
 
 ---
 
-## Integration Module Architecture
+## Time Integration Overview
 
-### 1. Integrator Base Class
-
-**File:** `dart/integration/Integrator.hpp`
-
-**Role:** Abstract base class for numerical integration methods.
-
-**Key Interface:**
-- `integrate(system, dt)` - Integrate both position and velocity
-- `integratePos(system, dt)` - Integrate only position
-- `integrateVel(system, dt)` - Integrate only velocity
-
-### 2. IntegrableSystem Interface
-
-**File:** `dart/integration/Integrator.hpp`
-
-**Role:** Interface that systems must implement to be integrated.
-
-**Required Methods:**
-- `setConfigs(configs)` - Set configuration (position)
-- `setGenVels(genVels)` - Set generalized velocities
-- `getConfigs()` - Get current configuration
-- `getGenVels()` - Get current velocities
-- `evalGenAccs()` - Evaluate generalized accelerations
-- `integrateConfigs(genVels, dt)` - Custom configuration integration
-- `integrateGenVels(genAccs, dt)` - Custom velocity integration
-
-**Design Note:** The interface allows systems with special configuration spaces (e.g., SO(3)) to define custom integration rules.
-
-### 3. EulerIntegrator
-
-**File:** `dart/integration/EulerIntegrator.hpp`
-
-**Role:** Forward (explicit) Euler integration.
-
-**Method:**
-```
-v(t+dt) = v(t) + a(t) * dt
-q(t+dt) = q(t) + v(t) * dt
-```
-
-**Characteristics:**
-- First-order accurate
-- Simple and fast
-- Prone to instability for stiff systems
-- Does not conserve energy
-
-**Use Case:** Quick prototyping, non-stiff systems.
-
-### 4. SemiImplicitEulerIntegrator
-
-**File:** `dart/integration/SemiImplicitEulerIntegrator.hpp`
-
-**Role:** Semi-implicit (symplectic) Euler integration.
-
-**Method:**
-```
-v(t+dt) = v(t) + a(t) * dt
-q(t+dt) = q(t) + v(t+dt) * dt  // Uses updated velocity
-```
-
-**Characteristics:**
-- First-order accurate
-- Better energy conservation than explicit Euler
-- More stable for oscillatory systems
-- Still relatively fast
-- Symplectic (preserves phase space volume)
-
-**Use Case:** Default choice for physics simulation, good stability-performance tradeoff.
-
-### 5. RK4Integrator
-
-**File:** `dart/integration/RK4Integrator.hpp`
-
-**Role:** 4th order Runge-Kutta integration.
-
-**Method:**
-```
-k1 = f(t, y)
-k2 = f(t + dt/2, y + k1*dt/2)
-k3 = f(t + dt/2, y + k2*dt/2)
-k4 = f(t + dt, y + k3*dt)
-y(t+dt) = y(t) + (k1 + 2*k2 + 2*k3 + k4) * dt/6
-```
-
-**Characteristics:**
-- Fourth-order accurate
-- Better accuracy for same timestep
-- Requires 4 acceleration evaluations per step
-- More computational cost
-- Better for smooth dynamics
-
-**Use Case:** High-accuracy requirements, smooth systems, larger timesteps.
-
-**Implementation Details:**
-- Caches intermediate states (q1, dq1-4, ddq1-4)
-- Integrates full system state together (not separate pos/vel)
+- `dart::simulation::World::step()` performs the semi-implicit Euler update internally once forces/constraints are resolved.
+- Users no longer configure an external `Integrator`; the time step is controlled by `World::setTimeStep()`.
+- The same integration logic applies across core C++ and dartpy.
 
 ---
 
@@ -407,7 +307,7 @@ World::step(dt)
     → Solve each group (LCP)
     → Apply constraint impulses
   ↓
-[4] Integrator::integrate(skeleton, dt)
+[4] Integrate state (semi-implicit Euler)
     → Get accelerations
     → Integrate velocities: v += a*dt
     → Integrate positions: q += v*dt
@@ -450,22 +350,19 @@ ConstraintSolver::solve()
                           └─> Each constraint: applyImpulse(lambda)
 ```
 
-### Integration Methods Comparison
+### Integration Notes
 
-| Method | Order | Evaluations | Stability | Energy | Use Case |
-|--------|-------|-------------|-----------|--------|----------|
-| Euler | 1st | 1 | Poor | Drifts | Simple tests |
-| Semi-Implicit Euler | 1st | 1 | Good | Better | Default choice |
-| RK4 | 4th | 4 | Excellent | Best | High accuracy |
+- `World::step()` uses semi-implicit Euler for all bodies.
+- Users tune accuracy/stability via the time step rather than swapping integrators.
 
 ---
 
 ## Key Design Patterns
 
 ### 1. Strategy Pattern
-- **Where:** Integrator hierarchy, BoxedLcpSolver hierarchy
-- **Purpose:** Allow runtime selection of integration/solving method
-- **Benefit:** Easy to add new methods without modifying existing code
+- **Where:** BoxedLcpSolver hierarchy
+- **Purpose:** Allow runtime selection of constraint solving method
+- **Benefit:** Easy to add new solvers without modifying existing code
 
 ### 2. Template Method Pattern
 - **Where:** ConstraintSolver with abstract `solveConstrainedGroup()`
@@ -537,20 +434,6 @@ auto secondary = std::make_shared<PgsBoxedLcpSolver>();
 auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 ```
 
-### Integrator Selection
-
-```cpp
-// Semi-implicit (default, recommended)
-world->setIntegrator<SemiImplicitEulerIntegrator>();
-
-// High accuracy
-world->setIntegrator<RK4Integrator>();
-
-// Fast but unstable
-world->setIntegrator<EulerIntegrator>();
-```
-
----
 
 ## Extension Points
 
@@ -569,14 +452,6 @@ world->setIntegrator<EulerIntegrator>();
 3. Handle the boxed LCP formulation
 4. Register with `BoxedLcpConstraintSolver`
 
-### Adding New Integrators
-
-1. Inherit from `Integrator`
-2. Implement `integrate()`, `integratePos()`, `integrateVel()`
-3. Use `IntegrableSystem` interface to access system state
-4. Handle special configuration spaces (e.g., quaternions)
-
----
 
 ## Common Issues and Solutions
 
@@ -598,7 +473,7 @@ world->setIntegrator<EulerIntegrator>();
 ### Issue 3: Instability
 **Symptom:** Simulation explodes
 **Solution:**
-- Use SemiImplicitEulerIntegrator
+- Keep timestep modest (semi-implicit Euler remains stable with small dt)
 - Reduce timestep
 - Check mass/inertia values
 - Verify constraint bounds
@@ -630,10 +505,9 @@ world->setIntegrator<EulerIntegrator>();
    - For large systems: PGS only
    - For small, critical systems: Dantzig only
 
-4. **Integration Method:**
-   - Default: SemiImplicitEulerIntegrator
-   - For smooth, non-contact: RK4Integrator
-   - Avoid EulerIntegrator except for testing
+4. **Integration Stability:**
+   - Semi-implicit Euler is fixed; tune dt for stability/accuracy
+   - Use substepping for highly stiff scenes
 
 5. **Collision Detection:**
    - Use appropriate collision detector for scene complexity
@@ -656,12 +530,6 @@ world->setIntegrator<EulerIntegrator>();
 - `dart/constraint/JointLimitConstraint.hpp`
 - `dart/constraint/ServoMotorConstraint.hpp`
 - `dart/constraint/BoxedLcpSolver.hpp`
-
-**Integration Module:**
-- `dart/integration/Integrator.hpp`
-- `dart/integration/EulerIntegrator.hpp`
-- `dart/integration/SemiImplicitEulerIntegrator.hpp`
-- `dart/integration/RK4Integrator.hpp`
 
 ### Related Concepts
 - Linear Complementarity Problem (LCP)
