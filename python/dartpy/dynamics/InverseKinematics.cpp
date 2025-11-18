@@ -57,9 +57,15 @@ void InverseKinematics(py::module& m)
               Eigen::Vector6d::Constant(-dart::dynamics::DefaultIKTolerance),
               Eigen::Vector6d::Constant(dart::dynamics::DefaultIKTolerance)),
           ::py::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
-          ::py::arg("errorWeights") = Eigen::compose(
-              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight),
-              Eigen::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight)))
+          ::py::arg("errorWeights") =
+              [] {
+                Eigen::Vector6d weights;
+                weights.head<3>().setConstant(
+                    dart::dynamics::DefaultIKAngularWeight);
+                weights.tail<3>().setConstant(
+                    dart::dynamics::DefaultIKLinearWeight);
+                return weights;
+              }())
       .def_readwrite(
           "mBounds",
           &dart::dynamics::InverseKinematics::ErrorMethod::Properties::mBounds)
@@ -297,6 +303,44 @@ void InverseKinematics(py::module& m)
           = dart::dynamics::InverseKinematics::ErrorMethod::Properties(),
           ::py::arg("taskSpaceProperties") = dart::dynamics::InverseKinematics::
               TaskSpaceRegion::UniqueProperties());
+
+  ::py::class_<dart::dynamics::InverseKinematics::GradientMethod>(
+      m, "InverseKinematicsGradientMethod")
+      .def(
+          "setComponentWiseClamp",
+          &dart::dynamics::InverseKinematics::GradientMethod::
+              setComponentWiseClamp,
+          ::py::arg("clamp"))
+      .def(
+          "getComponentWiseClamp",
+          &dart::dynamics::InverseKinematics::GradientMethod::
+              getComponentWiseClamp)
+      .def(
+          "setComponentWeights",
+          &dart::dynamics::InverseKinematics::GradientMethod::
+              setComponentWeights,
+          ::py::arg("weights"))
+      .def(
+          "getComponentWeights",
+          +[](const dart::dynamics::InverseKinematics::GradientMethod* self)
+              -> Eigen::VectorXd { return self->getComponentWeights(); })
+      .def(
+          "clearCache",
+          &dart::dynamics::InverseKinematics::GradientMethod::clearCache);
+
+  ::py::class_<
+      dart::dynamics::InverseKinematics::JacobianDLS,
+      dart::dynamics::InverseKinematics::GradientMethod>(
+      m, "InverseKinematicsJacobianDLS")
+      .def(
+          "setDampingCoefficient",
+          &dart::dynamics::InverseKinematics::JacobianDLS::
+              setDampingCoefficient,
+          ::py::arg("damping") = dart::dynamics::DefaultIKDLSCoefficient)
+      .def(
+          "getDampingCoefficient",
+          &dart::dynamics::InverseKinematics::JacobianDLS::
+              getDampingCoefficient);
 
   ::py::class_<
       dart::dynamics::InverseKinematics::TaskSpaceRegion,
@@ -545,9 +589,24 @@ void InverseKinematics(py::module& m)
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
           ::py::arg("q"))
       .def(
-          "clearCaches", +[](dart::dynamics::InverseKinematics* self) {
-            self->clearCaches();
-          });
+          "clearCaches",
+          +[](dart::dynamics::InverseKinematics* self) { self->clearCaches(); })
+      .def(
+          "getGradientMethod",
+          +[](dart::dynamics::InverseKinematics* self)
+              -> dart::dynamics::InverseKinematics::GradientMethod& {
+            return self->getGradientMethod();
+          },
+          ::py::return_value_policy::reference_internal,
+          "Return the GradientMethod used by this IK instance.")
+      .def(
+          "getGradientMethod",
+          +[](const dart::dynamics::InverseKinematics* self)
+              -> const dart::dynamics::InverseKinematics::GradientMethod& {
+            return self->getGradientMethod();
+          },
+          ::py::return_value_policy::reference_internal,
+          "Return the GradientMethod used by this IK instance.");
 }
 
 } // namespace python

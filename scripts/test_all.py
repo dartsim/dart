@@ -293,8 +293,18 @@ def run_python_tests() -> bool:
         print_warning("Skipping python tests because target 'pytest' was not generated")
         return True
 
+    # Ensure the dartpy bindings are built before running pytest
+    build_result, _ = run_command(
+        pixi_command("build-py-dev", PIXI_DEFAULT_DARTPY, build_type),
+        f"Build dartpy bindings ({build_type})",
+    )
+    if not build_result:
+        return False
+
     # Check if Python bindings are enabled
-    result, _ = run_command(pixi_command("test-py", build_type), "Python tests")
+    result, _ = run_command(
+        pixi_command("test-py", build_type), f"Python tests ({build_type})"
+    )
 
     return result
 
