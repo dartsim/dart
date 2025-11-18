@@ -46,7 +46,7 @@ using namespace Eigen;
 
 #define LIE_GROUP_OPT_TOL 1e-12
 
-/******************************************************************************/
+//==============================================================================
 Eigen::Matrix4d toMatrixForm(const Eigen::Vector6d& v)
 {
   Eigen::Matrix4d result = Eigen::Matrix4d::Zero();
@@ -65,7 +65,7 @@ Eigen::Matrix4d toMatrixForm(const Eigen::Vector6d& v)
   return result;
 }
 
-/******************************************************************************/
+//==============================================================================
 Eigen::Vector6d fromMatrixForm(const Eigen::Matrix4d& m)
 {
   Eigen::Vector6d ret;
@@ -73,7 +73,7 @@ Eigen::Vector6d fromMatrixForm(const Eigen::Matrix4d& m)
   return ret;
 }
 
-/******************************************************************************/
+//==============================================================================
 void testEulerAngles(const Eigen::Vector3d& angle)
 {
   Eigen::Matrix3d mat1;
@@ -212,7 +212,7 @@ void testEulerAngles(const Eigen::Vector3d& angle)
   // EXPECT_TRUE(equals(mat1, eulerZYZToMatrix(matrixToEulerZYZ(mat1))));
 }
 
-/******************************************************************************/
+//==============================================================================
 TEST(LieGroupOperators, EulerAngles)
 {
   // TODO: Special angles such as (PI, 0, 0)
@@ -225,7 +225,7 @@ TEST(LieGroupOperators, EulerAngles)
   }
 }
 
-/******************************************************************************/
+//==============================================================================
 #define EPSILON_EXPMAP_THETA 1.0e-3
 TEST(LieGroupOperators, ExponentialMappings)
 {
@@ -351,7 +351,7 @@ TEST(LieGroupOperators, ExponentialMappings)
   }
 }
 
-/******************************************************************************/
+//==============================================================================
 TEST(LieGroupOperators, AdjointMappings)
 {
   int numTest = 100;

@@ -47,7 +47,7 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-/******************************************************************************/
+//==============================================================================
 TEST(Building, Basic)
 {
   // Skeletons
