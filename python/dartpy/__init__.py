@@ -15,7 +15,7 @@ import sys
 import types
 from pathlib import Path
 
-from importlib import metadata
+from importlib import machinery, metadata
 
 
 def _candidate_runtime_dirs() -> list[Path]:
@@ -56,6 +56,16 @@ def _candidate_runtime_dirs() -> list[Path]:
     return candidates
 
 
+def _has_native_extension(runtime_dir: Path) -> bool:
+    """Check whether dartpy's compiled module exists in the directory."""
+
+    for suffix in machinery.EXTENSION_SUFFIXES:
+        pattern = f"dartpy*{suffix}"
+        if any(runtime_dir.glob(pattern)):
+            return True
+    return False
+
+
 def _extend_package_path() -> None:
     """Ensure the package path points at the compiled bindings."""
 
@@ -65,7 +75,7 @@ def _extend_package_path() -> None:
         runtime_dir = runtime_dir.resolve()
         if not runtime_dir.is_dir():
             continue
-        if not any(runtime_dir.glob("dartpy*.so")):
+        if not _has_native_extension(runtime_dir):
             continue
 
         # If the bindings live next to __init__.py (installed wheels/conda
