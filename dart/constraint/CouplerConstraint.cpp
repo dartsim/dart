@@ -186,12 +186,10 @@ void CouplerConstraint::applyUnitImpulse(std::size_t index)
       const auto& mimicProp = mMimicProps[i];
       dynamics::Joint* referenceJoint
           = const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint);
-      dynamics::Skeleton* referenceSkeleton
-          = const_cast<dynamics::Skeleton*>(
-              mimicProp.mReferenceJoint->getSkeleton().get());
-      dynamics::BodyNode* referenceBodyNode
-          = const_cast<dynamics::BodyNode*>(
-              mimicProp.mReferenceJoint->getChildBodyNode());
+      dynamics::Skeleton* referenceSkeleton = const_cast<dynamics::Skeleton*>(
+          mimicProp.mReferenceJoint->getSkeleton().get());
+      dynamics::BodyNode* referenceBodyNode = const_cast<dynamics::BodyNode*>(
+          mimicProp.mReferenceJoint->getChildBodyNode());
 
       DART_ASSERT(referenceJoint != nullptr);
       DART_ASSERT(referenceSkeleton != nullptr);

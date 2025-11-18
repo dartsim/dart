@@ -113,15 +113,18 @@ MimicAssembly createMimicAssembly(
   baseInertia.setMoment(1e-4, 1e-4, 1e-4, 0.0, 0.0, 0.0);
   baseBodyProps.mInertia = baseInertia;
 
-  auto basePair = skeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
-      nullptr, baseJointProps, baseBodyProps);
+  auto basePair
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+          nullptr, baseJointProps, baseBodyProps);
   auto* baseBody = basePair.second;
 
   RevoluteJoint::Properties referenceJointProps;
   referenceJointProps.mName = referenceJointName;
   referenceJointProps.mAxis = Eigen::Vector3d::UnitZ();
-  referenceJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.15, 0.0);
-  referenceJointProps.mT_ChildBodyToJoint = Eigen::Translation3d(-0.25, 0.0, 0.0);
+  referenceJointProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.0, 0.15, 0.0);
+  referenceJointProps.mT_ChildBodyToJoint
+      = Eigen::Translation3d(-0.25, 0.0, 0.0);
 
   BodyNode::Properties referenceBodyProps;
   referenceBodyProps.mName = referenceBodyName;
@@ -152,7 +155,8 @@ MimicAssembly createMimicAssembly(
   RevoluteJoint::Properties followerJointProps;
   followerJointProps.mName = followerJointName;
   followerJointProps.mAxis = Eigen::Vector3d::UnitZ();
-  followerJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, -0.15, 0.0);
+  followerJointProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.0, -0.15, 0.0);
   followerJointProps.mT_ChildBodyToJoint
       = Eigen::Translation3d(-0.25, 0.0, 0.0);
 
@@ -297,13 +301,11 @@ public:
       status.positionError
           = status.followerPosition - status.desiredFollowerPosition;
       status.followerLowerLimit
-          = pair.followerJoint
-                ? pair.followerJoint->getPositionLowerLimit(0)
-                : 0.0;
+          = pair.followerJoint ? pair.followerJoint->getPositionLowerLimit(0)
+                               : 0.0;
       status.followerUpperLimit
-          = pair.followerJoint
-                ? pair.followerJoint->getPositionUpperLimit(0)
-                : 0.0;
+          = pair.followerJoint ? pair.followerJoint->getPositionUpperLimit(0)
+                               : 0.0;
       const double lowerSlack
           = status.followerPosition - status.followerLowerLimit;
       const double upperSlack
@@ -391,7 +393,8 @@ private:
 
     const double position = pair.referenceJoint->getPosition(0);
     const double velocity = pair.referenceJoint->getVelocity(0);
-    double torque = pair.kp * (pair.targetAngle - position) - pair.kd * velocity;
+    double torque
+        = pair.kp * (pair.targetAngle - position) - pair.kd * velocity;
     torque = dart::math::clip(torque, -pair.torqueLimit, pair.torqueLimit);
     pair.referenceJoint->setForce(0, torque);
   }
@@ -489,8 +492,7 @@ public:
       ImGui::Text(
           "Constraint: %s",
           status.usesCoupler ? "Coupler (bilateral)" : "Mimic motor (servo)");
-      ImGui::Text(
-          "Reference target: %6.2f deg", status.targetAngle * radToDeg);
+      ImGui::Text("Reference target: %6.2f deg", status.targetAngle * radToDeg);
       ImGui::Text(
           "Reference:        %6.2f deg", status.referencePosition * radToDeg);
       ImGui::Text(
