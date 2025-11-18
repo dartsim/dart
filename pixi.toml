@@ -183,8 +183,7 @@ build = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-python scripts/cmake_build.py \\
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -195,12 +194,17 @@ python scripts/cmake_build.py \\
   { arg = "build_type", default = "Release" },
 ] }
 
-build-debug = { cmd = ["bash", "-lc", """
+build-debug = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-python scripts/cmake_build.py \\
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-"""], depends-on = ["config-debug"] }
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py
+""",
+], depends-on = [
+  "config-debug",
+] }
 
 config-debug = { cmd = [
   "bash",
@@ -264,9 +268,7 @@ build-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-python scripts/cmake_build.py \\
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --target tests
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -284,9 +286,7 @@ build-dart8-tests = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-python scripts/cmake_build.py \\
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --target dart8_tests
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart8_tests
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -298,18 +298,20 @@ python scripts/cmake_build.py \\
   { arg = "build_type", default = "Release" },
 ] }
 
-build-math-tests = { cmd = ["bash", "-lc", """
+build-math-tests = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Release}
-python scripts/cmake_build.py \\
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \\
-  --target UNIT_math_Convhull \\
-  --target UNIT_math_Geometry \\
-  --target UNIT_math_Icosphere \\
-  --target UNIT_math_Math \\
-  --target UNIT_math_Random \\
-  --target UNIT_math_TriMesh
-"""], depends-on = ["config"] }
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+python scripts/cmake_build.py --build-dir "$BUILD_DIR" \
+  --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere \
+  --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh
+""",
+], depends-on = [
+  "config",
+] }
 
 build-py-dev = { cmd = [
   "bash",
@@ -532,9 +534,7 @@ test-py = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-python scripts/cmake_build.py \
-    --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-    --target pytest
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target pytest
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -606,11 +606,7 @@ build-coverage = { cmd = [
   """
 set -euo pipefail
 PARALLEL_JOBS=$(python scripts/parallel_jobs.py)
-python scripts/cmake_build.py \
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-  --parallel ${PARALLEL_JOBS} \
-  --target all \
-  --target tests \
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
   && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """,
 ], depends-on = [
@@ -644,9 +640,7 @@ lcov \
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
 run-cpp-target = { cmd = """
-    python scripts/cmake_build.py \\
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} \\
-        --target {{ target }} \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} python scripts/cmake_build.py --target {{ target }} \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/bin/{{ target }}
 """, depends-on = [
   "config",
@@ -723,9 +717,7 @@ bm-convhull = { depends-on = [
 ] }
 
 bm-lcpsolver = { cmd = """
-    python scripts/cmake_build.py \\
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \\
-        --target BM_LCPSOLVER \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --target BM_LCPSOLVER \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
 """, depends-on = [
   "config",
@@ -1000,13 +992,17 @@ cmake \
 """,
 ], env = { BUILD_TYPE = "asan", CMAKE_BUILD_TYPE = "RelWithDebInfo", DART_BUILD_PROFILE = "OFF", DART_VERBOSE = "OFF" } }
 
-build-asan = { cmd = ["bash", "-lc", """
+build-asan = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-python scripts/cmake_build.py \
-  --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --target tests
-"""], depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+""",
+], depends-on = [
+  "config-asan",
+], env = { BUILD_TYPE = "asan" } }
 
 test-asan = { cmd = [
   "bash",
@@ -1066,8 +1062,7 @@ config-osg = { cmd = """
 
 build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-python scripts/cmake_build.py \
-  --build-dir .deps/OpenSceneGraph/build
+CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
 """], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
@@ -1106,8 +1101,7 @@ config-osg = { cmd = """
 
 build-osg = { cmd = ["bash", "-lc", """
 set -euo pipefail
-python scripts/cmake_build.py \
-  --build-dir .deps/OpenSceneGraph/build
+CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
 """], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
@@ -1182,9 +1176,7 @@ check-lint = { depends-on = [
 
 build = { cmd = """
     BUILD_TYPE={{ build_type }}
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE
 """, depends-on = [
   { task = "config", args = [
     "ON",
@@ -1194,18 +1186,14 @@ build = { cmd = """
 ] }
 
 build-debug = { cmd = """
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config Debug \
-        --target all
-""", depends-on = ["config-debug"] }
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config Debug --target all
+""", depends-on = [
+  "config-debug",
+] }
 
 build-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1217,10 +1205,7 @@ build-tests = { cmd = """
 
 build-dart8-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target dart8_tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart8_tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1232,10 +1217,7 @@ build-dart8-tests = { cmd = """
 
 build-py-dev = { cmd = """
     BUILD_TYPE={{ build_type }}
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target dartpy
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dartpy
 """, depends-on = [
   "config-py",
 ], args = [
@@ -1312,10 +1294,7 @@ test-dart8 = { cmd = [
 
 test-py = { cmd = """
     BUILD_TYPE={{ build_type }}
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target pytest
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target pytest
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1331,10 +1310,7 @@ test-all = { cmd = """
 # Windows helper to match the single-config generator layout. As above, configure
 # alternative build types explicitly before invoking with a different configuration.
 run-cpp-target-win = { cmd = """
-    python scripts/cmake_build.py \
-        --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config {{ build_type }} \
-        --target {{ target }} \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config {{ build_type }} --target {{ target }} \
     && build/{{ build_type }}/{{ run_target }}.exe
 """, depends-on = [
   "config",
@@ -1528,12 +1504,16 @@ cmake \
   ] },
 ] }
 
-build-gz = { cmd = ["bash", "-lc", """
+build-gz = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
-python scripts/cmake_build.py \
-  --build-dir .deps/gz-physics/build \
-  --target all
-"""], depends-on = ["config-gz"] }
+CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
+""",
+], depends-on = [
+  "config-gz",
+] }
 
 test-gz = { cmd = """
     bash -c '

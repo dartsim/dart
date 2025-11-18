@@ -21,8 +21,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--build-dir",
-        required=True,
-        help="Path to the CMake build tree",
+        help=(
+            "Path to the CMake build tree. When omitted, falls back to "
+            "CMAKE_BUILD_DIR or build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE."
+        ),
     )
     parser.add_argument(
         "--config",
@@ -54,6 +56,23 @@ def resolve_parallel(explicit: int | None) -> int:
     return compute_parallel_jobs()
 
 
+def resolve_build_dir(value: str | None) -> Path:
+    """Determine the build directory from CLI args or environment."""
+    if value:
+        return Path(value)
+    env_default = os.environ.get("CMAKE_BUILD_DIR")
+    if env_default:
+        return Path(env_default)
+    pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME")
+    build_type = os.environ.get("BUILD_TYPE")
+    if pixi_env and build_type:
+        return Path("build") / pixi_env / "cpp" / build_type
+    raise SystemExit(
+        "--build-dir is required. Provide it via CLI, set CMAKE_BUILD_DIR, "
+        "or ensure PIXI_ENVIRONMENT_NAME and BUILD_TYPE are defined."
+    )
+
+
 def run_build(
     build_dir: Path, config: str | None, parallel: int, target: str | None
 ) -> None:
@@ -68,7 +87,7 @@ def run_build(
 
 def main() -> int:
     args = parse_args()
-    build_dir = Path(args.build_dir)
+    build_dir = resolve_build_dir(args.build_dir)
     parallel = resolve_parallel(args.parallel)
     targets = args.target or [None]
     for target in targets:
