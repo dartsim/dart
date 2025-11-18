@@ -34,6 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -1273,6 +1274,47 @@ TEST_F(JOINTS, MIMIC_JOINT)
 TEST_F(JOINTS, MIMIC_JOINT_COUPLER)
 {
   testMimicCouplerJoint();
+}
+
+//==============================================================================
+TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
+{
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 0);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+  pendulum->setTimeStep(1e-3);
+
+  Joint* referenceJoint = pendulum->getJoint(0);
+  Joint* followerJoint = pendulum->getJoint(1);
+  ASSERT_NE(referenceJoint, nullptr);
+  ASSERT_NE(followerJoint, nullptr);
+
+  followerJoint->setActuatorType(Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, 1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(true);
+  followerJoint->setVelocityLowerLimit(0, -100.0);
+  followerJoint->setVelocityUpperLimit(0, 100.0);
+  followerJoint->setForceLowerLimit(0, -100.0);
+  followerJoint->setForceUpperLimit(0, 100.0);
+
+  referenceJoint->setPosition(0, 0.1);
+  followerJoint->setPosition(0, 0.0);
+
+  dart::constraint::CouplerConstraint constraint(
+      followerJoint, followerJoint->getMimicDofProperties());
+  constraint.update();
+  ASSERT_GT(constraint.getDimension(), 0u);
+
+  double lambda[1] = {2.3};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(followerJoint->getConstraintImpulse(0), lambda[0], 1e-12);
+  EXPECT_NEAR(
+      referenceJoint->getConstraintImpulse(0),
+      -lambda[0] * followerJoint->getMimicMultiplier(0),
+      1e-12);
 }
 
 //==============================================================================
