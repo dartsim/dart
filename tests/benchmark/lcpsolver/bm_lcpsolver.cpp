@@ -16,7 +16,7 @@
 
 #include <vector>
 
-using dart::math::dReal;
+using dReal = double;
 
 // Forward declare the baseline function
 namespace dart {

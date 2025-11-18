@@ -52,8 +52,8 @@
 #include <cmath>
 
 // Types from both implementations
-using dart::math::dReal; // From Dantzig solver (in
-                         // dart/math/lcp/Dantzig/)
+using dReal = double; // Compatibility alias for tests
+                      // dart/math/lcp/Dantzig/)
 
 // Forward declare the baseline function
 namespace dart {

@@ -388,11 +388,11 @@ struct LCP
   }
   Scalar AiC_times_qC(int i, Scalar* q) const
   {
-    return dDot(m_A[i], q, m_nC);
+    return Dot(m_A[i], q, m_nC);
   }
   Scalar AiN_times_qN(int i, Scalar* q) const
   {
-    return dDot(m_A[i] + m_nC, q + m_nC, m_nN);
+    return Dot(m_A[i] + m_nC, q + m_nC, m_nN);
   }
   void pN_equals_ANC_times_qC(Scalar* p, Scalar* q);
   void pN_plusequals_ANi(Scalar* p, int i, int sign = 1);
@@ -590,7 +590,7 @@ void LCP<Scalar>::transfer_i_to_C(int i)
         Ltgt[j] = ell[j];
     }
     const int nC = m_nC;
-    m_d[nC] = reciprocal(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
+    m_d[nC] = reciprocal(AROW(i)[i] - Dot(m_ell, m_Dell, nC));
   } else {
     m_d[0] = reciprocal(AROW(i)[i]);
   }
@@ -655,7 +655,7 @@ void LCP<Scalar>::transfer_i_from_N_to_C(int i)
           Ltgt[j] = ell[j] = Dell[j] * d[j];
       }
       const int nC = m_nC;
-      m_d[nC] = reciprocal(AROW(i)[i] - dDot(m_ell, m_Dell, nC));
+      m_d[nC] = reciprocal(AROW(i)[i] - Dot(m_ell, m_Dell, nC));
     } else {
       m_d[0] = reciprocal(AROW(i)[i]);
     }
@@ -766,7 +766,7 @@ void LCP<Scalar>::pN_equals_ANC_times_qC(Scalar* p, Scalar* q)
   Scalar* ptgt = p + nC;
   const int nN = m_nN;
   for (int i = 0; i < nN; ++i) {
-    ptgt[i] = dDot(AROW(i + nC), q, nC);
+    ptgt[i] = Dot(AROW(i + nC), q, nC);
   }
 }
 
