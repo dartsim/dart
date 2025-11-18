@@ -44,7 +44,7 @@ namespace python {
 
 void GradientDescentSolver(py::module& m)
 {
-  ::py::class_<dart::optimizer::GradientDescentSolver::UniqueProperties>(
+  ::py::class_<dart::math::GradientDescentSolver::UniqueProperties>(
       m, "GradientDescentSolverUniqueProperties")
       .def(::py::init<>())
       .def(::py::init<double>(), ::py::arg("stepMultiplier"))
@@ -115,171 +115,171 @@ void GradientDescentSolver(py::module& m)
           ::py::arg("ineqConstraintWeights"))
       .def_readwrite(
           "mStepSize",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::mStepSize)
+          &dart::math::GradientDescentSolver::UniqueProperties::mStepSize)
       .def_readwrite(
           "mMaxAttempts",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
-              mMaxAttempts)
+          &dart::math::GradientDescentSolver::UniqueProperties::mMaxAttempts)
       .def_readwrite(
           "mPerturbationStep",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mPerturbationStep)
       .def_readwrite(
           "mMaxPerturbationFactor",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mMaxPerturbationFactor)
       .def_readwrite(
           "mMaxRandomizationStep",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mMaxRandomizationStep)
       .def_readwrite(
           "mDefaultConstraintWeight",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mDefaultConstraintWeight)
       .def_readwrite(
           "mEqConstraintWeights",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mEqConstraintWeights)
       .def_readwrite(
           "mIneqConstraintWeights",
-          &dart::optimizer::GradientDescentSolver::UniqueProperties::
+          &dart::math::GradientDescentSolver::UniqueProperties::
               mIneqConstraintWeights);
 
   ::py::class_<
-      dart::optimizer::GradientDescentSolver::Properties,
-      dart::optimizer::Solver::Properties,
-      dart::optimizer::GradientDescentSolver::UniqueProperties>(
+      dart::math::GradientDescentSolver::Properties,
+      dart::math::Solver::Properties,
+      dart::math::GradientDescentSolver::UniqueProperties>(
       m, "GradientDescentSolverProperties")
       .def(::py::init<>())
       .def(
-          ::py::init<const dart::optimizer::Solver::Properties&>(),
+          ::py::init<const dart::math::Solver::Properties&>(),
           ::py::arg("solverProperties"))
       .def(
           ::py::init<
-              const dart::optimizer::Solver::Properties&,
-              const dart::optimizer::GradientDescentSolver::
-                  UniqueProperties&>(),
+              const dart::math::Solver::Properties&,
+              const dart::math::GradientDescentSolver::UniqueProperties&>(),
           ::py::arg("solverProperties"),
           ::py::arg("descentProperties"));
 
   ::py::class_<
-      dart::optimizer::GradientDescentSolver,
-      dart::optimizer::Solver,
-      std::shared_ptr<dart::optimizer::GradientDescentSolver>>(
+      dart::math::GradientDescentSolver,
+      dart::math::Solver,
+      std::shared_ptr<dart::math::GradientDescentSolver>>(
       m, "GradientDescentSolver")
       .def(::py::init<>())
       .def(
-          ::py::init<
-              const dart::optimizer::GradientDescentSolver::Properties&>(),
+          ::py::init<const dart::math::GradientDescentSolver::Properties&>(),
           ::py::arg("properties"))
       .def(
-          ::py::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          ::py::init<std::shared_ptr<dart::math::Problem>>(),
           ::py::arg("problem"))
       .def(
           "solve",
-          +[](dart::optimizer::GradientDescentSolver* self) -> bool {
+          +[](dart::math::GradientDescentSolver* self) -> bool {
             return self->solve();
           })
       .def(
           "getLastConfiguration",
-          +[](const dart::optimizer::GradientDescentSolver* self)
+          +[](const dart::math::GradientDescentSolver* self)
               -> Eigen::VectorXd { return self->getLastConfiguration(); })
       .def(
           "getType",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> std::string { return self->getType(); })
-      .def(
-          "clone",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> std::shared_ptr<dart::optimizer::Solver> {
-            return self->clone();
+          +[](const dart::math::GradientDescentSolver* self) -> std::string {
+            return self->getType();
           })
       .def(
+          "clone",
+          +[](const dart::math::GradientDescentSolver* self)
+              -> std::shared_ptr<dart::math::Solver> { return self->clone(); })
+      .def(
           "setProperties",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              const dart::optimizer::GradientDescentSolver::Properties&
+          +[](dart::math::GradientDescentSolver* self,
+              const dart::math::GradientDescentSolver::Properties&
                   _properties) { self->setProperties(_properties); },
           ::py::arg("properties"))
       .def(
           "setProperties",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              const dart::optimizer::GradientDescentSolver::UniqueProperties&
+          +[](dart::math::GradientDescentSolver* self,
+              const dart::math::GradientDescentSolver::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
           ::py::arg("properties"))
       .def(
           "getGradientDescentProperties",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> dart::optimizer::GradientDescentSolver::Properties {
+          +[](const dart::math::GradientDescentSolver* self)
+              -> dart::math::GradientDescentSolver::Properties {
             return self->getGradientDescentProperties();
           })
       .def(
           "setStepSize",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              double _newMultiplier) { self->setStepSize(_newMultiplier); },
+          +[](dart::math::GradientDescentSolver* self, double _newMultiplier) {
+            self->setStepSize(_newMultiplier);
+          },
           ::py::arg("newMultiplier"))
       .def(
           "getStepSize",
-          +[](const dart::optimizer::GradientDescentSolver* self) -> double {
+          +[](const dart::math::GradientDescentSolver* self) -> double {
             return self->getStepSize();
           })
       .def(
           "setMaxAttempts",
-          +[](dart::optimizer::GradientDescentSolver* self,
+          +[](dart::math::GradientDescentSolver* self,
               std::size_t _maxAttempts) { self->setMaxAttempts(_maxAttempts); },
           ::py::arg("maxAttempts"))
       .def(
           "getMaxAttempts",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> std::size_t { return self->getMaxAttempts(); })
+          +[](const dart::math::GradientDescentSolver* self) -> std::size_t {
+            return self->getMaxAttempts();
+          })
       .def(
           "setPerturbationStep",
-          +[](dart::optimizer::GradientDescentSolver* self, std::size_t _step) {
+          +[](dart::math::GradientDescentSolver* self, std::size_t _step) {
             self->setPerturbationStep(_step);
           },
           ::py::arg("step"))
       .def(
           "getPerturbationStep",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> std::size_t { return self->getPerturbationStep(); })
+          +[](const dart::math::GradientDescentSolver* self) -> std::size_t {
+            return self->getPerturbationStep();
+          })
       .def(
           "setMaxPerturbationFactor",
-          +[](dart::optimizer::GradientDescentSolver* self, double _factor) {
+          +[](dart::math::GradientDescentSolver* self, double _factor) {
             self->setMaxPerturbationFactor(_factor);
           },
           ::py::arg("factor"))
       .def(
           "getMaxPerturbationFactor",
-          +[](const dart::optimizer::GradientDescentSolver* self) -> double {
+          +[](const dart::math::GradientDescentSolver* self) -> double {
             return self->getMaxPerturbationFactor();
           })
       .def(
           "setDefaultConstraintWeight",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              double _newDefault) {
+          +[](dart::math::GradientDescentSolver* self, double _newDefault) {
             self->setDefaultConstraintWeight(_newDefault);
           },
           ::py::arg("newDefault"))
       .def(
           "getDefaultConstraintWeight",
-          +[](const dart::optimizer::GradientDescentSolver* self) -> double {
+          +[](const dart::math::GradientDescentSolver* self) -> double {
             return self->getDefaultConstraintWeight();
           })
       .def(
           "randomizeConfiguration",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              Eigen::VectorXd& _x) { self->randomizeConfiguration(_x); },
+          +[](dart::math::GradientDescentSolver* self, Eigen::VectorXd& _x) {
+            self->randomizeConfiguration(_x);
+          },
           ::py::arg("x"))
       .def(
           "clampToBoundary",
-          +[](dart::optimizer::GradientDescentSolver* self,
-              Eigen::VectorXd& _x) { self->clampToBoundary(_x); },
+          +[](dart::math::GradientDescentSolver* self, Eigen::VectorXd& _x) {
+            self->clampToBoundary(_x);
+          },
           ::py::arg("x"))
       .def(
           "getLastNumIterations",
-          +[](const dart::optimizer::GradientDescentSolver* self)
-              -> std::size_t { return self->getLastNumIterations(); })
-      .def_readonly_static(
-          "Type", &dart::optimizer::GradientDescentSolver::Type);
+          +[](const dart::math::GradientDescentSolver* self) -> std::size_t {
+            return self->getLastNumIterations();
+          })
+      .def_readonly_static("Type", &dart::math::GradientDescentSolver::Type);
 }
 
 } // namespace python

@@ -91,7 +91,8 @@ dart/
 ├── math/           # Math utilities
 ├── integration/    # Numerical integration
 ├── lcpsolver/      # LCP solver
-├── optimizer/      # Optimization algorithms
+├── math/
+│   └── optimization/   # Optimization helpers
 ├── dynamics/       # Dynamics engine
 ├── collision/      # Collision detection
 ├── constraint/     # Constraint handling
@@ -202,23 +203,9 @@ dart/
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Optimizer Dependencies (Optional Components)
-
-#### 10. IPOPT
-- **Version:** ≥ 3.14.17, < 4
-- **Purpose:** Interior Point Optimizer
-- **Component:** `dart-optimizer-ipopt`
-- **CMake Module:** `cmake/DARTFindIPOPT.cmake`
-
-#### 11. NLopt
-- **Version:** ≥ 2.10.0, < 3
-- **Purpose:** Nonlinear optimization library
-- **Component:** `dart-optimizer-nlopt`
-- **CMake Module:** `cmake/DARTFindNLOPT.cmake`
-
 ### Collision Engine Dependencies (Optional Components)
 
-#### 12. Bullet Physics
+#### 10. Bullet Physics
 - **Version:** ≥ 3.25, < 4
 - **Purpose:** Alternative collision detection
 - **Option:** `DART_BUILD_COLLISION_BULLET`
@@ -227,7 +214,7 @@ dart/
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
 - **Disable:** There is no `DART_SKIP_Bullet`; set `DART_BUILD_COLLISION_BULLET=OFF` to omit the backend entirely.
 
-#### 13. Open Dynamics Engine (ODE)
+#### 11. Open Dynamics Engine (ODE)
 - **Version:** ≥ 0.13, < 1
 - **Purpose:** Alternative collision detection
 - **Option:** `DART_BUILD_COLLISION_ODE`
@@ -238,20 +225,20 @@ dart/
 
 ### Utility Dependencies
 
-#### 14. tinyxml2
+#### 12. tinyxml2
 - **Version:** ≥ 11.0.0, < 12
 - **Purpose:** XML parsing (for SDF)
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
-#### 15. libsdformat
+#### 13. libsdformat
 - **Version:** ≥ 16.0.0, < 17
 - **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindsdformat.cmake`
 - **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
-#### 16. urdfdom
+#### 14. urdfdom
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
 - **Component:** `dart-utils-urdf`
@@ -260,17 +247,17 @@ dart/
 
 ### Build/Test Dependencies (Build-time only)
 
-#### 17. Google Test (gtest)
+#### 15. Google Test (gtest)
 - **Version:** ≥ 1.17.0, < 2
 - **Purpose:** Unit testing framework
 - **Option:** `DART_USE_SYSTEM_GOOGLETEST`
 
-#### 18. Google Benchmark
+#### 16. Google Benchmark
 - **Version:** ≥ 1.9.3, < 2
 - **Purpose:** Performance benchmarking
 - **Option:** `DART_USE_SYSTEM_GOOGLEBENCHMARK`
 
-#### 19. Tracy Profiler
+#### 17. Tracy Profiler
 - **Version:** ≥ 0.11.1, < 0.12
 - **Purpose:** Frame profiling
 - **Option:** `DART_USE_SYSTEM_TRACY`
@@ -377,12 +364,6 @@ Component Dependency Tree:
     ├── Bullet (optional; via `DART_BUILD_COLLISION_BULLET`)
     └── ODE (optional; via `DART_BUILD_COLLISION_ODE`)
 
-    ├── optimizer-ipopt
-    │   └── depends: dart, ipopt
-    │
-    ├── optimizer-nlopt
-    │   └── depends: dart, nlopt
-    │
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat
     │
@@ -398,8 +379,6 @@ Component Dependency Tree:
 | Component | Library Target | Dependencies |
 |-----------|---------------|--------------|
 | `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
-| `optimizer-ipopt` | `dart-optimizer-ipopt` | `dart`, `ipopt` |
-| `optimizer-nlopt` | `dart-optimizer-nlopt` | `dart`, `nlopt` |
 | `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
 | `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
@@ -415,9 +394,7 @@ dart/
 ├── math/            # Mathematical utilities (vectors, matrices, transforms)
 ├── integration/     # Numerical integration methods
 ├── lcpsolver/       # Linear Complementarity Problem solver
-├── optimizer/       # Optimization framework
-│   ├── ipopt/      # IPOPT optimizer plugin
-│   └── nlopt/      # NLopt optimizer plugin
+├── math/optimization/       # Optimization framework
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
@@ -455,8 +432,6 @@ dart/
   - Install: No (local build only)
 
 #### Component Libraries
-- **`dart-optimizer-ipopt`** - IPOPT optimizer plugin
-- **`dart-optimizer-nlopt`** - NLopt optimizer plugin
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
 - **`dart-gui-osg`** - OpenSceneGraph GUI

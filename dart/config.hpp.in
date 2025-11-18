@@ -67,10 +67,6 @@
 #cmakedefine01 DART_BUILD_MODE_DEBUG
 #cmakedefine01 DART_BUILD_MODE_RELEASE
 
-#cmakedefine01 HAVE_NLOPT
-#cmakedefine01 HAVE_IPOPT
-#cmakedefine01 HAVE_PAGMO
-#cmakedefine01 HAVE_SNOPT
 #cmakedefine01 HAVE_BULLET
 #cmakedefine01 HAVE_ODE
 #cmakedefine01 HAVE_OCTOMAP

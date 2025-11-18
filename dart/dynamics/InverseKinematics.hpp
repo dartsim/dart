@@ -36,11 +36,10 @@
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
 
-#include <dart/optimizer/Function.hpp>
-#include <dart/optimizer/Problem.hpp>
-#include <dart/optimizer/Solver.hpp>
-
 #include <dart/math/Geometry.hpp>
+#include <dart/math/optimization/Function.hpp>
+#include <dart/math/optimization/Problem.hpp>
+#include <dart/math/optimization/Solver.hpp>
 
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
@@ -69,14 +68,14 @@ const double DefaultIKLinearWeight = 1.0;
 /// optimization problem. It generates constraint functions based on the
 /// specified InverseKinematics::ErrorMethod and
 /// InverseKinematics::GradientMethod. The optimization problem is then solved
-/// by any classes derived from optimizer::Solver class. The default solver is
-/// optimizer::GradientDescentSolver.
+/// by any classes derived from math::Solver class. The default solver is
+/// math::GradientDescentSolver.
 ///
 /// It also provides a convenient way of specifying a configuration space
 /// objective and a null space objective. It is also possible to fully customize
-/// the optimizer::Problem that the module creates, and the IK module can be
+/// the math::Problem that the module creates, and the IK module can be
 /// safely cloned  over to another JacobianNode, as long as every
-/// optimizer::Function that depends on the JacobianNode inherits the
+/// math::Function that depends on the JacobianNode inherits the
 /// InverseKinematics::Function class and correctly overloads the clone function
 class DART_API InverseKinematics : public common::Subject
 {
@@ -119,7 +118,7 @@ public:
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
-  /// optimizer::GradientDescentSolver (unless you have changed the Solver type)
+  /// math::GradientDescentSolver (unless you have changed the Solver type)
   /// and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
@@ -162,7 +161,7 @@ public:
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
-  /// optimizer::GradientDescentSolver (unless you have changed the Solver type)
+  /// math::GradientDescentSolver (unless you have changed the Solver type)
   /// and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
@@ -213,7 +212,7 @@ public:
 
   /// Clone this IK module, but targeted at a new Node. Any Functions in the
   /// Problem that inherit InverseKinematics::Function will be adapted to the
-  /// new IK module. Any generic optimizer::Function will just be copied over
+  /// new IK module. Any generic math::Function will just be copied over
   /// by pointer instead of being cloned.
   InverseKinematicsPtr clone(JacobianNode* _newNode) const;
 
@@ -284,13 +283,13 @@ public:
   /// Set an objective function that should be minimized while satisfying the
   /// inverse kinematics constraint. Pass in a nullptr to remove the objective
   /// and make it a constant-zero function.
-  void setObjective(const std::shared_ptr<optimizer::Function>& _objective);
+  void setObjective(const std::shared_ptr<math::Function>& _objective);
 
   /// Get the objective function for this IK module
-  const std::shared_ptr<optimizer::Function>& getObjective();
+  const std::shared_ptr<math::Function>& getObjective();
 
   /// Get the objective function for this IK module
-  std::shared_ptr<const optimizer::Function> getObjective() const;
+  std::shared_ptr<const math::Function> getObjective() const;
 
   /// Set an objective function that should be minimized within the null space
   /// of the inverse kinematics constraint. The gradient of this function will
@@ -301,13 +300,13 @@ public:
   /// will always be superimposed (added together) via the evalObjective()
   /// function.
   void setNullSpaceObjective(
-      const std::shared_ptr<optimizer::Function>& _nsObjective);
+      const std::shared_ptr<math::Function>& _nsObjective);
 
   /// Get the null space objective for this IK module
-  const std::shared_ptr<optimizer::Function>& getNullSpaceObjective();
+  const std::shared_ptr<math::Function>& getNullSpaceObjective();
 
   /// Get the null space objective for this IK module
-  std::shared_ptr<const optimizer::Function> getNullSpaceObjective() const;
+  std::shared_ptr<const math::Function> getNullSpaceObjective() const;
 
   /// Returns false if the null space objective does nothing
   bool hasNullSpaceObjective() const;
@@ -353,10 +352,10 @@ public:
   const Analytical* getAnalytical() const;
 
   /// Get the Problem that is being maintained by this IK module.
-  const std::shared_ptr<optimizer::Problem>& getProblem();
+  const std::shared_ptr<math::Problem>& getProblem();
 
   /// Get the Problem that is being maintained by this IK module.
-  std::shared_ptr<const optimizer::Problem> getProblem() const;
+  std::shared_ptr<const math::Problem> getProblem() const;
 
   /// Reset the Problem that is being maintained by this IK module. This will
   /// clear out all Functions from the Problem and then configure the Problem to
@@ -368,13 +367,13 @@ public:
 
   /// Set the Solver that should be used by this IK module, and set it up with
   /// the Problem that is configured by this IK module
-  void setSolver(const std::shared_ptr<optimizer::Solver>& _newSolver);
+  void setSolver(const std::shared_ptr<math::Solver>& _newSolver);
 
   /// Get the Solver that is being used by this IK module.
-  const std::shared_ptr<optimizer::Solver>& getSolver();
+  const std::shared_ptr<math::Solver>& getSolver();
 
   /// Get the Solver that is being used by this IK module.
-  std::shared_ptr<const optimizer::Solver> getSolver() const;
+  std::shared_ptr<const math::Solver> getSolver() const;
 
   /// Inverse kinematics can be performed on any point within the body frame.
   /// The default point is the origin of the body frame. Use this function to
@@ -484,10 +483,10 @@ protected:
   std::vector<int> mDofMap;
 
   /// Objective for the IK module
-  std::shared_ptr<optimizer::Function> mObjective;
+  std::shared_ptr<math::Function> mObjective;
 
   /// Null space objective for the IK module
-  std::shared_ptr<optimizer::Function> mNullSpaceObjective;
+  std::shared_ptr<math::Function> mNullSpaceObjective;
 
   /// The method that this IK module will use to compute errors
   std::unique_ptr<ErrorMethod> mErrorMethod;
@@ -503,10 +502,10 @@ protected:
   Analytical* mAnalytical;
 
   /// The Problem that will be maintained by this IK module
-  std::shared_ptr<optimizer::Problem> mProblem;
+  std::shared_ptr<math::Problem> mProblem;
 
   /// The solver that this IK module will use for iterative methods
-  std::shared_ptr<optimizer::Solver> mSolver;
+  std::shared_ptr<math::Solver> mSolver;
 
   /// The offset that this IK module should use when computing IK
   Eigen::Vector3d mOffset;
@@ -527,7 +526,7 @@ protected:
 typedef InverseKinematics IK;
 
 //==============================================================================
-/// This class should be inherited by optimizer::Function classes that have a
+/// This class should be inherited by math::Function classes that have a
 /// dependency on the InverseKinematics module that they belong to. If you
 /// pass an InverseKinematics::Function into the Problem of an
 /// InverseKinematics module, then it will be properly cloned whenever the
@@ -538,7 +537,7 @@ class InverseKinematics::Function
 {
 public:
   /// Enable this function to be cloned to a new IK module.
-  virtual optimizer::FunctionPtr clone(InverseKinematics* _newIK) const = 0;
+  virtual math::FunctionPtr clone(InverseKinematics* _newIK) const = 0;
 
   /// Virtual destructor
   virtual ~Function() = default;
@@ -1312,7 +1311,7 @@ private:
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set
 /// the objective of the module's Problem to an InverseKinematics::Objective.
 class InverseKinematics::Objective final : public Function,
-                                           public optimizer::Function
+                                           public math::Function
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
@@ -1324,7 +1323,7 @@ public:
   virtual ~Objective() = default;
 
   // Documentation inherited
-  optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
+  math::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
   double eval(const Eigen::VectorXd& _x) override;
@@ -1360,7 +1359,7 @@ public:
 /// first equality constraint of the module's Problem to an
 /// InverseKinematics::Constraint.
 class InverseKinematics::Constraint final : public Function,
-                                            public optimizer::Function
+                                            public math::Function
 {
 public:
   /// Constructor
@@ -1370,7 +1369,7 @@ public:
   virtual ~Constraint() = default;
 
   // Documentation inherited
-  optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
+  math::FunctionPtr clone(InverseKinematics* _newIK) const override;
 
   // Documentation inherited
   double eval(const Eigen::VectorXd& _x) override;

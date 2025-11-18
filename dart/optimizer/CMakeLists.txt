@@ -1,10 +1,17 @@
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-dart_add_core_headers(${hdrs})
-dart_add_core_sources(${srcs})
+# Alias headers for backward compatibility
+set(hdrs
+  All.hpp
+  Function.hpp
+  GradientDescentSolver.hpp
+  Problem.hpp
+  Solver.hpp
+)
+list(TRANSFORM hdrs PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
 
-# Generate header for this namespace
+dart_add_core_headers(${hdrs})
+
+# Generate header for this namespace so legacy includes like
+# <dart/optimizer/optimizer.hpp> keep working.
 dart_get_filename_components(header_names "optimizer headers" ${hdrs})
 dart_generate_component_headers(
   COMPONENT_NAME optimizer
@@ -14,19 +21,15 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs}
 )
 
-# Install (includes All.hpp, optimizer.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp ${DART_GENERATED_COMPAT_HEADERS}
+  FILES ${hdrs}
+        ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+        ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )
 
-# Add subdirectories (components)
-add_subdirectory(ipopt)
-add_subdirectory(nlopt)
-# Skip pagmo when building wheels to avoid dependency issues
-if(NOT DART_BUILD_WHEELS)
-  add_subdirectory(pagmo)
-endif()
-add_subdirectory(snopt)
+dart_install_compat_headers(
+  COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
+  DESTINATION_PREFIX include/dart/optimizer
+)
