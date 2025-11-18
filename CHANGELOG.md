@@ -23,6 +23,7 @@
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
   * Added `libsdformat` as a required dependency so that SDF files are normalized through the official parser before being handed to DART: [#264](https://github.com/dartsim/dart/issues/264)
+  * Added `DART_BUILD_COLLISION_BULLET` and `DART_BUILD_COLLISION_ODE` to compile the optional Bullet/ODE backends directly into the core `dart` library (the legacy `dart-collision-*` targets and components are removed; enabling the options now fails fast if the dependencies are missing).
 * Simulation
   * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
   * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.

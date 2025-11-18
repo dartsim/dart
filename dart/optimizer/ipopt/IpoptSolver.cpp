@@ -409,7 +409,7 @@ bool DartTNLP::eval_h(
   // TODO(JS): Not implemented yet.
   DART_ERROR("Not implemented yet.");
 
-  return TNLP::eval_h(
+  return Ipopt::TNLP::eval_h(
       _n,
       _x,
       _new_x,

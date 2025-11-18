@@ -8,5 +8,5 @@ Name: @PROJECT_NAME@
 Description: @DART_PKG_DESC@
 Version: @DART_VERSION@
 Requires: @DART_PKG_EXTERNAL_DEPS@
-Libs: -L${libdir} -ldart
-Cflags: -I${includedir}
+Libs: -L${libdir} -ldart@DART_PKG_LINK_LIBS@
+Cflags: -I${includedir}@DART_PKG_EXTRA_CFLAGS@
