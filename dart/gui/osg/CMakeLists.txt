@@ -43,6 +43,11 @@ file(GLOB render_hdrs "render/*.hpp")
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
+target_compile_definitions(
+  ${target_name}
+  PRIVATE
+    DART_BUILDING_DART_GUI_OSG
+)
 
 if(MSVC AND BUILD_SHARED_LIBS)
   if(CMAKE_CONFIGURATION_TYPES)
