@@ -173,6 +173,8 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
             self.l_foot_constrained = not self.l_foot_constrained
             ik = self.l_foot.getIK()
             if self.l_foot_constrained:
+                if not ik.isActive():
+                    ik.setActive(True)
                 ik.getErrorMethod().setLinearBounds(
                     -self.constrained_linear_bounds, self.constrained_linear_bounds
                 )
@@ -195,6 +197,8 @@ class TeleoperationWorld(dart.gui.osg.RealTimeWorldNode):
             self.r_foot_constrained = not self.r_foot_constrained
             ik = self.r_foot.getIK()
             if self.r_foot_constrained:
+                if not ik.isActive():
+                    ik.setActive(True)
                 ik.getErrorMethod().setLinearBounds(
                     -self.constrained_linear_bounds, self.constrained_linear_bounds
                 )
@@ -585,8 +589,8 @@ def main():
 
     print(f"✓ Positioned interactive targets at end effector locations")
 
-    # Start with IK targets inactive/hidden until toggled via keyboard.
-    for eff in (l_hand, r_hand, l_foot, r_foot):
+    # Start with hand IK targets inactive/hidden until toggled via keyboard.
+    for eff in (l_hand, r_hand):
         eff.getIK().setActive(False)
 
     print()
