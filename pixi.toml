@@ -1032,7 +1032,6 @@ ctest \
 ################################################################################
 
 [target.linux-64.dependencies]
-freeglut = ">=3.2.2,<3.3"
 lcov = ">=1.16,<2"
 mesalib = ">=24"
 libglvnd = ">=1.7"
@@ -1118,7 +1117,6 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 ################################################################################
 
 [target.win-64.dependencies]
-freeglut = ">=3.2.2"
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
 
