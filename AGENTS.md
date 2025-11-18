@@ -5,6 +5,7 @@ This file is a pointer board for agents working in this repository.  Keep it con
 ## Read First
 
 - Architectural, build, and workflow expectations live in `docs/onboarding` (start with `docs/onboarding/ci-cd.md` and `docs/onboarding/build-system.md`).
+- The day-to-day pixi workflow (install, config, build, test) is documented in `docs/onboarding/building.md`.
 - Coding standards, formatting, and contribution flow are in `CONTRIBUTING.md`.
 - Feature‑specific notes belong beside the code (e.g., README in the component directory) or in `docs/`.
 
