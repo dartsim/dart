@@ -1,0 +1,95 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2011-2025, The DART development contributors
+# This file is distributed under the same license as the DART package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DART \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: 2025-11-17 17:49+0000\n"
+"Last-Translator: Codex Agent <codex@example.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../dart/user_guide/migration_guide.rst:2 423fe84ce5b3455fafa5765dd08d4ab4
+msgid "Migration Guide"
+msgstr "마이그레이션 가이드"
+
+#: ../../dart/user_guide/migration_guide.rst:4 801e2e516fce4826ad962bf4ee581f41
+msgid ""
+"This page captures noteworthy source-level changes between stable "
+"releases so you can migrate projects with minimal surprises. Only "
+"migrations for **published** versions are listed here; when a new major "
+"release approaches we will expand the guide accordingly."
+msgstr ""
+"이 페이지는 안정화 버전 간 소스 레벨 변경 사항을 정리해 예기치 않은 문제 없이 프로젝트를 마이그레이션할 수 있도록 돕습니다. "
+"여기에는 **공식 배포** 버전에 대한 변경만 정리되어 있으며, 새로운 메이저 릴리스가 다가오면 그에 맞춰 내용을 확장할 "
+"예정입니다."
+
+#: ../../dart/user_guide/migration_guide.rst:7 e93dcfec32ec413cb52944412b71e642
+msgid "DART 6 → DART 7"
+msgstr "DART 6 → DART 7"
+
+#: ../../dart/user_guide/migration_guide.rst:10
+#: f09df9b490db4a20b7db2d5d8730adae
+msgid "Component Headers Renamed"
+msgstr "컴포넌트 헤더 이름 변경"
+
+#: ../../dart/user_guide/migration_guide.rst:12
+#: 37eeec6b95e646019c2f7f505055e255
+msgid "**Change**: ``<component>.hpp`` → ``All.hpp``"
+msgstr "**변경 사항**: ``<component>.hpp`` → ``All.hpp``"
+
+#: ../../dart/user_guide/migration_guide.rst:24
+#: 47e7ea8dc16b493bb153fddfa0fdf3ef
+msgid ""
+"**Note**: Old headers still work but show deprecation warnings (removed "
+"in a future major release)."
+msgstr ""
+"**참고**: 이전 헤더도 동작하지만 사용 중단 경고가 표시되며, 향후 메이저 릴리스에서 제거될 예정입니다."
+
+#: ../../dart/user_guide/migration_guide.rst:26
+#: ../../dart/user_guide/migration_guide.rst:50
+#: 68590ea1b4ac4a808a2002c908de6579 6b17a366770e4a8d92448637c38d1085
+msgid "**Suppress warnings** (if needed during migration):"
+msgstr "**경고 억제**(마이그레이션 중 필요하다면):"
+
+#: ../../dart/user_guide/migration_guide.rst:34
+#: 74dbd3d79ecf448b8263e80fa61154c4
+msgid "Header Names: PascalCase → snake_case"
+msgstr "헤더 이름: PascalCase → snake_case"
+
+#: ../../dart/user_guide/migration_guide.rst:36
+#: a9d533d4900d4c35b99b161a23a7b703
+msgid "**Change**: PascalCase headers → snake_case headers"
+msgstr "**변경 사항**: PascalCase 헤더 → snake_case 헤더"
+
+#: ../../dart/user_guide/migration_guide.rst:48
+#: 7984157f47474bee83a5d19213899fbe
+msgid ""
+"**Note**: PascalCase headers continue to compile in DART 7.x but emit "
+"deprecation warnings. They are slated for removal in the next major "
+"release."
+msgstr ""
+"**참고**: PascalCase 헤더는 DART 7.x에서도 여전히 컴파일되지만 사용 중단 경고를 출력하며, 다음 메이저 "
+"릴리스에서 제거될 예정입니다."
+
+#: ../../dart/user_guide/migration_guide.rst:58
+#: cca36dad7c744df5927bbfb8d5944033
+msgid "Need another migration?"
+msgstr "다른 마이그레이션이 필요하신가요?"
+
+#: ../../dart/user_guide/migration_guide.rst:60
+#: 6ea33ebe181543288f5ac307b84f9366
+msgid ""
+"Looking for guidance on a different upgrade path? Open a discussion or "
+"issue on GitHub so we can expand this page with the details you need."
+msgstr ""
+"다른 업그레이드 경로에 대한 안내가 필요하다면 GitHub에 토론이나 이슈를 열어 주세요. 필요한 내용을 이 페이지에 추가하겠습니다."

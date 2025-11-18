@@ -9,50 +9,50 @@ msgstr ""
 "Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
 "7.0.0-alpha0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-25 19:23-0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2025-11-17 09:47-0800\n"
+"PO-Revision-Date: 2025-11-17 17:49+0000\n"
+"Last-Translator: Codex Agent <codex@example.com>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.17.0\n"
 
-#: ../../index.rst:89
+#: ../../index.rst:84
 msgid "Home"
 msgstr "홈"
 
-#: ../../index.rst:97
-msgid "dart (C++)"
-msgstr "dart (C++)"
+#: ../../index.rst:92
+msgid "Tutorials"
+msgstr "튜토리얼"
 
-#: ../../index.rst:105
+#: ../../index.rst:99 ../../index.rst:108
+msgid "API Reference"
+msgstr "API 레퍼런스"
+
+#: ../../index.rst:99
 msgid "dartpy (Python)"
 msgstr "dartpy (Python)"
 
-#: ../../index.rst:115
+#: ../../index.rst:108
+msgid "DART (C++)"
+msgstr "DART (C++)"
+
+#: ../../index.rst:117
 msgid "Community"
 msgstr "커뮤니티"
 
-#: ../../index.rst:97
-msgid "User Guide"
-msgstr "사용자 가이드"
-
-#: ../../index.rst:105
-msgid "Developer Guide"
-msgstr "개발자 가이드"
-
-#: ../../index.rst:7 d584aa398b19497baff45df31a4e8423
+#: ../../index.rst:7 88ff687b270043de838519dd087af822
 msgid "Welcome to DART documentation!"
 msgstr "DART 문서에 오신걸 환영합니다!"
 
-#: ../../index.rst:10 67cdc2ca4ec749a88206c9103f9c17f8
+#: ../../index.rst:10 4811a85cd3234c7b8003c639734e2182
 msgid "Introduction"
 msgstr "소개"
 
-#: ../../index.rst:12 aac4250988724d4ea7fdc8f87aa810f7
+#: ../../index.rst:12 010cef13b38b4f7f84d8ee67e9f1ba90
 msgid ""
 "DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-"
 "platform, open-source library developed by the `Graphics Lab "
@@ -75,29 +75,27 @@ msgstr ""
 "및 알고리즘을 제공합니다. DART는 관절이 있는 강체 시스템을 나타내기 위해 일반화 좌표를 사용하고, Featherstone의 "
 "관절 본 알고리즘을 적용하여 움직임 동역학을 계산하여 정확성과 안정성을 제공하는 점에서 뛰어난 성능을 보입니다."
 
-#: ../../index.rst:28 2812161c457b4691affd47010f8e9a5f
-msgid ""
-"This document pertains to the new major version, DART 7, which is "
-"currently under heavy development. Please note that this early stage "
-"version may contain bugs or other issues. If you prefer to use a more "
-"stable version, please use DART 6.13 instead."
-msgstr ""
-"이 문서는 현재 개발 중인 새로운 주요 버전인 DART 7에 관련된 것입니다. 언급되지 않은 버그나 다른 문제점이 발생할 수 있는 "
-"이른 상태의 버전임을 주의하시기 바랍니다. 더 안정된 버전을 원하시면, DART 6.13을 사용하십시오."
-
-#: ../../index.rst:34 44a96648ad7d47bcb90ab96ebe4fe67a
+#: ../../index.rst:28 bff03560711647549b67af642c538570
 msgid "Updates"
 msgstr "업데이트"
 
-#: ../../index.rst:36 d43d6ef39d624f16a5a0d6af570fea34
+#: ../../index.rst:30 5c3cff772f7e4967a042ac98b322e6d9
+msgid ""
+"2025-11-09: DART version 6.16.0 released. See :doc:`overview` and "
+":doc:`dart/cpp_api_reference` for links to the API reference."
+msgstr ""
+"2025-11-09: DART 버전 6.16.0 출시. API 문서 링크는 :doc:`overview` 와 "
+":doc:`dart/cpp_api_reference` 에서 확인하세요."
+
+#: ../../index.rst:31 290d8e7250d347fe991c26a26a68eef1
 msgid "2022-12-31: DART version 6.13.0 released."
 msgstr "2022-12-31: DART 버전 6.13.0 출시."
 
-#: ../../index.rst:39 a829b063426244ffb0ce5d08e0c4f2ea
+#: ../../index.rst:34 a4b9f5667bb74308a94ea039c1fccfac
 msgid "Social Media"
 msgstr "소셜 미디어"
 
-#: ../../index.rst:41 4d323a3d0c364a5db711f97c4cabb360
+#: ../../index.rst:36 012b18fef3ce4ded97ae708447404ee0
 msgid ""
 "Stay updated with the latest news and developments about DART by "
 "following us on `Twitter <https://twitter.com/dartsim_org>`_ and "
@@ -105,18 +103,18 @@ msgid ""
 "<https://www.youtube.com/@dartyoutube3531>`_."
 msgstr "트위터를 팔로우하고 유튜브 채널을 구독하여 DART의 최신 소식과 개발 상황을 확인하세요."
 
-#: ../../index.rst:46 741b7f121d8040abb74db6e9f7a5934b
+#: ../../index.rst:41 7bcb8064563b4f3e937af03a38b1c0fc
 msgid "Vision for the next version of DART"
 msgstr "DART의 다음 버전에 대한 비전"
 
-#: ../../index.rst:48 9ba519e8b2684eb29000628c39efa20a
+#: ../../index.rst:43 dae0ebb791034eff8f42b59b0439204e
 msgid ""
 "Elevate the Python binding to a first-class component, ensuring full "
 "support and equivalent functionality to the C++ APIs, rather than "
 "remaining in an experimental stage."
 msgstr "파이썬 바인딩을 일등급 컴포넌트로 만들어 C++ API와 동등한 기능을 제공하고 실험 단계를 벗어나게 합니다."
 
-#: ../../index.rst:51 30edf7211ae9434496437b17f5f21ac8
+#: ../../index.rst:46 ad47f60b7d2c48969bc6d5dd1b167724
 msgid ""
 "Modularize the library so that users can select specific components to "
 "use with minimal required dependencies, rather than having to use the "
@@ -125,14 +123,14 @@ msgstr ""
 "사용자가 필요한 최소한의 의존성을 사용하여 특정 컴포넌트를 선택할 수 있도록 라이브러리를 모듈화하여 불필요한 부분을 포함한 전체 "
 "라이브러리를 사용하지 않아도 됩니다."
 
-#: ../../index.rst:54 6ee80d15a69a4e1e9197878f00764e8e
+#: ../../index.rst:49 a616f5b76d08453d88c59f72ee6e1af2
 msgid ""
 "Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs, "
 "whenever available and enabled by the user, to maximize overall "
 "performance."
 msgstr "사용 가능하고 사용자가 활성화할 경우 SIMD, 멀티코어 CPU 및 GPU 등 하드웨어 가속을 활용하여 전반적인 성능을 극대화합니다."
 
-#: ../../index.rst:56 ff8419fbf9f3463cb83e2278b5eb2b2e
+#: ../../index.rst:51 111341a152a646a68d2bdac93c677db1
 msgid ""
 "Support both single and double precision, with options to compile the "
 "library for required scalar types or leave the template code uncompiled."
@@ -140,61 +138,95 @@ msgstr ""
 "단일 및 더블 정밀도를 모두 지원하며, 필요한 스칼라 유형으로 라이브러리를 컴파일하거나 템플릿 코드를 컴파일하지 않는 옵션이 "
 "있습니다."
 
-#: ../../index.rst:58 e440d60ae23a4c7ebe6fa1deec3fcf65
+#: ../../index.rst:53 353d079ea47f4128a8fb4e15d2d24c0c
 msgid ""
 "Minimize dependencies to make the library usable without bringing in all "
 "transitive dependencies."
 msgstr "모든 종속성을 가져오지 않고도 라이브러리를 사용할 수 있도록 종속성을 최소화합니다."
 
-#: ../../index.rst:60 3a0363633ec84137b2d2f53ddc24c566
+#: ../../index.rst:55 21f475f055bc484b8f567d5105db3f5d
 msgid ""
 "Modernize implementation and public APIs to enable users to work with "
 "more intuitive and user-friendly APIs."
 msgstr "사용자가 더 직관적이고 사용하기 쉬운 API를 사용할 수 있도록 구현과 공개 API를 현대화합니다."
 
-#: ../../index.rst:62 15c55b0de18e4a4d97d796706ed9c28c
+#: ../../index.rst:57 5461bb9629354cc08b60a04877cd973d
 msgid ""
 "Provide various resources, such as a quick start guide, examples, and "
 "tutorials, to lower the initial learning curve for users."
 msgstr "사용자의 초기 학습 곡선을 낮추기 위해 빠른 시작 가이드, 예제 및 튜토리얼과 같은 다양한 리소스를 제공합니다."
 
-#: ../../index.rst:66 ec589e05f4c248e49a1cad9b9cd20755
+#: ../../index.rst:61 5962ec66fd3b4e68bbf203c4e228517c
 msgid "Citation"
 msgstr "논문 인용"
 
-#: ../../index.rst:68 b45c21ed75714796bdceb25c4566efdf
+#: ../../index.rst:63 48faecf963b14ee5bf476269a354feee
 msgid ""
 "If you use DART in an academic publication, please consider citing this "
 "`JOSS Paper <https://doi.org/10.21105/joss.00500>`_ [`BibTeX "
 "<https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
-msgstr "만약 학술 논문에서 DART를 사용하신다면, 이 `JOSS 논문 <https://doi.org/10.21105/joss.00500>`_ 을 인용해 주시기 바랍니다 [`BibTeX <https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
-
-#: ../../index.rst:70 2831606b13a24b4ab7f8a1a7ea9b10b1
-msgid ""
-"@article{Lee2018,\n"
-"  doi = {10.21105/joss.00500},\n"
-"  url = {https://doi.org/10.21105/joss.00500},\n"
-"  year  = {2018},\n"
-"  month = {Feb},\n"
-"  publisher = {The Open Journal},\n"
-"  volume = {3},\n"
-"  number = {22},\n"
-"  pages = {500},\n"
-"  author = {Jeongseok Lee and Michael X. Grey and Sehoon Ha and Tobias Kunz and Sumit Jain and Yuting Ye and Siddhartha S. Srinivasa and Mike Stilman and C. Karen Liu},\n"
-"  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
-"  journal = {The Journal of Open Source Software}\n"
-"}"
 msgstr ""
-"@article{Lee2018,\n"
-"  doi = {10.21105/joss.00500},\n"
-"  url = {https://doi.org/10.21105/joss.00500},\n"
-"  year  = {2018},\n"
-"  month = {Feb},\n"
-"  publisher = {The Open Journal},\n"
-"  volume = {3},\n"
-"  number = {22},\n"
-"  pages = {500},\n"
-"  author = {Jeongseok Lee and Michael X. Grey and Sehoon Ha and Tobias Kunz and Sumit Jain and Yuting Ye and Siddhartha S. Srinivasa and Mike Stilman and C. Karen Liu},\n"
-"  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
-"  journal = {The Journal of Open Source Software}\n"
-"}"
+"만약 학술 논문에서 DART를 사용하신다면, 이 `JOSS 논문 "
+"<https://doi.org/10.21105/joss.00500>`_ 을 인용해 주시기 바랍니다 [`BibTeX "
+"<https://gist.github.com/jslee02/998b8809e3ae1b7aef6ef04dd2ad5e27>`_]"
+
+#~ msgid "User Guide"
+#~ msgstr "사용자 가이드"
+
+#~ msgid "Developer Guide"
+#~ msgstr "개발자 가이드"
+
+#~ msgid ""
+#~ "This document pertains to the new "
+#~ "major version, DART 7, which is "
+#~ "currently under heavy development. Please "
+#~ "note that this early stage version "
+#~ "may contain bugs or other issues. "
+#~ "If you prefer to use a more "
+#~ "stable version, please use DART 6.13 "
+#~ "instead."
+#~ msgstr ""
+#~ "이 문서는 현재 개발 중인 새로운 주요 버전인"
+#~ " DART 7에 관련된 것입니다. 언급되지 않은 버그나"
+#~ " 다른 문제점이 발생할 수 있는 이른 상태의 "
+#~ "버전임을 주의하시기 바랍니다. 더 안정된 버전을 원하시면,"
+#~ " DART 6.13을 사용하십시오."
+
+#~ msgid ""
+#~ "@article{Lee2018,\n"
+#~ "  doi = {10.21105/joss.00500},\n"
+#~ "  url = {https://doi.org/10.21105/joss.00500},\n"
+#~ "  year  = {2018},\n"
+#~ "  month = {Feb},\n"
+#~ "  publisher = {The Open Journal},\n"
+#~ "  volume = {3},\n"
+#~ "  number = {22},\n"
+#~ "  pages = {500},\n"
+#~ "  author = {Jeongseok Lee and "
+#~ "Michael X. Grey and Sehoon Ha and"
+#~ " Tobias Kunz and Sumit Jain and "
+#~ "Yuting Ye and Siddhartha S. Srinivasa"
+#~ " and Mike Stilman and C. Karen "
+#~ "Liu},\n"
+#~ "  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
+#~ "  journal = {The Journal of Open Source Software}\n"
+#~ "}"
+#~ msgstr ""
+#~ "@article{Lee2018,\n"
+#~ "  doi = {10.21105/joss.00500},\n"
+#~ "  url = {https://doi.org/10.21105/joss.00500},\n"
+#~ "  year  = {2018},\n"
+#~ "  month = {Feb},\n"
+#~ "  publisher = {The Open Journal},\n"
+#~ "  volume = {3},\n"
+#~ "  number = {22},\n"
+#~ "  pages = {500},\n"
+#~ "  author = {Jeongseok Lee and "
+#~ "Michael X. Grey and Sehoon Ha and"
+#~ " Tobias Kunz and Sumit Jain and "
+#~ "Yuting Ye and Siddhartha S. Srinivasa"
+#~ " and Mike Stilman and C. Karen "
+#~ "Liu},\n"
+#~ "  title = {{DART}: Dynamic Animation and Robotics Toolkit},\n"
+#~ "  journal = {The Journal of Open Source Software}\n"
+#~ "}"
