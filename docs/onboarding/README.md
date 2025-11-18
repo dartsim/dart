@@ -393,7 +393,7 @@ graph TB
 - Recording support for playback and analysis
 
 **Depends On**:
-- **Internal**: Skeleton, SimpleFrame, CollisionDetector, ConstraintSolver, Integrator
+- **Internal**: Skeleton, SimpleFrame, CollisionDetector, ConstraintSolver (handles time integration internally)
 - **External**: Eigen for math operations
 
 ---
@@ -640,7 +640,6 @@ sequenceDiagram
     participant CollisionDet as CollisionDetector
     participant ConstraintS as ConstraintSolver
     participant LCP as LcpSolver
-    participant Integrator as Integrator
 
     World->>Skeleton: computeForwardKinematics()
     Note over Skeleton: Update body transforms
@@ -660,9 +659,8 @@ sequenceDiagram
     LCP-->>ConstraintS: impulses
     ConstraintS->>Skeleton: applyConstraintImpulses()
 
-    World->>Integrator: integrate(q, q̇, q̈, dt)
-    Note over Integrator: Semi-Implicit Euler:<br/>q̇ₙ₊₁ = q̇ₙ + q̈ₙ·dt<br/>qₙ₊₁ = qₙ + q̇ₙ₊₁·dt
-    Integrator-->>World: new state (q, q̇)
+    World->>World: integrateState(q, q̇, q̈, dt)
+    Note over World: Built-in semi-implicit Euler:<br/>q̇ₙ₊₁ = q̇ₙ + q̈ₙ·dt<br/>qₙ₊₁ = qₙ + q̇ₙ₊₁·dt
 
     World->>World: time += dt
 </mermaid>
@@ -671,7 +669,6 @@ sequenceDiagram
 - [`World::step()`](dart/simulation/World.cpp#L356)
 - [`Skeleton::computeForwardDynamics()`](dart/dynamics/Skeleton.cpp#L2154)
 - [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159)
-- [`SemiImplicitEulerIntegrator`](dart/integration/SemiImplicitEulerIntegrator.cpp)
 
 ---
 
@@ -925,11 +922,10 @@ sequenceDiagram
 - `mGravity: Eigen::Vector3d` - Gravity vector (default: [0,0,-9.81])
 - `mCollisionDetector: CollisionDetector*` - Collision system
 - `mConstraintSolver: ConstraintSolver*` - Constraint system
-- `mIntegrator: Integrator*` - Time integration scheme
 
 **Relations**:
 - Contains: Skeletons, SimpleFrames
-- Uses: CollisionDetector, ConstraintSolver, Integrator
+- Uses: CollisionDetector, ConstraintSolver
 - Rendered by: WorldNode
 
 **Notes**:

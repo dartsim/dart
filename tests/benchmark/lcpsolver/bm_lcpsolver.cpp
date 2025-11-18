@@ -8,7 +8,7 @@
  * Benchmark comparing Dantzig LCP solver vs ODE baseline
  */
 
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 #include "tests/baseline/odelcpsolver/lcp.h"
 #include "tests/common/lcpsolver/LCPTestProblems.hpp"
 
@@ -16,7 +16,7 @@
 
 #include <vector>
 
-using dart::lcpsolver::dReal;
+using dReal = double;
 
 // Forward declare the baseline function
 namespace dart {
@@ -88,8 +88,8 @@ static void BM_Dantzig_F64_Solver(
   for (auto _ : state) {
     data.reset(problem);
 
-    // Solve LCP using Dantzig solver (from dart/lcpsolver/dantzig/)
-    bool success = dart::lcpsolver::SolveLCP<double>(
+    // Solve LCP using Dantzig solver (from dart/math/lcp/Dantzig/)
+    bool success = dart::math::SolveLCP<double>(
         data.n,
         data.A.data(),
         data.x.data(),
@@ -133,7 +133,7 @@ static void BM_Dantzig_F32_Solver(
     std::fill(w_f.begin(), w_f.end(), 0.0f);
 
     // Solve LCP using template version with float
-    bool success = dart::lcpsolver::SolveLCP<float>(
+    bool success = dart::math::SolveLCP<float>(
         problem.dimension,
         A_f.data(),
         x_f.data(),

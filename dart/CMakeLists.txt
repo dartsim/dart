@@ -13,7 +13,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # common
 # math
-# integration
 # lcpsolver
 # optimizer
 #   ipopt
@@ -35,12 +34,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
+# dart - common, math, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
 #        fcl, fmt]
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
-# dart-collision-bullet - {dart}, collision/bullet, [bullet]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
@@ -51,8 +49,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - {dart}
 # optimizer-ipopt - (dart), {dart-optimizer-ipopt}
 # optimizer-nlopt - (dart), {dart-optimizer-nlopt}
-# collision-bullet - (dart), {dart-collision-bullet}
-# utils - (collision-bullet), {dart-utils}
+# utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui-osg - (utils), {dart-gui-osg}
 
@@ -69,14 +66,13 @@ endfunction()
 
 add_subdirectory(common)
 add_subdirectory(math)
-add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(optimizer)
 add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
-add_subdirectory(utils) # tinyxml2, bullet
+add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
@@ -119,6 +115,16 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
+get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
+if(_dart_extra_includes)
+  list(REMOVE_DUPLICATES _dart_extra_includes)
+  target_include_directories(dart PUBLIC ${_dart_extra_includes})
+endif()
+get_property(_dart_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
+if(_dart_system_includes)
+  list(REMOVE_DUPLICATES _dart_system_includes)
+  target_include_directories(dart SYSTEM PUBLIC ${_dart_system_includes})
+endif()
 target_link_libraries(
   dart
   PUBLIC
@@ -128,12 +134,21 @@ target_link_libraries(
     assimp
 )
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
+get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
+if(_dart_extra_compile_options)
+  list(REMOVE_DUPLICATES _dart_extra_compile_options)
+  target_compile_options(dart PRIVATE ${_dart_extra_compile_options})
+endif()
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)
   target_link_libraries(dart PUBLIC fmt::fmt)
 else()
   message(FATAL_ERROR "Failed to find fmt targets")
+endif()
+get_property(_dart_extra_link_libs GLOBAL PROPERTY DART_EXTRA_LINK_LIBS)
+if(_dart_extra_link_libs)
+  target_link_libraries(dart PUBLIC ${_dart_extra_link_libs})
 endif()
 
 # spdlog settings

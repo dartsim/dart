@@ -81,7 +81,7 @@ Follow the control instructions displayed in the console and viewer window.
 - **OSG Patterns**: Uses modern OSG viewer patterns with proper reference counting
 - **Real-time Simulation**: Leverages `RealTimeWorldNode` for smooth physics stepping
 - **Shadow Rendering**: Includes default shadow technique for enhanced visualization
-- **Force Management**: Implements the same force application and decay logic as the original GLUT version
+- **Force Management**: Implements the same force application and decay logic as the legacy viewer version
 
 ## Related Examples
 

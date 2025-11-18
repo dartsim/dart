@@ -33,7 +33,7 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
 #include "dart/common/Profile.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 namespace dart {
 namespace constraint {
@@ -69,7 +69,7 @@ bool DantzigBoxedLcpSolver::solve(
   double* w = new double[n];
   std::memset(w, 0, n * sizeof(double));
 
-  bool result = lcpsolver::SolveLCP<double>(
+  bool result = math::SolveLCP<double>(
       n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 
   delete[] w;

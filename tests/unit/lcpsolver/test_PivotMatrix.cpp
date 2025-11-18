@@ -3,11 +3,11 @@
  * All rights reserved.
  */
 
-#include "dart/lcpsolver/dantzig/PivotMatrix.hpp"
+#include "dart/math/lcp/Dantzig/PivotMatrix.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace dart::lcpsolver;
+using namespace dart::math;
 
 //==============================================================================
 TEST(PivotMatrix, Construction)
