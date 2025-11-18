@@ -31,7 +31,7 @@
 **Choice**: pixi-based wheel building (not cibuildwheel + Docker)
 
 **Rationale**:
-- **No Docker maintenance**: No custom manylinux images to maintain
+- **No Docker maintenance**: No custom container images to maintain
 - **Local reproducibility**: Same commands work locally and in CI
 - **Unified tooling**: pixi handles both development and distribution
 - **Cross-platform**: Consistent environment via conda-forge
@@ -83,22 +83,22 @@ positions = skel.getPositions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI_OSG=ON`
+**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI=ON`
 
-**Root Cause**: Python bindings checked for undefined `HAVE_DART_GUI_OSG` preprocessor macro
+**Root Cause**: Python bindings previously checked for an undefined `HAVE_DART_GUI_OSG` preprocessor macro
 
 **Solution**:
-1. Use `DART_BUILD_GUI_OSG` directly in `python/dartpy/gui/module.cpp`:
+1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
    ```cpp
-   #if DART_BUILD_GUI_OSG
+   #if DART_BUILD_GUI
      // Bind OSG module
    #endif
    ```
 
 2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
    ```cmake
-   if(DART_BUILD_GUI_OSG)
-     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI_OSG=1)
+   if(DART_BUILD_GUI)
+     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
    endif()
    ```
 
@@ -140,7 +140,7 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 pixi run -e py312-wheel wheel-build
 pixi run -e py313-wheel wheel-build
 
-# Repair (Linux only - convert to manylinux)
+# Repair (Linux only - run auditwheel)
 pixi run -e py312-wheel wheel-repair
 pixi run -e py313-wheel wheel-repair
 

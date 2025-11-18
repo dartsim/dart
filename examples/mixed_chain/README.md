@@ -1,6 +1,6 @@
 # Mixed Chain Example
 
-This project is dependent on DART with OSG support. Please make sure a proper version of DART is installed with the gui-osg component before building this project.
+This project is dependent on DART with OSG support. Please make sure a proper version of DART is installed with the gui component before building this project.
 
 ## Build Instructions
 

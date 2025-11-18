@@ -149,7 +149,7 @@ dart_find_package(spdlog)
 #--------------------
 
 # ImGui
-if(DART_BUILD_GUI_OSG)
+if(DART_BUILD_GUI)
   if(DART_USE_SYSTEM_IMGUI)
     # Use system-installed ImGui
     dart_find_package(imgui)
@@ -265,7 +265,7 @@ if(DART_BUILD_GUI_OSG)
     # Component registration
     # Note: We use dart-imgui-lib as the real target name (not imgui::imgui with ALIAS)
     # because ALIAS targets cannot be exported by CMake install(EXPORT) commands.
-    # dart-gui-osg links directly to dart-imgui-lib when using fetched ImGui.
+    # dart-gui links directly to dart-imgui-lib when using fetched ImGui.
     add_component(${PROJECT_NAME} ${imgui_component_name})
     add_component_targets(${PROJECT_NAME} ${imgui_component_name} ${imgui_library_name})
 
