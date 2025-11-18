@@ -1029,7 +1029,6 @@ sequenceDiagram
 **Optional**:
 - Python ≥ 3.7 (for dartpy bindings)
 - Bullet, ODE (alternative collision backends)
-- IPOPT, NLopt (optimization)
 - urdfdom (URDF parsing)
 
 ### Quick Start with pixi
@@ -1128,7 +1127,6 @@ dart_gui/
 │   ├── integration/          # Time integrators
 │   ├── lcpsolver/            # LCP solver
 │   ├── math/                 # Mathematical utilities
-│   ├── optimizer/            # Optimization algorithms
 │   ├── simulation/           # World simulation
 │   └── utils/                # File parsers (URDF, SDF, etc.)
 ├── python/                   # Python bindings (dartpy)

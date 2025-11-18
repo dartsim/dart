@@ -94,9 +94,6 @@ endforeach()
 target_link_libraries(${pybind_module}
   PUBLIC ${dartpy_libraries}
 )
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
-endif()
 if(TARGET dart-gui-osg)
   target_link_libraries(${pybind_module} PUBLIC dart-gui-osg)
 endif()

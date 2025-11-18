@@ -45,147 +45,138 @@ namespace python {
 
 void Problem(py::module& m)
 {
-  ::py::class_<
-      dart::optimizer::Problem,
-      std::shared_ptr<dart::optimizer::Problem>>(m, "Problem")
+  ::py::class_<dart::math::Problem, std::shared_ptr<dart::math::Problem>>(
+      m, "Problem")
       .def(::py::init<>())
       .def(::py::init<std::size_t>(), ::py::arg("dim"))
       .def(
           "setDimension",
-          +[](dart::optimizer::Problem* self, std::size_t _dim) {
+          +[](dart::math::Problem* self, std::size_t _dim) {
             self->setDimension(_dim);
           },
           ::py::arg("dim"))
       .def(
           "getDimension",
-          +[](const dart::optimizer::Problem* self) -> std::size_t {
+          +[](const dart::math::Problem* self) -> std::size_t {
             return self->getDimension();
           })
       .def(
           "setInitialGuess",
-          +[](dart::optimizer::Problem* self,
-              const Eigen::VectorXd& _initGuess) {
+          +[](dart::math::Problem* self, const Eigen::VectorXd& _initGuess) {
             self->setInitialGuess(_initGuess);
           },
           ::py::arg("initGuess"))
       .def(
           "getInitialGuess",
-          +[](dart::optimizer::Problem* self) -> const Eigen::VectorXd& {
+          +[](dart::math::Problem* self) -> const Eigen::VectorXd& {
             return self->getInitialGuess();
           })
       .def(
           "addSeed",
-          +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _seed) {
+          +[](dart::math::Problem* self, const Eigen::VectorXd& _seed) {
             self->addSeed(_seed);
           },
           ::py::arg("seed"))
       .def(
           "clearAllSeeds",
-          +[](dart::optimizer::Problem* self) { self->clearAllSeeds(); })
+          +[](dart::math::Problem* self) { self->clearAllSeeds(); })
       .def(
           "setLowerBounds",
-          +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _lb) {
+          +[](dart::math::Problem* self, const Eigen::VectorXd& _lb) {
             self->setLowerBounds(_lb);
           },
           ::py::arg("lb"))
       .def(
           "setUpperBounds",
-          +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _ub) {
+          +[](dart::math::Problem* self, const Eigen::VectorXd& _ub) {
             self->setUpperBounds(_ub);
           },
           ::py::arg("ub"))
       .def(
           "setObjective",
-          +[](dart::optimizer::Problem* self,
-              dart::optimizer::FunctionPtr _obj) { self->setObjective(_obj); },
+          +[](dart::math::Problem* self, dart::math::FunctionPtr _obj) {
+            self->setObjective(_obj);
+          },
           ::py::arg("obj"))
       .def(
           "getObjective",
-          +[](const dart::optimizer::Problem* self)
-              -> dart::optimizer::FunctionPtr { return self->getObjective(); })
+          +[](const dart::math::Problem* self) -> dart::math::FunctionPtr {
+            return self->getObjective();
+          })
       .def(
           "addEqConstraint",
-          +[](dart::optimizer::Problem* self,
-              dart::optimizer::FunctionPtr _eqConst) {
+          +[](dart::math::Problem* self, dart::math::FunctionPtr _eqConst) {
             self->addEqConstraint(_eqConst);
           },
           ::py::arg("eqConst"))
       .def(
           "addIneqConstraint",
-          +[](dart::optimizer::Problem* self,
-              dart::optimizer::FunctionPtr _ineqConst) {
+          +[](dart::math::Problem* self, dart::math::FunctionPtr _ineqConst) {
             self->addIneqConstraint(_ineqConst);
           },
           ::py::arg("ineqConst"))
       .def(
           "getNumEqConstraints",
-          +[](const dart::optimizer::Problem* self) -> std::size_t {
+          +[](const dart::math::Problem* self) -> std::size_t {
             return self->getNumEqConstraints();
           })
       .def(
           "getNumIneqConstraints",
-          +[](const dart::optimizer::Problem* self) -> std::size_t {
+          +[](const dart::math::Problem* self) -> std::size_t {
             return self->getNumIneqConstraints();
           })
       .def(
           "getEqConstraint",
-          +[](const dart::optimizer::Problem* self,
-              std::size_t _idx) -> dart::optimizer::FunctionPtr {
+          +[](const dart::math::Problem* self,
+              std::size_t _idx) -> dart::math::FunctionPtr {
             return self->getEqConstraint(_idx);
           },
           ::py::arg("idx"))
       .def(
           "getIneqConstraint",
-          +[](const dart::optimizer::Problem* self,
-              std::size_t _idx) -> dart::optimizer::FunctionPtr {
+          +[](const dart::math::Problem* self,
+              std::size_t _idx) -> dart::math::FunctionPtr {
             return self->getIneqConstraint(_idx);
           },
           ::py::arg("idx"))
       .def(
           "removeEqConstraint",
-          +[](dart::optimizer::Problem* self,
-              dart::optimizer::FunctionPtr _eqConst) {
+          +[](dart::math::Problem* self, dart::math::FunctionPtr _eqConst) {
             self->removeEqConstraint(_eqConst);
           },
           ::py::arg("eqConst"))
       .def(
           "removeIneqConstraint",
-          +[](dart::optimizer::Problem* self,
-              dart::optimizer::FunctionPtr _ineqConst) {
+          +[](dart::math::Problem* self, dart::math::FunctionPtr _ineqConst) {
             self->removeIneqConstraint(_ineqConst);
           },
           ::py::arg("ineqConst"))
       .def(
           "removeAllEqConstraints",
-          +[](dart::optimizer::Problem* self) {
-            self->removeAllEqConstraints();
-          })
+          +[](dart::math::Problem* self) { self->removeAllEqConstraints(); })
       .def(
           "removeAllIneqConstraints",
-          +[](dart::optimizer::Problem* self) {
-            self->removeAllIneqConstraints();
-          })
+          +[](dart::math::Problem* self) { self->removeAllIneqConstraints(); })
       .def(
           "setOptimumValue",
-          +[](dart::optimizer::Problem* self, double _val) {
+          +[](dart::math::Problem* self, double _val) {
             self->setOptimumValue(_val);
           },
           ::py::arg("val"))
       .def(
           "getOptimumValue",
-          +[](const dart::optimizer::Problem* self) -> double {
+          +[](const dart::math::Problem* self) -> double {
             return self->getOptimumValue();
           })
       .def(
           "setOptimalSolution",
-          +[](dart::optimizer::Problem* self,
-              const Eigen::VectorXd& _optParam) {
+          +[](dart::math::Problem* self, const Eigen::VectorXd& _optParam) {
             self->setOptimalSolution(_optParam);
           },
           ::py::arg("optParam"))
       .def(
           "getOptimalSolution",
-          +[](dart::optimizer::Problem* self) -> const Eigen::VectorXd& {
+          +[](dart::math::Problem* self) -> const Eigen::VectorXd& {
             return self->getOptimalSolution();
           });
 }

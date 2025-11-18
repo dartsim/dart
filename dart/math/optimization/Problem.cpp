@@ -30,18 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Problem.hpp"
+#include "dart/math/optimization/Problem.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/optimizer/Function.hpp"
+#include "dart/math/optimization/Function.hpp"
 
 #include <algorithm>
 #include <limits>
 
 namespace dart {
-namespace optimizer {
+namespace math {
 
 //==============================================================================
 template <typename T>
@@ -310,5 +310,5 @@ const Eigen::VectorXd& Problem::getOptimalSolution()
   return mOptimalSolution;
 }
 
-} // namespace optimizer
+} // namespace math
 } // namespace dart
