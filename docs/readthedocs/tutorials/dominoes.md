@@ -21,10 +21,10 @@ very easily.
 
 ### Lesson 1a: Create a new domino
 
-Creating a new domino is straightforward. Find the function ``attemptToCreateDomino``
-in the ``MyWindow`` class. The class has a member called ``mFirstDomino`` which
-is the original domino created when the program starts up. To make a new one,
-we can just clone it:
+Creating a new domino is straightforward. Find the
+``DominoEventHandler::attemptToCreateDomino`` function. The event handler keeps
+``mFirstDomino`` as the original domino created when the program starts up. To
+make a new one, we can just clone it:
 
 ```{eval-rst}
 .. tabs::
@@ -87,10 +87,10 @@ position. First, let's grab the last domino that was placed in the environment:
          :end-before: # snippet:py-dominoes-lesson1a-last-end
 ```
 
-Now we should compute what we want its position to be. The ``MyWindow`` class
-keeps a member called ``mTotalAngle`` which tracks how much the line of dominoes
-has turned so far. We'll use that to figure out what translational offset the
-new domino should have from the last domino:
+Now we should compute what we want its position to be. The event handler keeps a
+member called ``mTotalAngle`` which tracks how much the line of dominoes has
+turned so far. We'll use that to figure out what translational offset the new
+domino should have from the last domino:
 
 ```{eval-rst}
 .. tabs::
@@ -285,9 +285,9 @@ there are any dominoes to actually remove:
 
 But just setting up dominoes isn't much fun without being able to knock them
 down. We can quickly and easily knock down the dominoes by magically applying
-a force to the first one. In the ``timeStepping`` function of ``MyWindow`` there
-is a label for **Lesson 1d**. This spot will get visited whenever the user
-presses 'f', so we'll apply an external force to the first domino here:
+a force to the first one. Inside ``DominoEventHandler::update()`` there is a
+label for **Lesson 1d**. ``CustomWorldNode`` calls this method each tick, so
+whenever the user presses 'f' we apply an external force to the first domino:
 
 ```{eval-rst}
 .. tabs::
