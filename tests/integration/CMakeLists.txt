@@ -43,6 +43,14 @@ if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
   target_link_libraries(INTEGRATION_collision_ContactGrouping
     dart-collision-ode
     dart-utils)
+
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_CapsuleGroundContact
+    collision/test_CapsuleGroundContact.cpp)
+  target_link_libraries(INTEGRATION_collision_CapsuleGroundContact
+    dart-collision-bullet
+    dart-collision-ode)
 endif()
 
 # ==============================================================================
