@@ -7,7 +7,6 @@ Usage:
     python scripts/build_docker.py ubuntu jammy     # Build specific Ubuntu distro
     python scripts/build_docker.py ubuntu noble     # Build specific Ubuntu distro
     python scripts/build_docker.py ubuntu questing  # Build specific Ubuntu distro
-    python scripts/build_docker.py manylinux        # Build manylinux image
 """
 
 import argparse
@@ -143,37 +142,6 @@ def build_all_ubuntu(container_tool: str, dart_version: str = "v6.16"):
     return success
 
 
-def build_manylinux(container_tool: str, dart_version: str = "v6.16"):
-    """Build manylinux Docker image."""
-    dockerfile = Path(f"docker/dev/{dart_version}/Dockerfile.manylinux_2_28_x86_64")
-    if not dockerfile.exists():
-        print(f"❌ Error: Dockerfile not found: {dockerfile}")
-        return False
-
-    tag = f"dart-dev:manylinux_2_28_x86_64-{dart_version}"
-    print(f"🔨 Building {tag}...")
-
-    cmd = [
-        container_tool,
-        "build",  # Use 'build' instead of 'buildx build' for podman compatibility
-        "--file",
-        str(dockerfile),
-        "--build-arg",
-        "BASE_IMAGE=quay.io/pypa/manylinux_2_28_x86_64",
-        "--tag",
-        tag,
-        ".",
-    ]
-
-    try:
-        result = subprocess.run(cmd, check=True)
-        print(f"✅ Successfully built {tag}")
-        return result.returncode == 0
-    except subprocess.CalledProcessError:
-        print(f"❌ Failed to build {tag}")
-        return False
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Build DART Docker images locally for testing",
@@ -185,14 +153,13 @@ Examples:
   %(prog)s ubuntu jammy         # Build Ubuntu 22.04 (Jammy) - same as above
   %(prog)s ubuntu 24.04         # Build Ubuntu 24.04 (Noble)
   %(prog)s ubuntu 25.10         # Build Ubuntu 25.10 (Questing)
-  %(prog)s manylinux            # Build manylinux image
         """,
     )
 
     parser.add_argument(
         "target",
-        choices=["all", "ubuntu", "manylinux"],
-        help="What to build: all (all Ubuntu versions), ubuntu (specific distro), or manylinux",
+        choices=["all", "ubuntu"],
+        help="What to build: all (all Ubuntu versions) or a specific Ubuntu distro",
     )
 
     parser.add_argument(
@@ -229,8 +196,6 @@ Examples:
         success = build_all_ubuntu(container_tool, args.dart_version)
     elif args.target == "ubuntu":
         success = build_ubuntu(args.distro, container_tool, args.dart_version)
-    elif args.target == "manylinux":
-        success = build_manylinux(container_tool, args.dart_version)
 
     return 0 if success else 1
 

@@ -934,14 +934,12 @@ test-dartpy-install = { cmd = """
 #   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
 #   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
 #   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
-#   pixi run docker-build-manylinux                    # Build manylinux image
 docker-build = { cmd = "python scripts/build_docker.py all" }
 
 docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [
   { arg = "distro", default = "jammy" },
 ] }
 
-docker-build-manylinux = { cmd = "python scripts/build_docker.py manylinux" }
 config-asan = { cmd = [
   "bash",
   "-lc",
@@ -1625,7 +1623,7 @@ delvewheel = ">=1.8.1"
 [feature.py312-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp312",
@@ -1741,7 +1739,7 @@ libglvnd = ">=1.7"
 [feature.py313-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp313",
@@ -1869,7 +1867,7 @@ libglvnd = ">=1.7"
 [feature.py314-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp314",
