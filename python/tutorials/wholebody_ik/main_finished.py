@@ -71,6 +71,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# snippet:py-load-atlas-start
 def load_atlas_robot():
     """Load the Atlas humanoid robot and configure initial pose."""
     loader = dart.utils.DartLoader()
@@ -92,8 +93,10 @@ def load_atlas_robot():
     atlas.getDof("l_leg_kny").setPositionLowerLimit(10.0 * np.pi / 180.0)
 
     return atlas
+# snippet:py-load-atlas-end
 
 
+# snippet:py-create-hand-start
 def create_hand_end_effector(hand_body_node, name):
     """Create an end effector for a hand with appropriate offset."""
     hand_offset = dart.math.Isometry3()
@@ -104,8 +107,10 @@ def create_hand_end_effector(hand_body_node, name):
     hand.setDefaultRelativeTransform(hand_offset, True)
 
     return hand
+# snippet:py-create-hand-end
 
 
+# snippet:py-setup-ik-start
 def setup_hand_ik(hand):
     """Configure inverse kinematics for a hand end effector."""
     ik = hand.getIK(True)
@@ -126,8 +131,10 @@ def setup_hand_ik(hand):
     ik.setActive(True)
 
     return ik
+# snippet:py-setup-ik-end
 
 
+# snippet:py-smooth-motion-start
 def configure_smooth_motion(ik, root_weight: float = 0.25):
     """Bias IK solutions toward smooth trajectories."""
     grad = ik.getGradientMethod()
@@ -143,6 +150,7 @@ def configure_smooth_motion(ik, root_weight: float = 0.25):
 
     if hasattr(grad, "setDampingCoefficient"):
         grad.setDampingCoefficient(2.0)
+# snippet:py-smooth-motion-end
 
 
 def create_hand_target(hand) -> HandTarget:
@@ -163,6 +171,7 @@ def update_target_pose(target: HandTarget, offset: np.ndarray):
     target.frame.setTransform(tf)
 
 
+# snippet:py-gui-start
 def run_gui_demo(world, atlas, left_hand, right_hand):
     node = WholeBodyIKWorldNode(world, atlas)
     viewer = dart.gui.osg.Viewer()
@@ -185,8 +194,10 @@ def run_gui_demo(world, atlas, left_hand, right_hand):
     viewer.setCameraHomePosition([3.0, 2.0, 2.0], [0.0, 0.5, 0.0], [0.0, 0.0, 1.0])
 
     viewer.run()
+# snippet:py-gui-end
 
 
+# snippet:py-headless-start
 def run_headless_demo(
     world,
     atlas,
@@ -249,6 +260,7 @@ def run_headless_demo(
         time.sleep(0.02)
 
     print("Headless run complete. Final joint configuration saved on the skeleton.")
+# snippet:py-headless-end
 
 
 def build_world(atlas):

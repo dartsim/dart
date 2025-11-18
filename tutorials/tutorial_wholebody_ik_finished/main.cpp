@@ -124,6 +124,7 @@ protected:
   SkeletonPtr mRobot;
 };
 
+// snippet:cpp-load-atlas-start
 SkeletonPtr loadAtlasRobot()
 {
   DartLoader loader;
@@ -149,7 +150,9 @@ SkeletonPtr loadAtlasRobot()
 
   return atlas;
 }
+// snippet:cpp-load-atlas-end
 
+// snippet:cpp-create-hand-start
 EndEffector* createHandEndEffector(BodyNode* handBodyNode, const std::string& name)
 {
   // Create an end effector for the hand
@@ -162,7 +165,9 @@ EndEffector* createHandEndEffector(BodyNode* handBodyNode, const std::string& na
 
   return hand;
 }
+// snippet:cpp-create-hand-end
 
+// snippet:cpp-setup-ik-start
 void setupHandIK(EndEffector* hand)
 {
   // Get or create the IK module for this end effector
@@ -190,7 +195,9 @@ void setupHandIK(EndEffector* hand)
   std::cout << "  - Error method bounds: tight (1e-8)" << std::endl;
   std::cout << "  - Max iterations: 100" << std::endl;
 }
+// snippet:cpp-setup-ik-end
 
+// snippet:cpp-smooth-motion-start
 void configureSmoothMotion(dart::dynamics::InverseKinematics* ik)
 {
   if (!ik)
@@ -216,6 +223,7 @@ void configureSmoothMotion(dart::dynamics::InverseKinematics* ik)
     dls->setDampingCoefficient(2.0);
   }
 }
+// snippet:cpp-smooth-motion-end
 
 struct HandTarget
 {
@@ -238,6 +246,7 @@ void updateTargetPose(const HandTarget& target, const Eigen::Vector3d& offset)
   target.mFrame->setTransform(tf);
 }
 
+// snippet:cpp-headless-start
 void runHeadlessDemo(
     const WorldPtr& world,
     const SkeletonPtr& atlas,
@@ -302,7 +311,9 @@ void runHeadlessDemo(
   }
   std::cout << "Headless run complete." << std::endl;
 }
+// snippet:cpp-headless-end
 
+// snippet:cpp-gui-start
 void runGuiDemo(
     const WorldPtr& world,
     const SkeletonPtr& atlas,
@@ -331,6 +342,7 @@ void runGuiDemo(
       {3.0, 2.0, 2.0}, {0.0, 0.5, 0.0}, {0.0, 0.0, 1.0});
   viewer.run();
 }
+// snippet:cpp-gui-end
 
 int main()
 {
