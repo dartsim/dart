@@ -35,6 +35,7 @@
 
 #include <dart/constraint/ConstraintBase.hpp>
 
+#include <dart/Export.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
 
 #include <vector>
@@ -48,7 +49,7 @@ namespace constraint {
 /// dependent joint, CouplerConstraint is bilateral: both the reference and
 /// dependent joints participate in the constraint solve, so any impulse on one
 /// joint is reflected on the other joint.
-class CouplerConstraint : public ConstraintBase
+class DART_API CouplerConstraint : public ConstraintBase
 {
 public:
   /// Constructor that creates a CouplerConstraint using the given
