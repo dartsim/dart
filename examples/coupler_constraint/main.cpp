@@ -84,14 +84,46 @@ struct MimicAssembly
   dart::dynamics::Joint* followerJoint;
   dart::dynamics::BodyNode* referenceBody;
   dart::dynamics::BodyNode* followerBody;
+  dart::dynamics::SimpleFramePtr lowerLimitGuide;
+  dart::dynamics::SimpleFramePtr upperLimitGuide;
 };
+
+dart::dynamics::SimpleFramePtr createLimitGuide(
+    const std::string& name,
+    const Eigen::Vector3d& baseOffset,
+    double angle,
+    const Eigen::Vector3d& color,
+    const dart::simulation::WorldPtr& world)
+{
+  using namespace dart::dynamics;
+  if (!world)
+    return nullptr;
+
+  auto frame = SimpleFrame::createShared(Frame::World(), name);
+  auto line = std::make_shared<LineSegmentShape>(0.05f);
+  line->addVertex(Eigen::Vector3d::Zero());
+  line->addVertex(Eigen::Vector3d::UnitX() * 0.65);
+  line->addConnection(0, 1);
+  frame->setShape(line);
+  auto visual = frame->createVisualAspect();
+  visual->setColor(color);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translate(baseOffset + Eigen::Vector3d(0.0, 0.0, 0.02));
+  tf.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()));
+  frame->setRelativeTransform(tf);
+
+  world->addSimpleFrame(frame);
+  return frame;
+}
 
 MimicAssembly createMimicAssembly(
     const std::string& label,
     const Eigen::Vector3d& baseOffset,
     bool useCouplerConstraint,
     const Eigen::Vector3d& referenceColor,
-    const Eigen::Vector3d& followerColor)
+    const Eigen::Vector3d& followerColor,
+    const dart::simulation::WorldPtr& world)
 {
   SkeletonPtr skeleton = Skeleton::create(label + "_rig");
 
@@ -194,7 +226,34 @@ MimicAssembly createMimicAssembly(
   referenceJoint->setPosition(0, 0.0);
   followerJoint->setPosition(0, 0.0);
 
-  return {skeleton, referenceJoint, followerJoint, referenceBody, followerBody};
+  MimicAssembly assembly{
+      skeleton,
+      referenceJoint,
+      followerJoint,
+      referenceBody,
+      followerBody,
+      nullptr,
+      nullptr,
+  };
+
+  if (world) {
+    const double lower = followerJoint->getPositionLowerLimit(0);
+    const double upper = followerJoint->getPositionUpperLimit(0);
+    assembly.lowerLimitGuide = createLimitGuide(
+        label + "_lower_limit",
+        baseOffset,
+        lower,
+        Eigen::Vector3d(0.92, 0.35, 0.35),
+        world);
+    assembly.upperLimitGuide = createLimitGuide(
+        label + "_upper_limit",
+        baseOffset,
+        upper,
+        Eigen::Vector3d(0.35, 0.92, 0.35),
+        world);
+  }
+
+  return assembly;
 }
 
 class CouplerController
@@ -544,13 +603,15 @@ int main(int /*argc*/, char* /*argv*/[])
       Eigen::Vector3d(-0.45, 0.0, 0.0),
       true,
       Eigen::Vector3d(0.85, 0.35, 0.25),
-      Eigen::Vector3d(0.25, 0.58, 0.92));
+      Eigen::Vector3d(0.25, 0.58, 0.92),
+      world);
   auto motorAssembly = createMimicAssembly(
       "motor",
       Eigen::Vector3d(0.45, 0.0, 0.0),
       false,
       Eigen::Vector3d(0.68, 0.32, 0.70),
-      Eigen::Vector3d(0.25, 0.75, 0.70));
+      Eigen::Vector3d(0.25, 0.75, 0.70),
+      world);
 
   world->addSkeleton(couplerAssembly.skeleton);
   world->addSkeleton(motorAssembly.skeleton);
