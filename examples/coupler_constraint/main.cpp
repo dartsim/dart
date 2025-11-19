@@ -90,7 +90,7 @@ struct MimicAssembly
 
 dart::dynamics::SimpleFramePtr createLimitGuide(
     const std::string& name,
-    const dart::dynamics::Joint* followerJoint,
+    dart::dynamics::Joint* followerJoint,
     double angle,
     const Eigen::Vector3d& color,
     const dart::simulation::WorldPtr& world)
@@ -99,7 +99,11 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   if (!world || !followerJoint)
     return nullptr;
 
-  auto frame = SimpleFrame::createShared(Frame::World(), name);
+  auto* parentBody = followerJoint->getParentBodyNode();
+  if (parentBody == nullptr)
+    return nullptr;
+
+  auto frame = SimpleFrame::createShared(parentBody, name);
   auto line = std::make_shared<LineSegmentShape>(0.05f);
   line->addVertex(Eigen::Vector3d::Zero());
   line->addVertex(Eigen::Vector3d::UnitX() * 0.65);
@@ -108,14 +112,9 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   auto visual = frame->createVisualAspect();
   visual->setColor(color);
 
-  const auto* parent = followerJoint->getParentBodyNode();
-  if (parent == nullptr)
-    return nullptr;
-
-  Eigen::Isometry3d tf
-      = parent->getWorldTransform() * followerJoint->getTransformFromParentBodyNode();
-  tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
+  Eigen::Isometry3d tf = followerJoint->getTransformFromParentBodyNode();
   tf.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()));
+  tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
   frame->setRelativeTransform(tf);
 
   world->addSimpleFrame(frame);
