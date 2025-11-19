@@ -398,10 +398,10 @@ void setVelocityActuators(SkeletonPtr biped)
   Joint* wheel2 = biped->getJoint("joint_front_right");
   Joint* wheel3 = biped->getJoint("joint_back_left");
   Joint* wheel4 = biped->getJoint("joint_back_right");
-  wheel1->setActuatorType(Joint::VELOCITY);
-  wheel2->setActuatorType(Joint::VELOCITY);
-  wheel3->setActuatorType(Joint::VELOCITY);
-  wheel4->setActuatorType(Joint::VELOCITY);
+  wheel1->setActuatorType(Joint::Velocity);
+  wheel2->setActuatorType(Joint::Velocity);
+  wheel3->setActuatorType(Joint::Velocity);
+  wheel4->setActuatorType(Joint::Velocity);
   // snippet:cpp-biped-lesson6-velocity-actuators-end
 }
 

@@ -70,11 +70,11 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   EXPECT_EQ(mujoco.getModel(), "ant");
 
   const auto& compiler = mujoco.getCompiler();
-  EXPECT_EQ(compiler.getAngle(), Angle::DEGREE);
-  EXPECT_EQ(compiler.getCoordinate(), Coordinate::LOCAL);
+  EXPECT_EQ(compiler.getAngle(), Angle::Degree);
+  EXPECT_EQ(compiler.getCoordinate(), Coordinate::Local);
 
   const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(option.getIntegrator(), Integrator::Rk4);
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
 
   const auto& worldbody = mujoco.getWorldbody();
@@ -90,7 +90,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
 
   ASSERT_EQ(rootBody0.getNumJoints(), 1);
   const auto& rootJoint0 = rootBody0.getJoint(0);
-  EXPECT_EQ(rootJoint0.getType(), JointType::FREE);
+  EXPECT_EQ(rootJoint0.getType(), JointType::Free);
   EXPECT_EQ(rootJoint0.getName(), "root");
 }
 

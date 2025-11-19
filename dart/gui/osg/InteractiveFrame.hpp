@@ -52,11 +52,11 @@ public:
   enum Type
   {
 
-    LINEAR = 0, /// Tool for linearly constrained translations
-    ANGULAR,    /// Tool for rotations
-    PLANAR,     /// Tool for planar translations
+    Linear = 0, /// Tool for linearly constrained translations
+    Angular,    /// Tool for rotations
+    Planar,     /// Tool for planar translations
 
-    NUM_TYPES
+    NumTypes
   };
 
   InteractiveTool(
@@ -156,7 +156,7 @@ protected:
   void deleteAllTools();
 
   /// Array of tools belonging to this InteractiveFrame
-  InteractiveTool* mTools[InteractiveTool::NUM_TYPES][3];
+  InteractiveTool* mTools[InteractiveTool::NumTypes][3];
 
   std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
 };

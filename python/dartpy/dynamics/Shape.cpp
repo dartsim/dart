@@ -463,10 +463,9 @@ void Shape(py::module& m)
 
   ::py::enum_<dart::dynamics::MeshShape::ColorMode>(attr, "ColorMode")
       .value(
-          "MATERIAL_COLOR",
-          dart::dynamics::MeshShape::ColorMode::MATERIAL_COLOR)
-      .value("COLOR_INDEX", dart::dynamics::MeshShape::ColorMode::COLOR_INDEX)
-      .value("SHAPE_COLOR", dart::dynamics::MeshShape::ColorMode::SHAPE_COLOR)
+          "MATERIAL_COLOR", dart::dynamics::MeshShape::ColorMode::MaterialColor)
+      .value("COLOR_INDEX", dart::dynamics::MeshShape::ColorMode::ColorIndex)
+      .value("SHAPE_COLOR", dart::dynamics::MeshShape::ColorMode::ShapeColor)
       .export_values();
 
   ::py::class_<
@@ -829,24 +828,25 @@ void Shape(py::module& m)
       pointCloudShape, "ColorMode")
       .value(
           "USE_SHAPE_COLOR",
-          dart::dynamics::PointCloudShape::ColorMode::USE_SHAPE_COLOR)
+          dart::dynamics::PointCloudShape::ColorMode::UseShapeColor)
       .value(
           "BIND_OVERALL",
-          dart::dynamics::PointCloudShape::ColorMode::BIND_OVERALL)
+          dart::dynamics::PointCloudShape::ColorMode::BindOverall)
       .value(
           "BIND_PER_POINT",
-          dart::dynamics::PointCloudShape::ColorMode::BIND_PER_POINT)
+          dart::dynamics::PointCloudShape::ColorMode::BindPerPoint)
       .export_values();
 
   ::py::enum_<dart::dynamics::PointCloudShape::PointShapeType>(
       pointCloudShape, "PointShapeType")
-      .value("BOX", dart::dynamics::PointCloudShape::PointShapeType::BOX)
+      .value("BOX", dart::dynamics::PointCloudShape::PointShapeType::Box)
       .value(
           "BILLBOARD_SQUARE",
-          dart::dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE)
+          dart::dynamics::PointCloudShape::PointShapeType::BillboardSquare)
       .value(
           "BILLBOARD_CIRCLE",
-          dart::dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+          dart::dynamics::PointCloudShape::PointShapeType::BillboardCircle)
+      .value("POINT", dart::dynamics::PointCloudShape::PointShapeType::Point)
       .export_values();
 
   ::py::class_<

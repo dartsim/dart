@@ -45,9 +45,9 @@ struct MarkerProperties
 {
   enum ConstraintType
   {
-    NO,
-    HARD,
-    SOFT
+    No,
+    Hard,
+    Soft
   };
 
   Eigen::Vector4d mColor;
@@ -55,7 +55,7 @@ struct MarkerProperties
 
   MarkerProperties(
       const Eigen::Vector4d& color = Color::White(1.0),
-      ConstraintType type = NO);
+      ConstraintType type = No);
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

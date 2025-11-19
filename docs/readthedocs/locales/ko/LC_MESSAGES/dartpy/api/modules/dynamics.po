@@ -4557,17 +4557,17 @@ msgstr ""
 
 #: ../../docstring dartpy.dynamics.PointCloudShape.ColorMode:3
 #: fd03d30d0bc7459d9781fb7b47851f24 of
-msgid "USE_SHAPE_COLOR"
+msgid "UseShapeColor"
 msgstr ""
 
 #: ../../docstring 18dc63d60bdc4b6995876919b41978d6
 #: dartpy.dynamics.PointCloudShape.ColorMode:5 of
-msgid "BIND_OVERALL"
+msgid "BindOverall"
 msgstr ""
 
 #: ../../docstring 75d4092b6c7a41e28a5489b8ad2bdf91
 #: dartpy.dynamics.PointCloudShape.ColorMode:7 of
-msgid "BIND_PER_POINT"
+msgid "BindPerPoint"
 msgstr ""
 
 #: ../../docstring 406046a77d654786b0a7ee10bdbd94b9
@@ -4578,12 +4578,12 @@ msgstr ""
 
 #: ../../docstring b8dc677a20364977a8899e08cba0d55b
 #: dartpy.dynamics.PointCloudShape.PointShapeType:5 of
-msgid "BILLBOARD_SQUARE"
+msgid "BillboardSquare"
 msgstr ""
 
 #: ../../docstring 6f5f9a7cbd1941cb9aad3a32b754d4af
 #: dartpy.dynamics.PointCloudShape.PointShapeType:7 of
-msgid "BILLBOARD_CIRCLE"
+msgid "BillboardCircle"
 msgstr ""
 
 #: ../../docstring 4dae8248b55f4fd6b5d9565f0971e055

@@ -300,13 +300,13 @@ public:
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Xy);
             ImGui::SameLine();
             if (ImGui::RadioButton("YZ-Plane", &e, 1))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Yz);
             ImGui::SameLine();
             if (ImGui::RadioButton("ZX-Plane", &e, 2))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Zx);
           }
 
           static Eigen::Vector3f offset;

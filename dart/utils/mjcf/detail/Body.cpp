@@ -55,7 +55,7 @@ Errors Body::read(
 
   if (std::string(element->Name()) != "body") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Body> from the provided element");
     return errors;
   }
@@ -68,7 +68,7 @@ Errors Body::read(
       currentDefault = &(*defaultClass);
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Failed to find default with childclass name '" + className + "'"));
     }
   }
@@ -180,9 +180,9 @@ Errors Body::compile(const Compiler& compiler)
     errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
   } else {
     for (const Geom& geom : mGeoms) {
-      if (geom.getType() == GeomType::MESH) {
+      if (geom.getType() == GeomType::Mesh) {
         errors.push_back(Error(
-            ErrorCode::ELEMENT_MISSING,
+            ErrorCode::ElementMissing,
             "<inertial> element must be specified if a <body> include a geom "
             "of mesh type."));
         break;
@@ -223,7 +223,7 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
   Errors errors;
 
   if (mAttributes.mPos) {
-    if (compiler.getCoordinate() == Coordinate::LOCAL) {
+    if (compiler.getCoordinate() == Coordinate::Local) {
       mRelativeTransform.translation() = *mAttributes.mPos;
       mRelativeTransform.linear() = compileRotation(
           mAttributes.mQuat,
@@ -249,7 +249,7 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
       DART_ASSERT(math::verifyTransform(mWorldTransform));
     }
   } else {
-    if (compiler.getCoordinate() == Coordinate::LOCAL) {
+    if (compiler.getCoordinate() == Coordinate::Local) {
       mRelativeTransform = mInertial.getRelativeTransform();
       DART_ASSERT(math::verifyTransform(mRelativeTransform));
     } else {
@@ -401,7 +401,7 @@ Inertial Body::computeInertialFromGeoms(
       "[MjcfParser] Unsupported number of <geom> in inferring <inertial>. We "
       "use only the first <geom> for now.");
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     inertial.setRelativeTransform(geoms[0].getRelativeTransform());
   } else {
     inertial.setWorldTransform(geoms[0].getWorldTransform());

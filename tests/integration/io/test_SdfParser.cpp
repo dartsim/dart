@@ -84,9 +84,9 @@ public:
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
     std::size_t base = 0;
-    if (origin == SEEKTYPE_CUR)
+    if (origin == Resource::Cur)
       base = mOffset;
-    else if (origin == SEEKTYPE_END)
+    else if (origin == Resource::End)
       base = mData.size();
 
     const auto next = static_cast<long long>(base) + offset;

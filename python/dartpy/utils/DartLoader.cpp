@@ -46,8 +46,8 @@ void DartLoader(py::module& m)
   auto dartLoaderRootJointType
       = ::py::enum_<utils::DartLoader::RootJointType>(
             m, "DartLoaderRootJointType")
-            .value("Floating", utils::DartLoader::RootJointType::Floating)
-            .value("Fixed", utils::DartLoader::RootJointType::Fixed);
+            .value("FLOATING", utils::DartLoader::RootJointType::Floating)
+            .value("FIXED", utils::DartLoader::RootJointType::Fixed);
 
   auto dartLoaderOptions
       = ::py::class_<utils::DartLoader::Options>(m, "DartLoaderOptions")

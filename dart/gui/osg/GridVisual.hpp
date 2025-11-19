@@ -51,9 +51,9 @@ class GridVisual : public ViewerAttachment
 public:
   enum class PlaneType : unsigned char
   {
-    XY = 0u,
-    YZ = 1u,
-    ZX = 2u,
+    Xy = 0u,
+    Yz = 1u,
+    Zx = 2u,
   };
 
   /// Default constructor

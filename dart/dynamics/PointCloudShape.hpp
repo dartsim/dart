@@ -51,21 +51,21 @@ public:
   enum ColorMode
   {
     /// Use the color specified by the ShapeAspect. This is the default.
-    USE_SHAPE_COLOR = 0,
+    UseShapeColor = 0,
 
     /// Use one color for all the points
-    BIND_OVERALL,
+    BindOverall,
 
     /// Use one color per point
-    BIND_PER_POINT,
+    BindPerPoint,
   };
 
   enum PointShapeType
   {
-    BOX = 0,          ///< 3D volumetric box
-    BILLBOARD_SQUARE, ///< 2D square always facing the screen
-    BILLBOARD_CIRCLE, ///< 2D circle always facing the screen
-    POINT,            ///< Vertex
+    Box = 0,         ///< 3D volumetric box
+    BillboardSquare, ///< 2D square always facing the screen
+    BillboardCircle, ///< 2D circle always facing the screen
+    Point,           ///< Vertex
   };
 
   /// Constructor

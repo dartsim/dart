@@ -47,10 +47,10 @@ namespace detail {
 enum class Angle
 {
   /// [Default] Always use for MJCF
-  DEGREE = 0,
+  Degree = 0,
 
   /// Always use for URDF
-  RADIAN = 1,
+  Radian = 1,
 };
 
 /// This attribute specifies whether the frame positions and orientations in the
@@ -61,8 +61,8 @@ enum class Angle
 enum class Coordinate
 {
   /// [Default]
-  LOCAL = 0,
-  GLOBAL = 1,
+  Local = 0,
+  Global = 1,
 };
 
 /// This attribute selects the numerical integrator to be used. Currently the
@@ -71,64 +71,64 @@ enum class Coordinate
 enum class Integrator
 {
   /// [Default]
-  EULER = 0,
-  RK4 = 1,
+  Euler = 0,
+  Rk4 = 1,
 };
 
 enum class InertiaFromGeom
 {
-  IFG_FALSE,
-  IFG_TRUE,
-  IFG_AUTO,
+  IfgFalse,
+  IfgTrue,
+  IfgAuto,
 };
 
 enum class CollisionType
 {
-  ALL,
-  PREDEFINED,
-  DYNAMIC,
+  All,
+  Predefined,
+  Dynamic,
 };
 
 enum class ConeType
 {
-  PYRAMIDAL,
-  ELLIPTIC,
+  Pyramidal,
+  Elliptic,
 };
 
 enum class JacobianType
 {
-  DENSE,
-  SPARSE,
-  AUTO,
+  Dense,
+  Sparse,
+  Auto,
 };
 
 enum class SolverType
 {
-  PGS,
-  CG,
-  NEWTON,
+  Pgs,
+  Cg,
+  Newton,
 };
 
 enum class GeomType
 {
-  PLANE,
-  HFIELD,
+  Plane,
+  Hfield,
   /// [Default]
-  SPHERE,
-  CAPSULE,
-  ELLIPSOID,
-  CYLINDER,
-  BOX,
-  MESH,
+  Sphere,
+  Capsule,
+  Ellipsoid,
+  Cylinder,
+  Box,
+  Mesh,
 };
 
 enum class JointType
 {
-  FREE,
-  BALL,
-  SLIDE,
+  Free,
+  Ball,
+  Slide,
   /// [Default]
-  HINGE,
+  Hinge,
 };
 
 } // namespace detail

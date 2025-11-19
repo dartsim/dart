@@ -79,12 +79,12 @@ class SaveScreen;
 enum class CameraMode
 {
   /// To render the RGBA color
-  RGBA,
+  Rgba,
 
   /// To render the depth buffer
   ///
-  /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
-  DEPTH,
+  /// \warning The Depth mode currently not compatible with the ImGui widgets.
+  Depth,
 };
 
 [[nodiscard]] std::string toString(CameraMode mode);

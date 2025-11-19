@@ -63,8 +63,8 @@ public:
   /// MESH until FCL fully supports primitive shapes.
   enum PrimitiveShape
   {
-    PRIMITIVE = 0,
-    MESH
+    Primitive = 0,
+    Mesh
   };
 
   /// Whether to use FCL's contact point computation.
@@ -77,8 +77,8 @@ public:
   /// We recommend using DART until it's fixed in FCL.
   enum ContactPointComputationMethod
   {
-    FCL = 0,
-    DART
+    Fcl = 0,
+    Dart
   };
 
   /// Constructor

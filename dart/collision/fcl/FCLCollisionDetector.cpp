@@ -184,9 +184,9 @@ struct FCLCollisionCallbackData
   FCLCollisionCallbackData(
       const CollisionOption& option,
       CollisionResult* result,
-      FCLCollisionDetector::PrimitiveShape type = FCLCollisionDetector::MESH,
+      FCLCollisionDetector::PrimitiveShape type = FCLCollisionDetector::Mesh,
       FCLCollisionDetector::ContactPointComputationMethod method
-      = FCLCollisionDetector::DART)
+      = FCLCollisionDetector::Dart)
     : option(option),
       result(result),
       foundCollision(false),
@@ -764,11 +764,11 @@ void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
   DART_WARN_IF(
-      type == PRIMITIVE,
+      type == PrimitiveShape::Primitive,
       "You chose to use FCL's primitive shape collision feature while it's not "
       "complete (at least until 0.4.0) especially in use of dynamics "
       "simulation. It's recommended to use mesh even for primitive shapes by "
-      "settting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
+      "settting FCLCollisionDetector::setPrimitiveShapeType(Mesh).");
 
   mPrimitiveShapeType = type;
 }
@@ -785,7 +785,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
     FCLCollisionDetector::ContactPointComputationMethod method)
 {
   DART_WARN_IF(
-      method == FCL,
+      method == ContactPointComputationMethod::Fcl,
       "You chose to use FCL's built in contact point computation whileit's "
       "buggy (see "
       "https://github.com/flexible-collision-library/fcl/issues/106) at least "
@@ -806,8 +806,8 @@ FCLCollisionDetector::getContactPointComputationMethod() const
 //==============================================================================
 FCLCollisionDetector::FCLCollisionDetector()
   : CollisionDetector(),
-    mPrimitiveShapeType(MESH),
-    mContactPointComputationMethod(DART)
+    mPrimitiveShapeType(PrimitiveShape::Mesh),
+    mContactPointComputationMethod(ContactPointComputationMethod::Dart)
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
@@ -888,7 +888,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto* sphere = static_cast<const SphereShape*>(shape.get());
     const auto radius = sphere->getRadius();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
+    if (FCLCollisionDetector::Primitive == type)
       geom = new fcl::Sphere(radius);
     else
       geom = createEllipsoid<fcl::OBBRSS>(
@@ -899,7 +899,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto box = static_cast<const BoxShape*>(shape.get());
     const Eigen::Vector3d& size = box->getSize();
 
-    if (FCLCollisionDetector::PRIMITIVE == type)
+    if (FCLCollisionDetector::Primitive == type)
       geom = new fcl::Box(size[0], size[1], size[2]);
     else
       geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
@@ -909,7 +909,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
     const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
-    if (FCLCollisionDetector::PRIMITIVE == type) {
+    if (FCLCollisionDetector::Primitive == type) {
       geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
     } else {
       geom = createEllipsoid<fcl::OBBRSS>(
@@ -922,7 +922,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
-    if (FCLCollisionDetector::PRIMITIVE == type) {
+    if (FCLCollisionDetector::Primitive == type) {
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
       // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
       // returns single contact point for cylinder yet. Once FCL support
@@ -938,7 +938,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto radius = cone->getRadius();
     const auto height = cone->getHeight();
 
-    if (FCLCollisionDetector::PRIMITIVE == type) {
+    if (FCLCollisionDetector::Primitive == type) {
       // TODO(JS): We still need to use mesh for cone because FCL 0.4.0
       // returns single contact point for cone yet. Once FCL support
       // multiple contact points then above code will be replaced by:
@@ -962,7 +962,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     // Use mesh since FCL doesn't support pyramid shape.
     geom = createPyramid<fcl::OBBRSS>(*pyramid, fcl::getTransform3Identity());
   } else if (PlaneShape::getStaticType() == shapeType) {
-    if (FCLCollisionDetector::PRIMITIVE == type) {
+    if (FCLCollisionDetector::Primitive == type) {
       DART_ASSERT(dynamic_cast<const PlaneShape*>(shape.get()));
       auto plane = static_cast<const PlaneShape*>(shape.get());
       const Eigen::Vector3d normal = plane->getNormal();
@@ -1081,8 +1081,8 @@ bool collisionCallback(
 
   if (result) {
     // Post processing -- converting fcl contact information to ours if needed
-    if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->primitiveShapeType) {
+    if (FCLCollisionDetector::Dart == collData->contactPointComputationMethod
+        && FCLCollisionDetector::Mesh == collData->primitiveShapeType) {
       postProcessDART(fclResult, o1, o2, option, *result);
     } else {
       postProcessFCL(fclResult, o1, o2, option, *result);

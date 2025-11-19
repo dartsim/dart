@@ -59,22 +59,22 @@ Linkage::Criteria Chain::Criteria::convert() const
 {
   Linkage::Criteria criteria;
   criteria.mStart.mNode = mStart;
-  criteria.mStart.mPolicy = Linkage::Criteria::INCLUDE;
+  criteria.mStart.mPolicy = Linkage::Criteria::Include;
 
   Linkage::Criteria::Target target;
   target.mNode = mTarget;
   target.mChain = true;
-  target.mPolicy = Linkage::Criteria::INCLUDE;
+  target.mPolicy = Linkage::Criteria::Include;
 
   if (!mIncludeUpstreamParentJoint) {
     if (target.mNode.lock()
         && target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock())) {
-      criteria.mStart.mPolicy = Linkage::Criteria::EXCLUDE;
+      criteria.mStart.mPolicy = Linkage::Criteria::Exclude;
     }
 
     if (criteria.mStart.mNode.lock()
         && criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock())) {
-      target.mPolicy = Linkage::Criteria::EXCLUDE;
+      target.mPolicy = Linkage::Criteria::Exclude;
     }
   }
 
@@ -114,9 +114,9 @@ Chain::Criteria Chain::Criteria::convert(const Linkage::Criteria& criteria)
   }
 
   bool includeUpstreamParentJoint = true;
-  if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE)
+  if (criteria.mStart.mPolicy != Linkage::Criteria::Include)
     includeUpstreamParentJoint = false;
-  if (target.mPolicy != Linkage::Criteria::INCLUDE)
+  if (target.mPolicy != Linkage::Criteria::Include)
     includeUpstreamParentJoint = false;
 
   return Chain::Criteria(

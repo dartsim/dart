@@ -106,9 +106,9 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   Eigen::Vector2d projected_com(com.dot(axes.first), com.dot(axes.second));
   Eigen::Vector2d projected_error(Eigen::Vector2d::Zero());
 
-  if (FROM_CENTROID == mErrorMethod || OPTIMIZE_BALANCE == mErrorMethod) {
+  if (FromCentroid == mErrorMethod || OptimizeBalance == mErrorMethod) {
     bool zeroError = false;
-    if (FROM_CENTROID == mErrorMethod) {
+    if (FromCentroid == mErrorMethod) {
       zeroError = math::isInsideSupportPolygon(projected_com, polygon, true);
     }
 
@@ -117,12 +117,12 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
       projected_error = projected_com - centroid;
     }
 
-    if (OPTIMIZE_BALANCE == mErrorMethod
+    if (OptimizeBalance == mErrorMethod
         && projected_error.norm() < mOptimizationTolerance) {
       // Drop the error to zero if we're within the tolerance
       projected_error.setZero();
     }
-  } else if (FROM_EDGE == mErrorMethod) {
+  } else if (FromEdge == mErrorMethod) {
     bool zeroError = math::isInsideSupportPolygon(projected_com, polygon, true);
 
     if (!zeroError) {
@@ -185,7 +185,7 @@ void BalanceConstraint::evalGradient(
   const dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
 
-  if (SHIFT_COM == mBalanceMethod) {
+  if (ShiftCom == mBalanceMethod) {
     // Compute the gradient whose negative will move the center of mass
     // towards the support polygon without moving the supporting end effector
     // locations
@@ -220,8 +220,8 @@ void BalanceConstraint::evalGradient(
 
     addDampedPseudoInverseToGradient(
         _grad, mComJacCache, mNullSpaceCache, mLastError, mDamping);
-  } else if (SHIFT_SUPPORT == mBalanceMethod) {
-    if (FROM_CENTROID == mErrorMethod || OPTIMIZE_BALANCE == mErrorMethod) {
+  } else if (ShiftSupport == mBalanceMethod) {
+    if (FromCentroid == mErrorMethod || OptimizeBalance == mErrorMethod) {
       // Compute the gradient whose negative will move all the supporting end
       // effectors towards the center of mass without moving the center of mass
       // location
@@ -253,7 +253,7 @@ void BalanceConstraint::evalGradient(
         // Error is negative because we want to move the supports towards the
         // center of mass, not the center of mass towards the support
       }
-    } else if (FROM_EDGE == mErrorMethod) {
+    } else if (FromEdge == mErrorMethod) {
       // Compute the gradient that will shift the end effectors that are closest
       // to the center of mass
 

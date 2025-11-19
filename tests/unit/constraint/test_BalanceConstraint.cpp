@@ -133,9 +133,7 @@ TEST(BalanceConstraintTests, CentroidErrorDropsInsidePolygon)
 {
   auto rig = makeBalanceRig();
   auto constraint = BalanceConstraint(
-      rig.ik,
-      BalanceConstraint::SHIFT_SUPPORT,
-      BalanceConstraint::FROM_CENTROID);
+      rig.ik, BalanceConstraint::ShiftSupport, BalanceConstraint::FromCentroid);
 
   auto q = getPositions(rig.skeleton);
   rig.skeleton->setPositions(q);
@@ -154,7 +152,7 @@ TEST(BalanceConstraintTests, EdgeErrorMatchesClosestPointDistance)
 {
   auto rig = makeBalanceRig();
   BalanceConstraint constraint(
-      rig.ik, BalanceConstraint::SHIFT_SUPPORT, BalanceConstraint::FROM_EDGE);
+      rig.ik, BalanceConstraint::ShiftSupport, BalanceConstraint::FromEdge);
 
   auto q = getPositions(rig.skeleton);
   rig.skeleton->setPositions(q);
@@ -181,8 +179,8 @@ TEST(BalanceConstraintTests, OptimizeBalanceHonorsTolerance)
   auto rig = makeBalanceRig();
   BalanceConstraint constraint(
       rig.ik,
-      BalanceConstraint::SHIFT_SUPPORT,
-      BalanceConstraint::OPTIMIZE_BALANCE);
+      BalanceConstraint::ShiftSupport,
+      BalanceConstraint::OptimizeBalance);
 
   setComOffset(rig, 1.2);
   const auto q = rig.skeleton->getPositions();
@@ -201,7 +199,7 @@ TEST(BalanceConstraintTests, ShiftComProducesGradient)
 {
   auto rig = makeBalanceRig();
   BalanceConstraint constraint(
-      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_CENTROID);
+      rig.ik, BalanceConstraint::ShiftCom, BalanceConstraint::FromCentroid);
 
   auto q = getPositions(rig.skeleton);
   rig.skeleton->setPositions(q);

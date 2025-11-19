@@ -4629,11 +4629,14 @@ class PointCloudShape(Shape):
           BILLBOARD_SQUARE
         
           BILLBOARD_CIRCLE
+        
+          POINT
         """
         BILLBOARD_CIRCLE: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.BILLBOARD_CIRCLE: 2>
         BILLBOARD_SQUARE: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.BILLBOARD_SQUARE: 1>
         BOX: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.BOX: 0>
-        __members__: typing.ClassVar[dict[str, PointCloudShape.PointShapeType]]  # value = {'BOX': <PointShapeType.BOX: 0>, 'BILLBOARD_SQUARE': <PointShapeType.BILLBOARD_SQUARE: 1>, 'BILLBOARD_CIRCLE': <PointShapeType.BILLBOARD_CIRCLE: 2>}
+        POINT: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.POINT: 3>
+        __members__: typing.ClassVar[dict[str, PointCloudShape.PointShapeType]]  # value = {'BOX': <PointShapeType.BOX: 0>, 'BILLBOARD_SQUARE': <PointShapeType.BILLBOARD_SQUARE: 1>, 'BILLBOARD_CIRCLE': <PointShapeType.BILLBOARD_CIRCLE: 2>, 'POINT': <PointShapeType.POINT: 3>}
         def __eq__(self, other: typing.Any) -> bool:
             ...
         def __getstate__(self) -> int:
@@ -4665,6 +4668,7 @@ class PointCloudShape(Shape):
     BIND_OVERALL: typing.ClassVar[PointCloudShape.ColorMode]  # value = <ColorMode.BIND_OVERALL: 1>
     BIND_PER_POINT: typing.ClassVar[PointCloudShape.ColorMode]  # value = <ColorMode.BIND_PER_POINT: 2>
     BOX: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.BOX: 0>
+    POINT: typing.ClassVar[PointCloudShape.PointShapeType]  # value = <PointShapeType.POINT: 3>
     USE_SHAPE_COLOR: typing.ClassVar[PointCloudShape.ColorMode]  # value = <ColorMode.USE_SHAPE_COLOR: 0>
     def __init__(self, visualSize: float = 0.01) -> None:
         ...

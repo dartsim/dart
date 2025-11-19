@@ -119,41 +119,41 @@ TEST(World, AddingAndRemovingSkeletons)
   //-------------------- Test World::removeSkeleton() ------------------------
   SkeletonPtr skeleton1 = createThreeLinkRobot(
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_X,
+      DofX,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Y,
+      DofY,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Z,
+      DofZ,
       false,
       false);
 
   SkeletonPtr skeleton2 = createThreeLinkRobot(
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_X,
+      DofX,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Y,
+      DofY,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Z,
+      DofZ,
       false,
       false);
 
   SkeletonPtr skeleton3 = createThreeLinkRobot(
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_X,
+      DofX,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Y,
+      DofY,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Z,
+      DofZ,
       false,
       false);
 
   SkeletonPtr skeleton4 = createThreeLinkRobot(
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_X,
+      DofX,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Y,
+      DofY,
       Eigen::Vector3d(1.0, 1.0, 1.0),
-      DOF_Z,
+      DofZ,
       false,
       false);
 
@@ -429,7 +429,7 @@ TEST(World, DefaultWorldUsesFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::Mesh);
 }
 
 //==============================================================================
@@ -450,7 +450,7 @@ TEST(World, TypedSetterConfiguresFclMeshPrimitive)
   ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
       fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
+      collision::FCLCollisionDetector::Mesh);
 }
 
 //==============================================================================

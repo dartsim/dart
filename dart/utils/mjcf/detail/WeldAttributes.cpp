@@ -55,7 +55,7 @@ Errors appendWeldAttributes(
 
   if (std::string(element->Name()) != "weld") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <weld> from the provided element");
     return errors;
   }
@@ -76,7 +76,7 @@ Errors appendWeldAttributes(
     const Eigen::VectorXd solimp = getAttributeVectorXd(element, "solimp");
     if (solimp.size() == 0 || solimp.size() > 5) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid dimension for 'solimp' attribute");
       return errors;
     }
@@ -93,7 +93,7 @@ Errors appendWeldAttributes(
     attributes.mBody1 = getAttributeString(element, "body1");
   } else {
     errors.push_back(Error(
-        ErrorCode::ATTRIBUTE_MISSING,
+        ErrorCode::AttributeMissing,
         "Failed to find required attribute 'body1' in <weld>."));
   }
 

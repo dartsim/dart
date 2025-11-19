@@ -55,7 +55,7 @@ Linkage::Criteria Branch::Criteria::convert() const
 {
   Linkage::Criteria criteria;
   criteria.mStart.mNode = mStart;
-  criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
+  criteria.mStart.mPolicy = Linkage::Criteria::Downstream;
 
   return criteria;
 }

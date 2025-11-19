@@ -501,7 +501,7 @@ bool readShape(
   // Determine the local transform of the shape
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
   localTransform.linear()
-      = math::computeRotation(tf.translation(), math::AxisType::AXIS_X);
+      = math::computeRotation(tf.translation(), math::AxisType::AxisX);
   localTransform.translation() = 0.5 * tf.translation();
 
   dynamics::ShapePtr shape;
@@ -874,7 +874,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     // Determine the local transform of the shape
     Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
     localTransform.linear()
-        = math::computeRotation(tf.translation(), math::AxisType::AXIS_X);
+        = math::computeRotation(tf.translation(), math::AxisType::AxisX);
     localTransform.translation() = 0.5 * tf.translation();
 
     dynamics::ShapeNode* shapeNode = parent->createShapeNodeWith<

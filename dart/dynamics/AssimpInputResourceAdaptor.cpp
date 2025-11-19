@@ -142,15 +142,15 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
   Resource::SeekType origin;
   switch (pOrigin) {
     case aiOrigin_CUR:
-      origin = Resource::SEEKTYPE_CUR;
+      origin = Resource::Cur;
       break;
 
     case aiOrigin_END:
-      origin = Resource::SEEKTYPE_END;
+      origin = Resource::End;
       break;
 
     case aiOrigin_SET:
-      origin = Resource::SEEKTYPE_SET;
+      origin = Resource::Set;
       break;
 
     default:

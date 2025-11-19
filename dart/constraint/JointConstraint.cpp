@@ -298,7 +298,7 @@ void JointConstraint::update()
         continue;
       }
 
-      const bool isServo = mJoint->getActuatorType() == dynamics::Joint::SERVO;
+      const bool isServo = mJoint->getActuatorType() == dynamics::Joint::Servo;
       const double servoCommand
           = isServo ? mJoint->getCommand(static_cast<std::size_t>(i)) : 0.0;
       const bool atLowerLimit
@@ -367,7 +367,7 @@ void JointConstraint::update()
     }
 
     // Servo motor constraint check
-    if (mJoint->getActuatorType() == dynamics::Joint::SERVO) {
+    if (mJoint->getActuatorType() == dynamics::Joint::Servo) {
       // The desired velocity shouldn't be out of the velocity limits
       double desired_velocity = math::clip(
           mJoint->getCommand(static_cast<std::size_t>(i)),

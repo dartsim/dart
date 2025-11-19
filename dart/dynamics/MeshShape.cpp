@@ -134,10 +134,10 @@ MeshShape::MeshShape(
     const aiScene* mesh,
     const common::Uri& path,
     common::ResourceRetrieverPtr resourceRetriever)
-  : Shape(MESH),
+  : Shape(Shape::Mesh),
     mDisplayList(0),
-    mColorMode(MATERIAL_COLOR),
-    mAlphaMode(BLEND),
+    mColorMode(MaterialColor),
+    mAlphaMode(AlphaMode::Blend),
     mColorIndex(0)
 {
   setMesh(mesh, path, std::move(resourceRetriever));

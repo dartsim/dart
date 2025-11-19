@@ -48,17 +48,17 @@ namespace detail {
 /// Plane type
 enum class PlaneType : int
 {
-  XY,
-  YZ,
-  ZX,
-  ARBITRARY
+  Xy,
+  Yz,
+  Zx,
+  Arbitrary
 };
 
 //==============================================================================
 /// Properties that are unique to PlanarJoints. Note that the mPlaneType
 /// member has greater authority than the mTransAxis1 and mTransAxis2 members.
 /// When copying properties into a PlanarJoint, it will first defer to
-/// mPlaneType. If mPlaneType is PlaneType::ARBITRARY, then and only then will
+/// mPlaneType. If mPlaneType is PlaneType::Arbitrary, then and only then will
 /// it use mTransAxis1 and mTransAxis2. mRotAxis has no authority; it will
 /// always be recomputed from mTransAxis1 and mTransAxis2 when copying it into a
 /// PlanarJoint
@@ -77,11 +77,11 @@ struct PlanarJointUniqueProperties
   Eigen::Vector3d mRotAxis;
 
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
-  /// PlaneType::ARBITRARY is specified.
-  PlanarJointUniqueProperties(PlaneType _planeType = PlaneType::XY);
+  /// PlaneType::Arbitrary is specified.
+  PlanarJointUniqueProperties(PlaneType _planeType = PlaneType::Xy);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
-  /// PlaneType::ARBITRARY
+  /// PlaneType::Arbitrary
   PlanarJointUniqueProperties(
       const Eigen::Vector3d& _transAxis1, const Eigen::Vector3d& _transAxis2);
 

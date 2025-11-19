@@ -159,7 +159,7 @@ void VoxelGridShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static
       && mVoxelGridVersion == mVoxelGridShape->getVersion()) {
     return;
   }

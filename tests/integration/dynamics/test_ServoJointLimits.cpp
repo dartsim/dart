@@ -62,7 +62,7 @@ TEST(Issue1583, ServoJointWithPositionLimits)
   joint->setPositionLowerLimit(0, pos_lb);
   joint->setPositionUpperLimit(0, pos_ub);
   joint->setLimitEnforcement(true);
-  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  joint->setActuatorType(dart::dynamics::Joint::Servo);
 
   EXPECT_DOUBLE_EQ(0, joint->getPosition(0));
   EXPECT_DOUBLE_EQ(0, joint->getVelocity(0));
@@ -107,7 +107,7 @@ TEST(Issue1683, ServoJointRecoversFromPositionLimits)
   joint->setPositionLowerLimit(0, posLowerBound);
   joint->setPositionUpperLimit(0, posUpperBound);
   joint->setLimitEnforcement(true);
-  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  joint->setActuatorType(dart::dynamics::Joint::Servo);
   auto* bodyNode = skel->getBodyNode("bar");
   ASSERT_NE(bodyNode, nullptr);
 
@@ -154,7 +154,7 @@ TEST(Issue1683, ServoJointRespectsVelocityLimitsAwayFromBounds)
   ASSERT_EQ(world->getNumSkeletons(), 1);
 
   auto* joint = skel->getJoint("j1");
-  joint->setActuatorType(dart::dynamics::Joint::SERVO);
+  joint->setActuatorType(dart::dynamics::Joint::Servo);
   joint->setLimitEnforcement(true);
   joint->setVelocityLowerLimit(0, -velLimit);
   joint->setVelocityUpperLimit(0, +velLimit);

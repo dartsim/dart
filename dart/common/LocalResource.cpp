@@ -160,23 +160,23 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 {
   int origin;
   switch (_mode) {
-    case Resource::SEEKTYPE_CUR:
+    case Resource::Cur:
       origin = SEEK_CUR;
       break;
 
-    case Resource::SEEKTYPE_END:
+    case Resource::End:
       origin = SEEK_END;
       break;
 
-    case Resource::SEEKTYPE_SET:
+    case Resource::Set:
       origin = SEEK_SET;
       break;
 
     default:
       DART_WARN(
           "{}",
-          "Invalid origin. Expected SEEKTYPE_CUR, SEEKTYPE_END, or "
-          "SEEKTYPE_SET.\n");
+          "Invalid origin. Expected Cur, End, or "
+          "Set.\n");
       return false;
   }
 

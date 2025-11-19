@@ -395,9 +395,9 @@ TEST(MetaSkeleton, Linkage)
   skel->getBodyNode(0)->copyTo(nullptr);
   criteria.mTargets.clear();
   criteria.mStart = skel->getBodyNode("c3b1");
-  criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
+  criteria.mStart.mPolicy = Linkage::Criteria::Upstream;
   criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel->getBodyNode("c3b1(1)"), Linkage::Criteria::UPSTREAM));
+      skel->getBodyNode("c3b1(1)"), Linkage::Criteria::Upstream));
 
   LinkagePtr combinedTreeBases = Linkage::create(criteria, "combinedTreeBases");
   checkForBodyNodes(
@@ -427,7 +427,7 @@ TEST(MetaSkeleton, Linkage)
   SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
   criteria.mTargets.clear();
   criteria.mTargets.push_back(Linkage::Criteria::Target(
-      skel2->getBodyNode("c3b1"), Linkage::Criteria::UPSTREAM));
+      skel2->getBodyNode("c3b1"), Linkage::Criteria::Upstream));
   LinkagePtr combinedSkelBases = Linkage::create(criteria, "combinedSkelBases");
   std::size_t count = 0;
   count += checkForBodyNodes(
@@ -498,7 +498,7 @@ TEST(MetaSkeleton, Linkage)
   checkLinkageJointConsistency(terminatedLinkage);
 
   criteria.mStart = skel->getBodyNode("c1b1");
-  criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
+  criteria.mStart.mPolicy = Linkage::Criteria::Downstream;
   criteria.mTargets.clear();
   criteria.mTerminals.clear();
   criteria.mTerminals.push_back(
@@ -519,7 +519,7 @@ TEST(MetaSkeleton, Linkage)
       "c3b3");
   checkLinkageJointConsistency(terminatedSubtree);
 
-  criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
+  criteria.mStart.mPolicy = Linkage::Criteria::Upstream;
   criteria.mStart.mNode = skel->getBodyNode("c3b1");
   LinkagePtr terminatedUpstream
       = Linkage::create(criteria, "terminatedUpstream");

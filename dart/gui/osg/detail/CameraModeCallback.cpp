@@ -40,7 +40,7 @@ namespace dart::gui::osg::detail {
 
 //==============================================================================
 CameraModeCallback::CameraModeCallback()
-  : mCameraMode(CameraMode::RGBA), mCameraModeChanged(false)
+  : mCameraMode(CameraMode::Rgba), mCameraModeChanged(false)
 {
   // Do nothing
 }
@@ -63,7 +63,7 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
     }
 
     if (mCameraModeChanged) {
-      if (mCameraMode == CameraMode::RGBA) {
+      if (mCameraMode == CameraMode::Rgba) {
         if (mDepthRrtCam) {
           group->removeChild(mDepthRrtCam);
           mDepthRrtCam.release();
@@ -73,7 +73,7 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
           group->removeChild(mDepthHudCam);
           mDepthHudCam.release();
         }
-      } else if (mCameraMode == CameraMode::DEPTH) {
+      } else if (mCameraMode == CameraMode::Depth) {
         // Allocate an empty texture by specifying its size for RTT operation
         ::osg::ref_ptr<::osg::Texture2D> tex2d = new ::osg::Texture2D;
         tex2d->setTextureSize(1024, 1024);
@@ -116,7 +116,7 @@ void CameraModeCallback::operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
 //==============================================================================
 void CameraModeCallback::setCameraMode(CameraMode mode)
 {
-  if (mode != CameraMode::RGBA && mode != CameraMode::DEPTH) {
+  if (mode != CameraMode::Rgba && mode != CameraMode::Depth) {
     DART_WARN(
         "Unsupported camera mode '{}'. Use RGBA or DEPTH.", toString(mode));
     return;

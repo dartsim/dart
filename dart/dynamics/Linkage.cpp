@@ -63,7 +63,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
       BodyNode* target_bn = target.mNode.lock();
 
       Target start = mStart;
-      start.mPolicy = INCLUDE;
+      start.mPolicy = Include;
 
       std::size_t treeIndex = target_bn->getTreeIndex();
       start.mNode = target_bn->getSkeleton()->getRootBodyNode(treeIndex);
@@ -73,7 +73,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   } else {
     refreshTerminalMap();
 
-    if (EXCLUDE != mStart.mPolicy)
+    if (Exclude != mStart.mPolicy)
       bns.push_back(mStart.mNode.lock());
     expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
 
@@ -121,22 +121,22 @@ Linkage::Criteria::Criteria(
     BodyNode* start, BodyNode* target, bool includeUpstreamParentJoint)
 {
   mStart.mNode = start;
-  mStart.mPolicy = Linkage::Criteria::INCLUDE;
+  mStart.mPolicy = Linkage::Criteria::Include;
 
   Target endPoint;
   endPoint.mNode = target;
   endPoint.mChain = false;
-  endPoint.mPolicy = Linkage::Criteria::INCLUDE;
+  endPoint.mPolicy = Linkage::Criteria::Include;
 
   if (!includeUpstreamParentJoint) {
     if (endPoint.mNode.lock()
         && endPoint.mNode.lock()->descendsFrom(mStart.mNode.lock())) {
-      mStart.mPolicy = Linkage::Criteria::EXCLUDE;
+      mStart.mPolicy = Linkage::Criteria::Exclude;
     }
 
     if (mStart.mNode.lock()
         && mStart.mNode.lock()->descendsFrom(endPoint.mNode.lock())) {
-      endPoint.mPolicy = Linkage::Criteria::EXCLUDE;
+      endPoint.mPolicy = Linkage::Criteria::Exclude;
     }
   }
 
@@ -158,7 +158,7 @@ void Linkage::Criteria::expansionPolicy(
     Linkage::Criteria::ExpansionPolicy _policy,
     std::vector<BodyNode*>& _bns) const
 {
-  if (EXCLUDE != _policy) {
+  if (Exclude != _policy) {
     // If the _start is a terminal, we quit before expanding
     std::unordered_map<BodyNode*, bool>::const_iterator check_start
         = mMapOfTerminals.find(_start);
@@ -170,10 +170,10 @@ void Linkage::Criteria::expansionPolicy(
     }
   }
 
-  if (DOWNSTREAM == _policy)
-    expandDownstream(_start, _bns, EXCLUDE != _policy);
-  else if (UPSTREAM == _policy)
-    expandUpstream(_start, _bns, EXCLUDE != _policy);
+  if (Downstream == _policy)
+    expandDownstream(_start, _bns, Exclude != _policy);
+  else if (Upstream == _policy)
+    expandUpstream(_start, _bns, Exclude != _policy);
 }
 
 //==============================================================================
@@ -340,13 +340,13 @@ void Linkage::Criteria::expandToTarget(
   }
 
   // Remove the start BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _start.mPolicy && newBns.size() > 0
+  if (Exclude == _start.mPolicy && newBns.size() > 0
       && newBns.front() == start_bn) {
     newBns.erase(newBns.begin());
   }
 
   // Remove the target BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _target.mPolicy && newBns.size() > 0
+  if (Exclude == _target.mPolicy && newBns.size() > 0
       && newBns.back() == target_bn) {
     newBns.pop_back();
   }

@@ -118,10 +118,10 @@ void InteractiveFrame(py::module& m)
                 });
 
   ::py::enum_<dart::gui::osg::InteractiveTool::Type>(it, "Type")
-      .value("LINEAR", dart::gui::osg::InteractiveTool::Type::LINEAR)
-      .value("ANGULAR", dart::gui::osg::InteractiveTool::Type::ANGULAR)
-      .value("PLANAR", dart::gui::osg::InteractiveTool::Type::PLANAR)
-      .value("NUM_TYPES", dart::gui::osg::InteractiveTool::Type::NUM_TYPES)
+      .value("LINEAR", dart::gui::osg::InteractiveTool::Type::Linear)
+      .value("ANGULAR", dart::gui::osg::InteractiveTool::Type::Angular)
+      .value("PLANAR", dart::gui::osg::InteractiveTool::Type::Planar)
+      .value("NUM_TYPES", dart::gui::osg::InteractiveTool::Type::NumTypes)
       .export_values();
 
   ::py::class_<

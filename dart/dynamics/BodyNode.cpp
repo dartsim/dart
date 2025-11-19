@@ -528,13 +528,13 @@ void BodyNode::getMomentOfInertia(
     double& _Ixz,
     double& _Iyz) const
 {
-  _Ixx = mAspectProperties.mInertia.getParameter(Inertia::I_XX);
-  _Iyy = mAspectProperties.mInertia.getParameter(Inertia::I_YY);
-  _Izz = mAspectProperties.mInertia.getParameter(Inertia::I_ZZ);
+  _Ixx = mAspectProperties.mInertia.getParameter(Inertia::Ixx);
+  _Iyy = mAspectProperties.mInertia.getParameter(Inertia::Iyy);
+  _Izz = mAspectProperties.mInertia.getParameter(Inertia::Izz);
 
-  _Ixy = mAspectProperties.mInertia.getParameter(Inertia::I_XY);
-  _Ixz = mAspectProperties.mInertia.getParameter(Inertia::I_XZ);
-  _Iyz = mAspectProperties.mInertia.getParameter(Inertia::I_YZ);
+  _Ixy = mAspectProperties.mInertia.getParameter(Inertia::Ixy);
+  _Ixz = mAspectProperties.mInertia.getParameter(Inertia::Ixz);
+  _Iyz = mAspectProperties.mInertia.getParameter(Inertia::Iyz);
 }
 
 //==============================================================================

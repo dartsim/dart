@@ -103,7 +103,7 @@ void EllipsoidShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -118,8 +118,8 @@ double smallestComponent(const Eigen::Vector3d& v)
 //==============================================================================
 void EllipsoidShapeNode::extractData(bool firstTime)
 {
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicTransform)
+      || mShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s
@@ -203,13 +203,13 @@ EllipsoidShapeDrawable::EllipsoidShapeDrawable(
 //==============================================================================
 void EllipsoidShapeDrawable::refresh(bool firstTime)
 {
-  if (mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mEllipsoidShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+          dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape = new ::osg::Sphere(
@@ -219,7 +219,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

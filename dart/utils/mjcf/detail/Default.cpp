@@ -72,7 +72,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
 
   if (std::string(element->Name()) != "default") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Default> from the provided element");
     return errors;
   }
@@ -155,7 +155,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
 
   if (std::string(element->Name()) != "default") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <default> from the provided element");
     return errors;
   }
@@ -170,7 +170,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
   } else {
     if (parent != nullptr) {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_MISSING,
+          ErrorCode::AttributeMissing,
           "Class name for non-root <default> is not specified."));
       return errors;
     }

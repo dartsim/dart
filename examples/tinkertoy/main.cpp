@@ -114,12 +114,12 @@ public:
 
     dart::gui::osg::MouseButtonEvent event
         = viewer->getDefaultEventHandler()->getButtonEvent(
-            dart::gui::osg::LEFT_MOUSE);
+            dart::gui::osg::LeftMouse);
 
-    if (dart::gui::osg::BUTTON_PUSH == event) {
+    if (dart::gui::osg::ButtonPush == event) {
       const std::vector<dart::gui::osg::PickInfo>& picks
           = viewer->getDefaultEventHandler()->getButtonPicks(
-              dart::gui::osg::LEFT_MOUSE, dart::gui::osg::BUTTON_PUSH);
+              dart::gui::osg::LeftMouse, dart::gui::osg::ButtonPush);
 
       if (picks.empty())
         return;

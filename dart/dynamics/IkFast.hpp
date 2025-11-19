@@ -56,77 +56,77 @@ public:
   enum IkType
   {
     /// End effector reaches desired 6D transformation
-    TRANSFORM_6D,
+    Transform6D,
 
     /// End effector reaches desired 3D rotation
-    ROTATION_3D,
+    Rotation3D,
 
     /// End effector origin reaches desired 3D translation
-    TRANSLATION_3D,
+    Translation3D,
 
     /// Direction on end effector coordinate system reaches desired direction
-    DIRECTION_3D,
+    Direction3D,
 
     /// Ray on end effector coordinate system reaches desired global ray
-    RAY_4D,
+    Ray4D,
 
     /// Direction on end effector coordinate system points to desired 3D
     /// position
-    LOOKAT_3D,
+    LookAt3D,
 
     /// End effector origin and direction reaches desired 3D translation and
     /// direction. Can be thought of as Ray IK where the origin of the ray must
     /// coincide.
-    TRANSLATION_DIRECTION_5D,
+    TranslationDirection5D,
 
     /// End effector origin reaches desired XY translation position, Z is
     /// ignored. The coordinate system with relative to the base link.
-    TRANSLATION_XY_2D,
+    TranslationXy2D,
 
     /// 2D translation along XY plane and 1D rotation around Z axis. The offset
     /// of the rotation is measured starting at +X, so at +X is it 0, at +Y it
     /// is pi/2.
-    TRANSLATION_XY_ORIENTATION_3D,
+    TranslationXyOrientation3D,
 
     /// Local point on end effector origin reaches desired 3D global point.
     /// Because both local point and global point can be specified, there are 6
     /// values.
-    TRANSLATION_LOCAL_GLOBAL_6D,
+    TranslationLocalGlobal6D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction makes a specific angle with x-axis (defined in the
     /// manipulator base link’s coordinate system)
-    TRANSLATION_X_AXIS_ANGLE_4D,
+    TranslationXAxisAngle4D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction makes a specific angle with y-axis (defined in the
     /// manipulator base link’s coordinate system)
-    TRANSLATION_Y_AXIS_ANGLE_4D,
+    TranslationYAxisAngle4D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction makes a specific angle with z-axis (defined in the
     /// manipulator base link’s coordinate system)
-    TRANSLATION_Z_AXIS_ANGLE_4D,
+    TranslationZAxisAngle4D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction needs to be orthogonal to z-axis and be rotated at a certain
     /// angle starting from the x-axis (defined in the manipulator base link's
     /// coordinate system)
-    TRANSLATION_X_AXIS_ANGLE_Z_NORM_4D,
+    TranslationXAxisAngleZNorm4D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction needs to be orthogonal to z-axis and be rotated at a certain
     /// angle starting from the y-axis (defined in the manipulator base link's
     /// coordinate system)
-    TRANSLATION_Y_AXIS_ANGLE_X_NORM_4D,
+    TranslationYAxisAngleXNorm4D,
 
     /// End effector origin reaches desired 3D translation, manipulator
     /// direction needs to be orthogonal to z-axis and be rotated at a certain
     /// angle starting from the z-axis (defined in the manipulator base link's
     /// coordinate system)
-    TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D,
+    TranslationZAxisAngleYNorm4D,
 
-    UNKNOWN,
+    Unknown,
   };
 
   /// Constructor

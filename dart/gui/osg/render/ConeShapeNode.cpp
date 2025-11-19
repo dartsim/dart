@@ -101,7 +101,7 @@ void ConeShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -178,12 +178,12 @@ ConeShapeDrawable::ConeShapeDrawable(
 //==============================================================================
 void ConeShapeDrawable::refresh(bool firstTime)
 {
-  if (mConeShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mConeShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mConeShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     double R = mConeShape->getRadius();
     double h = mConeShape->getHeight();
@@ -193,7 +193,7 @@ void ConeShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mConeShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

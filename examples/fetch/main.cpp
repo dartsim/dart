@@ -163,7 +163,7 @@ int main()
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");
   DART_ASSERT(robot);
-  robot->getJoint(0)->setActuatorType(dynamics::Joint::ActuatorType::LOCKED);
+  robot->getJoint(0)->setActuatorType(dynamics::Joint::Locked);
   robot->eachDof(
       [](dynamics::DegreeOfFreedom* dof) { dof->setSpringStiffness(1e+3); });
   robot->getJoint("robot0:torso_lift_joint")->setSpringStiffness(0, 1e+7);

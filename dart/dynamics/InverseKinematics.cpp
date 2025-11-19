@@ -988,9 +988,9 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 
   for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     const Solution& s = mSolutions[i];
-    if (s.mValidity == VALID)
+    if (s.mValidity == Valid)
       mValidSolutionsCache.push_back(s);
-    else if ((s.mValidity & LIMIT_VIOLATED) == LIMIT_VIOLATED)
+    else if ((s.mValidity & LimitViolated) == LimitViolated)
       mLimitViolationCache.push_back(s);
     else
       mOutOfReachCache.push_back(s);
@@ -1081,8 +1081,8 @@ void InverseKinematics::Analytical::computeGradient(
       = mIK->getErrorMethod().computeDesiredTransform(
           mIK->getNode()->getWorldTransform(), _error);
 
-  if ((PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
-       || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
+  if ((PreAnalytical == mAnalyticalP.mExtraDofUtilization
+       || PreAndPostAnalytical == mAnalyticalP.mExtraDofUtilization)
       && mExtraDofs.size() > 0) {
     const double norm = _error.norm();
     const Eigen::Vector6d& error
@@ -1090,7 +1090,7 @@ void InverseKinematics::Analytical::computeGradient(
               ? mAnalyticalP.mExtraErrorLengthClamp * _error / norm
               : _error;
 
-    addExtraDofGradient(_grad, error, PRE_ANALYTICAL);
+    addExtraDofGradient(_grad, error, PreAnalytical);
 
     const std::vector<int>& gradMap = mIK->getDofMap();
     for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
@@ -1107,7 +1107,7 @@ void InverseKinematics::Analytical::computeGradient(
   if (mSolutions.empty())
     return;
 
-  if (mSolutions[0].mValidity != VALID)
+  if (mSolutions[0].mValidity != Valid)
     return;
 
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
@@ -1127,8 +1127,8 @@ void InverseKinematics::Analytical::computeGradient(
     _grad[index] = mConfigCache[i] - bestSolution[i];
   }
 
-  if ((POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
-       || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
+  if ((PostAnalytical == mAnalyticalP.mExtraDofUtilization
+       || PreAndPostAnalytical == mAnalyticalP.mExtraDofUtilization)
       && mExtraDofs.size() > 0) {
     setPositions(bestSolution);
 
@@ -1142,7 +1142,7 @@ void InverseKinematics::Analytical::computeGradient(
     if (norm > mAnalyticalP.mExtraErrorLengthClamp)
       postError = mAnalyticalP.mExtraErrorLengthClamp * postError / norm;
 
-    addExtraDofGradient(_grad, postError, POST_ANALYTICAL);
+    addExtraDofGradient(_grad, postError, PostAnalytical);
   }
 }
 
@@ -1263,7 +1263,7 @@ void InverseKinematics::Analytical::checkSolutionJointLimits()
       DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
       if (q[j] < dof->getPositionLowerLimit()
           || dof->getPositionUpperLimit() < q[j]) {
-        s.mValidity |= LIMIT_VIOLATED;
+        s.mValidity |= LimitViolated;
         break;
       }
     }

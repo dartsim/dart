@@ -64,9 +64,9 @@ public:
   enum class RotationOption : int
   {
 
-    HOLD_MODKEY = 0, // Default setting, hold ctrl key to rotate
-    ALWAYS_ON,
-    ALWAYS_OFF
+    HoldModKey = 0, // Default setting, hold ctrl key to rotate
+    AlwaysOn,
+    AlwaysOff
 
   };
 

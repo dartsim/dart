@@ -106,9 +106,9 @@ void FCLCollisionDetector(py::module& m)
       fclCollisionDetector, "PrimitiveShape")
       .value(
           "PRIMITIVE",
-          dart::collision::FCLCollisionDetector::PrimitiveShape::PRIMITIVE)
+          dart::collision::FCLCollisionDetector::PrimitiveShape::Primitive)
       .value(
-          "MESH", dart::collision::FCLCollisionDetector::PrimitiveShape::MESH)
+          "MESH", dart::collision::FCLCollisionDetector::PrimitiveShape::Mesh)
       .export_values();
 
   ::py::enum_<
@@ -117,11 +117,11 @@ void FCLCollisionDetector(py::module& m)
       .value(
           "FCL",
           dart::collision::FCLCollisionDetector::ContactPointComputationMethod::
-              FCL)
+              Fcl)
       .value(
           "DART",
           dart::collision::FCLCollisionDetector::ContactPointComputationMethod::
-              DART)
+              Dart)
       .export_values();
 }
 

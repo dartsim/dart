@@ -44,13 +44,13 @@ namespace python {
 void Joint(py::module& m)
 {
   ::py::enum_<dart::dynamics::detail::ActuatorType>(m, "ActuatorType")
-      .value("FORCE", dart::dynamics::detail::ActuatorType::FORCE)
-      .value("PASSIVE", dart::dynamics::detail::ActuatorType::PASSIVE)
-      .value("SERVO", dart::dynamics::detail::ActuatorType::SERVO)
-      .value("MIMIC", dart::dynamics::detail::ActuatorType::MIMIC)
-      .value("ACCELERATION", dart::dynamics::detail::ActuatorType::ACCELERATION)
-      .value("VELOCITY", dart::dynamics::detail::ActuatorType::VELOCITY)
-      .value("LOCKED", dart::dynamics::detail::ActuatorType::LOCKED)
+      .value("FORCE", dart::dynamics::detail::Force)
+      .value("PASSIVE", dart::dynamics::detail::Passive)
+      .value("SERVO", dart::dynamics::detail::Servo)
+      .value("MIMIC", dart::dynamics::detail::Mimic)
+      .value("ACCELERATION", dart::dynamics::detail::Acceleration)
+      .value("VELOCITY", dart::dynamics::detail::Velocity)
+      .value("LOCKED", dart::dynamics::detail::Locked)
       .export_values();
 
   m.attr("DefaultActuatorType") = dart::dynamics::detail::DefaultActuatorType;

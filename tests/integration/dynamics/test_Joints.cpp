@@ -162,7 +162,7 @@ TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
   FreeJoint* joint = pair.first;
   BodyNode* body = pair.second;
 
-  joint->setActuatorType(Joint::VELOCITY);
+  joint->setActuatorType(Joint::Velocity);
   world->addSkeleton(skeleton);
 
   Eigen::Vector6d desiredVel = Eigen::Vector6d::Zero();
@@ -382,10 +382,10 @@ TEST_F(JOINTS, EULER_JOINT)
 {
   EulerJoint::Properties properties;
 
-  properties.mAxisOrder = EulerJoint::AxisOrder::XYZ;
+  properties.mAxisOrder = EulerJoint::AxisOrder::Xyz;
   kinematicsTest<EulerJoint>(properties);
 
-  properties.mAxisOrder = EulerJoint::AxisOrder::ZYX;
+  properties.mAxisOrder = EulerJoint::AxisOrder::Zyx;
   kinematicsTest<EulerJoint>(properties);
 }
 
@@ -458,22 +458,22 @@ TEST_F(JOINTS, COMMAND_LIMIT)
   pendulum->eachBodyNode([&](BodyNode* bodyNode) {
     Joint* joint = bodyNode->getParentJoint();
 
-    joint->setActuatorType(Joint::FORCE);
-    EXPECT_EQ(joint->getActuatorType(), Joint::FORCE);
+    joint->setActuatorType(Joint::Force);
+    EXPECT_EQ(joint->getActuatorType(), Joint::Force);
     testCommandLimits<
         &Joint::setForce,
         &Joint::setForceLowerLimit,
         &Joint::setForceUpperLimit>(joint);
 
-    joint->setActuatorType(Joint::ACCELERATION);
-    EXPECT_EQ(joint->getActuatorType(), Joint::ACCELERATION);
+    joint->setActuatorType(Joint::Acceleration);
+    EXPECT_EQ(joint->getActuatorType(), Joint::Acceleration);
     testCommandLimits<
         &Joint::setAcceleration,
         &Joint::setAccelerationLowerLimit,
         &Joint::setAccelerationUpperLimit>(joint);
 
-    joint->setActuatorType(Joint::VELOCITY);
-    EXPECT_EQ(joint->getActuatorType(), Joint::VELOCITY);
+    joint->setActuatorType(Joint::Velocity);
+    EXPECT_EQ(joint->getActuatorType(), Joint::Velocity);
     testCommandLimits<
         &Joint::setVelocity,
         &Joint::setVelocityLowerLimit,
@@ -495,8 +495,8 @@ TEST_F(JOINTS, PASSIVE_ACTUATOR_CLEARS_COMMAND)
   ASSERT_TRUE(joint != nullptr);
 
   // Start in FORCE mode so that commands are stored.
-  joint->setActuatorType(Joint::FORCE);
-  ASSERT_EQ(joint->getActuatorType(), Joint::FORCE);
+  joint->setActuatorType(Joint::Force);
+  ASSERT_EQ(joint->getActuatorType(), Joint::Force);
 
   // Store an arbitrary command while the joint is FORCE actuated.
   const double storedCommand = 1.23;
@@ -504,8 +504,8 @@ TEST_F(JOINTS, PASSIVE_ACTUATOR_CLEARS_COMMAND)
   ASSERT_DOUBLE_EQ(joint->getCommand(0), storedCommand);
 
   // Switching to PASSIVE should discard any previously stored command values.
-  joint->setActuatorType(Joint::PASSIVE);
-  EXPECT_EQ(joint->getActuatorType(), Joint::PASSIVE);
+  joint->setActuatorType(Joint::Passive);
+  EXPECT_EQ(joint->getActuatorType(), Joint::Passive);
   EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
   EXPECT_TRUE(joint->getCommands().isZero());
 
@@ -878,7 +878,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 2);
 
-  SkeletonPtr pendulum = createNLinkPendulum(1, dim, DOF_ROLL, offset);
+  SkeletonPtr pendulum = createNLinkPendulum(1, dim, DofRoll, offset);
   EXPECT_NE(pendulum, nullptr);
 
   pendulum->disableSelfCollisionCheck();
@@ -907,7 +907,7 @@ TEST_F(JOINTS, SpringRestPosition)
 {
   using namespace math::suffixes;
 
-  auto skel = createPendulum(Joint::ActuatorType::PASSIVE);
+  auto skel = createPendulum(Joint::Passive);
   ASSERT_NE(skel, nullptr);
 
   auto joint = skel->getRootJoint();
@@ -1008,7 +1008,7 @@ void testServoMotor()
   std::vector<SkeletonPtr> pendulums(numPendulums);
   std::vector<JointPtr> joints(numPendulums);
   for (std::size_t i = 0; i < numPendulums; ++i) {
-    pendulums[i] = createPendulum(Joint::SERVO);
+    pendulums[i] = createPendulum(Joint::Servo);
     joints[i] = pendulums[i]->getJoint(0);
   }
 
@@ -1127,7 +1127,7 @@ void testMimicJoint()
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 2);
 
-  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DofRoll, offset);
   EXPECT_NE(pendulum, nullptr);
 
   pendulum->disableSelfCollisionCheck();
@@ -1143,7 +1143,7 @@ void testMimicJoint()
     dynamics::Joint* joint = pendulum->getJoint(i);
     EXPECT_NE(joint, nullptr);
 
-    joint->setActuatorType(Joint::SERVO);
+    joint->setActuatorType(Joint::Servo);
     joint->setPosition(0, 90.0_deg);
     joint->setDampingCoefficient(0, 0.0);
     joint->setSpringStiffness(0, 0.0);
@@ -1160,7 +1160,7 @@ void testMimicJoint()
   joints[1]->setForceLowerLimit(0, -sufficient_force);
 
   // Second joint mimics the first one
-  joints[1]->setActuatorType(Joint::MIMIC);
+  joints[1]->setActuatorType(Joint::Mimic);
   joints[1]->setMimicJoint(joints[0], 1., 0.);
 
   world->addSkeleton(pendulum);

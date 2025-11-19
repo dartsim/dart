@@ -66,20 +66,20 @@ enum ActuatorType
   /// If the command is zero, then it's identical to passive joint. The valid
   /// joint constraints are position limit, velocity limit, and Coulomb
   /// friction, and the invalid joint constraint is force limit.
-  FORCE,
+  Force,
 
   /// Passive joint doesn't take any command input, and the output is joint
   /// acceleration.
   ///
   /// The valid joint constraints are position limit, velocity limit, and
   /// Coulomb friction, and the invalid joint constraint is force limit.
-  PASSIVE,
+  Passive,
 
   /// Command input is desired velocity, and the output is joint acceleration.
   ///
   /// The constraint solver will try to track the desired velocity within the
   /// joint force limit. All the joint constraints are valid.
-  SERVO,
+  Servo,
 
   /// There is no command input. The joint tries to follow the position of
   /// another joint (the mimic joint) by computing desired velocities.
@@ -87,30 +87,30 @@ enum ActuatorType
   ///
   /// The constraint solver will try to track the desired velocity within the
   /// joint force limit. All the joint constraints are valid.
-  MIMIC,
+  Mimic,
 
   /// Command input is joint acceleration, and the output is joint force.
   ///
   /// The joint acceleration is always satisfied but it doesn't take the joint
   /// force limit into account. All the joint constraints are invalid.
-  ACCELERATION,
+  Acceleration,
 
   /// Command input is joint velocity, and the output is joint force.
   ///
   /// The joint velocity is always satisfied but it doesn't take the joint
   /// force limit into account. If you want to consider the joint force limit,
   /// should use SERVO instead. All the joint constraints are invalid.
-  VELOCITY,
+  Velocity,
 
   /// Locked joint always set the velocity and acceleration to zero so that
   /// the joint dosen't move at all (locked), and the output is joint force.
   /// force.
   ///
   /// All the joint constraints are invalid.
-  LOCKED
+  Locked
 };
 
-const ActuatorType DefaultActuatorType = FORCE;
+const ActuatorType DefaultActuatorType = Force;
 
 struct JointProperties
 {

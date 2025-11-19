@@ -271,8 +271,8 @@ createJointAndBodyNodePairForMultipleJoints(
     // Try to create predefined 2 DOFs joints
     //----------------------------------------
 
-    if (mjcfBody.getJoint(0).getType() == detail::JointType::SLIDE
-        && mjcfBody.getJoint(1).getType() == detail::JointType::SLIDE) {
+    if (mjcfBody.getJoint(0).getType() == detail::JointType::Slide
+        && mjcfBody.getJoint(1).getType() == detail::JointType::Slide) {
       const detail::Joint& mjcfJoint0 = mjcfBody.getJoint(0);
       const detail::Joint& mjcfJoint1 = mjcfBody.getJoint(1);
 
@@ -324,9 +324,9 @@ createJointAndBodyNodePairForMultipleJoints(
     // Try to create predefined 3 DOFs joints
     //----------------------------------------
 
-    if (mjcfBody.getJoint(0).getType() == detail::JointType::SLIDE
-        && mjcfBody.getJoint(1).getType() == detail::JointType::SLIDE
-        && mjcfBody.getJoint(2).getType() == detail::JointType::SLIDE) {
+    if (mjcfBody.getJoint(0).getType() == detail::JointType::Slide
+        && mjcfBody.getJoint(1).getType() == detail::JointType::Slide
+        && mjcfBody.getJoint(2).getType() == detail::JointType::Slide) {
       const detail::Joint& mjcfJoint0 = mjcfBody.getJoint(0);
       const detail::Joint& mjcfJoint1 = mjcfBody.getJoint(1);
       const detail::Joint& mjcfJoint2 = mjcfBody.getJoint(2);
@@ -395,28 +395,28 @@ dynamics::ShapePtr createShape(const GeomOrSite& geomOrSite)
   dynamics::ShapePtr shape = nullptr;
 
   switch (geomOrSite.getType()) {
-    case detail::GeomType::SPHERE: {
+    case detail::GeomType::Sphere: {
       shape = std::make_shared<dynamics::SphereShape>(
           geomOrSite.getSphereRadius());
       break;
     }
-    case detail::GeomType::CAPSULE: {
+    case detail::GeomType::Capsule: {
       shape = std::make_shared<dynamics::CapsuleShape>(
           geomOrSite.getCapsuleRadius(), geomOrSite.getCapsuleLength());
       break;
     }
-    case detail::GeomType::ELLIPSOID: {
+    case detail::GeomType::Ellipsoid: {
       // DART takes diameters while MJCF has radii
       shape = std::make_shared<dynamics::EllipsoidShape>(
           geomOrSite.getEllipsoidDiameters());
       break;
     }
-    case detail::GeomType::CYLINDER: {
+    case detail::GeomType::Cylinder: {
       shape = std::make_shared<dynamics::CylinderShape>(
           geomOrSite.getCylinderRadius(), geomOrSite.getCylinderLength());
       break;
     }
-    case detail::GeomType::BOX: {
+    case detail::GeomType::Box: {
       // DART takes full-sizes while MJCF has half-sizes
       shape = std::make_shared<dynamics::BoxShape>(geomOrSite.getBoxSize());
       break;
@@ -436,7 +436,7 @@ dynamics::ShapePtr createShape(
   dynamics::ShapePtr shape = nullptr;
 
   switch (geom.getType()) {
-    case detail::GeomType::PLANE: {
+    case detail::GeomType::Plane: {
       // TODO(JS): Needs to properly parse PLANE.
       Eigen::Vector3d size;
       size.head<2>() = 2.0 * geom.getPlaneHalfSize();
@@ -444,11 +444,11 @@ dynamics::ShapePtr createShape(
       shape = std::make_shared<dynamics::BoxShape>(size);
       break;
     }
-    case detail::GeomType::HFIELD: {
+    case detail::GeomType::Hfield: {
       DART_ERROR("[MjcfParser] Not implemented for 'HFIELD' geom type.");
       break;
     }
-    case detail::GeomType::MESH: {
+    case detail::GeomType::Mesh: {
       const detail::Mesh* mjcfMesh = mjcfAsset.getMesh(geom.getMesh());
       DART_ASSERT(mjcfMesh);
       shape = mjcfMesh->getMeshShape();
@@ -558,25 +558,25 @@ bool populateSkeletonRecurse(
             parentBodyNode, jointProps, bodyProps);
   } else if (numJoints == 1u) {
     const auto& mjcfJoint = mjcfBody.getJoint(0);
-    if (mjcfJoint.getType() == detail::JointType::FREE) {
+    if (mjcfJoint.getType() == detail::JointType::Free) {
       const auto jointProps = createFreeJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
               parentBodyNode, jointProps, bodyProps);
-    } else if (mjcfJoint.getType() == detail::JointType::BALL) {
+    } else if (mjcfJoint.getType() == detail::JointType::Ball) {
       const auto jointProps = createBallJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::BallJoint>(
               parentBodyNode, jointProps, bodyProps);
-    } else if (mjcfJoint.getType() == detail::JointType::SLIDE) {
+    } else if (mjcfJoint.getType() == detail::JointType::Slide) {
       const auto jointProps = createPrismaticJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
               parentBodyNode, jointProps, bodyProps);
-    } else if (mjcfJoint.getType() == detail::JointType::HINGE) {
+    } else if (mjcfJoint.getType() == detail::JointType::Hinge) {
       const auto jointProps = createRevoluteJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
       std::tie(joint, bodyNode)

@@ -166,11 +166,11 @@ InteractiveFrame::InteractiveFrame(
   for (std::size_t i = 0; i < 3; ++i) {
     std::string affix = (i == 0) ? "x" : (i == 1) ? "y" : "z";
 
-    mTools[InteractiveTool::LINEAR][i]
+    mTools[InteractiveTool::Linear][i]
         = new InteractiveTool(this, 0.8, "LINEAR_" + affix);
-    mTools[InteractiveTool::ANGULAR][i]
+    mTools[InteractiveTool::Angular][i]
         = new InteractiveTool(this, 0.8, "ANGULAR_" + affix);
-    mTools[InteractiveTool::PLANAR][i]
+    mTools[InteractiveTool::Planar][i]
         = new InteractiveTool(this, 0.7, "PLANAR_" + affix);
   }
 
@@ -196,11 +196,11 @@ void InteractiveFrame::resizeStandardVisuals(
 InteractiveTool* InteractiveFrame::getTool(
     InteractiveTool::Type tool, std::size_t coordinate)
 {
-  if (InteractiveTool::NUM_TYPES <= tool) {
+  if (InteractiveTool::NumTypes <= tool) {
     DART_WARN(
         "Attempting to access tool #{}, but tools only go up to {}",
         tool,
-        InteractiveTool::NUM_TYPES);
+        InteractiveTool::NumTypes);
     return nullptr;
   }
 
@@ -289,7 +289,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     Eigen::Vector4d color(Eigen::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
-    color[3] = getTool(InteractiveTool::LINEAR, a)->getDefaultAlpha();
+    color[3] = getTool(InteractiveTool::Linear, a)->getDefaultAlpha();
 
     dart::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness * size * 0.03;
@@ -297,13 +297,13 @@ void InteractiveFrame::createStandardVisualizationShapes(
     p.mHeadLengthScale = 0.4;
     p.mDoubleArrow = false;
 
-    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(dart::dynamics::ShapePtr(
+    mTools[InteractiveTool::Linear][a]->addShapeFrame(dart::dynamics::ShapePtr(
         new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
 
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
-    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(dart::dynamics::ShapePtr(
+    mTools[InteractiveTool::Linear][a]->addShapeFrame(dart::dynamics::ShapePtr(
         new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
   }
 
@@ -355,8 +355,8 @@ void InteractiveFrame::createStandardVisualizationShapes(
         }
         color1[r] = 1.0;
         color2[r] = 0.6;
-        color1.a = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
-        color2.a = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
+        color1.a = getTool(InteractiveTool::Angular, r)->getDefaultAlpha();
+        color2.a = getTool(InteractiveTool::Angular, r)->getDefaultAlpha();
         mesh->mColors[0][4 * i + j] = ((4 * i + j) % 2 == 0) ? color1 : color2;
         mesh->mColors[0][4 * i + j + R]
             = ((4 * i + j + R) % 2 == 0) ? color1 : color2;
@@ -447,7 +447,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    shape->setColorMode(dart::dynamics::MeshShape::ColorIndex);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (r == 1)
@@ -455,7 +455,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     else if (r == 2)
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
 
-    auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
+    auto shapeFrame = mTools[InteractiveTool::Angular][r]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
   }
 
@@ -484,7 +484,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
     }
 
     aiColor4D color(
-        0.1, 0.1, 0.1, getTool(InteractiveTool::PLANAR, p)->getDefaultAlpha());
+        0.1, 0.1, 0.1, getTool(InteractiveTool::Planar, p)->getDefaultAlpha());
     color[p] = 0.9;
     for (std::size_t i = 0; i < numVertices; ++i)
       mesh->mColors[0][i] = color;
@@ -531,7 +531,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    shape->setColorMode(dart::dynamics::MeshShape::ColorIndex);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if (p == 1)
@@ -539,16 +539,16 @@ void InteractiveFrame::createStandardVisualizationShapes(
     else if (p == 2)
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
 
-    auto shapeFrame = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
+    auto shapeFrame = mTools[InteractiveTool::Planar][p]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
   }
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+  for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i) {
     for (std::size_t j = 0; j < 3; ++j) {
       const auto& shapesFrames = mTools[i][j]->getShapeFrames();
       for (std::size_t s = 0; s < shapesFrames.size(); ++s) {
         shapesFrames[s]->getShape()->setDataVariance(
-            dart::dynamics::Shape::DYNAMIC_COLOR);
+            dart::dynamics::Shape::DynamicColor);
       }
     }
   }
@@ -573,7 +573,7 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 {
   removeAllShapeFrames();
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+  for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i) {
     for (std::size_t j = 0; j < 3; ++j) {
       InteractiveTool* tool = mTools[i][j];
       tool->removeAllShapeFrames();
@@ -584,7 +584,7 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 //==============================================================================
 void InteractiveFrame::deleteAllTools()
 {
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
+  for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i)
     for (std::size_t j = 0; j < 3; ++j)
       delete mTools[i][j];
 }

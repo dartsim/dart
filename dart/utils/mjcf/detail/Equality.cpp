@@ -58,7 +58,7 @@ Errors Equality::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 
   if (std::string(element->Name()) != "equality") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Equality> from the provided element");
     return errors;
   }

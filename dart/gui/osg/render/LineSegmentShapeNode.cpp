@@ -107,7 +107,7 @@ void LineSegmentShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -159,7 +159,7 @@ void LineSegmentShapeGeode::refresh()
 void LineSegmentShapeGeode::extractData(bool firstTime)
 {
   if (mLineSegmentShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+          dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     mLineWidth->setWidth(mLineSegmentShape->getThickness());
     getOrCreateStateSet()->setAttributeAndModes(mLineWidth);
@@ -198,13 +198,13 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
 //==============================================================================
 void LineSegmentShapeDrawable::refresh(bool firstTime)
 {
-  if (mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mLineSegmentShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+          dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     const common::aligned_vector<Eigen::Vector2i>& connections
         = mLineSegmentShape->getConnections();
@@ -222,9 +222,9 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   }
 
   if (mLineSegmentShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_VERTICES)
+          dart::dynamics::Shape::DynamicVertices)
       || mLineSegmentShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+          dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     const std::vector<Eigen::Vector3d>& vertices
         = mLineSegmentShape->getVertices();
@@ -238,7 +238,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     setVertexArray(mVertices);
   }
 
-  if (mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

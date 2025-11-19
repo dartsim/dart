@@ -58,7 +58,7 @@ Errors Worldbody::read(
 
   if (std::string(element->Name()) != "worldbody") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <worldbody> from the provided element");
     return errors;
   }
@@ -71,7 +71,7 @@ Errors Worldbody::read(
       currentDefault = &(*defaultClass);
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Failed to find default with childclass name '" + className + "'"));
     }
   }

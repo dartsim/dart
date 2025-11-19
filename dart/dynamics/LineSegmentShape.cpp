@@ -43,7 +43,7 @@ const Eigen::Vector3d LineSegmentShape::mDummyVertex = Eigen::Vector3d::Zero();
 
 //==============================================================================
 LineSegmentShape::LineSegmentShape(float _thickness)
-  : Shape(LINE_SEGMENT), mThickness(_thickness)
+  : Shape(Shape::LineSegment), mThickness(_thickness)
 {
   if (_thickness <= 0.0f) {
     DART_WARN(
@@ -52,13 +52,13 @@ LineSegmentShape::LineSegmentShape(float _thickness)
     mThickness = 1.0f;
   }
 
-  mVariance = DYNAMIC_VERTICES;
+  mVariance = DynamicVertices;
 }
 
 //==============================================================================
 LineSegmentShape::LineSegmentShape(
     const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, float _thickness)
-  : Shape(), mThickness(_thickness)
+  : Shape(Shape::LineSegment), mThickness(_thickness)
 {
   if (_thickness <= 0.0f) {
     DART_WARN(
@@ -69,7 +69,7 @@ LineSegmentShape::LineSegmentShape(
 
   addVertex(_v1);
   addVertex(_v2);
-  mVariance = DYNAMIC_VERTICES;
+  mVariance = DynamicVertices;
 }
 
 //==============================================================================

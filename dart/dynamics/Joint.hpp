@@ -40,6 +40,7 @@
 
 #include <dart/math/MathTypes.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
@@ -66,14 +67,23 @@ public:
   using CompositeProperties = common::Composite::Properties;
   using Properties = detail::JointProperties;
 
-  typedef detail::ActuatorType ActuatorType;
-  static constexpr ActuatorType FORCE = detail::FORCE;
-  static constexpr ActuatorType PASSIVE = detail::PASSIVE;
-  static constexpr ActuatorType SERVO = detail::SERVO;
-  static constexpr ActuatorType MIMIC = detail::MIMIC;
-  static constexpr ActuatorType ACCELERATION = detail::ACCELERATION;
-  static constexpr ActuatorType VELOCITY = detail::VELOCITY;
-  static constexpr ActuatorType LOCKED = detail::LOCKED;
+  using ActuatorType = detail::ActuatorType;
+  static constexpr ActuatorType Force = detail::Force;
+  static constexpr ActuatorType Passive = detail::Passive;
+  static constexpr ActuatorType Servo = detail::Servo;
+  static constexpr ActuatorType Mimic = detail::Mimic;
+  static constexpr ActuatorType Acceleration = detail::Acceleration;
+  static constexpr ActuatorType Velocity = detail::Velocity;
+  static constexpr ActuatorType Locked = detail::Locked;
+
+  DART_DEPRECATED(7.0) static constexpr ActuatorType FORCE = Force;
+  DART_DEPRECATED(7.0) static constexpr ActuatorType PASSIVE = Passive;
+  DART_DEPRECATED(7.0) static constexpr ActuatorType SERVO = Servo;
+  DART_DEPRECATED(7.0) static constexpr ActuatorType MIMIC = Mimic;
+  DART_DEPRECATED(7.0)
+  static constexpr ActuatorType ACCELERATION = Acceleration;
+  DART_DEPRECATED(7.0) static constexpr ActuatorType VELOCITY = Velocity;
+  DART_DEPRECATED(7.0) static constexpr ActuatorType LOCKED = Locked;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect)
 

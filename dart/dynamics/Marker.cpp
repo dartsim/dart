@@ -41,9 +41,9 @@ int Marker::msMarkerCount = 0;
 
 //==============================================================================
 // These declarations are needed for linking to work
-constexpr Marker::ConstraintType Marker::NO;
-constexpr Marker::ConstraintType Marker::HARD;
-constexpr Marker::ConstraintType Marker::SOFT;
+constexpr Marker::ConstraintType Marker::No;
+constexpr Marker::ConstraintType Marker::Hard;
+constexpr Marker::ConstraintType Marker::Soft;
 
 namespace detail {
 

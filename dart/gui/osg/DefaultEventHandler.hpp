@@ -68,32 +68,32 @@ class Viewer;
 enum MouseButton
 {
 
-  LEFT_MOUSE = 0,
-  RIGHT_MOUSE,
-  MIDDLE_MOUSE,
+  LeftMouse = 0,
+  RightMouse,
+  MiddleMouse,
 
-  NUM_MOUSE_BUTTONS
+  NumMouseButtons
 };
 
 enum MouseButtonEvent
 {
 
-  BUTTON_PUSH = 0,
-  BUTTON_DRAG,
-  BUTTON_RELEASE,
-  BUTTON_NOTHING
+  ButtonPush = 0,
+  ButtonDrag,
+  ButtonRelease,
+  ButtonNothing
 
 };
 
 enum ConstraintType
 {
 
-  UNCONSTRAINED = 0,
-  LINE_CONSTRAINT,
-  PLANE_CONSTRAINT,
-  CUSTOM_CONSTRAINT,
+  Unconstrained = 0,
+  LineConstraint,
+  PlaneConstraint,
+  CustomConstraint,
 
-  NUM_CONSTRAINT_TYPES
+  NumConstraintTypes
 };
 
 class MouseEventHandler;
@@ -126,16 +126,16 @@ public:
   /// location in the world (_fromPosition). For the unconstrained case, this
   /// change is projected onto a plane parallel to the camera's orientation.
   ///
-  /// If _constraint is set to LINE_CONSTRAINT, the change in cursor position
+  /// If _constraint is set to LineConstraint, the change in cursor position
   /// will be constrained to a line that passes through _fromPosition with a
   /// slope of _constraintVector.
   ///
-  /// If _constraint is set to PLANE_CONSTRAINT, the change in cursor position
+  /// If _constraint is set to PlaneConstraint, the change in cursor position
   /// will be constrained to a plane that passes through _fromPosition with a
   /// normal vector of _constraintVector.
   Eigen::Vector3d getDeltaCursor(
       const Eigen::Vector3d& _fromPosition,
-      ConstraintType _constraint = UNCONSTRAINED,
+      ConstraintType _constraint = Unconstrained,
       const Eigen::Vector3d& _constraintVector
       = Eigen::Vector3d::UnitZ()) const;
 
@@ -204,10 +204,10 @@ protected:
   std::set<MouseEventHandler*> mMouseEventHandlers;
 
   /// The objects that were under the cursor during the last button event
-  std::vector<PickInfo> mButtonPicks[NUM_MOUSE_BUTTONS][BUTTON_NOTHING];
+  std::vector<PickInfo> mButtonPicks[NumMouseButtons][ButtonNothing];
 
   /// Suppress pick detection
-  bool mSuppressButtonPicks[NUM_MOUSE_BUTTONS][BUTTON_NOTHING];
+  bool mSuppressButtonPicks[NumMouseButtons][ButtonNothing];
 
   /// The objects that were under the cursor during the last move
   std::vector<PickInfo> mMovePicks;
@@ -219,7 +219,7 @@ protected:
   std::vector<PickInfo> mTempPicks;
 
   /// The last mouse event that was registered by the event handler
-  MouseButtonEvent mLastButtonEvent[NUM_MOUSE_BUTTONS];
+  MouseButtonEvent mLastButtonEvent[NumMouseButtons];
 
   /// X/Y values of the cursor (in the window coordinates) during the last mouse
   /// event

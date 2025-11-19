@@ -52,9 +52,9 @@ public:
   /// \brief Position to seek relative to.
   enum SeekType
   {
-    SEEKTYPE_CUR, ///< Current position.
-    SEEKTYPE_END, ///< End of file.
-    SEEKTYPE_SET  ///< Begining of file.
+    Cur, ///< Current position.
+    End, ///< End of file.
+    Set  ///< Begining of file.
   };
 
   virtual ~Resource() = default;

@@ -54,8 +54,8 @@ Eigen::Vector3d toVector3d(const octomap::point3d& point)
 //==============================================================================
 PointCloudShape::PointCloudShape(double visualSize)
   : Shape(),
-    mPointShapeType(BOX),
-    mColorMode(USE_SHAPE_COLOR),
+    mPointShapeType(PointShapeType::Box),
+    mColorMode(UseShapeColor),
     mVisualSize(visualSize)
 {
   // Do nothing

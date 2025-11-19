@@ -85,7 +85,7 @@ private:
 
   std::string mName{""};
 
-  JointType mType{JointType::HINGE};
+  JointType mType{JointType::Hinge};
 
   int mGroup{0};
 

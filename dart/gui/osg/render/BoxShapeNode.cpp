@@ -96,7 +96,7 @@ void BoxShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -170,12 +170,12 @@ BoxShapeDrawable::BoxShapeDrawable(
 //==============================================================================
 void BoxShapeDrawable::refresh(bool firstTime)
 {
-  if (mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mBoxShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     const Eigen::Vector3d& d = mBoxShape->getSize();
     ::osg::ref_ptr<::osg::Box> osg_shape
@@ -184,7 +184,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mBoxShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

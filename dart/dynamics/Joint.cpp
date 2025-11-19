@@ -48,13 +48,13 @@ namespace dynamics {
 const Joint::ActuatorType Joint::DefaultActuatorType
     = detail::DefaultActuatorType;
 // These declarations are needed for linking to work
-constexpr Joint::ActuatorType Joint::FORCE;
-constexpr Joint::ActuatorType Joint::PASSIVE;
-constexpr Joint::ActuatorType Joint::SERVO;
-constexpr Joint::ActuatorType Joint::MIMIC;
-constexpr Joint::ActuatorType Joint::ACCELERATION;
-constexpr Joint::ActuatorType Joint::VELOCITY;
-constexpr Joint::ActuatorType Joint::LOCKED;
+constexpr Joint::ActuatorType Joint::Force;
+constexpr Joint::ActuatorType Joint::Passive;
+constexpr Joint::ActuatorType Joint::Servo;
+constexpr Joint::ActuatorType Joint::Mimic;
+constexpr Joint::ActuatorType Joint::Acceleration;
+constexpr Joint::ActuatorType Joint::Velocity;
+constexpr Joint::ActuatorType Joint::Locked;
 
 namespace detail {
 
@@ -278,14 +278,14 @@ const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 bool Joint::isKinematic() const
 {
   switch (mAspectProperties.mActuatorType) {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
-    case MIMIC:
+    case ActuatorType::Force:
+    case ActuatorType::Passive:
+    case ActuatorType::Servo:
+    case ActuatorType::Mimic:
       return false;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case ActuatorType::Acceleration:
+    case ActuatorType::Velocity:
+    case ActuatorType::Locked:
       return true;
     default: {
       DART_ERROR("Unsupported actuator type.");

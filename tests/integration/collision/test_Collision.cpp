@@ -444,23 +444,23 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 TEST_F(Collision, SimpleFrames)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testSimpleFrames(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testSimpleFrames(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testSimpleFrames(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testSimpleFrames(fcl_mesh_fcl);
 
 #if HAVE_BULLET
@@ -528,7 +528,7 @@ void testSphereSphere(
   double tol2 = tol;
   if (cd->getType() == FCLCollisionDetector::getStaticType()
       && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
-             == FCLCollisionDetector::MESH) {
+             == FCLCollisionDetector::Mesh) {
     tol2 *= 1e+12;
     // FCL returns less accurate contact normals for sphere-sphere since we're
     // using sphere-like rough meshes instead of analytical sphere shapes.
@@ -571,24 +571,24 @@ TEST_F(Collision, SphereSphere)
   {
     SCOPED_TRACE("FCLCollisionDetector");
     auto fcl_mesh_dart = FCLCollisionDetector::create();
-    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
     testSphereSphere(fcl_mesh_dart);
   }
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testSphereSphere(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testSphereSphere(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testSphereSphere(fcl_mesh_fcl);
 
 #if HAVE_ODE
@@ -690,23 +690,23 @@ void testBoxBox(
 TEST_F(Collision, BoxBox)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testBoxBox(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testBoxBox(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testBoxBox(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testBoxBox(fcl_mesh_fcl);
 
 #if HAVE_ODE
@@ -821,23 +821,23 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
 TEST_F(Collision, testCylinderCylinder)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testCylinderCylinder(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCylinderCylinder(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testCylinderCylinder(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCylinderCylinder(fcl_mesh_fcl);
 
 #if HAVE_ODE
@@ -894,32 +894,32 @@ TEST_F(Collision, testConeCone)
   {
     SCOPED_TRACE("FCLCollisionDetector (MESH, DART)");
     auto fcl_mesh_dart = FCLCollisionDetector::create();
-    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+    fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
     testConeCone(fcl_mesh_dart);
   }
 
   {
     SCOPED_TRACE("FCLCollisionDetector (MESH, FCL)");
     auto fcl_mesh_fcl = FCLCollisionDetector::create();
-    fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-    fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+    fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+    fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
     testConeCone(fcl_mesh_fcl);
   }
 
   {
     SCOPED_TRACE("FCLCollisionDetector (PRIMITIVE, DART)");
     auto fcl_prim_dart = FCLCollisionDetector::create();
-    fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-    fcl_prim_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+    fcl_prim_dart->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+    fcl_prim_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
     testConeCone(fcl_prim_dart);
   }
 
   {
     SCOPED_TRACE("FCLCollisionDetector (PRIMITIVE, FCL)");
     auto fcl_prim_fcl = FCLCollisionDetector::create();
-    fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-    fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+    fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+    fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
     testConeCone(fcl_prim_fcl);
   }
 
@@ -984,23 +984,23 @@ void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 TEST_F(Collision, testCapsuleCapsule)
 {
   // auto fcl_mesh_dart = FCLCollisionDetector::create();
-  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testCapsuleCapsule(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCapsuleCapsule(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testCapsuleCapsule(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCapsuleCapsule(fcl_mesh_fcl);
 
 #if HAVE_ODE
@@ -1348,23 +1348,23 @@ TEST_F(Collision, testHeightmapFlipY)
 TEST_F(Collision, Options)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testOptions(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testOptions(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testOptions(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testOptions(fcl_mesh_fcl);
 
 #if HAVE_BULLET
@@ -1450,23 +1450,23 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
 TEST_F(Collision, Filter)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testFilter(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testFilter(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testFilter(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testFilter(fcl_mesh_fcl);
 
 #if HAVE_BULLET
@@ -1550,23 +1550,23 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 TEST_F(Collision, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   testCreateCollisionGroups(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::Mesh);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCreateCollisionGroups(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Dart);
   // testCreateCollisionGroups(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::Primitive);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::Fcl);
   // testCreateCollisionGroups(fcl_mesh_fcl);
 
 #if HAVE_BULLET
@@ -1622,12 +1622,12 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
   EXPECT_TRUE(joint4 != nullptr);
   EXPECT_TRUE(joint5 != nullptr);
   EXPECT_TRUE(joint6 != nullptr);
-  EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
-  EXPECT_EQ(joint3->getActuatorType(), Joint::SERVO);
-  EXPECT_EQ(joint4->getActuatorType(), Joint::ACCELERATION);
-  EXPECT_EQ(joint5->getActuatorType(), Joint::VELOCITY);
-  EXPECT_EQ(joint6->getActuatorType(), Joint::LOCKED);
+  EXPECT_EQ(joint1->getActuatorType(), Joint::Force);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::Passive);
+  EXPECT_EQ(joint3->getActuatorType(), Joint::Servo);
+  EXPECT_EQ(joint4->getActuatorType(), Joint::Acceleration);
+  EXPECT_EQ(joint5->getActuatorType(), Joint::Velocity);
+  EXPECT_EQ(joint6->getActuatorType(), Joint::Locked);
 
   for (std::size_t i = 0; i < numFrames; ++i) {
     const double time = world->getTime();

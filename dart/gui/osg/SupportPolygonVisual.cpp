@@ -158,7 +158,7 @@ void SupportPolygonVisual::setCentroidRadius(double radius)
   const dart::dynamics::ShapePtr& shape = mCentroid->getShape();
   std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
       mCentroidRadius / 4.0);
-  shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+  shape->addDataVariance(dart::dynamics::Shape::DynamicPrimitive);
 }
 
 //==============================================================================
@@ -197,7 +197,7 @@ void SupportPolygonVisual::setCenterOfMassRadius(double radius)
   const dart::dynamics::ShapePtr& shape = mCom->getShape();
   std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
       mComRadius / 4.0);
-  shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+  shape->addDataVariance(dart::dynamics::Shape::DynamicPrimitive);
 }
 
 //==============================================================================
@@ -286,7 +286,7 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCentroid->getShape()->removeDataVariance(
-        dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+        dart::dynamics::Shape::DynamicPrimitive);
   }
 
   if (mDisplayCOM) {
@@ -328,7 +328,7 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCom->getShape()->removeDataVariance(
-        dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+        dart::dynamics::Shape::DynamicPrimitive);
   }
 }
 
@@ -383,7 +383,7 @@ void SupportPolygonVisual::initialize()
   mComRadius = mCentroidRadius;
   mCom->setShape(
       std::make_shared<dart::dynamics::SphereShape>(mComRadius / 4.0));
-  mCom->getShape()->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+  mCom->getShape()->addDataVariance(dart::dynamics::Shape::DynamicColor);
 
   mComNode = new ShapeFrameNode(mCom.get(), nullptr);
   addChild(mComNode);

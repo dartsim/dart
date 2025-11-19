@@ -57,7 +57,7 @@ Errors Geom::read(
 
   if (std::string(element->Name()) != "geom") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Geom> from the provided element");
     return errors;
   }
@@ -70,7 +70,7 @@ Errors Geom::read(
       mAttributes = defaultClass->getGeomAttributes();
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Failed to find default with class name '" + className + "'"));
     }
   } else {
@@ -92,10 +92,10 @@ static bool canUseFromTo(
     return false;
 
   switch (type) {
-    case detail::GeomType::CAPSULE:
-    case detail::GeomType::ELLIPSOID:
-    case detail::GeomType::CYLINDER:
-    case detail::GeomType::BOX:
+    case detail::GeomType::Capsule:
+    case detail::GeomType::Ellipsoid:
+    case detail::GeomType::Cylinder:
+    case detail::GeomType::Box:
       return true;
     default:
       return false;
@@ -130,14 +130,14 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
 
   // Size
   switch (mType) {
-    case GeomType::PLANE:
-    case GeomType::HFIELD:
-    case GeomType::SPHERE: {
+    case GeomType::Plane:
+    case GeomType::Hfield:
+    case GeomType::Sphere: {
       mSize = mAttributes.mSize;
       break;
     }
-    case GeomType::CAPSULE:
-    case GeomType::CYLINDER: {
+    case GeomType::Capsule:
+    case GeomType::Cylinder: {
       if (mAttributes.mFromTo) {
         const double radius = mAttributes.mSize[0];
         mSize[0] = radius;
@@ -151,8 +151,8 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
       }
       break;
     }
-    case GeomType::ELLIPSOID:
-    case GeomType::BOX: {
+    case GeomType::Ellipsoid:
+    case GeomType::Box: {
       if (mAttributes.mFromTo) {
         const double halfLengthX = mAttributes.mSize[0];
         mSize[0] = halfLengthX;
@@ -169,7 +169,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
       }
       break;
     }
-    case GeomType::MESH: {
+    case GeomType::Mesh: {
       break;
     }
   }
@@ -210,18 +210,18 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
         compiler);
   }
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     mRelativeTransform = tf;
   } else {
     mWorldTransform = tf;
   }
 
-  if (mAttributes.mType == GeomType::HFIELD) {
+  if (mAttributes.mType == GeomType::Hfield) {
     if (mAttributes.mHField) {
       mHField = *mAttributes.mHField;
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_MISSING,
+          ErrorCode::AttributeMissing,
           "Failed to find 'hfield' attribute when the geom type is set to "
           "hfield."));
     }
@@ -241,11 +241,11 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     // fitscale attribute below. In the compiled mjModel the geom is represented
     // as a regular geom of the specified primitive type, and there is no
     // reference to the mesh used for fitting.
-    if (mType == GeomType::SPHERE || mType == GeomType::CAPSULE
-        || mType == GeomType::CYLINDER || mType == GeomType::ELLIPSOID
-        || mType == GeomType::BOX) {
+    if (mType == GeomType::Sphere || mType == GeomType::Capsule
+        || mType == GeomType::Cylinder || mType == GeomType::Ellipsoid
+        || mType == GeomType::Box) {
       errors.push_back(Error(
-          ErrorCode::UNDEFINED_ERROR,
+          ErrorCode::UndefinedError,
           "Fitting primitive shapes to mesh is not supported yet. Setting "
           "mass, volume, density, and size to predefined values for now."));
 
@@ -257,9 +257,9 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
   } else {
     // If 'type' attribute is specified to "mesh", then 'mesh' attribute must
     // be specified.
-    if (mAttributes.mType == GeomType::MESH) {
+    if (mAttributes.mType == GeomType::Mesh) {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_MISSING,
+          ErrorCode::AttributeMissing,
           "Failed to find 'mesh' attribute when the geom type is set to "
           "mesh."));
     }
@@ -282,7 +282,7 @@ Errors Geom::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     if (parent != nullptr) {
       mWorldTransform = parent->getWorldTransform() * mRelativeTransform;
     } else {
@@ -514,17 +514,17 @@ const Eigen::Isometry3d& Geom::getWorldTransform() const
 double Geom::computeVolume() const
 {
   switch (mType) {
-    case GeomType::SPHERE:
+    case GeomType::Sphere:
       return dynamics::SphereShape::computeVolume(getSphereRadius());
-    case GeomType::CAPSULE:
+    case GeomType::Capsule:
       return dynamics::CapsuleShape::computeVolume(
           getCapsuleRadius(), getCapsuleLength());
-    case GeomType::ELLIPSOID:
+    case GeomType::Ellipsoid:
       return dynamics::EllipsoidShape::computeVolume(getEllipsoidDiameters());
-    case GeomType::CYLINDER:
+    case GeomType::Cylinder:
       return dynamics::CylinderShape::computeVolume(
           getCylinderRadius(), getCylinderLength());
-    case GeomType::BOX:
+    case GeomType::Box:
       return dynamics::BoxShape::computeVolume(getBoxSize());
     default:
       // TODO(JS): Error handle?
@@ -538,18 +538,18 @@ double Geom::computeVolume() const
 Eigen::Matrix3d Geom::computeInertia() const
 {
   switch (mType) {
-    case GeomType::SPHERE:
+    case GeomType::Sphere:
       return dynamics::SphereShape::computeInertia(getSphereRadius(), mMass);
-    case GeomType::CAPSULE:
+    case GeomType::Capsule:
       return dynamics::CapsuleShape::computeInertia(
           getCapsuleRadius(), getCapsuleLength(), mMass);
-    case GeomType::ELLIPSOID:
+    case GeomType::Ellipsoid:
       return dynamics::EllipsoidShape::computeInertia(
           getEllipsoidDiameters(), mMass);
-    case GeomType::CYLINDER:
+    case GeomType::Cylinder:
       return dynamics::CylinderShape::computeInertia(
           getCylinderRadius(), getCylinderLength(), mMass);
-    case GeomType::BOX:
+    case GeomType::Box:
       return dynamics::BoxShape::computeInertia(getBoxSize(), mMass);
     default:
       // TODO(JS): Error handle?

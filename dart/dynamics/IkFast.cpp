@@ -168,8 +168,8 @@ void convertIkSolution(
   }
 
   solution.mValidity = limitViolated
-                           ? InverseKinematics::Analytical::LIMIT_VIOLATED
-                           : InverseKinematics::Analytical::VALID;
+                           ? InverseKinematics::Analytical::LimitViolated
+                           : InverseKinematics::Analytical::Valid;
 }
 
 //==============================================================================
@@ -243,7 +243,7 @@ IkFast::IkFast(
     const InverseKinematics::Analytical::Properties& properties)
   : Analytical{ik, methodName, properties}, mConfigured{false}
 {
-  setExtraDofUtilization(UNUSED);
+  setExtraDofUtilization(ExtraDofUtilization::Unused);
 
   mDofs = dofMap;
   mFreeDofs = freeDofMap;
@@ -299,41 +299,41 @@ IkFast::IkType IkFast::getIkType2() const
   const int type = getIkType();
 
   if (type == 0)
-    return IkType::UNKNOWN;
+    return IkType::Unknown;
   else if (type == 0x67000001)
-    return IkType::TRANSFORM_6D;
+    return IkType::Transform6D;
   else if (type == 0x34000002)
-    return IkType::ROTATION_3D;
+    return IkType::Rotation3D;
   else if (type == 0x34000003)
-    return IkType::TRANSLATION_3D;
+    return IkType::Translation3D;
   else if (type == 0x34000004)
-    return IkType::DIRECTION_3D;
+    return IkType::Direction3D;
   else if (type == 0x34000005)
-    return IkType::RAY_4D;
+    return IkType::Ray4D;
   else if (type == 0x34000006)
-    return IkType::LOOKAT_3D;
+    return IkType::LookAt3D;
   else if (type == 0x34000007)
-    return IkType::TRANSLATION_DIRECTION_5D;
+    return IkType::TranslationDirection5D;
   else if (type == 0x34000008)
-    return IkType::TRANSLATION_XY_2D;
+    return IkType::TranslationXy2D;
   else if (type == 0x34000009)
-    return IkType::TRANSLATION_XY_ORIENTATION_3D;
+    return IkType::TranslationXyOrientation3D;
   else if (type == 0x3400000a)
-    return IkType::TRANSLATION_LOCAL_GLOBAL_6D;
+    return IkType::TranslationLocalGlobal6D;
   else if (type == 0x3400000b)
-    return IkType::TRANSLATION_X_AXIS_ANGLE_4D;
+    return IkType::TranslationXAxisAngle4D;
   else if (type == 0x3400000c)
-    return IkType::TRANSLATION_Y_AXIS_ANGLE_4D;
+    return IkType::TranslationYAxisAngle4D;
   else if (type == 0x3400000d)
-    return IkType::TRANSLATION_Z_AXIS_ANGLE_4D;
+    return IkType::TranslationZAxisAngle4D;
   else if (type == 0x3400000e)
-    return IkType::TRANSLATION_X_AXIS_ANGLE_Z_NORM_4D;
+    return IkType::TranslationXAxisAngleZNorm4D;
   else if (type == 0x3400000f)
-    return IkType::TRANSLATION_Y_AXIS_ANGLE_X_NORM_4D;
+    return IkType::TranslationYAxisAngleXNorm4D;
   else if (type == 0x34000010)
-    return IkType::TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D;
+    return IkType::TranslationZAxisAngleYNorm4D;
 
-  return IkType::UNKNOWN;
+  return IkType::Unknown;
 }
 
 //==============================================================================

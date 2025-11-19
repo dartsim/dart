@@ -165,8 +165,8 @@ access it at this point.
 
 We'll take advantage of the Shape::ShapeType enumeration to specify what kind of
 Shape we want to produce for the body. In particular, we'll allow the user to
-specify three types of Shapes: ``Shape::BOX``, ``Shape::CYLINDER``, and
-``Shape::ELLIPSOID``. 
+specify three types of Shapes: ``Shape::Box``, ``Shape::Cylinder``, and
+``Shape::Ellipsoid``. 
 
 ```{eval-rst}
 .. tabs::

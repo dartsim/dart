@@ -69,7 +69,7 @@ Errors Asset::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "asset") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Asset> from the provided element");
     return errors;
   }

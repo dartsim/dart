@@ -432,16 +432,16 @@ Eigen::Matrix3d parallelAxisTheorem(
 
 enum AxisType
 {
-  AXIS_X = 0,
-  AXIS_Y = 1,
-  AXIS_Z = 2
+  AxisX = 0,
+  AxisY = 1,
+  AxisZ = 2
 };
 
 /// Compute a rotation matrix from a vector. One axis of the rotated coordinates
 /// by the rotation matrix matches the input axis where the axis is specified
 /// by axisType.
 Eigen::Matrix3d computeRotation(
-    const Eigen::Vector3d& axis, AxisType axisType = AxisType::AXIS_X);
+    const Eigen::Vector3d& axis, AxisType axisType = AxisType::AxisX);
 
 /// Compute a transform from a vector and a position. The rotation of the result
 /// transform is computed by computeRotationMatrix(), and the translation is
@@ -449,7 +449,7 @@ Eigen::Matrix3d computeRotation(
 Eigen::Isometry3d computeTransform(
     const Eigen::Vector3d& axis,
     const Eigen::Vector3d& translation,
-    AxisType axisType = AxisType::AXIS_X);
+    AxisType axisType = AxisType::AxisX);
 
 /// \brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.
@@ -547,9 +547,9 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
 enum IntersectionResult
 {
 
-  INTERSECTING = 0, ///< An intersection was found
-  PARALLEL,         ///< The line segments are parallel
-  BEYOND_ENDPOINTS  ///< There is no intersection because the end points do not
+  Intersecting = 0, ///< An intersection was found
+  Parallel,         ///< The line segments are parallel
+  BeyondEndpoints   ///< There is no intersection because the end points do not
                     ///< expand far enough
 
 };

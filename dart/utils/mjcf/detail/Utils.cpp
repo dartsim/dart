@@ -85,7 +85,7 @@ Errors checkOrientationValidity(const tinyxml2::XMLElement* element)
 
   if (numOrientationTypes > 1) {
     errors.push_back(Error(
-        ErrorCode::ATTRIBUTE_CONFLICT,
+        ErrorCode::AttributeConflict,
         "More than one orientation representations present: "
             + orientationTypes));
   }
@@ -107,14 +107,14 @@ Eigen::Matrix3d compileRotation(
   if (axisAngle) {
     const Eigen::Vector3d axis = axisAngle->head<3>().normalized();
     double angle = (*axisAngle)[3];
-    if (compiler.getAngle() == Angle::DEGREE) {
+    if (compiler.getAngle() == Angle::Degree) {
       angle = math::toRadian(angle);
     }
     rot = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
     DART_ASSERT(math::verifyRotation(rot));
   } else if (euler) {
     Eigen::Vector3d angles = *euler;
-    if (compiler.getAngle() == Angle::DEGREE) {
+    if (compiler.getAngle() == Angle::Degree) {
       angles[0] = math::toRadian(angles[0]);
       angles[1] = math::toRadian(angles[1]);
       angles[2] = math::toRadian(angles[2]);
@@ -168,21 +168,21 @@ Errors handleInclude(
     tinyxml2::XMLDocument mjcfDoc;
     if (!readXmlFile(mjcfDoc, mjcfUri, retriever)) {
       errors.emplace_back(
-          ErrorCode::FILE_READ, "Failed to load '" + mjcfUri.toString() + "'.");
+          ErrorCode::FileRead, "Failed to load '" + mjcfUri.toString() + "'.");
     }
 
     // Get root <mujoco> element
     tinyxml2::XMLElement* mujocoElement = mjcfDoc.FirstChildElement("mujoco");
     if (mujocoElement == nullptr) {
       errors.emplace_back(
-          ErrorCode::ELEMENT_MISSING, "Failed to find <mujoco> at the root");
+          ErrorCode::ElementMissing, "Failed to find <mujoco> at the root");
       return errors;
     }
 
     const bool copyResult = copyChildNodes(element, *mujocoElement);
     if (!copyResult) {
       errors.push_back(
-          Error(ErrorCode::FILE_READ, "Failed to handle <include>"));
+          Error(ErrorCode::FileRead, "Failed to handle <include>"));
     }
   }
 

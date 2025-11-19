@@ -135,12 +135,10 @@ void DragAndDrop(py::module& m)
   ::py::enum_<dart::gui::osg::DragAndDrop::RotationOption>(
       attr, "RotationOption")
       .value(
-          "HOLD_MODKEY",
-          dart::gui::osg::DragAndDrop::RotationOption::HOLD_MODKEY)
+          "HoldModKey", dart::gui::osg::DragAndDrop::RotationOption::HoldModkey)
+      .value("AlwaysOn", dart::gui::osg::DragAndDrop::RotationOption::AlwaysOn)
       .value(
-          "ALWAYS_ON", dart::gui::osg::DragAndDrop::RotationOption::ALWAYS_ON)
-      .value(
-          "ALWAYS_OFF", dart::gui::osg::DragAndDrop::RotationOption::ALWAYS_OFF)
+          "AlwaysOff", dart::gui::osg::DragAndDrop::RotationOption::AlwaysOff)
       .export_values();
 
   ::py::class_<

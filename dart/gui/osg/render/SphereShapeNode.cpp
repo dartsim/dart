@@ -103,7 +103,7 @@ void SphereShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -182,12 +182,12 @@ SphereShapeDrawable::SphereShapeDrawable(
 //==============================================================================
 void SphereShapeDrawable::refresh(bool firstTime)
 {
-  if (mSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSphereShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape
@@ -197,7 +197,7 @@ void SphereShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mSphereShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

@@ -53,14 +53,14 @@ class PointCloudWorld : public gui::osg::RealTimeWorldNode
 public:
   enum PointSamplingMode
   {
-    SAMPLE_ON_ROBOT = 0,
-    SAMPLE_IN_BOX = 1,
+    SampleOnRobot = 0,
+    SampleInBox = 1,
   };
 
   explicit PointCloudWorld(
       simulation::WorldPtr world, dynamics::SkeletonPtr robot)
     : gui::osg::RealTimeWorldNode(std::move(world)),
-      mSampleingMode(SAMPLE_ON_ROBOT),
+      mSampleingMode(SampleOnRobot),
       mRobot(std::move(robot))
   {
     auto pointCloudFrame = mWorld->getSimpleFrame("point cloud");
@@ -68,7 +68,7 @@ public:
 
     mPointCloudShape = std::dynamic_pointer_cast<dynamics::PointCloudShape>(
         pointCloudFrame->getShape());
-    mPointCloudShape->setColorMode(dynamics::PointCloudShape::BIND_PER_POINT);
+    mPointCloudShape->setColorMode(dynamics::PointCloudShape::BindPerPoint);
     mVoxelGridShape = std::dynamic_pointer_cast<dynamics::VoxelGridShape>(
         voxelGridFrame->getShape());
 
@@ -107,10 +107,10 @@ public:
     octomap::Pointcloud pointCloud;
     auto numPoints = 500u;
     switch (mSampleingMode) {
-      case SAMPLE_ON_ROBOT:
+      case SampleOnRobot:
         pointCloud = generatePointCloudOnRobot(numPoints);
         break;
-      case SAMPLE_IN_BOX:
+      case SampleInBox:
         pointCloud = generatePointCloudInBox(
             numPoints,
             Eigen::Vector3d::Constant(-0.5),
@@ -368,14 +368,13 @@ public:
         mNode->setUpdate(false);
 
       int samplingMode
-          = mNode->getPointSamplingMode() == PointCloudWorld::SAMPLE_ON_ROBOT
-                ? 0
-                : 1;
+          = mNode->getPointSamplingMode() == PointCloudWorld::SampleOnRobot ? 0
+                                                                            : 1;
       if (ImGui::RadioButton("Sample on robot", &samplingMode, 0))
-        mNode->setPointSamplingMode(PointCloudWorld::SAMPLE_ON_ROBOT);
+        mNode->setPointSamplingMode(PointCloudWorld::SampleOnRobot);
       ImGui::SameLine();
       if (ImGui::RadioButton("Sample in box", &samplingMode, 1))
-        mNode->setPointSamplingMode(PointCloudWorld::SAMPLE_IN_BOX);
+        mNode->setPointSamplingMode(PointCloudWorld::SampleInBox);
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -402,13 +401,13 @@ public:
                   IM_ARRAYSIZE(colorModeItems))) {
             if (colorMode == 0) {
               pointCloudShape->setColorMode(
-                  dynamics::PointCloudShape::USE_SHAPE_COLOR);
+                  dynamics::PointCloudShape::UseShapeColor);
             } else if (colorMode == 1) {
               pointCloudShape->setColorMode(
-                  dynamics::PointCloudShape::BIND_OVERALL);
+                  dynamics::PointCloudShape::BindOverall);
             } else if (colorMode == 2) {
               pointCloudShape->setColorMode(
-                  dynamics::PointCloudShape::BIND_PER_POINT);
+                  dynamics::PointCloudShape::BindPerPoint);
             }
           }
           if (colorMode == 0) {
@@ -438,16 +437,16 @@ public:
                   IM_ARRAYSIZE(pointShapeTypeItems))) {
             if (pointShapeType == 0) {
               pointCloudShape->setPointShapeType(
-                  dynamics::PointCloudShape::BOX);
+                  dynamics::PointCloudShape::Box);
             } else if (pointShapeType == 1) {
               pointCloudShape->setPointShapeType(
-                  dynamics::PointCloudShape::BILLBOARD_SQUARE);
+                  dynamics::PointCloudShape::BillboardSquare);
             } else if (pointShapeType == 2) {
               pointCloudShape->setPointShapeType(
-                  dynamics::PointCloudShape::BILLBOARD_CIRCLE);
+                  dynamics::PointCloudShape::BillboardCircle);
             } else if (pointShapeType == 3) {
               pointCloudShape->setPointShapeType(
-                  dynamics::PointCloudShape::POINT);
+                  dynamics::PointCloudShape::Point);
             }
           }
 
@@ -501,13 +500,13 @@ public:
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Xy);
             ImGui::SameLine();
             if (ImGui::RadioButton("YZ-Plane", &e, 1))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Yz);
             ImGui::SameLine();
             if (ImGui::RadioButton("ZX-Plane", &e, 2))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
+              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::Zx);
           }
 
           static Eigen::Vector3f offset;
@@ -660,7 +659,7 @@ dynamics::SimpleFramePtr createPointCloudFrame()
 {
   auto pointCloudShape
       = ::std::make_shared<::dart::dynamics::PointCloudShape>();
-  pointCloudShape->setPointShapeType(::dart::dynamics::PointCloudShape::BOX);
+  pointCloudShape->setPointShapeType(::dart::dynamics::PointCloudShape::Box);
   auto pointCloudFrame = ::dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
   pointCloudFrame->setName("point cloud");

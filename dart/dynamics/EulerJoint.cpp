@@ -155,9 +155,9 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
     const Eigen::Vector3d& _positions, AxisOrder _ordering)
 {
   switch (_ordering) {
-    case AxisOrder::XYZ:
+    case AxisOrder::Xyz:
       return math::eulerXYZToMatrix(_positions);
-    case AxisOrder::ZYX:
+    case AxisOrder::Zyx:
       return math::eulerZYXToMatrix(_positions);
     default: {
       DART_ERROR(
@@ -197,7 +197,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
   switch (getAxisOrder()) {
-    case AxisOrder::XYZ: {
+    case AxisOrder::Xyz: {
       //------------------------------------------------------------------------
       // S = [    c1*c2, s2,  0
       //       -(c1*s2), c2,  0
@@ -220,7 +220,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
       break;
     }
-    case AxisOrder::ZYX: {
+    case AxisOrder::Zyx: {
       //------------------------------------------------------------------------
       // S = [   -s1,    0,   1
       //       s2*c1,   c2,   0
@@ -296,12 +296,12 @@ void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
   switch (getAxisOrder()) {
-    case AxisOrder::ZYX:
+    case AxisOrder::Zyx:
       affixes.push_back("_z");
       affixes.push_back("_y");
       affixes.push_back("_x");
       break;
-    case AxisOrder::XYZ:
+    case AxisOrder::Xyz:
       affixes.push_back("_x");
       affixes.push_back("_y");
       affixes.push_back("_z");
@@ -363,7 +363,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
   Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
 
   switch (getAxisOrder()) {
-    case AxisOrder::XYZ: {
+    case AxisOrder::Xyz: {
       //------------------------------------------------------------------------
       // dS = [  -(dq1*c2*s1) - dq2*c1*s2,    dq2*c2,  0
       //         -(dq2*c1*c2) + dq1*s1*s2, -(dq2*s2),  0
@@ -379,7 +379,7 @@ void EulerJoint::updateRelativeJacobianTimeDeriv() const
 
       break;
     }
-    case AxisOrder::ZYX: {
+    case AxisOrder::Zyx: {
       //------------------------------------------------------------------------
       // dS = [               -c1*dq1,        0,   0
       //          c2*c1*dq2-s2*s1*dq1,  -s2*dq2,   0

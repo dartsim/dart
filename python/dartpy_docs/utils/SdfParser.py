@@ -13,13 +13,13 @@ class RootJointType:
     """
     Members:
     
-      Floating
+      FLOATING
     
-      Fixed
+      FIXED
     """
-    Fixed: typing.ClassVar[RootJointType]  # value = <RootJointType.Fixed: 1>
-    Floating: typing.ClassVar[RootJointType]  # value = <RootJointType.Floating: 0>
-    __members__: typing.ClassVar[dict[str, RootJointType]]  # value = {'Floating': <RootJointType.Floating: 0>, 'Fixed': <RootJointType.Fixed: 1>}
+    FIXED: typing.ClassVar[RootJointType]  # value = <RootJointType.FIXED: 1>
+    FLOATING: typing.ClassVar[RootJointType]  # value = <RootJointType.FLOATING: 0>
+    __members__: typing.ClassVar[dict[str, RootJointType]]  # value = {'FLOATING': <RootJointType.FLOATING: 0>, 'FIXED': <RootJointType.FIXED: 1>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:

@@ -48,8 +48,8 @@ namespace detail {
 /// Axis order
 enum class AxisOrder : int
 {
-  ZYX = 0,
-  XYZ = 1
+  Zyx = 0,
+  Xyz = 1
 };
 
 //==============================================================================
@@ -59,7 +59,7 @@ struct EulerJointUniqueProperties
   AxisOrder mAxisOrder;
 
   /// Constructor
-  EulerJointUniqueProperties(AxisOrder _axisOrder = AxisOrder::XYZ);
+  EulerJointUniqueProperties(AxisOrder _axisOrder = AxisOrder::Xyz);
 
   virtual ~EulerJointUniqueProperties() = default;
 };

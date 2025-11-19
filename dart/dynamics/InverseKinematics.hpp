@@ -41,6 +41,7 @@
 #include <dart/math/optimization/Problem.hpp>
 #include <dart/math/optimization/Solver.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
@@ -1045,10 +1046,10 @@ public:
   /// solution produced by the analytical IK.
   enum Validity_t
   {
-    VALID = 0, ///< The solution is completely valid and reaches the target
-    OUT_OF_REACH = 1 << 0,  ///< The solution does not reach the target
-    LIMIT_VIOLATED = 1 << 1 ///< The solution has one or more joint positions
-                            ///< that violate the joint limits
+    Valid = 0, ///< The solution is completely valid and reaches the target
+    OutOfReach = 1 << 0,   ///< The solution does not reach the target
+    LimitViolated = 1 << 1 ///< The solution has one or more joint positions
+                           ///< that violate the joint limits
   };
   // TODO(JS): Change to enum class?
 
@@ -1072,19 +1073,29 @@ public:
   /// them in a HierarchicalIK.
   enum ExtraDofUtilization
   {
-    UNUSED = 0,
-    PRE_ANALYTICAL,
-    POST_ANALYTICAL,
-    PRE_AND_POST_ANALYTICAL
+    Unused = 0,
+    PreAnalytical,
+    PostAnalytical,
+    PreAndPostAnalytical
   };
   // TODO(JS): Change to enum class?
+
+  DART_DEPRECATED(7.0)
+  static constexpr ExtraDofUtilization UNUSED = Unused;
+  DART_DEPRECATED(7.0)
+  static constexpr ExtraDofUtilization PRE_ANALYTICAL = PreAnalytical;
+  DART_DEPRECATED(7.0)
+  static constexpr ExtraDofUtilization POST_ANALYTICAL = PostAnalytical;
+  DART_DEPRECATED(7.0)
+  static constexpr ExtraDofUtilization
+      PRE_AND_POST_ANALYTICAL = PreAndPostAnalytical;
 
   struct Solution
   {
     /// Default constructor
     Solution(
         const Eigen::VectorXd& _config = Eigen::VectorXd(),
-        int _validity = VALID);
+        int _validity = Valid);
 
     /// Configuration computed by the Analytical solver
     Eigen::VectorXd mConfig;
@@ -1114,7 +1125,7 @@ public:
 
     /// Default constructor. Uses a default quality comparison function.
     UniqueProperties(
-        ExtraDofUtilization extraDofUtilization = UNUSED,
+        ExtraDofUtilization extraDofUtilization = Unused,
         double extraErrorLengthClamp = DefaultIKErrorClamp);
 
     /// Constructor that allows you to set the quality comparison function.

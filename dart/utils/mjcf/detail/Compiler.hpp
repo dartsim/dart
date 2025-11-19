@@ -90,8 +90,8 @@ private:
   double mSetTotalMass{-1};
   bool mBalanceInertia{false};
   bool mStripPath{false};
-  Coordinate mCoordinate{Coordinate::LOCAL};
-  Angle mAngle{Angle::DEGREE};
+  Coordinate mCoordinate{Coordinate::Local};
+  Angle mAngle{Angle::Degree};
   bool mFitAabb{false};
   std::string mEulerSeq{"xyz"};
   std::string mMeshDir{""};
@@ -100,7 +100,7 @@ private:
   bool mConvexHull{true};
   bool mUserThread{true};
   bool mFuseStatic{false};
-  InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::IFG_AUTO};
+  InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::IfgAuto};
   Eigen::Vector2i mInertiaGroupRange{Eigen::Vector2i(0, 5)};
 };
 

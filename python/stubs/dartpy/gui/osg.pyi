@@ -82,16 +82,16 @@ class DragAndDrop(dartpy.common.Observer, dartpy.common.Subject):
         """
         Members:
         
-          HOLD_MODKEY
+          HoldModKey
         
-          ALWAYS_ON
+          AlwaysOn
         
-          ALWAYS_OFF
+          AlwaysOff
         """
-        ALWAYS_OFF: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.ALWAYS_OFF: 2>
-        ALWAYS_ON: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.ALWAYS_ON: 1>
-        HOLD_MODKEY: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.HOLD_MODKEY: 0>
-        __members__: typing.ClassVar[dict[str, DragAndDrop.RotationOption]]  # value = {'HOLD_MODKEY': <RotationOption.HOLD_MODKEY: 0>, 'ALWAYS_ON': <RotationOption.ALWAYS_ON: 1>, 'ALWAYS_OFF': <RotationOption.ALWAYS_OFF: 2>}
+        AlwaysOff: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.AlwaysOff: 2>
+        AlwaysOn: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.AlwaysOn: 1>
+        HoldModKey: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.HoldModKey: 0>
+        __members__: typing.ClassVar[dict[str, DragAndDrop.RotationOption]]  # value = {'HoldModKey': <RotationOption.HoldModKey: 0>, 'AlwaysOn': <RotationOption.AlwaysOn: 1>, 'AlwaysOff': <RotationOption.AlwaysOff: 2>}
         def __eq__(self, other: typing.Any) -> bool:
             ...
         def __getstate__(self) -> int:
@@ -118,9 +118,9 @@ class DragAndDrop(dartpy.common.Observer, dartpy.common.Subject):
         @property
         def value(self) -> int:
             ...
-    ALWAYS_OFF: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.ALWAYS_OFF: 2>
-    ALWAYS_ON: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.ALWAYS_ON: 1>
-    HOLD_MODKEY: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.HOLD_MODKEY: 0>
+    AlwaysOff: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.AlwaysOff: 2>
+    AlwaysOn: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.AlwaysOn: 1>
+    HoldModKey: typing.ClassVar[DragAndDrop.RotationOption]  # value = <RotationOption.HoldModKey: 0>
     def constrainToLine(self, slope: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
         ...
     def constrainToPlane(self, normal: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:

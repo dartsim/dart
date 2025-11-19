@@ -46,7 +46,7 @@ Shape::Shape(ShapeType type)
     mVolume(0.0),
     mIsVolumeDirty(true),
     mID(mCounter++),
-    mVariance(STATIC),
+    mVariance(Static),
     mType(type),
     onVersionChanged(mVersionChangedSignal)
 {
@@ -58,8 +58,8 @@ Shape::Shape()
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mVariance(STATIC),
-    mType(UNSUPPORTED),
+    mVariance(Static),
+    mType(Unsupported),
     onVersionChanged(mVersionChangedSignal)
 {
   mVersion = 1;
@@ -134,8 +134,8 @@ unsigned int Shape::getDataVariance() const
 //==============================================================================
 bool Shape::checkDataVariance(DataVariance type) const
 {
-  if (STATIC == type)
-    return STATIC == mVariance;
+  if (Static == type)
+    return Static == mVariance;
 
   return (type & mVariance) != 0x00;
 }

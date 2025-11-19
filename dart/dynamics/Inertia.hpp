@@ -48,20 +48,20 @@ public:
   {
 
     // Overall mass
-    MASS = 0,
+    Mass = 0,
 
     // Center of mass components
-    COM_X,
-    COM_Y,
-    COM_Z,
+    ComX,
+    ComY,
+    ComZ,
 
     // Moment of inertia components
-    I_XX,
-    I_YY,
-    I_ZZ,
-    I_XY,
-    I_XZ,
-    I_YZ
+    Ixx,
+    Iyy,
+    Izz,
+    Ixy,
+    Ixz,
+    Iyz
 
   };
 

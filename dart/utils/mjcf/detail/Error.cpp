@@ -47,7 +47,7 @@ Error::Error(ErrorCode code, const std::string& message)
 //==============================================================================
 Error::operator bool() const
 {
-  return mCode != ErrorCode::NONE;
+  return mCode != ErrorCode::None;
 }
 
 //==============================================================================

@@ -56,8 +56,8 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i)
-    for (std::size_t j = 0; j < BUTTON_NOTHING; ++j)
+  for (std::size_t i = 0; i < NumMouseButtons; ++i)
+    for (std::size_t j = 0; j < ButtonNothing; ++j)
       mSuppressButtonPicks[i][j] = false;
   mSuppressMovePicks = false;
 
@@ -107,7 +107,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
   getNearAndFarPointUnderCursor(nearPt, farPt);
   Eigen::Vector3d v1 = farPt - nearPt;
 
-  if (LINE_CONSTRAINT == _constraint) {
+  if (LineConstraint == _constraint) {
     const Eigen::Vector3d& b1 = nearPt;
     const Eigen::Vector3d& v2 = _constraintVector;
     const Eigen::Vector3d& b2 = _fromPosition;
@@ -126,7 +126,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
           / denominator;
 
     return v2 * s;
-  } else if (PLANE_CONSTRAINT == _constraint) {
+  } else if (PlaneConstraint == _constraint) {
     const Eigen::Vector3d& n = _constraintVector;
     double s = n.dot(_fromPosition - nearPt) / n.dot(v1);
     return nearPt - _fromPosition + s * v1;
@@ -161,7 +161,7 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(
 const std::vector<PickInfo>& DefaultEventHandler::getButtonPicks(
     MouseButton button, MouseButtonEvent event) const
 {
-  if (BUTTON_NOTHING == event)
+  if (ButtonNothing == event)
     return mMovePicks;
 
   return mButtonPicks[button][event];
@@ -177,7 +177,7 @@ const std::vector<PickInfo>& DefaultEventHandler::getMovePicks() const
 void DefaultEventHandler::suppressButtonPicks(
     MouseButton button, MouseButtonEvent event)
 {
-  if (BUTTON_NOTHING == event)
+  if (ButtonNothing == event)
     mSuppressMovePicks = true;
   else
     mSuppressButtonPicks[button][event] = true;
@@ -193,7 +193,7 @@ void DefaultEventHandler::suppressMovePicks()
 void DefaultEventHandler::activateButtonPicks(
     MouseButton button, MouseButtonEvent event)
 {
-  if (BUTTON_NOTHING == event)
+  if (ButtonNothing == event)
     mSuppressMovePicks = false;
   else
     mSuppressButtonPicks[button][event] = false;
@@ -251,44 +251,44 @@ const std::set<MouseEventHandler*>& DefaultEventHandler::getMouseEventHandlers()
 //==============================================================================
 static bool wasActive(MouseButtonEvent event)
 {
-  return ((event == BUTTON_PUSH) || (event == BUTTON_DRAG));
+  return ((event == ButtonPush) || (event == ButtonDrag));
 }
 
 //==============================================================================
 static void assignEventToButtons(
-    MouseButtonEvent (&mLastButtonEvent)[NUM_MOUSE_BUTTONS],
+    MouseButtonEvent (&mLastButtonEvent)[NumMouseButtons],
     const ::osgGA::GUIEventAdapter& ea)
 {
-  MouseButtonEvent event = BUTTON_NOTHING;
+  MouseButtonEvent event = ButtonNothing;
   if (ea.getEventType() == ::osgGA::GUIEventAdapter::PUSH)
-    event = BUTTON_PUSH;
+    event = ButtonPush;
   else if (ea.getEventType() == ::osgGA::GUIEventAdapter::DRAG)
-    event = BUTTON_DRAG;
+    event = ButtonDrag;
   else if (ea.getEventType() == ::osgGA::GUIEventAdapter::RELEASE)
-    event = BUTTON_RELEASE;
+    event = ButtonRelease;
 
-  if (BUTTON_RELEASE == event) {
+  if (ButtonRelease == event) {
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) == 0
-        && wasActive(mLastButtonEvent[LEFT_MOUSE]))
-      mLastButtonEvent[LEFT_MOUSE] = event;
+        && wasActive(mLastButtonEvent[LeftMouse]))
+      mLastButtonEvent[LeftMouse] = event;
 
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) == 0
-        && wasActive(mLastButtonEvent[RIGHT_MOUSE]))
-      mLastButtonEvent[RIGHT_MOUSE] = event;
+        && wasActive(mLastButtonEvent[RightMouse]))
+      mLastButtonEvent[RightMouse] = event;
 
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
             == 0
-        && wasActive(mLastButtonEvent[MIDDLE_MOUSE]))
-      mLastButtonEvent[MIDDLE_MOUSE] = event;
+        && wasActive(mLastButtonEvent[MiddleMouse]))
+      mLastButtonEvent[MiddleMouse] = event;
   } else {
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
-      mLastButtonEvent[LEFT_MOUSE] = event;
+      mLastButtonEvent[LeftMouse] = event;
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-      mLastButtonEvent[RIGHT_MOUSE] = event;
+      mLastButtonEvent[RightMouse] = event;
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-      mLastButtonEvent[MIDDLE_MOUSE] = event;
+      mLastButtonEvent[MiddleMouse] = event;
   }
 }
 
@@ -373,42 +373,42 @@ void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
   MouseButtonEvent mbe;
   switch (ea.getEventType()) {
     case ::osgGA::GUIEventAdapter::PUSH:
-      mbe = BUTTON_PUSH;
+      mbe = ButtonPush;
       break;
     case ::osgGA::GUIEventAdapter::DRAG:
-      mbe = BUTTON_DRAG;
+      mbe = ButtonDrag;
       break;
     case ::osgGA::GUIEventAdapter::RELEASE:
-      mbe = BUTTON_RELEASE;
+      mbe = ButtonRelease;
       break;
     default:
       return;
   }
 
   if (((ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
-       && !mSuppressButtonPicks[LEFT_MOUSE][mbe])
+       && !mSuppressButtonPicks[LeftMouse][mbe])
       || ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-          && !mSuppressButtonPicks[RIGHT_MOUSE][mbe])
+          && !mSuppressButtonPicks[RightMouse][mbe])
       || ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-          && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe])) {
+          && !mSuppressButtonPicks[MiddleMouse][mbe])) {
     pick(mTempPicks, ea);
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
-      mButtonPicks[LEFT_MOUSE][mbe] = mTempPicks;
+      mButtonPicks[LeftMouse][mbe] = mTempPicks;
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-      mButtonPicks[RIGHT_MOUSE][mbe] = mTempPicks;
+      mButtonPicks[RightMouse][mbe] = mTempPicks;
 
     if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-      mButtonPicks[MIDDLE_MOUSE][mbe] = mTempPicks;
+      mButtonPicks[MiddleMouse][mbe] = mTempPicks;
   }
 }
 
 //==============================================================================
 void DefaultEventHandler::clearButtonEvents()
 {
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i)
-    mLastButtonEvent[i] = BUTTON_NOTHING;
+  for (std::size_t i = 0; i < NumMouseButtons; ++i)
+    mLastButtonEvent[i] = ButtonNothing;
 }
 
 //==============================================================================

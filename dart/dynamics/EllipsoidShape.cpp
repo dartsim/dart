@@ -40,7 +40,7 @@ namespace dynamics {
 
 //==============================================================================
 EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters)
-  : Shape(ELLIPSOID)
+  : Shape(Shape::Ellipsoid)
 {
   setDiameters(diameters);
 }

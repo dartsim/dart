@@ -41,13 +41,15 @@ namespace dart {
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
-  : Shape(SOFT_MESH), mSoftBodyNode(_softBodyNode), mAssimpMesh(nullptr)
+  : Shape(Shape::SoftMesh),
+    mSoftBodyNode(_softBodyNode),
+    mAssimpMesh(nullptr)
 {
   DART_ASSERT(_softBodyNode != nullptr);
   // Build mesh here using soft body node
   // TODO(JS): Not implemented.
   _buildMesh();
-  mVariance = DYNAMIC_VERTICES;
+  mVariance = DynamicVertices;
 }
 
 SoftMeshShape::~SoftMeshShape()

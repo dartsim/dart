@@ -75,7 +75,7 @@ Controller::Controller(
   //  harnessRightFoot();
 
   mInitialState = mAtlasRobot->getConfiguration(
-      Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
+      Skeleton::ConfigPositions | Skeleton::ConfigVelocities);
 }
 
 //==============================================================================

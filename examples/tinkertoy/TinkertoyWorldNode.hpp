@@ -196,7 +196,7 @@ public:
         = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
             2.0 * DefaultJointRadius, DefaultBlockWidth, DefaultBlockWidth));
 
-    mWeldJointShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    mWeldJointShape->addDataVariance(dart::dynamics::Shape::DynamicColor);
   }
 
   void createRevoluteJointShape()
@@ -204,7 +204,7 @@ public:
     mRevoluteJointShape = std::make_shared<dart::dynamics::CylinderShape>(
         DefaultJointRadius, 1.5 * DefaultBlockWidth);
 
-    mRevoluteJointShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    mRevoluteJointShape->addDataVariance(dart::dynamics::Shape::DynamicColor);
   }
 
   void createBallJointShape()
@@ -212,7 +212,7 @@ public:
     mBallJointShape
         = std::make_shared<dart::dynamics::SphereShape>(DefaultJointRadius);
 
-    mBallJointShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    mBallJointShape->addDataVariance(dart::dynamics::Shape::DynamicColor);
   }
 
   void createBlockShape()
@@ -220,7 +220,7 @@ public:
     mBlockShape = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
         DefaultBlockLength, DefaultBlockWidth, DefaultBlockWidth));
 
-    mBlockShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    mBlockShape->addDataVariance(dart::dynamics::Shape::DynamicColor);
 
     mBlockOffset = Eigen::Isometry3d::Identity();
     mBlockOffset.translation()[0] = DefaultBlockLength / 2.0;
@@ -395,7 +395,7 @@ public:
 
     mForceLine = std::make_shared<dart::dynamics::LineSegmentShape>(
         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 3.0);
-    mForceLine->addDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES);
+    mForceLine->addDataVariance(dart::dynamics::Shape::DynamicVertices);
 
     lineFrame->setShape(mForceLine);
     lineFrame->createVisualAspect();

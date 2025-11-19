@@ -51,10 +51,10 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
   : mViewer(viewer),
     mEntity(entity),
     mPickedPosition(Eigen::Vector3d::Zero()),
-    mConstraintType(UNCONSTRAINED),
+    mConstraintType(Unconstrained),
     mAmObstructable(true),
     mAmMoving(false),
-    mRotationOption(RotationOption::HOLD_MODKEY),
+    mRotationOption(RotationOption::HoldModKey),
     mRotationModKey(::osgGA::GUIEventAdapter::MODKEY_CTRL)
 {
   addSubject(mEntity);
@@ -80,10 +80,10 @@ void DragAndDrop::update()
     return;
 
   osg::MouseButtonEvent event
-      = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+      = mViewer->getDefaultEventHandler()->getButtonEvent(LeftMouse);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event) {
+    if (osg::ButtonRelease == event) {
       mAmMoving = false;
       release();
     }
@@ -91,10 +91,10 @@ void DragAndDrop::update()
     move();
   } else // not moving
   {
-    if (osg::BUTTON_PUSH == event) {
+    if (osg::ButtonPush == event) {
       const std::vector<osg::PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              osg::LeftMouse, osg::ButtonPush);
 
       for (const osg::PickInfo& pick : picks) {
         if (pick.frame == mEntity) {
@@ -145,10 +145,9 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
   Eigen::Vector3d v1 = mPickedPosition - mPivot;
   Eigen::Vector3d v2;
 
-  if (LINE_CONSTRAINT == mConstraintType
-      || PLANE_CONSTRAINT == mConstraintType) {
+  if (LineConstraint == mConstraintType || PlaneConstraint == mConstraintType) {
     v2 = mViewer->getDefaultEventHandler()->getDeltaCursor(
-             mPickedPosition, PLANE_CONSTRAINT, mVector)
+             mPickedPosition, PlaneConstraint, mVector)
          + mPickedPosition - mPivot;
   } else {
     v2 = mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition)
@@ -162,8 +161,7 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
   v2.normalize();
 
   Eigen::Vector3d axis = v1.cross(v2);
-  if (LINE_CONSTRAINT == mConstraintType
-      || PLANE_CONSTRAINT == mConstraintType) {
+  if (LineConstraint == mConstraintType || PlaneConstraint == mConstraintType) {
     if (axis.dot(mVector) == 0)
       return Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
 
@@ -178,20 +176,20 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
 //==============================================================================
 void DragAndDrop::unconstrain()
 {
-  mConstraintType = UNCONSTRAINED;
+  mConstraintType = Unconstrained;
 }
 
 //==============================================================================
 void DragAndDrop::constrainToLine(const Eigen::Vector3d& slope)
 {
-  mConstraintType = LINE_CONSTRAINT;
+  mConstraintType = LineConstraint;
   mVector = slope;
 }
 
 //==============================================================================
 void DragAndDrop::constrainToPlane(const Eigen::Vector3d& normal)
 {
-  mConstraintType = PLANE_CONSTRAINT;
+  mConstraintType = PlaneConstraint;
   mVector = normal;
 }
 
@@ -259,8 +257,8 @@ void SimpleFrameDnD::move()
   bool modkey_down
       = (mViewer->getDefaultEventHandler()->getModKeyMask() & mRotationModKey);
 
-  if (((RotationOption::HOLD_MODKEY == mRotationOption) && modkey_down)
-      || RotationOption::ALWAYS_ON == mRotationOption) {
+  if (((RotationOption::HoldModKey == mRotationOption) && modkey_down)
+      || RotationOption::AlwaysOn == mRotationOption) {
     // Rotate
 
     Eigen::AngleAxisd R = getConstrainedRotation();
@@ -316,18 +314,18 @@ void SimpleFrameShapeDnD::update()
     return;
 
   osg::MouseButtonEvent event
-      = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+      = mViewer->getDefaultEventHandler()->getButtonEvent(LeftMouse);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event)
+    if (osg::ButtonRelease == event)
       mAmMoving = false;
 
     move();
   } else {
-    if (osg::BUTTON_PUSH == event) {
+    if (osg::ButtonPush == event) {
       const std::vector<osg::PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              osg::LeftMouse, osg::ButtonPush);
 
       for (const osg::PickInfo& pick : picks) {
         if (pick.frame == mFrame && pick.shape.get() == mShape) {
@@ -373,10 +371,10 @@ public:
       return;
 
     if (mHighlighting) {
-      MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
+      MouseButtonEvent event = mEventHandler->getButtonEvent(LeftMouse);
       bool stop_highlighting = false;
 
-      if (BUTTON_RELEASE == event || BUTTON_NOTHING == event) {
+      if (ButtonRelease == event || ButtonNothing == event) {
         const std::vector<PickInfo>& picks = mEventHandler->getMovePicks();
         if (picks.size() > 0) {
           const PickInfo& pick = picks[0];
@@ -388,15 +386,15 @@ public:
       }
 
       if (stop_highlighting) {
-        for (std::size_t s = 0; s < InteractiveTool::NUM_TYPES; ++s)
+        for (std::size_t s = 0; s < InteractiveTool::NumTypes; ++s)
           for (std::size_t c = 0; c < 3; ++c)
             mFrame->getTool((InteractiveTool::Type)s, c)->resetAlpha();
         mHighlighting = false;
       }
     } else {
-      MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
+      MouseButtonEvent event = mEventHandler->getButtonEvent(LeftMouse);
 
-      if (BUTTON_NOTHING != event && BUTTON_RELEASE != event)
+      if (ButtonNothing != event && ButtonRelease != event)
         return;
 
       const std::vector<PickInfo> picks = mEventHandler->getMovePicks();
@@ -405,8 +403,7 @@ public:
 
       const PickInfo& pick = picks[0];
 
-      for (std::size_t s = 0; s < (std::size_t)InteractiveTool::NUM_TYPES;
-           ++s) {
+      for (std::size_t s = 0; s < (std::size_t)InteractiveTool::NumTypes; ++s) {
         for (std::size_t c = 0; c < 3; ++c) {
           if (mFrame->getTool((InteractiveTool::Type)s, c)
               == pick.frame->getParentFrame()) {
@@ -421,7 +418,7 @@ public:
       }
 
       if (mHighlighting) {
-        for (std::size_t s = 0; s < InteractiveTool::NUM_TYPES; ++s) {
+        for (std::size_t s = 0; s < InteractiveTool::NumTypes; ++s) {
           for (std::size_t c = 0; c < 3; ++c) {
             if (s == (std::size_t)mTool && c == mCoordinate)
               mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(1.0);
@@ -469,10 +466,10 @@ public:
       return;
 
     osg::MouseButtonEvent event
-        = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+        = mViewer->getDefaultEventHandler()->getButtonEvent(LeftMouse);
 
     if (mAmMoving) {
-      if (osg::BUTTON_RELEASE == event) {
+      if (osg::ButtonRelease == event) {
         mAmMoving = false;
         release();
       }
@@ -480,10 +477,10 @@ public:
       move();
     } else // not moving
     {
-      if (osg::BUTTON_PUSH == event) {
+      if (osg::ButtonPush == event) {
         const std::vector<osg::PickInfo>& picks
             = mViewer->getDefaultEventHandler()->getButtonPicks(
-                osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+                osg::LeftMouse, osg::ButtonPush);
 
         for (const osg::PickInfo& pick : picks) {
           if (pick.frame->getParentFrame() == mEntity) {
@@ -517,20 +514,20 @@ InteractiveFrameDnD::InteractiveFrameDnD(
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
       new InteractiveFrameMouseEvent(frame));
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
+  for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i)
     for (std::size_t j = 0; j < 3; ++j)
       mDnDs.push_back(new InteractiveToolDnD(
           viewer, frame, frame->getTool((InteractiveTool::Type)i, j)));
 
   for (std::size_t i = 0; i < 3; ++i) {
     DragAndDrop* dnd = mDnDs[i];
-    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::AlwaysOff);
 
     dnd = mDnDs[i + 3];
-    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_ON);
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::AlwaysOn);
 
     dnd = mDnDs[i + 6];
-    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::AlwaysOff);
   }
 }
 
@@ -565,7 +562,7 @@ void InteractiveFrameDnD::update()
   }
 
   if (mAmMoving) {
-    for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i) {
       for (std::size_t j = 0; j < 3; ++j) {
         DragAndDrop* dnd = mDnDs[3 * i + j];
         InteractiveTool* tool
@@ -578,7 +575,7 @@ void InteractiveFrameDnD::update()
       }
     }
   } else {
-    for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t i = 0; i < InteractiveTool::NumTypes; ++i) {
       for (std::size_t j = 0; j < 3; ++j) {
         InteractiveTool* tool
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
@@ -633,10 +630,10 @@ void BodyNodeDnD::update()
     return;
 
   osg::MouseButtonEvent event
-      = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+      = mViewer->getDefaultEventHandler()->getButtonEvent(LeftMouse);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event) {
+    if (osg::ButtonRelease == event) {
       mAmMoving = false;
       release();
     }
@@ -644,10 +641,10 @@ void BodyNodeDnD::update()
     move();
   } else // not moving
   {
-    if (osg::BUTTON_PUSH == event) {
+    if (osg::ButtonPush == event) {
       const std::vector<osg::PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              osg::LeftMouse, osg::ButtonPush);
 
       for (const osg::PickInfo& pick : picks) {
         if (pick.frame->getParentFrame() == mEntity) {
@@ -710,8 +707,8 @@ void BodyNodeDnD::move()
   bool rotationActive
       = (mViewer->getDefaultEventHandler()->getModKeyMask() & mRotationModKey);
 
-  if (((RotationOption::HOLD_MODKEY == mRotationOption) && rotationActive)
-      || RotationOption::ALWAYS_ON == mRotationOption) {
+  if (((RotationOption::HoldModKey == mRotationOption) && rotationActive)
+      || RotationOption::AlwaysOn == mRotationOption) {
     tf.translation() = mPivot;
     mIK->setOffset();
   } else {

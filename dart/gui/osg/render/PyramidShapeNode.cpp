@@ -109,7 +109,7 @@ void PyramidShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -193,7 +193,7 @@ PyramidShapeDrawable::PyramidShapeDrawable(
 //==============================================================================
 void PyramidShapeDrawable::refresh(bool firstTime)
 {
-  if (mPyramidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mPyramidShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
@@ -240,7 +240,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
     setPrimitiveSet(5, mElements[5]);
   }
 
-  if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
+  if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DynamicVertices)
       || firstTime) {
     const float w = static_cast<float>(mPyramidShape->getBaseWidth());
     const float d = static_cast<float>(mPyramidShape->getBaseDepth());
@@ -275,7 +275,7 @@ void PyramidShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, ::osg::Array::BIND_PER_PRIMITIVE_SET);
   }
 
-  if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mPyramidShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

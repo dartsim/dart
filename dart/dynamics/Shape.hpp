@@ -39,6 +39,7 @@
 
 #include <dart/common/Castable.hpp>
 #include <dart/common/ClassWithVirtualBase.hpp>
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
@@ -61,44 +62,76 @@ public:
 
   enum ShapeType
   {
-    SPHERE,
-    BOX,
-    ELLIPSOID,
-    CYLINDER,
-    CAPSULE,
-    CONE,
-    PYRAMID,
-    RECTANGULAR_PYRAMID,
-    PLANE,
-    MULTISPHERE,
-    MESH,
-    SOFT_MESH,
-    LINE_SEGMENT,
-    HEIGHTMAP,
-    UNSUPPORTED
+    Sphere,
+    Box,
+    Ellipsoid,
+    Cylinder,
+    Capsule,
+    Cone,
+    Pyramid,
+    RectangularPyramid,
+    Plane,
+    MultiSphere,
+    Mesh,
+    SoftMesh,
+    LineSegment,
+    Heightmap,
+    Unsupported
   };
+
+  // Legacy uppercase aliases for backwards compatibility.
+  DART_DEPRECATED(7.0) static constexpr ShapeType SPHERE = Sphere;
+  DART_DEPRECATED(7.0) static constexpr ShapeType BOX = Box;
+  DART_DEPRECATED(7.0) static constexpr ShapeType ELLIPSOID = Ellipsoid;
+  DART_DEPRECATED(7.0) static constexpr ShapeType CYLINDER = Cylinder;
+  DART_DEPRECATED(7.0) static constexpr ShapeType CAPSULE = Capsule;
+  DART_DEPRECATED(7.0) static constexpr ShapeType CONE = Cone;
+  DART_DEPRECATED(7.0) static constexpr ShapeType PYRAMID = Pyramid;
+  DART_DEPRECATED(7.0)
+  static constexpr ShapeType RECTANGULAR_PYRAMID = RectangularPyramid;
+  DART_DEPRECATED(7.0) static constexpr ShapeType PLANE = Plane;
+  DART_DEPRECATED(7.0) static constexpr ShapeType MULTISPHERE = MultiSphere;
+  DART_DEPRECATED(7.0) static constexpr ShapeType MESH = Mesh;
+  DART_DEPRECATED(7.0) static constexpr ShapeType SOFT_MESH = SoftMesh;
+  DART_DEPRECATED(7.0) static constexpr ShapeType LINE_SEGMENT = LineSegment;
+  DART_DEPRECATED(7.0) static constexpr ShapeType HEIGHTMAP = Heightmap;
+  DART_DEPRECATED(7.0) static constexpr ShapeType UNSUPPORTED = Unsupported;
 
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this shape to change during each update.
   enum DataVariance
   {
-    STATIC = 0, /// No data will ever change
-    DYNAMIC_TRANSFORM
+    Static = 0, /// No data will ever change
+    DynamicTransform
     = 1 << 1, /// The relative transform of the Shape might change
-    DYNAMIC_PRIMITIVE = 1 << 2, /// The primitive properties (such as x/y/z
-                                /// scaling) of the shape might change
-    DYNAMIC_COLOR
+    DynamicPrimitive = 1 << 2, /// The primitive properties (such as x/y/z
+                               /// scaling) of the shape might change
+    DynamicColor
     = 1 << 3, /// The coloring or textures of the shape might change
-    DYNAMIC_VERTICES
+    DynamicVertices
     = 1 << 4, /// Vertex positions of a mesh might change (this does not include
               /// adding or removing vertices) (this enum is not relevant for
               /// primitive shapes)
-    DYNAMIC_ELEMENTS
+    DynamicElements
     = 1 << 5, /// The number of elements and/or arrangement of elements might
               /// change (this includes adding and removing vertices)  (this
               /// enum is not relevant for primitive shapes)
-    DYNAMIC = 0xFF /// All data is subject to changing
+    Dynamic = 0xFF /// All data is subject to changing
   };
+
+  // Legacy uppercase aliases for DataVariance.
+  DART_DEPRECATED(7.0) static constexpr DataVariance STATIC = Static;
+  DART_DEPRECATED(7.0)
+  static constexpr DataVariance DYNAMIC_TRANSFORM = DynamicTransform;
+  DART_DEPRECATED(7.0)
+  static constexpr DataVariance DYNAMIC_PRIMITIVE = DynamicPrimitive;
+  DART_DEPRECATED(7.0)
+  static constexpr DataVariance DYNAMIC_COLOR = DynamicColor;
+  DART_DEPRECATED(7.0)
+  static constexpr DataVariance DYNAMIC_VERTICES = DynamicVertices;
+  DART_DEPRECATED(7.0)
+  static constexpr DataVariance DYNAMIC_ELEMENTS = DynamicElements;
+  DART_DEPRECATED(7.0) static constexpr DataVariance DYNAMIC = Dynamic;
 
   /// \brief Constructor
   explicit Shape(ShapeType _type);

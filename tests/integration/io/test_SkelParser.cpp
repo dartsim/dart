@@ -304,10 +304,10 @@ TEST(SkelParser, PlanarJoint)
   EXPECT_TRUE(planarJoint3 != nullptr);
   EXPECT_TRUE(planarJoint4 != nullptr);
 
-  EXPECT_EQ(planarJoint1->getPlaneType(), PlanarJoint::PlaneType::XY);
-  EXPECT_EQ(planarJoint2->getPlaneType(), PlanarJoint::PlaneType::YZ);
-  EXPECT_EQ(planarJoint3->getPlaneType(), PlanarJoint::PlaneType::ZX);
-  EXPECT_EQ(planarJoint4->getPlaneType(), PlanarJoint::PlaneType::ARBITRARY);
+  EXPECT_EQ(planarJoint1->getPlaneType(), PlanarJoint::PlaneType::Xy);
+  EXPECT_EQ(planarJoint2->getPlaneType(), PlanarJoint::PlaneType::Yz);
+  EXPECT_EQ(planarJoint3->getPlaneType(), PlanarJoint::PlaneType::Zx);
+  EXPECT_EQ(planarJoint4->getPlaneType(), PlanarJoint::PlaneType::Arbitrary);
 
   EXPECT_EQ(planarJoint1->getTranslationalAxis1(), Eigen::Vector3d::UnitX());
   EXPECT_EQ(planarJoint2->getTranslationalAxis1(), Eigen::Vector3d::UnitY());
@@ -395,25 +395,25 @@ TEST(SKEL_PARSER, JointActuatorType)
   // Test for no actuator type attribute being specified
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getActuatorType(), Joint::DefaultActuatorType);
-  EXPECT_EQ(joint0->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(joint0->getActuatorType(), Joint::Force);
 
   // Test for when actuator type attribute are specified
   Joint* joint1 = skel1->getJoint("joint1");
-  EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(joint1->getActuatorType(), Joint::Force);
 
   // Test for only a dof name being changed
   Joint* joint2 = skel1->getJoint("joint2");
-  EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
-  joint2->setActuatorType(Joint::FORCE);
-  EXPECT_EQ(joint2->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::Passive);
+  joint2->setActuatorType(Joint::Force);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::Force);
 
   // Test for when actuator type attribute are specified
   Joint* joint3 = skel1->getJoint("joint3");
-  EXPECT_EQ(joint3->getActuatorType(), Joint::ACCELERATION);
+  EXPECT_EQ(joint3->getActuatorType(), Joint::Acceleration);
 
   // Test for when actuator type attribute are specified
   Joint* joint4 = skel1->getJoint("joint4");
-  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(joint4->getActuatorType(), Joint::Velocity);
 }
 
 //==============================================================================

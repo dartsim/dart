@@ -47,7 +47,7 @@ Errors appendMeshAttributes(
 
   if (std::string(element->Name()) != "mesh") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <mesh> from the provided element");
     return errors;
   }

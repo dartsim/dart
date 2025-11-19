@@ -56,9 +56,9 @@ namespace osg {
 std::string toString(CameraMode mode)
 {
   switch (mode) {
-    case CameraMode::RGBA:
+    case CameraMode::Rgba:
       return "RGBA";
-    case CameraMode::DEPTH:
+    case CameraMode::Depth:
       return "DEPTH";
     default:
       return "UNKNOWN";
@@ -219,7 +219,7 @@ Viewer::Viewer(const ::osg::Vec4& clearColor)
 
   // Settings for camera mode (RGBA/Depth)
   mCameraModeCallback = new detail::CameraModeCallback;
-  mCameraModeCallback->setCameraMode(CameraMode::RGBA);
+  mCameraModeCallback->setCameraMode(CameraMode::Rgba);
   mRootGroup->addUpdateCallback(mCameraModeCallback);
 }
 

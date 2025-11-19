@@ -50,7 +50,7 @@ Errors Joint::read(
 
   if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Joint> from the provided element");
     return errors;
   }
@@ -63,7 +63,7 @@ Errors Joint::read(
       mAttributes = defaultClass->getJointAttributes();
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Failed to find default with class name '" + className + "'"));
     }
   } else {
@@ -108,7 +108,7 @@ Errors Joint::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     // Do nothing
   } else {
     if (parent != nullptr) {

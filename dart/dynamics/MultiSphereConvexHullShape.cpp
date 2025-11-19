@@ -41,7 +41,7 @@ namespace dynamics {
 
 //==============================================================================
 MultiSphereConvexHullShape::MultiSphereConvexHullShape(const Spheres& spheres)
-  : Shape(MULTISPHERE)
+  : Shape(Shape::MultiSphere)
 {
   addSpheres(spheres);
 }

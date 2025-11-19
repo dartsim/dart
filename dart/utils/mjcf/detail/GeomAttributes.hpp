@@ -56,7 +56,7 @@ struct GeomAttributes final
   std::optional<std::string> mName;
 
   /// Type of geometric shape
-  GeomType mType{GeomType::SPHERE};
+  GeomType mType{GeomType::Sphere};
 
   int mConType{1};
 

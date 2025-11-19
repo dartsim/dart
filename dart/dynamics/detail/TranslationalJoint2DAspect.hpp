@@ -52,17 +52,17 @@ class TranslationalJoint2DUniqueProperties
 {
 public:
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
-  /// PlaneType::ARBITRARY is specified.
+  /// PlaneType::Arbitrary is specified.
   explicit TranslationalJoint2DUniqueProperties(
-      PlaneType planeType = PlaneType::XY);
+      PlaneType planeType = PlaneType::Xy);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
-  /// PlaneType::ARBITRARY
+  /// PlaneType::Arbitrary
   explicit TranslationalJoint2DUniqueProperties(
       const Eigen::Matrix<double, 3, 2>& transAxes);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
-  /// PlaneType::ARBITRARY
+  /// PlaneType::Arbitrary
   TranslationalJoint2DUniqueProperties(
       const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
 

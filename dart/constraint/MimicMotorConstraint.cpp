@@ -282,7 +282,7 @@ bool MimicMotorConstraint::isActive() const
 {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
-  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
+  if (mJoint->getActuatorType() == dynamics::Joint::Mimic)
     return true;
 
   return false;

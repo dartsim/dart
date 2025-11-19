@@ -52,7 +52,7 @@ Errors appendBodyAttributes(
 
   if (std::string(element->Name()) != "body") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Body> from the provided element");
     return errors;
   }
@@ -110,7 +110,7 @@ Errors appendBodyAttributes(
   if (hasAttribute(element, "user")) {
     if (!size) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Attempt to parse 'user' attribute of <body> when <size> is missing");
       return errors;
     }
@@ -119,7 +119,7 @@ Errors appendBodyAttributes(
 
     if (user.size() != size->getNUserBody()) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "The size of 'user' is different from <size nuser_body="
               + std::to_string(size->getNUserBody()) + ">");
       return errors;

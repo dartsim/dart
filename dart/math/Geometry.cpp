@@ -1657,12 +1657,12 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
     IntersectionResult result
         = computeIntersection(intersect, p0, midp12, p2, midp01);
 
-    if (BEYOND_ENDPOINTS == result) {
+    if (BeyondEndpoints == result) {
       double a1 = atan2((p1 - p0)[1], (p1 - p0)[0]) * 180.0 / pi;
       double a2 = atan2((p2 - p0)[1], (p2 - p0)[0]) * 180.0 / pi;
       double diff = a1 - a2;
       const char* intersectionNote
-          = (PARALLEL == result) ? "Segments are parallel."
+          = (Parallel == result) ? "Segments are parallel."
                                  : "Segments are too short to intersect.";
       DART_WARN(
           "[computeCentroidOfHull] Non-convex hull segment indices {} -> {}. "
@@ -1836,7 +1836,7 @@ IntersectionResult computeIntersection(
   if (std::abs(dx_b * dy_a - dx_a * dy_b) < 1e-12) {
     // The line segments are parallel, so give back an average of all the points
     point = (a1 + a2 + b1 + b2) / 4.0;
-    return PARALLEL;
+    return Parallel;
   }
 
   point[0] = (dx_b * dy_a * a1[0] - dx_a * dy_b * b1[0]
@@ -1851,16 +1851,16 @@ IntersectionResult computeIntersection(
   for (std::size_t i = 0; i < 2; ++i) {
     if ((point[i] < std::min(a1[i], a2[i]))
         || (std::max(a1[i], a2[i]) < point[i])) {
-      return BEYOND_ENDPOINTS;
+      return BeyondEndpoints;
     }
 
     if ((point[i] < std::min(b1[i], b2[i]))
         || (std::max(b1[i], b2[i]) < point[i])) {
-      return BEYOND_ENDPOINTS;
+      return BeyondEndpoints;
     }
   }
 
-  return INTERSECTING;
+  return Intersecting;
 }
 
 //==============================================================================

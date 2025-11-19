@@ -42,16 +42,16 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     PlaneType planeType)
 {
   switch (planeType) {
-    case PlaneType::ARBITRARY:
-    case PlaneType::XY:
+    case PlaneType::Arbitrary:
+    case PlaneType::Xy:
       setXYPlane();
       mPlaneType
           = planeType; // In case the PlaneType was supposed to be arbitrary
       break;
-    case PlaneType::YZ:
+    case PlaneType::Yz:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case PlaneType::Zx:
       setZXPlane();
       break;
   }
@@ -76,16 +76,16 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     const TranslationalJoint2DUniqueProperties& other)
 {
   switch (other.mPlaneType) {
-    case PlaneType::ARBITRARY:
+    case PlaneType::Arbitrary:
       setArbitraryPlane(other.mTransAxes);
       break;
-    case PlaneType::XY:
+    case PlaneType::Xy:
       setXYPlane();
       break;
-    case PlaneType::YZ:
+    case PlaneType::Yz:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case PlaneType::Zx:
       setZXPlane();
       break;
   }
@@ -98,16 +98,16 @@ TranslationalJoint2DUniqueProperties::operator=(
 {
   if (this != &other) {
     switch (other.mPlaneType) {
-      case PlaneType::ARBITRARY:
+      case PlaneType::Arbitrary:
         setArbitraryPlane(other.mTransAxes);
         break;
-      case PlaneType::XY:
+      case PlaneType::Xy:
         setXYPlane();
         break;
-      case PlaneType::YZ:
+      case PlaneType::Yz:
         setYZPlane();
         break;
-      case PlaneType::ZX:
+      case PlaneType::Zx:
         setZXPlane();
         break;
     }
@@ -119,7 +119,7 @@ TranslationalJoint2DUniqueProperties::operator=(
 //==============================================================================
 void TranslationalJoint2DUniqueProperties::setXYPlane()
 {
-  mPlaneType = PlaneType::XY;
+  mPlaneType = PlaneType::Xy;
   mTransAxes.col(0) = Eigen::Vector3d::UnitX();
   mTransAxes.col(1) = Eigen::Vector3d::UnitY();
 }
@@ -127,7 +127,7 @@ void TranslationalJoint2DUniqueProperties::setXYPlane()
 //==============================================================================
 void TranslationalJoint2DUniqueProperties::setYZPlane()
 {
-  mPlaneType = PlaneType::YZ;
+  mPlaneType = PlaneType::Yz;
   mTransAxes.col(0) = Eigen::Vector3d::UnitY();
   mTransAxes.col(1) = Eigen::Vector3d::UnitZ();
 }
@@ -135,7 +135,7 @@ void TranslationalJoint2DUniqueProperties::setYZPlane()
 //==============================================================================
 void TranslationalJoint2DUniqueProperties::setZXPlane()
 {
-  mPlaneType = PlaneType::ZX;
+  mPlaneType = PlaneType::Zx;
   mTransAxes.col(0) = Eigen::Vector3d::UnitZ();
   mTransAxes.col(1) = Eigen::Vector3d::UnitX();
 }
@@ -145,7 +145,7 @@ void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
     const Eigen::Matrix<double, 3, 2>& transAxes)
 {
   // Set plane type as arbitrary plane
-  mPlaneType = PlaneType::ARBITRARY;
+  mPlaneType = PlaneType::Arbitrary;
 
   // Normalize axes
   mTransAxes = transAxes.colwise().normalized();
@@ -163,7 +163,7 @@ void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
     const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2)
 {
   // Set plane type as arbitrary plane
-  mPlaneType = PlaneType::ARBITRARY;
+  mPlaneType = PlaneType::Arbitrary;
 
   // First translational axis
   mTransAxes.col(0) = transAxis1.normalized();

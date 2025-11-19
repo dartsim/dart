@@ -507,7 +507,7 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
   // Fix mimic joint references
   for (std::size_t i = 0; i < getNumJoints(); ++i) {
     Joint* joint = skelClone->getJoint(i);
-    if (joint->getActuatorType() == Joint::MIMIC) {
+    if (joint->getActuatorType() == Joint::Mimic) {
       const Joint* mimicJoint
           = skelClone->getJoint(joint->getMimicJoint()->getName());
       if (mimicJoint) {
@@ -573,22 +573,22 @@ Skeleton::Configuration Skeleton::getConfiguration(
     const std::vector<std::size_t>& indices, int flags) const
 {
   Configuration config(indices);
-  if (flags == CONFIG_NOTHING)
+  if (flags == ConfigNothing)
     return config;
 
-  if ((flags & CONFIG_POSITIONS) == CONFIG_POSITIONS)
+  if ((flags & ConfigPositions) == ConfigPositions)
     config.mPositions = getPositions(indices);
 
-  if ((flags & CONFIG_VELOCITIES) == CONFIG_VELOCITIES)
+  if ((flags & ConfigVelocities) == ConfigVelocities)
     config.mVelocities = getVelocities(indices);
 
-  if ((flags & CONFIG_ACCELERATIONS) == CONFIG_ACCELERATIONS)
+  if ((flags & ConfigAccelerations) == ConfigAccelerations)
     config.mAccelerations = getAccelerations(indices);
 
-  if ((flags & CONFIG_FORCES) == CONFIG_FORCES)
+  if ((flags & ConfigForces) == ConfigForces)
     config.mForces = getForces(indices);
 
-  if ((flags & CONFIG_COMMANDS) == CONFIG_COMMANDS)
+  if ((flags & ConfigCommands) == ConfigCommands)
     config.mCommands = getCommands(indices);
 
   return config;

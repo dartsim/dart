@@ -46,8 +46,8 @@ void SdfParser(py::module& m)
   auto sm = m.def_submodule("SdfParser");
 
   ::py::enum_<utils::SdfParser::RootJointType>(sm, "RootJointType")
-      .value("Floating", utils::SdfParser::RootJointType::Floating)
-      .value("Fixed", utils::SdfParser::RootJointType::Fixed);
+      .value("FLOATING", utils::SdfParser::RootJointType::Floating)
+      .value("FIXED", utils::SdfParser::RootJointType::Fixed);
 
   ::py::class_<utils::SdfParser::Options>(sm, "Options")
       .def(

@@ -155,7 +155,7 @@ TEST(IkFast, LoadWamArmIk)
   ASSERT_NE(ikfast, nullptr);
   EXPECT_EQ(ikfast->getNumJoints2(), 7);
   EXPECT_EQ(ikfast->getNumFreeParameters2(), 1);
-  EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::TRANSFORM_6D);
+  EXPECT_EQ(ikfast->getIkType2(), dynamics::IkFast::IkType::Transform6D);
   EXPECT_EQ(ikfast->getIkFastVersion2(), "71");
 
   targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
@@ -167,7 +167,7 @@ TEST(IkFast, LoadWamArmIk)
   for (const auto& solution : solutions) {
     ASSERT_EQ(solution.mConfig.size(), 6);
 
-    if (solution.mValidity != dynamics::InverseKinematics::Analytical::VALID)
+    if (solution.mValidity != dynamics::InverseKinematics::Analytical::Valid)
       continue;
 
     wam->setPositions(dofs, solution.mConfig);

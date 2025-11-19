@@ -163,7 +163,7 @@ void HeightmapShapeNode<S>::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
-  if (mShape->getDataVariance() == dynamics::Shape::STATIC
+  if (mShape->getDataVariance() == dynamics::Shape::Static
       && mHeightmapVersion == mHeightmapShape->getVersion())
     return;
 
@@ -439,7 +439,7 @@ void setVertices(
 template <typename S>
 void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
 {
-  if (mHeightmapShape->getDataVariance() == dynamics::Shape::STATIC)
+  if (mHeightmapShape->getDataVariance() == dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);

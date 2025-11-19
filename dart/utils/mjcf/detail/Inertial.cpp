@@ -48,7 +48,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "inertial") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <inertial> from the provided element");
     return errors;
   }
@@ -56,7 +56,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   // (required) pos
   if (!hasAttribute(element, "pos")) {
     errors.emplace_back(
-        ErrorCode::ATTRIBUTE_MISSING,
+        ErrorCode::AttributeMissing,
         "Failed to find required attribute 'pos' in <inertial>");
     return errors;
   }
@@ -99,7 +99,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
   // (required) mass
   if (!hasAttribute(element, "mass")) {
     errors.emplace_back(
-        ErrorCode::ATTRIBUTE_MISSING,
+        ErrorCode::AttributeMissing,
         "Failed to find required attribute 'mass' in <inertial>");
     return errors;
   }
@@ -111,7 +111,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
 
     if (hasAttribute(element, "fullinertia")) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_CONFLICT,
+          ErrorCode::AttributeConflict,
           "Not allowed to set both of 'diaginertia' and 'fullinertia' in "
           "<inertial>");
       return errors;
@@ -120,7 +120,7 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
     // If diaginertia is omitted, the next attribute becomes required.
     if (!hasAttribute(element, "fullinertia")) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_MISSING,
+          ErrorCode::AttributeMissing,
           "Failed to find required attribute 'diaginertia' or 'fullinertia' in "
           "<inertial>");
       return errors;
@@ -139,7 +139,7 @@ Errors Inertial::compile(const Compiler& compiler)
 
   mPos = mData.mPos;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     mRelativeTransform.translation() = mData.mPos;
     mRelativeTransform.linear() = compileRotation(
         mData.mQuat,

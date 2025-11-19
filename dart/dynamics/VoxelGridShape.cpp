@@ -81,7 +81,7 @@ VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
   setOctree(std::make_shared<octomap::OcTree>(resolution));
 
-  mVariance = DYNAMIC_ELEMENTS;
+  mVariance = DynamicElements;
 }
 
 //==============================================================================

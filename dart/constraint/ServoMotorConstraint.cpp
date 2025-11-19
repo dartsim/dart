@@ -272,7 +272,7 @@ bool ServoMotorConstraint::isActive() const
 {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
-  if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
+  if (mJoint->getActuatorType() == dynamics::Joint::Servo)
     return true;
 
   return false;

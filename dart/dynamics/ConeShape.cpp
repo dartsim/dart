@@ -44,7 +44,7 @@ namespace dynamics {
 
 //==============================================================================
 ConeShape::ConeShape(double radius, double height)
-  : Shape(CONE), mRadius(radius), mHeight(height)
+  : Shape(Shape::Cone), mRadius(radius), mHeight(height)
 {
   DART_ASSERT(0.0 < radius);
   DART_ASSERT(0.0 < height);

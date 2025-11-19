@@ -48,7 +48,7 @@ Errors appendJointAttributes(
 
   if (std::string(element->Name()) != "joint") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <joint> from the provided element");
     return errors;
   }
@@ -63,17 +63,16 @@ Errors appendJointAttributes(
   if (hasAttribute(element, "type")) {
     const std::string type = getAttributeString(element, "type");
     if (type == "free") {
-      attributes.mType = JointType::FREE;
+      attributes.mType = JointType::Free;
     } else if (type == "ball") {
-      attributes.mType = JointType::BALL;
+      attributes.mType = JointType::Ball;
     } else if (type == "slide") {
-      attributes.mType = JointType::SLIDE;
+      attributes.mType = JointType::Slide;
     } else if (type == "hinge") {
-      attributes.mType = JointType::HINGE;
+      attributes.mType = JointType::Hinge;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
-          "Invalid attribute for 'type': " + type);
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'type': " + type);
       return errors;
     }
   }

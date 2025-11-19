@@ -269,17 +269,17 @@ void setVertices(
   int axis2 = 1;
 
   switch (planeType) {
-    case GridVisual::PlaneType::XY: {
+    case GridVisual::PlaneType::Xy: {
       axis1 = 0;
       axis2 = 1;
       break;
     }
-    case GridVisual::PlaneType::YZ: {
+    case GridVisual::PlaneType::Yz: {
       axis1 = 1;
       axis2 = 2;
       break;
     }
-    case GridVisual::PlaneType::ZX: {
+    case GridVisual::PlaneType::Zx: {
       axis1 = 2;
       axis2 = 0;
       break;
@@ -490,17 +490,17 @@ void GridVisual::refresh()
     static const ::osg::Vec4 zAxisLineColor(0.1f, 0.1f, 0.9f, 1.0f);
 
     switch (mPlaneType) {
-      case GridVisual::PlaneType::XY: {
+      case GridVisual::PlaneType::Xy: {
         mAxisLineColor->at(0) = xAxisLineColor;
         mAxisLineColor->at(2) = yAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::YZ: {
+      case GridVisual::PlaneType::Yz: {
         mAxisLineColor->at(0) = yAxisLineColor;
         mAxisLineColor->at(2) = zAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::ZX: {
+      case GridVisual::PlaneType::Zx: {
         mAxisLineColor->at(0) = zAxisLineColor;
         mAxisLineColor->at(2) = xAxisLineColor;
         break;
@@ -520,7 +520,7 @@ void GridVisual::initialize()
 
   mDisplayGrid = true;
 
-  mPlaneType = PlaneType::XY;
+  mPlaneType = PlaneType::Xy;
   mNumCells = 20;
   mMinorLineStepSize = 0.1;
   mNumMinorLinesPerMajorLine = 5;

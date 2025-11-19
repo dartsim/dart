@@ -76,18 +76,18 @@ Inertia::Inertia(
 //==============================================================================
 void Inertia::setParameter(Param _param, double _value)
 {
-  if (_param == MASS) {
+  if (_param == Mass) {
     mMass = _value;
-  } else if (_param <= COM_Z) {
+  } else if (_param <= ComZ) {
     mCenterOfMass[_param - 1] = _value;
-  } else if (_param <= I_YZ) {
+  } else if (_param <= Iyz) {
     mCenterOfMass[_param - 4] = _value;
   } else {
     DART_WARN(
         "Attempting to set Param #{}, but inertial parameters only go up to "
         "{}. Nothing will be set.",
         static_cast<int>(_param),
-        static_cast<int>(I_YZ));
+        static_cast<int>(Iyz));
     return;
   }
 
@@ -97,18 +97,18 @@ void Inertia::setParameter(Param _param, double _value)
 //==============================================================================
 double Inertia::getParameter(Param _param) const
 {
-  if (_param == MASS)
+  if (_param == Mass)
     return mMass;
-  else if (_param <= COM_Z)
+  else if (_param <= ComZ)
     return mCenterOfMass[_param - 1];
-  else if (_param <= I_YZ)
+  else if (_param <= Iyz)
     return mMoment[_param - 4];
 
   DART_WARN(
       "Requested Param #{}, but inertial parameters only go up to {}. "
       "Returning 0",
       static_cast<int>(_param),
-      static_cast<int>(I_YZ));
+      static_cast<int>(Iyz));
 
   return 0;
 }
@@ -150,9 +150,9 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
   for (std::size_t i = 0; i < 3; ++i)
     mMoment[i] = _moment(i, i);
 
-  mMoment[I_XY - 4] = _moment(0, 1);
-  mMoment[I_XZ - 4] = _moment(0, 2);
-  mMoment[I_YZ - 4] = _moment(1, 2);
+  mMoment[Ixy - 4] = _moment(0, 1);
+  mMoment[Ixz - 4] = _moment(0, 2);
+  mMoment[Iyz - 4] = _moment(1, 2);
 
   computeSpatialTensor();
 }
@@ -166,12 +166,12 @@ void Inertia::setMoment(
     double _Ixz,
     double _Iyz)
 {
-  mMoment[I_XX - 4] = _Ixx;
-  mMoment[I_YY - 4] = _Iyy;
-  mMoment[I_ZZ - 4] = _Izz;
-  mMoment[I_XY - 4] = _Ixy;
-  mMoment[I_XZ - 4] = _Ixz;
-  mMoment[I_YZ - 4] = _Iyz;
+  mMoment[Ixx - 4] = _Ixx;
+  mMoment[Iyy - 4] = _Iyy;
+  mMoment[Izz - 4] = _Izz;
+  mMoment[Ixy - 4] = _Ixy;
+  mMoment[Ixz - 4] = _Ixz;
+  mMoment[Iyz - 4] = _Iyz;
 
   computeSpatialTensor();
 }
@@ -183,9 +183,9 @@ Eigen::Matrix3d Inertia::getMoment() const
   for (int i = 0; i < 3; ++i)
     I(i, i) = mMoment[i];
 
-  I(0, 1) = I(1, 0) = mMoment[I_XY - 4];
-  I(0, 2) = I(2, 0) = mMoment[I_XZ - 4];
-  I(1, 2) = I(2, 1) = mMoment[I_YZ - 4];
+  I(0, 1) = I(1, 0) = mMoment[Ixy - 4];
+  I(0, 2) = I(2, 0) = mMoment[Ixz - 4];
+  I(1, 2) = I(2, 1) = mMoment[Iyz - 4];
 
   return I;
 }
@@ -456,9 +456,9 @@ void Inertia::computeParameters()
   for (std::size_t i = 0; i < 3; ++i)
     mMoment[i] = I(i, i);
 
-  mMoment[I_XY - 4] = I(0, 1);
-  mMoment[I_XZ - 4] = I(0, 2);
-  mMoment[I_YZ - 4] = I(1, 2);
+  mMoment[Ixy - 4] = I(0, 1);
+  mMoment[Ixz - 4] = I(0, 2);
+  mMoment[Iyz - 4] = I(1, 2);
 }
 
 } // namespace dynamics

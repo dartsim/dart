@@ -71,7 +71,7 @@ ArrowShape::ArrowShape(
 {
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
-  setColorMode(MeshShape::COLOR_INDEX);
+  setColorMode(MeshShape::ColorIndex);
   notifyColorUpdated(_color);
 }
 

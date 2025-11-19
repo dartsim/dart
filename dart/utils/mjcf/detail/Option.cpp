@@ -46,7 +46,7 @@ Errors Option::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "option") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <option> from the provided element");
     return errors;
   }
@@ -96,12 +96,12 @@ Errors Option::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "integrator")) {
     const std::string integrator = getAttributeString(element, "integrator");
     if (integrator == "Euler") {
-      mIntegrator = Integrator::EULER;
+      mIntegrator = Integrator::Euler;
     } else if (integrator == "RK4") {
-      mIntegrator = Integrator::RK4;
+      mIntegrator = Integrator::Rk4;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'integrator': " + integrator);
       return errors;
     }
@@ -111,14 +111,14 @@ Errors Option::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "collision")) {
     const std::string collision = getAttributeString(element, "collision");
     if (collision == "all") {
-      mCollision = CollisionType::ALL;
+      mCollision = CollisionType::All;
     } else if (collision == "predefined") {
-      mCollision = CollisionType::PREDEFINED;
+      mCollision = CollisionType::Predefined;
     } else if (collision == "dynamic") {
-      mCollision = CollisionType::DYNAMIC;
+      mCollision = CollisionType::Dynamic;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'collision': " + collision);
       return errors;
     }
@@ -128,13 +128,12 @@ Errors Option::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "cone")) {
     const std::string cone = getAttributeString(element, "cone");
     if (cone == "pyramidal") {
-      mCone = ConeType::PYRAMIDAL;
+      mCone = ConeType::Pyramidal;
     } else if (cone == "elliptic") {
-      mCone = ConeType::ELLIPTIC;
+      mCone = ConeType::Elliptic;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
-          "Invalid attribute for 'cone': " + cone);
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'cone': " + cone);
       return errors;
     }
   }
@@ -143,14 +142,14 @@ Errors Option::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "jacobian")) {
     const std::string jacobian = getAttributeString(element, "jacobian");
     if (jacobian == "dense") {
-      mJacobian = JacobianType::DENSE;
+      mJacobian = JacobianType::Dense;
     } else if (jacobian == "sparse") {
-      mJacobian = JacobianType::SPARSE;
+      mJacobian = JacobianType::Sparse;
     } else if (jacobian == "auto") {
-      mJacobian = JacobianType::AUTO;
+      mJacobian = JacobianType::Auto;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'jacobian': " + jacobian);
       return errors;
     }
@@ -160,14 +159,14 @@ Errors Option::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "solver")) {
     const std::string solver = getAttributeString(element, "solver");
     if (solver == "PGS") {
-      mSolver = SolverType::PGS;
+      mSolver = SolverType::Pgs;
     } else if (solver == "CG") {
-      mSolver = SolverType::CG;
+      mSolver = SolverType::Cg;
     } else if (solver == "Newton") {
-      mSolver = SolverType::NEWTON;
+      mSolver = SolverType::Newton;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'solver': " + solver);
       return errors;
     }

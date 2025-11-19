@@ -221,10 +221,10 @@ bool createPair(
 
 enum NextResult
 {
-  VALID,
-  CONTINUE,
-  BREAK,
-  CREATE_ROOT_JOINT
+  Valid,
+  Continue,
+  Break,
+  CreateRootJoint
 };
 
 NextResult getNextJointAndNodePair(
@@ -750,11 +750,11 @@ dynamics::SkeletonPtr readSkeleton(
     NextResult result = getNextJointAndNodePair(
         body, parentJoint, parentBody, newSkeleton, sdfBodyNodes, sdfJoints);
 
-    if (BREAK == result)
+    if (Break == result)
       break;
-    else if (CONTINUE == result)
+    else if (Continue == result)
       continue;
-    else if (CREATE_ROOT_JOINT == result) {
+    else if (CreateRootJoint == result) {
       SDFJoint rootJoint;
       if (options.defaultRootJointType == RootJointType::Floating) {
         // If a root FreeJoint is needed for the parent of the current joint,
@@ -837,7 +837,7 @@ NextResult getNextJointAndNodePair(
 {
   parentJoint = sdfJoints.find(body->first);
   if (parentJoint == sdfJoints.end()) {
-    return CREATE_ROOT_JOINT;
+    return CreateRootJoint;
   }
 
   const std::string& parentBodyName = parentJoint->second.parentName;
@@ -858,14 +858,14 @@ NextResult getNextJointAndNodePair(
           "We will now quit parsing.",
           parentBodyName,
           parentJointName);
-      return BREAK;
+      return Break;
     } else {
       body = check_parent_body;
-      return CONTINUE; // Create the parent before creating the current Joint
+      return Continue; // Create the parent before creating the current Joint
     }
   }
 
-  return VALID;
+  return Valid;
 }
 
 dynamics::SkeletonPtr makeSkeleton(

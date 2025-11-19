@@ -353,8 +353,8 @@ graph TB
 - [`SimpleFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
 - [`InteractiveFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L236) - Drag interactive frame tools
 - [`BodyNodeDnD`](dart/gui/osg/DragAndDrop.hpp#L266) - Drag robot bodies with IK
-- Constraint types: `UNCONSTRAINED`, `LINE_CONSTRAINT`, `PLANE_CONSTRAINT`
-- Rotation modes: `HOLD_MODKEY`, `ALWAYS_ON`, `ALWAYS_OFF`
+- Constraint types: `Unconstrained`, `LineConstraint`, `PlaneConstraint`
+- Rotation modes: `HoldModKey`, `AlwaysOn`, `AlwaysOff`
 
 **Depends On**:
 - **Internal**: DART frames, BodyNode, IK module, picking system

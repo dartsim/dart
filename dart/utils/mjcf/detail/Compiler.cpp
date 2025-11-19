@@ -71,7 +71,7 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "compiler") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <compiler> from the provided element");
     return errors;
   }
@@ -105,12 +105,12 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "coordinate")) {
     const std::string coordiante = getAttributeString(element, "coordinate");
     if (coordiante == "local") {
-      mCoordinate = Coordinate::LOCAL;
+      mCoordinate = Coordinate::Local;
     } else if (coordiante == "global") {
-      mCoordinate = Coordinate::GLOBAL;
+      mCoordinate = Coordinate::Global;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'coordinate': " + coordiante);
       return errors;
     }
@@ -120,12 +120,12 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "angle")) {
     const std::string angle = getAttributeString(element, "angle");
     if (angle == "degree") {
-      mAngle = Angle::DEGREE;
+      mAngle = Angle::Degree;
     } else if (angle == "radian") {
-      mAngle = Angle::RADIAN;
+      mAngle = Angle::Radian;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'angle': " + angle);
       return errors;
     }
@@ -180,14 +180,14 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
     const std::string inertiafromgeom
         = getAttributeString(element, "inertiafromgeom");
     if (inertiafromgeom == "false") {
-      mInertiaFromGeom = InertiaFromGeom::IFG_FALSE;
+      mInertiaFromGeom = InertiaFromGeom::IfgFalse;
     } else if (inertiafromgeom == "true") {
-      mInertiaFromGeom = InertiaFromGeom::IFG_TRUE;
+      mInertiaFromGeom = InertiaFromGeom::IfgTrue;
     } else if (inertiafromgeom == "auto") {
-      mInertiaFromGeom = InertiaFromGeom::IFG_AUTO;
+      mInertiaFromGeom = InertiaFromGeom::IfgAuto;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Invalid attribute for 'inertiafromgeom': " + inertiafromgeom);
       return errors;
     }

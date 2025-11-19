@@ -77,12 +77,12 @@ public:
     if (mHarnessOn) {
       Joint* joint
           = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-      joint->setActuatorType(Joint::LOCKED);
+      joint->setActuatorType(Joint::Locked);
       std::cout << "The pelvis is locked." << std::endl;
     } else {
       Joint* joint
           = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-      joint->setActuatorType(Joint::PASSIVE);
+      joint->setActuatorType(Joint::Passive);
       std::cout << "The pelvis is unlocked." << std::endl;
     }
   }
@@ -147,10 +147,10 @@ int main(int /*argc*/, char* /*argv*/[])
   skel->setPositions(genCoordIds, initConfig);
 
   Joint* joint0 = skel->getJoint(0);
-  joint0->setActuatorType(Joint::PASSIVE);
+  joint0->setActuatorType(Joint::Passive);
   for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i) {
     Joint* joint = skel->getJoint(i);
-    joint->setActuatorType(Joint::VELOCITY);
+    joint->setActuatorType(Joint::Velocity);
   }
 
   // Create event handler

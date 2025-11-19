@@ -135,16 +135,16 @@ class TeleoperationWorld : public dart::gui::osg::WorldNode
 public:
   enum MoveEnum_t
   {
-    MOVE_Q = 0,
-    MOVE_W,
-    MOVE_E,
-    MOVE_A,
-    MOVE_S,
-    MOVE_D,
-    MOVE_F,
-    MOVE_Z,
+    MoveQ = 0,
+    MoveW,
+    MoveE,
+    MoveA,
+    MoveS,
+    MoveD,
+    MoveF,
+    MoveZ,
 
-    NUM_MOVE
+    MoveCount
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
@@ -154,7 +154,7 @@ public:
       l_foot(_robot->getEndEffector("l_foot")),
       r_foot(_robot->getEndEffector("r_foot"))
   {
-    mMoveComponents.resize(NUM_MOVE, false);
+    mMoveComponents.resize(MoveCount, false);
     mAnyMovement = false;
   }
 
@@ -197,28 +197,28 @@ public:
       const double elevationStep = 0.2 * linearStep;
       const double rotationalStep = 2.0 * pi / 180.0;
 
-      if (mMoveComponents[MOVE_W])
+      if (mMoveComponents[MoveW])
         new_tf.translate(linearStep * forward);
 
-      if (mMoveComponents[MOVE_S])
+      if (mMoveComponents[MoveS])
         new_tf.translate(-linearStep * forward);
 
-      if (mMoveComponents[MOVE_A])
+      if (mMoveComponents[MoveA])
         new_tf.translate(linearStep * left);
 
-      if (mMoveComponents[MOVE_D])
+      if (mMoveComponents[MoveD])
         new_tf.translate(-linearStep * left);
 
-      if (mMoveComponents[MOVE_F])
+      if (mMoveComponents[MoveF])
         new_tf.translate(elevationStep * up);
 
-      if (mMoveComponents[MOVE_Z])
+      if (mMoveComponents[MoveZ])
         new_tf.translate(-elevationStep * up);
 
-      if (mMoveComponents[MOVE_Q])
+      if (mMoveComponents[MoveQ])
         new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
 
-      if (mMoveComponents[MOVE_E])
+      if (mMoveComponents[MoveE])
         new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
 
       new_tf.pretranslate(old_tf.translation());
@@ -297,7 +297,7 @@ public:
 
     mOptimizationKey = 'r';
 
-    mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
+    mMoveComponents.resize(TeleoperationWorld::MoveCount, false);
   }
 
   virtual bool handle(
@@ -363,28 +363,28 @@ public:
 
       switch (ea.getKey()) {
         case 'w':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = true;
+          mMoveComponents[TeleoperationWorld::MoveW] = true;
           break;
         case 'a':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = true;
+          mMoveComponents[TeleoperationWorld::MoveA] = true;
           break;
         case 's':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = true;
+          mMoveComponents[TeleoperationWorld::MoveS] = true;
           break;
         case 'd':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = true;
+          mMoveComponents[TeleoperationWorld::MoveD] = true;
           break;
         case 'q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = true;
+          mMoveComponents[TeleoperationWorld::MoveQ] = true;
           break;
         case 'e':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = true;
+          mMoveComponents[TeleoperationWorld::MoveE] = true;
           break;
         case 'f':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = true;
+          mMoveComponents[TeleoperationWorld::MoveF] = true;
           break;
         case 'z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = true;
+          mMoveComponents[TeleoperationWorld::MoveZ] = true;
           break;
       }
 
@@ -408,7 +408,7 @@ public:
 
         if (mBalance)
           mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+              dart::constraint::BalanceConstraint::OptimizeBalance);
 
         return true;
       }
@@ -421,35 +421,35 @@ public:
 
         if (mBalance)
           mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::FROM_CENTROID);
+              dart::constraint::BalanceConstraint::FromCentroid);
 
         return true;
       }
 
       switch (ea.getKey()) {
         case 'w':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = false;
+          mMoveComponents[TeleoperationWorld::MoveW] = false;
           break;
         case 'a':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = false;
+          mMoveComponents[TeleoperationWorld::MoveA] = false;
           break;
         case 's':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = false;
+          mMoveComponents[TeleoperationWorld::MoveS] = false;
           break;
         case 'd':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = false;
+          mMoveComponents[TeleoperationWorld::MoveD] = false;
           break;
         case 'q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = false;
+          mMoveComponents[TeleoperationWorld::MoveQ] = false;
           break;
         case 'e':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = false;
+          mMoveComponents[TeleoperationWorld::MoveE] = false;
           break;
         case 'f':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = false;
+          mMoveComponents[TeleoperationWorld::MoveF] = false;
           break;
         case 'z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = false;
+          mMoveComponents[TeleoperationWorld::MoveZ] = false;
           break;
       }
 
@@ -807,31 +807,31 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   //  // Shift the center of mass towards the support polygon center while
   //  trying
   //  // to keep the support polygon where it is
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FromCentroid);
+  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::ShiftCom);
 
   //  // Keep shifting the center of mass towards the center of the support
   //  // polygon, even if it is already inside. This is useful for trying to
   //  // optimize a stance
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::OptimizeBalance);
+  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::ShiftCom);
 
   //  // Try to leave the center of mass where it is while moving the support
   //  // polygon to be under the current center of mass location
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+  balance->setErrorMethod(dart::constraint::BalanceConstraint::FromCentroid);
+  balance->setBalanceMethod(dart::constraint::BalanceConstraint::ShiftSupport);
 
   //  // Try to leave the center of mass where it is while moving the support
   //  // point that is closest to the center of mass
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_EDGE);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FromEdge);
+  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::ShiftSupport);
 
-  // Note that using the FROM_EDGE error method is liable to leave the center of
+  // Note that using the FromEdge error method is liable to leave the center of
   // mass visualization red even when the constraint was successfully solved.
   // This is because the constraint solver has a tiny bit of tolerance that
   // allows the Problem to be considered solved when the center of mass is
   // microscopically outside of the support polygon. This is an inherent risk of
-  // using FROM_EDGE instead of FROM_CENTROID.
+  // using FromEdge instead of FromCentroid.
 
   // Feel free to experiment with the different balancing methods. You will find
   // that some work much better for user interaction than others.

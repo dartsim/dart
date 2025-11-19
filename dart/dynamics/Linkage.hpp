@@ -61,13 +61,13 @@ public:
     /// expand from the starting BodyNode (mStart)
     enum ExpansionPolicy
     {
-      INCLUDE = 0, ///< Do not expand from the target. Include everything up to
+      Include = 0, ///< Do not expand from the target. Include everything up to
                    ///< the target and then stop.
-      EXCLUDE, ///< Do not expand from the target. Include everything up to the
+      Exclude, ///< Do not expand from the target. Include everything up to the
                ///< target, but NOT the target, and then stop.
-      DOWNSTREAM, ///< Include the target, and then expand downstream, toward
+      Downstream, ///< Include the target, and then expand downstream, toward
                   ///< the leaves of the tree.
-      UPSTREAM    ///< Include the target, and then expand upstream, toward the
+      Upstream    ///< Include the target, and then expand upstream, toward the
                   ///< root of the tree.
     };
 
@@ -81,7 +81,7 @@ public:
       /// Default constructor for Target
       Target(
           BodyNode* _target = nullptr,
-          ExpansionPolicy _policy = INCLUDE,
+          ExpansionPolicy _policy = Include,
           bool _chain = false);
 
       /// The Linkage will expand from the starting BodyNode up to this node

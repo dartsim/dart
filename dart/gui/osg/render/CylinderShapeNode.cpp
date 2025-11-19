@@ -101,7 +101,7 @@ void CylinderShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -179,13 +179,12 @@ CylinderShapeDrawable::CylinderShapeDrawable(
 //==============================================================================
 void CylinderShapeDrawable::refresh(bool firstTime)
 {
-  if (mCylinderShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mCylinderShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mCylinderShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mCylinderShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     double R = mCylinderShape->getRadius();
     double h = mCylinderShape->getHeight();
@@ -195,7 +194,7 @@ void CylinderShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mCylinderShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

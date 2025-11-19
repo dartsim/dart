@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_MARKER_HPP_
 #define DART_DYNAMICS_MARKER_HPP_
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/dynamics/FixedJacobianNode.hpp>
 #include <dart/dynamics/detail/MarkerAspect.hpp>
 
@@ -50,9 +51,13 @@ class Marker final : public common::EmbedPropertiesOnTopOf<
 {
 public:
   using ConstraintType = detail::MarkerProperties::ConstraintType;
-  static constexpr ConstraintType NO = detail::MarkerProperties::NO;
-  static constexpr ConstraintType HARD = detail::MarkerProperties::HARD;
-  static constexpr ConstraintType SOFT = detail::MarkerProperties::SOFT;
+  static constexpr ConstraintType No = detail::MarkerProperties::No;
+  static constexpr ConstraintType Hard = detail::MarkerProperties::Hard;
+  static constexpr ConstraintType Soft = detail::MarkerProperties::Soft;
+
+  DART_DEPRECATED(7.0) static constexpr ConstraintType NO = No;
+  DART_DEPRECATED(7.0) static constexpr ConstraintType HARD = Hard;
+  DART_DEPRECATED(7.0) static constexpr ConstraintType SOFT = Soft;
 
   using BasicProperties
       = common::Composite::MakeProperties<NameAspect, FixedFrame, Marker>;

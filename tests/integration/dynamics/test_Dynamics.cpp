@@ -1632,7 +1632,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 
       // Set random states
       Skeleton::Configuration x = skel->getConfiguration(
-          Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
+          Skeleton::ConfigPositions | Skeleton::ConfigVelocities);
       for (auto k = 0u; k < skel->getNumDofs(); ++k) {
         x.mPositions[k] = Random::uniform(lb, ub);
         x.mVelocities[k] = Random::uniform(lb, ub);
@@ -2048,7 +2048,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 #endif
       continue;
     } else {
-      rootFreeJoint->setActuatorType(dynamics::Joint::PASSIVE);
+      rootFreeJoint->setActuatorType(dynamics::Joint::Passive);
     }
 
     // Make sure the damping and spring forces are zero for the root FreeJoint.
@@ -2429,11 +2429,11 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
   // Make sure all the joint actuator types
-  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::ACCELERATION);
-  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::VELOCITY);
-  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::ACCELERATION);
-  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::Force);
+  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::Acceleration);
+  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::Velocity);
+  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::Acceleration);
+  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::Velocity);
 
   // Prepare command for each joint types per simulation steps
   Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
@@ -2468,16 +2468,16 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
   // Change all the actuator types to force
-  skel->getJoint(0)->setActuatorType(Joint::FORCE);
-  skel->getJoint(1)->setActuatorType(Joint::FORCE);
-  skel->getJoint(2)->setActuatorType(Joint::FORCE);
-  skel->getJoint(3)->setActuatorType(Joint::FORCE);
-  skel->getJoint(4)->setActuatorType(Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::FORCE);
-  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::FORCE);
+  skel->getJoint(0)->setActuatorType(Joint::Force);
+  skel->getJoint(1)->setActuatorType(Joint::Force);
+  skel->getJoint(2)->setActuatorType(Joint::Force);
+  skel->getJoint(3)->setActuatorType(Joint::Force);
+  skel->getJoint(4)->setActuatorType(Joint::Force);
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::Force);
+  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::Force);
+  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::Force);
+  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::Force);
+  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::Force);
 
   // Test if the skeleton moves as the command with the joint forces
   Eigen::MatrixXd output = Eigen::MatrixXd::Zero(numFrames, numDofs);

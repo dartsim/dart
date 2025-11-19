@@ -44,7 +44,7 @@ namespace dynamics {
 
 //==============================================================================
 CapsuleShape::CapsuleShape(double radius, double height)
-  : Shape(CAPSULE), mRadius(radius), mHeight(height)
+  : Shape(Shape::Capsule), mRadius(radius), mHeight(height)
 {
   DART_ASSERT(0.0 < radius);
   DART_ASSERT(0.0 < height);

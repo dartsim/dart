@@ -106,9 +106,9 @@ public:
       const RotationType& _rotation, AxisOrder _ordering)
   {
     switch (_ordering) {
-      case AxisOrder::XYZ:
+      case AxisOrder::Xyz:
         return math::matrixToEulerXYZ(_rotation);
-      case AxisOrder::ZYX:
+      case AxisOrder::Zyx:
         return math::matrixToEulerZYX(_rotation);
       default:
         DART_WARN(

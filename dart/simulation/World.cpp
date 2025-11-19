@@ -73,7 +73,7 @@ void configureCollisionDetector(
     auto fclDetector
         = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
     if (fclDetector) {
-      fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+      fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::Mesh);
     }
   }
 }

@@ -48,12 +48,12 @@ class BalanceConstraint : public math::Function,
 public:
   /// The ErrorMethod_t determines whether the error should be computed based on
   /// the center of mass's distance from the centroid of the support polygon
-  /// (FROM_CENTROID) or the COM's distance from the edge of the support polygon
-  /// (FROM_EDGE). Note that once the center of mass is inside the support
+  /// (FromCentroid) or the COM's distance from the edge of the support polygon
+  /// (FromEdge). Note that once the center of mass is inside the support
   /// polygon, the error will immediately drop to zero regardless of which is
   /// chosen.
   ///
-  /// Alternatively, choosing OPTIMIZE_BALANCE will not drop the error to zero
+  /// Alternatively, choosing OptimizeBalance will not drop the error to zero
   /// while inside the support polygon. Instead, it will try to drive the center
   /// of mass to the centroid of the support polygon. The error will only drop
   /// to zero once it is within a certain tolerance of the centroid. The
@@ -62,32 +62,32 @@ public:
   /// configuration rather than as a constraint function.
   enum ErrorMethod_t
   {
-    FROM_CENTROID = 0,
-    FROM_EDGE,
-    OPTIMIZE_BALANCE
+    FromCentroid = 0,
+    FromEdge,
+    OptimizeBalance
   };
 
   /// The BalanceMethod_t determines whether balancing should be achieved by
   /// shifting the locations of the supporting EndEffectors or by shifting the
   /// center of mass without moving the support locations.
   ///
-  /// Note that if the BalanceMethod_t is SHIFT_SUPPORT, then its behavior will
+  /// Note that if the BalanceMethod_t is ShiftSupport, then its behavior will
   /// change significantly based on the ErrorMethod_t: if the ErrorMethod_t is
-  /// FROM_CENTROID or OPTIMIZE BALANCE, then all support points will be shifted
+  /// FromCentroid or OptimizeBalance, then all support points will be shifted
   /// towards the center of mass simultaneously. However, if the ErrorMethod_t
-  /// is FROM_EDGE, then only the EndEffector that is closest to the center of
+  /// is FromEdge, then only the EndEffector that is closest to the center of
   /// mass will be shifted.
   enum BalanceMethod_t
   {
-    SHIFT_SUPPORT = 0,
-    SHIFT_COM
+    ShiftSupport = 0,
+    ShiftCom
   };
 
   /// Constructor
   BalanceConstraint(
       const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
-      BalanceMethod_t _balanceMethod = SHIFT_SUPPORT,
-      ErrorMethod_t _errorMethod = FROM_CENTROID);
+      BalanceMethod_t _balanceMethod = ShiftSupport,
+      ErrorMethod_t _errorMethod = FromCentroid);
 
   /// Virtual destructor
   virtual ~BalanceConstraint() = default;
@@ -161,7 +161,7 @@ protected:
   double mDamping;
 
   /// The indices of the supporting end effectors that are closest to the center
-  /// of mass. These are used when using FROM_EDGE
+  /// of mass. These are used when using FromEdge
   std::size_t mClosestEndEffector[2];
 
   /// The error vector points away from the direction that the center of mass

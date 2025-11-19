@@ -320,7 +320,7 @@ TEST(DartLoader, mimicJoint)
   EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 
-  EXPECT_TRUE(joint2->getActuatorType() == dart::dynamics::Joint::MIMIC);
+  EXPECT_TRUE(joint2->getActuatorType() == dart::dynamics::Joint::Mimic);
   EXPECT_TRUE(nullptr != joint2->getMimicJoint());
   EXPECT_DOUBLE_EQ(joint2->getMimicMultiplier(), 2.);
   EXPECT_DOUBLE_EQ(joint2->getMimicOffset(), 0.1);
@@ -408,7 +408,7 @@ TEST(DartLoader, badMimicJoint)
   EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 
-  EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::MIMIC);
+  EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::Mimic);
   EXPECT_TRUE(nullptr == joint2->getMimicJoint());
 }
 
@@ -518,7 +518,7 @@ TEST(DartLoader, KR5MeshColor)
         [&](dynamics::ShapeNode* shapeNode) {
           auto shape = shapeNode->getShape();
           if (auto mesh = shape->as<dynamics::MeshShape>()) {
-            EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+            EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::ShapeColor);
           }
         });
   });

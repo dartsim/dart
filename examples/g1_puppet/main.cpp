@@ -420,7 +420,7 @@ int main(int argc, char* argv[])
 
   auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
       new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::Xy);
   grid->setNumCells(40);
   grid->setMinorLineStepSize(0.1);
   grid->setOffset(Eigen::Vector3d::Zero());

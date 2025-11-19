@@ -211,7 +211,7 @@ void MeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -327,8 +327,8 @@ void MeshShapeNode::extractData(bool firstTime)
     }
   }
 
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicTransform)
+      || mShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s = mMeshShape->getScale();
@@ -434,7 +434,7 @@ void osgAiNode::refresh()
 {
   mUtilized = true;
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -445,7 +445,7 @@ void osgAiNode::extractData(bool firstTime)
 {
   clearChildUtilizationFlags();
 
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicTransform)
       || firstTime) {
     aiMatrix4x4 M = mAiNode->mTransformation;
     M.Transpose();
@@ -520,7 +520,7 @@ void MeshShapeGeode::refresh()
 {
   mUtilized = true;
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -600,7 +600,7 @@ void MeshShapeGeometry::refresh()
 {
   mUtilized = true;
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -633,12 +633,12 @@ void blendMaterialAlpha(::osg::Material* material, const float alpha)
 //==============================================================================
 void MeshShapeGeometry::extractData(bool firstTime)
 {
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements[4];
     elements[0] = new ::osg::DrawElementsUInt(GL_POINTS);
@@ -668,8 +668,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
         addPrimitiveSet(elements[i]);
   }
 
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicVertices)
+      || mShape->checkDataVariance(dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     if (mVertices->size() != mAiMesh->mNumVertices)
       mVertices->resize(mAiMesh->mNumVertices);
@@ -696,12 +696,12 @@ void MeshShapeGeometry::extractData(bool firstTime)
       setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     bool isColored = false;
     ::osg::StateSet* ss = getOrCreateStateSet();
 
-    if (mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX) {
+    if (mMeshShape->getColorMode() == dart::dynamics::MeshShape::ColorIndex) {
       int index = mMeshShape->getColorIndex();
       if (index >= AI_MAX_NUMBER_OF_COLOR_SETS)
         index = AI_MAX_NUMBER_OF_COLOR_SETS - 1;
@@ -720,10 +720,10 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
         for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
           const aiColor4D& c = colors[i];
-          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::ShapeAlpha) {
             (*mColors)[i] = ::osg::Vec4(
                 c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
-          } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND) {
+          } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::Blend) {
             (*mColors)[i] = ::osg::Vec4(
                 c.r,
                 c.g,
@@ -748,7 +748,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     }
 
     if (mMeshShape->getColorMode()
-        == dart::dynamics::MeshShape::MATERIAL_COLOR) {
+        == dart::dynamics::MeshShape::MaterialColor) {
       const unsigned int matIndex = mAiMesh->mMaterialIndex;
       if (matIndex
           != static_cast<unsigned int>(
@@ -756,7 +756,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       {
         isColored = true;
         ::osg::Material* material = mMainNode->getMaterial(matIndex);
-        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
+        if (mMeshShape->getAlphaMode() == dynamics::MeshShape::ShapeAlpha) {
           const float shapeAlpha
               = static_cast<float>(mVisualAspect->getAlpha());
 
@@ -780,7 +780,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
             depth->setWriteMask(false);
             ss->setAttributeAndModes(depth, ::osg::StateAttribute::ON);
           }
-        } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND) {
+        } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::Blend) {
           float shapeAlpha = static_cast<float>(mVisualAspect->getAlpha());
           ::osg::ref_ptr<::osg::Material> newMaterial
               = new ::osg::Material(*material);
@@ -843,7 +843,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
     if (!isColored
         || mMeshShape->getColorMode()
-               == dart::dynamics::MeshShape::SHAPE_COLOR) {
+               == dart::dynamics::MeshShape::ShapeColor) {
       // Set color
       const Eigen::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
       mColors->resize(1);

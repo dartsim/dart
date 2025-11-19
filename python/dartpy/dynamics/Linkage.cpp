@@ -109,16 +109,16 @@ void Linkage(py::module& m)
       m.attr("LinkageCriteria"), "ExpansionPolicy")
       .value(
           "INCLUDE",
-          dart::dynamics::Linkage::Criteria::ExpansionPolicy::INCLUDE)
+          dart::dynamics::Linkage::Criteria::ExpansionPolicy::Include)
       .value(
           "EXCLUDE",
-          dart::dynamics::Linkage::Criteria::ExpansionPolicy::EXCLUDE)
+          dart::dynamics::Linkage::Criteria::ExpansionPolicy::Exclude)
       .value(
           "DOWNSTREAM",
-          dart::dynamics::Linkage::Criteria::ExpansionPolicy::DOWNSTREAM)
+          dart::dynamics::Linkage::Criteria::ExpansionPolicy::Downstream)
       .value(
           "UPSTREAM",
-          dart::dynamics::Linkage::Criteria::ExpansionPolicy::UPSTREAM)
+          dart::dynamics::Linkage::Criteria::ExpansionPolicy::Upstream)
       .export_values();
 
   ::py::class_<dart::dynamics::Linkage::Criteria::Terminal>(

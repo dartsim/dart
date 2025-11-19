@@ -78,9 +78,9 @@ void GridVisual(py::module& m)
 
   auto attr = m.attr("GridVisual");
   ::py::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
-      .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
-      .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
-      .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);
+      .value("XY", dart::gui::osg::GridVisual::PlaneType::Xy)
+      .value("YZ", dart::gui::osg::GridVisual::PlaneType::Yz)
+      .value("ZX", dart::gui::osg::GridVisual::PlaneType::Zx);
 }
 
 } // namespace python

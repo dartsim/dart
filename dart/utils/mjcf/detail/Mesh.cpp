@@ -50,7 +50,7 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "mesh") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Mesh> from the provided element");
     return errors;
   }
@@ -121,7 +121,7 @@ dynamics::MeshShapePtr Mesh::createMeshShape() const
 
   auto shape = std::make_shared<dynamics::MeshShape>(
       mScale, model, mMeshUri, mRetriever);
-  shape->setColorMode(dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
+  shape->setColorMode(dynamics::MeshShape::ColorMode::MaterialColor);
   return shape;
 }
 

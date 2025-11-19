@@ -73,7 +73,7 @@ ConstraintSolver::ConstraintSolver()
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::Mesh);
   // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
   // incorrect contact point computation.
   // (see: https://github.com/flexible-collision-library/fcl/issues/106)
@@ -514,11 +514,11 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->getActuatorType() == dynamics::Joint::Servo) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
+      if (joint->getActuatorType() == dynamics::Joint::Mimic
           && joint->getMimicJoint()) {
         mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
             joint, joint->getMimicDofProperties()));

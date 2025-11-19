@@ -347,13 +347,13 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     GenericJoint_REPORT_OUT_OF_RANGE(setCommand, index);
 
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
+    case Joint::Force:
       this->mAspectState.mCommands[index] = math::clip(
           command,
           Base::mAspectProperties.mForceLowerLimits[index],
           Base::mAspectProperties.mForceUpperLimits[index]);
       break;
-    case Joint::PASSIVE:
+    case Joint::Passive:
       DART_WARN_IF(
           0.0 != command,
           "Attempting to set a non-zero ({}) command for a PASSIVE joint [{}].",
@@ -361,13 +361,13 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
-    case Joint::SERVO:
+    case Joint::Servo:
       this->mAspectState.mCommands[index] = math::clip(
           command,
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
-    case Joint::MIMIC:
+    case Joint::Mimic:
       DART_WARN_IF(
           0.0 != command,
           "Attempting to set a non-zero ({}) command for a MIMIC joint [{}].",
@@ -375,20 +375,20 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           this->getName());
       this->mAspectState.mCommands[index] = 0.0;
       break;
-    case Joint::ACCELERATION:
+    case Joint::Acceleration:
       this->mAspectState.mCommands[index] = math::clip(
           command,
           Base::mAspectProperties.mAccelerationLowerLimits[index],
           Base::mAspectProperties.mAccelerationUpperLimits[index]);
       break;
-    case Joint::VELOCITY:
+    case Joint::Velocity:
       this->mAspectState.mCommands[index] = math::clip(
           command,
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
-    case Joint::LOCKED:
+    case Joint::Locked:
       DART_WARN_IF(
           0.0 != command,
           "Attempting to set a non-zero ({}) command for a LOCKED joint [{}].",
@@ -424,13 +424,13 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
   }
 
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
+    case Joint::Force:
       this->mAspectState.mCommands = math::clip(
           commands,
           Base::mAspectProperties.mForceLowerLimits,
           Base::mAspectProperties.mForceUpperLimits);
       break;
-    case Joint::PASSIVE:
+    case Joint::Passive:
       DART_WARN_IF(
           !commands.isZero(),
           "Attempting to set a non-zero ({}) command for a PASSIVE joint [{}].",
@@ -438,13 +438,13 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           this->getName());
       this->mAspectState.mCommands.setZero();
       break;
-    case Joint::SERVO:
+    case Joint::Servo:
       this->mAspectState.mCommands = math::clip(
           commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);
       break;
-    case Joint::MIMIC:
+    case Joint::Mimic:
       DART_WARN_IF(
           !commands.isZero(),
           "Attempting to set a non-zero ({}) command for a MIMIC joint [{}].",
@@ -452,20 +452,20 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
           this->getName());
       this->mAspectState.mCommands.setZero();
       break;
-    case Joint::ACCELERATION:
+    case Joint::Acceleration:
       this->mAspectState.mCommands = math::clip(
           commands,
           Base::mAspectProperties.mAccelerationLowerLimits,
           Base::mAspectProperties.mAccelerationUpperLimits);
       break;
-    case Joint::VELOCITY:
+    case Joint::Velocity:
       this->mAspectState.mCommands = math::clip(
           commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
-    case Joint::LOCKED:
+    case Joint::Locked:
       DART_WARN_IF(
           !commands.isZero(),
           "Attempting to set a non-zero ({}) command for a LOCKED joint [{}].",
@@ -784,7 +784,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Velocity)
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
 }
 
@@ -812,7 +812,7 @@ void GenericJoint<ConfigSpaceT>::setVelocities(
 
   setVelocitiesStatic(velocities);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Velocity)
     this->mAspectState.mCommands = this->getVelocitiesStatic();
 }
 
@@ -994,7 +994,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Acceleration)
     this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
 }
 
@@ -1022,7 +1022,7 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   setAccelerationsStatic(accelerations);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Acceleration)
     this->mAspectState.mCommands = this->getAccelerationsStatic();
 }
 
@@ -1140,7 +1140,7 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   this->mAspectState.mForces[index] = force;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Force)
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
 }
 
@@ -1167,7 +1167,7 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
   this->mAspectState.mForces = forces;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Force)
     this->mAspectState.mCommands = this->mAspectState.mForces;
 }
 
@@ -1272,7 +1272,7 @@ void GenericJoint<ConfigSpaceT>::resetForces()
 {
   this->mAspectState.mForces.setZero();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::Force)
     this->mAspectState.mCommands = this->mAspectState.mForces;
 }
 
@@ -1700,15 +1700,15 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       addChildArtInertiaToDynamic(parentArtInertia, childArtInertia);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       addChildArtInertiaToKinematic(parentArtInertia, childArtInertia);
       break;
     default:
@@ -1751,15 +1751,15 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& parentArtInertia, const Eigen::Matrix6d& childArtInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       addChildArtInertiaImplicitToDynamic(parentArtInertia, childArtInertia);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       addChildArtInertiaImplicitToKinematic(parentArtInertia, childArtInertia);
       break;
     default:
@@ -1802,15 +1802,15 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
     const Eigen::Matrix6d& artInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateInvProjArtInertiaDynamic(artInertia);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateInvProjArtInertiaKinematic(artInertia);
       break;
     default:
@@ -1849,15 +1849,15 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& artInertia, double timeStep)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateInvProjArtInertiaImplicitDynamic(artInertia, timeStep);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateInvProjArtInertiaImplicitKinematic(artInertia, timeStep);
       break;
     default:
@@ -1904,16 +1904,16 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
     const Eigen::Vector6d& childPartialAcc)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       addChildBiasForceToDynamic(
           parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       addChildBiasForceToKinematic(
           parentBiasForce, childArtInertia, childBiasForce, childPartialAcc);
       break;
@@ -1990,16 +1990,16 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
     const Eigen::Vector6d& childBiasImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       addChildBiasImpulseToDynamic(
           parentBiasImpulse, childArtInertia, childBiasImpulse);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       addChildBiasImpulseToKinematic(
           parentBiasImpulse, childArtInertia, childBiasImpulse);
       break;
@@ -2050,26 +2050,26 @@ void GenericJoint<ConfigSpaceT>::updateTotalForce(
   DART_ASSERT(timeStep > 0.0);
 
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
+    case Joint::Force:
       this->mAspectState.mForces = this->mAspectState.mCommands;
       updateTotalForceDynamic(bodyForce, timeStep);
       break;
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       this->mAspectState.mForces.setZero();
       updateTotalForceDynamic(bodyForce, timeStep);
       break;
-    case Joint::ACCELERATION:
+    case Joint::Acceleration:
       setAccelerationsStatic(this->mAspectState.mCommands);
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
-    case Joint::VELOCITY:
+    case Joint::Velocity:
       setAccelerationsStatic(
           (this->mAspectState.mCommands - getVelocitiesStatic()) / timeStep);
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
-    case Joint::LOCKED:
+    case Joint::Locked:
       setVelocitiesStatic(Vector::Zero());
       setAccelerationsStatic(Vector::Zero());
       updateTotalForceKinematic(bodyForce, timeStep);
@@ -2115,15 +2115,15 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
     const Eigen::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateTotalImpulseDynamic(bodyImpulse);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateTotalImpulseKinematic(bodyImpulse);
       break;
     default:
@@ -2163,15 +2163,15 @@ void GenericJoint<ConfigSpaceT>::updateAcceleration(
     const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& spatialAcc)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateAccelerationDynamic(artInertia, spatialAcc);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateAccelerationKinematic(artInertia, spatialAcc);
       break;
     default:
@@ -2211,15 +2211,15 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChange(
     const Eigen::Matrix6d& artInertia, const Eigen::Vector6d& velocityChange)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateVelocityChangeDynamic(artInertia, velocityChange);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateVelocityChangeKinematic(artInertia, velocityChange);
       break;
     default:
@@ -2294,14 +2294,14 @@ void GenericJoint<ConfigSpaceT>::updateForceFD(
     bool withSpringForces)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateForceID(bodyForce, timeStep, withDampingForces, withSpringForces);
       break;
     default:
@@ -2324,14 +2324,14 @@ void GenericJoint<ConfigSpaceT>::updateImpulseFD(
     const Eigen::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateImpulseID(bodyImpulse);
       break;
     default:
@@ -2345,15 +2345,15 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
 {
   switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-    case Joint::PASSIVE:
-    case Joint::SERVO:
-    case Joint::MIMIC:
+    case Joint::Force:
+    case Joint::Passive:
+    case Joint::Servo:
+    case Joint::Mimic:
       updateConstrainedTermsDynamic(timeStep);
       break;
-    case Joint::ACCELERATION:
-    case Joint::VELOCITY:
-    case Joint::LOCKED:
+    case Joint::Acceleration:
+    case Joint::Velocity:
+    case Joint::Locked:
       updateConstrainedTermsKinematic(timeStep);
       break;
     default:

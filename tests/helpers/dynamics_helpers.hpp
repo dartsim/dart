@@ -52,12 +52,12 @@ using namespace dart::dynamics;
 /// Function headers
 enum TypeOfDOF
 {
-  DOF_X,
-  DOF_Y,
-  DOF_Z,
-  DOF_ROLL,
-  DOF_PITCH,
-  DOF_YAW
+  DofX,
+  DofY,
+  DofZ,
+  DofRoll,
+  DofPitch,
+  DofYaw
 };
 
 //==============================================================================
@@ -94,32 +94,32 @@ std::pair<Joint*, BodyNode*> add1DofJoint(
   properties.mPositionLowerLimits[0] = min;
   properties.mPositionUpperLimits[0] = max;
   std::pair<Joint*, BodyNode*> newComponent;
-  if (DOF_X == type)
+  if (DofX == type)
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)),
         node);
-  else if (DOF_Y == type)
+  else if (DofY == type)
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)),
         node);
-  else if (DOF_Z == type)
+  else if (DofZ == type)
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)),
         node);
-  else if (DOF_YAW == type)
+  else if (DofYaw == type)
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)),
         node);
-  else if (DOF_PITCH == type)
+  else if (DofPitch == type)
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)),
         node);
-  else if (DOF_ROLL == type)
+  else if (DofRoll == type)
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)),
@@ -232,7 +232,7 @@ SkeletonPtr createTwoLinkRobot(
       dim2,
       type2,
       Eigen::Vector3d::Zero(),
-      DOF_X,
+      DofX,
       finished,
       true,
       2);

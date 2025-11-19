@@ -101,7 +101,7 @@ void CapsuleShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -179,12 +179,12 @@ CapsuleShapeDrawable::CapsuleShapeDrawable(
 //==============================================================================
 void CapsuleShapeDrawable::refresh(bool firstTime)
 {
-  if (mCapsuleShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mCapsuleShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     double R = mCapsuleShape->getRadius();
     double h = mCapsuleShape->getHeight();
@@ -194,7 +194,7 @@ void CapsuleShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

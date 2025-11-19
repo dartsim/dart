@@ -349,7 +349,7 @@ bool DartLoader::addMimicJointsRecursive(
       return false;
     }
 
-    joint->setActuatorType(dynamics::Joint::MIMIC);
+    joint->setActuatorType(dynamics::Joint::Mimic);
     joint->setMimicJoint(mimicJoint, multiplier, offset);
   }
 
@@ -605,7 +605,7 @@ void setMaterial(
     auto shapeFrame = visualAspect->getComposite();
     auto shape = shapeFrame->getShape();
     if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
-      mesh->setColorMode(dynamics::MeshShape::ColorMode::SHAPE_COLOR);
+      mesh->setColorMode(dynamics::MeshShape::ColorMode::ShapeColor);
   }
 }
 

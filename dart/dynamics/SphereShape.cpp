@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-SphereShape::SphereShape(double radius) : Shape(SPHERE)
+SphereShape::SphereShape(double radius) : Shape(Shape::Sphere)
 {
   setRadius(radius);
 }

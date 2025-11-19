@@ -49,9 +49,9 @@ class MeshShape : public Shape
 public:
   enum ColorMode
   {
-    MATERIAL_COLOR = 0, ///< Use the colors specified by the Mesh's material
-    COLOR_INDEX,        ///< Use the colors specified by aiMesh::mColor
-    SHAPE_COLOR,        ///< Use the color specified by the visual aspect
+    MaterialColor = 0, ///< Use the colors specified by the Mesh's material
+    ColorIndex,        ///< Use the colors specified by aiMesh::mColor
+    ShapeColor,        ///< Use the color specified by the visual aspect
   };
 
   /// Alpha mode to specify how the alpha of this mesh should be determined. The
@@ -60,21 +60,21 @@ public:
   enum AlphaMode
   {
     /// Blend alphas of visual aspect and mesh. This is the default.
-    /// - MATERIAL_COLOR: Blend the alpha of visual aspect and the alpha values
-    ///                   of the mesh materials.
-    /// - COLOR_INDEX: Blend the alpha of visual aspect and the alpha value of
-    ///                mesh color
-    /// - SHAPE_COLOR: Use the alpha of visual aspect.
-    BLEND = 0,
+    /// - MaterialColor: Blend the alpha of visual aspect and the alpha values
+    ///                  of the mesh materials.
+    /// - ColorIndex: Blend the alpha of visual aspect and the alpha value of
+    ///               mesh color
+    /// - ShapeColor: Use the alpha of visual aspect.
+    Blend = 0,
 
     /// Use the alpha of mesh or visual aspect.
-    /// - MATERIAL_COLOR: Use the alpha values of mesh materials.
-    /// - COLOR_INDEX: Use the alpha value of mesh color.
-    /// - SHAPE_COLOR: Use the alpha of visual aspect.
-    AUTO,
+    /// - MaterialColor: Use the alpha values of mesh materials.
+    /// - ColorIndex: Use the alpha value of mesh color.
+    /// - ShapeColor: Use the alpha of visual aspect.
+    Auto,
 
     /// Always use the alpha of visual aspect.
-    SHAPE_ALPHA
+    ShapeAlpha
   };
 
   /// Constructor.
@@ -157,12 +157,12 @@ public:
   AlphaMode getAlphaMode() const;
 
   /// Set which entry in aiMesh::mColor should be used when the color mode is
-  /// COLOR_INDEX. This value must be smaller than AI_MAX_NUMBER_OF_COLOR_SETS.
+  /// ColorIndex. This value must be smaller than AI_MAX_NUMBER_OF_COLOR_SETS.
   /// If the color index is higher than what the mesh has available, then we
   /// will use the highest index possible.
   void setColorIndex(int index);
 
-  /// Get the index that will be used when the ColorMode is set to COLOR_INDEX
+  /// Get the index that will be used when the ColorMode is set to ColorIndex
   int getColorIndex() const;
 
   int getDisplayList() const;
@@ -215,7 +215,7 @@ protected:
   /// Specifies how the alpha of this mesh should be determined
   AlphaMode mAlphaMode;
 
-  /// Specifies which color index should be used when mColorMode is COLOR_INDEX
+  /// Specifies which color index should be used when mColorMode is ColorIndex
   int mColorIndex;
 };
 

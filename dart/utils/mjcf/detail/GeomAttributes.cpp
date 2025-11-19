@@ -48,7 +48,7 @@ Errors appendGeomAttributes(
 
   if (std::string(element->Name()) != "geom") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <geom> from the provided element");
     return errors;
   }
@@ -66,25 +66,24 @@ Errors appendGeomAttributes(
   if (hasAttribute(element, "type")) {
     const std::string type = getAttributeString(element, "type");
     if (type == "plane") {
-      attributes.mType = GeomType::PLANE;
+      attributes.mType = GeomType::Plane;
     } else if (type == "hfield") {
-      attributes.mType = GeomType::HFIELD;
+      attributes.mType = GeomType::Hfield;
     } else if (type == "sphere") {
-      attributes.mType = GeomType::SPHERE;
+      attributes.mType = GeomType::Sphere;
     } else if (type == "capsule") {
-      attributes.mType = GeomType::CAPSULE;
+      attributes.mType = GeomType::Capsule;
     } else if (type == "ellipsoid") {
-      attributes.mType = GeomType::ELLIPSOID;
+      attributes.mType = GeomType::Ellipsoid;
     } else if (type == "cylinder") {
-      attributes.mType = GeomType::CYLINDER;
+      attributes.mType = GeomType::Cylinder;
     } else if (type == "box") {
-      attributes.mType = GeomType::BOX;
+      attributes.mType = GeomType::Box;
     } else if (type == "mesh") {
-      attributes.mType = GeomType::MESH;
+      attributes.mType = GeomType::Mesh;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
-          "Invalid attribute for 'type': " + type);
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'type': " + type);
       return errors;
     }
   }
@@ -119,7 +118,7 @@ Errors appendGeomAttributes(
     const Eigen::VectorXd size = getAttributeVectorXd(element, "size");
     if (size.size() == 0 || size.size() > 3) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'size'");
       return errors;
     }
     attributes.mSize.head(size.size()) = size;
@@ -135,7 +134,7 @@ Errors appendGeomAttributes(
     const Eigen::VectorXd friction = getAttributeVectorXd(element, "friction");
     if (friction.size() == 0 || friction.size() > 3) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'size'");
       return errors;
     }
     attributes.mFriction.head(friction.size()) = friction;

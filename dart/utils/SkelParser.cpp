@@ -90,10 +90,10 @@ namespace {
 
 enum NextResult
 {
-  VALID,
-  CONTINUE,
-  BREAK,
-  CREATE_FREEJOINT_ROOT
+  Valid,
+  Continue,
+  Break,
+  CreateFreeJointRoot
 };
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
@@ -723,8 +723,8 @@ createFclMeshCollisionDetector()
 {
   auto cd = collision::CollisionDetector::getFactory()->create("fcl");
   auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::Mesh);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::Dart);
 
   return fcl;
 }
@@ -776,9 +776,9 @@ simulation::WorldPtr readWorld(
             = collision::CollisionDetector::getFactory()->create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
             collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::Primitive);
         cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
+            collision::FCLCollisionDetector::Dart);
       } else {
         collision_detector
             = collision::CollisionDetector::getFactory()->create(cdType);
@@ -819,7 +819,7 @@ NextResult getNextJointAndNodePair(
     JointMap& joints,
     const BodyMap& bodyNodes)
 {
-  NextResult result = VALID;
+  NextResult result = Valid;
   const SkelJoint& joint = it->second;
   parent = skeleton->getBodyNode(joint.parentName);
   if (nullptr == parent && !joint.parentName.empty()) {
@@ -836,15 +836,15 @@ NextResult getNextJointAndNodePair(
             "parsing.",
             joint.parentName,
             joint.properties->mName);
-        return BREAK;
+        return Break;
       }
 
       // If the current Joint has a parent BodyNode but does not have a parent
       // Joint, then we need to create a FreeJoint for the parent BodyNode.
-      result = CREATE_FREEJOINT_ROOT;
+      result = CreateFreeJointRoot;
     } else {
       it = check_parent_joint;
-      return CONTINUE; // Create the parent before creating the current Joint
+      return Continue; // Create the parent before creating the current Joint
     }
   }
 
@@ -857,7 +857,7 @@ NextResult getNextJointAndNodePair(
         "will now quit parsing. Please report this bug!",
         joint.childName,
         joint.properties->mName);
-    return BREAK;
+    return Break;
   }
 
   return result;
@@ -1062,11 +1062,11 @@ dynamics::SkeletonPtr readSkeleton(
     NextResult result = getNextJointAndNodePair(
         it, child, parent, newSkeleton, joints, bodyNodes);
 
-    if (BREAK == result)
+    if (Break == result)
       break;
-    else if (CONTINUE == result)
+    else if (Continue == result)
       continue;
-    else if (CREATE_FREEJOINT_ROOT == result) {
+    else if (CreateFreeJointRoot == result) {
       // If a root FreeJoint is needed for the parent of the current joint, then
       // create it
       BodyMap::const_iterator rootNode = bodyNodes.find(it->second.parentName);
@@ -1476,17 +1476,17 @@ void readJoint(
     const std::string actuator = getAttributeString(_jointElement, "actuator");
 
     if (actuator == "force")
-      joint.properties->mActuatorType = dynamics::Joint::FORCE;
+      joint.properties->mActuatorType = dynamics::Joint::Force;
     else if (actuator == "passive")
-      joint.properties->mActuatorType = dynamics::Joint::PASSIVE;
+      joint.properties->mActuatorType = dynamics::Joint::Passive;
     else if (actuator == "servo")
-      joint.properties->mActuatorType = dynamics::Joint::SERVO;
+      joint.properties->mActuatorType = dynamics::Joint::Servo;
     else if (actuator == "acceleration")
-      joint.properties->mActuatorType = dynamics::Joint::ACCELERATION;
+      joint.properties->mActuatorType = dynamics::Joint::Acceleration;
     else if (actuator == "velocity")
-      joint.properties->mActuatorType = dynamics::Joint::VELOCITY;
+      joint.properties->mActuatorType = dynamics::Joint::Velocity;
     else if (actuator == "locked")
-      joint.properties->mActuatorType = dynamics::Joint::LOCKED;
+      joint.properties->mActuatorType = dynamics::Joint::Locked;
     else
       DART_ERROR(
           "Joint named [{}] contains invalid actuator attribute [{}].",
@@ -2242,9 +2242,9 @@ JointPropPtr readEulerJoint(
   // axis order
   std::string order = getValueString(_jointElement, "axis_order");
   if (order == "xyz") {
-    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::XYZ;
+    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::Xyz;
   } else if (order == "zyx") {
-    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::ZYX;
+    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::Zyx;
   } else {
     DART_ERROR(
         "[readEulerJoint] Undefined Euler axis order for Euler Joint named "
@@ -2406,13 +2406,13 @@ JointPropPtr readPlanarJoint(
     std::string type = getAttributeString(planeElement, "type");
 
     if (type == "xy") {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Xy;
     } else if (type == "yz") {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::YZ;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Yz;
     } else if (type == "zx") {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ZX;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Zx;
     } else if (type == "arbitrary") {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ARBITRARY;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Arbitrary;
 
       tinyxml2::XMLElement* transAxis1Element
           = getElement(planeElement, "translation_axis1");
@@ -2428,14 +2428,14 @@ JointPropPtr readPlanarJoint(
           "[readPlanarJoint] Planar Joint named [{}] is missing plane type "
           "information. Defaulting to XY-Plane.",
           _name);
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Xy;
     }
   } else {
     DART_WARN(
         "[readPlanarJoint] Planar Joint named [{}] is missing plane type "
         "information. Defaulting to XY-Plane.",
         _name);
-    properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+    properties.mPlaneType = dynamics::PlanarJoint::PlaneType::Xy;
   }
 
   //--------------------------------------------------------------------------

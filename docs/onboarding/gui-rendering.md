@@ -288,17 +288,17 @@ class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 1. **Mouse Button Events**:
    ```cpp
    enum MouseButtonEvent {
-       BUTTON_PUSH,        // Initial click
-       BUTTON_DRAG,        // Dragging with button held
-       BUTTON_RELEASE,     // Button released
-       BUTTON_NOTHING      // No event
+       ButtonPush,        // Initial click
+       ButtonDrag,        // Dragging with button held
+       ButtonRelease,     // Button released
+       ButtonNothing      // No event
    };
    ```
 
 2. **Mouse Buttons**:
-   - `LEFT_MOUSE`: Typically for interaction/selection
-   - `RIGHT_MOUSE`: Typically for camera rotation
-   - `MIDDLE_MOUSE`: Typically for camera pan
+   - `LeftMouse`: Typically for interaction/selection
+   - `RightMouse`: Typically for camera rotation
+   - `MiddleMouse`: Typically for camera pan
 
 3. **Keyboard Shortcuts**:
    - `Spacebar`: Toggle simulation on/off
@@ -323,9 +323,9 @@ struct PickInfo {
 **Cursor Delta Calculation**:
 - `getDeltaCursor()`: Projects cursor movement into 3D space
 - **Constraint Types**:
-  - `UNCONSTRAINED`: Project onto plane parallel to camera
-  - `LINE_CONSTRAINT`: Constrain to a line
-  - `PLANE_CONSTRAINT`: Constrain to a plane
+  - `Unconstrained`: Project onto plane parallel to camera
+  - `LineConstraint`: Constrain to a line
+  - `PlaneConstraint`: Constrain to a plane
 
 **Pick Suppression**:
 - Can suppress picks for specific button/event combinations
@@ -357,9 +357,9 @@ protected:
 ```cpp
 class MyHandler : public MouseEventHandler {
     void update() override {
-        auto button = mEventHandler->getButtonEvent(LEFT_MOUSE);
-        if (button == BUTTON_PUSH) {
-            auto picks = mEventHandler->getButtonPicks(LEFT_MOUSE, BUTTON_PUSH);
+        auto button = mEventHandler->getButtonEvent(LeftMouse);
+        if (button == ButtonPush) {
+            auto picks = mEventHandler->getButtonPicks(LeftMouse, ButtonPush);
             // Handle picks...
         }
     }
@@ -833,13 +833,13 @@ class MyInteractionHandler : public dart::gui::osg::MouseEventHandler {
 public:
     void update() override {
         // Check for left mouse button push
-        if (mEventHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE)
-            == dart::gui::osg::BUTTON_PUSH) {
+        if (mEventHandler->getButtonEvent(dart::gui::osg::LeftMouse)
+            == dart::gui::osg::ButtonPush) {
 
             // Get picked objects
             const auto& picks = mEventHandler->getButtonPicks(
-                dart::gui::osg::LEFT_MOUSE,
-                dart::gui::osg::BUTTON_PUSH);
+                dart::gui::osg::LeftMouse,
+                dart::gui::osg::ButtonPush);
 
             // Handle picks
             for (const auto& pick : picks) {

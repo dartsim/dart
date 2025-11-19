@@ -109,7 +109,7 @@ void MultiSphereShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -194,13 +194,13 @@ MultiSphereShapeDrawable::MultiSphereShapeDrawable(
 //==============================================================================
 void MultiSphereShapeDrawable::refresh(bool firstTime)
 {
-  if (mMultiSphereShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mMultiSphereShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   if (mMultiSphereShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+          dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     const auto subdivisions = 3; // TODO(JS): Make this configurable
     const auto& spheres = mMultiSphereShape->getSpheres();
@@ -254,7 +254,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mMultiSphereShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

@@ -49,7 +49,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
 
   if (std::string(element->Name()) != "site") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Site> from the provided element");
     return errors;
   }
@@ -67,19 +67,18 @@ Errors Site::read(tinyxml2::XMLElement* element)
   if (hasAttribute(element, "type")) {
     const std::string type = getAttributeString(element, "type");
     if (type == "sphere") {
-      mData.mType = GeomType::SPHERE;
+      mData.mType = GeomType::Sphere;
     } else if (type == "capsule") {
-      mData.mType = GeomType::CAPSULE;
+      mData.mType = GeomType::Capsule;
     } else if (type == "ellipsoid") {
-      mData.mType = GeomType::ELLIPSOID;
+      mData.mType = GeomType::Ellipsoid;
     } else if (type == "cylinder") {
-      mData.mType = GeomType::CYLINDER;
+      mData.mType = GeomType::Cylinder;
     } else if (type == "box") {
-      mData.mType = GeomType::BOX;
+      mData.mType = GeomType::Box;
     } else {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID,
-          "Invalid attribute for 'type': " + type);
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'type': " + type);
       return errors;
     }
   }
@@ -94,7 +93,7 @@ Errors Site::read(tinyxml2::XMLElement* element)
     const Eigen::VectorXd size = getAttributeVectorXd(element, "size");
     if (size.size() == 0 || size.size() > 3) {
       errors.emplace_back(
-          ErrorCode::ATTRIBUTE_INVALID, "Invalid attribute for 'size'");
+          ErrorCode::AttributeInvalid, "Invalid attribute for 'size'");
       return errors;
     }
     mData.mSize.head(size.size()) = size;
@@ -160,10 +159,10 @@ static bool canUseFromTo(
     return false;
 
   switch (type) {
-    case detail::GeomType::CAPSULE:
-    case detail::GeomType::ELLIPSOID:
-    case detail::GeomType::CYLINDER:
-    case detail::GeomType::BOX:
+    case detail::GeomType::Capsule:
+    case detail::GeomType::Ellipsoid:
+    case detail::GeomType::Cylinder:
+    case detail::GeomType::Box:
       return true;
     default:
       return false;
@@ -187,14 +186,14 @@ Errors Site::preprocess(const Compiler& compiler)
 
   // Size
   switch (mData.mType) {
-    case GeomType::PLANE:
-    case GeomType::HFIELD:
-    case GeomType::SPHERE: {
+    case GeomType::Plane:
+    case GeomType::Hfield:
+    case GeomType::Sphere: {
       mSize = mData.mSize;
       break;
     }
-    case GeomType::CAPSULE:
-    case GeomType::CYLINDER: {
+    case GeomType::Capsule:
+    case GeomType::Cylinder: {
       if (mData.mFromTo) {
         const double radius = mData.mSize[0];
         mSize[0] = radius;
@@ -208,8 +207,8 @@ Errors Site::preprocess(const Compiler& compiler)
       }
       break;
     }
-    case GeomType::ELLIPSOID:
-    case GeomType::BOX: {
+    case GeomType::Ellipsoid:
+    case GeomType::Box: {
       if (mData.mFromTo) {
         const double halfLengthX = mData.mSize[0];
         mSize[0] = halfLengthX;
@@ -226,7 +225,7 @@ Errors Site::preprocess(const Compiler& compiler)
       }
       break;
     }
-    case GeomType::MESH: {
+    case GeomType::Mesh: {
       break;
     }
   }
@@ -253,7 +252,7 @@ Errors Site::preprocess(const Compiler& compiler)
         compiler);
   }
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     mRelativeTransform = tf;
   } else {
     mWorldTransform = tf;
@@ -274,7 +273,7 @@ Errors Site::postprocess(const Body* parent, const Compiler& compiler)
 {
   Errors errors;
 
-  if (compiler.getCoordinate() == Coordinate::LOCAL) {
+  if (compiler.getCoordinate() == Coordinate::Local) {
     if (parent != nullptr) {
       mWorldTransform = parent->getWorldTransform() * mRelativeTransform;
     } else {

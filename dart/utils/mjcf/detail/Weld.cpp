@@ -89,7 +89,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 
   if (std::string(element->Name()) != "weld") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <weld> from the provided element");
     return errors;
   }
@@ -104,7 +104,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
       currentDefault = &(*defaultClass);
     } else {
       errors.push_back(Error(
-          ErrorCode::ATTRIBUTE_INVALID,
+          ErrorCode::AttributeInvalid,
           "Failed to find default with childclass name '" + className + "'"));
     }
   } else {

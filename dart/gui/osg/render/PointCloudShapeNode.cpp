@@ -297,22 +297,22 @@ bool shouldUseVisualAspectColor(
         Eigen::aligned_allocator<Eigen::Vector4d>>& colors,
     dynamics::PointCloudShape::ColorMode colorMode)
 {
-  if (colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {
+  if (colorMode == dynamics::PointCloudShape::UseShapeColor) {
     return true;
-  } else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL) {
+  } else if (colorMode == dynamics::PointCloudShape::BindOverall) {
     if (colors.empty()) {
       DART_WARN(
           "[PointCloudShapeNode] The color array in PointCloudShape is empty "
-          "while the color mode is BIND_OVERALL, which requires at least on "
+          "while the color mode is BindOverall, which requires at least on "
           "color in the color array. Using visual aspect color instead.");
       return true;
     }
-  } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
+  } else if (colorMode == dynamics::PointCloudShape::BindPerPoint) {
     if (colors.size() != points.size()) {
       DART_WARN(
           "[PointCloudShapeNode] The color array in PointCloudShape has "
           "different size from the point array while the color mode is "
-          "BIND_PER_POINT, which requires the same number of colors. Using "
+          "BindPerPoint, which requires the same number of colors. Using "
           "visual aspect color instead.");
       return true;
     }
@@ -334,15 +334,15 @@ bool shouldUseVisualAspectColor(
     double size,
     const Eigen::Vector4d& color)
 {
-  if (pointShapeType == dynamics::PointCloudShape::PointShapeType::BOX) {
+  if (pointShapeType == dynamics::PointCloudShape::PointShapeType::Box) {
     return new BoxPointNode(point, size, color);
   } else if (
       pointShapeType
-      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE) {
+      == dynamics::PointCloudShape::PointShapeType::BillboardSquare) {
     return new BillboardPointNode<SquareDrawable>(point, size, color);
   } else if (
       pointShapeType
-      == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE) {
+      == dynamics::PointCloudShape::PointShapeType::BillboardCircle) {
     return new BillboardPointNode<CircleDrawable>(point, size, color);
   } else {
     DART_ERROR(
@@ -396,11 +396,11 @@ public:
       mPointNodes[i]->updateCenter(points[i]);
       mPointNodes[i]->updateSize(visualSize);
       if (useVisualAspectColor
-          || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {
+          || colorMode == dynamics::PointCloudShape::UseShapeColor) {
         mPointNodes[i]->updateColor(mVisualAspect->getRGBA());
-      } else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL) {
+      } else if (colorMode == dynamics::PointCloudShape::BindOverall) {
         mPointNodes[i]->updateColor(colors[0]);
-      } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
+      } else if (colorMode == dynamics::PointCloudShape::BindPerPoint) {
         mPointNodes[i]->updateColor(colors[i]);
       }
     }
@@ -410,13 +410,13 @@ public:
     for (auto i = mPointNodes.size(); i < points.size(); ++i) {
       ::osg::ref_ptr<PointNode> pointNode;
       if (useVisualAspectColor
-          || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {
+          || colorMode == dynamics::PointCloudShape::UseShapeColor) {
         pointNode = createPointNode(
             mPointShapeType, points[i], visualSize, mVisualAspect->getRGBA());
-      } else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL) {
+      } else if (colorMode == dynamics::PointCloudShape::BindOverall) {
         pointNode = createPointNode(
             mPointShapeType, points[i], visualSize, colors[0]);
-      } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
+      } else if (colorMode == dynamics::PointCloudShape::BindPerPoint) {
         pointNode = createPointNode(
             mPointShapeType, points[i], visualSize, colors[i]);
       }
@@ -503,7 +503,7 @@ public:
     }
 
     if (useVisualAspectColor
-        || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {
+        || colorMode == dynamics::PointCloudShape::UseShapeColor) {
       mColors->resize(1);
       const auto& color = mVisualAspect->getRGBA();
       mColors->at(0).set(
@@ -512,7 +512,7 @@ public:
           static_cast<float>(color[2]),
           static_cast<float>(color[3]));
       mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
-    } else if (colorMode == dynamics::PointCloudShape::BIND_OVERALL) {
+    } else if (colorMode == dynamics::PointCloudShape::BindOverall) {
       mColors->resize(1);
       const auto& color = colors[0];
       mColors->at(0).set(
@@ -521,7 +521,7 @@ public:
           static_cast<float>(color[2]),
           static_cast<float>(color[3]));
       mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
-    } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
+    } else if (colorMode == dynamics::PointCloudShape::BindPerPoint) {
       mColors->resize(colors.size());
       for (auto i = 0u; i < colors.size(); ++i) {
         const auto& color = colors[i];
@@ -582,7 +582,7 @@ void PointCloudShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static
       && mPointCloudVersion == mPointCloudShape->getVersion()) {
     return;
   }
@@ -621,14 +621,14 @@ PointCloudShapeNode::~PointCloudShapeNode()
 //==============================================================================
 ::osg::ref_ptr<PointNodes> PointCloudShapeNode::createPointNodes()
 {
-  if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::BOX
+  if (mPointShapeType == dynamics::PointCloudShape::PointShapeType::Box
       || mPointShapeType
-             == dynamics::PointCloudShape::PointShapeType::BILLBOARD_SQUARE
+             == dynamics::PointCloudShape::PointShapeType::BillboardSquare
       || mPointShapeType
-             == dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE) {
+             == dynamics::PointCloudShape::PointShapeType::BillboardCircle) {
     return new NonVertexPointNodes(mPointCloudShape, mVisualAspect);
   } else if (
-      mPointShapeType == dynamics::PointCloudShape::PointShapeType::POINT) {
+      mPointShapeType == dynamics::PointCloudShape::PointShapeType::Point) {
     return new VertexPointNodes(mPointCloudShape, mVisualAspect);
   } else {
     DART_WARN(

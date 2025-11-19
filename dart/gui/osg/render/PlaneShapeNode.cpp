@@ -99,7 +99,7 @@ void PlaneShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -177,12 +177,12 @@ PlaneShapeDrawable::PlaneShapeDrawable(
 //==============================================================================
 void PlaneShapeDrawable::refresh(bool firstTime)
 {
-  if (mPlaneShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mPlaneShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DynamicPrimitive)
       || firstTime) {
     const Eigen::Vector3d& n = mPlaneShape->getNormal();
     const Eigen::Vector3d& p = mPlaneShape->getOffset() * n;
@@ -194,7 +194,7 @@ void PlaneShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mPlaneShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

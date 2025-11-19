@@ -83,11 +83,11 @@ private:
   Eigen::Vector3d mMagnetic{Eigen::Vector3d(0, -0.5, 0)};
   double mDensity{0};
   double mViscosity{0};
-  Integrator mIntegrator{Integrator::EULER};
-  CollisionType mCollision{CollisionType::ALL};
-  ConeType mCone{ConeType::PYRAMIDAL};
-  JacobianType mJacobian{JacobianType::AUTO};
-  SolverType mSolver{SolverType::NEWTON};
+  Integrator mIntegrator{Integrator::Euler};
+  CollisionType mCollision{CollisionType::All};
+  ConeType mCone{ConeType::Pyramidal};
+  JacobianType mJacobian{JacobianType::Auto};
+  SolverType mSolver{SolverType::Newton};
   int mIterations{100};
   double mTolerance{1e-8};
   int mNoSlipIterations{0};

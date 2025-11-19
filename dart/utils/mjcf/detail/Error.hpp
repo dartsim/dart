@@ -43,27 +43,27 @@ namespace detail {
 
 enum class ErrorCode
 {
-  NONE = 0,
+  None = 0,
 
-  FILE_READ,
+  FileRead,
 
-  DUPLICATE_NAME,
+  DuplicateName,
 
-  ATTRIBUTE_MISSING,
+  AttributeMissing,
 
-  ATTRIBUTE_INVALID,
+  AttributeInvalid,
 
-  ATTRIBUTE_DEPRECATED,
+  AttributeDeprecated,
 
-  ATTRIBUTE_CONFLICT,
+  AttributeConflict,
 
-  ELEMENT_MISSING,
+  ElementMissing,
 
-  ELEMENT_INVALID,
+  ElementInvalid,
 
-  INCORRECT_ELEMENT_TYPE,
+  IncorrectElementType,
 
-  UNDEFINED_ERROR,
+  UndefinedError,
 };
 
 class Error final
@@ -78,7 +78,7 @@ public:
   const std::string& getMessage() const;
 
 private:
-  ErrorCode mCode{ErrorCode::NONE};
+  ErrorCode mCode{ErrorCode::None};
   std::string mMessage{""};
 };
 

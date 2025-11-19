@@ -80,7 +80,7 @@ DART now maintains two naming schemes in parallel:
 - **Indentation**: 2 spaces
 - **Functions**: camelCase
 - **Classes**: PascalCase
-- **Enum members**: PascalCase (e.g., `enum class Mode { Disabled, Enabled };`)
+- **Enum members**: PascalCase in C++; Python bindings follow PEP 8 constant casing (e.g., `enum class Mode { Disabled, Enabled };` vs. `dart.utils.SdfParser.RootJointType.FIXED`)
 - **Member variables**: Prefixed with `m` (e.g., `mExampleMember`)
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
 - **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake_case everywhere in `dart8/` and its dependents; legacy `tests/` use `test_` + PascalCase while dart8-era tests stay fully snake_case
@@ -261,9 +261,13 @@ The Python bindings use different naming conventions than the C++ code to follow
 |-------------------|---------------|---------------|-------------------------|-------------------------|
 | Functions         | camelCase     | snake_case    | `isIdentity()`          | `is_identity()`         |
 | Classes           | PascalCase    | PascalCase    | `MyClass`               | `MyClass`               |
+| Enum members      | PascalCase    | ALL_CAPS      | `RootJointType::Floating` | `dart.utils.SdfParser.RootJointType.FIXED` |
 | Variables         | snake_case    | snake_case    | `my_variable`           | `my_variable`           |
 | Constants         | ALL_CAPS      | ALL_CAPS      | `MY_CONSTANT`           | `MY_CONSTANT`           |
 | Namespaces/Modules| N/A           | snake_case    | `dart::dynamics`        | `dart.dynamics`         |
+
+Enum values behave like constants in Python, so bindings should expose them in
+`ALL_CAPS` per PEP 8 even though the underlying C++ enums stay PascalCase.
 
 ### Example
 

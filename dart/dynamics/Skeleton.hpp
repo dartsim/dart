@@ -80,14 +80,28 @@ public:
 
   enum ConfigFlags
   {
-    CONFIG_NOTHING = 0,
-    CONFIG_POSITIONS = 1 << 1,
-    CONFIG_VELOCITIES = 1 << 2,
-    CONFIG_ACCELERATIONS = 1 << 3,
-    CONFIG_FORCES = 1 << 4,
-    CONFIG_COMMANDS = 1 << 5,
-    CONFIG_ALL = 0xFF
+    ConfigNothing = 0,
+    ConfigPositions = 1 << 1,
+    ConfigVelocities = 1 << 2,
+    ConfigAccelerations = 1 << 3,
+    ConfigForces = 1 << 4,
+    ConfigCommands = 1 << 5,
+    ConfigAll = 0xFF
   };
+
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_NOTHING
+      = ConfigNothing;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_POSITIONS
+      = ConfigPositions;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_VELOCITIES
+      = ConfigVelocities;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_ACCELERATIONS
+      = ConfigAccelerations;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_FORCES
+      = ConfigForces;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_COMMANDS
+      = ConfigCommands;
+  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_ALL = ConfigAll;
 
   /// The Configuration struct represents the joint configuration of a Skeleton.
   /// The size of each Eigen::VectorXd member in this struct must be equal to
@@ -196,11 +210,11 @@ public:
   void setConfiguration(const Configuration& configuration);
 
   /// Get the configuration of this Skeleton
-  Configuration getConfiguration(int flags = CONFIG_ALL) const;
+  Configuration getConfiguration(int flags = ConfigAll) const;
 
   /// Get the configuration of the specified indices in this Skeleton
   Configuration getConfiguration(
-      const std::vector<std::size_t>& indices, int flags = CONFIG_ALL) const;
+      const std::vector<std::size_t>& indices, int flags = ConfigAll) const;
 
   /// \}
 

@@ -340,11 +340,11 @@ TEST(Skeleton, Persistence)
       {
         SkeletonPtr skeleton = createThreeLinkRobot(
             Eigen::Vector3d(1.0, 1.0, 1.0),
-            DOF_X,
+            DofX,
             Eigen::Vector3d(1.0, 1.0, 1.0),
-            DOF_Y,
+            DofY,
             Eigen::Vector3d(1.0, 1.0, 1.0),
-            DOF_Z);
+            DofZ);
         weakSkelPtr = skeleton;
 
         // Test usability of the BodyNodePtr
@@ -489,11 +489,11 @@ TEST(Skeleton, Persistence)
 
     SkeletonPtr other_skeleton = createThreeLinkRobot(
         Eigen::Vector3d(1.0, 1.0, 1.0),
-        DOF_X,
+        DofX,
         Eigen::Vector3d(1.0, 1.0, 1.0),
-        DOF_Y,
+        DofY,
         Eigen::Vector3d(1.0, 1.0, 1.0),
-        DOF_Z);
+        DofZ);
     BodyNode* tail
         = other_skeleton->getBodyNode(other_skeleton->getNumBodyNodes() - 1);
 
@@ -806,16 +806,16 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
 
 TEST(Skeleton, Configurations)
 {
-  SkeletonPtr twoLink = createTwoLinkRobot(
-      Vector3d::Ones(), DOF_YAW, Vector3d::Ones(), DOF_ROLL);
+  SkeletonPtr twoLink
+      = createTwoLinkRobot(Vector3d::Ones(), DofYaw, Vector3d::Ones(), DofRoll);
 
   SkeletonPtr threeLink = createThreeLinkRobot(
       Vector3d::Ones(),
-      DOF_PITCH,
+      DofPitch,
       Vector3d::Ones(),
-      DOF_ROLL,
+      DofRoll,
       Vector3d::Ones(),
-      DOF_YAW);
+      DofYaw);
 
   Skeleton::Configuration c2 = twoLink->getConfiguration();
   Skeleton::Configuration c3 = threeLink->getConfiguration();
@@ -831,7 +831,7 @@ TEST(Skeleton, Configurations)
   threeLink->setPosition(1, 2.0);
   EXPECT_FALSE(c3 == twoLink->getConfiguration());
 
-  c2 = twoLink->getConfiguration(Skeleton::CONFIG_VELOCITIES);
+  c2 = twoLink->getConfiguration(Skeleton::ConfigVelocities);
   EXPECT_TRUE(c2.mPositions.size() == 0);
   EXPECT_TRUE(c2.mVelocities.size() == static_cast<int>(twoLink->getNumDofs()));
   EXPECT_TRUE(c2.mAccelerations.size() == 0);
@@ -843,11 +843,11 @@ TEST(Skeleton, LinearJacobianDerivOverload)
   // is working appropriately.
   SkeletonPtr skeleton = createThreeLinkRobot(
       Vector3d::Ones(),
-      DOF_PITCH,
+      DofPitch,
       Vector3d::Ones(),
-      DOF_ROLL,
+      DofRoll,
       Vector3d::Ones(),
-      DOF_YAW);
+      DofYaw);
 
   skeleton->getLinearJacobianDeriv(skeleton->getBodyNode(0));
 
@@ -861,7 +861,7 @@ TEST(Skeleton, Updating)
 
   // RevoluteJoint
   SkeletonPtr skeleton = createTwoLinkRobot(
-      Vector3d::Ones(), DOF_PITCH, Vector3d::Ones(), DOF_ROLL);
+      Vector3d::Ones(), DofPitch, Vector3d::Ones(), DofRoll);
 
   Joint* joint0 = skeleton->getJoint(0);
   Joint* joint1 = skeleton->getJoint(1);
@@ -874,8 +874,7 @@ TEST(Skeleton, Updating)
   EXPECT_FALSE(equals(J0i, J0f));
 
   // PrismaticJoint
-  skeleton
-      = createTwoLinkRobot(Vector3d::Ones(), DOF_X, Vector3d::Ones(), DOF_Y);
+  skeleton = createTwoLinkRobot(Vector3d::Ones(), DofX, Vector3d::Ones(), DofY);
   joint0 = skeleton->getJoint(0);
   joint1 = skeleton->getJoint(1);
 

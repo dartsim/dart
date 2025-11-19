@@ -54,7 +54,7 @@ Errors MujocoModel::read(
 
   if (std::string(element->Name()) != "mujoco") {
     errors.emplace_back(
-        ErrorCode::INCORRECT_ELEMENT_TYPE,
+        ErrorCode::IncorrectElementType,
         "Failed to find <Mujoco> from the provided element");
     return errors;
   }
@@ -188,7 +188,7 @@ Errors MujocoModel::read(
   tinyxml2::XMLDocument mjcfDoc;
   if (!readXmlFile(mjcfDoc, uri, retriever)) {
     errors.emplace_back(
-        ErrorCode::FILE_READ, "Failed to load '" + uri.toString() + "'.");
+        ErrorCode::FileRead, "Failed to load '" + uri.toString() + "'.");
     return errors;
   }
 
@@ -196,7 +196,7 @@ Errors MujocoModel::read(
   tinyxml2::XMLElement* mujocoElement = mjcfDoc.FirstChildElement("mujoco");
   if (mujocoElement == nullptr) {
     errors.emplace_back(
-        ErrorCode::ELEMENT_MISSING, "Failed to find <mujoco> at the root");
+        ErrorCode::ElementMissing, "Failed to find <mujoco> at the root");
     return errors;
   }
 

@@ -42,7 +42,7 @@ namespace dynamics {
 
 //==============================================================================
 CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER), mRadius(_radius), mHeight(_height)
+  : Shape(Shape::Cylinder), mRadius(_radius), mHeight(_height)
 {
   DART_ASSERT(0.0 < _radius);
   DART_ASSERT(0.0 < _height);

@@ -107,7 +107,7 @@ void SoftMeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::Static)
     return;
 
   extractData(false);
@@ -229,14 +229,14 @@ static void computeNormals(
 //==============================================================================
 void SoftMeshShapeDrawable::refresh(bool firstTime)
 {
-  if (mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::Static)
     setDataVariance(::osg::Object::STATIC);
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
   const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
 
-  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements
         = new ::osg::DrawElementsUInt(GL_TRIANGLES);
@@ -251,9 +251,9 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     addPrimitiveSet(elements);
   }
 
-  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DynamicVertices)
       || mSoftMeshShape->checkDataVariance(
-          dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+          dart::dynamics::Shape::DynamicElements)
       || firstTime) {
     if (mVertices->size() != bn->getNumPointMasses())
       mVertices->resize(bn->getNumPointMasses());
@@ -274,7 +274,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DynamicColor)
       || firstTime) {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());

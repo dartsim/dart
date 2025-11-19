@@ -120,7 +120,7 @@ private:
     std::optional<std::string> mName;
 
     /// Type of Siteetric shape
-    GeomType mType{GeomType::SPHERE};
+    GeomType mType{GeomType::Sphere};
 
     int mGroup{0};
 
@@ -165,7 +165,7 @@ private:
   std::string mName{""};
 
   /// Type of Siteetric shape
-  GeomType mType{GeomType::SPHERE};
+  GeomType mType{GeomType::Sphere};
 
   int mGroup{0};
 
