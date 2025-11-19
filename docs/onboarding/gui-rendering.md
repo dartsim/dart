@@ -712,6 +712,12 @@ To add persistent visual elements:
 2. Implement `refresh()` for per-frame updates
 3. Add to viewer: `viewer->addAttachment(myAttachment)`
 
+Common attachments you can reuse without writing custom logic:
+
+- `GridVisual` renders reference grid planes that can be toggled or recolored.
+- `SupportPolygonVisual` tracks a skeleton's support polygon, centroid, and COM.
+- `PolyhedronVisual` converts an arbitrary set of vertices into a convex hull and draws it with a fill and wireframe overlay—handy for visualizing custom polyhedra directly from their V-representation.
+
 ---
 
 ## File Structure Summary
