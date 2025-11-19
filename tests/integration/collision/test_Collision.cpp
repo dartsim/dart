@@ -252,7 +252,7 @@ void Collision::printResult(
   std::cout << std::endl;
 }
 
-TEST_F(Collision, DROP)
+TEST_F(Collision, Drop)
 {
   DART_DEBUG("Unrotated box");
   dart::collision::fcl::Box box1(0.5, 0.5, 0.5);
@@ -269,7 +269,7 @@ TEST_F(Collision, DROP)
   dropWithRotation(&box2, 0.0, 0.1, 0.0);
 }
 
-TEST_F(Collision, FCL_BOX_BOX)
+TEST_F(Collision, FclBoxBox)
 {
   double EulerZ = 1;
   double EulerY = 2;
