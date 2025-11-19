@@ -94,7 +94,8 @@ If you use DART in an academic publication, please consider citing this
    :hidden:
    :caption: Key Topics
 
-   topics/index
+   Tutorials <tutorials/index>
+   Inverse Kinematics <shared/inverse_kinematics/index>
 
 .. toctree::
    :maxdepth: 1
@@ -103,7 +104,6 @@ If you use DART in an academic publication, please consider citing this
 
    dartpy/user_guide/installation
    dartpy/user_guide/examples
-   shared/inverse_kinematics/index
    API Reference <dartpy/python_api_reference>
 
 .. toctree::
@@ -113,7 +113,6 @@ If you use DART in an academic publication, please consider citing this
 
    dart/user_guide/installation
    dart/user_guide/migration_guide
-   shared/inverse_kinematics/index
    API Reference <dart/cpp_api_reference>
 
 .. toctree::
