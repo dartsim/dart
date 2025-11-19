@@ -52,7 +52,7 @@ class EllipsoidShapeGeode;
 class EllipsoidShapeDrawable;
 
 class DART_GUI_API EllipsoidShapeNode : public ShapeNode,
-                                            public ::osg::MatrixTransform
+                                        public ::osg::MatrixTransform
 {
 public:
   EllipsoidShapeNode(

@@ -51,7 +51,7 @@ class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
 class DART_GUI_API SoftMeshShapeNode : public ShapeNode,
-                                           public ::osg::MatrixTransform
+                                       public ::osg::MatrixTransform
 {
 public:
   SoftMeshShapeNode(

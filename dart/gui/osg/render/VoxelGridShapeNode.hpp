@@ -83,8 +83,7 @@ private:
   ::osg::ref_ptr<::osg::Geode> mGeode;
 };
 
-class DART_GUI_API VoxelGridShapeNode : public ShapeNode,
-                                            public ::osg::Group
+class DART_GUI_API VoxelGridShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   VoxelGridShapeNode(

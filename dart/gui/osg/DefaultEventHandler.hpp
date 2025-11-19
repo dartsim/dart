@@ -101,10 +101,9 @@ enum ConstraintType
 class MouseEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_GUI_API DefaultEventHandler
-  : public ::osgGA::GUIEventHandler,
-    public virtual dart::common::Subject,
-    public virtual dart::common::Observer
+class DART_GUI_API DefaultEventHandler : public ::osgGA::GUIEventHandler,
+                                         public virtual dart::common::Subject,
+                                         public virtual dart::common::Observer
 {
 public:
   /// Constructor takes in a pointer to a viewer

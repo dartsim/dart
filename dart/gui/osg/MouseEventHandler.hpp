@@ -48,7 +48,7 @@ class DefaultEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_GUI_API MouseEventHandler : public virtual dart::common::Subject,
-                                           public virtual dart::common::Observer
+                                       public virtual dart::common::Observer
 {
 public:
   friend class DefaultEventHandler;

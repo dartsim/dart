@@ -118,7 +118,7 @@ private:
 };
 
 class DART_GUI_API Viewer : public osgViewer::Viewer,
-                                public dart::common::Subject
+                            public dart::common::Subject
 {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the

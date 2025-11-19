@@ -61,7 +61,7 @@ class InteractiveFrame;
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an dart::gui::osg environment
 class DART_GUI_API DragAndDrop : public dart::common::Subject,
-                                     public dart::common::Observer
+                                 public dart::common::Observer
 {
 public:
   enum class RotationOption : int

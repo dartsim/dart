@@ -52,7 +52,7 @@ class MultiSphereShapeGeode;
 class MultiSphereShapeDrawable;
 
 class DART_GUI_API MultiSphereShapeNode : public ShapeNode,
-                                              public ::osg::MatrixTransform
+                                          public ::osg::MatrixTransform
 {
 public:
   MultiSphereShapeNode(
