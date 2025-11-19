@@ -34,14 +34,13 @@
 #define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 
 #include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/ode/Export.hpp>
 
 #include <ode/ode.h>
 
 namespace dart {
 namespace collision {
 
-class DART_COLLISION_ODE_API OdeCollisionGroup : public CollisionGroup
+class DART_API OdeCollisionGroup : public CollisionGroup
 {
 public:
   friend class OdeCollisionDetector;

@@ -37,7 +37,6 @@
 #include <dart/collision/bullet/BulletCollisionGroup.hpp>
 #include <dart/collision/bullet/BulletCollisionShape.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
-#include <dart/collision/bullet/Export.hpp>
 
 #include <assimp/scene.h>
 
@@ -47,8 +46,7 @@
 namespace dart {
 namespace collision {
 
-class DART_COLLISION_BULLET_API BulletCollisionDetector
-  : public CollisionDetector
+class DART_API BulletCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;
