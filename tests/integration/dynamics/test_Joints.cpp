@@ -1273,19 +1273,19 @@ void testMimicCouplerJoint()
 }
 
 //==============================================================================
-TEST_F(JOINTS, MIMIC_JOINT)
+TEST_F(Joints, MIMIC_JOINT)
 {
   testMimicJoint();
 }
 
 //==============================================================================
-TEST_F(JOINTS, MIMIC_JOINT_COUPLER)
+TEST_F(Joints, MIMIC_JOINT_COUPLER)
 {
   testMimicCouplerJoint();
 }
 
 //==============================================================================
-TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
+TEST_F(Joints, COUPLER_CONSTRAINT_APPLY_IMPULSE)
 {
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 0);
@@ -1326,7 +1326,7 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
 }
 
 //==============================================================================
-TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
+TEST_F(Joints, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 {
   const double timeStep = 1e-3;
   const double tol = 1e-2;
