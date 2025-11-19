@@ -322,13 +322,20 @@ void setVertices(
 
   vertices.resize(static_cast<std::size_t>(heightmap.size()));
 
-  // Note that heightmap(i, j) represents the height value at (j, -i) in XY
-  // coordinates.
+  const S spanX = (cols > 1 ? static_cast<S>(cols - 1) : S(0)) * scale.x();
+  const S spanY = (rows > 1 ? static_cast<S>(rows - 1) : S(0)) * scale.y();
+  const S xOffset = static_cast<S>(-0.5) * spanX;
+  const S yOffset = static_cast<S>(0.5) * spanY;
+
+  // Note that heightmap(i, j) represents the height value at
+  // (xOffset + j * scale.x(), -(i * scale.y()) + yOffset) in XY coordinates.
   for (auto i = 0; i < rows; ++i) {
     for (auto j = 0; j < cols; ++j) {
       const auto index = cols * i + j;
       vertices[index].set(
-          j * scale.x(), -(i * scale.y()), heightmap(i, j) * scale.z());
+          static_cast<S>(j) * scale.x() + xOffset,
+          -static_cast<S>(i) * scale.y() + yOffset,
+          heightmap(i, j) * scale.z());
     }
   }
 

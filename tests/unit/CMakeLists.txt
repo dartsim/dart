@@ -78,6 +78,14 @@ if(TARGET dart-utils-urdf)
 endif()
 
 # ==============================================================================
+# GUI Tests
+# ==============================================================================
+if(TARGET dart-gui)
+  dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
+  target_link_libraries(UNIT_gui_HeightmapShapeNode dart-gui)
+endif()
+
+# ==============================================================================
 # LCP Solver Tests (organized in subdirectory)
 # ==============================================================================
 add_subdirectory(lcpsolver)
