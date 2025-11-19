@@ -144,7 +144,7 @@ DART uses CMake as its build system. CMake generates build files for various bui
 ### CMake Options
 
 For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
-- `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
+- `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
@@ -157,11 +157,11 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio 2017
-cmake .. -G "Visual Studio 15 2017" -A x64 -DCMAKE_BUILD_TYPE=Release
+# Visual Studio 2017 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 15 2017" -A x64
 
-# Xcode
-cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=Release
+# Xcode (multi-config; pick configuration at build-time)
+cmake .. -G "Xcode"
 ```
 
 ## Building from Command Line
