@@ -83,7 +83,8 @@ function(dart_add_test test_type target_name) # ARGN for source files
     )
   else()
     if(WIN32)
-      set(_dart_test_path_sep "%3B")
+      # Escape the semicolon so CMake does not treat it as a list separator.
+      set(_dart_test_path_sep "\\;")
     else()
       set(_dart_test_path_sep ":")
     endif()
