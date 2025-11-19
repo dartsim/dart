@@ -30,57 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include <dart/gui/osg/All.hpp>
 
-namespace py = pybind11;
+#include <Eigen/Core>
 
-namespace dart {
-namespace python {
+#include <vector>
 
-void WorldNode(py::module& sm);
-void RealTimeWorldNode(py::module& sm);
-
-void GUIEventHandler(py::module& sm);
-
-void InteractiveFrame(py::module& sm);
-
-void ImGuiHandler(py::module& sm);
-void ImGuiWidget(py::module& sm);
-
-void Viewer(py::module& sm);
-void ImGuiViewer(py::module& sm);
-void ViewerAttachment(py::module& sm);
-void GridVisual(py::module& sm);
-void PolyhedronVisual(py::module& sm);
-
-void DragAndDrop(py::module& sm);
-
-void ShadowTechnique(py::module& sm);
-
-void dart_gui_osg(py::module& m)
+int main()
 {
-  auto sm = m.def_submodule("osg");
+  // Provide the V-representation of a convex polyhedron. The visual will build
+  // the convex hull automatically, so the vertices can be provided in any
+  // order.
+  std::vector<Eigen::Vector3d> vertices
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.2),
+         Eigen::Vector3d(0.6, 0.5, 0.1),
+         Eigen::Vector3d(-0.4, 0.6, 0.15),
+         Eigen::Vector3d(-0.2, -0.2, 0.9),
+         Eigen::Vector3d(0.35, -0.3, 0.8),
+         Eigen::Vector3d(0.4, 0.35, 0.75),
+         Eigen::Vector3d(-0.35, 0.4, 0.7)};
 
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
+  dart::gui::osg::Viewer viewer;
 
-  GUIEventHandler(sm);
+  // Add a grid for reference.
+  auto grid = new dart::gui::osg::GridVisual();
+  grid->setOffset(Eigen::Vector3d::Zero());
+  viewer.addAttachment(grid);
 
-  InteractiveFrame(sm);
+  // Attach the polyhedron visual and customize its colors.
+  auto polyhedron = new dart::gui::osg::PolyhedronVisual();
+  polyhedron->setVertices(vertices);
+  polyhedron->setSurfaceColor(Eigen::Vector4d(0.1, 0.8, 0.6, 0.5));
+  polyhedron->setWireframeColor(Eigen::Vector4d(0.05, 0.05, 0.05, 1.0));
+  viewer.addAttachment(polyhedron);
 
-  ImGuiHandler(sm);
-  ImGuiWidget(sm);
+  viewer.setUpViewInWindow(0, 0, 640, 480);
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(2.0, 2.0, 1.5),
+      ::osg::Vec3(0.0, 0.0, 0.4),
+      ::osg::Vec3(0.0, 0.0, 1.0));
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  Viewer(sm);
-  ImGuiViewer(sm);
-  ViewerAttachment(sm);
-  GridVisual(sm);
-  PolyhedronVisual(sm);
-
-  DragAndDrop(sm);
-
-  ShadowTechnique(sm);
+  viewer.run();
 }
-
-} // namespace python
-} // namespace dart
