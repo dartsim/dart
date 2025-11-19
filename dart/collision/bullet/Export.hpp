@@ -37,6 +37,10 @@
 #ifndef DART_COLLISION_BULLET_API
   #if defined(DART_BUILDING_DART_COLLISION_BULLET)
     #define DART_COLLISION_BULLET_API DART_DLL_EXPORT
+  #elif defined(DART_BUILDING_DART)
+    // Bullet sources are compiled directly into the core dart target, so fall
+    // back to the same import/export behavior as any other core symbol.
+    #define DART_COLLISION_BULLET_API DART_API
   #else
     #define DART_COLLISION_BULLET_API DART_DLL_IMPORT
   #endif
