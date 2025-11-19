@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
+
 #include <exception>
 #include <format>
 #include <source_location>
@@ -179,12 +181,12 @@ using ErrorHandler = void (*)(
 ///     // Can attempt recovery or exit gracefully
 ///   });
 /// \endcode
-void setErrorHandler(ErrorHandler handler);
+DART8_API void setErrorHandler(ErrorHandler handler);
 
 /// Get the current error handler
 ///
 /// \return Current handler, or nullptr if using default behavior
-ErrorHandler getErrorHandler();
+DART8_API ErrorHandler getErrorHandler();
 
 } // namespace dart8
 

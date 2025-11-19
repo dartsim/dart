@@ -50,7 +50,7 @@ namespace render {
 class BoxShapeGeode;
 class BoxShapeDrawable;
 
-class BoxShapeNode : public ShapeNode, public ::osg::Group
+class DART_GUI_API BoxShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   BoxShapeNode(

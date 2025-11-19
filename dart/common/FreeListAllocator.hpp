@@ -36,7 +36,10 @@
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
+#include <dart/Export.hpp>
+
 #include <mutex>
+#include <vector>
 
 namespace dart::common {
 
@@ -53,7 +56,7 @@ namespace dart::common {
 ///
 /// If the preallocated memory is all used up, then this class allocates
 /// additional memory chunck using the base allocator.
-class FreeListAllocator : public MemoryAllocator
+class DART_API FreeListAllocator : public MemoryAllocator
 {
 public:
   using Debug = MemoryAllocatorDebugger<FreeListAllocator>;
@@ -138,11 +141,20 @@ private:
   /// \return The success
   bool allocateMemoryBlock(size_t sizeToAllocate);
 
+  struct AllocatedBlock
+  {
+    void* pointer;
+    size_t size;
+  };
+
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
 
   /// Mutex for private variables except the base allocator
   mutable std::mutex mMutex;
+
+  /// Tracks the raw memory blocks reserved from the base allocator
+  std::vector<AllocatedBlock> mAllocatedBlocks;
 
   /// Pointer to the first memory block
   MemoryBlockHeader* mFirstMemoryBlock{nullptr};

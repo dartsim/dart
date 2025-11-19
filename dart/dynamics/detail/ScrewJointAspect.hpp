@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -47,7 +49,7 @@ class ScrewJoint;
 namespace detail {
 
 //==============================================================================
-struct ScrewJointUniqueProperties
+struct DART_API ScrewJointUniqueProperties
 {
   /// Rotational axis
   Eigen::Vector3d mAxis;
@@ -63,8 +65,8 @@ struct ScrewJointUniqueProperties
 };
 
 //==============================================================================
-struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
-                              ScrewJointUniqueProperties
+struct DART_API ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
+                                       ScrewJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(ScrewJointProperties)
 

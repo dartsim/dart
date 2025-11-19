@@ -44,6 +44,26 @@ file(GLOB render_hdrs "render/*.hpp")
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
 
+if(MSVC AND BUILD_SHARED_LIBS)
+  if(CMAKE_CONFIGURATION_TYPES)
+    foreach(_cfg ${CMAKE_CONFIGURATION_TYPES})
+      string(TOUPPER "${_cfg}" _cfg_upper)
+      set_target_properties(
+        ${target_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY_${_cfg_upper}
+            "${DART_BINARY_DIR}/lib/${_cfg}"
+      )
+    endforeach()
+  else()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
+    )
+  endif()
+endif()
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})

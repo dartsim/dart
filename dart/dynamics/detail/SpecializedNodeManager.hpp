@@ -132,23 +132,6 @@ SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(
 
 //==============================================================================
 template <class SpecNode>
-template <class NodeType>
-constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(
-    type<NodeType>)
-{
-  return false;
-}
-
-//==============================================================================
-template <class SpecNode>
-constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(
-    type<SpecNode>)
-{
-  return true;
-}
-
-//==============================================================================
-template <class SpecNode>
 SkeletonSpecializedFor<SpecNode>::SkeletonSpecializedFor()
 {
   mSpecializedTreeNodes[typeid(SpecNode)] = &mTreeSpecNodeIterators;
@@ -201,14 +184,6 @@ const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
 {
   return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->_getNode(
       type<NodeType>(), name);
-}
-
-//==============================================================================
-template <class SpecNode>
-template <class NodeType>
-constexpr bool SkeletonSpecializedFor<SpecNode>::isSpecializedForNode()
-{
-  return _isSpecializedForNode(type<NodeType>());
 }
 
 //==============================================================================
@@ -311,22 +286,6 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 }
 
 //==============================================================================
-template <class SpecNode>
-template <class NodeType>
-constexpr bool SkeletonSpecializedFor<SpecNode>::_isSpecializedForNode(
-    type<NodeType>)
-{
-  return false;
-}
-
-//==============================================================================
-template <class SpecNode>
-constexpr bool SkeletonSpecializedFor<SpecNode>::_isSpecializedForNode(
-    type<SpecNode>)
-{
-  return true;
-}
-
 } // namespace dynamics
 } // namespace dart
 

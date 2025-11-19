@@ -39,6 +39,8 @@
 
   #include <dart/gui/osg/render/ShapeNode.hpp>
 
+  #include <Eigen/Core>
+  #include <osg/Geode>
   #include <osg/MatrixTransform>
   #include <osg/ShapeDrawable>
 
@@ -53,9 +55,35 @@ namespace osg {
 namespace render {
 
 class VoxelGridShapeGeode;
-class VoxelNode;
 
-class VoxelGridShapeNode : public ShapeNode, public ::osg::Group
+class VoxelBoxDrawable final : public ::osg::ShapeDrawable
+{
+public:
+  VoxelBoxDrawable(double size, const Eigen::Vector4d& color);
+
+  void updateSize(double size);
+  void updateColor(const Eigen::Vector4d& color);
+
+private:
+  ::osg::ref_ptr<::osg::Box> mShape;
+};
+
+class VoxelNode : public ::osg::MatrixTransform
+{
+public:
+  VoxelNode(
+      const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color);
+
+  void updateCenter(const Eigen::Vector3d& point);
+  void updateSize(double size);
+  void updateColor(const Eigen::Vector4d& color);
+
+private:
+  ::osg::ref_ptr<VoxelBoxDrawable> mDrawable;
+  ::osg::ref_ptr<::osg::Geode> mGeode;
+};
+
+class DART_GUI_API VoxelGridShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   VoxelGridShapeNode(

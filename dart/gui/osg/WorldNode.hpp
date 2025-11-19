@@ -33,10 +33,12 @@
 #ifndef DART_GUI_OSG_WORLDNODE_HPP_
 #define DART_GUI_OSG_WORLDNODE_HPP_
 
-#include <dart/gui/osg/Viewer.hpp>
+#include <dart/gui/osg/Export.hpp>
+#include <dart/gui/osg/ShapeFrameNode.hpp>
 
 #include <osg/Group>
 #include <osgShadow/ShadowTechnique>
+#include <osgShadow/ShadowedScene>
 
 #include <memory>
 #include <unordered_map>
@@ -62,7 +64,7 @@ class EntityNode;
 class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
-class WorldNode : public ::osg::Group
+class DART_GUI_API WorldNode : public ::osg::Group
 {
 public:
   friend class Viewer;

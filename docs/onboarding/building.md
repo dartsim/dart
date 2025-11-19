@@ -106,6 +106,36 @@ For the complete and up-to-date list of dependencies with version requirements, 
 - [`CMakeLists.txt`](../../CMakeLists.txt) - Authoritative source for CMake dependencies and version requirements
 - [`pixi.toml`](../../pixi.toml) - Managed dependencies for reproducible builds
 
+## Recommended pixi Workflow
+
+We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs every required dependency (CMake, Ninja, compilers, Python, optional libraries) and exposes reproducible tasks so you do not have to manage toolchains manually.
+
+1. [Install pixi](https://pixi.sh/latest/#installation) and run `pixi install` once to create the environment.
+2. Configure a build:
+
+   ```bash
+   pixi run config                # Release (default)
+   pixi run config-debug          # Debug
+   ```
+
+   You can override booleans via environment variables instead of editing `pixi.toml`:
+
+   ```bash
+   DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
+   DART_BUILD_GUI_OVERRIDE=OFF pixi run config
+   ```
+
+3. Build and test:
+
+   ```bash
+   pixi run build                 # cmake --build … --target all
+   pixi run build-tests           # builds the C++ test targets
+   pixi run test                  # ctest -LE dart8
+   pixi run test-all              # helper script that runs lint + build + tests
+   ```
+
+Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
+
 ## Clone the Repository
 
 1. Clone the DART repository:

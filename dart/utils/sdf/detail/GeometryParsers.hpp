@@ -41,7 +41,7 @@
 
 namespace dart::utils::SdfParser::detail {
 
-dynamics::ShapePtr readGeometryShape(
+DART_UTILS_API dynamics::ShapePtr readGeometryShape(
     const ElementPtr& geometryElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);

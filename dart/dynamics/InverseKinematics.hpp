@@ -45,6 +45,8 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/sub_ptr.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/SVD>
 
 #include <functional>
@@ -75,7 +77,7 @@ const double DefaultIKLinearWeight = 1.0;
 /// safely cloned  over to another JacobianNode, as long as every
 /// math::Function that depends on the JacobianNode inherits the
 /// InverseKinematics::Function class and correctly overloads the clone function
-class InverseKinematics : public common::Subject
+class DART_API InverseKinematics : public common::Subject
 {
 public:
   /// Create an InverseKinematics module for a specified node
@@ -544,14 +546,14 @@ public:
 //==============================================================================
 /// ErrorMethod is a base class for different ways of computing the error of
 /// an InverseKinematics module.
-class InverseKinematics::ErrorMethod : public common::Subject
+class DART_API InverseKinematics::ErrorMethod : public common::Subject
 {
 public:
   typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
 
   /// The Properties struct contains settings that are commonly used by
   /// methods that compute error for inverse kinematics.
-  struct Properties
+  struct DART_API Properties
   {
     /// Default constructor
     Properties(
@@ -731,7 +733,7 @@ public:
 //==============================================================================
 /// The TaskSpaceRegion is a nicely generalized method for computing the error
 /// of an IK Problem.
-class InverseKinematics::TaskSpaceRegion : public ErrorMethod
+class DART_API InverseKinematics::TaskSpaceRegion : public ErrorMethod
 {
 public:
   struct UniqueProperties
@@ -756,7 +758,7 @@ public:
         SimpleFramePtr referenceFrame = nullptr);
   };
 
-  struct Properties : ErrorMethod::Properties, UniqueProperties
+  struct DART_API Properties : ErrorMethod::Properties, UniqueProperties
   {
     /// Default constructor
     Properties(
@@ -809,10 +811,10 @@ protected:
 //==============================================================================
 /// GradientMethod is a base class for different ways of computing the
 /// gradient of an InverseKinematics module.
-class InverseKinematics::GradientMethod : public common::Subject
+class DART_API InverseKinematics::GradientMethod : public common::Subject
 {
 public:
-  struct Properties
+  struct DART_API Properties
   {
     /// The component-wise clamp for this GradientMethod
     double mComponentWiseClamp;
@@ -947,7 +949,7 @@ private:
 /// damping helps with this), and each cycle might take more time to compute
 /// than the JacobianTranspose method (although the JacobianDLS method will
 /// usually converge in fewer cycles than JacobianTranspose).
-class InverseKinematics::JacobianDLS : public GradientMethod
+class DART_API InverseKinematics::JacobianDLS : public GradientMethod
 {
 public:
   struct UniqueProperties
@@ -959,7 +961,7 @@ public:
     UniqueProperties(double damping = DefaultIKDLSCoefficient);
   };
 
-  struct Properties : GradientMethod::Properties, UniqueProperties
+  struct DART_API Properties : GradientMethod::Properties, UniqueProperties
   {
     /// Default constructor
     Properties(
@@ -1005,7 +1007,7 @@ protected:
 /// very smooth but imprecise, requiring more iterations before converging
 /// and being less precise in general. This method is suitable for animations
 /// where smoothness is prefered over precision.
-class InverseKinematics::JacobianTranspose : public GradientMethod
+class DART_API InverseKinematics::JacobianTranspose : public GradientMethod
 {
 public:
   /// Constructor
@@ -1038,7 +1040,7 @@ public:
 /// counter-productive for analytical methods which do not typically rely on
 /// convergence; analytical methods can usually solve the entire error vector
 /// directly.
-class InverseKinematics::Analytical : public GradientMethod
+class DART_API InverseKinematics::Analytical : public GradientMethod
 {
 public:
   /// Bitwise enumerations that are used to describe some properties of each
@@ -1082,7 +1084,7 @@ public:
   struct Solution
   {
     /// Default constructor
-    Solution(
+    DART_API Solution(
         const Eigen::VectorXd& _config = Eigen::VectorXd(),
         int _validity = VALID);
 
@@ -1101,7 +1103,7 @@ public:
       const InverseKinematics* _ik)>
       QualityComparison;
 
-  struct UniqueProperties
+  struct DART_API UniqueProperties
   {
     /// Flag for how to use the extra DOFs in the IK module.
     ExtraDofUtilization mExtraDofUtilization;
@@ -1127,7 +1129,7 @@ public:
     void resetQualityComparisonFunction();
   };
 
-  struct Properties : GradientMethod::Properties, UniqueProperties
+  struct DART_API Properties : GradientMethod::Properties, UniqueProperties
   {
     // Default constructor
     Properties(

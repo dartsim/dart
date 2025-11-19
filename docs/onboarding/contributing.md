@@ -78,11 +78,10 @@ cmake --build build/ --target test
 
 ```bash
 # Using pixi
-pixi run format
+pixi run lint
 
 # Or manually
-cd build/
-make format
+cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release --target format
 ```
 
 ### 6. Push and Create Pull Request

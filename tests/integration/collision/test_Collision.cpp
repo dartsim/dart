@@ -1702,12 +1702,28 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
 
 #if HAVE_BULLET
+  // Force-load the Bullet collision plugin on platforms (e.g., Windows) where
+  // the DLL is otherwise not loaded unless a symbol is referenced.
+  auto bulletDetector = collision::BulletCollisionDetector::create();
+  ASSERT_NE(bulletDetector, nullptr);
+  collision::CollisionDetector::getFactory()->registerCreator(
+      bulletDetector->getType(),
+      []() -> std::shared_ptr<collision::CollisionDetector> {
+        return collision::BulletCollisionDetector::create();
+      });
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #else
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #endif
 
 #if HAVE_ODE
+  auto odeDetector = collision::OdeCollisionDetector::create();
+  ASSERT_NE(odeDetector, nullptr);
+  collision::CollisionDetector::getFactory()->registerCreator(
+      odeDetector->getType(),
+      []() -> std::shared_ptr<collision::CollisionDetector> {
+        return collision::OdeCollisionDetector::create();
+      });
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
 #else
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));

@@ -35,6 +35,8 @@
 
 #include <dart/config.hpp>
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/Logging.hpp>
 #include <dart/common/Macros.hpp>
 
@@ -65,13 +67,13 @@ namespace dart::utils::SdfParser::detail {
 
 using ElementPtr = sdf::ElementPtr;
 
-std::string toLowerCopy(std::string text);
-std::string trimCopy(const std::string& text);
+DART_UTILS_API std::string toLowerCopy(std::string text);
+DART_UTILS_API std::string trimCopy(const std::string& text);
 
-std::string getElementText(const ElementPtr& element);
-std::string getChildElementText(
+DART_UTILS_API std::string getElementText(const ElementPtr& element);
+DART_UTILS_API std::string getChildElementText(
     const ElementPtr& parent, const std::string& name);
-std::string getValueText(
+DART_UTILS_API std::string getValueText(
     const ElementPtr& parentElement,
     const std::string& name,
     const sdf::ParamPtr& param);
@@ -112,10 +114,10 @@ std::vector<T> parseArray(const std::string& text)
   return values;
 }
 
-sdf::ParamPtr getAttributeParam(
+DART_UTILS_API sdf::ParamPtr getAttributeParam(
     const ElementPtr& element, const std::string& attributeName);
 
-sdf::ParamPtr getChildValueParam(
+DART_UTILS_API sdf::ParamPtr getChildValueParam(
     const ElementPtr& parentElement, const std::string& name);
 
 template <typename T>
@@ -137,37 +139,42 @@ bool readScalarParam(const sdf::ParamPtr& param, T& value)
   return parseScalar(text, value);
 }
 
-Eigen::Vector3d toEigen(const gz::math::Vector3d& vec);
-Eigen::Vector2d toEigen(const gz::math::Vector2d& vec);
-Eigen::Vector3i toEigen(const gz::math::Vector3i& vec);
-Eigen::VectorXd colorToVector(const gz::math::Color& color);
-Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose);
+DART_UTILS_API Eigen::Vector3d toEigen(const gz::math::Vector3d& vec);
+DART_UTILS_API Eigen::Vector2d toEigen(const gz::math::Vector2d& vec);
+DART_UTILS_API Eigen::Vector3i toEigen(const gz::math::Vector3i& vec);
+DART_UTILS_API Eigen::VectorXd colorToVector(const gz::math::Color& color);
+DART_UTILS_API Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose);
 
-bool hasElement(const ElementPtr& parent, const std::string& name);
-ElementPtr getElement(const ElementPtr& parent, const std::string& name);
-bool hasAttribute(const ElementPtr& element, const std::string& attributeName);
-
-std::string getAttributeString(
+DART_UTILS_API bool hasElement(
+    const ElementPtr& parent, const std::string& name);
+DART_UTILS_API ElementPtr
+getElement(const ElementPtr& parent, const std::string& name);
+DART_UTILS_API bool hasAttribute(
     const ElementPtr& element, const std::string& attributeName);
 
-std::string getValueString(
+DART_UTILS_API std::string getAttributeString(
+    const ElementPtr& element, const std::string& attributeName);
+
+DART_UTILS_API std::string getValueString(
     const ElementPtr& parentElement, const std::string& name);
-bool getValueBool(const ElementPtr& parentElement, const std::string& name);
-unsigned int getValueUInt(
+DART_UTILS_API bool getValueBool(
     const ElementPtr& parentElement, const std::string& name);
-double getValueDouble(const ElementPtr& parentElement, const std::string& name);
-Eigen::Vector2d getValueVector2d(
+DART_UTILS_API unsigned int getValueUInt(
     const ElementPtr& parentElement, const std::string& name);
-Eigen::Vector3d getValueVector3d(
+DART_UTILS_API double getValueDouble(
     const ElementPtr& parentElement, const std::string& name);
-Eigen::Vector3i getValueVector3i(
+DART_UTILS_API Eigen::Vector2d getValueVector2d(
     const ElementPtr& parentElement, const std::string& name);
-Eigen::VectorXd getValueVectorXd(
+DART_UTILS_API Eigen::Vector3d getValueVector3d(
     const ElementPtr& parentElement, const std::string& name);
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
+DART_UTILS_API Eigen::Vector3i getValueVector3i(
+    const ElementPtr& parentElement, const std::string& name);
+DART_UTILS_API Eigen::VectorXd getValueVectorXd(
+    const ElementPtr& parentElement, const std::string& name);
+DART_UTILS_API Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const ElementPtr& parentElement, const std::string& name);
 
-class ElementEnumerator
+class DART_UTILS_API ElementEnumerator
 {
 public:
   ElementEnumerator(const ElementPtr& parentElement, const std::string& name);

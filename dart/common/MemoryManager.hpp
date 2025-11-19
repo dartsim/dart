@@ -39,13 +39,15 @@
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
+#include <dart/Export.hpp>
+
 #include <iostream>
 
 namespace dart::common {
 
 /// A composite memory allocator that contains various memory allocators that
 /// are optimized for different use cases.
-class MemoryManager final
+class DART_API MemoryManager final
 {
 public:
   /// Type of the memory allocators

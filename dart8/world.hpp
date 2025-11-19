@@ -48,7 +48,7 @@
 
 namespace dart8 {
 
-class World
+class DART8_API World
 {
 public:
   World();

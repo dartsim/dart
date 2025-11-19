@@ -55,6 +55,7 @@
 
 #pragma once
 
+#include "dart/Export.hpp"
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
 #include <Eigen/Core>
