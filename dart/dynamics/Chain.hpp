@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Linkage.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -43,10 +45,10 @@ namespace dynamics {
 /// specified BodyNode and include every BodyNode on the way to a target
 /// BodyNode, except it will stop if it encounters a branching (BodyNode with
 /// multiple child BodyNodes) or a FreeJoint.
-class Chain : public Linkage
+class DART_API Chain : public Linkage
 {
 public:
-  struct Criteria
+  struct DART_API Criteria
   {
     /// Constructor for Chain::Criteria
     Criteria(

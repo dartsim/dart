@@ -96,7 +96,8 @@ endif()
 # Set header and source files
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 get_filename_component(dart_all_hpp "All.hpp" ABSOLUTE)
-dart_add_core_headers(${dart_hpp} ${dart_all_hpp})
+get_filename_component(dart_export_hpp "Export.hpp" ABSOLUTE)
+dart_add_core_headers(${dart_hpp} ${dart_all_hpp} ${dart_export_hpp})
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
@@ -245,6 +246,10 @@ if(DART_BUILD_PROFILE)
   target_link_libraries(dart PUBLIC Tracy::TracyClient)
 endif()
 
-install(FILES ${dart_hpp} ${dart_all_hpp} DESTINATION include/dart/ COMPONENT headers)
+install(
+  FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp}
+  DESTINATION include/dart/
+  COMPONENT headers
+)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

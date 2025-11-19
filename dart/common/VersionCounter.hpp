@@ -33,13 +33,15 @@
 #ifndef DART_COMMON_VERSIONCOUNTER_HPP_
 #define DART_COMMON_VERSIONCOUNTER_HPP_
 
+#include <dart/Export.hpp>
+
 #include <cstddef>
 
 namespace dart {
 namespace common {
 
 /// VersionCounter is an interface for objects that count their versions
-class VersionCounter
+class DART_API VersionCounter
 {
 public:
   /// Default constructor

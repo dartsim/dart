@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/detail/FixedJacobianNode.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -43,7 +45,8 @@ class FixedJacobianNode : public detail::FixedJacobianNodeCompositeBase,
 {
 public:
   /// Set the current relative transform of this Fixed Frame
-  void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
+  DART_API void setRelativeTransform(
+      const Eigen::Isometry3d& newRelativeTf) override;
 
   // Documentation inherited
   bool dependsOn(std::size_t _genCoordIndex) const override;

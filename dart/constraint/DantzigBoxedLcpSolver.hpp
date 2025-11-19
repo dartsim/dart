@@ -35,10 +35,12 @@
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace constraint {
 
-class DantzigBoxedLcpSolver : public BoxedLcpSolver
+class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
   // Documentation inherited.

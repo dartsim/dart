@@ -35,6 +35,8 @@
 
 #include <dart/math/optimization/Function.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <vector>
@@ -45,7 +47,7 @@ namespace dart {
 namespace math {
 
 /// \brief class Problem
-class Problem
+class DART_API Problem
 {
 public:
   /// \brief Constructor

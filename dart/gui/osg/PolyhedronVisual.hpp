@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OSG_POLYHEDRONVISUAL_HPP_
 #define DART_GUI_OSG_POLYHEDRONVISUAL_HPP_
 
+#include <dart/gui/osg/Export.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
 #include <Eigen/Core>
@@ -50,7 +51,7 @@ namespace osg {
 /// vertices. The vertices are converted into a convex hull before being sent to
 /// OpenSceneGraph, which allows callers to provide a V-representation of the
 /// desired shape.
-class PolyhedronVisual : public ViewerAttachment
+class DART_GUI_API PolyhedronVisual : public ViewerAttachment
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

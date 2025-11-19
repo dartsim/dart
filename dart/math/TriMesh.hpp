@@ -35,6 +35,8 @@
 
 #include <dart/math/Mesh.hpp>
 
+#include <dart/Export.hpp>
+
 #include <memory>
 
 namespace dart {
@@ -108,7 +110,9 @@ protected:
   Normals mTriangleNormals;
 };
 
+#if DART_OS_WINDOWS
 extern template class TriMesh<double>;
+#endif
 
 using TriMeshf = TriMesh<float>;
 using TriMeshd = TriMesh<double>;

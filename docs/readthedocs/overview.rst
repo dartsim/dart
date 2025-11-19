@@ -8,6 +8,8 @@ Overview
 
 DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-platform, open-source library developed by the `Graphics Lab <http://www.cc.gatech.edu/~karenliu/Home.html>`_ and `Humanoid Robotics Lab <http://www.golems.org/>`_ at the `Georgia Institute of Technology <http://www.gatech.edu/>`_, with ongoing contributions from the `Personal Robotics Lab <http://personalrobotics.cs.washington.edu/>`_ at the `University of Washington <http://www.washington.edu/>`_ and the `Open Source Robotics Foundation <https://www.osrfoundation.org/>`_. It provides data structures and algorithms for kinematic and dynamic applications in robotics and computer animation. DART stands out due to its accuracy and stability, which are achieved through the use of generalized coordinates to represent articulated rigid body systems and the application of Featherstone's Articulated Body Algorithm to compute motion dynamics.
 
+For curated how-to material, visit :doc:`topics/index`, which aggregates the tutorial series and other deep dives such as the inverse kinematics guide.
+
 For developers, DART offers full access to internal kinematic and dynamic quantities, such as the mass matrix, Coriolis and centrifugal forces, transformation matrices, and their derivatives, unlike many popular physics engines that treat the simulator as a black box. It also provides efficient computation of Jacobian matrices for arbitrary body points and coordinate frames. The frame semantics of DART allow users to define and use arbitrary reference frames (both inertial and non-inertial) to specify or request data.
 
 DART is suitable for real-time controllers due to its lazy evaluation, which automatically updates forward kinematics and dynamics values to ensure code safety. It also allows for the extension of the API to embed user-provided classes into DART data structures. Contacts and collisions are handled using an implicit time-stepping, velocity-based linear complementarity problem (LCP) to guarantee non-penetration, directional friction, and approximated Coulomb friction cone conditions.
@@ -50,7 +52,7 @@ Kinematics
 * Fully modular inverse kinematics framework.
 * Plug-and-play hierarchical whole-body inverse kinematics solver.
 * Analytic inverse kinematics interface with IkFast support
-  (:doc:`dart/user_guide/inverse_kinematics/ikfast`).
+  (:doc:`shared/inverse_kinematics/ikfast`).
 
 Dynamics
 ~~~~~~~~

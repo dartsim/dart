@@ -309,22 +309,6 @@ std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
   return extraction;
 }
 
-//==============================================================================
-template <class SpecAspect>
-template <class T>
-constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(type<T>)
-{
-  return false;
-}
-
-//==============================================================================
-template <class SpecAspect>
-constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(
-    type<SpecAspect>)
-{
-  return true;
-}
-
 } // namespace common
 } // namespace dart
 

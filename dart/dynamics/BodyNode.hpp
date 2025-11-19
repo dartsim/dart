@@ -51,6 +51,8 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Signal.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
@@ -77,7 +79,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class BodyNode
+class DART_API BodyNode
   : public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,

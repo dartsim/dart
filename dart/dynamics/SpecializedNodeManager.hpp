@@ -96,10 +96,16 @@ protected:
 
   /// Return false
   template <class NodeType>
-  static constexpr bool _isSpecializedForNode(type<NodeType>);
+  static constexpr bool _isSpecializedForNode(type<NodeType>)
+  {
+    return false;
+  }
 
   /// Return true
-  static constexpr bool _isSpecializedForNode(type<SpecNode>);
+  static constexpr bool _isSpecializedForNode(type<SpecNode>)
+  {
+    return true;
+  }
 
   /// Iterator that allows direct access to the specialized Nodes
   BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
@@ -166,7 +172,10 @@ public:
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class T>
-  static constexpr bool isSpecializedForNode();
+  static constexpr bool isSpecializedForNode()
+  {
+    return _isSpecializedForNode(type<T>());
+  }
 
 protected:
   /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(std::size_t)
@@ -194,10 +203,16 @@ protected:
 
   /// Return false
   template <class T>
-  static constexpr bool _isSpecializedForNode(type<T>);
+  static constexpr bool _isSpecializedForNode(type<T>)
+  {
+    return false;
+  }
 
   /// Return true
-  static constexpr bool _isSpecializedForNode(type<SpecNode>);
+  static constexpr bool _isSpecializedForNode(type<SpecNode>)
+  {
+    return true;
+  }
 
   /// std::vector of iterators that allow direct access to the specialized Nodes
   /// of each tree

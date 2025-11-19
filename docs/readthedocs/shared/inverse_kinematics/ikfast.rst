@@ -67,6 +67,13 @@ the robot description that DART loads.
 Using IkFast within DART
 ------------------------
 
+.. note::
+
+   ``dartpy`` does not currently expose :class:`dart::dynamics::SharedLibraryIkFast`.
+   The instructions below apply to the C++ API. Python applications can still
+   consume IKFast solutions by calling into a wrapped C++ helper or by driving
+   the skeleton with gradient-based IK.
+
 * Use :func:`dart::dynamics::InverseKinematics::setGradientMethod` with
   :class:`dart::dynamics::SharedLibraryIkFast`. You must pass the shared library
   path and two index lists: ``dofMap`` enumerates the DOFs solved by IkFast and

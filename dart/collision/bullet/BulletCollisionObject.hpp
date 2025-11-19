@@ -42,7 +42,7 @@ namespace collision {
 
 class CollisionObject;
 
-class BulletCollisionObject : public CollisionObject
+class DART_API BulletCollisionObject : public CollisionObject
 {
 public:
   friend class BulletCollisionDetector;
