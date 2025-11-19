@@ -99,11 +99,7 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   if (!world || !followerJoint)
     return nullptr;
 
-  auto* parentBody = followerJoint->getParentBodyNode();
-  if (parentBody == nullptr)
-    return nullptr;
-
-  auto frame = SimpleFrame::createShared(parentBody, name);
+  auto frame = SimpleFrame::createShared(Frame::World(), name);
   auto line = std::make_shared<LineSegmentShape>(0.05f);
   line->addVertex(Eigen::Vector3d::Zero());
   line->addVertex(Eigen::Vector3d::UnitX() * 0.65);
@@ -112,8 +108,11 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   auto visual = frame->createVisualAspect();
   visual->setColor(color);
 
-  Eigen::Isometry3d tf = followerJoint->getTransformFromParentBodyNode();
-  tf.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  if (const auto* parent = followerJoint->getParentBodyNode())
+    tf = parent->getWorldTransform();
+  tf *= followerJoint->getTransformFromParentBodyNode();
+  tf.rotate(Eigen::AngleAxisd(angle, followerJoint->getAxis(0)));
   tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
   frame->setRelativeTransform(tf);
 
