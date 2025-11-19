@@ -28,6 +28,12 @@ Current upstream status
   packages exist. Expect to build OpenRAVE from source (see ``INSTALL`` in the
   upstream repository) or rely on a community-provided Docker image if you need
   the generator.
+* There is **no standalone ``ikfast`` Python package** on PyPI or the major
+  conda channels. ``pip index versions ikfast`` returns "No matching
+  distribution" and searching ``https://api.anaconda.org/search?name=ikfast``
+  only surfaces ROS-specific plugins that already embed pre-generated solvers.
+  You still need the OpenRAVE tree if you want to generate new IKFast C++
+  sources.
 * Because OpenRAVE does not distribute binaries, **DART keeps IkFast support on
   a best-effort basis**. The API surface inside DART is stable, but the tooling
   required to regenerate new IkFast solvers is outside of DART's release
