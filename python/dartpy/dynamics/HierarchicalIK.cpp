@@ -30,12 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "pointers.hpp"
 
-#include <nanobind/nanobind.h>
+#include <dart/All.hpp>
 
-namespace dartpy8 {
+#include <pybind11/pybind11.h>
 
-void defRigidBody(nanobind::module_& m);
+namespace py = pybind11;
 
-} // namespace dartpy8
+namespace dart {
+namespace python {
+
+void HierarchicalIK(py::module& m)
+{
+  ::py::class_<
+      dart::dynamics::HierarchicalIK,
+      dart::common::Subject,
+      std::shared_ptr<dart::dynamics::HierarchicalIK>>(m, "HierarchicalIK")
+      .def(
+          "solveAndApply",
+          +[](dart::dynamics::HierarchicalIK* self, bool allowIncompleteResult)
+              -> bool { return self->solveAndApply(allowIncompleteResult); },
+          ::py::arg("allowIncompleteResult") = true);
+
+  ::py::class_<
+      dart::dynamics::WholeBodyIK,
+      dart::dynamics::HierarchicalIK,
+      std::shared_ptr<dart::dynamics::WholeBodyIK>>(m, "WholeBodyIK")
+      .def(
+          "refreshIKHierarchy",
+          &dart::dynamics::WholeBodyIK::refreshIKHierarchy);
+}
+
+} // namespace python
+} // namespace dart

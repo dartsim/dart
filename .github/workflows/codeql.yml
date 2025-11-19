@@ -51,12 +51,12 @@ jobs:
             build_mode: manual
             run_build: true
             dartpy: "OFF"
-            gui_osg: "OFF"
+            gui: "OFF"
           - language: python
             build_mode: none
             run_build: false
             dartpy: "ON"
-            gui_osg: "ON"
+            gui: "ON"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -91,18 +91,16 @@ jobs:
       - name: Configure (CMake)
         if: matrix.run_build
         env:
-          DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
+          DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
           DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
-          DART_BUILD_DARTPY8_OVERRIDE: ${{ matrix.dartpy }}
         run: |
           pixi run config
 
       - name: Build
         if: matrix.run_build
         env:
-          DART_BUILD_GUI_OSG_OVERRIDE: ${{ matrix.gui_osg }}
+          DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
           DART_BUILD_DARTPY_OVERRIDE: ${{ matrix.dartpy }}
-          DART_BUILD_DARTPY8_OVERRIDE: ${{ matrix.dartpy }}
         run: |
           pixi run build
 

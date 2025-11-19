@@ -57,7 +57,7 @@ git checkout -b feature/my-awesome-feature
 ### 3. Make Your Changes
 
 - Write code following the [code style guide](code-style.md)
-- Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for anything new in `dart8/`, `python/dartpy8/`, and their related test/example directories
+- Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for anything new in `dart8/` and its related test/example directories
 - Add tests for new functionality
 - Update documentation if needed
 - Commit with clear, descriptive messages
