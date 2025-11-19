@@ -60,7 +60,7 @@ class ShapeNode;
 
 class WorldNode;
 
-class DART_GUI_OSG_API ShapeFrameNode : public ::osg::MatrixTransform
+class DART_GUI_API ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
   /// Create a ShapeFrameNode. If recursive is set to true, it will also create

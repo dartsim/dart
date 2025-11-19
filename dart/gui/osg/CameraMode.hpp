@@ -51,7 +51,7 @@ enum class CameraMode
   DEPTH,
 };
 
-DART_GUI_OSG_API std::string toString(CameraMode mode);
+DART_GUI_API std::string toString(CameraMode mode);
 
 } // namespace dart::gui::osg
 

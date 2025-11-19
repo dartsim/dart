@@ -42,7 +42,7 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-class DART_GUI_OSG_API RealTimeWorldNode : public WorldNode
+class DART_GUI_API RealTimeWorldNode : public WorldNode
 {
 public:
   /// Construct a world node that will attempt to run a simulation with close

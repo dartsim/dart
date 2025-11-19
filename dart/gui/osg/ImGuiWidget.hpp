@@ -46,7 +46,7 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-class DART_GUI_OSG_API ImGuiWidget
+class DART_GUI_API ImGuiWidget
 {
 public:
   /// Constructor
@@ -78,7 +78,7 @@ protected:
   bool mIsVisible;
 };
 
-class DART_GUI_OSG_API AboutWidget : public ImGuiWidget
+class DART_GUI_API AboutWidget : public ImGuiWidget
 {
 public:
   // Documentation inherited

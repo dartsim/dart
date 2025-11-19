@@ -82,7 +82,7 @@ class Viewer;
 class SaveScreen;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_GUI_OSG_API ViewerAttachment : public virtual ::osg::Group
+class DART_GUI_API ViewerAttachment : public virtual ::osg::Group
 {
 public:
   friend class Viewer;
@@ -117,7 +117,7 @@ private:
   Viewer* mViewer;
 };
 
-class DART_GUI_OSG_API Viewer : public osgViewer::Viewer,
+class DART_GUI_API Viewer : public osgViewer::Viewer,
                                 public dart::common::Subject
 {
 public:

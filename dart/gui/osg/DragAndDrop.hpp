@@ -60,7 +60,7 @@ class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an dart::gui::osg environment
-class DART_GUI_OSG_API DragAndDrop : public dart::common::Subject,
+class DART_GUI_API DragAndDrop : public dart::common::Subject,
                                      public dart::common::Observer
 {
 public:
@@ -178,7 +178,7 @@ protected:
 
 //==============================================================================
 /// SimpleFrameDnD is a DragAndDrop implementation for SimpleFrame objects
-class DART_GUI_OSG_API SimpleFrameDnD : public DragAndDrop
+class DART_GUI_API SimpleFrameDnD : public DragAndDrop
 {
 public:
   /// Constructor
@@ -208,7 +208,7 @@ protected:
 /// SimpleFrameShapeDnD is a version of SimpleFrameDnD that allows a specific
 /// Shape within the SimpleFrame to be dragged and dropped (although it will
 /// carry the entire SimpleFrame with it)
-class DART_GUI_OSG_API SimpleFrameShapeDnD : public SimpleFrameDnD
+class DART_GUI_API SimpleFrameShapeDnD : public SimpleFrameDnD
 {
 public:
   /// Constructor
@@ -236,7 +236,7 @@ protected:
 };
 
 //==============================================================================
-class DART_GUI_OSG_API InteractiveFrameDnD : public DragAndDrop
+class DART_GUI_API InteractiveFrameDnD : public DragAndDrop
 {
 public:
   /// Constructor
@@ -266,7 +266,7 @@ protected:
 };
 
 //==============================================================================
-class DART_GUI_OSG_API BodyNodeDnD : public DragAndDrop
+class DART_GUI_API BodyNodeDnD : public DragAndDrop
 {
 public:
   /// Constructor

@@ -58,7 +58,7 @@ class ShapeFrameNode;
 
 namespace render {
 
-class DART_GUI_OSG_API ShapeNode
+class DART_GUI_API ShapeNode
 {
 public:
   ShapeNode(

@@ -50,7 +50,7 @@ namespace render {
 class PyramidShapeGeode;
 class PyramidShapeDrawable;
 
-class DART_GUI_OSG_API PyramidShapeNode : public ShapeNode, public ::osg::Group
+class DART_GUI_API PyramidShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   PyramidShapeNode(

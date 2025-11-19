@@ -73,10 +73,10 @@ typename std::conditional<
 eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec);
 
 /// Converts osg::Vec3f to Eigen::Vector3f
-DART_GUI_OSG_API Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
+DART_GUI_API Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
 
 /// Converts osg::Vec3d to Eigen::Vector3d
-DART_GUI_OSG_API Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec);
+DART_GUI_API Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec);
 
 /// Converts Eigen::MatrixBase to osg::Vec4f
 template <typename Derived>
@@ -96,24 +96,24 @@ std::conditional<
 eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec);
 
 /// Converts osg::Vec4f to Eigen::Vector4f
-DART_GUI_OSG_API Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);
+DART_GUI_API Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);
 
 /// Converts osg::Vec4d to Eigen::Vector4d
-DART_GUI_OSG_API Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
+DART_GUI_API Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
 
 /// Create a Render-To-Texture (RTT) camera.
-DART_GUI_OSG_API ::osg::Camera* createRttCamera(
+DART_GUI_API ::osg::Camera* createRttCamera(
     ::osg::Camera::BufferComponent buffer,
     ::osg::Texture* tex,
     bool isAbsolute = false);
 
 /// Creates a head-up display (HUD) camera that renders on the top after the
 /// main scene is drawn, which is generally used for heads-up display
-DART_GUI_OSG_API ::osg::Camera* createHudCamera(
+DART_GUI_API ::osg::Camera* createHudCamera(
     double left = 0, double right = 1, double bottom = 0, double top = 1);
 
 /// Creates a osg::Geode of quad shape
-DART_GUI_OSG_API ::osg::Geode* createScreenQuad(
+DART_GUI_API ::osg::Geode* createScreenQuad(
     float width, float height, float scale = 1.0f);
 
 } // namespace dart::gui::osg

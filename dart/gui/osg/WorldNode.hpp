@@ -64,7 +64,7 @@ class EntityNode;
 class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
-class DART_GUI_OSG_API WorldNode : public ::osg::Group
+class DART_GUI_API WorldNode : public ::osg::Group
 {
 public:
   friend class Viewer;

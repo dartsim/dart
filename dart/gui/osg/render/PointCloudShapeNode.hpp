@@ -63,7 +63,7 @@ public:
   virtual void refresh(bool firstTime) = 0;
 };
 
-class DART_GUI_OSG_API PointCloudShapeNode : public ShapeNode,
+class DART_GUI_API PointCloudShapeNode : public ShapeNode,
                                              public ::osg::Group
 {
 public:

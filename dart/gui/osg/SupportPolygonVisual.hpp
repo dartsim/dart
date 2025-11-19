@@ -47,7 +47,7 @@ namespace osg {
 
 /// Attach this to a Viewer in order to visualize the support polygon of a
 /// Skeleton
-class DART_GUI_OSG_API SupportPolygonVisual : public ViewerAttachment
+class DART_GUI_API SupportPolygonVisual : public ViewerAttachment
 {
 public:
   /// Visualize the support polygon of an entire Skeleton

@@ -45,7 +45,7 @@ namespace osg {
 class MainMenuWidget;
 class AboutWidget;
 
-class DART_GUI_OSG_API ImGuiViewer : public Viewer
+class DART_GUI_API ImGuiViewer : public Viewer
 {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the

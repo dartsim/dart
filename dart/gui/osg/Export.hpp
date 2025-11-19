@@ -34,18 +34,26 @@
 
 #include <dart/common/Export.hpp>
 
-#ifndef DART_GUI_OSG_API
-  #if defined(DART_BUILDING_DART_GUI_OSG)
-    #define DART_GUI_OSG_API DART_DLL_EXPORT
+#ifndef DART_GUI_API
+  #if defined(DART_BUILDING_DART_GUI)
+    #define DART_GUI_API DART_DLL_EXPORT
   #else
-    #define DART_GUI_OSG_API DART_DLL_IMPORT
+    #define DART_GUI_API DART_DLL_IMPORT
   #endif
 #endif
 
-#ifndef DART_GUI_OSG_LOCAL
+#ifndef DART_GUI_LOCAL
   #if DART_BUILD_SHARED
-    #define DART_GUI_OSG_LOCAL DART_DLL_LOCAL
+    #define DART_GUI_LOCAL DART_DLL_LOCAL
   #else
-    #define DART_GUI_OSG_LOCAL
+    #define DART_GUI_LOCAL
   #endif
+#endif
+
+#ifndef DART_GUI_OSG_API
+  #define DART_GUI_OSG_API DART_GUI_API
+#endif
+
+#ifndef DART_GUI_OSG_LOCAL
+  #define DART_GUI_OSG_LOCAL DART_GUI_LOCAL
 #endif

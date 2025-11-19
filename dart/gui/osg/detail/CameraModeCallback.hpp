@@ -42,7 +42,7 @@
 
 namespace dart::gui::osg::detail {
 
-class DART_GUI_OSG_API CameraModeCallback : public ::osg::NodeCallback
+class DART_GUI_API CameraModeCallback : public ::osg::NodeCallback
 {
 public:
   /// Default constructor
