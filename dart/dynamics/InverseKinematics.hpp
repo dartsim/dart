@@ -1087,8 +1087,8 @@ public:
   DART_DEPRECATED(7.0)
   static constexpr ExtraDofUtilization POST_ANALYTICAL = PostAnalytical;
   DART_DEPRECATED(7.0)
-  static constexpr ExtraDofUtilization
-      PRE_AND_POST_ANALYTICAL = PreAndPostAnalytical;
+  static constexpr ExtraDofUtilization PRE_AND_POST_ANALYTICAL
+      = PreAndPostAnalytical;
 
   struct Solution
   {

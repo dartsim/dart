@@ -89,18 +89,18 @@ public:
     ConfigAll = 0xFF
   };
 
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_NOTHING
-      = ConfigNothing;
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_POSITIONS
-      = ConfigPositions;
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_VELOCITIES
-      = ConfigVelocities;
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_ACCELERATIONS
-      = ConfigAccelerations;
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_FORCES
-      = ConfigForces;
-  DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_COMMANDS
-      = ConfigCommands;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_NOTHING = ConfigNothing;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_POSITIONS = ConfigPositions;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_VELOCITIES = ConfigVelocities;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_ACCELERATIONS = ConfigAccelerations;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_FORCES = ConfigForces;
+  DART_DEPRECATED(7.0)
+  static constexpr ConfigFlags CONFIG_COMMANDS = ConfigCommands;
   DART_DEPRECATED(7.0) static constexpr ConfigFlags CONFIG_ALL = ConfigAll;
 
   /// The Configuration struct represents the joint configuration of a Skeleton.
