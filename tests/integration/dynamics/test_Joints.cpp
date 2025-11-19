@@ -1346,7 +1346,8 @@ TEST_F(Joints, PARTIAL_MIMIC_JOINT)
   followerPair.second->setMass(1.0);
 
   const double forceLimit = 1e5;
-  for (auto* joint : {leaderJoint, followerJoint}) {
+  std::array<Joint*, 2> joints = {leaderJoint, followerJoint};
+  for (Joint* joint : joints) {
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
       joint->setDampingCoefficient(i, 0.0);
       joint->setSpringStiffness(i, 0.0);
