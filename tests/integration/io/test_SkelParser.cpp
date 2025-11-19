@@ -383,7 +383,7 @@ TEST(SkelParser, PlanarJoint)
 }
 
 //==============================================================================
-TEST(SKEL_PARSER, JointActuatorType)
+TEST(SkelParser, JointActuatorType)
 {
   WorldPtr world = SkelParser::readWorld(
       "dart://sample/skel/test/joint_actuator_type_test.skel");
