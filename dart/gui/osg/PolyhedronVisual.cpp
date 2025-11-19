@@ -32,7 +32,7 @@
 
 #include "dart/gui/osg/PolyhedronVisual.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/math/Geometry.hpp"
 
 #include <osg/StateSet>
@@ -112,9 +112,11 @@ void PolyhedronVisual::setVertices(
     for (int i = 0; i < vertices.rows(); ++i)
       converted.emplace_back(vertices(i, 0), vertices(i, 1), vertices(i, 2));
   } else {
-    dterr << "[PolyhedronVisual::setVertices] Expected either a 3xN or Nx3 "
-          << "matrix. Received " << vertices.rows() << "x" << vertices.cols()
-          << ". Ignoring the request." << std::endl;
+    DART_WARN(
+        "[PolyhedronVisual::setVertices] Expected either a 3xN or Nx3 matrix. "
+        "Received {}x{}; ignoring the request.",
+        vertices.rows(),
+        vertices.cols());
     return;
   }
 
@@ -303,10 +305,11 @@ void PolyhedronVisual::updateGeometry()
 
   if (hullVertices.size() < 3u || hullTriangles.empty()) {
     if (!mVertices.empty()) {
-      dtwarn << "[PolyhedronVisual::updateGeometry] Unable to compute a "
-             << "non-degenerate convex hull from " << mVertices.size()
-             << " vertices. Provide at least four non-coplanar points."
-             << std::endl;
+      DART_WARN(
+          "[PolyhedronVisual::updateGeometry] Unable to compute a "
+          "non-degenerate convex hull from {} vertices. Provide at least four "
+          "non-coplanar points.",
+          mVertices.size());
     }
     clearGeometry();
     return;
