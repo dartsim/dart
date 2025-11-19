@@ -345,8 +345,8 @@ DART includes several dependencies as part of the source tree under `dart/extern
 **Notes:**
 - The actual solver binaries are supplied by users (generated with OpenRAVE's
   IkFast tooling). See
-  `docs/readthedocs/dart/user_guide/inverse_kinematics/ikfast.rst` for the
-  current support policy and integration guide.
+  `docs/readthedocs/shared/inverse_kinematics/ikfast.rst` for the current
+  support policy and integration guide.
 
 ---
 
