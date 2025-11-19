@@ -81,8 +81,11 @@ endif()
 # GUI Tests
 # ==============================================================================
 if(TARGET dart-gui)
+  find_package(OpenSceneGraph REQUIRED COMPONENTS osg)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_HeightmapShapeNode.cpp)
-  target_link_libraries(UNIT_gui_HeightmapShapeNode dart-gui)
+  target_link_libraries(UNIT_gui_HeightmapShapeNode ${OPENSCENEGRAPH_LIBRARIES})
+  target_include_directories(
+    UNIT_gui_HeightmapShapeNode PRIVATE ${OPENSCENEGRAPH_INCLUDE_DIRS})
 endif()
 
 # ==============================================================================
