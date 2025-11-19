@@ -737,7 +737,7 @@ Matrix<double, 6, 6> Transform_Matrix4d(
   return ret;
 }
 
-TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
+TEST(Math, ArticulatedInertiaTransform)
 {
   const int iterations = 100000;
 
@@ -798,7 +798,7 @@ TEST(MATH, ARTICULATED_INERTIA_TRANSFORM)
   // cout << "result: " << m2 << endl;
 }
 
-TEST(MATH, ADJOINT_MAPPING)
+TEST(Math, AdjointMapping)
 {
   const int iterations = 10000;
 
@@ -870,7 +870,7 @@ TEST(MATH, ADJOINT_MAPPING)
   // cout << "result: " << im << endl;
 }
 
-TEST(MATH, TRANSFORMATION)
+TEST(Math, Transformation)
 {
   const int iterations = 10000;
 
@@ -926,7 +926,7 @@ TEST(MATH, TRANSFORMATION)
             << " s\n";
 }
 
-TEST(MATH, INVERSION)
+TEST(Math, Inversion)
 {
   const int iterations = 10000;
 
@@ -971,8 +971,8 @@ TEST(MATH, INVERSION)
             << " s\n";
 }
 
-/******************************************************************************/
-// TEST(MATH, SE3_VS_EIGENMATRIX4D)
+//==============================================================================
+// TEST(Math, Se3VsEigenmatrix4d)
 //{
 //    int n = 10000;
 //    double min = -100;
@@ -1078,8 +1078,8 @@ TEST(MATH, INVERSION)
 ////    std::cout << E4 << std::endl;
 //}
 
-/******************************************************************************/
-// TEST(MATH, SO3)
+//==============================================================================
+// TEST(Math, So3)
 //{
 //    // Exponential and Logarithm mapping
 //    for (int i = 0; i < 100; ++i)
@@ -1109,7 +1109,7 @@ TEST(MATH, INVERSION)
 //}
 
 ///******************************************************************************/
-// TEST(MATH, SE3)
+// TEST(Math, Se3)
 //{
 //    // Exponential and Logarithm mapping
 //    for (int i = 0; i < 100; ++i)
@@ -1188,7 +1188,7 @@ TEST(MATH, INVERSION)
 //}
 
 ///******************************************************************************/
-// TEST(MATH, ADJOINT_MAPPING)
+// TEST(Math, AdjointMapping)
 //{
 //    double min = -100;
 //    double max = 100;
@@ -1209,7 +1209,7 @@ TEST(MATH, INVERSION)
 //}
 
 ///******************************************************************************/
-// TEST(MATH, INERTIA)
+// TEST(Math, Inertia)
 //{
 //    for (int k = 0; k < 100; ++k)
 //    {
@@ -1237,8 +1237,8 @@ TEST(MATH, INVERSION)
 //    }
 //}
 
-/******************************************************************************/
-TEST(MATH, ROTATION)
+//==============================================================================
+TEST(Math, Rotation)
 {
   using namespace dart;
   using namespace math;
@@ -1266,8 +1266,8 @@ TEST(MATH, ROTATION)
       << "Orig: " << m << " Reconstructed: " << m2;
 }
 
-/******************************************************************************/
-TEST(MATH, UTILS)
+//==============================================================================
+TEST(Math, Utils)
 {
   // Test CR Matrix
   EXPECT_DOUBLE_EQ(dart::math::CR(0, 1), -1.0);
@@ -1336,7 +1336,7 @@ typename Derived::PlainObject AdTJac3(
 }
 
 //==============================================================================
-TEST(MATH, PerformanceComparisonOfAdTJac)
+TEST(Math, PerformanceComparisonOfAdTJac)
 {
 #if DART_BUILD_MODE_DEBUG
   int testCount = 1e+2;

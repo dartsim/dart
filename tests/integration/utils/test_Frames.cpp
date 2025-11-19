@@ -132,7 +132,7 @@ void compute_acceleration(
   alpha_child = alpha_parent + R * alpha_rel + w_parent.cross(R * w_rel);
 }
 
-TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
+TEST(Frames, ForwardKinematicsChain)
 {
   std::vector<SimpleFrame*> frames;
 
@@ -779,27 +779,27 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
 
 // Test different combinations of using spatial and classical derivative terms
 
-TEST(RELATIVE_FRAMES, SPATIAL_SPATIAL)
+TEST(RelativeFrames, SpatialSpatial)
 {
   test_relative_values(true, true);
 }
 
-TEST(RELATIVE_FRAMES, CLASSIC_CLASSIC)
+TEST(RelativeFrames, ClassicClassic)
 {
   test_relative_values(false, false);
 }
 
-TEST(RELATIVE_FRAMES, SPATIAL_CLASSIC)
+TEST(RelativeFrames, SpatialClassic)
 {
   test_relative_values(true, false);
 }
 
-TEST(RELATIVE_FRAMES, CLASSIC_SPATIAL)
+TEST(RelativeFrames, ClassicSpatial)
 {
   test_relative_values(false, true);
 }
 
-TEST(FRAMES, CHILDHOOD)
+TEST(Frames, Childhood)
 {
   SimpleFrame F1(Frame::World(), "F1");
   SimpleFrame F2(&F1, "F2");
