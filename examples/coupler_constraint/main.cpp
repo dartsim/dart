@@ -90,13 +90,13 @@ struct MimicAssembly
 
 dart::dynamics::SimpleFramePtr createLimitGuide(
     const std::string& name,
-    const Eigen::Vector3d& baseOffset,
+    const dart::dynamics::Joint* followerJoint,
     double angle,
     const Eigen::Vector3d& color,
     const dart::simulation::WorldPtr& world)
 {
   using namespace dart::dynamics;
-  if (!world)
+  if (!world || !followerJoint)
     return nullptr;
 
   auto frame = SimpleFrame::createShared(Frame::World(), name);
@@ -108,8 +108,13 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   auto visual = frame->createVisualAspect();
   visual->setColor(color);
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translate(baseOffset + Eigen::Vector3d(0.0, 0.0, 0.02));
+  const auto* parent = followerJoint->getParentBodyNode();
+  if (parent == nullptr)
+    return nullptr;
+
+  Eigen::Isometry3d tf
+      = parent->getWorldTransform() * followerJoint->getTransformFromParentBodyNode();
+  tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
   tf.rotate(Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()));
   frame->setRelativeTransform(tf);
 
@@ -241,13 +246,13 @@ MimicAssembly createMimicAssembly(
     const double upper = followerJoint->getPositionUpperLimit(0);
     assembly.lowerLimitGuide = createLimitGuide(
         label + "_lower_limit",
-        baseOffset,
+        followerJoint,
         lower,
         Eigen::Vector3d(0.92, 0.35, 0.35),
         world);
     assembly.upperLimitGuide = createLimitGuide(
         label + "_upper_limit",
-        baseOffset,
+        followerJoint,
         upper,
         Eigen::Vector3d(0.35, 0.92, 0.35),
         world);
