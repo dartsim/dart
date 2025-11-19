@@ -39,6 +39,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -1323,6 +1324,79 @@ TEST_F(Joints, COUPLER_CONSTRAINT_APPLY_IMPULSE)
       referenceJoint->getConstraintImpulse(0),
       -lambda[0] * followerJoint->getMimicMultiplier(0),
       1e-12);
+}
+
+//==============================================================================
+TEST_F(Joints, PARTIAL_MIMIC_JOINT)
+{
+  using namespace dart::math::suffixes;
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-3);
+
+  auto skeleton = Skeleton::create("partial_mimic");
+  auto leaderPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto leaderJoint = leaderPair.first;
+  auto followerPair
+      = skeleton->createJointAndBodyNodePair<UniversalJoint>(leaderPair.second);
+  auto followerJoint = followerPair.first;
+
+  leaderPair.second->setMass(1.0);
+  followerPair.second->setMass(1.0);
+
+  const double forceLimit = 1e5;
+  for (auto* joint : {leaderJoint, followerJoint}) {
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.0);
+      joint->setSpringStiffness(i, 0.0);
+      joint->setCoulombFriction(i, 0.0);
+      joint->setForceLowerLimit(i, -forceLimit);
+      joint->setForceUpperLimit(i, forceLimit);
+      joint->setVelocityLowerLimit(i, -forceLimit);
+      joint->setVelocityUpperLimit(i, forceLimit);
+    }
+  }
+
+  leaderJoint->setActuatorType(Joint::SERVO);
+  followerJoint->setActuatorType(Joint::SERVO);
+
+  MimicDofProperties mimicProps;
+  mimicProps.mReferenceJoint = leaderJoint;
+  mimicProps.mReferenceDofIndex = 0;
+  mimicProps.mMultiplier = 1.0;
+  mimicProps.mOffset = 0.0;
+  followerJoint->setMimicJointDof(1, mimicProps);
+  followerJoint->setActuatorType(1, Joint::MIMIC);
+
+  EXPECT_EQ(followerJoint->getActuatorType(0), Joint::SERVO);
+  EXPECT_EQ(followerJoint->getActuatorType(1), Joint::MIMIC);
+  EXPECT_TRUE(followerJoint->hasActuatorType(Joint::MIMIC));
+
+  world->addSkeleton(skeleton);
+
+#if DART_BUILD_MODE_DEBUG
+  const std::size_t numSteps = 400;
+#else
+  const std::size_t numSteps = 2000;
+#endif
+  const double followerCommand = 0.25;
+  const double tolVel = 1e-3;
+  const double tolPos = 5e-3;
+
+  for (std::size_t i = 0; i < numSteps; ++i) {
+    const double leaderCommand = std::sin(world->getTime());
+
+    leaderJoint->setCommand(0, leaderCommand);
+    followerJoint->setCommand(0, followerCommand);
+
+    world->step();
+
+    EXPECT_NEAR(leaderJoint->getVelocity(0), leaderCommand, tolVel);
+    EXPECT_NEAR(followerJoint->getVelocity(0), followerCommand, tolVel);
+    EXPECT_NEAR(
+        followerJoint->getPosition(1), leaderJoint->getPosition(0), tolPos);
+  }
 }
 
 //==============================================================================

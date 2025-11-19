@@ -38,6 +38,8 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <algorithm>
+
 #define DART_CFM 1e-9
 
 namespace dart {
@@ -112,6 +114,12 @@ void CouplerConstraint::update()
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
     const auto& mimicProp = mMimicProps[i];
+
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr) {
+      mActive[i] = false;
+      continue;
+    }
 
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double qError
@@ -318,8 +326,14 @@ void CouplerConstraint::uniteSkeletons()
 
   auto dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
 
-  for (const auto& mimicProp : mMimicProps) {
-    if (mimicProp.mReferenceJoint == nullptr)
+  for (std::size_t i = 0; i < mJoint->getNumDofs(); ++i) {
+    if (i >= mMimicProps.size())
+      break;
+
+    const auto& mimicProp = mMimicProps[i];
+
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr)
       continue;
 
     auto referenceBody = mimicProp.mReferenceJoint->getChildBodyNode();
@@ -359,8 +373,13 @@ void CouplerConstraint::uniteSkeletons()
 //==============================================================================
 bool CouplerConstraint::isActive() const
 {
-  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
-    return true;
+  const auto dof = std::min(mJoint->getNumDofs(), mMimicProps.size());
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (mJoint->getActuatorType(i) == dynamics::Joint::MIMIC
+        && mMimicProps[i].mReferenceJoint != nullptr) {
+      return true;
+    }
+  }
 
   return false;
 }

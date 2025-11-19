@@ -516,19 +516,38 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        if (joint->isUsingCouplerConstraint()) {
-          mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-              joint, joint->getMimicDofProperties()));
-        } else {
-          mMimicMotorConstraints.push_back(
-              std::make_shared<MimicMotorConstraint>(
-                  joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        const auto& mimicProps = joint->getMimicDofProperties();
+        const auto dofCount = std::min(
+            joint->getNumDofs(), static_cast<std::size_t>(mimicProps.size()));
+        bool hasValidMimicDof = false;
+        bool useCouplerConstraint = false;
+        for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) != dynamics::Joint::MIMIC)
+            continue;
+          if (mimicProps[dofIndex].mReferenceJoint == nullptr)
+            continue;
+
+          hasValidMimicDof = true;
+          if (mimicProps[dofIndex].mConstraintType
+              == dynamics::MimicConstraintType::Coupler) {
+            useCouplerConstraint = true;
+          }
+        }
+
+        if (hasValidMimicDof) {
+          if (useCouplerConstraint) {
+            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+                joint, joint->getMimicDofProperties()));
+          } else {
+            mMimicMotorConstraints.push_back(
+                std::make_shared<MimicMotorConstraint>(
+                    joint, joint->getMimicDofProperties()));
+          }
         }
       }
     }
