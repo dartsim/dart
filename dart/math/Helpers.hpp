@@ -34,13 +34,17 @@
 #define DART_MATH_HELPERS_HPP_
 
 // Standard Libraries
+#include <array>
+#include <bit>
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <type_traits>
 
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <ctime>
 
@@ -164,6 +168,61 @@ inline typename DerivedA::PlainObject clip(
     const Eigen::MatrixBase<DerivedB>& upper)
 {
   return lower.cwiseMax(val.cwiseMin(upper));
+}
+
+namespace detail {
+
+template <typename Float>
+using FloatByteArray = std::array<std::byte, sizeof(Float)>;
+
+template <typename Float>
+inline bool valueEqualFloating(Float lhs, Float rhs)
+{
+  static_assert(
+      std::is_floating_point_v<Float>,
+      "valueEqualFloating expects floating point");
+
+  if (std::isnan(lhs) || std::isnan(rhs))
+    return false;
+
+  if (std::fpclassify(lhs) == FP_ZERO && std::fpclassify(rhs) == FP_ZERO)
+    return true;
+
+  return std::bit_cast<FloatByteArray<Float>>(lhs)
+         == std::bit_cast<FloatByteArray<Float>>(rhs);
+}
+
+} // namespace detail
+
+template <typename T>
+inline std::enable_if_t<std::is_floating_point_v<T>, bool> valueEqual(
+    const T& lhs, const T& rhs)
+{
+  return detail::valueEqualFloating(lhs, rhs);
+}
+
+template <typename T>
+inline std::
+    enable_if_t<std::is_arithmetic_v<T> && !std::is_floating_point_v<T>, bool>
+    valueEqual(const T& lhs, const T& rhs)
+{
+  return lhs == rhs;
+}
+
+template <typename DerivedA, typename DerivedB>
+inline bool valueEqual(
+    const Eigen::MatrixBase<DerivedA>& lhs,
+    const Eigen::MatrixBase<DerivedB>& rhs)
+{
+  if (lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols())
+    return false;
+
+  for (Eigen::Index r = 0; r < lhs.rows(); ++r)
+    for (Eigen::Index c = 0; c < lhs.cols(); ++c)
+      if (!valueEqual(lhs(r, c), rhs(r, c)))
+        return false;
+
+  return true;
 }
 
 inline bool isEqual(double _x, double _y)
