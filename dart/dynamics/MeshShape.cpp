@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/MeshShape.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Resource.hpp"
@@ -226,10 +227,15 @@ void MeshShape::setMesh(
 
   mMeshUri = uri;
 
-  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath)
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
     mMeshPath = uri.getFilesystemPath();
-  else
+  } else if (resourceRetriever) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    mMeshPath = resourceRetriever->getFilePath(uri);
+    DART_SUPPRESS_DEPRECATED_END
+  } else {
     mMeshPath.clear();
+  }
 
   mResourceRetriever = std::move(resourceRetriever);
 
