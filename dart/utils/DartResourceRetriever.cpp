@@ -32,6 +32,7 @@
 
 #include "dart/utils/DartResourceRetriever.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/config.hpp"
@@ -122,6 +123,7 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 {
   std::string relativePath;
@@ -142,7 +144,7 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 
     DART_WARN(
         "Failed to retrieve a resource from '{}'. Please make sure you set the "
-        "environment variable for DART data path. For example:\\n  $ export "
+        "environment variable for DART data path. For example:\n  $ export "
         "DART_DATA_PATH=/usr/local/share/doc/dart/data/",
         uri.toString());
   } else {
@@ -155,6 +157,7 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
 
   return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 void DartResourceRetriever::addDataDirectory(const std::string& dataDirectory)

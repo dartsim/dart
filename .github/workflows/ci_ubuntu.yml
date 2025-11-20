@@ -43,6 +43,8 @@ jobs:
     if: github.event_name != 'workflow_dispatch'
     name: Coverage (Debug)
     runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
     strategy:
       fail-fast: false
     steps:
@@ -58,7 +60,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: 2
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -99,6 +101,8 @@ jobs:
   build-release:
     name: Release Tests
     runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -112,7 +116,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: 2
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -155,6 +159,8 @@ jobs:
   build-debug:
     name: Debug Tests
     runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
@@ -169,7 +175,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: 2
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9

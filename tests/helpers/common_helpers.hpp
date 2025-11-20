@@ -39,12 +39,15 @@
 #ifndef DART_UNITTESTS_COMMON_HELPERS_HPP_
 #define DART_UNITTESTS_COMMON_HELPERS_HPP_
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 //==============================================================================
 struct TestResource : public dart::common::Resource
@@ -121,5 +124,7 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
   std::vector<std::string> mGetFilePath;
   std::vector<std::string> mRetrieve;
 };
+
+DART_SUPPRESS_DEPRECATED_END
 
 #endif // DART_UNITTESTS_COMMON_HELPERS_HPP_
