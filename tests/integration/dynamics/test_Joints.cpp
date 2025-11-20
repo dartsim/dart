@@ -1893,7 +1893,9 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
 
   skel->integratePositions(dt);
   translated = joint->getRelativeTransform().translation();
+  const Eigen::Matrix3d initialRotation
+      = joint->getRelativeTransform().linear();
   const Eigen::Vector3d expectedTranslation
-      = initialTranslation + velocities.tail<3>() * dt;
+      = initialTranslation + initialRotation * velocities.tail<3>() * dt;
   EXPECT_TRUE(equals(translated, expectedTranslation));
 }
