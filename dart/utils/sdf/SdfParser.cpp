@@ -497,9 +497,9 @@ std::string resolveWithRetriever(
 
   if (requestedUri.mScheme.get_value_or("file") == "file"
       && requestedUri.mPath) {
-    common::error_code ec;
+    std::error_code ec;
     const auto candidate = requestedUri.getFilesystemPath();
-    if (common::filesystem::exists(candidate, ec) && !ec)
+    if (std::filesystem::exists(candidate, ec) && !ec)
       return candidate;
   }
 
@@ -629,8 +629,8 @@ bool loadSdfRoot(
   std::string localPath;
   if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
     const auto candidate = uri.getFilesystemPath();
-    common::error_code ec;
-    if (common::filesystem::exists(candidate, ec) && !ec)
+    std::error_code ec;
+    if (std::filesystem::exists(candidate, ec) && !ec)
       localPath = candidate;
   }
   if (!localPath.empty()) {

@@ -49,12 +49,13 @@
 
 #include <atomic>
 #include <chrono>
-#include <cstdint>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace gui {
