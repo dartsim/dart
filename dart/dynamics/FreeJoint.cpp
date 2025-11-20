@@ -592,7 +592,7 @@ void FreeJoint::integratePositions(double _dt)
   const Eigen::Vector3d linearVel = velocities.tail<3>();
 
   Eigen::Isometry3d Qnext = getQ();
-  Qnext.linear() = Qnext.linear() * math::expMapRot(omega * _dt);
+  Qnext.linear() = math::expMapRot(omega * _dt) * Qnext.linear();
   Qnext.translation() += linearVel * _dt;
 
   setPositionsStatic(convertToPositions(Qnext));
