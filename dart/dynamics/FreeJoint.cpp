@@ -669,17 +669,32 @@ void FreeJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void FreeJoint::updateRelativeJacobian(bool _mandatory) const
+void FreeJoint::updateRelativeJacobian(bool) const
 {
-  if (_mandatory)
-    mJacobian
-        = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+  const Eigen::Matrix3d rotationTranspose
+      = getRelativeTransform().linear().transpose();
+  const Eigen::Matrix6d baseJac
+      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+
+  mJacobian.topRows<3>() = rotationTranspose * baseJac.topRows<3>();
+  mJacobian.bottomRows<3>() = rotationTranspose * baseJac.bottomRows<3>();
 }
 
 //==============================================================================
 void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
-  DART_ASSERT(Eigen::Matrix6d::Zero() == mJacobianDeriv);
+  const Eigen::Matrix3d rotationTranspose
+      = getRelativeTransform().linear().transpose();
+  const Eigen::Matrix6d baseJac
+      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+
+  const Eigen::Vector3d omega = getRelativeSpatialVelocity().head<3>();
+  const Eigen::Matrix3d omegaSkew = math::makeSkewSymmetric(omega);
+  const Eigen::Matrix3d rotationDeriv = -omegaSkew * rotationTranspose;
+
+  mJacobianDeriv.setZero();
+  mJacobianDeriv.topRows<3>() = rotationDeriv * baseJac.topRows<3>();
+  mJacobianDeriv.bottomRows<3>() = rotationDeriv * baseJac.bottomRows<3>();
 }
 
 //==============================================================================
