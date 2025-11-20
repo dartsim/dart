@@ -54,7 +54,8 @@ struct DART_API CollisionOption
 
   /// Maximum number of contacts to detect. Once the contacts are found up to
   /// this number, the collision checking will terminate at that moment. Set
-  /// this to 1 for binary check.
+  /// this to 1 for binary check. A value of 0 short-circuits collision
+  /// detection and returns false immediately.
   std::size_t maxNumContacts;
 
   /// CollisionFilter

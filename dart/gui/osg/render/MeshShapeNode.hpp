@@ -73,10 +73,13 @@ public:
 protected:
   virtual ~MeshShapeNode();
 
+  void clearTemporaryTextures();
+
   std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
   std::vector<::osg::ref_ptr<::osg::Material>> mMaterials;
   std::vector<std::vector<std::string>> mTextureImageArrays;
+  std::vector<std::string> mTemporaryTextureFiles;
 };
 
 } // namespace render

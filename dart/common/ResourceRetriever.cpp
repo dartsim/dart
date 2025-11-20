@@ -32,6 +32,7 @@
 
 #include "dart/common/ResourceRetriever.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 
 #include <sstream>
@@ -54,10 +55,12 @@ std::string ResourceRetriever::readAll(const Uri& uri)
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string ResourceRetriever::getFilePath(const Uri& /*uri*/)
 {
   return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace common
 } // namespace dart

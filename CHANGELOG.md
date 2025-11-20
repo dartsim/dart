@@ -38,6 +38,7 @@
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
   * Removed all APIs deprecated in DART 6.7 (legacy math random helpers, `Skeleton::clone()` overloads, and `ConstraintSolver::set/getLCPSolver()`).
   * Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias).
+  * Deprecated `ResourceRetriever::getFilePath()` and the overriding implementations across retrievers. The method now emits compiler deprecation warnings and will be removed in DART 8.0; use the new resource-materialization helpers (e.g., the SDF/OSG utilities) instead.
   * Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   * Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
   * Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
@@ -50,7 +51,6 @@
   * Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
   * Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
 
-<<<<<<< HEAD
 * dartpy
   * Added bindings for `dynamics::EndEffector` (including the `Support` aspect) and exposed `BodyNode::createEndEffector`/`getEndEffector` plus the `Skeleton::getEndEffector` overloads to unblock the Atlas puppet Python example and IK tests.
 * Tutorials

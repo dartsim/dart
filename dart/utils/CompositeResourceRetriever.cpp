@@ -32,6 +32,7 @@
 
 #include "dart/utils/CompositeResourceRetriever.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
 
@@ -104,6 +105,7 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
 {
   for (const auto& resourceRetriever : getRetrievers(uri)) {
@@ -114,6 +116,7 @@ std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
 
   return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 std::vector<common::ResourceRetrieverPtr>

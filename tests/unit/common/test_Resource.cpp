@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -44,6 +45,8 @@
 
 using namespace dart;
 using namespace dart::common;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
@@ -197,3 +200,5 @@ TEST(ResourceRetrieverTests, DefaultGetFilePathIsEmpty)
   const Uri uri("package://tests/asset.txt");
   EXPECT_EQ(retriever.getFilePath(uri), "");
 }
+
+DART_SUPPRESS_DEPRECATED_END

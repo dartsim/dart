@@ -68,19 +68,19 @@ const std::string& ReferentialSkeleton::getName() const
 }
 
 //==============================================================================
-std::size_t ReferentialSkeleton::getNumSkeletons() const
+std::size_t ReferentialSkeleton::getNumSkeletons() const noexcept
 {
   return mSkeletons.size();
 }
 
 //==============================================================================
-bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const
+bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const noexcept
 {
   return mSkeletons.find(skel) != mSkeletons.end();
 }
 
 //==============================================================================
-std::size_t ReferentialSkeleton::getNumBodyNodes() const
+std::size_t ReferentialSkeleton::getNumBodyNodes() const noexcept
 {
   return mBodyNodes.size();
 }
@@ -774,7 +774,7 @@ math::AngularJacobian ReferentialSkeleton::getAngularJacobianDeriv(
 }
 
 //==============================================================================
-double ReferentialSkeleton::getMass() const
+double ReferentialSkeleton::getMass() const noexcept
 {
   double mass = 0;
   for (const BodyNode* bn : mRawBodyNodes)
