@@ -52,12 +52,12 @@ namespace dart8 {
 /// - End-effector frames
 ///
 /// DART6 equivalent: FixedFrame
-class FixedFrame : public Frame,
-                   public EntityObjectWith<
-                       TagComps<comps::FixedFrameTag>,
-                       ReadOnlyComps<>,
-                       WriteOnlyComps<>,
-                       ReadWriteComps<comps::FixedFrameProperties>>
+class DART8_API FixedFrame : public Frame,
+                             public EntityObjectWith<
+                                 TagComps<comps::FixedFrameTag>,
+                                 ReadOnlyComps<>,
+                                 WriteOnlyComps<>,
+                                 ReadWriteComps<comps::FixedFrameProperties>>
 {
 public:
   /// Constructor (package-private, use World::addFixedFrame)

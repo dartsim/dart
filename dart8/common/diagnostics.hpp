@@ -32,26 +32,29 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
+
 #include <string>
 
 namespace dart8::common {
 
 /// Get compiler information string (e.g., "GCC 15.2.1")
-std::string getCompilerInfo();
+DART8_API std::string getCompilerInfo();
 
 /// Get C++ ABI information (e.g., "libstdc++ 20250808")
-std::string getCxxABI();
+DART8_API std::string getCxxABI();
 
 /// Get C++ standard version (e.g., 202002)
-long getCxxStandard();
+DART8_API long getCxxStandard();
 
 /// Get the path to a shared library by function pointer
-std::string getLibraryPath(void* func);
+DART8_API std::string getLibraryPath(void* func);
 
 /// Print comprehensive runtime diagnostic information to stderr
-void printRuntimeInfo();
+DART8_API void printRuntimeInfo();
 
 /// Print helpful error message for initialization failures
-void printErrorHelp(const std::string& section, const std::string& error);
+DART8_API void printErrorHelp(
+    const std::string& section, const std::string& error);
 
 } // namespace dart8::common

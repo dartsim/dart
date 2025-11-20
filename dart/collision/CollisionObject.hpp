@@ -37,12 +37,14 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject
+class DART_API CollisionObject
 {
 public:
   friend class CollisionGroup;

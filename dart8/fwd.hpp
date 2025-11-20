@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
+
 namespace dart8 {
 
 class FixedFrame;

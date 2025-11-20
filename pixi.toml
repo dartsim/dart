@@ -26,6 +26,7 @@ isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
 libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
+libsdformat = ">=16.0.0,<17"
 myst-parser = "*"
 nanobind = ">=2.4.0"
 ninja = ">=1.12.1,<2"
@@ -53,7 +54,6 @@ tinyxml2 = ">=11.0.0,<12"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 urdfdom = ">=4.0.1,<5"
-libsdformat = ">=16.0.0,<17"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -68,6 +68,9 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
+if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
+  DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
+fi
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
 DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
@@ -216,6 +219,9 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
+if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
+  DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
+fi
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -351,7 +357,7 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
 config-py = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${DART_BUILD_DARTPY_VALUE}\" ]; then\n  DART_BUILD_DARTPY_VALUE=\"{{ dartpy }}\"\nfi\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
@@ -540,7 +546,7 @@ test-py = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target pytest
+python scripts/pixi_test_py.py
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -972,14 +978,9 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-  fi
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
@@ -1143,7 +1144,7 @@ config = { cmd = """
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
         -G 'Visual Studio 17 2022' \
-        -DBUILD_SHARED_LIBS=OFF \
+        -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
@@ -1247,7 +1248,6 @@ config-py = { cmd = """
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
         -G 'Visual Studio 17 2022' \
-        -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
@@ -1487,14 +1487,9 @@ config-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-  fi
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then

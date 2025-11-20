@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
+ *
+ * This file is provided under the same BSD-style license as DART.
  */
 
 #pragma once

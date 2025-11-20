@@ -33,10 +33,13 @@
 #ifndef DART_UTILS_SDFPARSER_HPP_
 #define DART_UTILS_SDFPARSER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
 namespace dart {
@@ -55,7 +58,7 @@ enum class RootJointType
   Fixed = 1,
 };
 
-struct Options
+struct DART_UTILS_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr mResourceRetriever;
@@ -70,11 +73,19 @@ struct Options
       RootJointType defaultRootJointType = RootJointType::Floating);
 };
 
-simulation::WorldPtr readWorld(
-    const common::Uri& uri, const Options& options = Options());
+simulation::WorldPtr DART_UTILS_API
+readWorld(const common::Uri& uri, const Options& options = Options());
 
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const Options& options = Options());
+DART_DEPRECATED(6.12)
+simulation::WorldPtr DART_UTILS_API readWorld(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+
+dynamics::SkeletonPtr DART_UTILS_API
+readSkeleton(const common::Uri& uri, const Options& options = Options());
+
+DART_DEPRECATED(6.12)
+dynamics::SkeletonPtr DART_UTILS_API readSkeleton(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retrievers);
 
 } // namespace SdfParser
 

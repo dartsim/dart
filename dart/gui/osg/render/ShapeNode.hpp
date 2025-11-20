@@ -33,6 +33,8 @@
 #ifndef DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 #define DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 
+#include <dart/gui/osg/Export.hpp>
+
 #include <osg/Node>
 
 #include <memory>
@@ -56,7 +58,7 @@ class ShapeFrameNode;
 
 namespace render {
 
-class ShapeNode
+class DART_GUI_API ShapeNode
 {
 public:
   ShapeNode(
