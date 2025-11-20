@@ -37,6 +37,7 @@
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -128,8 +129,12 @@ bool DARTCollisionDetector::collide(
   if (result)
     result->clear();
 
-  if (0u == option.maxNumContacts) [[unlikely]]
+  if (0u == option.maxNumContacts) [[unlikely]] {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
     return false;
+  }
 
   if (!checkGroupValidity(this, group))
     return false;
@@ -179,8 +184,12 @@ bool DARTCollisionDetector::collide(
   if (result)
     result->clear();
 
-  if (0u == option.maxNumContacts)
+  if (0u == option.maxNumContacts) {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
     return false;
+  }
 
   if (!checkGroupValidity(this, group1))
     return false;
