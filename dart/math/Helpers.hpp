@@ -34,13 +34,18 @@
 #define DART_MATH_HELPERS_HPP_
 
 // Standard Libraries
+#include <array>
+#include <bit>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <random>
+#include <type_traits>
 
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <ctime>
 
@@ -107,11 +112,6 @@ inline double Tsinc(double _theta)
   return 0.5 - sqrt(_theta) / 48;
 }
 
-inline bool isZero(double _theta)
-{
-  return (std::abs(_theta) < 1e-6);
-}
-
 inline double asinh(double _X)
 {
   return log(_X + sqrt(_X * _X + 1));
@@ -166,17 +166,205 @@ inline typename DerivedA::PlainObject clip(
   return lower.cwiseMax(val.cwiseMin(upper));
 }
 
-inline bool isEqual(double _x, double _y)
+template <typename T>
+constexpr T defaultAbsTolerance()
 {
-  return (std::abs(_x - _y) < 1e-6);
+  return static_cast<T>(1e-12);
+}
+
+template <typename T>
+constexpr T defaultRelTolerance()
+{
+  return static_cast<T>(1e-12);
+}
+
+namespace detail {
+
+template <typename Float>
+using FloatByteArray = std::array<std::byte, sizeof(Float)>;
+
+template <typename Float>
+inline bool valueEqualFloating(Float lhs, Float rhs)
+{
+  static_assert(
+      std::is_floating_point_v<Float>,
+      "valueEqualFloating expects floating point");
+
+  if (std::isnan(lhs) || std::isnan(rhs))
+    return false;
+
+  if (std::fpclassify(lhs) == FP_ZERO && std::fpclassify(rhs) == FP_ZERO)
+    return true;
+
+  return std::bit_cast<FloatByteArray<Float>>(lhs)
+         == std::bit_cast<FloatByteArray<Float>>(rhs);
+}
+
+} // namespace detail
+
+template <typename T>
+inline std::enable_if_t<std::is_floating_point_v<T>, bool> valueEqual(
+    const T& lhs, const T& rhs)
+{
+  return detail::valueEqualFloating(lhs, rhs);
+}
+
+template <typename T>
+inline std::
+    enable_if_t<std::is_arithmetic_v<T> && !std::is_floating_point_v<T>, bool>
+    valueEqual(const T& lhs, const T& rhs)
+{
+  return lhs == rhs;
+}
+
+template <typename DerivedA, typename DerivedB>
+inline bool valueEqual(
+    const Eigen::MatrixBase<DerivedA>& lhs,
+    const Eigen::MatrixBase<DerivedB>& rhs)
+{
+  if (lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols())
+    return false;
+
+  for (Eigen::Index r = 0; r < lhs.rows(); ++r)
+    for (Eigen::Index c = 0; c < lhs.cols(); ++c)
+      if (!valueEqual(lhs(r, c), rhs(r, c)))
+        return false;
+
+  return true;
+}
+
+template <typename T>
+inline bool isEqual(const T& lhs, const T& rhs)
+{
+  return valueEqual(lhs, rhs);
+}
+
+template <typename T>
+inline std::enable_if_t<std::is_floating_point_v<T>, bool> isApprox(
+    const T& lhs,
+    const T& rhs,
+    const T& abs_tol = defaultAbsTolerance<T>(),
+    const T& rel_tol = defaultRelTolerance<T>())
+{
+  if (std::isnan(lhs) || std::isnan(rhs))
+    return false;
+
+  if (std::isinf(lhs) || std::isinf(rhs))
+    return lhs == rhs;
+
+  const T diff = std::abs(lhs - rhs);
+  const T scale = std::max(std::abs(lhs), std::abs(rhs));
+  return diff <= std::max(abs_tol, rel_tol * scale);
+}
+
+template <typename T>
+inline std::enable_if_t<
+    std::is_arithmetic_v<T> && !std::is_floating_point_v<T>,
+    bool>
+isApprox(const T& lhs, const T& rhs, double abs_tol = 0.0, double rel_tol = 0.0)
+{
+  return isApprox(
+      static_cast<double>(lhs), static_cast<double>(rhs), abs_tol, rel_tol);
+}
+
+template <typename DerivedA, typename DerivedB>
+inline std::enable_if_t<
+    std::is_floating_point_v<
+        typename DerivedA::
+            Scalar> && std::is_floating_point_v<typename DerivedB::Scalar>,
+    bool>
+isApprox(
+    const Eigen::MatrixBase<DerivedA>& lhs,
+    const Eigen::MatrixBase<DerivedB>& rhs,
+    const typename DerivedA::Scalar abs_tol
+    = defaultAbsTolerance<typename DerivedA::Scalar>(),
+    const typename DerivedA::Scalar rel_tol
+    = defaultRelTolerance<typename DerivedA::Scalar>())
+{
+  if (lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols())
+    return false;
+
+  for (Eigen::Index r = 0; r < lhs.rows(); ++r)
+    for (Eigen::Index c = 0; c < lhs.cols(); ++c)
+      if (!isApprox(lhs(r, c), rhs(r, c), abs_tol, rel_tol))
+        return false;
+
+  return true;
+}
+
+template <typename DerivedA, typename DerivedB>
+inline std::enable_if_t<
+    std::is_arithmetic_v<
+        typename DerivedA::
+            Scalar> && std::is_arithmetic_v<typename DerivedB::Scalar> && (!std::is_floating_point_v<typename DerivedA::Scalar> || !std::is_floating_point_v<typename DerivedB::Scalar>),
+    bool>
+isApprox(
+    const Eigen::MatrixBase<DerivedA>& lhs,
+    const Eigen::MatrixBase<DerivedB>& rhs,
+    const std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double> abs_tol
+    = std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double>{0},
+    const std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double> rel_tol
+    = std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double>{0})
+{
+  using Common = std::common_type_t<
+      typename DerivedA::Scalar,
+      typename DerivedB::Scalar,
+      double>;
+  return isApprox(
+      lhs.template cast<Common>(),
+      rhs.template cast<Common>(),
+      static_cast<Common>(abs_tol),
+      static_cast<Common>(rel_tol));
+}
+
+template <typename T>
+inline std::enable_if_t<std::is_floating_point_v<T>, bool> isZero(
+    const T& value, const T& abs_tol = defaultAbsTolerance<T>())
+{
+  if (std::isnan(value))
+    return false;
+
+  return std::abs(value) <= abs_tol;
+}
+
+template <typename T>
+inline std::
+    enable_if_t<std::is_arithmetic_v<T> && !std::is_floating_point_v<T>, bool>
+    isZero(const T& value)
+{
+  return value == T{0};
+}
+
+template <typename Derived>
+inline std::
+    enable_if_t<std::is_floating_point_v<typename Derived::Scalar>, bool>
+    isZero(
+        const Eigen::MatrixBase<Derived>& values,
+        const typename Derived::Scalar abs_tol
+        = defaultAbsTolerance<typename Derived::Scalar>())
+{
+  if (values.size() == 0)
+    return true;
+
+  return values.cwiseAbs().maxCoeff() <= abs_tol;
 }
 
 // check if it is an integer
 inline bool isInt(double _x)
 {
-  if (isEqual(round(_x), _x))
-    return true;
-  return false;
+  return isApprox(round(_x), _x, static_cast<double>(1e-6));
 }
 
 /// \brief Returns whether _v is a NaN (Not-A-Number) value
