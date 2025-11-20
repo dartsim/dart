@@ -62,10 +62,15 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         str(build_dir),
         "--config",
         build_type,
-        "--parallel",
         "--target",
         target,
     ]
+    cmd.append("--parallel")
+
+    parallel = os.environ.get("DART_PARALLEL_JOBS")
+    if parallel and parallel.strip():
+        cmd.append(parallel)
+
     subprocess.check_call(cmd)
 
 
