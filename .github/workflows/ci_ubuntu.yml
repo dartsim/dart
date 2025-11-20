@@ -51,7 +51,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Remove preinstalled pixi (if any)
+      - name: Remove stale pixi binary
         run: rm -f "$HOME/.pixi/bin/pixi"
 
       - name: Setup pixi
