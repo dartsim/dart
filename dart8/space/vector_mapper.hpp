@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart8/export.hpp>
 #include <dart8/space/component_mapper.hpp>
 #include <dart8/space/state_space.hpp>
 
@@ -71,7 +72,7 @@ namespace dart8 {
 /// // Write back
 /// mapper.fromVector(registry, vec);
 /// ```
-class VectorMapper
+class DART8_API VectorMapper
 {
 public:
   /// Constructor

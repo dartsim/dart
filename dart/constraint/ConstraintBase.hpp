@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Fwd.hpp>
 
+#include <dart/Export.hpp>
+
 #include <cstddef>
 
 namespace dart {
@@ -71,7 +73,7 @@ struct ConstraintInfo
 };
 
 /// Constraint is a base class of concrete constraints classes
-class ConstraintBase
+class DART_API ConstraintBase
 {
 public:
   /// Returns a string representing the constraint type

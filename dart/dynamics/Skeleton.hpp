@@ -48,6 +48,8 @@
 #include <dart/common/NameManager.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <dart/Export.hpp>
+
 #include <mutex>
 
 namespace dart {
@@ -55,10 +57,11 @@ namespace dynamics {
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Skeleton : public virtual common::VersionCounter,
-                 public MetaSkeleton,
-                 public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
-                 public detail::SkeletonAspectBase
+class DART_API Skeleton
+  : public virtual common::VersionCounter,
+    public MetaSkeleton,
+    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
+    public detail::SkeletonAspectBase
 {
 public:
   // Some of non-virtual functions of MetaSkeleton are hidden because of the
@@ -108,7 +111,7 @@ public:
   /// the number of degrees of freedom in the Skeleton or it must be zero. We
   /// assume that any Eigen::VectorXd member with zero entries should be
   /// ignored.
-  struct Configuration
+  struct DART_API Configuration
   {
     Configuration(
         const Eigen::VectorXd& positions = Eigen::VectorXd(),

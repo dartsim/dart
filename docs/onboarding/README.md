@@ -1110,8 +1110,8 @@ python examples/operational_space_control/main.py
 ### Development Workflow
 
 1. **Make code changes**
-2. **Run formatter**: `pixi run format`
-3. **Check formatting**: `pixi run check-format`
+2. **Run formatter**: `pixi run lint`
+3. **Check formatting**: `pixi run check-lint`
 4. **Build**: `pixi run build`
 5. **Run tests**: `pixi run test`
 6. **Build docs**: `pixi run docs-build`

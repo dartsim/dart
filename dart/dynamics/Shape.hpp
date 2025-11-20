@@ -44,6 +44,8 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <memory>
@@ -52,9 +54,9 @@ namespace dart {
 namespace dynamics {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Shape : public virtual common::Subject,
-              public virtual common::VersionCounter,
-              public common::Castable<Shape>
+class DART_API Shape : public virtual common::Subject,
+                       public virtual common::VersionCounter,
+                       public common::Castable<Shape>
 {
 public:
   using VersionChangedSignal

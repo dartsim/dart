@@ -145,41 +145,56 @@ void Shape(py::module& m)
             .def_readonly(
                 "onVersionChanged", &dart::dynamics::Shape::onVersionChanged);
 
-#define DARTPY_DEFINE_SHAPE_TYPE(val)                                          \
-  .value(#val, dart::dynamics::Shape::ShapeType::val)
+#define DARTPY_DEFINE_SHAPE_TYPE(old_name, new_name)                           \
+  .value(#new_name, dart::dynamics::Shape::ShapeType::new_name)                \
+      .value(#old_name, dart::dynamics::Shape::ShapeType::new_name)
 
   // clang-format off
   ::py::enum_<dart::dynamics::Shape::ShapeType>(shape, "ShapeType")
-      DARTPY_DEFINE_SHAPE_TYPE(SPHERE)
-      DARTPY_DEFINE_SHAPE_TYPE(BOX)
-      DARTPY_DEFINE_SHAPE_TYPE(ELLIPSOID)
-      DARTPY_DEFINE_SHAPE_TYPE(CYLINDER)
-      DARTPY_DEFINE_SHAPE_TYPE(CAPSULE)
-      DARTPY_DEFINE_SHAPE_TYPE(CONE)
-      DARTPY_DEFINE_SHAPE_TYPE(PLANE)
-      DARTPY_DEFINE_SHAPE_TYPE(MULTISPHERE)
-      DARTPY_DEFINE_SHAPE_TYPE(MESH)
-      DARTPY_DEFINE_SHAPE_TYPE(SOFT_MESH)
-      DARTPY_DEFINE_SHAPE_TYPE(LINE_SEGMENT)
-      DARTPY_DEFINE_SHAPE_TYPE(HEIGHTMAP)
-      DARTPY_DEFINE_SHAPE_TYPE(UNSUPPORTED)
+#define DARTPY_DEFINE_SHAPE_TYPE_OLD_AND_NEW(name)                             \
+  DARTPY_DEFINE_SHAPE_TYPE(name, name)
+
+#define DARTPY_DEFINE_SHAPE_TYPE_MAP(old_name, new_name)                       \
+  DARTPY_DEFINE_SHAPE_TYPE(old_name, new_name)
+
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(SPHERE, Sphere)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(BOX, Box)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(ELLIPSOID, Ellipsoid)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(CYLINDER, Cylinder)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(CAPSULE, Capsule)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(CONE, Cone)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(PYRAMID, Pyramid)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(RECTANGULAR_PYRAMID, RectangularPyramid)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(PLANE, Plane)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(MULTISPHERE, MultiSphere)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(MESH, Mesh)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(SOFT_MESH, SoftMesh)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(LINE_SEGMENT, LineSegment)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(HEIGHTMAP, Heightmap)
+      DARTPY_DEFINE_SHAPE_TYPE_MAP(UNSUPPORTED, Unsupported)
       .export_values();
   // clang-format on
 
-#define DARTPY_DEFINE_DATA_VARIANCE(val)                                       \
-  .value(#val, dart::dynamics::Shape::DataVariance::val)
+#undef DARTPY_DEFINE_SHAPE_TYPE_MAP
+#undef DARTPY_DEFINE_SHAPE_TYPE_OLD_AND_NEW
+
+#define DARTPY_DEFINE_DATA_VARIANCE(old_name, new_name)                        \
+  .value(#new_name, dart::dynamics::Shape::DataVariance::new_name)             \
+      .value(#old_name, dart::dynamics::Shape::DataVariance::new_name)
 
   // clang-format off
   ::py::enum_<dart::dynamics::Shape::DataVariance>(shape, "DataVariance")
-      DARTPY_DEFINE_DATA_VARIANCE(STATIC           )
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_TRANSFORM)
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_PRIMITIVE)
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_COLOR    )
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_VERTICES )
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_ELEMENTS )
-      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC          )
+      DARTPY_DEFINE_DATA_VARIANCE(STATIC, Static)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_TRANSFORM, DynamicTransform)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_PRIMITIVE, DynamicPrimitive)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_COLOR, DynamicColor)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_VERTICES, DynamicVertices)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC_ELEMENTS, DynamicElements)
+      DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC, Dynamic)
       .export_values();
   // clang-format on
+
+#undef DARTPY_DEFINE_DATA_VARIANCE
 
   ::py::class_<
       dart::dynamics::BoxShape,

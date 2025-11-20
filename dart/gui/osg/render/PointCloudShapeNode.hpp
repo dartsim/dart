@@ -53,9 +53,17 @@ namespace render {
 class PointCloudShapeGeode;
 class PointCloudShapeBillboardGeode;
 class PointNode;
-class PointNodes;
 
-class PointCloudShapeNode : public ShapeNode, public ::osg::Group
+class PointNodes : public ::osg::Group
+{
+public:
+  PointNodes() = default;
+  virtual ~PointNodes() override = default;
+
+  virtual void refresh(bool firstTime) = 0;
+};
+
+class DART_GUI_API PointCloudShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
   PointCloudShapeNode(

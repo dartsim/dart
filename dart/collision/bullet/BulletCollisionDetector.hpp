@@ -46,7 +46,7 @@
 namespace dart {
 namespace collision {
 
-class BulletCollisionDetector : public CollisionDetector
+class DART_API BulletCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;

@@ -88,6 +88,11 @@ DART now maintains two naming schemes in parallel:
 - **Braces**: No "cuddled" braces (except namespaces)
 - **Documentation**: Doxygen-style comments (`///`)
 
+### Parameter Naming
+
+- **New/modified code**: Use camelCase names for function parameters (e.g., `void setMass(double mass)`).
+- **Legacy code**: Many functions in `dart/dynamics` still use `_param` conventions. Avoid mass renames—update these opportunistically when touching the surrounding code, and prefer camelCase for any new APIs.
+
 ### Header Style
 
 **Rules:**

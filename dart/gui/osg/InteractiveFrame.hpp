@@ -33,6 +33,8 @@
 #ifndef DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 #define DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 
+#include <dart/gui/osg/Export.hpp>
+
 #include <dart/dynamics/SimpleFrame.hpp>
 
 namespace dart {
@@ -46,7 +48,7 @@ namespace osg {
 
 class InteractiveFrame;
 
-class InteractiveTool : public dart::dynamics::SimpleFrame
+class DART_GUI_API InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
   enum Type
@@ -61,6 +63,11 @@ public:
 
   InteractiveTool(
       InteractiveFrame* frame, double defaultAlpha, const std::string& name);
+
+  InteractiveTool(const InteractiveTool&) = delete;
+  InteractiveTool& operator=(const InteractiveTool&) = delete;
+  InteractiveTool(InteractiveTool&&) = delete;
+  InteractiveTool& operator=(InteractiveTool&&) = delete;
 
   /// Set this tool to be enabled or disabled
   void setEnabled(bool enabled);
@@ -106,7 +113,7 @@ protected:
   InteractiveFrame* mInteractiveFrame;
 };
 
-class InteractiveFrame : public dart::dynamics::SimpleFrame
+class DART_GUI_API InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InteractiveFrame)
@@ -119,6 +126,11 @@ public:
       = Eigen::Isometry3d::Identity(),
       double size_scale = 0.2,
       double thickness_scale = 2.0);
+
+  InteractiveFrame(const InteractiveFrame&) = delete;
+  InteractiveFrame& operator=(const InteractiveFrame&) = delete;
+  InteractiveFrame(InteractiveFrame&&) = delete;
+  InteractiveFrame& operator=(InteractiveFrame&&) = delete;
 
   /// Destructor
   virtual ~InteractiveFrame();

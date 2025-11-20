@@ -58,6 +58,12 @@ include(CompilerCache)
 # - CONFIG_INSTALL_DIR
 initialize_component_helpers(${PROJECT_NAME})
 
+if(BUILD_SHARED_LIBS)
+  set(DART_BUILD_SHARED_VALUE 1)
+else()
+  set(DART_BUILD_SHARED_VALUE 0)
+endif()
+
 #===============================================================================
 # Project settings
 #===============================================================================
@@ -297,14 +303,29 @@ endif()
 #===============================================================================
 # Build type settings
 #===============================================================================
-if(NOT CMAKE_BUILD_TYPE)
-  set(
-    CMAKE_BUILD_TYPE Release
-    CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
-    FORCE
-  )
+set(_dart_known_build_types Debug Release RelWithDebInfo MinSizeRel None)
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(
+      CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+    message(STATUS "Setting CMAKE_BUILD_TYPE to '${CMAKE_BUILD_TYPE}'.")
+  else()
+    set(
+      CMAKE_BUILD_TYPE
+      "${CMAKE_BUILD_TYPE}"
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+  endif()
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_dart_known_build_types})
 endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPERCASE)
 
 set(DART_BUILD_MODE_DEBUG FALSE)
 set(DART_BUILD_MODE_RELEASE FALSE)
@@ -317,8 +338,6 @@ elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
   set(DART_BUILD_MODE_RELEASE TRUE)
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(DART_BUILD_MODE_RELEASE TRUE)
-else()
-  message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 # Active log level:
@@ -569,6 +588,14 @@ if(TARGET dart)
       add_subdirectory(tests)
     else()
       add_subdirectory(tests EXCLUDE_FROM_ALL)
+    endif()
+
+    if(DART_BUILD_DART8)
+      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
+        if(NOT TARGET dart8_tests)
+          add_custom_target(dart8_tests)
+        endif()
+      endif()
     endif()
   elseif(NOT DART_BUILD_TESTS)
     message(STATUS "Skipping tests (DART_BUILD_TESTS == OFF)")

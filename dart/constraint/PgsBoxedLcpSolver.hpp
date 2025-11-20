@@ -35,16 +35,18 @@
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
+#include <dart/Export.hpp>
+
 #include <vector>
 
 namespace dart {
 namespace constraint {
 
 /// Implementation of projected Gauss-Seidel (PGS) LCP solver.
-class PgsBoxedLcpSolver : public BoxedLcpSolver
+class DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
-  struct Option
+  struct DART_API Option
   {
     int mMaxIteration;
     double mDeltaXThreshold;

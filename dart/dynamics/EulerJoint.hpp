@@ -35,11 +35,13 @@
 
 #include <dart/dynamics/detail/EulerJointAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
 /// class EulerJoint
-class EulerJoint : public detail::EulerJointBase
+class DART_API EulerJoint : public detail::EulerJointBase
 {
 public:
   friend class Skeleton;

@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_MOUSEEVENTHANDLER_HPP_
 
 #include <dart/gui/osg/DefaultEventHandler.hpp>
+#include <dart/gui/osg/Export.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Observer.hpp>
@@ -46,8 +47,8 @@ namespace osg {
 class DefaultEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class MouseEventHandler : public virtual dart::common::Subject,
-                          public virtual dart::common::Observer
+class DART_GUI_API MouseEventHandler : public virtual dart::common::Subject,
+                                       public virtual dart::common::Observer
 {
 public:
   friend class DefaultEventHandler;

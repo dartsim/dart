@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <string>
 
 namespace dart {
@@ -53,7 +55,7 @@ enum class AxisOrder : int
 };
 
 //==============================================================================
-struct EulerJointUniqueProperties
+struct DART_API EulerJointUniqueProperties
 {
   /// Euler angle order
   AxisOrder mAxisOrder;
@@ -65,8 +67,8 @@ struct EulerJointUniqueProperties
 };
 
 //==============================================================================
-struct EulerJointProperties : GenericJoint<math::R3Space>::Properties,
-                              EulerJointUniqueProperties
+struct DART_API EulerJointProperties : GenericJoint<math::R3Space>::Properties,
+                                       EulerJointUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
 

@@ -48,7 +48,7 @@ namespace dart {
 namespace dynamics {
 
 /// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
-class VoxelGridShape : public Shape
+class DART_API VoxelGridShape : public Shape
 {
 public:
   /// Constructor.
