@@ -40,6 +40,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <type_traits>
+
 //==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
   if (!::dart::test::equals(vec1, vec2)) {                                     \
@@ -160,7 +162,10 @@ template <typename T1, typename T2>
 bool equals(
     const T1& expected,
     const T2& actual,
-    typename T1::Scalar tol = static_cast<typename T1::Scalar>(1e-5))
+    std::common_type_t<typename T1::Scalar, typename T2::Scalar, double> tol
+    = static_cast<
+        std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>>(
+        1e-5))
 {
   return dart::math::isApprox(expected, actual, tol, tol);
 }

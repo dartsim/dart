@@ -257,6 +257,16 @@ inline std::enable_if_t<std::is_floating_point_v<T>, bool> isApprox(
   return diff <= std::max(abs_tol, rel_tol * scale);
 }
 
+template <typename T>
+inline std::enable_if_t<
+    std::is_arithmetic_v<T> && !std::is_floating_point_v<T>,
+    bool>
+isApprox(const T& lhs, const T& rhs, double abs_tol = 0.0, double rel_tol = 0.0)
+{
+  return isApprox(
+      static_cast<double>(lhs), static_cast<double>(rhs), abs_tol, rel_tol);
+}
+
 template <typename DerivedA, typename DerivedB>
 inline std::enable_if_t<
     std::is_floating_point_v<
@@ -280,6 +290,43 @@ isApprox(
         return false;
 
   return true;
+}
+
+template <typename DerivedA, typename DerivedB>
+inline std::enable_if_t<
+    std::is_arithmetic_v<
+        typename DerivedA::
+            Scalar> && std::is_arithmetic_v<typename DerivedB::Scalar> && (!std::is_floating_point_v<typename DerivedA::Scalar> || !std::is_floating_point_v<typename DerivedB::Scalar>),
+    bool>
+isApprox(
+    const Eigen::MatrixBase<DerivedA>& lhs,
+    const Eigen::MatrixBase<DerivedB>& rhs,
+    const std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double> abs_tol
+    = std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double>{0},
+    const std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double> rel_tol
+    = std::common_type_t<
+        typename DerivedA::Scalar,
+        typename DerivedB::Scalar,
+        double>{0})
+{
+  using Common = std::common_type_t<
+      typename DerivedA::Scalar,
+      typename DerivedB::Scalar,
+      double>;
+  return isApprox(
+      lhs.template cast<Common>(),
+      rhs.template cast<Common>(),
+      static_cast<Common>(abs_tol),
+      static_cast<Common>(rel_tol));
 }
 
 template <typename T>
