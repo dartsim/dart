@@ -158,6 +158,55 @@ void FreeJoint::setSpatialMotion(
   }
 }
 
+//==============================================================================
+void FreeJoint::setVelocities(const Eigen::VectorXd& velocities)
+{
+  Base::setVelocities(velocities);
+}
+
+//==============================================================================
+void FreeJoint::setVelocity(std::size_t index, double velocity)
+{
+  Base::setVelocity(index, velocity);
+}
+
+//==============================================================================
+void FreeJoint::setAccelerations(const Eigen::VectorXd& accelerations)
+{
+  Base::setAccelerations(accelerations);
+}
+
+//==============================================================================
+void FreeJoint::setAcceleration(std::size_t index, double acceleration)
+{
+  Base::setAcceleration(index, acceleration);
+}
+
+//==============================================================================
+Eigen::VectorXd FreeJoint::getVelocities() const
+{
+  return Base::getVelocities();
+}
+
+//==============================================================================
+double FreeJoint::getVelocity(std::size_t index) const
+{
+  return Base::getVelocity(index);
+}
+
+//==============================================================================
+Eigen::VectorXd FreeJoint::getAccelerations() const
+{
+  return Base::getAccelerations();
+}
+
+//==============================================================================
+double FreeJoint::getAcceleration(std::size_t index) const
+{
+  return Base::getAcceleration(index);
+}
+
+//==============================================================================
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
@@ -622,37 +671,30 @@ void FreeJoint::updateRelativeTransform() const
 //==============================================================================
 void FreeJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  if (_mandatory)
-    mJacobian
-        = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+  const Eigen::Matrix3d rotationTranspose
+      = getRelativeTransform().linear().transpose();
+  const Eigen::Matrix6d baseJac
+      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 
-  const BodyNode* childBody = getChildBodyNode();
-  Eigen::Matrix3d worldRotation = Eigen::Matrix3d::Identity();
-  if (childBody)
-    worldRotation = childBody->getWorldTransform().linear();
-
-  mJacobian.topRows<3>().rightCols<3>().setZero();
-  mJacobian.bottomRows<3>().rightCols<3>() = worldRotation.transpose();
+  mJacobian.topRows<3>() = rotationTranspose * baseJac.topRows<3>();
+  mJacobian.bottomRows<3>() = rotationTranspose * baseJac.bottomRows<3>();
 }
 
 //==============================================================================
 void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
-  mJacobianDeriv.setZero();
+  const Eigen::Matrix3d rotationTranspose
+      = getRelativeTransform().linear().transpose();
+  const Eigen::Matrix6d baseJac
+      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 
-  const BodyNode* childBody = getChildBodyNode();
-  if (!childBody)
-    return;
-
-  const Eigen::Matrix3d worldRotation = childBody->getWorldTransform().linear();
-  const Eigen::Matrix3d rotationTranspose = worldRotation.transpose();
-
-  const Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
-  const Eigen::Vector3d omega = spatialVelocity.head<3>();
+  const Eigen::Vector3d omega = getRelativeSpatialVelocity().head<3>();
   const Eigen::Matrix3d omegaSkew = math::makeSkewSymmetric(omega);
+  const Eigen::Matrix3d rotationDeriv = -omegaSkew * rotationTranspose;
 
-  mJacobianDeriv.bottomRows<3>().rightCols<3>()
-      = -omegaSkew * rotationTranspose;
+  mJacobianDeriv.setZero();
+  mJacobianDeriv.topRows<3>() = rotationDeriv * baseJac.topRows<3>();
+  mJacobianDeriv.bottomRows<3>() = rotationDeriv * baseJac.bottomRows<3>();
 }
 
 //==============================================================================
