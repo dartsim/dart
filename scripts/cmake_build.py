@@ -84,11 +84,7 @@ def run_build(
     def _pipe_external_logs() -> None:
         """Print useful external project logs when available for debugging."""
         stamp_dir = (
-            build_dir
-            / "test"
-            / "FAKE_INSTALL-prefix"
-            / "src"
-            / "FAKE_INSTALL-stamp"
+            build_dir / "test" / "FAKE_INSTALL-prefix" / "src" / "FAKE_INSTALL-stamp"
         )
         # Only print the logs we know are small enough to surface in CI.
         if not stamp_dir.exists():
