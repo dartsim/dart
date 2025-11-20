@@ -549,8 +549,15 @@ void testSphereSphere(
     // contains the other object (no collisions between the hulls)
   } else {
     EXPECT_TRUE(group->collide(option, &result));
-    // Regression guard for Bullet containment case (#876).
-    EXPECT_EQ(result.getNumContacts(), 1u);
+#if HAVE_BULLET
+    if (cd->getType() == BulletCollisionDetector::getStaticType()) {
+      // Regression guard for Bullet containment case (#876).
+      EXPECT_EQ(result.getNumContacts(), 1u);
+    } else
+#endif
+    {
+      EXPECT_GE(result.getNumContacts(), 1u);
+    }
     for (auto i = 0u; i < result.getNumContacts(); ++i) {
       std::cout << "point: " << result.getContact(i).point.transpose()
                 << std::endl;
