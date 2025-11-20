@@ -1953,7 +1953,7 @@ double BodyNode::computeKineticEnergy() const
 //==============================================================================
 double BodyNode::computePotentialEnergy(const Eigen::Vector3d& gravity) const
 {
-  return -getMass() * getWorldTransform().translation().dot(gravity);
+  return -getMass() * getCOM().dot(gravity);
 }
 
 //==============================================================================
