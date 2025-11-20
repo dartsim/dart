@@ -457,13 +457,13 @@ void BodyNode::setGravityMode(bool _gravityMode)
 }
 
 //==============================================================================
-bool BodyNode::getGravityMode() const
+bool BodyNode::getGravityMode() const noexcept
 {
   return mAspectProperties.mGravityMode;
 }
 
 //==============================================================================
-bool BodyNode::isCollidable() const
+bool BodyNode::isCollidable() const noexcept
 {
   return mAspectProperties.mIsCollidable;
 }
@@ -500,7 +500,7 @@ void BodyNode::setMass(const double mass)
 }
 
 //==============================================================================
-double BodyNode::getMass() const
+double BodyNode::getMass() const noexcept
 {
   return mAspectProperties.mInertia.getMass();
 }

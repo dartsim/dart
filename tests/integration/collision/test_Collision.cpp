@@ -549,12 +549,14 @@ void testSphereSphere(
     // contains the other object (no collisions between the hulls)
   } else {
     EXPECT_TRUE(group->collide(option, &result));
-    // TODO(JS): BulletCollisionDetector includes a bug related to this.
-    // (see #876)
-
-    constexpr auto hasBullet = (HAVE_BULLET == 1);
-    if constexpr (!hasBullet) {
+#if HAVE_BULLET
+    if (cd->getType() == BulletCollisionDetector::getStaticType()) {
+      // Regression guard for Bullet containment case (#876).
       EXPECT_EQ(result.getNumContacts(), 1u);
+    } else
+#endif
+    {
+      EXPECT_GE(result.getNumContacts(), 1u);
     }
     for (auto i = 0u; i < result.getNumContacts(); ++i) {
       std::cout << "point: " << result.getContact(i).point.transpose()

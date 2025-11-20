@@ -495,9 +495,13 @@ std::string resolveWithRetriever(
   if (!requestedUri.fromStringOrPath(requested))
     return std::string();
 
-  const auto path = retriever->getFilePath(requestedUri);
-  if (!path.empty())
-    return path;
+  if (requestedUri.mScheme.get_value_or("file") == "file"
+      && requestedUri.mPath) {
+    std::error_code ec;
+    const auto candidate = requestedUri.getFilesystemPath();
+    if (std::filesystem::exists(candidate, ec) && !ec)
+      return candidate;
+  }
 
   if (!retriever->exists(requestedUri))
     return std::string();
@@ -622,7 +626,13 @@ bool loadSdfRoot(
       });
 
   sdf::Errors errors;
-  const auto localPath = retriever->getFilePath(uri);
+  std::string localPath;
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+    const auto candidate = uri.getFilesystemPath();
+    std::error_code ec;
+    if (std::filesystem::exists(candidate, ec) && !ec)
+      localPath = candidate;
+  }
   if (!localPath.empty()) {
     errors = root.Load(localPath, config);
   } else {

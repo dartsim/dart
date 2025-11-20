@@ -57,6 +57,7 @@ dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDer
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
+dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)

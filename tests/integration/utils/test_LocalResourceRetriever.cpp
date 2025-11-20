@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/GTestUtils.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/config.hpp"
 
@@ -42,6 +43,8 @@
 using dart::common::LocalResourceRetriever;
 using dart::common::Resource;
 using dart::common::Uri;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 #ifdef _WIN32
   #define FILE_SCHEME "file:///"
@@ -223,3 +226,5 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
 }
+
+DART_SUPPRESS_DEPRECATED_END

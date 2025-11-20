@@ -171,10 +171,10 @@ public:
   void setGravityMode(bool _gravityMode);
 
   /// Return true if gravity mode is enabled
-  bool getGravityMode() const;
+  bool getGravityMode() const noexcept;
 
   /// Return true if this body can collide with others bodies
-  bool isCollidable() const;
+  bool isCollidable() const noexcept;
 
   /// Set whether this body node will collide with others in the world
   /// \param[in] _isCollidable True to enable collisions
@@ -184,7 +184,7 @@ public:
   void setMass(double mass);
 
   /// Return the mass of the bodynode
-  double getMass() const;
+  double getMass() const noexcept;
 
   /// Set moment of inertia defined around the center of mass
   ///
