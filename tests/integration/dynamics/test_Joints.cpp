@@ -1684,6 +1684,7 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
   EXPECT_TRUE(equals(translationalBlock, Eigen::Matrix3d::Identity()));
 
   Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.2, -0.15, 0.35);
   velocities.tail<3>() = Eigen::Vector3d(0.45, -0.6, 0.2);
   joint->setVelocities(velocities);
 
@@ -1729,4 +1730,43 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
     EXPECT_TRUE(equals(spatialFromJac, spatialVelocity));
     EXPECT_TRUE(equals(translationalFromJac, translationalVelocity));
   }
+}
+
+//==============================================================================
+TEST_F(JOINTS, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  Eigen::Vector6d positions = Eigen::Vector6d::Zero();
+  positions.head<3>() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  positions.tail<3>() = Eigen::Vector3d(0.4, -0.25, 0.1);
+  joint->setPositions(positions);
+
+  const Eigen::Vector3d initialTranslation
+      = joint->getRelativeTransform().translation();
+
+  const double dt = 0.01;
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.5, -0.2, 0.4);
+  joint->setVelocities(velocities);
+
+  skel->integratePositions(dt);
+  Eigen::Vector3d translated = joint->getRelativeTransform().translation();
+  EXPECT_TRUE(equals(translated, initialTranslation));
+
+  joint->setPositions(positions);
+
+  velocities.head<3>() = Eigen::Vector3d(0.3, -0.1, 0.2);
+  velocities.tail<3>() = Eigen::Vector3d(-0.15, 0.05, 0.2);
+  joint->setVelocities(velocities);
+
+  skel->integratePositions(dt);
+  translated = joint->getRelativeTransform().translation();
+  const Eigen::Vector3d expectedTranslation
+      = initialTranslation + velocities.tail<3>() * dt;
+  EXPECT_TRUE(equals(translated, expectedTranslation));
 }

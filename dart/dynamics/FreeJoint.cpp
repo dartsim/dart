@@ -158,123 +158,6 @@ void FreeJoint::setSpatialMotion(
   }
 }
 
-//==============================================================================
-void FreeJoint::setVelocities(const Eigen::VectorXd& velocities)
-{
-  if (static_cast<std::size_t>(velocities.size()) != getNumDofs()) {
-    Base::setVelocities(velocities);
-    return;
-  }
-
-  Eigen::VectorXd local = velocities;
-  const Eigen::Matrix3d rotation = getQ().linear();
-  local.tail<3>() = rotation.transpose() * local.tail<3>();
-  Base::setVelocities(local);
-}
-
-//==============================================================================
-void FreeJoint::setVelocity(std::size_t index, double velocity)
-{
-  if (index >= getNumDofs()) {
-    Base::setVelocity(index, velocity);
-    return;
-  }
-
-  if (index < 3) {
-    Base::setVelocity(index, velocity);
-    return;
-  }
-
-  Eigen::VectorXd local = getVelocitiesStatic();
-  const Eigen::Matrix3d rotation = getQ().linear();
-  Eigen::Vector3d worldLinear = rotation * local.tail<3>();
-  worldLinear[index - 3] = velocity;
-  local.tail<3>() = rotation.transpose() * worldLinear;
-  Base::setVelocities(local);
-}
-
-//==============================================================================
-void FreeJoint::setAccelerations(const Eigen::VectorXd& accelerations)
-{
-  if (static_cast<std::size_t>(accelerations.size()) != getNumDofs()) {
-    Base::setAccelerations(accelerations);
-    return;
-  }
-
-  Eigen::VectorXd local = accelerations;
-  const Eigen::Matrix3d rotation = getQ().linear();
-  local.tail<3>() = rotation.transpose() * local.tail<3>();
-  Base::setAccelerations(local);
-}
-
-//==============================================================================
-void FreeJoint::setAcceleration(std::size_t index, double acceleration)
-{
-  if (index >= getNumDofs()) {
-    Base::setAcceleration(index, acceleration);
-    return;
-  }
-
-  if (index < 3) {
-    Base::setAcceleration(index, acceleration);
-    return;
-  }
-
-  Eigen::VectorXd local = getAccelerationsStatic();
-  const Eigen::Matrix3d rotation = getQ().linear();
-  Eigen::Vector3d worldLinear = rotation * local.tail<3>();
-  worldLinear[index - 3] = acceleration;
-  local.tail<3>() = rotation.transpose() * worldLinear;
-  Base::setAccelerations(local);
-}
-
-//==============================================================================
-Eigen::VectorXd FreeJoint::getVelocities() const
-{
-  Eigen::VectorXd velocities = getVelocitiesStatic();
-  const Eigen::Matrix3d rotation = getQ().linear();
-  velocities.tail<3>() = rotation * velocities.tail<3>();
-  return velocities;
-}
-
-//==============================================================================
-double FreeJoint::getVelocity(std::size_t index) const
-{
-  if (index >= getNumDofs())
-    return Base::getVelocity(index);
-
-  if (index < 3)
-    return Base::getVelocity(index);
-
-  const Eigen::Vector3d worldLinear
-      = getQ().linear() * getVelocitiesStatic().tail<3>();
-  return worldLinear[index - 3];
-}
-
-//==============================================================================
-Eigen::VectorXd FreeJoint::getAccelerations() const
-{
-  Eigen::VectorXd accelerations = getAccelerationsStatic();
-  const Eigen::Matrix3d rotation = getQ().linear();
-  accelerations.tail<3>() = rotation * accelerations.tail<3>();
-  return accelerations;
-}
-
-//==============================================================================
-double FreeJoint::getAcceleration(std::size_t index) const
-{
-  if (index >= getNumDofs())
-    return Base::getAcceleration(index);
-
-  if (index < 3)
-    return Base::getAcceleration(index);
-
-  const Eigen::Vector3d worldLinear
-      = getQ().linear() * getAccelerationsStatic().tail<3>();
-  return worldLinear[index - 3];
-}
-
-//==============================================================================
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
@@ -299,10 +182,7 @@ void FreeJoint::setRelativeSpatialVelocity(
 {
   const Eigen::Vector6d jointVelocities
       = getRelativeJacobianStatic().inverse() * newSpatialVelocity;
-  Eigen::VectorXd worldVelocities = jointVelocities;
-  const Eigen::Matrix3d rotation = getQ().linear();
-  worldVelocities.tail<3>() = rotation * worldVelocities.tail<3>();
-  setVelocities(worldVelocities);
+  setVelocities(jointVelocities);
 }
 
 //==============================================================================
@@ -445,10 +325,7 @@ void FreeJoint::setRelativeSpatialAcceleration(
 
   const Eigen::Vector6d jointAccelerations
       = J.inverse() * (newSpatialAcceleration - dJ * getVelocitiesStatic());
-  Eigen::VectorXd worldAccelerations = jointAccelerations;
-  const Eigen::Matrix3d rotation = getQ().linear();
-  worldAccelerations.tail<3>() = rotation * worldAccelerations.tail<3>();
-  setAccelerations(worldAccelerations);
+  setAccelerations(jointAccelerations);
 }
 
 //==============================================================================

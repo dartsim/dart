@@ -77,6 +77,7 @@ def test_free_joint_world_jacobian_translational_dofs():
     assert np.allclose(translational_block, np.eye(3), atol=1e-12)
 
     velocities = np.zeros(6)
+    velocities[:3] = np.array([0.1, 0.15, -0.2])
     velocities[3:] = np.array([0.05, -0.08, 0.12])
     joint.setVelocities(velocities)
 
