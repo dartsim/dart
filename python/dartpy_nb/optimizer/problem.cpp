@@ -1,5 +1,6 @@
 #include "optimizer/problem.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/optimizer/Problem.hpp"
 
 #include <nanobind/eigen/dense.h>
@@ -11,6 +12,8 @@
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 void defOptimizerProblem(nb::module_& m)
 {
@@ -75,5 +78,7 @@ void defOptimizerProblem(nb::module_& m)
         return self.getOptimalSolution();
       });
 }
+
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb

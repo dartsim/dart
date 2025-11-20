@@ -12,6 +12,8 @@ namespace nb = nanobind;
 
 namespace dart::python_nb {
 
+DART_SUPPRESS_DEPRECATED_BEGIN
+
 class PySolver : public dart::optimizer::Solver
 {
 public:
@@ -154,5 +156,7 @@ void defOptimizerSolver(nb::module_& m)
           &Solver::getResultFileName,
           nb::rv_policy::reference_internal);
 }
+
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb

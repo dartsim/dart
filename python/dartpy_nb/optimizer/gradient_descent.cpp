@@ -1,5 +1,6 @@
 #include "optimizer/gradient_descent.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/optimizer/GradientDescentSolver.hpp"
 #include "dart/optimizer/Problem.hpp"
 
@@ -10,6 +11,8 @@
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 void defGradientDescentSolver(nb::module_& m)
 {
@@ -58,5 +61,7 @@ void defGradientDescentSolver(nb::module_& m)
       .def("getStepSize", &Solver::getStepSize)
       .def("getTolerance", &Solver::getTolerance);
 }
+
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb

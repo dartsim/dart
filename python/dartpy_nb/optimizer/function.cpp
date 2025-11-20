@@ -1,5 +1,6 @@
 #include "optimizer/function.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/optimizer/Function.hpp"
 
 #include <nanobind/eigen/dense.h>
@@ -11,6 +12,8 @@
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 class PyFunction : public dart::optimizer::Function
 {
@@ -51,11 +54,13 @@ void defOptimizerFunction(nb::module_& m)
       m, "NullFunction")
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(
-          "eval",
-          [](dart::optimizer::NullFunction& self, const Eigen::VectorXd& x) {
-            return self.eval(x);
-          },
-          nb::arg("x"));
+      "eval",
+      [](dart::optimizer::NullFunction& self, const Eigen::VectorXd& x) {
+        return self.eval(x);
+      },
+      nb::arg("x"));
 }
+
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb
