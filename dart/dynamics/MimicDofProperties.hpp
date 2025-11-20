@@ -40,6 +40,13 @@ namespace dynamics {
 
 class Joint;
 
+/// Type of coupling constraint used for a mimic joint.
+enum class MimicConstraintType
+{
+  Motor,
+  Coupler
+};
+
 /// Properties of a mimicked Degree of Freedom (DoF) in a joint.
 struct MimicDofProperties
 {
@@ -54,6 +61,9 @@ struct MimicDofProperties
 
   /// Offset added to the reference joint's DoF value.
   double mOffset = 0.0;
+
+  /// Coupling behavior used to enforce the mimic relationship.
+  MimicConstraintType mConstraintType = MimicConstraintType::Motor;
 };
 
 } // namespace dynamics

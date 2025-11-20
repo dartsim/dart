@@ -206,6 +206,10 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 - Allows a joint to mimic the motion of another joint
 - Supports different multipliers and offsets per DOF
 - Useful for coupled mechanisms
+- `Joint::setUseCouplerConstraint(true)` swaps the legacy servo-style mimic
+  motor for a bilateral `CouplerConstraint`, so both the reference and
+  dependent joints feel equal-and-opposite impulses. Leave it disabled to keep
+  the original MimicMotorConstraint behavior.
 
 **Internal Update Methods:**
 - `updateRelativeTransform()`, `updateRelativeSpatialVelocity()`

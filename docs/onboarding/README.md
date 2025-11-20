@@ -499,7 +499,8 @@ graph TB
 **Key Elements**:
 - [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
 - [`ConstraintSolver::addConstraint()`](dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
-- Constraint types: Contact, JointLimit, Motor, Servo, Mimic, custom
+- Constraint types: Contact, JointLimit, Motor, Servo, Mimic (MimicMotor or
+  Coupler), custom
 - LCP solvers: Dantzig (primary), PGS (fallback)
 - Skeleton grouping for independent constraint solving
 
@@ -973,6 +974,7 @@ sequenceDiagram
 - `JointLimitConstraint` - Joint position/velocity limits
 - `ServoMotorConstraint` - Joint servo control
 - `MimicMotorConstraint` - Mimic joint behavior
+- `CouplerConstraint` - Bilateral mimic coupling (equal-and-opposite impulses)
 - Custom constraints
 
 **Key Fields**:

@@ -704,6 +704,36 @@ bm = { depends-on = [
   { arg = "build_type", default = "Release" },
 ] }
 
+test-joints = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+    --parallel \
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints
+""",
+], depends-on = [
+  "config",
+] }
+
+test-joints-coupler = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+    --parallel \
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints --gtest_filter=JOINTS.MIMIC_JOINT:JOINTS.MIMIC_JOINT_COUPLER
+""",
+], depends-on = [
+  "config",
+] }
+
 bm-boxes = { depends-on = [
   { task = "run-cpp-target", args = [
     "BM_INTEGRATION_boxes",
