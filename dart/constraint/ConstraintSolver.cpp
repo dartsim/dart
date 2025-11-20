@@ -526,21 +526,25 @@ void ConstraintSolver::updateConstraints()
             joint->getNumDofs(), static_cast<std::size_t>(mimicProps.size()));
         bool hasValidMimicDof = false;
         bool useCouplerConstraint = false;
+        bool allMimicWithReference = true;
         for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
-          if (joint->getActuatorType(dofIndex) != dynamics::Joint::MIMIC)
-            continue;
-          if (mimicProps[dofIndex].mReferenceJoint == nullptr)
-            continue;
-
-          hasValidMimicDof = true;
-          if (mimicProps[dofIndex].mConstraintType
-              == dynamics::MimicConstraintType::Coupler) {
-            useCouplerConstraint = true;
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+              if (mimicProps[dofIndex].mConstraintType
+                  == dynamics::MimicConstraintType::Coupler) {
+                useCouplerConstraint = true;
+              }
+            } else {
+              allMimicWithReference = false;
+            }
+          } else {
+            allMimicWithReference = false;
           }
         }
 
         if (hasValidMimicDof) {
-          if (useCouplerConstraint) {
+          if (useCouplerConstraint && allMimicWithReference) {
             mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
                 joint, joint->getMimicDofProperties()));
           } else {
