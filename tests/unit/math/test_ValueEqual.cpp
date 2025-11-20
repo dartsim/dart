@@ -90,3 +90,55 @@ TEST(ValueEqualTest, EigenContainers)
   c[1] = std::nextafter(1.0, 2.0);
   EXPECT_FALSE(valueEqual(a, c));
 }
+
+TEST(ValueEqualTest, IsApproxScalar)
+{
+  using dart::math::isApprox;
+
+  EXPECT_TRUE(isApprox(1.0, 1.0));
+  EXPECT_TRUE(isApprox(1.0, 1.0 + 1e-7, 1e-6, 1e-6));
+  EXPECT_FALSE(isApprox(1.0, 1.0 + 1e-3, 1e-6, 1e-6));
+
+  EXPECT_FALSE(isApprox(
+      std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::quiet_NaN()));
+}
+
+TEST(ValueEqualTest, IsApproxEigen)
+{
+  using dart::math::isApprox;
+
+  Eigen::Vector2d v1;
+  v1 << 1.0, 2.0;
+  Eigen::Vector2d v2 = v1;
+  v2[1] += 1e-7;
+
+  EXPECT_TRUE(isApprox(v1, v2, 1e-6, 1e-6));
+  EXPECT_FALSE(isApprox(v1, v2, 1e-8, 1e-8));
+}
+
+TEST(ValueEqualTest, IsZeroScalar)
+{
+  using dart::math::isZero;
+
+  EXPECT_TRUE(isZero(0.0));
+  EXPECT_TRUE(isZero(-0.0));
+  EXPECT_TRUE(isZero(1e-7, 1e-6));
+  EXPECT_FALSE(isZero(1e-3, 1e-6));
+  EXPECT_TRUE(isZero(0));
+  EXPECT_FALSE(isZero(5));
+}
+
+TEST(ValueEqualTest, IsZeroEigen)
+{
+  using dart::math::isZero;
+
+  Eigen::Vector3d zeros = Eigen::Vector3d::Zero();
+  EXPECT_TRUE(isZero(zeros));
+
+  Eigen::Vector3d nearZero = Eigen::Vector3d::Constant(5e-7);
+  EXPECT_TRUE(isZero(nearZero, 1e-6));
+
+  nearZero[1] = 1e-3;
+  EXPECT_FALSE(isZero(nearZero, 1e-6));
+}
