@@ -168,7 +168,6 @@ TEST(PackageResourceRetriever, getFilePath_UnableToResolve_ReturnsEmptyString)
 
 TEST(PackageResourceRetriever, getFilePath_DelegateFails_ReturnsEmptyString)
 {
-  // GTest breaks the string concatenation.
   const std::string expected = makeFileUri("test/foo");
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
@@ -178,8 +177,8 @@ TEST(PackageResourceRetriever, getFilePath_DelegateFails_ReturnsEmptyString)
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")), "");
   ASSERT_TRUE(mockRetriever->mExists.empty());
-  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
   ASSERT_EQ(1u, mockRetriever->mGetFilePath.size());
+  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
 
@@ -206,9 +205,9 @@ TEST(PackageResourceRetriever, getFilePath_StripsTrailingSlash)
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")),
       expected);
-  ASSERT_TRUE(mockRetriever->mExists.empty());
-  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
+  EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(1u, mockRetriever->mGetFilePath.size());
+  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
 
@@ -224,9 +223,9 @@ TEST(PackageResourceRetriever, getFilePath_FirstUriSucceeds)
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")),
       expected);
-  ASSERT_TRUE(mockRetriever->mExists.empty());
-  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
+  EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(1u, mockRetriever->mGetFilePath.size());
+  EXPECT_EQ(expected, mockRetriever->mGetFilePath.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
 
@@ -242,7 +241,7 @@ TEST(PackageResourceRetriever, getFilePath_FallsBackOnSecondUri)
 
   EXPECT_EQ(
       retriever.getFilePath(Uri::createFromString("package://test/foo")), "");
-  ASSERT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(2u, mockRetriever->mGetFilePath.size());
   EXPECT_EQ(expected1, mockRetriever->mGetFilePath[0]);
   EXPECT_EQ(expected2, mockRetriever->mGetFilePath[1]);

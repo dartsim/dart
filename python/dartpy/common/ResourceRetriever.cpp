@@ -50,7 +50,10 @@ void ResourceRetriever(py::module& m)
       .def(
           "getFilePath",
           &common::ResourceRetriever::getFilePath,
-          ::py::arg("uri"));
+          ::py::arg("uri"),
+          ::py::deprecated(
+              "ResourceRetriever.getFilePath() is deprecated and will be "
+              "removed in DART 8."));
 
   ::py::class_<
       dart::common::LocalResourceRetriever,

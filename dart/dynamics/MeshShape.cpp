@@ -34,6 +34,7 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
+#include "dart/common/Resource.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
@@ -225,8 +226,8 @@ void MeshShape::setMesh(
 
   mMeshUri = uri;
 
-  if (resourceRetriever)
-    mMeshPath = resourceRetriever->getFilePath(uri);
+  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath)
+    mMeshPath = uri.getFilesystemPath();
   else
     mMeshPath.clear();
 
@@ -572,16 +573,31 @@ bool isColladaResource(
   if (hasColladaExtension(uri))
     return true;
 
-  if (retriever) {
-    const auto parsedUri = common::Uri::createFromStringOrPath(uri);
-    if (parsedUri.mPath) {
-      const std::string resolvedPath = retriever->getFilePath(parsedUri);
-      if (!resolvedPath.empty())
-        return hasColladaExtension(resolvedPath);
-    }
+  const auto parsedUri = common::Uri::createFromStringOrPath(uri);
+  if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
+    if (hasColladaExtension(parsedUri.mPath.get()))
+      return true;
   }
 
-  return false;
+  if (!retriever)
+    return false;
+
+  const auto resource = retriever->retrieve(parsedUri);
+  if (!resource)
+    return false;
+
+  constexpr std::size_t kMaxProbeSize = 4096;
+  const auto sampleSize = std::min(kMaxProbeSize, resource->getSize());
+  std::string buffer(sampleSize, '\0');
+  const auto read = resource->read(buffer.data(), 1, sampleSize);
+  buffer.resize(read);
+  resource->seek(0, common::Resource::SEEKTYPE_SET);
+
+  const auto upper = buffer.find("COLLADA");
+  const auto lower = buffer.find("collada");
+  const auto mixed = buffer.find("Collada");
+  return upper != std::string::npos || lower != std::string::npos
+         || mixed != std::string::npos;
 }
 
 } // namespace

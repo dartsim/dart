@@ -52,6 +52,7 @@ public:
   ResourcePtr retrieve(const Uri& _uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const Uri& uri) override;
 };
 

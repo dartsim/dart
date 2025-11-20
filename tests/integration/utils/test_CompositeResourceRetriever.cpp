@@ -167,14 +167,14 @@ TEST(
       retriever.getFilePath(Uri::createFromString("package://test/foo")),
       "package://test/foo");
 
-  EXPECT_TRUE(retriever2->mExists.empty());
+  EXPECT_TRUE(retriever1->mRetrieve.empty());
   ASSERT_EQ(1u, retriever1->mGetFilePath.size());
   EXPECT_EQ("package://test/foo", retriever1->mGetFilePath.front());
-  EXPECT_TRUE(retriever1->mRetrieve.empty());
 
   EXPECT_TRUE(retriever2->mExists.empty());
   EXPECT_TRUE(retriever2->mGetFilePath.empty());
   EXPECT_TRUE(retriever2->mRetrieve.empty());
+
   EXPECT_TRUE(retriever3->mExists.empty());
   EXPECT_TRUE(retriever3->mGetFilePath.empty());
   EXPECT_TRUE(retriever3->mRetrieve.empty());

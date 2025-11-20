@@ -45,7 +45,15 @@ namespace common {
 //==============================================================================
 bool LocalResourceRetriever::exists(const Uri& _uri)
 {
-  return !getFilePath(_uri).empty();
+  if (_uri.mScheme.get_value_or("file") != "file")
+    return false;
+
+  if (!_uri.mPath)
+    return false;
+
+  const auto path = _uri.getFilesystemPath();
+
+  return std::ifstream(path, std::ios::binary).good();
 }
 
 //==============================================================================
@@ -68,8 +76,6 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
 //==============================================================================
 std::string LocalResourceRetriever::getFilePath(const Uri& uri)
 {
-  // Open and close the file to check if it exists. It would be more efficient
-  // to stat() it, but that is not portable.
   if (uri.mScheme.get_value_or("file") != "file")
     return "";
   else if (!uri.mPath)
