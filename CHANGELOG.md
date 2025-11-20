@@ -50,7 +50,6 @@
   * Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
   * Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
 
-<<<<<<< HEAD
 * dartpy
   * Added bindings for `dynamics::EndEffector` (including the `Support` aspect) and exposed `BodyNode::createEndEffector`/`getEndEffector` plus the `Skeleton::getEndEffector` overloads to unblock the Atlas puppet Python example and IK tests.
 * Tutorials
