@@ -1,7 +1,9 @@
 #include "dynamics/inverse_kinematics.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/optimizer/Solver.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -12,6 +14,8 @@
 namespace nb = nanobind;
 
 namespace dart::python_nb {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 void defInverseKinematics(nb::module_& m)
 {
@@ -64,5 +68,7 @@ void defInverseKinematics(nb::module_& m)
           },
           nb::arg("allowIncompleteResult") = true);
 }
+
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb
