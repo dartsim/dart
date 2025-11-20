@@ -56,6 +56,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     """
     Invoke `cmake --build` for the provided target.
     """
+    parallel_level = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "8")
     cmd = [
         "cmake",
         "--build",
@@ -63,6 +64,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         "--config",
         build_type,
         "--parallel",
+        parallel_level,
         "--target",
         target,
     ]
