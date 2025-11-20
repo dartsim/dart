@@ -73,5 +73,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Test gz-physics
+        env:
+          DART_PARALLEL_JOBS: 8
         run: |
           pixi r -e gazebo test-gz
