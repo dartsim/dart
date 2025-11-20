@@ -51,10 +51,12 @@ enum class CameraMode
   ///
   /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
   Depth,
-
-  DART_DEPRECATED(7.0) RGBA = Rgba,
-  DART_DEPRECATED(7.0) DEPTH = Depth,
 };
+
+DART_DEPRECATED(7.0)
+inline constexpr CameraMode RGBA = CameraMode::Rgba;
+DART_DEPRECATED(7.0)
+inline constexpr CameraMode DEPTH = CameraMode::Depth;
 
 DART_GUI_API std::string toString(CameraMode mode);
 
