@@ -1792,7 +1792,7 @@ TEST_F(Joints, FreeJointRelativeTransformVelocityAcceleration)
 }
 
 //==============================================================================
-TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
+TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -1826,7 +1826,7 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION)
 }
 
 //==============================================================================
-TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
+TEST_F(Joints, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -1860,7 +1860,7 @@ TEST_F(JOINTS, FREE_JOINT_WORLD_JACOBIAN_TRANSLATION_RANDOMIZED)
 }
 
 //==============================================================================
-TEST_F(JOINTS, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
+TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
 {
   SkeletonPtr skel = Skeleton::create();
 
