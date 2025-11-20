@@ -33,8 +33,9 @@
 #ifndef DART_GUI_OSG_CAMERAMODE_HPP_
 #define DART_GUI_OSG_CAMERAMODE_HPP_
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/gui/osg/Export.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 #include <string>
 
