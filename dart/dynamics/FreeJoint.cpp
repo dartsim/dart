@@ -587,39 +587,21 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Isometry3d Qdiff
-      = convertToTransform(getVelocitiesStatic() * _dt);
-  const Eigen::Isometry3d Qnext = getQ() * Qdiff;
-  const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
+  const Eigen::Vector6d velocities = getVelocitiesStatic();
+  const Eigen::Vector3d omega = velocities.head<3>();
+  const Eigen::Vector3d linearVel = velocities.tail<3>();
 
-  setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
-  setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
+  Eigen::Isometry3d Qnext = getQ();
+  Qnext.linear() = Qnext.linear() * math::expMapRot(omega * _dt);
+  Qnext.translation() += linearVel * _dt;
+
   setPositionsStatic(convertToPositions(Qnext));
 }
 
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  // Integrating the acceleration gives us the new velocity of child body frame.
-  // But if there is any linear acceleration, the frame will be displaced. If we
-  // apply euler integration direcly on the spatial acceleration, it will
-  // produce the velocity of a point that is instantaneously coincident with the
-  // previous location of the child body frame. However, we want to compute the
-  // spatial velocity at the current location of the child body frame. To
-  // accomplish this, we first convert the linear portion of the spatial
-  // acceleration into classical linear acceleration and apply the integration.
-  Eigen::Vector6d accel = getAccelerationsStatic();
-  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
-  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
-  setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
-      getVelocitiesStatic(), accel, _dt));
-
-  // Since the velocity has been updated, we use the new velocity to recompute
-  // the spatial acceleration. This is needed to ensure that functions like
-  // BodyNode::getLinearAcceleration work properly.
-  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
-  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
-  setAccelerationsStatic(accel);
+  setVelocitiesStatic(getVelocitiesStatic() + getAccelerationsStatic() * _dt);
 }
 
 //==============================================================================
