@@ -1,5 +1,6 @@
 #include "optimizer/solver.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/optimizer/Problem.hpp"
 #include "dart/optimizer/Solver.hpp"
 
