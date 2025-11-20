@@ -46,6 +46,22 @@ using namespace dart::dynamics;
 using namespace dart::math;
 
 template <typename S>
+typename HeightmapShape<S>::HeightField generateHeightField(
+    std::size_t xResolution,
+    std::size_t yResolution,
+    S zMin,
+    S zMax)
+{
+  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
+  for (auto i = 0u; i < yResolution; ++i) {
+    for (auto j = 0u; j < xResolution; ++j) {
+      data(i, j) = math::Random::uniform(zMin, zMax);
+    }
+  }
+  return data;
+}
+
+template <typename S>
 dynamics::ShapePtr createHeightmapShape(
     std::size_t xResolution = 20u,
     std::size_t yResolution = 20u,
@@ -56,17 +72,13 @@ dynamics::ShapePtr createHeightmapShape(
 {
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
-  for (auto i = 0u; i < yResolution; ++i) {
-    for (auto j = 0u; j < xResolution; ++j) {
-      data(i, j) = math::Random::uniform(zMin, zMax);
-    }
-  }
+  auto data = generateHeightField<S>(xResolution, yResolution, zMin, zMax);
   auto scale = Vector3(xSize / xResolution, ySize / yResolution, 1);
 
   auto terrainShape = std::make_shared<HeightmapShape<S>>();
   terrainShape->setScale(scale);
   terrainShape->setHeightField(data);
+  terrainShape->setDataVariance(dynamics::Shape::DYNAMIC);
 
   return terrainShape;
 }
@@ -129,7 +141,12 @@ public:
       S ySize = S(2),
       S zMin = S(0.0),
       S zMax = S(0.1))
-    : mViewer(viewer), mNode(node), mTerrain(std::move(terrain)), mGrid(grid)
+    : mViewer(viewer),
+      mNode(node),
+      mTerrain(std::move(terrain)),
+      mGrid(grid),
+      mHeightmapShape(std::dynamic_pointer_cast<HeightmapShape<S>>(
+          mTerrain->getShape()))
   {
     mXResolution = xResolution;
     mYResolution = yResolution;
@@ -143,8 +160,23 @@ public:
 
   void updateHeightmapShape()
   {
-    mTerrain->setShape(createHeightmapShape(
-        mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
+    if (!mHeightmapShape) {
+      mTerrain->setShape(createHeightmapShape(
+          mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
+      mHeightmapShape = std::dynamic_pointer_cast<HeightmapShape<S>>(
+          mTerrain->getShape());
+      if (!mHeightmapShape)
+        return;
+    }
+
+    mHeightmapShape->setHeightField(generateHeightField<S>(
+        mXResolution, mYResolution, mZMin, mZMax));
+    Eigen::Matrix<S, 3, 1> scale(
+        mXSize / static_cast<S>(mXResolution),
+        mYSize / static_cast<S>(mYResolution),
+        S(1));
+    mHeightmapShape->setScale(scale);
+    mTerrain->setShape(mHeightmapShape);
 
     auto tf = mTerrain->getRelativeTransform();
     tf.translation()[0] = -static_cast<double>(mXSize) / 2.0;
@@ -183,7 +215,9 @@ public:
 
     ImGui::Text("Heightmap rendering example");
     ImGui::Spacing();
-    ImGui::TextWrapped("TODO.");
+    ImGui::TextWrapped(
+        "Tweak the controls below to regenerate the heightmap. The grid stays "
+        "aligned with the terrain so you can check updates in real time.");
 
     if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
@@ -412,6 +446,7 @@ protected:
   float mYSize;
   float mZMin;
   float mZMax;
+  std::shared_ptr<HeightmapShape<S>> mHeightmapShape;
 };
 
 int main()
@@ -438,7 +473,7 @@ int main()
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
-      &viewer, node.get(), terrain, grid));
+      &viewer, node.get(), terrain, grid.get()));
 
   viewer.addAttachment(grid);
 

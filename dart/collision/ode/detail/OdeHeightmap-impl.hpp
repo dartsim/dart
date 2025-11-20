@@ -156,6 +156,14 @@ OdeHeightmap<S>::OdeHeightmap(
   q[3] = 0;
   dGeomSetQuaternion(mGeomId, q);
 
+  // Center the ODE heightfield so its visual and collision representations
+  // share the same origin.
+  const auto width
+      = static_cast<dReal>((heightMap->getWidth() - 1) * scale.x());
+  const auto depth
+      = static_cast<dReal>((heightMap->getDepth() - 1) * scale.y());
+  dGeomSetPosition(mGeomId, -0.5 * width, 0.5 * depth, 0.0);
+
   // TODO Take this out as soon as testing is finished, getting the
   // AABB is only needed for the debug print.
   dReal aabb[6];
