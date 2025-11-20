@@ -207,12 +207,13 @@ TEST(Simulation, ContactsReportNonZeroForceWithLargeTimeStep)
   // Falling box.
   auto box = Skeleton::create("box");
   auto boxPair = box->createJointAndBodyNodePair<FreeJoint>(
-      nullptr, FreeJoint::Properties(), BodyNode::Properties("box_link"));
+      nullptr, FreeJoint::Properties(), BodyNode::Properties());
+  boxPair.second->setName("box_link");
   auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.3));
   auto boxNode
       = boxPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
           boxShape);
-  boxNode->getDynamicsAspect()->setMass(1.0);
+  boxPair.second->setMass(1.0);
   Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
   boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.6);
   FreeJoint::setTransformOf(boxPair.first, boxTf);
