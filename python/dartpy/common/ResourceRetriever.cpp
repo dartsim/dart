@@ -63,9 +63,8 @@ void ResourceRetriever(py::module& m)
       "getFilePath",
       &common::ResourceRetriever::getFilePath,
       ::py::arg("uri"),
-      ::py::deprecated(
-          "ResourceRetriever.getFilePath() is deprecated and will be "
-          "removed in DART 8."));
+      "ResourceRetriever.getFilePath() is deprecated and will be removed in "
+      "DART 8.");
   DART_SUPPRESS_DEPRECATED_END
 
   ::py::class_<
