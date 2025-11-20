@@ -84,6 +84,7 @@ JointProperties::JointProperties(
     prop.mReferenceDofIndex = i;
     prop.mMultiplier = _mimicMultiplier;
     prop.mOffset = _mimicOffset;
+    prop.mConstraintType = MimicConstraintType::Motor;
   }
 }
 
@@ -126,8 +127,8 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
-  setActuatorType(properties.mActuatorType);
   setMimicJointDofs(properties.mMimicDofProps);
+  setActuatorType(properties.mActuatorType);
 }
 
 //==============================================================================
@@ -213,6 +214,7 @@ Joint::ActuatorType Joint::getActuatorType() const
 void Joint::setMimicJoint(
     const Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
 {
+  const auto constraintType = getMimicConstraintType();
   std::size_t numDofs = getNumDofs();
   mAspectProperties.mMimicDofProps.resize(numDofs);
 
@@ -222,6 +224,7 @@ void Joint::setMimicJoint(
     prop.mReferenceDofIndex = i;
     prop.mMultiplier = mimicMultiplier;
     prop.mOffset = mimicOffset;
+    prop.mConstraintType = constraintType;
     setMimicJointDof(i, prop);
   }
 }
@@ -272,6 +275,34 @@ double Joint::getMimicOffset(std::size_t index) const
 const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 {
   return mAspectProperties.mMimicDofProps;
+}
+
+//==============================================================================
+void Joint::setMimicConstraintType(MimicConstraintType type)
+{
+  for (auto& prop : mAspectProperties.mMimicDofProps)
+    prop.mConstraintType = type;
+}
+
+//==============================================================================
+MimicConstraintType Joint::getMimicConstraintType() const
+{
+  if (mAspectProperties.mMimicDofProps.empty())
+    return MimicConstraintType::Motor;
+  return mAspectProperties.mMimicDofProps.front().mConstraintType;
+}
+
+//==============================================================================
+void Joint::setUseCouplerConstraint(bool enable)
+{
+  setMimicConstraintType(
+      enable ? MimicConstraintType::Coupler : MimicConstraintType::Motor);
+}
+
+//==============================================================================
+bool Joint::isUsingCouplerConstraint() const
+{
+  return getMimicConstraintType() == MimicConstraintType::Coupler;
 }
 
 //==============================================================================

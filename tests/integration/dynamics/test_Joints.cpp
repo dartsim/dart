@@ -34,6 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -64,6 +65,14 @@ using namespace dart::simulation;
 using namespace dart::test;
 
 #define JOINT_TOL 0.01
+
+class CouplerConstraintTestHelper : public dart::constraint::CouplerConstraint
+{
+public:
+  using CouplerConstraint::applyImpulse;
+  using CouplerConstraint::CouplerConstraint;
+  using CouplerConstraint::update;
+};
 
 //==============================================================================
 class Joints : public testing::Test
@@ -1193,13 +1202,131 @@ void testMimicJoint()
 }
 
 //==============================================================================
-TEST_F(Joints, MimicJoint)
+void testMimicCouplerJoint()
+{
+  using namespace dart::math::suffixes;
+
+  double timestep = 1e-3;
+  double tolPos = 1e-3;
+  double sufficient_force = 1e+5;
+
+  simulation::WorldPtr world = simulation::World::create();
+  ASSERT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(timestep);
+
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 2);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+
+  pendulum->disableSelfCollisionCheck();
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    auto bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllShapeNodesWith<CollisionAspect>();
+  }
+
+  std::vector<JointPtr> joints(2);
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    dynamics::Joint* joint = pendulum->getJoint(i);
+    ASSERT_NE(joint, nullptr);
+
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setLimitEnforcement(true);
+    joint->setCoulombFriction(0, 0.0);
+
+    joints[i] = joint;
+  }
+
+  joints[0]->setActuatorType(Joint::PASSIVE);
+  joints[0]->setForceUpperLimit(0, sufficient_force);
+  joints[0]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[1]->setActuatorType(Joint::MIMIC);
+  joints[1]->setMimicJoint(joints[0], 1., 0.);
+  joints[1]->setUseCouplerConstraint(true);
+  joints[1]->setForceUpperLimit(0, sufficient_force);
+  joints[1]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[0]->setPosition(0, 0.0_deg);
+  joints[1]->setPosition(0, 30.0_deg);
+
+  world->addSkeleton(pendulum);
+
+  double initialReferencePosition = joints[0]->getPosition(0);
+  double initialError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  for (int i = 0; i < 400; ++i)
+    world->step();
+
+  double finalError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  EXPECT_LT(std::abs(finalError), std::abs(initialError));
+  EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
+  EXPECT_GT(
+      std::abs(joints[0]->getPosition(0) - initialReferencePosition), 1e-4);
+}
+
+//==============================================================================
+TEST_F(Joints, MIMIC_JOINT)
 {
   testMimicJoint();
 }
 
 //==============================================================================
-TEST_F(Joints, JointCoulombFrictionAndPositionLimit)
+TEST_F(Joints, MIMIC_JOINT_COUPLER)
+{
+  testMimicCouplerJoint();
+}
+
+//==============================================================================
+TEST_F(Joints, COUPLER_CONSTRAINT_APPLY_IMPULSE)
+{
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 0);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+  pendulum->setTimeStep(1e-3);
+
+  Joint* referenceJoint = pendulum->getJoint(0);
+  Joint* followerJoint = pendulum->getJoint(1);
+  ASSERT_NE(referenceJoint, nullptr);
+  ASSERT_NE(followerJoint, nullptr);
+
+  followerJoint->setActuatorType(Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, 1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(true);
+  followerJoint->setVelocityLowerLimit(0, -100.0);
+  followerJoint->setVelocityUpperLimit(0, 100.0);
+  followerJoint->setForceLowerLimit(0, -100.0);
+  followerJoint->setForceUpperLimit(0, 100.0);
+
+  referenceJoint->setPosition(0, 0.1);
+  followerJoint->setPosition(0, 0.0);
+
+  CouplerConstraintTestHelper constraint(
+      followerJoint, followerJoint->getMimicDofProperties());
+  constraint.update();
+  ASSERT_GT(constraint.getDimension(), 0u);
+
+  double lambda[1] = {2.3};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(followerJoint->getConstraintImpulse(0), lambda[0], 1e-12);
+  EXPECT_NEAR(
+      referenceJoint->getConstraintImpulse(0),
+      -lambda[0] * followerJoint->getMimicMultiplier(0),
+      1e-12);
+}
+
+//==============================================================================
+TEST_F(Joints, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 {
   const double timeStep = 1e-3;
   const double tol = 1e-2;
