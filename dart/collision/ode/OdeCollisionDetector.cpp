@@ -37,6 +37,7 @@
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -214,6 +215,13 @@ bool OdeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (0u == option.maxNumContacts) {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
+    return false;
+  }
+
   auto odeGroup = static_cast<OdeCollisionGroup*>(group);
   odeGroup->updateEngineData();
 
@@ -237,6 +245,13 @@ bool OdeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (0u == option.maxNumContacts) {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
+    return false;
+  }
+
   auto odeGroup1 = static_cast<OdeCollisionGroup*>(group1);
   odeGroup1->updateEngineData();
 
