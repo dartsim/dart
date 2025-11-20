@@ -1,9 +1,10 @@
 #include "optimizer/gradient_descent.hpp"
 
 #include "dart/common/Diagnostics.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/optimizer/Solver.hpp"
 #include "dart/optimizer/Problem.hpp"
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
