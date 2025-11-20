@@ -76,13 +76,16 @@ using namespace dart::gui::osg;
 
 void setupRing(const SkeletonPtr& ring)
 {
+  // snippet:cpp-collisions-lesson4a-ring-stiffness-start
   // Set the spring and damping coefficients for the degrees of freedom
   for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setSpringStiffness(ring_spring_stiffness);
     dof->setDampingCoefficient(ring_damping_coefficient);
   }
+  // snippet:cpp-collisions-lesson4a-ring-stiffness-end
 
+  // snippet:cpp-collisions-lesson4b-ring-rest-start
   // Compute the joint angle needed to form a ring
   std::size_t numEdges = ring->getNumBodyNodes();
   double angle = 2 * dart::math::pi / numEdges;
@@ -97,12 +100,15 @@ void setupRing(const SkeletonPtr& ring)
     for (std::size_t j = 0; j < 3; ++j)
       joint->setRestPosition(j, restPos[j]);
   }
+  // snippet:cpp-collisions-lesson4b-ring-rest-end
 
+  // snippet:cpp-collisions-lesson4c-ring-rest-state-start
   // Set the Joints to be in their rest positions
   for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setPosition(dof->getRestPosition());
   }
+  // snippet:cpp-collisions-lesson4c-ring-rest-state-end
 }
 
 class CollisionsEventHandler : public ::osgGA::GUIEventHandler
@@ -171,6 +177,7 @@ protected:
   /// Add an object to the world and toss it at the wall
   bool addObject(const SkeletonPtr& object)
   {
+    // snippet:cpp-collisions-lesson3a-initial-position-start
     // Set the starting position for the object
     Eigen::Vector6d positions(Eigen::Vector6d::Zero());
 
@@ -180,10 +187,14 @@ protected:
 
     positions[5] = default_start_height;
     object->getJoint(0)->setPositions(positions);
+    // snippet:cpp-collisions-lesson3a-initial-position-end
 
+    // snippet:cpp-collisions-lesson3b-name-start
     // Add the object to the world
     object->setName(object->getName() + std::to_string(mSkelCount++));
+    // snippet:cpp-collisions-lesson3b-name-end
 
+    // snippet:cpp-collisions-lesson3c-collision-check-start
     // Look through the collisions to see if the new object would start in
     // collision with something
     auto collisionEngine = mWorld->getCollisionDetector();
@@ -203,12 +214,16 @@ protected:
                 << "It will not be added to the world." << std::endl;
       return false;
     }
+    // snippet:cpp-collisions-lesson3c-collision-check-end
 
+    // snippet:cpp-collisions-lesson3d-reference-frame-start
     // Create reference frames for setting the initial velocity
     Eigen::Isometry3d centerTf(Eigen::Isometry3d::Identity());
     centerTf.translation() = object->getCOM();
     SimpleFrame center(Frame::World(), "center", centerTf);
+    // snippet:cpp-collisions-lesson3d-reference-frame-end
 
+    // snippet:cpp-collisions-lesson3e-launch-velocity-start
     // Set the velocities of the reference frames so that we can easily give the
     // Skeleton the linear and angular velocities that we want
     double angle = default_launch_angle;
@@ -229,12 +244,15 @@ protected:
     Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
     Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
     center.setClassicDerivatives(v, w);
+    // snippet:cpp-collisions-lesson3e-launch-velocity-end
 
+    // snippet:cpp-collisions-lesson3f-apply-velocity-start
     SimpleFrame ref(&center, "root_reference");
     ref.setRelativeTransform(object->getBodyNode(0)->getTransform(&center));
 
     // Use the reference frames to set the velocity of the Skeleton's root
     object->getJoint(0)->setVelocities(ref.getSpatialVelocity());
+    // snippet:cpp-collisions-lesson3f-apply-velocity-end
 
     return true;
   }
@@ -248,6 +266,7 @@ protected:
     if (!addObject(ring))
       return;
 
+    // snippet:cpp-collisions-lesson5-closed-chain-start
     // Create a closed loop to turn the chain into a ring
     BodyNode* head = ring->getBodyNode(0);
     BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes() - 1);
@@ -260,6 +279,7 @@ protected:
 
     mWorld->getConstraintSolver()->addConstraint(constraint);
     mJointConstraints.push_back(constraint);
+    // snippet:cpp-collisions-lesson5-closed-chain-end
   }
 
   /// Remove a Skeleton and get rid of the constraint that was associated with
@@ -332,6 +352,7 @@ BodyNode* addRigidBody(
     Shape::ShapeType type,
     BodyNode* parent = nullptr)
 {
+  // snippet:cpp-collisions-lesson1a-properties-start
   // Set the Joint properties
   typename JointType::Properties properties;
   properties.mName = name + "_joint";
@@ -343,13 +364,17 @@ BodyNode* addRigidBody(
     properties.mT_ParentBodyToJoint = tf;
     properties.mT_ChildBodyToJoint = tf.inverse();
   }
+  // snippet:cpp-collisions-lesson1a-properties-end
 
+  // snippet:cpp-collisions-lesson1b-joint-pair-start
   // Create the Joint and Body pair
   BodyNode* bn = chain
                      ->createJointAndBodyNodePair<JointType>(
                          parent, properties, BodyNode::AspectProperties(name))
                      .second;
+  // snippet:cpp-collisions-lesson1b-joint-pair-end
 
+  // snippet:cpp-collisions-lesson1c-shape-selection-start
   // Make the shape based on the requested Shape type
   ShapePtr shape;
   if (Shape::BOX == type) {
@@ -362,27 +387,36 @@ BodyNode* addRigidBody(
     shape = std::make_shared<EllipsoidShape>(
         default_shape_height * Eigen::Vector3d::Ones());
   }
+  // snippet:cpp-collisions-lesson1c-shape-selection-end
 
+  // snippet:cpp-collisions-lesson1c-shape-node-start
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
+  // snippet:cpp-collisions-lesson1c-shape-node-end
 
+  // snippet:cpp-collisions-lesson1d-inertia-start
   // Setup the inertia for the body
   Inertia inertia;
   double mass = default_shape_density * shape->getVolume();
   inertia.setMass(mass);
   inertia.setMoment(shape->computeInertia(mass));
   bn->setInertia(inertia);
+  // snippet:cpp-collisions-lesson1d-inertia-end
 
+  // snippet:cpp-collisions-lesson1e-restitution-start
   // Set the coefficient of restitution to make the body more bouncy
   shapeNode->getDynamicsAspect()->setRestitutionCoeff(default_restitution);
+  // snippet:cpp-collisions-lesson1e-restitution-end
 
+  // snippet:cpp-collisions-lesson1f-damping-start
   // Set damping to make the simulation more stable
   if (parent) {
     Joint* joint = bn->getParentJoint();
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
       joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
   }
+  // snippet:cpp-collisions-lesson1f-damping-end
 
   return bn;
 }
@@ -414,6 +448,7 @@ BodyNode* addSoftBody(
     joint_properties.mT_ChildBodyToJoint = tf.inverse();
   }
 
+  // snippet:cpp-collisions-lesson2b-soft-properties-start
   // Set the properties of the soft body
   SoftBodyNode::UniqueProperties soft_properties;
   // Use the SoftBodyNodeHelper class to create the geometries for the
@@ -452,7 +487,9 @@ BodyNode* addSoftBody(
   soft_properties.mKv = default_vertex_stiffness;
   soft_properties.mKe = default_edge_stiffness;
   soft_properties.mDampCoeff = default_soft_damping;
+  // snippet:cpp-collisions-lesson2b-soft-properties-end
 
+  // snippet:cpp-collisions-lesson2c-soft-node-start
   // Create the Joint and Body pair
   SoftBodyNode::Properties body_properties(
       BodyNode::AspectProperties(name), soft_properties);
@@ -460,15 +497,20 @@ BodyNode* addSoftBody(
                          ->createJointAndBodyNodePair<JointType, SoftBodyNode>(
                              parent, joint_properties, body_properties)
                          .second;
+  // snippet:cpp-collisions-lesson2c-soft-node-end
 
+  // snippet:cpp-collisions-lesson2d-soft-inertia-start
   // Zero out the inertia for the underlying BodyNode
   Inertia inertia;
   inertia.setMoment(1e-8 * Eigen::Matrix3d::Identity());
   inertia.setMass(1e-8);
   bn->setInertia(inertia);
+  // snippet:cpp-collisions-lesson2d-soft-inertia-end
 
+  // snippet:cpp-collisions-lesson2e-soft-alpha-start
   // Make the shape transparent
   bn->setAlpha(0.4);
+  // snippet:cpp-collisions-lesson2e-soft-alpha-end
 
   return bn;
 }
@@ -529,6 +571,7 @@ SkeletonPtr createSoftBody()
   // Add a soft body
   BodyNode* bn = addSoftBody<FreeJoint>(soft, "soft box", SOFT_BOX);
 
+  // snippet:cpp-collisions-lesson2f-rigid-core-start
   // Add a rigid collision geometry and inertia
   double width = default_shape_height, height = 2 * default_shape_width;
   Eigen::Vector3d dims(width, width, height);
@@ -540,6 +583,7 @@ SkeletonPtr createSoftBody()
   inertia.setMass(default_shape_density * box->getVolume());
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
+  // snippet:cpp-collisions-lesson2f-rigid-core-end
 
   setAllColors(soft, dart::Color::Fuchsia());
 
@@ -553,6 +597,7 @@ SkeletonPtr createHybridBody()
   // Add a soft body
   BodyNode* bn = addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
+  // snippet:cpp-collisions-lesson2g-welded-rigid-start
   // Add a rigid body attached by a WeldJoint
   bn = hybrid->createJointAndBodyNodePair<WeldJoint>(bn).second;
   bn->setName("rigid box");
@@ -570,6 +615,7 @@ SkeletonPtr createHybridBody()
   inertia.setMass(default_shape_density * box->getVolume());
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
+  // snippet:cpp-collisions-lesson2g-welded-rigid-end
 
   setAllColors(hybrid, dart::Color::Green());
 

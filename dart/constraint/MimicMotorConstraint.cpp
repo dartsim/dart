@@ -37,7 +37,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include <iostream>
 
@@ -99,16 +99,16 @@ const std::string& MimicMotorConstraint::getStaticType()
 //==============================================================================
 void MimicMotorConstraint::setConstraintForceMixing(double cfm)
 {
-  // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9) {
+  double clamped = cfm;
+  if (clamped < 1e-9) {
     DART_WARN(
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    mConstraintForceMixing = 1e-9;
+    clamped = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  mConstraintForceMixing = clamped;
 }
 
 //==============================================================================

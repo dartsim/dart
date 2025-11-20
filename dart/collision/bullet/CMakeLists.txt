@@ -1,46 +1,57 @@
 # Dependency checks
+if(NOT DART_BUILD_COLLISION_BULLET)
+  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  unset(BT_USE_DOUBLE_PRECISION CACHE)
+  unset(BT_USE_DOUBLE_PRECISION)
+  return()
+endif()
+
+message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
 
 # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
-if(BULLET_FOUND)
-  # Test whether Bullet was built with double precision. If so, we need to
-  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
-  # any Bullet headers. This is a workaround for the fact that Bullet does not
-  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-  include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_FLAGS "-w")
-  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-  check_cxx_source_compiles(
-    "
-    #include <btBulletCollisionCommon.h>
-    int main()
-    {
-      btVector3 v(0., 0., 1.);
-      btStaticPlaneShape planeShape(v, 0.);
-      return 0;
-    }
-    "
-    BT_USE_DOUBLE_PRECISION
+if(NOT BULLET_FOUND)
+  message(
+    FATAL_ERROR
+    "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
+    "Please install libbullet-dev (>= 3.25) or disable "
+    "DART_BUILD_COLLISION_BULLET."
   )
-
-  if(DART_VERBOSE)
-    if(BT_USE_DOUBLE_PRECISION)
-      message(STATUS "Looking for Bullet - found (double precision)")
-    else()
-      message(STATUS "Looking for Bullet - found (single precision)")
-    endif()
-  endif()
-
-  set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
-else()
-  message(WARNING "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev")
-  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
-  return()
 endif()
+
+# Test whether Bullet was built with double precision. If so, we need to
+# define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+# any Bullet headers. This is a workaround for the fact that Bullet does not
+# add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-w")
+set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+check_cxx_source_compiles(
+  "
+  #include <btBulletCollisionCommon.h>
+  int main()
+  {
+    btVector3 v(0., 0., 1.);
+    btStaticPlaneShape planeShape(v, 0.);
+    return 0;
+  }
+  "
+  BT_USE_DOUBLE_PRECISION
+)
+
+if(DART_VERBOSE)
+  if(BT_USE_DOUBLE_PRECISION)
+    message(STATUS "Looking for Bullet - found (double precision)")
+  else()
+    message(STATUS "Looking for Bullet - found (single precision)")
+  endif()
+endif()
+
+set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
@@ -48,19 +59,38 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-# Set local target name
-set(target_name ${PROJECT_NAME}-collision-bullet)
-set(component_name collision-bullet)
-
-# Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-target_link_libraries(${target_name} PUBLIC dart Bullet)
-
-# Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} Bullet)
+dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs})
+set(_dart_bullet_link_items ${BULLET_LIBRARIES})
+if(TARGET Bullet::Bullet)
+  list(APPEND _dart_bullet_link_items Bullet::Bullet)
+endif()
+if(NOT _dart_bullet_link_items)
+  set(_bullet_candidate_libs
+    ${BULLET_COLLISION_LIBRARY}
+    ${BULLET_DYNAMICS_LIBRARY}
+    ${BULLET_SOFTBODY_LIBRARY}
+    ${BULLET_MATH_LIBRARY}
+  )
+  foreach(_bullet_candidate IN LISTS _bullet_candidate_libs)
+    if(_bullet_candidate)
+      list(APPEND _dart_bullet_link_items ${_bullet_candidate})
+    endif()
+  endforeach()
+endif()
+list(REMOVE_DUPLICATES _dart_bullet_link_items)
+if(NOT _dart_bullet_link_items)
+  message(
+    FATAL_ERROR
+    "Bullet was found but did not report any linkable libraries."
+  )
+endif()
+set(_dart_bullet_include_dirs ${BULLET_INCLUDE_DIRS})
+if(_dart_bullet_include_dirs)
+  set_property(GLOBAL APPEND PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS ${_dart_bullet_include_dirs})
+endif()
+set_property(GLOBAL APPEND PROPERTY DART_EXTRA_LINK_LIBS ${_dart_bullet_link_items})
+dart_pkgconfig_append_libraries(${_dart_bullet_link_items})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})

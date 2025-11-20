@@ -34,8 +34,8 @@
 #define DART_DYNAMICS_JOINT_HPP_
 
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 #include <dart/dynamics/detail/JointAspect.hpp>
 
 #include <dart/math/MathTypes.hpp>
@@ -43,6 +43,8 @@
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
+
+#include <dart/Export.hpp>
 
 #include <memory>
 #include <string>
@@ -58,9 +60,10 @@ class DegreeOfFreedom;
 
 /// class Joint
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Joint : public virtual common::Subject,
-              public virtual common::VersionCounter,
-              public common::EmbedProperties<Joint, detail::JointProperties>
+class DART_API Joint
+  : public virtual common::Subject,
+    public virtual common::VersionCounter,
+    public common::EmbedProperties<Joint, detail::JointProperties>
 {
 public:
   using CompositeProperties = common::Composite::Properties;
@@ -174,6 +177,18 @@ public:
   /// Returns the vector of MimicDofProperties for all DoFs of the dependent
   /// joint.
   const std::vector<MimicDofProperties>& getMimicDofProperties() const;
+
+  /// Sets the constraint type used to enforce the mimic relationship.
+  void setMimicConstraintType(MimicConstraintType type);
+
+  /// Returns the constraint type used to enforce the mimic relationship.
+  MimicConstraintType getMimicConstraintType() const;
+
+  /// Enable or disable the CouplerConstraint enforcement for this joint.
+  void setUseCouplerConstraint(bool enable);
+
+  /// Returns true if the CouplerConstraint enforcement is enabled.
+  bool isUsingCouplerConstraint() const;
 
   /// Return true if this joint is kinematic joint.
   ///

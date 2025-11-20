@@ -39,20 +39,23 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
-#include <dart/simulation/SmartPointer.hpp>
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/SmartPointer.hpp>
+#include <dart/collision/Fwd.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -62,23 +65,6 @@
 #include <vector>
 
 namespace dart {
-
-namespace integration {
-class Integrator;
-} // namespace integration
-
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
-namespace constraint {
-class ConstraintSolver;
-} // namespace constraint
-
-namespace collision {
-class CollisionResult;
-} // namespace collision
-
 namespace simulation {
 
 /// Available collision detector backends for a World.
@@ -103,11 +89,9 @@ struct WorldConfig final
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
 };
 
-DART_COMMON_DECLARE_SHARED_WEAK(World)
-
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class World : public virtual common::Subject
+class DART_API World : public virtual common::Subject
 {
 public:
   using NameChangedSignal = common::Signal<void(

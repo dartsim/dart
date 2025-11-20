@@ -47,8 +47,8 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-/******************************************************************************/
-TEST(BUILDING, BASIC)
+//==============================================================================
+TEST(Building, Basic)
 {
   // Skeletons
   SkeletonPtr skel1 = Skeleton::create();

@@ -923,6 +923,14 @@ void BodyNode(py::module& m)
           ::py::arg("shape"),
           ::py::arg("name"))
       .def(
+          "createEndEffector",
+          +[](dart::dynamics::BodyNode* self,
+              const std::string& name) -> dart::dynamics::EndEffector* {
+            return self->createEndEffector(name);
+          },
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("name") = "EndEffector")
+      .def(
           "getShapeNodes",
           +[](dart::dynamics::BodyNode* self)
               -> std::vector<dart::dynamics::ShapeNode*> {
@@ -942,6 +950,14 @@ void BodyNode(py::module& m)
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
             return self->getNumEndEffectors();
           })
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::BodyNode* self,
+              std::size_t index) -> dart::dynamics::EndEffector* {
+            return self->getEndEffector(index);
+          },
+          ::py::return_value_policy::reference_internal,
+          ::py::arg("index"))
       .def(
           "getNumMarkers",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {

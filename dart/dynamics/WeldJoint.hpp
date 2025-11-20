@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/ZeroDofJoint.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <string>
@@ -43,12 +45,12 @@ namespace dart {
 namespace dynamics {
 
 /// class WeldJoint
-class WeldJoint : public ZeroDofJoint
+class DART_API WeldJoint : public ZeroDofJoint
 {
 public:
   friend class Skeleton;
 
-  struct Properties : ZeroDofJoint::Properties
+  struct DART_API Properties : ZeroDofJoint::Properties
   {
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 

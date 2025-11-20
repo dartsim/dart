@@ -1,6 +1,5 @@
-# Note: The dart-gui component has been removed since GLUT has been deprecated.
-# OpenSceneGraph (OSG) is now the only GUI backend, provided through the
-# dart-gui-osg component.
+# Note: The dart-gui component is backed entirely by OpenSceneGraph (OSG).
+# OSG is currently the only GUI backend and lives under dart/gui/osg.
 
 # Add subdirectories
 add_subdirectory(osg)

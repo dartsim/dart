@@ -44,7 +44,7 @@ namespace gui {
 namespace osg {
 namespace render {
 
-class WarningShapeNode : public ShapeNode, public ::osg::Node
+class DART_GUI_API WarningShapeNode : public ShapeNode, public ::osg::Node
 {
 public:
   WarningShapeNode(

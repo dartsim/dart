@@ -17,7 +17,10 @@ import argparse
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, Optional, Tuple
+
+from build_helpers import cmake_target_exists, get_build_dir
 
 
 def supports_unicode() -> bool:
@@ -50,6 +53,32 @@ class Symbols:
 
 
 PIXI_DEFAULT_DARTPY = "ON"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+
+def _env_flag_enabled(name: str, default: str = "ON") -> bool:
+    """Helper to treat ON/OFF/0/1 env values as booleans."""
+    value = os.environ.get(name, default)
+    if value is None:
+        return True
+    return value.upper() not in {"OFF", "0", "FALSE"}
+
+
+def _cmake_option_enabled(option: str) -> Optional[bool]:
+    """Return bool if option present in CMakeCache, otherwise None."""
+    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    cache_path = ROOT_DIR / "build" / env_name / "cpp" / build_type / "CMakeCache.txt"
+    if not cache_path.is_file():
+        return None
+
+    needle = f"{option}:BOOL="
+    with cache_path.open("r", encoding="utf-8", errors="ignore") as cache:
+        for line in cache:
+            if line.startswith(needle):
+                value = line.strip().split("=", maxsplit=1)[-1].upper()
+                return value == "ON"
+    return None
 
 
 def pixi_command(task: str, *args: str) -> str:
@@ -211,7 +240,7 @@ def run_build_tests(skip_debug: bool = False) -> bool:
     success = True
 
     # Build Release
-    result, _ = run_command(pixi_command("build", "Release"), "Build Release")
+    result, _ = run_command(pixi_command("build"), "Build Release")
     success = success and result
 
     if not skip_debug:
@@ -229,9 +258,7 @@ def run_unit_tests() -> bool:
     success = True
 
     # Build and run C++ tests
-    result, _ = run_command(
-        pixi_command("test", PIXI_DEFAULT_DARTPY, "Release"), "C++ unit tests"
-    )
+    result, _ = run_command(pixi_command("test", PIXI_DEFAULT_DARTPY), "C++ unit tests")
     success = success and result
 
     return success
@@ -242,7 +269,7 @@ def run_dart8_tests() -> bool:
     print_header("DART8 TESTS")
 
     result, _ = run_command(
-        pixi_command("test-dart8", PIXI_DEFAULT_DARTPY, "Release"), "dart8 C++ tests"
+        pixi_command("test-dart8", PIXI_DEFAULT_DARTPY), "dart8 C++ tests"
     )
     return result
 
@@ -251,19 +278,34 @@ def run_python_tests() -> bool:
     """Run Python tests"""
     print_header("PYTHON TESTS")
 
-    # Check if Python bindings are enabled
-    result, _ = run_command(pixi_command("test-py", "Release"), "Python tests")
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    cmake_flag = _cmake_option_enabled("DART_BUILD_DARTPY")
+    if cmake_flag is False:
+        print_warning("Skipping python tests because DART_BUILD_DARTPY is OFF in build")
+        return True
 
-    return result
+    if not _env_flag_enabled("DART_BUILD_DARTPY_OVERRIDE", PIXI_DEFAULT_DARTPY):
+        print_warning("Skipping python tests because DART_BUILD_DARTPY_OVERRIDE is OFF")
+        return True
 
+    build_dir = get_build_dir(build_type)
+    if not cmake_target_exists(build_dir, build_type, "pytest"):
+        print_warning("Skipping python tests because target 'pytest' was not generated")
+        return True
 
-def run_dartpy8_tests() -> bool:
-    """Run dartpy8 smoke test."""
-    print_header("DARTPY8 SMOKE TEST")
-
-    result, _ = run_command(
-        pixi_command("test-dartpy8", "Release"), "dartpy8 smoke test"
+    # Ensure the dartpy bindings are built before running pytest
+    build_result, _ = run_command(
+        pixi_command("build-py-dev", PIXI_DEFAULT_DARTPY, build_type),
+        f"Build dartpy bindings ({build_type})",
     )
+    if not build_result:
+        return False
+
+    # Check if Python bindings are enabled
+    result, _ = run_command(
+        pixi_command("test-py", build_type), f"Python tests ({build_type})"
+    )
+
     return result
 
 
@@ -329,9 +371,6 @@ def main():
     parser.add_argument("--skip-python", action="store_true", help="Skip Python tests")
     parser.add_argument(
         "--skip-dart8", action="store_true", help="Skip dart8 C++ tests"
-    )
-    parser.add_argument(
-        "--skip-dartpy8", action="store_true", help="Skip dartpy8 smoke tests"
     )
     parser.add_argument(
         "--skip-debug",
@@ -401,12 +440,6 @@ def main():
         run_step("Python Tests", run_python_tests)
     else:
         print_warning("Skipping Python tests")
-
-    # Run dartpy8 tests
-    if not args.skip_dartpy8:
-        run_step("dartpy8 Tests", run_dartpy8_tests)
-    else:
-        print_warning("Skipping dartpy8 tests")
 
     # Run documentation build
     if not args.skip_docs:

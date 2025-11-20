@@ -175,10 +175,16 @@ protected:
 
   /// Return false
   template <class T>
-  static constexpr bool _isSpecializedFor(type<T>);
+  static constexpr bool _isSpecializedFor(type<T>)
+  {
+    return false;
+  }
 
   /// Return true
-  static constexpr bool _isSpecializedFor(type<SpecAspect>);
+  static constexpr bool _isSpecializedFor(type<SpecAspect>)
+  {
+    return true;
+  }
 
   /// Iterator that points to the Aspect of this SpecializedForAspect
   Composite::AspectMap::iterator mSpecAspectIterator;

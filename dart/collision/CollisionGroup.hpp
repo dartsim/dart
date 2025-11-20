@@ -37,13 +37,15 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/Fwd.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
-#include <dart/collision/SmartPointer.hpp>
 
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Observer.hpp>
+
+#include <dart/Export.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -52,12 +54,18 @@
 namespace dart {
 namespace collision {
 
-class CollisionGroup
+class DART_API CollisionGroup
 {
 public:
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
   // CollisionGroup also can be created from CollisionDetector::create()
+
+  CollisionGroup(const CollisionGroup&) = delete;
+  CollisionGroup& operator=(const CollisionGroup&) = delete;
+
+  CollisionGroup(CollisionGroup&&) noexcept = default;
+  CollisionGroup& operator=(CollisionGroup&&) noexcept = default;
 
   /// Destructor
   virtual ~CollisionGroup() = default;

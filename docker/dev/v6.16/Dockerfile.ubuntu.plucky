@@ -40,21 +40,14 @@ RUN apt-get install -y --no-install-recommends \
 # ==============================================================================
 
 RUN apt-get install -y --no-install-recommends \
-    coinor-libipopt-dev \
-    freeglut3-dev \
-    libxi-dev \
-    libxmu-dev \
-    libbullet-dev \
     libtinyxml2-dev \
     liburdfdom-dev \
     liburdfdom-headers-dev \
     libopenscenegraph-dev \
-    libnlopt-cxx-dev \
     liboctomap-dev \
     libode-dev \
     libimgui-dev \
-    libspdlog-dev \
-    libpagmo-dev
+    libspdlog-dev
 
 # ==============================================================================
 # Python binding dependencies

@@ -33,12 +33,14 @@
 #ifndef DART_DYNAMICS_NODE_HPP_
 #define DART_DYNAMICS_NODE_HPP_
 
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
+
+#include <dart/Export.hpp>
 
 #include <memory>
 
@@ -49,7 +51,7 @@ class BodyNode;
 class Node;
 
 //==============================================================================
-class NodeDestructor final
+class DART_API NodeDestructor final
 {
 public:
   /// Constructor
@@ -76,8 +78,8 @@ private:
 /// In most cases, when creating your own custom Node class, you will also want
 /// to inherit from AccessoryNode using CRTP.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Node : public virtual common::Subject,
-             public virtual common::VersionCounter
+class DART_API Node : public virtual common::Subject,
+                      public virtual common::VersionCounter
 {
 public:
   friend class BodyNode;

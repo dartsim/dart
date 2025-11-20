@@ -3,6 +3,10 @@
 ## Overview
 This document provides an exploration of the core dynamics classes in DART (Dynamic Animation and Robotics Toolkit), located in the `dart/dynamics` directory.
 
+## Coding Conventions
+- Follow `CONTRIBUTING.md` for formatting (two-space indentation, camelCase functions, PascalCase classes, no cuddled braces).
+- Always wrap conditional bodies in braces, even when the branch contains a single statement. This keeps future edits safe and matches the repository style enforced in current work.
+
 ## Core Dynamics Classes
 
 ### 1. Skeleton (`Skeleton.hpp`)
@@ -202,6 +206,10 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 - Allows a joint to mimic the motion of another joint
 - Supports different multipliers and offsets per DOF
 - Useful for coupled mechanisms
+- `Joint::setUseCouplerConstraint(true)` swaps the legacy servo-style mimic
+  motor for a bilateral `CouplerConstraint`, so both the reference and
+  dependent joints feel equal-and-opposite impulses. Leave it disabled to keep
+  the original MimicMotorConstraint behavior.
 
 **Internal Update Methods:**
 - `updateRelativeTransform()`, `updateRelativeSpatialVelocity()`

@@ -79,7 +79,7 @@ namespace dart8 {
 ///       or the World is destroyed.
 ///
 /// @see Frame
-class Link : public Frame
+class DART8_API Link : public Frame
 {
 public:
   /// Constructor (typically called by MultiBody::addLink)

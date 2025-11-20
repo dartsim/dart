@@ -41,6 +41,8 @@
 #include <dart/common/AspectWithVersion.hpp>
 #include <dart/common/SpecializedForAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -49,12 +51,13 @@ class Skeleton;
 class EndEffector;
 
 //==============================================================================
-class Support final : public common::AspectWithStateAndVersionedProperties<
-                          Support,
-                          detail::SupportStateData,
-                          detail::SupportPropertiesData,
-                          EndEffector,
-                          &detail::SupportUpdate>
+class DART_API Support final
+  : public common::AspectWithStateAndVersionedProperties<
+        Support,
+        detail::SupportStateData,
+        detail::SupportPropertiesData,
+        EndEffector,
+        &detail::SupportUpdate>
 {
 public:
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
@@ -125,13 +128,13 @@ public:
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
-  void setDefaultRelativeTransform(
+  DART_API void setDefaultRelativeTransform(
       const Eigen::Isometry3d& _newDefaultTf, bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can
   /// be set with setDefaultRelativeTransform()
-  void resetRelativeTransform();
+  DART_API void resetRelativeTransform();
 
   DART_BAKE_SPECIALIZED_ASPECT(Support)
 

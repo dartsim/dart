@@ -37,6 +37,10 @@
 
 #include <ode/ode.h>
 
+#include <deque>
+#include <utility>
+#include <vector>
+
 #define MAX_COLLIDE_RETURNS 250
 
 namespace dart {
@@ -47,14 +51,27 @@ namespace collision {
 /// The supported collision shape types are sphere, box, capsule, cylinder,
 /// plane, and trimesh.
 ///
+/// The detector keeps a short history of contact manifolds per shape pair in
+/// order to stabilize resting configurations (for example, capsules lying on a
+/// plane). This improves parity with Bullet while maintaining ODE as the
+/// narrow-phase backend.
+///
 /// ODE additionally supports ray and heightfiled, but DART doesn't support them
 /// yet.
-class OdeCollisionDetector : public CollisionDetector
+class DART_API OdeCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;
 
   friend class OdeCollisionObject;
+  friend class OdeCollisionGroup;
+  using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;
+
+  struct ContactHistoryItem
+  {
+    CollObjPair pair;
+    std::deque<Contact> history;
+  };
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
@@ -120,8 +137,13 @@ protected:
 private:
   dGeomID createOdeCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
+  void clearContactHistoryFor(const CollisionObject* object);
+  void clearContactHistory();
+  void pruneContactHistory(const CollisionResult& result);
+
 private:
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
+  std::vector<ContactHistoryItem> mContactHistory;
   static Registrar<OdeCollisionDetector> mRegistrar;
 };
 

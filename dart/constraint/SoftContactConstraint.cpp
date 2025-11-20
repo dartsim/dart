@@ -41,9 +41,9 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include <iostream>
 

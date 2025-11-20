@@ -37,6 +37,8 @@
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/detail/NoOp.hpp>
 
+#include <dart/Export.hpp>
+
 #include <string>
 
 namespace dart {
@@ -44,7 +46,7 @@ namespace common {
 
 class Composite;
 
-class Aspect
+class DART_API Aspect
 {
 public:
   friend class Composite;

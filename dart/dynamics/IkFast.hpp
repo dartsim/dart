@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_IKFAST_HPP_
 #define DART_DYNAMICS_IKFAST_HPP_
 
+#include <dart/Export.hpp>
+
 #include <array>
 
 #define IKFAST_HAS_LIBRARY
@@ -47,7 +49,7 @@ namespace dynamics {
 ///
 /// The detail of IkFast can be found here:
 /// http://openrave.org/docs/0.8.2/openravepy/ikfast/
-class IkFast : public InverseKinematics::Analytical
+class DART_API IkFast : public InverseKinematics::Analytical
 {
 public:
   /// Inverse kinematics types supported by IkFast
@@ -269,7 +271,8 @@ private:
 /// value initially in the bounds. This value is only updated if an available
 /// solution is found.
 /// \return True if a solution is found. False, otherwise.
-bool wrapCyclicSolution(double curr, double lb, double ub, double& sol);
+DART_API bool wrapCyclicSolution(
+    double curr, double lb, double ub, double& sol);
 
 } // namespace dynamics
 } // namespace dart

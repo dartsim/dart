@@ -27,14 +27,17 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfcl-dev libfmt-dev
+  libeigen3-dev libfcl-dev libfmt-dev \
+  libsdformat15 libgz-math8 libgz-utils2
 ```
+
+> **Note:** Replace the `libsdformat15`/`libgz-*` package names with the versions available on your distribution. These packages are published via [packages.osrfoundation.org](https://packages.osrfoundation.org).
 
 Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
+  coinor-libipopt-dev libbullet-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
   libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
@@ -43,16 +46,19 @@ sudo apt install \
 
 ### macOS
 
-Install required dependencies using `brew`:
+Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
-brew install assimp cmake eigen fmt fcl
+brew tap osrf/simulation
+brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 ```
+
+> **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
 
 Install optional dependencies:
 
 ```bash
-brew install bullet freeglut ipopt nlopt octomap ode \
+brew install bullet ipopt nlopt octomap ode \
   open-scene-graph --HEAD \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
@@ -62,14 +68,14 @@ brew install bullet freeglut ipopt nlopt octomap ode \
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fcl fmt spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
 ```
 
 Install optional dependencies:
 
 ```bash
 vcpkg install --triplet x64-windows \
-  assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
+  assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
   opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
 ```
 
@@ -78,14 +84,14 @@ vcpkg install --triplet x64-windows \
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fcl fmt
+yay -S assimp cmake eigen fcl fmt sdformat
 ```
 
 Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt freeglut nlopt octomap ode opencl-clhpp \
+  bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
   opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
   urdfdom pybind11
 ```
@@ -99,6 +105,36 @@ TODO
 For the complete and up-to-date list of dependencies with version requirements, refer to:
 - [`CMakeLists.txt`](../../CMakeLists.txt) - Authoritative source for CMake dependencies and version requirements
 - [`pixi.toml`](../../pixi.toml) - Managed dependencies for reproducible builds
+
+## Recommended pixi Workflow
+
+We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs every required dependency (CMake, Ninja, compilers, Python, optional libraries) and exposes reproducible tasks so you do not have to manage toolchains manually.
+
+1. [Install pixi](https://pixi.sh/latest/#installation) and run `pixi install` once to create the environment.
+2. Configure a build:
+
+   ```bash
+   pixi run config                # Release (default)
+   pixi run config-debug          # Debug
+   ```
+
+   You can override booleans via environment variables instead of editing `pixi.toml`:
+
+   ```bash
+   DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
+   DART_BUILD_GUI_OVERRIDE=OFF pixi run config
+   ```
+
+3. Build and test:
+
+   ```bash
+   pixi run build                 # cmake --build … --target all
+   pixi run build-tests           # builds the C++ test targets
+   pixi run test                  # ctest -LE dart8
+   pixi run test-all              # helper script that runs lint + build + tests
+   ```
+
+Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
 
 ## Clone the Repository
 
@@ -138,12 +174,12 @@ DART uses CMake as its build system. CMake generates build files for various bui
 ### CMake Options
 
 For all available CMake configuration options and their defaults, refer to [`CMakeLists.txt`](../../CMakeLists.txt). Common options include:
-- `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.)
+- `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI_OSG` - Enable OpenSceneGraph GUI
+- `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
-- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
-- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI_OSG=OFF`)
+- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 
 ### Platform-Specific Configuration Examples
 
@@ -151,11 +187,11 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio 2017
-cmake .. -G "Visual Studio 15 2017" -A x64 -DCMAKE_BUILD_TYPE=Release
+# Visual Studio 2017 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 15 2017" -A x64
 
-# Xcode
-cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=Release
+# Xcode (multi-config; pick configuration at build-time)
+cmake .. -G "Xcode"
 ```
 
 ## Building from Command Line

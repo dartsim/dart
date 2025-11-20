@@ -10,6 +10,7 @@ on:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
       - "docs/**"
+      - ".readthedocs.yml"
       - "tutorials/**"
       - "**/*.md"
       - "**/*.rst"
@@ -22,6 +23,7 @@ on:
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
       - "docs/**"
+      - ".readthedocs.yml"
       - "tutorials/**"
       - "**/*.md"
       - "**/*.rst"
@@ -52,11 +54,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for sccache
+      - name: Configure environment for compiler cache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
 
       # Lint checks are now centralized to Ubuntu Release build only
       # See ci_ubuntu.yml for the single source of lint validation
@@ -89,11 +97,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Configure environment for sccache
+      - name: Configure environment for compiler cache
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+          mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Test DART and dartpy
         run: |

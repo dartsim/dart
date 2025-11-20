@@ -33,11 +33,13 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/Contact.hpp>
 
 #include <dart/dynamics/ShapeNode.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Core>
 
@@ -60,7 +62,7 @@ const Eigen::Vector3d DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY
     = Eigen::Vector3d::Zero();
 
 /// Computed parameters of the contact surface
-struct ContactSurfaceParams
+struct DART_API ContactSurfaceParams
 {
   /// Primary Coefficient of Friction
   double mPrimaryFrictionCoeff{DART_DEFAULT_FRICTION_COEFF};
@@ -106,7 +108,7 @@ private:
 
 /// Class used to determine the properties of a contact constraint based on the
 /// two colliding bodies and information about their contact.
-class ContactSurfaceHandler
+class DART_API ContactSurfaceHandler
 {
 public:
   /// Constructor
@@ -150,7 +152,7 @@ protected:
 /// Default contact surface handler. It chooses friction direction of the body
 /// with lower friction coefficient. It also adjusts slip compliance by
 /// mutliplying it with the number of contact points.
-class DefaultContactSurfaceHandler : public ContactSurfaceHandler
+class DART_API DefaultContactSurfaceHandler : public ContactSurfaceHandler
 {
 public:
   virtual ~DefaultContactSurfaceHandler() = default;

@@ -147,7 +147,7 @@ int main(int /*argc*/, char* /*argv*/[])
   osg::ref_ptr<dart::gui::osg::WorldNode> worldNode
       = new dart::gui::osg::WorldNode(world);
 
-  // Set wireframe mode to match the original GLUT example
+  // Set wireframe mode to match the legacy example
   worldNode->getStateSet()->setAttributeAndModes(
       new ::osg::PolygonMode(
           ::osg::PolygonMode::FRONT_AND_BACK, ::osg::PolygonMode::LINE),

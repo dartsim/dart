@@ -38,13 +38,15 @@
 #include <dart/collision/Contact.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/Fwd.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
-#include <dart/collision/SmartPointer.hpp>
 
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Factory.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -56,7 +58,8 @@ namespace collision {
 
 class CollisionObject;
 
-class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
+class DART_API CollisionDetector
+  : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
   friend class CollisionObject;
@@ -213,7 +216,7 @@ protected:
 };
 
 //==============================================================================
-class CollisionDetector::CollisionObjectManager
+class DART_API CollisionDetector::CollisionObjectManager
 {
 public:
   /// Constructor
@@ -236,7 +239,7 @@ protected:
 };
 
 //==============================================================================
-class CollisionDetector::ManagerForUnsharableCollisionObjects final
+class DART_API CollisionDetector::ManagerForUnsharableCollisionObjects final
   : public CollisionDetector::CollisionObjectManager
 {
 public:
@@ -263,7 +266,7 @@ private:
 };
 
 //==============================================================================
-class CollisionDetector::ManagerForSharableCollisionObjects final
+class DART_API CollisionDetector::ManagerForSharableCollisionObjects final
   : public CollisionDetector::CollisionObjectManager
 {
 public:

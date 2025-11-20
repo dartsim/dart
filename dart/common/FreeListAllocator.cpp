@@ -51,51 +51,30 @@ FreeListAllocator::~FreeListAllocator()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  // Forcefully deallocate all the memory blocks if destructing this allocator
-  // without deallocating individual memories allocated by this allocator.
+  // If there are outstanding allocations, just log the leak and release the
+  // backing chunks wholesale. The internal bookkeeping structures may be
+  // inconsistent at this point, so we avoid walking them while deallocating.
   if (mTotalAllocatedSize != 0) {
-    MemoryBlockHeader* currBlock = mFirstMemoryBlock;
-    while (currBlock) {
-      MemoryBlockHeader* currSubBlock = currBlock;
-      MemoryBlockHeader* next = currBlock->mNext;
-      size_t sizeToDeallocate = 0;
-
-      while (currSubBlock) {
-        sizeToDeallocate += currSubBlock->mSize + sizeof(MemoryBlockHeader);
-        if (!currSubBlock->mIsNextContiguous) {
-          next = currSubBlock->mNext;
-          break;
-        }
-        currSubBlock = currSubBlock->mNext;
-      }
-
-      mBaseAllocator.deallocate(currBlock, sizeToDeallocate);
-      currBlock = next;
-    }
-
     DART_ERROR(
         "Forcefully deallocated memory {} of byte(s) that is not deallocated "
         "before destructing this memory allocator.",
         mTotalAllocatedSize);
-    // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-    // destructor is resolved.
+  } else {
+    // Deallocate memory blocks when everything was properly released.
+    MemoryBlockHeader* curr = mFirstMemoryBlock;
+    while (curr) {
+      DART_ASSERT(!curr->mIsAllocated); // pointers should already be freed
+      MemoryBlockHeader* next = curr->mNext;
 
-    return;
+      curr->~MemoryBlockHeader();
+      curr = next;
+    }
   }
 
-  // Deallocate memory blocks
-  MemoryBlockHeader* curr = mFirstMemoryBlock;
-  while (curr) {
-    DART_ASSERT(!curr->mIsAllocated); // TODO(JS): This means some of pointers
-    // are not deallocated
-    MemoryBlockHeader* next = curr->mNext;
-    const auto size = curr->mSize;
-
-    curr->~MemoryBlockHeader();
-    mBaseAllocator.deallocate(curr, size + sizeof(MemoryBlockHeader));
-
-    curr = next;
+  for (const auto& block : mAllocatedBlocks) {
+    mBaseAllocator.deallocate(block.pointer, block.size);
   }
+  mAllocatedBlocks.clear();
 }
 
 //==============================================================================
@@ -239,6 +218,9 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
       mFirstMemoryBlock, // next memory block
       false              // whether the next memory block is contiguous
   );
+
+  mAllocatedBlocks.push_back(
+      AllocatedBlock{memory, sizeToAllocate + sizeof(MemoryBlockHeader)});
 
   // Set the new memory block as free block
   mFreeBlock = mFirstMemoryBlock;

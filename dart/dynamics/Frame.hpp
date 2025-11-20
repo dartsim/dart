@@ -37,6 +37,8 @@
 
 #include <dart/math/MathTypes.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Geometry>
 
 #include <set>
@@ -55,7 +57,7 @@ namespace dynamics {
 /// so-called "diamond problem". Because of that, the Entity's constructor will
 /// be called directly by the most derived class's constructor.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Frame : public virtual Entity
+class DART_API Frame : public virtual Entity
 {
 public:
   friend class Entity;

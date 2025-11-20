@@ -36,6 +36,8 @@
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
+#include <dart/Export.hpp>
+
 #include <array>
 #include <mutex>
 
@@ -43,7 +45,7 @@ namespace dart::common {
 
 /// Memory allocator optimized for allocating many objects of the same or
 /// similar sizes
-class PoolAllocator : public MemoryAllocator
+class DART_API PoolAllocator : public MemoryAllocator
 {
 public:
   using Debug = MemoryAllocatorDebugger<PoolAllocator>;

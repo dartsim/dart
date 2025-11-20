@@ -47,10 +47,12 @@ void SimpleFrame(py::module& sm);
 void Node(py::module& sm);
 void JacobianNode(py::module& sm);
 void ShapeNode(py::module& sm);
+void HierarchicalIK(py::module& sm);
 
 void DegreeOfFreedom(py::module& sm);
 
 void BodyNode(py::module& sm);
+void EndEffector(py::module& sm);
 
 void Joint(py::module& sm);
 void ZeroDofJoint(py::module& sm);
@@ -90,10 +92,12 @@ void dart_dynamics(py::module& m)
   Node(sm);
   JacobianNode(sm);
   ShapeNode(sm);
+  HierarchicalIK(sm);
 
   DegreeOfFreedom(sm);
 
   BodyNode(sm);
+  EndEffector(sm);
 
   Joint(sm);
   ZeroDofJoint(sm);

@@ -42,7 +42,7 @@ namespace dynamics {
 
 /// MultiSphereConvexHullShape represents the convex hull of a collection of
 /// spheres.
-class MultiSphereConvexHullShape : public Shape
+class DART_API MultiSphereConvexHullShape : public Shape
 {
 public:
   using Sphere = std::pair<double, Eigen::Vector3d>;

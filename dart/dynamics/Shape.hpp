@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_SHAPE_HPP_
 #define DART_DYNAMICS_SHAPE_HPP_
 
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/dynamics/Fwd.hpp>
 
 #include <dart/math/Geometry.hpp>
 
@@ -43,6 +43,8 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <memory>
@@ -51,9 +53,9 @@ namespace dart {
 namespace dynamics {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Shape : public virtual common::Subject,
-              public virtual common::VersionCounter,
-              public common::Castable<Shape>
+class DART_API Shape : public virtual common::Subject,
+                       public virtual common::VersionCounter,
+                       public common::Castable<Shape>
 {
 public:
   using VersionChangedSignal

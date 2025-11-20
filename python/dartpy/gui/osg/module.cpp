@@ -51,6 +51,7 @@ void Viewer(py::module& sm);
 void ImGuiViewer(py::module& sm);
 void ViewerAttachment(py::module& sm);
 void GridVisual(py::module& sm);
+void PolyhedronVisual(py::module& sm);
 
 void DragAndDrop(py::module& sm);
 
@@ -74,6 +75,7 @@ void dart_gui_osg(py::module& m)
   ImGuiViewer(sm);
   ViewerAttachment(sm);
   GridVisual(sm);
+  PolyhedronVisual(sm);
 
   DragAndDrop(sm);
 

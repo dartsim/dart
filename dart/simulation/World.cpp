@@ -48,7 +48,6 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 
 #include <iostream>
 #include <string>

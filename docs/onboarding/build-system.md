@@ -36,7 +36,7 @@
 
 ### Key Build Options
 ```cmake
-DART_BUILD_GUI_OSG          = ON   # Build OpenSceneGraph GUI
+DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -86,17 +86,15 @@ BUILD_SHARED_LIBS           = ON   # Build shared libraries (Linux/macOS)
 **Component Hierarchy:**
 ```
 dart/
-├── external/       # Bundled dependencies
 ├── common/         # Common utilities
-├── math/           # Math utilities
-├── integration/    # Numerical integration
+├── math/           # Math utilities (includes math/optimization/)
 ├── lcpsolver/      # LCP solver
-├── optimizer/      # Optimization algorithms
+├── optimizer/      # Deprecated alias headers that forward to math/optimization
 ├── dynamics/       # Dynamics engine
-├── collision/      # Collision detection
+├── collision/      # Collision detection (FCL + optional Bullet/ODE)
 ├── constraint/     # Constraint handling
-├── simulation/     # Simulation framework
-├── utils/          # Utility functions
+├── simulation/     # Simulation framework + time stepping
+├── utils/          # Parsers and helpers (URDF/SDF)
 └── gui/            # GUI components
     └── osg/        # OpenSceneGraph GUI
 ```
@@ -105,7 +103,7 @@ dart/
 **File:** `dart/gui/osg/CMakeLists.txt`
 
 **Responsibilities:**
-- Builds `dart-gui-osg` library
+- Builds `dart-gui` library
 - Integrates OpenSceneGraph
 - Integrates ImGui (system or fetched)
 - Manages render subdirectory
@@ -202,35 +200,40 @@ dart/
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Optimizer Dependencies (Optional Components)
-
-#### 10. IPOPT
-- **Version:** ≥ 3.14.17, < 4
-- **Purpose:** Interior Point Optimizer
-- **Component:** `dart-optimizer-ipopt`
-- **CMake Module:** `cmake/DARTFindIPOPT.cmake`
-
-#### 11. NLopt
-- **Version:** ≥ 2.10.0, < 3
-- **Purpose:** Nonlinear optimization library
-- **Component:** `dart-optimizer-nlopt`
-- **CMake Module:** `cmake/DARTFindNLOPT.cmake`
-
 ### Collision Engine Dependencies (Optional Components)
 
-#### 12. Bullet Physics
+#### 10. Bullet Physics
 - **Version:** ≥ 3.25, < 4
 - **Purpose:** Alternative collision detection
-- **Component:** `dart-collision-bullet`
+- **Option:** `DART_BUILD_COLLISION_BULLET`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
+- **Disable:** There is no `DART_SKIP_Bullet`; set `DART_BUILD_COLLISION_BULLET=OFF` to omit the backend entirely.
+
+#### 11. Open Dynamics Engine (ODE)
+- **Version:** ≥ 0.13, < 1
+- **Purpose:** Alternative collision detection
+- **Option:** `DART_BUILD_COLLISION_ODE`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
+- **CMake Module:** `cmake/DARTFindODE.cmake`
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
+- **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF` to omit the backend entirely.
 
 ### Utility Dependencies
 
-#### 13. tinyxml2
+#### 12. tinyxml2
 - **Version:** ≥ 11.0.0, < 12
 - **Purpose:** XML parsing (for SDF)
 - **Component:** `dart-utils`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
+
+#### 13. libsdformat
+- **Version:** ≥ 16.0.0, < 17
+- **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
+- **Component:** `dart-utils`
+- **CMake Module:** `cmake/DARTFindsdformat.cmake`
+- **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
 #### 14. urdfdom
 - **Version:** ≥ 4.0.1, < 5
@@ -262,11 +265,7 @@ dart/
 ### Additional Platform Dependencies
 
 #### Linux (linux-64)
-- **freeglut:** ≥ 3.2.2, < 3.3
 - **lcov:** ≥ 1.16, < 2 (coverage reports)
-
-#### Windows (win-64)
-- **freeglut:** ≥ 3.2.2
 
 #### macOS
 - **Cocoa Framework** (linked with ImGui)
@@ -324,7 +323,7 @@ DART includes several dependencies as part of the source tree under `dart/extern
 
 **Installation:** NOT installed (local build only)
 
-**Linked By:** `dart-gui-osg` library
+**Linked By:** `dart-gui` library
 
 ### 3. ConvHull 3D
 **Location:** `dart/external/convhull_3d/`
@@ -343,6 +342,12 @@ DART includes several dependencies as part of the source tree under `dart/extern
 **Source Files:**
 - `ikfast.h` - IKFast header
 
+**Notes:**
+- The actual solver binaries are supplied by users (generated with OpenRAVE's
+  IkFast tooling). See
+  `docs/readthedocs/shared/inverse_kinematics/ikfast.rst` for the current
+  support policy and integration guide.
+
 ---
 
 ## Component Architecture
@@ -358,24 +363,17 @@ Component Dependency Tree:
     ├── assimp
     ├── fmt
     ├── spdlog (optional)
-    └── octomap (optional)
+    ├── octomap (optional)
+    ├── Bullet (optional; via `DART_BUILD_COLLISION_BULLET`)
+    └── ODE (optional; via `DART_BUILD_COLLISION_ODE`)
 
-    ├── optimizer-ipopt
-    │   └── depends: dart, ipopt
-    │
-    ├── optimizer-nlopt
-    │   └── depends: dart, nlopt
-    │
-    ├── collision-bullet
-    │   └── depends: dart, bullet
-    │
     ├── utils
-    │   └── depends: dart, tinyxml2
+    │   └── depends: dart, tinyxml2, libsdformat
     │
     ├── utils-urdf
     │   └── depends: utils, urdfdom
     │
-    └── gui-osg
+    └── gui
         └── depends: utils, OpenSceneGraph, ImGui, OpenGL
 ```
 
@@ -383,14 +381,15 @@ Component Dependency Tree:
 
 | Component | Library Target | Dependencies |
 |-----------|---------------|--------------|
-| `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` |
-| `optimizer-ipopt` | `dart-optimizer-ipopt` | `dart`, `ipopt` |
-| `optimizer-nlopt` | `dart-optimizer-nlopt` | `dart`, `nlopt` |
-| `collision-bullet` | `dart-collision-bullet` | `dart`, `bullet` |
-| `utils` | `dart-utils` | `dart`, `tinyxml2` |
+| `dart` | `dart` | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
+| `utils` | `dart-utils` | `dart`, `tinyxml2`, `libsdformat` |
 | `utils-urdf` | `dart-utils-urdf` | `dart-utils`, `urdfdom` |
-| `gui-osg` | `dart-gui-osg` | `dart-utils`, `osg::osg`, `imgui::imgui` |
+| `gui` | `dart-gui` | `dart-utils`, `osg::osg`, `imgui::imgui` |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL` |
+
+> Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
+
+> Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
 
 ### Source Directory Structure
 
@@ -398,18 +397,17 @@ Component Dependency Tree:
 dart/
 ├── common/          # Common utilities and definitions
 ├── math/            # Mathematical utilities (vectors, matrices, transforms)
-├── integration/     # Numerical integration methods
+│   └── optimization/       # Gradient-descent + IK helpers
+├── optimizer/       # Deprecated alias headers (forwards to math/optimization)
 ├── lcpsolver/       # Linear Complementarity Problem solver
-├── optimizer/       # Optimization framework
-│   ├── ipopt/      # IPOPT optimizer plugin
-│   └── nlopt/      # NLopt optimizer plugin
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
 │   ├── fcl/        # FCL collision engine
-│   └── bullet/     # Bullet collision engine
+│   ├── bullet/     # Bullet collision engine (optional)
+│   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
-├── simulation/      # Simulation world and framework
+├── simulation/      # Simulation world, integration, and time stepping
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
@@ -440,12 +438,9 @@ dart/
   - Install: No (local build only)
 
 #### Component Libraries
-- **`dart-optimizer-ipopt`** - IPOPT optimizer plugin
-- **`dart-optimizer-nlopt`** - NLopt optimizer plugin
-- **`dart-collision-bullet`** - Bullet collision plugin
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
-- **`dart-gui-osg`** - OpenSceneGraph GUI
+- **`dart-gui`** - OpenSceneGraph GUI
 
 ### Python Bindings Target
 - **`dartpy`** - Python bindings
@@ -670,9 +665,7 @@ build/
 <depend>bullet</depend>
 <depend>eigen</depend>
 <depend>libfcl-dev</depend>
-<depend>glut</depend>
 <depend>liburdfdom-dev</depend>
-<depend>libxi-dev</depend>
-<depend>libxmu-dev</depend>
 <depend>tinyxml2</depend>
+<depend>sdformat</depend>
 ```

@@ -50,12 +50,19 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
+include(CompilerCache)
 
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
 # - LIBRARY_INSTALL_DIR
 # - CONFIG_INSTALL_DIR
 initialize_component_helpers(${PROJECT_NAME})
+
+if(BUILD_SHARED_LIBS)
+  set(DART_BUILD_SHARED_VALUE 1)
+else()
+  set(DART_BUILD_SHARED_VALUE 0)
+endif()
 
 #===============================================================================
 # Project settings
@@ -107,6 +114,62 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
+set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
+set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
+set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
+set_property(GLOBAL PROPERTY DART_EXTRA_LINK_LIBS "")
+set_property(GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS "")
+
+function(_dart_pkgconfig_collect output_var)
+  set(_converted "")
+  set(_expect_framework FALSE)
+  foreach(_lib IN LISTS ARGN)
+    if(NOT _lib)
+      continue()
+    endif()
+    if(_expect_framework)
+      list(APPEND _converted "-framework" "${_lib}")
+      set(_expect_framework FALSE)
+      continue()
+    endif()
+    if(_lib STREQUAL "optimized" OR _lib STREQUAL "debug" OR _lib STREQUAL "general")
+      continue()
+    elseif(_lib STREQUAL "-framework")
+      set(_expect_framework TRUE)
+      continue()
+    elseif(TARGET "${_lib}")
+      get_target_property(_iface "${_lib}" INTERFACE_LINK_LIBRARIES)
+      if(_iface)
+        _dart_pkgconfig_collect(_nested ${_iface})
+        list(APPEND _converted ${_nested})
+      endif()
+      get_target_property(_imported "${_lib}" IMPORTED_LOCATION)
+      if(NOT _imported)
+        get_target_property(_imported "${_lib}" IMPORTED_IMPLIB)
+      endif()
+      if(_imported)
+        list(APPEND _converted "${_imported}")
+      endif()
+    elseif(_lib MATCHES "^-.*")
+      list(APPEND _converted "${_lib}")
+    elseif(IS_ABSOLUTE "${_lib}")
+      list(APPEND _converted "${_lib}")
+    else()
+      list(APPEND _converted "-l${_lib}")
+    endif()
+  endforeach()
+  set("${output_var}" "${_converted}" PARENT_SCOPE)
+endfunction()
+
+function(dart_pkgconfig_append_libraries)
+  if(NOT ARGN)
+    return()
+  endif()
+  _dart_pkgconfig_collect(_converted ${ARGN})
+  if(_converted)
+    set_property(GLOBAL APPEND PROPERTY DART_PKG_LINK_LIBS ${_converted})
+  endif()
+endfunction()
 
 #===============================================================================
 # Build options
@@ -142,7 +205,9 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON CATEGORY build)
+dart_option(DART_BUILD_GUI "Build osgDart library" ON CATEGORY build)
+dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
+dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
@@ -174,11 +239,8 @@ dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
-dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
 
-if(DART_BUILD_DARTPY8)
-  set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
-endif()
+dart_configure_compiler_cache()
 
 #===============================================================================
 # Print intro
@@ -241,14 +303,29 @@ endif()
 #===============================================================================
 # Build type settings
 #===============================================================================
-if(NOT CMAKE_BUILD_TYPE)
-  set(
-    CMAKE_BUILD_TYPE Release
-    CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
-    FORCE
-  )
+set(_dart_known_build_types Debug Release RelWithDebInfo MinSizeRel None)
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(
+      CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+    message(STATUS "Setting CMAKE_BUILD_TYPE to '${CMAKE_BUILD_TYPE}'.")
+  else()
+    set(
+      CMAKE_BUILD_TYPE
+      "${CMAKE_BUILD_TYPE}"
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+  endif()
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_dart_known_build_types})
 endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPERCASE)
 
 set(DART_BUILD_MODE_DEBUG FALSE)
 set(DART_BUILD_MODE_RELEASE FALSE)
@@ -261,8 +338,6 @@ elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
   set(DART_BUILD_MODE_RELEASE TRUE)
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(DART_BUILD_MODE_RELEASE TRUE)
-else()
-  message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 # Active log level:
@@ -367,7 +442,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if(DART_BUILD_WHEELS)
-    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
+    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support older glibc-based wheel builds
   else()
     set(gcc_required_version 11.2.0)
   endif()
@@ -468,7 +543,7 @@ if(DART_VERBOSE)
   message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_VERSION}")
   message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
+  message(STATUS "Build gui (OSG) : ${DART_BUILD_GUI}")
   message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
   message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
   if(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "RELEASE")
@@ -514,6 +589,14 @@ if(TARGET dart)
     else()
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
+
+    if(DART_BUILD_DART8)
+      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
+        if(NOT TARGET dart8_tests)
+          add_custom_target(dart8_tests)
+        endif()
+      endif()
+    endif()
   elseif(NOT DART_BUILD_TESTS)
     message(STATUS "Skipping tests (DART_BUILD_TESTS == OFF)")
   else()
@@ -521,7 +604,7 @@ if(TARGET dart)
   endif()
 
   if(DART_BUILD_EXAMPLES)
-    if(TARGET dart-gui-osg)
+    if(TARGET dart-gui)
       # Add example subdirectories and an "examples" target.
       if(MSVC)
         add_subdirectory(examples)
@@ -542,14 +625,14 @@ if(TARGET dart)
         message(STATUS "Adding ${examples_length} examples")
       endif()
     else()
-      message(STATUS "Skipping examples (requires dart-gui-osg target; enable DART_BUILD_GUI_OSG)")
+      message(STATUS "Skipping examples (requires dart-gui target; enable DART_BUILD_GUI)")
     endif()
   else()
     message(STATUS "Skipping examples (DART_BUILD_EXAMPLES == OFF)")
   endif()
 
   if(DART_BUILD_TUTORIALS)
-    if(TARGET dart-gui-osg)
+    if(TARGET dart-gui)
       # Add a "tutorials" target to build tutorials.
       if(MSVC)
         add_subdirectory(tutorials)
@@ -570,7 +653,7 @@ if(TARGET dart)
         message(STATUS "Adding ${tutorials_length} tutorials")
       endif()
     else()
-      message(STATUS "Skipping tutorials (requires dart-gui-osg target; enable DART_BUILD_GUI_OSG)")
+      message(STATUS "Skipping tutorials (requires dart-gui target; enable DART_BUILD_GUI)")
     endif()
   else()
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
@@ -582,9 +665,6 @@ add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
 set(all_target_candidates dartpy)
-if(DART_BUILD_DARTPY8)
-  list(APPEND all_target_candidates dartpy8)
-endif()
 if(DART_BUILD_TESTS AND BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)
 endif()
@@ -660,6 +740,26 @@ install(
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${DART_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart.pc)
+set(DART_PKG_LINK_LIBS "")
+get_property(_dart_pkg_link_libs GLOBAL PROPERTY DART_PKG_LINK_LIBS)
+if(_dart_pkg_link_libs)
+  string(JOIN " " DART_PKG_LINK_LIBS ${_dart_pkg_link_libs})
+  if(DART_PKG_LINK_LIBS)
+    set(DART_PKG_LINK_LIBS " ${DART_PKG_LINK_LIBS}")
+  endif()
+endif()
+set(DART_PKG_EXTRA_CFLAGS "")
+get_property(_dart_pkg_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
+get_property(_dart_pkg_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
+set(_dart_pkg_all_includes ${_dart_pkg_includes} ${_dart_pkg_system_includes})
+if(_dart_pkg_all_includes)
+  list(REMOVE_DUPLICATES _dart_pkg_all_includes)
+  foreach(_inc IN LISTS _dart_pkg_all_includes)
+    if(_inc)
+      string(APPEND DART_PKG_EXTRA_CFLAGS " -I${_inc}")
+    endif()
+  endforeach()
+endif()
 cmake_path(IS_ABSOLUTE CMAKE_INSTALL_LIBDIR ABSOLUTE_CMAKE_INSTALL_LIBDIR)
 if(ABSOLUTE_CMAKE_INSTALL_LIBDIR)
   # Absolute "CMAKE_INSTALL_*DIR" can be provided by user

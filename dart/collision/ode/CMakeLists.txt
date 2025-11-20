@@ -1,6 +1,32 @@
 # Dependency checks
+if(NOT DART_BUILD_COLLISION_ODE)
+  set(HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
+  return()
+endif()
+
+message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
+
 dart_find_package(ODE)
-dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.13")
+if(NOT ODE_FOUND)
+  message(
+    FATAL_ERROR
+    "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
+    "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
+  )
+endif()
+set(HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
+set(_dart_ode_public_link ${ODE_LIBRARIES})
+if(NOT _dart_ode_public_link)
+  if(TARGET ODE::ODE)
+    set(_dart_ode_public_link ODE::ODE)
+  else()
+    message(
+      FATAL_ERROR
+      "ODE was found but did not export ODE::ODE or populate ODE_LIBRARIES. "
+      "Please install a complete ODE package."
+    )
+  endif()
+endif()
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
@@ -8,19 +34,17 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-# Set local target name
-set(target_name ${PROJECT_NAME}-collision-ode)
-set(component_name collision-ode)
-
-# Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-target_link_libraries(${target_name} PUBLIC dart ODE::ODE)
-
-# Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} ODE)
+dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs})
+set(_dart_ode_include_dirs ${ODE_INCLUDE_DIRS})
+if(_dart_ode_include_dirs)
+  set_property(GLOBAL APPEND PROPERTY DART_PUBLIC_INCLUDE_DIRS ${_dart_ode_include_dirs})
+endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  set_property(GLOBAL APPEND PROPERTY DART_EXTRA_COMPILE_OPTIONS -Wno-deprecated-enum-enum-conversion)
+endif()
+set_property(GLOBAL APPEND PROPERTY DART_EXTRA_LINK_LIBS ${_dart_ode_public_link})
+dart_pkgconfig_append_libraries(${_dart_ode_public_link})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_ode headers" ${hdrs})

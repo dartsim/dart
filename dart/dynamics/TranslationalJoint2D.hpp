@@ -36,6 +36,8 @@
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 #include <dart/dynamics/detail/TranslationalJoint2DAspect.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -44,7 +46,7 @@ namespace dynamics {
 ///
 /// First and second coordiantes represent the translations along first and
 /// second translational axes, respectively.
-class TranslationalJoint2D : public detail::TranslationalJoint2DBase
+class DART_API TranslationalJoint2D : public detail::TranslationalJoint2DBase
 {
 public:
   friend class Skeleton;

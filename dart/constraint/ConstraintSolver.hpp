@@ -35,9 +35,13 @@
 
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
-#include <dart/constraint/SmartPointer.hpp>
+#include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
+
+#include <dart/common/Deprecated.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -54,7 +58,7 @@ class ShapeNodeCollisionObject;
 namespace constraint {
 
 /// ConstraintSolver manages constraints and computes constraint impulses
-class ConstraintSolver
+class DART_API ConstraintSolver
 {
 public:
   // TODO(JS): Remove timeStep. The timestep can be set by world when a
@@ -258,6 +262,9 @@ protected:
 
   /// Mimic motor constraints those are automatically created
   std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
+
+  /// Coupler constraints that are automatically created
+  std::vector<CouplerConstraintPtr> mCouplerConstraints;
 
   /// Joint Coulomb friction constraints those are automatically created
   std::vector<JointCoulombFrictionConstraintPtr>

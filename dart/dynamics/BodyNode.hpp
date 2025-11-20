@@ -37,10 +37,10 @@
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
-#include <dart/dynamics/SmartPointer.hpp>
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/detail/BodyNodeAspect.hpp>
@@ -50,6 +50,8 @@
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/Signal.hpp>
+
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -77,7 +79,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class BodyNode
+class DART_API BodyNode
   : public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,

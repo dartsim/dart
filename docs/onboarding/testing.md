@@ -63,7 +63,7 @@ Integration tests verify that **multiple components work correctly together** in
 Unit tests focus on testing **individual classes or functions in isolation**. These tests:
 - Test a single component without dependencies on other major subsystems
 - Are fast to execute (milliseconds)
-- Have minimal dependencies (e.g., only dart-math, only dart-collision)
+- Have minimal dependencies (e.g., only dart-math, only the collision module)
 - Test specific functionality, edge cases, and API correctness
 - Use simple test fixtures (SimpleFrame, basic objects)
 
@@ -427,4 +427,4 @@ If you have questions about the test suite or where to add a new test, please:
 - Check this README first
 - Review existing tests in the same category
 - Ask in the DART development forum or GitHub discussions
-- Consult the main DART documentation at https://dartsim.github.io/
+- Consult the main DART documentation at https://docs.dartsim.org/
