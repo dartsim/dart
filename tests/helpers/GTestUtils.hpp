@@ -42,6 +42,8 @@
 
 #include <type_traits>
 
+#include <cmath>
+
 //==============================================================================
 #define EXPECT_VECTOR_DOUBLE_EQ(vec1, vec2)                                    \
   if (!::dart::test::equals(vec1, vec2)) {                                     \
@@ -167,7 +169,26 @@ bool equals(
         std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>>(
         1e-5))
 {
-  return dart::math::isApprox(expected, actual, tol, tol);
+  if (expected.rows() != actual.rows() || expected.cols() != actual.cols())
+    return false;
+
+  using CommonScalar
+      = std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>;
+
+  for (Eigen::Index i = 0; i < expected.rows(); ++i) {
+    for (Eigen::Index j = 0; j < expected.cols(); ++j) {
+      const CommonScalar lhs = static_cast<CommonScalar>(expected(i, j));
+      const CommonScalar rhs = static_cast<CommonScalar>(actual(i, j));
+
+      if (std::isnan(lhs) && std::isnan(rhs))
+        continue;
+
+      if (!dart::math::isApprox(lhs, rhs, tol, tol))
+        return false;
+    }
+  }
+
+  return true;
 }
 
 //==============================================================================
