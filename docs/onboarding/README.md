@@ -68,8 +68,11 @@ DART addresses the need for:
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
 - **Python Bindings**: Complete API coverage via pybind11 with NumPy integration
+- **Optimization Helpers**: Core repo ships gradient-descent + IK primitives; the heavy-duty solver suite (IPOPT, NLopt, pagmo, SNOPT) now lives in [dart-optimization](https://github.com/dartsim/dart-optimization)
 - **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading
 - **Cross-Platform**: Linux, macOS (Intel/ARM), Windows
+
+> Related projects: motion-planning helpers now reside in [dart-planning](https://github.com/dartsim/dart-planning) and the advanced optimizer suite lives in [dart-optimization](https://github.com/dartsim/dart-optimization). This repository focuses on the simulation core plus lightweight gradient-descent utilities.
 
 ### Technologies Used
 
@@ -496,7 +499,8 @@ graph TB
 **Key Elements**:
 - [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
 - [`ConstraintSolver::addConstraint()`](dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
-- Constraint types: Contact, JointLimit, Motor, Servo, Mimic, custom
+- Constraint types: Contact, JointLimit, Motor, Servo, Mimic (MimicMotor or
+  Coupler), custom
 - LCP solvers: Dantzig (primary), PGS (fallback)
 - Skeleton grouping for independent constraint solving
 
@@ -970,6 +974,7 @@ sequenceDiagram
 - `JointLimitConstraint` - Joint position/velocity limits
 - `ServoMotorConstraint` - Joint servo control
 - `MimicMotorConstraint` - Mimic joint behavior
+- `CouplerConstraint` - Bilateral mimic coupling (equal-and-opposite impulses)
 - Custom constraints
 
 **Key Fields**:
@@ -1029,7 +1034,6 @@ sequenceDiagram
 **Optional**:
 - Python ≥ 3.7 (for dartpy bindings)
 - Bullet, ODE (alternative collision backends)
-- IPOPT, NLopt (optimization)
 - urdfdom (URDF parsing)
 
 ### Quick Start with pixi
@@ -1065,7 +1069,7 @@ mkdir build && cd build
 # Configure
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
-  -DDART_BUILD_GUI_OSG=ON \
+  -DDART_BUILD_GUI=ON \
   -DDART_BUILD_DARTPY=ON
 
 # Build
@@ -1108,8 +1112,8 @@ python examples/operational_space_control/main.py
 ### Development Workflow
 
 1. **Make code changes**
-2. **Run formatter**: `pixi run format`
-3. **Check formatting**: `pixi run check-format`
+2. **Run formatter**: `pixi run lint`
+3. **Check formatting**: `pixi run check-lint`
 4. **Build**: `pixi run build`
 5. **Run tests**: `pixi run test`
 6. **Build docs**: `pixi run docs-build`
@@ -1119,17 +1123,15 @@ python examples/operational_space_control/main.py
 ```
 dart_gui/
 ├── dart/                      # C++ library source
-│   ├── collision/            # Collision detection backends
+│   ├── collision/            # Collision detection backends (FCL + optional Bullet/ODE)
 │   ├── common/               # Common utilities and patterns
 │   ├── constraint/           # Constraint solver
 │   ├── dynamics/             # Kinematics and dynamics
-│   ├── external/             # Bundled dependencies (ImGui, etc.)
 │   ├── gui/osg/              # OpenSceneGraph visualization
-│   ├── integration/          # Time integrators
 │   ├── lcpsolver/            # LCP solver
-│   ├── math/                 # Mathematical utilities
-│   ├── optimizer/            # Optimization algorithms
-│   ├── simulation/           # World simulation
+│   ├── math/                 # Mathematical utilities (includes math/optimization/)
+│   ├── optimizer/            # Deprecated alias headers forwarding to math/optimization
+│   ├── simulation/           # World simulation and time stepping
 │   └── utils/                # File parsers (URDF, SDF, etc.)
 ├── python/                   # Python bindings (dartpy)
 ├── examples/                 # C++ and Python examples

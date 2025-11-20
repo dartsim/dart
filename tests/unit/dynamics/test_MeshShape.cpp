@@ -42,13 +42,6 @@ public:
     return mDelegate->retrieve(uri);
   }
 
-  std::string getFilePath(const common::Uri& uri) override
-  {
-    if (isAlias(uri))
-      return mDelegate->getFilePath(mTargetUri);
-    return mDelegate->getFilePath(uri);
-  }
-
 private:
   bool isAlias(const common::Uri& uri) const
   {

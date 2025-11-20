@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_DARTRESOURCERETRIEVER_HPP_
 #define DART_UTILS_DARTRESOURCERETRIEVER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/ResourceRetriever.hpp>
 
 #include <unordered_map>
@@ -61,7 +63,7 @@ namespace utils {
 ///    `/usr/local/share/doc/dart/data/` on Linux).
 /// 3) environment variable, `DART_DATA_PATH`: Path to the data directory
 ///    specified by the user.
-class DartResourceRetriever : public common::ResourceRetriever
+class DART_UTILS_API DartResourceRetriever : public common::ResourceRetriever
 {
 public:
   template <typename... Args>
@@ -83,6 +85,7 @@ public:
   common::ResourcePtr retrieve(const common::Uri& uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const common::Uri& uri) override;
 
 private:

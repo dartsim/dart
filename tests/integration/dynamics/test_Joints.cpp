@@ -34,6 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -65,8 +66,16 @@ using namespace dart::test;
 
 #define JOINT_TOL 0.01
 
+class CouplerConstraintTestHelper : public dart::constraint::CouplerConstraint
+{
+public:
+  using CouplerConstraint::applyImpulse;
+  using CouplerConstraint::CouplerConstraint;
+  using CouplerConstraint::update;
+};
+
 //==============================================================================
-class JOINTS : public testing::Test
+class Joints : public testing::Test
 {
 public:
   // Get reference frames
@@ -102,7 +111,7 @@ protected:
 };
 
 //==============================================================================
-void JOINTS::SetUp()
+void Joints::SetUp()
 {
   // Create a list of reference frames to use during tests
   frames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
@@ -114,7 +123,7 @@ void JOINTS::SetUp()
 }
 
 //==============================================================================
-void JOINTS::TearDown()
+void Joints::TearDown()
 {
   for (SimpleFrame* frame : frames) {
     delete frame;
@@ -123,13 +132,13 @@ void JOINTS::TearDown()
 }
 
 //==============================================================================
-const std::vector<SimpleFrame*>& JOINTS::getFrames() const
+const std::vector<SimpleFrame*>& Joints::getFrames() const
 {
   return frames;
 }
 
 //==============================================================================
-void JOINTS::randomizeRefFrames()
+void Joints::randomizeRefFrames()
 {
   for (std::size_t i = 0; i < frames.size(); ++i) {
     SimpleFrame* F = frames[i];
@@ -150,7 +159,7 @@ void JOINTS::randomizeRefFrames()
 }
 
 //==============================================================================
-TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
+TEST_F(Joints, FreeJointSpatialVelocityWithVelocityActuator)
 {
   auto world = simulation::World::create();
   const double timeStep = 0.01;
@@ -196,7 +205,7 @@ TEST_F(JOINTS, FREE_JOINT_SPATIAL_VELOCITY_WITH_VELOCITY_ACTUATOR)
 
 //==============================================================================
 template <typename JointType>
-void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
+void Joints::kinematicsTest(const typename JointType::Properties& _properties)
 {
   int numTests = 1;
 
@@ -332,43 +341,43 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 }
 
 // 0-dof joint
-TEST_F(JOINTS, WELD_JOINT)
+TEST_F(Joints, WeldJoint)
 {
   kinematicsTest<WeldJoint>();
 }
 
 // 1-dof joint
-TEST_F(JOINTS, REVOLUTE_JOINT)
+TEST_F(Joints, RevoluteJoint)
 {
   kinematicsTest<RevoluteJoint>();
 }
 
 // 1-dof joint
-TEST_F(JOINTS, PRISMATIC_JOINT)
+TEST_F(Joints, PrismaticJoint)
 {
   kinematicsTest<PrismaticJoint>();
 }
 
 // 1-dof joint
-TEST_F(JOINTS, SCREW_JOINT)
+TEST_F(Joints, ScrewJoint)
 {
   kinematicsTest<ScrewJoint>();
 }
 
 // 2-dof joint
-TEST_F(JOINTS, UNIVERSAL_JOINT)
+TEST_F(Joints, UniversalJoint)
 {
   kinematicsTest<UniversalJoint>();
 }
 
 // 2-dof joint
-TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
+TEST_F(Joints, TranslationalJoint2D)
 {
   kinematicsTest<TranslationalJoint2D>();
 }
 
 // 3-dof joint
-// TEST_F(JOINTS, BALL_JOINT)
+// TEST_F(Joints, BallJoint)
 //{
 //  kinematicsTest<BallJoint>();
 //}
@@ -378,7 +387,7 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
 // velocities and accelerations, repectively.
 
 // 3-dof joint
-TEST_F(JOINTS, EULER_JOINT)
+TEST_F(Joints, EulerJoint)
 {
   EulerJoint::Properties properties;
 
@@ -390,19 +399,19 @@ TEST_F(JOINTS, EULER_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, TRANSLATIONAL_JOINT)
+TEST_F(Joints, TranslationalJoint)
 {
   kinematicsTest<TranslationalJoint>();
 }
 
 // 3-dof joint
-TEST_F(JOINTS, PLANAR_JOINT)
+TEST_F(Joints, PlanarJoint)
 {
   kinematicsTest<PlanarJoint>();
 }
 
 // 6-dof joint
-// TEST_F(JOINTS, FREE_JOINT)
+// TEST_F(Joints, FreeJoint)
 //{
 //  kinematicsTest<FreeJoint>();
 //}
@@ -446,7 +455,7 @@ void testCommandLimits(dynamics::Joint* joint)
 }
 
 //==============================================================================
-TEST_F(JOINTS, COMMAND_LIMIT)
+TEST_F(Joints, CommandLimit)
 {
   simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
       "dart://sample/skel/test/joint_limit_test.skel");
@@ -482,7 +491,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 }
 
 //==============================================================================
-TEST_F(JOINTS, PASSIVE_ACTUATOR_CLEARS_COMMAND)
+TEST_F(Joints, PassiveActuatorClearsCommand)
 {
   auto world = utils::SkelParser::readWorld(
       "dart://sample/skel/test/joint_limit_test.skel");
@@ -515,7 +524,7 @@ TEST_F(JOINTS, PASSIVE_ACTUATOR_CLEARS_COMMAND)
 }
 
 //==============================================================================
-TEST_F(JOINTS, POSITION_LIMIT)
+TEST_F(Joints, PositionLimit)
 {
   double tol = 1e-3;
 
@@ -587,7 +596,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 }
 
 //==============================================================================
-TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
+TEST_F(Joints, PositionAndVelocityLimit)
 {
   using namespace dart::math::suffixes;
 
@@ -683,7 +692,7 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
 }
 
 //==============================================================================
-TEST_F(JOINTS, JOINT_LIMITS)
+TEST_F(Joints, JointLimits)
 {
   simulation::WorldPtr myWorld = utils::SkelParser::readWorld(
       "dart://sample/skel/test/joint_limit_test.skel");
@@ -859,7 +868,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 }
 
 //==============================================================================
-TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
+TEST_F(Joints, JointCoulombFriction)
 {
   std::array<double, 3> timeSteps;
   timeSteps[0] = 1e-2;
@@ -903,7 +912,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 }
 
 //==============================================================================
-TEST_F(JOINTS, SpringRestPosition)
+TEST_F(Joints, SpringRestPosition)
 {
   using namespace math::suffixes;
 
@@ -1102,7 +1111,7 @@ void testServoMotor()
 }
 
 //==============================================================================
-TEST_F(JOINTS, SERVO_MOTOR)
+TEST_F(Joints, ServoMotor)
 {
   testServoMotor();
 }
@@ -1193,13 +1202,131 @@ void testMimicJoint()
 }
 
 //==============================================================================
-TEST_F(JOINTS, MIMIC_JOINT)
+void testMimicCouplerJoint()
+{
+  using namespace dart::math::suffixes;
+
+  double timestep = 1e-3;
+  double tolPos = 1e-3;
+  double sufficient_force = 1e+5;
+
+  simulation::WorldPtr world = simulation::World::create();
+  ASSERT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(timestep);
+
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 2);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+
+  pendulum->disableSelfCollisionCheck();
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    auto bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllShapeNodesWith<CollisionAspect>();
+  }
+
+  std::vector<JointPtr> joints(2);
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    dynamics::Joint* joint = pendulum->getJoint(i);
+    ASSERT_NE(joint, nullptr);
+
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setLimitEnforcement(true);
+    joint->setCoulombFriction(0, 0.0);
+
+    joints[i] = joint;
+  }
+
+  joints[0]->setActuatorType(Joint::PASSIVE);
+  joints[0]->setForceUpperLimit(0, sufficient_force);
+  joints[0]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[1]->setActuatorType(Joint::MIMIC);
+  joints[1]->setMimicJoint(joints[0], 1., 0.);
+  joints[1]->setUseCouplerConstraint(true);
+  joints[1]->setForceUpperLimit(0, sufficient_force);
+  joints[1]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[0]->setPosition(0, 0.0_deg);
+  joints[1]->setPosition(0, 30.0_deg);
+
+  world->addSkeleton(pendulum);
+
+  double initialReferencePosition = joints[0]->getPosition(0);
+  double initialError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  for (int i = 0; i < 400; ++i)
+    world->step();
+
+  double finalError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  EXPECT_LT(std::abs(finalError), std::abs(initialError));
+  EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
+  EXPECT_GT(
+      std::abs(joints[0]->getPosition(0) - initialReferencePosition), 1e-4);
+}
+
+//==============================================================================
+TEST_F(Joints, MIMIC_JOINT)
 {
   testMimicJoint();
 }
 
 //==============================================================================
-TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
+TEST_F(Joints, MIMIC_JOINT_COUPLER)
+{
+  testMimicCouplerJoint();
+}
+
+//==============================================================================
+TEST_F(Joints, COUPLER_CONSTRAINT_APPLY_IMPULSE)
+{
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 0);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+  pendulum->setTimeStep(1e-3);
+
+  Joint* referenceJoint = pendulum->getJoint(0);
+  Joint* followerJoint = pendulum->getJoint(1);
+  ASSERT_NE(referenceJoint, nullptr);
+  ASSERT_NE(followerJoint, nullptr);
+
+  followerJoint->setActuatorType(Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, 1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(true);
+  followerJoint->setVelocityLowerLimit(0, -100.0);
+  followerJoint->setVelocityUpperLimit(0, 100.0);
+  followerJoint->setForceLowerLimit(0, -100.0);
+  followerJoint->setForceUpperLimit(0, 100.0);
+
+  referenceJoint->setPosition(0, 0.1);
+  followerJoint->setPosition(0, 0.0);
+
+  CouplerConstraintTestHelper constraint(
+      followerJoint, followerJoint->getMimicDofProperties());
+  constraint.update();
+  ASSERT_GT(constraint.getDimension(), 0u);
+
+  double lambda[1] = {2.3};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(followerJoint->getConstraintImpulse(0), lambda[0], 1e-12);
+  EXPECT_NEAR(
+      referenceJoint->getConstraintImpulse(0),
+      -lambda[0] * followerJoint->getMimicMultiplier(0),
+      1e-12);
+}
+
+//==============================================================================
+TEST_F(Joints, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 {
   const double timeStep = 1e-3;
   const double tol = 1e-2;
@@ -1347,7 +1474,7 @@ Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
 }
 
 //==============================================================================
-TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
+TEST_F(Joints, ConvenienceFunctions)
 {
   SkeletonPtr skel = Skeleton::create();
 
@@ -1461,7 +1588,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 }
 
 //==============================================================================
-TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
+TEST_F(Joints, FreeJointRelativeTransformVelocityAcceleration)
 {
   const std::size_t numTests = 50;
 

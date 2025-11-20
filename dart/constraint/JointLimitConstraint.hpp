@@ -47,7 +47,7 @@ class Joint;
 namespace constraint {
 
 /// JointLimitConstraint handles joint position and velocity limits
-class JointLimitConstraint : public ConstraintBase
+class DART_API JointLimitConstraint : public ConstraintBase
 {
 public:
   /// Constructor

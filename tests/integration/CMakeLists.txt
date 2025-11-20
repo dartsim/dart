@@ -97,6 +97,9 @@ if(TARGET dart-utils)
     dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_ForwardKinematics.cpp)
     target_link_libraries(INTEGRATION_dynamics_ForwardKinematics dart-utils-urdf)
 
+    dart_add_test("integration" INTEGRATION_dynamics_AtlasIK dynamics/test_AtlasIK.cpp)
+    target_link_libraries(INTEGRATION_dynamics_AtlasIK dart-utils-urdf)
+
     # Additional dynamics tests
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonState dynamics/test_SkeletonState.cpp)
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonTopology dynamics/test_SkeletonTopology.cpp)
@@ -143,9 +146,13 @@ if(TARGET dart-utils-urdf)
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
   if(BUILD_SHARED_LIBS)
-    dart_add_test("integration" INTEGRATION_io_IkFast io/test_IkFast.cpp)
-    target_link_libraries(INTEGRATION_io_IkFast dart-utils-urdf)
-    add_dependencies(INTEGRATION_io_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    dart_add_test("integration" test_IkFast io/test_IkFast.cpp)
+    target_link_libraries(test_IkFast dart-utils-urdf)
+    add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    target_compile_definitions(
+      test_IkFast PRIVATE
+        DART_IKFAST_GENERATED_LIB_PATH="$<TARGET_FILE:GeneratedWamIkFast>"
+    )
   endif()
 endif()
 
@@ -167,17 +174,6 @@ dart_build_tests(
 )
 
 dart_add_test("integration" INTEGRATION_optimization_Optimizer optimization/test_Optimizer.cpp)
-if(TARGET dart-optimizer-ipopt)
-  target_link_libraries(INTEGRATION_optimization_Optimizer dart-optimizer-ipopt)
-endif()
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(INTEGRATION_optimization_Optimizer dart-optimizer-nlopt)
-endif()
-
-if(TARGET dart-optimizer-pagmo)
-  dart_add_test("integration" INTEGRATION_optimization_MultiObjectiveOptimization optimization/test_MultiObjectiveOptimization.cpp)
-  target_link_libraries(INTEGRATION_optimization_MultiObjectiveOptimization dart-optimizer-pagmo)
-endif()
 
 # ==============================================================================
 # Simulation Tests

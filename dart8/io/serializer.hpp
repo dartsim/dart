@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart8/common/exceptions.hpp>
+#include <dart8/export.hpp>
 #include <dart8/io/binary_io.hpp>
 
 #include <entt/entity/registry.hpp>
@@ -51,7 +52,7 @@ namespace dart8::io {
 
 // Abstract interface for component serialization
 // Users can extend this to support custom component types
-class ComponentSerializer
+class DART8_API ComponentSerializer
 {
 public:
   virtual ~ComponentSerializer() = default;
@@ -93,7 +94,7 @@ public:
 //   auto& registry = SerializerRegistry::instance();
 //   registry.registerSerializer(std::make_unique<MyCustomSerializer>());
 //
-class SerializerRegistry
+class DART8_API SerializerRegistry
 {
 public:
   // Get singleton instance

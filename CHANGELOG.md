@@ -8,6 +8,10 @@
   * Increased required C++ standard from C++17 to C++20
     * See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   * Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
+  * Removed all optional optimizer plugins (`dart-optimizer-ipopt`, `dart-optimizer-nlopt`, `dart-optimizer-pagmo`, and `dart-optimizer-snopt`) along with the pagmo-based multi-objective optimization APIs since they were only exercised by tests.
+  * Moved the generic optimization primitives (`Function`, `Problem`, `Solver`, `GradientDescentSolver`) under `dart/math/optimization`; the legacy `<dart/optimizer/...>` headers and `dart::optimizer::*` namespace now forward (with deprecation notices) to the new `dart::math::*` definitions.
+  * Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
+  * Renamed the OpenSceneGraph GUI component/target to `gui`/`dart-gui` (previously `gui-osg`/`dart-gui-osg`) and replaced the `DART_BUILD_GUI_OSG` toggle with `DART_BUILD_GUI`.
 
 * Minimum Compiler Requirements
   * Linux: GCC 11.0+
@@ -19,21 +23,22 @@
 
 * Build
   * Minimum C++ standard: C++20 (previously C++17)
-  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui-osg` is not built).
+  * Added `DART_BUILD_TESTS`, `DART_BUILD_EXAMPLES`, and `DART_BUILD_TUTORIALS` to allow optionally skipping the tests/examples/tutorial targets (examples/tutorials now auto-disable if `dart-gui` is not built).
   * `dart.pc` now reports the installed include directory via `Cflags`, improving downstream `pkg-config` usage without breaking relocatable installs.
   * Added `DART_EXAMPLES_INSTALL_PATH` CMake cache variable to customize where example sources are installed or disable their installation.
   * Added `libsdformat` as a required dependency so that SDF files are normalized through the official parser before being handed to DART: [#264](https://github.com/dartsim/dart/issues/264)
-  * Added `DART_BUILD_COLLISION_BULLET` and `DART_BUILD_COLLISION_ODE` to compile the optional Bullet/ODE backends directly into the core `dart` library (the legacy `dart-collision-*` targets and components are removed; enabling the options now fails fast if the dependencies are missing).
+  * Introduced per-target export headers (`dart/<component>/Export.hpp`) that define `DART_<COMPONENT>_API` macros. Each library now controls symbol visibility independently on Windows instead of sharing the monolithic `DART_API`, which fixes long‑standing DLL import inconsistencies.
+  * Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
 * Simulation
   * Added `dart::simulation::WorldConfig`, `World::setCollisionDetector(...)`, and corresponding dartpy bindings so users can switch collision detectors (FCL, Bullet, ODE, etc.) without reaching into the constraint solver internals.
   * Removed the string-based `World::setCollisionDetector()` overload in favor of the strongly typed enum helper to make switching detectors simpler in user code.
 
 * Core
   * Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1).
-  * Removed the legacy `dart/integration` module (Euler/RK4/SemiImplicit classes); time integration now happens entirely inside `dart::simulation::World::step()` via the built-in semi-implicit Euler scheme.
   * Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers).
   * Removed all APIs deprecated in DART 6.7 (legacy math random helpers, `Skeleton::clone()` overloads, and `ConstraintSolver::set/getLCPSolver()`).
   * Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias).
+  * Deprecated `ResourceRetriever::getFilePath()` and the overriding implementations across retrievers. The method now emits compiler deprecation warnings and will be removed in DART 8.0; use the new resource-materialization helpers (e.g., the SDF/OSG utilities) instead.
   * Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   * Removed `CollisionFilter::needCollision()` (deprecated in DART 6.3).
   * Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
@@ -46,6 +51,8 @@
   * Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
   * Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
 
+* dartpy
+  * Added bindings for `dynamics::EndEffector` (including the `Support` aspect) and exposed `BodyNode::createEndEffector`/`getEndEffector` plus the `Skeleton::getEndEffector` overloads to unblock the Atlas puppet Python example and IK tests.
 * Tutorials
   * Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.
 
@@ -978,7 +985,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 
 * Misc
 
-  * Fixed build of dart-gui-osg that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
+  * Fixed build of the OpenSceneGraph GUI library (`dart-gui`, historically `dart-gui-osg`) that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
   * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
   * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
   * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)

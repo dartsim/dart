@@ -58,6 +58,12 @@ include(CompilerCache)
 # - CONFIG_INSTALL_DIR
 initialize_component_helpers(${PROJECT_NAME})
 
+if(BUILD_SHARED_LIBS)
+  set(DART_BUILD_SHARED_VALUE 1)
+else()
+  set(DART_BUILD_SHARED_VALUE 0)
+endif()
+
 #===============================================================================
 # Project settings
 #===============================================================================
@@ -199,7 +205,7 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON CATEGORY build)
+dart_option(DART_BUILD_GUI "Build osgDart library" ON CATEGORY build)
 dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
@@ -233,11 +239,6 @@ dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
-dart_option(DART_BUILD_DARTPY8 "Build experimental dartpy8 Python bindings" OFF CATEGORY build)
-
-if(DART_BUILD_DARTPY8)
-  set(DART_BUILD_DART8 ON CACHE BOOL "Build experimental DART8 library" FORCE)
-endif()
 
 dart_configure_compiler_cache()
 
@@ -302,14 +303,29 @@ endif()
 #===============================================================================
 # Build type settings
 #===============================================================================
-if(NOT CMAKE_BUILD_TYPE)
-  set(
-    CMAKE_BUILD_TYPE Release
-    CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
-    FORCE
-  )
+set(_dart_known_build_types Debug Release RelWithDebInfo MinSizeRel None)
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(
+      CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+    message(STATUS "Setting CMAKE_BUILD_TYPE to '${CMAKE_BUILD_TYPE}'.")
+  else()
+    set(
+      CMAKE_BUILD_TYPE
+      "${CMAKE_BUILD_TYPE}"
+      CACHE STRING
+            "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
+      FORCE
+    )
+  endif()
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_dart_known_build_types})
 endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPERCASE)
 
 set(DART_BUILD_MODE_DEBUG FALSE)
 set(DART_BUILD_MODE_RELEASE FALSE)
@@ -322,8 +338,6 @@ elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
   set(DART_BUILD_MODE_RELEASE TRUE)
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(DART_BUILD_MODE_RELEASE TRUE)
-else()
-  message(WARNING "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 # Active log level:
@@ -428,7 +442,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if(DART_BUILD_WHEELS)
-    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
+    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support older glibc-based wheel builds
   else()
     set(gcc_required_version 11.2.0)
   endif()
@@ -529,7 +543,7 @@ if(DART_VERBOSE)
   message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_VERSION}")
   message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
+  message(STATUS "Build gui (OSG) : ${DART_BUILD_GUI}")
   message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
   message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
   if(CMAKE_BUILD_TYPE_UPPERCASE STREQUAL "RELEASE")
@@ -575,6 +589,14 @@ if(TARGET dart)
     else()
       add_subdirectory(tests EXCLUDE_FROM_ALL)
     endif()
+
+    if(DART_BUILD_DART8)
+      if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests_dart8/CMakeLists.txt")
+        if(NOT TARGET dart8_tests)
+          add_custom_target(dart8_tests)
+        endif()
+      endif()
+    endif()
   elseif(NOT DART_BUILD_TESTS)
     message(STATUS "Skipping tests (DART_BUILD_TESTS == OFF)")
   else()
@@ -582,7 +604,7 @@ if(TARGET dart)
   endif()
 
   if(DART_BUILD_EXAMPLES)
-    if(TARGET dart-gui-osg)
+    if(TARGET dart-gui)
       # Add example subdirectories and an "examples" target.
       if(MSVC)
         add_subdirectory(examples)
@@ -603,14 +625,14 @@ if(TARGET dart)
         message(STATUS "Adding ${examples_length} examples")
       endif()
     else()
-      message(STATUS "Skipping examples (requires dart-gui-osg target; enable DART_BUILD_GUI_OSG)")
+      message(STATUS "Skipping examples (requires dart-gui target; enable DART_BUILD_GUI)")
     endif()
   else()
     message(STATUS "Skipping examples (DART_BUILD_EXAMPLES == OFF)")
   endif()
 
   if(DART_BUILD_TUTORIALS)
-    if(TARGET dart-gui-osg)
+    if(TARGET dart-gui)
       # Add a "tutorials" target to build tutorials.
       if(MSVC)
         add_subdirectory(tutorials)
@@ -631,7 +653,7 @@ if(TARGET dart)
         message(STATUS "Adding ${tutorials_length} tutorials")
       endif()
     else()
-      message(STATUS "Skipping tutorials (requires dart-gui-osg target; enable DART_BUILD_GUI_OSG)")
+      message(STATUS "Skipping tutorials (requires dart-gui target; enable DART_BUILD_GUI)")
     endif()
   else()
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
@@ -645,9 +667,6 @@ add_subdirectory(python)
 set(all_target_candidates)
 if(DART_BUILD_DARTPY)
   list(APPEND all_target_candidates dartpy_nb)
-endif()
-if(DART_BUILD_DARTPY8)
-  list(APPEND all_target_candidates dartpy8)
 endif()
 if(DART_BUILD_TESTS AND BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)

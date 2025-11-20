@@ -195,6 +195,7 @@ function(dart_print_options)
   endif()
 
   set(group_order
+    cmake
     build
     performance
     system
@@ -203,6 +204,7 @@ function(dart_print_options)
     other
   )
   set(group_label_build "Build Outputs")
+  set(group_label_cmake "CMake Globals")
   set(group_label_performance "Performance & Debug")
   set(group_label_system "System Integrations")
   set(group_label_msvc "MSVC Toolchain")
@@ -287,6 +289,12 @@ function(dart_print_options)
 
     list(APPEND group_${group_key} "${option_str}")
   endforeach()
+
+  if(BUILD_SHARED_LIBS)
+    set(group_cmake "- BUILD_SHARED_LIBS : ON [default]")
+  else()
+    set(group_cmake "- BUILD_SHARED_LIBS : OFF")
+  endif()
 
   foreach(group IN LISTS group_order)
     set(group_entries ${group_${group}})
@@ -1269,7 +1277,82 @@ endmacro()
 #   dart_add_library(_libname source1 [source2 ...])
 #-------------------------------------------------------------------------------
 macro(dart_add_library _name)
+  if(BUILD_SHARED_LIBS)
+    set(_dart_target_build_shared 1)
+  else()
+    set(_dart_target_build_shared 0)
+  endif()
   add_library(${_name} ${ARGN})
+  string(REPLACE "-" "_" _dart_export_macro "${_name}")
+  string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
+  string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
+  string(TOUPPER "${_dart_export_macro}" _dart_export_macro)
+  target_compile_definitions(
+    ${_name}
+    PUBLIC
+      DART_BUILD_SHARED=${_dart_target_build_shared}
+    PRIVATE
+      DART_BUILDING_${_dart_export_macro}
+  )
+  unset(_dart_target_build_shared)
+
+  set(_dart_use_global_output_dirs TRUE)
+  if(DEFINED DART_USE_GLOBAL_OUTPUT_DIRS)
+    if(NOT DART_USE_GLOBAL_OUTPUT_DIRS)
+      set(_dart_use_global_output_dirs FALSE)
+    endif()
+  endif()
+
+  if(_dart_use_global_output_dirs)
+    if(CMAKE_CONFIGURATION_TYPES)
+      foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+        string(TOUPPER "${_dart_config}" _dart_config_upper)
+        set_target_properties(
+          ${_name}
+          PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/lib/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/lib/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${DART_BINARY_DIR}/bin/${_dart_config}"
+        )
+      endforeach()
+    else()
+      set_target_properties(
+        ${_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+          LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+          RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+      )
+    endif()
+  else()
+    if(CMAKE_CONFIGURATION_TYPES)
+      foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+        string(TOUPPER "${_dart_config}" _dart_config_upper)
+        set_target_properties(
+          ${_name}
+          PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            LIBRARY_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+            RUNTIME_OUTPUT_DIRECTORY_${_dart_config_upper}
+              "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
+        )
+      endforeach()
+    else()
+      set_target_properties(
+        ${_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      )
+    endif()
+  endif()
+
   set_target_properties(
     ${_name} PROPERTIES
     SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"

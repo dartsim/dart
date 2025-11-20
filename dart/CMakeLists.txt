@@ -14,9 +14,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # common
 # math
 # lcpsolver
-# optimizer
-#   ipopt
-#   nlopt
+# optimizer (legacy alias headers for backward compatibility)
 # dynamics
 # collision
 #   dart
@@ -34,24 +32,20 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
-# dart - common, math, lcpsolver, optimizer, dynamics, collision,
-#        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
-#        fcl, fmt]
-# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
-# dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
+# dart - common, math (including math/optimization), lcpsolver, dynamics,
+#        collision (fcl + optional Bullet/ODE), constraint, simulation, utils,
+#        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
-# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
-# optimizer-nlopt - (dart), {dart-optimizer-nlopt}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui-osg - (utils), {dart-gui-osg}
+# gui - (utils), {dart-gui}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -102,7 +96,8 @@ endif()
 # Set header and source files
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 get_filename_component(dart_all_hpp "All.hpp" ABSOLUTE)
-dart_add_core_headers(${dart_hpp} ${dart_all_hpp})
+get_filename_component(dart_export_hpp "Export.hpp" ABSOLUTE)
+dart_add_core_headers(${dart_hpp} ${dart_all_hpp} ${dart_export_hpp})
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
@@ -251,6 +246,10 @@ if(DART_BUILD_PROFILE)
   target_link_libraries(dart PUBLIC Tracy::TracyClient)
 endif()
 
-install(FILES ${dart_hpp} ${dart_all_hpp} DESTINATION include/dart/ COMPONENT headers)
+install(
+  FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp}
+  DESTINATION include/dart/
+  COMPONENT headers
+)
 
 dart_format_add(${dart_core_headers} ${dart_core_sources})

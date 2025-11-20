@@ -48,6 +48,8 @@
 #include <dart/common/NameManager.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <dart/Export.hpp>
+
 #include <mutex>
 
 namespace dart {
@@ -55,10 +57,11 @@ namespace dynamics {
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class Skeleton : public virtual common::VersionCounter,
-                 public MetaSkeleton,
-                 public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
-                 public detail::SkeletonAspectBase
+class DART_API Skeleton
+  : public virtual common::VersionCounter,
+    public MetaSkeleton,
+    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
+    public detail::SkeletonAspectBase
 {
 public:
   // Some of non-virtual functions of MetaSkeleton are hidden because of the
@@ -94,7 +97,7 @@ public:
   /// the number of degrees of freedom in the Skeleton or it must be zero. We
   /// assume that any Eigen::VectorXd member with zero entries should be
   /// ignored.
-  struct Configuration
+  struct DART_API Configuration
   {
     Configuration(
         const Eigen::VectorXd& positions = Eigen::VectorXd(),
@@ -162,7 +165,7 @@ public:
   ConstSkeletonPtr getSkeleton() const;
 
   /// Get the mutex that protects the state of this Skeleton
-  std::mutex& getMutex() const;
+  std::mutex& getMutex() const noexcept;
 
   /// Get the mutex that protects the state of this Skeleton
   std::unique_ptr<common::LockableReference> getLockableReference()
@@ -242,7 +245,7 @@ public:
   void setSelfCollisionCheck(bool enable);
 
   /// Return whether self-collision check is enabled.
-  bool getSelfCollisionCheck() const;
+  bool getSelfCollisionCheck() const noexcept;
 
   /// Enable self-collision check.
   void enableSelfCollisionCheck();
@@ -251,14 +254,14 @@ public:
   void disableSelfCollisionCheck();
 
   /// Return true if self-collision check is enabled
-  bool isEnabledSelfCollisionCheck() const;
+  bool isEnabledSelfCollisionCheck() const noexcept;
 
   /// Set whether to check adjacent bodies. This option is effective only when
   /// the self-collision check is enabled.
   void setAdjacentBodyCheck(bool enable);
 
   /// Return whether adjacent body check is enabled.
-  bool getAdjacentBodyCheck() const;
+  bool getAdjacentBodyCheck() const noexcept;
 
   /// Enable collision check for adjacent bodies. This option is effective only
   /// when the self-collision check is enabled.
@@ -269,7 +272,7 @@ public:
   void disableAdjacentBodyCheck();
 
   /// Return true if self-collision check is enabled including adjacent bodies.
-  bool isEnabledAdjacentBodyCheck() const;
+  bool isEnabledAdjacentBodyCheck() const noexcept;
 
   /// Set whether this skeleton will be updated by forward dynamics.
   /// \param[in] _isMobile True if this skeleton is mobile.
@@ -277,21 +280,21 @@ public:
 
   /// Get whether this skeleton will be updated by forward dynamics.
   /// \return True if this skeleton is mobile.
-  bool isMobile() const;
+  bool isMobile() const noexcept;
 
   /// Set time step. This timestep is used for implicit joint damping
   /// force.
   void setTimeStep(double _timeStep);
 
   /// Get time step.
-  double getTimeStep() const;
+  double getTimeStep() const noexcept;
 
   /// Set 3-dim gravitational acceleration. The gravity is used for
   /// calculating gravity force vector of the skeleton.
   void setGravity(const Eigen::Vector3d& _gravity);
 
   /// Get 3-dim gravitational acceleration.
-  const Eigen::Vector3d& getGravity() const;
+  const Eigen::Vector3d& getGravity() const noexcept;
 
   /// \}
 
@@ -310,16 +313,16 @@ public:
       = typename NodeType::Properties());
 
   // Documentation inherited
-  std::size_t getNumBodyNodes() const override;
+  std::size_t getNumBodyNodes() const noexcept override;
 
   /// Get number of rigid body nodes.
-  std::size_t getNumRigidBodyNodes() const;
+  std::size_t getNumRigidBodyNodes() const noexcept;
 
   /// Get number of soft body nodes.
-  std::size_t getNumSoftBodyNodes() const;
+  std::size_t getNumSoftBodyNodes() const noexcept;
 
   /// Get the number of independent trees that this Skeleton contains
-  std::size_t getNumTrees() const;
+  std::size_t getNumTrees() const noexcept;
 
   /// Get the root BodyNode of the tree whose index in this Skeleton is _treeIdx
   BodyNode* getRootBodyNode(std::size_t _treeIdx = 0);
@@ -819,7 +822,7 @@ public:
   /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
   /// are added and is updated as BodyNode mass is changed, so this is a
   /// constant-time O(1) operation for the Skeleton class.
-  double getMass() const override;
+  double getMass() const noexcept override;
 
   /// Get the mass matrix of a specific tree in the Skeleton
   const Eigen::MatrixXd& getMassMatrix(std::size_t _treeIdx) const;

@@ -1,11 +1,11 @@
-if(NOT DART_BUILD_GUI_OSG)
-  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+if(NOT DART_BUILD_GUI)
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI == ${DART_BUILD_GUI})")
   return()
 endif()
 
-# Set local target name
-set(target_name ${PROJECT_NAME}-gui-osg)
-set(component_name gui-osg)
+# Set local target/component names
+set(target_name ${PROJECT_NAME}-gui)
+set(component_name gui)
 set(component_dependencies )
 set(component_dependency_packages )
 set(link_libraries )
@@ -15,7 +15,7 @@ dart_check_dependent_target(${target_name} dart-utils)
 
 # OpenSceneGraph
 dart_find_package(OpenSceneGraph)
-dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph")
+dart_check_required_package(OpenSceneGraph "dart-gui" "OpenSceneGraph")
 list(APPEND component_dependency_packages OpenSceneGraph)
 
 # ImGui
@@ -43,6 +43,26 @@ file(GLOB render_hdrs "render/*.hpp")
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
+
+if(MSVC AND BUILD_SHARED_LIBS)
+  if(CMAKE_CONFIGURATION_TYPES)
+    foreach(_cfg ${CMAKE_CONFIGURATION_TYPES})
+      string(TOUPPER "${_cfg}" _cfg_upper)
+      set_target_properties(
+        ${target_name}
+        PROPERTIES
+          ARCHIVE_OUTPUT_DIRECTORY_${_cfg_upper}
+            "${DART_BINARY_DIR}/lib/${_cfg}"
+      )
+    endforeach()
+  else()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
+    )
+  endif()
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

@@ -77,7 +77,7 @@ namespace dart8 {
 /// @note Joint handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
 ///       or the World is destroyed.
-class Joint
+class DART8_API Joint
 {
 public:
   /// Constructor (typically called by Link::getParentJoint)

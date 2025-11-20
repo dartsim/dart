@@ -77,14 +77,14 @@ public:
   //----------------------------------------------------------------------------
 
   /// Returns number of skeletons associated with this ReferentialSkeleton.
-  std::size_t getNumSkeletons() const;
+  std::size_t getNumSkeletons() const noexcept;
 
   /// Returns whether this ReferentialSkeleton contains any BodyNode or Joint
   /// from \c skel.
-  bool hasSkeleton(const Skeleton* skel) const;
+  bool hasSkeleton(const Skeleton* skel) const noexcept;
 
   // Documentation inherited
-  std::size_t getNumBodyNodes() const override;
+  std::size_t getNumBodyNodes() const noexcept override;
 
   // Documentation inherited
   BodyNode* getBodyNode(std::size_t _idx) override;
@@ -310,7 +310,7 @@ public:
   /// ReferentialSkeleton::getMass(), the total mass is computed upon request,
   /// so this is a linear-time O(N) operation. The Skeleton::getMass() version,
   /// however, is constant-time.
-  double getMass() const override;
+  double getMass() const noexcept override;
 
   // Documentation inherited
   const Eigen::MatrixXd& getMassMatrix() const override;

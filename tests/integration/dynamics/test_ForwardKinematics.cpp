@@ -45,7 +45,7 @@ using namespace dart::test;
 std::vector<std::size_t> twoLinkIndices;
 
 //==============================================================================
-TEST(FORWARD_KINEMATICS, YAW_ROLL)
+TEST(ForwardKinematics, YawRoll)
 {
   // Checks forward kinematics for two DoF arm manipulators.
   // NOTE: The following is the reference frame description of the world
@@ -86,7 +86,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
 //==============================================================================
 // TODO: Use link lengths in expectations explicitly
-TEST(FORWARD_KINEMATICS, TWO_ROLLS)
+TEST(ForwardKinematics, TwoRolls)
 {
   // Checks forward kinematics for two DoF arm manipulators.
   // NOTE: The following is the reference frame description of the world
@@ -172,7 +172,7 @@ Eigen::MatrixXd standardJacobian(
 }
 
 //==============================================================================
-TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
+TEST(ForwardKinematics, JacobianPartialChange)
 {
   // This is a regression test for issue #499
   const double tolerance = 1e-8;
@@ -221,7 +221,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 }
 
 //==============================================================================
-TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
+TEST(ForwardKinematics, JacobianEndEffectorChange)
 {
   // This is a regression test for pull request #683
   const double tolerance = 1e-8;

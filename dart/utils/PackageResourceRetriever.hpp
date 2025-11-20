@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 #define DART_UTILS_PACKAGERESOURCERETRIEVER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -48,7 +50,8 @@ namespace utils {
 /// base URI of every package that you wish to resolve using the
 /// \ref addPackageDirectory method.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class PackageResourceRetriever : public virtual common::ResourceRetriever
+class DART_UTILS_API PackageResourceRetriever
+  : public virtual common::ResourceRetriever
 {
 public:
   /// Construct a PackageResourceRetriever that uses the specified \a
@@ -95,6 +98,7 @@ public:
   common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const common::Uri& uri) override;
 
 private:

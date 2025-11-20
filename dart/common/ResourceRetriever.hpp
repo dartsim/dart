@@ -33,8 +33,11 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/common/Resource.hpp>
 #include <dart/common/Uri.hpp>
+
+#include <dart/Export.hpp>
 
 #include <memory>
 #include <string>
@@ -44,7 +47,7 @@ namespace common {
 
 /// ResourceRetriever provides methods for testing for the existence of and
 /// accessing the content of a resource specified by URI.
-class ResourceRetriever
+class DART_API ResourceRetriever
 {
 public:
   virtual ~ResourceRetriever() = default;
@@ -64,7 +67,9 @@ public:
 
   /// Returns absolute file path to \c uri; an empty string if unavailable.
   ///
-  /// This base class returns an empty string by default.
+  /// \deprecated Since DART 7.0; slated for removal in DART 8.0. Prefer
+  /// resource-materialization helpers instead.
+  DART_DEPRECATED(7.0)
   virtual std::string getFilePath(const Uri& uri);
 
   // We don't const-qualify for exists, retrieve, readAll, and getFilePath here.

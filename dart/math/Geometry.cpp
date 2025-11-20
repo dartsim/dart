@@ -1369,7 +1369,8 @@ Eigen::Vector6d dad(const Eigen::Vector6d& _s, const Eigen::Vector6d& _t)
   return res;
 }
 
-Inertia transformInertia(const Eigen::Isometry3d& _T, const Inertia& _I)
+DART_API Inertia
+transformInertia(const Eigen::Isometry3d& _T, const Inertia& _I)
 {
   // operation count: multiplication = 186, addition = 117, subtract = 21
 

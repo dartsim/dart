@@ -92,9 +92,10 @@ If you use DART in an academic publication, please consider citing this
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Tutorials
+   :caption: Key Topics
 
    Tutorials <tutorials/index>
+   Inverse Kinematics <shared/inverse_kinematics/index>
 
 .. toctree::
    :maxdepth: 1

@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_COMPOSITERESOURCERETRIEVER_HPP_
 #define DART_UTILS_COMPOSITERESOURCERETRIEVER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -47,7 +49,8 @@ namespace utils {
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class CompositeResourceRetriever : public virtual common::ResourceRetriever
+class DART_UTILS_API CompositeResourceRetriever
+  : public virtual common::ResourceRetriever
 {
 public:
   virtual ~CompositeResourceRetriever() = default;
@@ -76,6 +79,7 @@ public:
   common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const common::Uri& uri) override;
 
 private:

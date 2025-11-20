@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/MimicDofProperties.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -112,7 +114,7 @@ enum ActuatorType
 
 const ActuatorType DefaultActuatorType = FORCE;
 
-struct JointProperties
+struct DART_API JointProperties
 {
   /// Joint name
   std::string mName;

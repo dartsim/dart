@@ -35,12 +35,14 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace common {
 
 /// LocalResourceRetriever provides access to local resources specified by
 /// file:// URIs by wrapping the standard C and C++ file manipulation routines.
-class LocalResourceRetriever : public virtual ResourceRetriever
+class DART_API LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;
@@ -52,6 +54,7 @@ public:
   ResourcePtr retrieve(const Uri& _uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const Uri& uri) override;
 };
 

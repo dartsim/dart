@@ -22,19 +22,17 @@ fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 gtest = ">=1.17.0,<2"
 imgui = ">=1.91.9,<2"
-ipopt = ">=3.14.17,<4"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
 libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
+libsdformat = ">=16.0.0,<17"
 myst-parser = "*"
 nanobind = ">=2.4.0"
 ninja = ">=1.12.1,<2"
-nlopt = ">=2.10.0,<3"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
-pagmo-devel = ">=2.19.1,<3"
 pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
@@ -48,13 +46,12 @@ sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
 sphinx_rtd_theme = "*"
+taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
-taplo = ">=0.9.0,<1"
 tinyxml2 = ">=11.0.0,<12"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 urdfdom = ">=4.0.1,<5"
-libsdformat = ">=16.0.0,<17"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -69,11 +66,13 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
-DART_BUILD_DARTPY8_VALUE=${DART_BUILD_DARTPY8_OVERRIDE:-OFF}
+if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
+  DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
+fi
 DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
 DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
-DART_BUILD_GUI_OSG_VALUE=${DART_BUILD_GUI_OSG_OVERRIDE:-ON}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -102,10 +101,9 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
-  -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY8_VALUE} \
   -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_VALUE} \
   -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
-  -DDART_BUILD_GUI_OSG=${DART_BUILD_GUI_OSG_VALUE} \
+  -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -132,7 +130,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 python/dartpy8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
@@ -143,35 +141,7 @@ lint-yaml = { cmd = """
     prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
-lint-toml = { cmd = ["bash", "-lc", """
-set -euo pipefail
-python - <<'PY'
-import pathlib
-import shutil
-import subprocess
-import time
-
-skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
-root = pathlib.Path('.')
-toml_files = []
-for path in root.rglob('*.toml'):
-    if any(part in skip_dirs for part in path.parts):
-        continue
-    toml_files.append(path)
-
-if not toml_files:
-    raise SystemExit(0)
-
-timestamp = time.strftime('%Y%m%d%H%M%S')
-backup_dir = root / '.pixi' / 'lint-toml-backups' / timestamp
-for path in toml_files:
-    dest = backup_dir / path
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(path, dest)
-
-subprocess.run(['taplo', 'fmt', *map(str, toml_files)], check=True)
-PY
-"""] }
+lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
 lint = { depends-on = [
   "lint-cpp",
@@ -189,7 +159,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 python/dartpy8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -213,10 +183,7 @@ build = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel \
-  --target all
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -228,14 +195,17 @@ cmake \
   { arg = "build_type", default = "Release" },
 ] }
 
-build-debug = { cmd = ["bash", "-lc", """
+build-debug = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel \
-  --target all
-"""], depends-on = ["config-debug"] }
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py
+""",
+], depends-on = [
+  "config-debug",
+] }
 
 config-debug = { cmd = [
   "bash",
@@ -247,6 +217,9 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
+if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
+  DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
+fi
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -275,7 +248,6 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_DART8=ON \
-  -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -296,7 +268,11 @@ cmake \
 build-tests = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target tests",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+""",
 ], depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -310,7 +286,11 @@ build-tests = { cmd = [
 build-dart8-tests = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dart8_tests",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart8_tests
+""",
 ], depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -324,7 +304,14 @@ build-dart8-tests = { cmd = [
 build-math-tests = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE=${BUILD_TYPE:-Release}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -j --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh",
+  """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-Release}
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+python scripts/cmake_build.py --build-dir "$BUILD_DIR" \
+  --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere \
+  --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh
+""",
 ], depends-on = [
   "config",
 ] }
@@ -332,7 +319,11 @@ build-math-tests = { cmd = [
 build-py-dev = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy_nb",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dartpy_nb
+""",
 ], depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -343,24 +334,10 @@ build-py-dev = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
-build-dartpy8 = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\ncmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --parallel --target dartpy8",
-], depends-on = [
-  { task = "config-py", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "OFF" },
-  { arg = "build_type", default = "Release" },
-] }
-
 config-py = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_DARTPY8=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${DART_BUILD_DARTPY_VALUE}\" ]; then\n  DART_BUILD_DARTPY_VALUE=\"{{ dartpy }}\"\nfi\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "OFF" },
   { arg = "build_type", default = "Release" },
@@ -473,6 +450,12 @@ py-tu-biped-fi = { depends-on = [
   ] },
 ] }
 
+py-ex-atlas-puppet = { depends-on = [
+  { task = "py-ex", args = [
+    "atlas_puppet",
+  ] },
+] }
+
 test = { cmd = [
   "bash",
   "-lc",
@@ -537,32 +520,13 @@ test-lcpsolver = { cmd = """
         -R UNIT_lcpsolver
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
-test-dartpy8 = { cmd = [
-  "bash",
-  "-lc",
-  """
-export BUILD_TYPE={{ build_type }}
-python -c "import os, importlib.util; from pathlib import Path; env=os.environ; build_type=env.get('BUILD_TYPE', '{{ build_type }}'); build_dir=Path('build').joinpath(env['PIXI_ENVIRONMENT_NAME'], 'cpp', build_type, 'python'); ext=next((build_dir/'dartpy8').glob('dartpy8*.so'), None); assert ext is not None, 'dartpy8 extension not found'; spec=importlib.util.spec_from_file_location('dartpy8', ext); module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); module.World(); print('dartpy8 smoke test passed')"
-""",
-], depends-on = [
-  { task = "build-dartpy8", args = [
-    "ON",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "build_type", default = "Release" },
-] }
-
 test-py = { cmd = [
   "bash",
   "-lc",
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-cmake \
-    --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-    --parallel \
-    --target pytest
+python scripts/pixi_test_py.py
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -629,10 +593,16 @@ cmake \
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
 
-build-coverage = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
-    && ctest --output-on-failure -j --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-""", depends-on = [
+build-coverage = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+PARALLEL_JOBS=$(python scripts/parallel_jobs.py)
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
+  && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+""",
+], depends-on = [
   "config-coverage",
 ], env = { BUILD_TYPE = "Debug" } }
 
@@ -663,10 +633,7 @@ lcov \
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
 run-cpp-target = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} \
-        --parallel \
-        --target {{ target }} \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }} python scripts/cmake_build.py --target {{ target }} \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/{{ build_type }}/bin/{{ target }}
 """, depends-on = [
   "config",
@@ -718,6 +685,36 @@ bm = { depends-on = [
   { arg = "build_type", default = "Release" },
 ] }
 
+test-joints = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+    --parallel \
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints
+""",
+], depends-on = [
+  "config",
+] }
+
+test-joints-coupler = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+cmake \
+    --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+    --parallel \
+    --target INTEGRATION_dynamics_Joints
+./build/$PIXI_ENVIRONMENT_NAME/cpp/Release/tests/integration/INTEGRATION_dynamics_Joints --gtest_filter=JOINTS.MIMIC_JOINT:JOINTS.MIMIC_JOINT_COUPLER
+""",
+], depends-on = [
+  "config",
+] }
+
 bm-boxes = { depends-on = [
   { task = "run-cpp-target", args = [
     "BM_INTEGRATION_boxes",
@@ -743,10 +740,7 @@ bm-convhull = { depends-on = [
 ] }
 
 bm-lcpsolver = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target BM_LCPSOLVER \
-        --parallel \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --target BM_LCPSOLVER \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/lcpsolver/BM_LCPSOLVER
 """, depends-on = [
   "config",
@@ -800,38 +794,59 @@ tu-multi-pendulum-fi = { depends-on = [
   ] },
 ] }
 
+tu-wholebody-ik = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "tutorial_wholebody_ik",
+  ] },
+] }
+
+tu-wholebody-ik-fi = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "tutorial_wholebody_ik_finished",
+  ] },
+] }
+
 install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [
   { task = "config-install", args = [
     "{{ dartpy }}",
   ] },
 ], env = { BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+  { arg = "dartpy", default = "ON" },
 ] }
 
-config-install = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_DART8={{ dartpy }} \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
-  { arg = "dartpy", default = "OFF" },
+config-install = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+cmake \
+    -G Ninja \
+    -S . \
+    -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+    -DDART_BUILD_DARTPY={{ dartpy }} \
+    -DDART_BUILD_DART8={{ dartpy }} \
+    -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
+    -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
+    -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
+    -DDART_BUILD_PROFILE=OFF \
+    -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+    -DDART_USE_SYSTEM_GOOGLETEST=ON \
+    -DDART_USE_SYSTEM_IMGUI=ON \
+    -DDART_USE_SYSTEM_NANOBIND=OFF \
+    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_VERBOSE=$DART_VERBOSE
+""",
+], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
+  { arg = "dartpy", default = "ON" },
 ] }
 
 tracy = { cmd = "tracy-profiler" }
 
 # Python package build
-build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_SKIP_pagmo=ON -DDART_USE_SYSTEM_IMGUI=ON" } }
+build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
 # Build wheel package (without installing)
 build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
@@ -847,7 +862,7 @@ test-installation = { cmd = "python scripts/test_installation.py" }
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "pip wheel . --no-deps -w dist/ -v", args = [
   { arg = "use_system_imgui", default = "ON" },
-], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI_OSG=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
+], env = { CMAKE_ARGS = "-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON -DDART_BUILD_GUI=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI={{ use_system_imgui }}" } }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
   { arg = "python_tag" },
@@ -961,14 +976,12 @@ test-dartpy-install = { cmd = """
 #   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
 #   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
 #   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
-#   pixi run docker-build-manylinux                    # Build manylinux image
 docker-build = { cmd = "python scripts/build_docker.py all" }
 
 docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [
   { arg = "distro", default = "jammy" },
 ] }
 
-docker-build-manylinux = { cmd = "python scripts/build_docker.py manylinux" }
 config-asan = { cmd = [
   "bash",
   "-lc",
@@ -978,14 +991,9 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-  fi
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
@@ -1015,14 +1023,17 @@ cmake \
 """,
 ], env = { BUILD_TYPE = "asan", CMAKE_BUILD_TYPE = "RelWithDebInfo", DART_BUILD_PROFILE = "OFF", DART_VERBOSE = "OFF" } }
 
-build-asan = { cmd = ["bash", "-lc", """
+build-asan = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-cmake \
-  --build build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --parallel \
-  --target tests
-"""], depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+""",
+], depends-on = [
+  "config-asan",
+], env = { BUILD_TYPE = "asan" } }
 
 test-asan = { cmd = [
   "bash",
@@ -1080,9 +1091,10 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
-  "config-osg",
-] }
+build-osg = { cmd = ["bash", "-lc", """
+set -euo pipefail
+CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
+"""], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
   "build-osg",
@@ -1118,9 +1130,10 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
-  "config-osg",
-] }
+build-osg = { cmd = ["bash", "-lc", """
+set -euo pipefail
+CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
+"""], depends-on = ["config-osg"] }
 
 install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
   "build-osg",
@@ -1143,7 +1156,7 @@ config = { cmd = """
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
         -G 'Visual Studio 17 2022' \
-        -DBUILD_SHARED_LIBS=OFF \
+        -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
@@ -1194,10 +1207,7 @@ check-lint = { depends-on = [
 
 build = { cmd = """
     BUILD_TYPE={{ build_type }}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE
 """, depends-on = [
   { task = "config", args = [
     "ON",
@@ -1207,20 +1217,14 @@ build = { cmd = """
 ] }
 
 build-debug = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config Debug \
-        --parallel \
-        --target all
-""", depends-on = ["config-debug"] }
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config Debug --target all
+""", depends-on = [
+  "config-debug",
+] }
 
 build-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1232,11 +1236,7 @@ build-tests = { cmd = """
 
 build-dart8-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target dart8_tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart8_tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1248,11 +1248,7 @@ build-dart8-tests = { cmd = """
 
 build-py-dev = { cmd = """
     BUILD_TYPE={{ build_type }}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target dartpy_nb
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dartpy_nb
 """, depends-on = [
   "config-py",
 ], args = [
@@ -1264,7 +1260,6 @@ config-py = { cmd = """
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
         -G 'Visual Studio 17 2022' \
-        -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
@@ -1329,11 +1324,7 @@ test-dart8 = { cmd = [
 
 test-py = { cmd = """
     BUILD_TYPE={{ build_type }}
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --parallel \
-        --target pytest
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target pytest
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -1349,11 +1340,7 @@ test-all = { cmd = """
 # Windows helper to match the single-config generator layout. As above, configure
 # alternative build types explicitly before invoking with a different configuration.
 run-cpp-target-win = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config {{ build_type }} \
-        --parallel \
-        --target {{ target }} \
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config {{ build_type }} --target {{ target }} \
     && build/{{ build_type }}/{{ run_target }}.exe
 """, depends-on = [
   "config",
@@ -1512,14 +1499,9 @@ config-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-  fi
+if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
+  CMAKE_C_COMPILER_LAUNCHER=sccache
+  CMAKE_CXX_COMPILER_LAUNCHER=sccache
 fi
 LAUNCHER_DEFS=""
 if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
@@ -1547,19 +1529,30 @@ cmake \
   ] },
 ] }
 
-build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
+build-gz = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
+""",
+], depends-on = [
   "config-gz",
 ] }
 
 test-gz = { cmd = """
     bash -c '
         set -euo pipefail
+        DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
+        export DART_PARALLEL_JOBS
         export CTEST_OUTPUT_ON_FAILURE=1
         export LIBRARY_PATH=$CONDA_PREFIX/lib:${LIBRARY_PATH:-}
         export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
+        ROOT_DIR=$PWD
         cd .deps/gz-physics/build
-        cmake --build . -j --target all
+        python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         python <<\"PY\"
+import os
 import subprocess
 from pathlib import Path
 
@@ -1579,7 +1572,8 @@ for line in ctest.stdout.splitlines():
     elif name.startswith(\"COMMON_TEST_\") and name.endswith(\"_dartsim\"):
         base = name.rsplit(\"_\", 1)[0]
         targets.add(base)
-subprocess.check_call([\"ninja\", \"-j\", \"8\", *sorted(targets)], cwd=build_dir)
+jobs = os.environ.get(\"DART_PARALLEL_JOBS\", \"1\")
+subprocess.check_call([\"ninja\", \"-j\", jobs, *sorted(targets)], cwd=build_dir)
 PY
         ctest --output-on-failure --tests-regex \"^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)\"
         cd lib
@@ -1597,9 +1591,9 @@ PY
 # IMPORTANT NOTES:
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
-# - DART_BUILD_GUI_OSG controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
+# - DART_BUILD_GUI controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
 # - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI_OSG=ON enables dartpy.gui.osg Python bindings on all platforms
+# - DART_BUILD_GUI=ON enables dartpy.gui.osg Python bindings on all platforms
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
@@ -1650,7 +1644,7 @@ delvewheel = ">=1.8.1"
 [feature.py312-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp312",
@@ -1766,7 +1760,7 @@ libglvnd = ">=1.7"
 [feature.py313-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp313",
@@ -1894,7 +1888,7 @@ libglvnd = ">=1.7"
 [feature.py314-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
 
-# auditwheel auto-detects an appropriate manylinux tag from the bundled libraries.
+# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
   { task = "wheel-repair-linux-core", args = [
     "cp314",

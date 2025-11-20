@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_HTTPRESOURCERETRIEVER_HPP_
 #define DART_UTILS_HTTPRESOURCERETRIEVER_HPP_
 
+#include <dart/utils/Export.hpp>
+
 #include <dart/common/Filesystem.hpp>
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/ResourceRetriever.hpp>
@@ -56,7 +58,8 @@ namespace utils {
 /// memory and to allow subsequent calls to re-use already downloaded assets).
 /// Cached files are keyed by URL and stored inside the configured cache
 /// directory (defaults to $TMP/dart_http_cache).
-class HttpResourceRetriever : public virtual common::ResourceRetriever
+class DART_UTILS_API HttpResourceRetriever
+  : public virtual common::ResourceRetriever
 {
 public:
   struct Options
@@ -88,6 +91,7 @@ public:
   common::ResourcePtr retrieve(const common::Uri& uri) override;
 
   // Documentation inherited.
+  DART_DEPRECATED(7.0)
   std::string getFilePath(const common::Uri& uri) override;
 
   /// Set the runtime options.

@@ -36,10 +36,12 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/Fwd.hpp>
 
+#include <dart/Export.hpp>
+
 namespace dart {
 namespace constraint {
 
-class BoxedLcpConstraintSolver : public ConstraintSolver
+class DART_API BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
   /// Constructor

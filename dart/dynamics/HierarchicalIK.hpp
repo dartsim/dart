@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/InverseKinematics.hpp>
 
+#include <dart/Export.hpp>
+
 #include <unordered_set>
 
 namespace dart {
@@ -60,7 +62,7 @@ typedef std::vector<std::vector<std::shared_ptr<InverseKinematics>>>
 /// put into the IK modules' Problems. Any additional constraints or objectives
 /// that you want the HierarchicalIK to solve should be put directly into the
 /// HierarchicalIK's Problem.
-class HierarchicalIK : public common::Subject
+class DART_API HierarchicalIK : public common::Subject
 {
 public:
   /// Virtual destructor
@@ -108,7 +110,7 @@ public:
   virtual std::shared_ptr<HierarchicalIK> clone(
       const SkeletonPtr& _newSkel) const = 0;
 
-  /// This class should be inherited by optimizer::Function classes that have a
+  /// This class should be inherited by math::Function classes that have a
   /// dependency on the HierarchicalIK module that they belong to. If you
   /// pass an HierarchicalIK::Function into the Problem of an
   /// HierarchicalIK module, then it will be properly cloned whenever the
@@ -119,7 +121,7 @@ public:
   {
   public:
     /// Enable this function to be cloned to a new IK module.
-    virtual optimizer::FunctionPtr clone(
+    virtual math::FunctionPtr clone(
         const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
 
     /// Virtual destructor
@@ -127,32 +129,32 @@ public:
   };
 
   /// Set the objective function for this HierarchicalIK.
-  void setObjective(const std::shared_ptr<optimizer::Function>& _objective);
+  void setObjective(const std::shared_ptr<math::Function>& _objective);
 
   /// Get the objective function for this HierarchicalIK.
-  const std::shared_ptr<optimizer::Function>& getObjective();
+  const std::shared_ptr<math::Function>& getObjective();
 
   /// Get the objective function for this HierarchicalIK.
-  std::shared_ptr<const optimizer::Function> getObjective() const;
+  std::shared_ptr<const math::Function> getObjective() const;
 
   /// Set the null space objective for this HierarchicalIK.
   void setNullSpaceObjective(
-      const std::shared_ptr<optimizer::Function>& _nsObjective);
+      const std::shared_ptr<math::Function>& _nsObjective);
 
   /// Get the null space objective for this HierarchicalIK.
-  const std::shared_ptr<optimizer::Function>& getNullSpaceObjective();
+  const std::shared_ptr<math::Function>& getNullSpaceObjective();
 
   /// Get the null space objective for this HierarchicalIK.
-  std::shared_ptr<const optimizer::Function> getNullSpaceObjective() const;
+  std::shared_ptr<const math::Function> getNullSpaceObjective() const;
 
   /// Returns true if this HierarchicalIK has a null space objective.
   bool hasNullSpaceObjective() const;
 
   /// Get the Problem that is being maintained by this HierarchicalIK module
-  const std::shared_ptr<optimizer::Problem>& getProblem();
+  const std::shared_ptr<math::Problem>& getProblem();
 
   /// Get the Problem that is being maintained by this HierarchicalIK module
-  std::shared_ptr<const optimizer::Problem> getProblem() const;
+  std::shared_ptr<const math::Problem> getProblem() const;
 
   /// Reset the Problem that is being maintained by this HierarchicalIK module.
   /// This will clear out all Functions from the Problem and then configure the
@@ -164,13 +166,13 @@ public:
 
   /// Set the Solver that should be used by this IK module, and set it up with
   /// the Problem that is configured by this IK module
-  void setSolver(const std::shared_ptr<optimizer::Solver>& _newSolver);
+  void setSolver(const std::shared_ptr<math::Solver>& _newSolver);
 
   /// Get the Solver that is being used by this IK module.
-  const std::shared_ptr<optimizer::Solver>& getSolver();
+  const std::shared_ptr<math::Solver>& getSolver();
 
   /// Get the Solver that is being used by this IK module.
-  std::shared_ptr<const optimizer::Solver> getSolver() const;
+  std::shared_ptr<const math::Solver> getSolver() const;
 
   /// Refresh the IK hierarchy of this IK module
   virtual void refreshIKHierarchy() = 0;
@@ -213,7 +215,7 @@ protected:
   /// HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the objective of the module's Problem to an HierarchicalIK::Objective.
-  class Objective final : public Function, public optimizer::Function
+  class Objective final : public Function, public math::Function
   {
   public:
     /// Constructor
@@ -223,7 +225,7 @@ protected:
     virtual ~Objective() = default;
 
     // Documentation inherited
-    optimizer::FunctionPtr clone(
+    math::FunctionPtr clone(
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
@@ -246,7 +248,7 @@ protected:
   /// of this HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the constraint of the module's Problem to an HierarchicalIK::Constraint.
-  class Constraint final : public Function, public optimizer::Function
+  class Constraint final : public Function, public math::Function
   {
   public:
     /// Constructor
@@ -256,7 +258,7 @@ protected:
     virtual ~Constraint() = default;
 
     // Documentation inherited
-    optimizer::FunctionPtr clone(
+    math::FunctionPtr clone(
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
@@ -294,16 +296,16 @@ protected:
   IKHierarchy mHierarchy;
 
   /// The Problem that this IK module is maintaining
-  std::shared_ptr<optimizer::Problem> mProblem;
+  std::shared_ptr<math::Problem> mProblem;
 
   /// The Solver that this IK module will use
-  std::shared_ptr<optimizer::Solver> mSolver;
+  std::shared_ptr<math::Solver> mSolver;
 
   /// The Objective of this IK module
-  optimizer::FunctionPtr mObjective;
+  math::FunctionPtr mObjective;
 
   /// The null space Objective of this IK module
-  optimizer::FunctionPtr mNullSpaceObjective;
+  math::FunctionPtr mNullSpaceObjective;
 
   /// Weak pointer to self
   std::weak_ptr<HierarchicalIK> mPtr;
@@ -331,7 +333,7 @@ public:
 /// The CompositeIK class allows you to specify an arbitrary hierarchy of
 /// InverseKinematics modules for a single Skeleton. Simply add in each IK
 /// module that should be used.
-class CompositeIK : public HierarchicalIK
+class DART_API CompositeIK : public HierarchicalIK
 {
 public:
   typedef std::unordered_set<std::shared_ptr<InverseKinematics>> ModuleSet;
@@ -374,7 +376,7 @@ protected:
 /// The WholeBodyIK class provides an interface for simultaneously solving all
 /// the IK constraints of all BodyNodes and EndEffectors belonging to a single
 /// Skeleton.
-class WholeBodyIK : public HierarchicalIK
+class DART_API WholeBodyIK : public HierarchicalIK
 {
 public:
   /// Create a WholeBodyIK

@@ -11,6 +11,7 @@ name: Publish dartpy
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
       - "docs/**"
+      - ".readthedocs.yml"
       - "tutorials/**"
       - "**/*.md"
       - "**/*.rst"
@@ -23,6 +24,7 @@ name: Publish dartpy
       - ".github/workflows/cache_*.yml"
       - "docker/dev/**"
       - "docs/**"
+      - ".readthedocs.yml"
       - "tutorials/**"
       - "**/*.md"
       - "**/*.rst"
@@ -40,8 +42,8 @@ jobs:
   build_wheels:
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # Note: No manylinux container used. All platforms use pixi environments.
-    # Linux wheels: auditwheel auto-detects manylinux tag based on glibc symbols.
+    # Note: No dedicated container image is used; all platforms rely on pixi environments.
+    # Linux wheels: auditwheel derives the glibc compatibility tag from bundled symbols.
     # macOS wheels: delocate bundles dylibs. Windows wheels: delvewheel bundles DLLs.
     strategy:
       fail-fast: false

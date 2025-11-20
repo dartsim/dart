@@ -122,7 +122,7 @@ def test_access_to_parent_child_transforms():
     assert np.allclose(childToJointTf.matrix(), storedChildTf.matrix())
 
 
-def test_BallJoint_positions_conversion():
+def test_ball_joint_positions_conversion():
     assert np.allclose(
         dart.dynamics.BallJoint.convertToPositions(np.eye(3)), np.zeros((1, 3))
     )

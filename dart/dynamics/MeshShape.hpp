@@ -44,7 +44,7 @@
 namespace dart {
 namespace dynamics {
 
-class MeshShape : public Shape
+class DART_API MeshShape : public Shape
 {
 public:
   enum ColorMode

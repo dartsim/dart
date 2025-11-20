@@ -13,12 +13,16 @@
 # On Windows/MSVC, we need to handle Debug/Release library configuration carefully
 # to avoid runtime library mismatches (MDd vs MD)
 if(MSVC)
+  set(_DART_MULTI_CONFIG FALSE)
+  if(CMAKE_CONFIGURATION_TYPES)
+    set(_DART_MULTI_CONFIG TRUE)
+  endif()
   # Store original CMAKE_CONFIGURATION_TYPES and CMAKE_BUILD_TYPE
   set(_BULLET_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
   # For multi-config generators (like Visual Studio), set library suffixes appropriately
   # FindBullet.cmake looks for libraries with _Debug/_d suffix for debug builds
-  if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  if(NOT _DART_MULTI_CONFIG AND CMAKE_BUILD_TYPE MATCHES "Debug")
     # Prefer Debug versions first, then fall back to Release
     set(CMAKE_FIND_LIBRARY_SUFFIXES "_Debug.lib" "_d.lib" ".lib")
   else()
@@ -51,7 +55,10 @@ if(MSVC AND BULLET_FOUND)
   endforeach()
 
   # Check for mismatch and disable Bullet if found
-  if(CMAKE_BUILD_TYPE MATCHES "Debug" AND _BULLET_HAS_RELEASE_LIBS AND NOT _BULLET_HAS_DEBUG_LIBS)
+  if(NOT _DART_MULTI_CONFIG
+     AND CMAKE_BUILD_TYPE MATCHES "Debug"
+     AND _BULLET_HAS_RELEASE_LIBS
+     AND NOT _BULLET_HAS_DEBUG_LIBS)
     set(_BULLET_CONFIG_MISMATCH TRUE)
     message(WARNING
       "Bullet libraries appear to be Release builds, but CMAKE_BUILD_TYPE is Debug. "
@@ -65,7 +72,10 @@ if(MSVC AND BULLET_FOUND)
       "  3. Or use RelWithDebInfo: -DCMAKE_BUILD_TYPE=RelWithDebInfo"
     )
     set(BULLET_FOUND FALSE)
-  elseif(NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND _BULLET_HAS_DEBUG_LIBS AND NOT _BULLET_HAS_RELEASE_LIBS)
+  elseif(NOT _DART_MULTI_CONFIG
+         AND NOT CMAKE_BUILD_TYPE MATCHES "Debug"
+         AND _BULLET_HAS_DEBUG_LIBS
+         AND NOT _BULLET_HAS_RELEASE_LIBS)
     set(_BULLET_CONFIG_MISMATCH TRUE)
     message(WARNING
       "Bullet libraries appear to be Debug builds, but CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}. "
@@ -83,6 +93,7 @@ if(MSVC AND BULLET_FOUND)
   unset(_BULLET_HAS_DEBUG_LIBS)
   unset(_BULLET_HAS_RELEASE_LIBS)
   unset(_BULLET_CONFIG_MISMATCH)
+  unset(_DART_MULTI_CONFIG)
 elseif(DEFINED _BULLET_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES)
   # Restore original suffixes if not done above
   set(CMAKE_FIND_LIBRARY_SUFFIXES ${_BULLET_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -93,4 +104,8 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   add_library(Bullet INTERFACE IMPORTED)
   target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
   target_link_libraries(Bullet INTERFACE ${BULLET_LIBRARIES})
+endif()
+
+if(DEFINED _DART_MULTI_CONFIG)
+  unset(_DART_MULTI_CONFIG)
 endif()

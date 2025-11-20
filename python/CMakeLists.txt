@@ -28,15 +28,13 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-if(NOT DART_BUILD_DARTPY AND NOT DART_BUILD_DARTPY8)
+if(NOT DART_BUILD_DARTPY)
   return()
 endif()
 
 set(DART_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-if(DART_BUILD_DARTPY)
-  set(DART_DARTPY_NB_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy_nb")
-  set(DART_DARTPY_NB_RUNTIME_DIR "${DART_DARTPY_NB_BUILD_DIR}")
-endif()
+set(DART_DARTPY_NB_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy_nb")
+set(DART_DARTPY_NB_RUNTIME_DIR "${DART_DARTPY_NB_BUILD_DIR}")
 
 if(WIN32)
   set(DART_PYTHONPATH_DELIM ";")
@@ -65,13 +63,13 @@ if(DART_BUILD_DARTPY)
   if(DEFINED PYTHON_SITE_PACKAGES)
     message(STATUS "- PYTHON_SITE_PACKAGES: ${PYTHON_SITE_PACKAGES}")
   endif()
+  if(DEFINED DARTPY_PYTEST_FOUND)
+    message(STATUS "- DARTPY_PYTEST_FOUND : ${DARTPY_PYTEST_FOUND}")
+  endif()
 endif()
 
 if(DART_BUILD_DARTPY)
   add_subdirectory(tests)
   add_subdirectory(examples)
-endif()
-
-if(DART_BUILD_DARTPY8)
-  message(FATAL_ERROR "dartpy8 now relies on nanobind; pybind11-based builds have been removed.")
+  add_subdirectory(tutorials)
 endif()

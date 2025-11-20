@@ -52,7 +52,7 @@ build-type = "Release"
 # Build configuration for wheels (static linking, minimal dependencies)
 BUILD_SHARED_LIBS = "OFF"
 DART_BUILD_DARTPY = "ON"
-DART_BUILD_GUI_OSG = "ON"
+DART_BUILD_GUI = "ON"
 DART_ENABLE_SIMD = "OFF"
 DART_BUILD_WHEELS = "ON"
 DART_TREAT_WARNINGS_AS_ERRORS = "OFF"
