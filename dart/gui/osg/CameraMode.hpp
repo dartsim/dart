@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OSG_CAMERAMODE_HPP_
 #define DART_GUI_OSG_CAMERAMODE_HPP_
 
+#include <dart/common/Deprecated.hpp>
 #include <dart/gui/osg/Export.hpp>
 
 #include <string>
@@ -43,12 +44,15 @@ namespace dart::gui::osg {
 enum class CameraMode
 {
   /// To render the RGBA color
-  RGBA,
+  Rgba,
 
   /// To render the depth buffer
   ///
   /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
-  DEPTH,
+  Depth,
+
+  DART_DEPRECATED(7.0) RGBA = Rgba,
+  DART_DEPRECATED(7.0) DEPTH = Depth,
 };
 
 DART_GUI_API std::string toString(CameraMode mode);
