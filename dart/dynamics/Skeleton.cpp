@@ -100,7 +100,7 @@ template <
     class Object,
     class ObjectBase,
     class Data,
-    std::size_t (Owner::*getNumObjects)() const noexcept,
+    std::size_t (Owner::*getNumObjects)() const,
     Object* (Owner::*getObject)(std::size_t),
     void (ObjectBase::*setData)(const Data&)>
 void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
@@ -154,7 +154,7 @@ template <
     class Object,
     class ObjectBase,
     class Data,
-    std::size_t (Owner::*getNumObjects)() const noexcept,
+    std::size_t (Owner::*getNumObjects)() const,
     const Object* (Owner::*getObject)(std::size_t) const,
     Data (ObjectBase::*getData)() const>
 std::vector<Data> getAllMemberObjectData(const Owner* owner)
