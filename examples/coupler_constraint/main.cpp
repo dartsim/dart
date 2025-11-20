@@ -99,6 +99,11 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   if (!world || !followerJoint)
     return nullptr;
 
+  const auto* revolute
+      = dynamic_cast<dart::dynamics::RevoluteJoint*>(followerJoint);
+  if (revolute == nullptr)
+    return nullptr;
+
   auto frame = SimpleFrame::createShared(Frame::World(), name);
   auto line = std::make_shared<LineSegmentShape>(0.05f);
   line->addVertex(Eigen::Vector3d::Zero());
@@ -111,8 +116,8 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   if (const auto* parent = followerJoint->getParentBodyNode())
     tf = parent->getWorldTransform();
-  tf *= followerJoint->getTransformFromParentBodyNode();
-  tf.rotate(Eigen::AngleAxisd(angle, followerJoint->getAxis(0)));
+  tf = tf * followerJoint->getTransformFromParentBodyNode();
+  tf.rotate(Eigen::AngleAxisd(angle, revolute->getAxis()));
   tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
   frame->setRelativeTransform(tf);
 

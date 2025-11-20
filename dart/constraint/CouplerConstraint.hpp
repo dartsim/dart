@@ -35,8 +35,9 @@
 
 #include <dart/constraint/ConstraintBase.hpp>
 
-#include <dart/Export.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
+
+#include <dart/Export.hpp>
 
 #include <vector>
 
