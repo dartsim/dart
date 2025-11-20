@@ -100,9 +100,9 @@ template <
     class Object,
     class ObjectBase,
     class Data,
-    std::size_t (Owner::*getNumObjects)() const,
-    Object* (Owner::*getObject)(std::size_t),
-    void (ObjectBase::*setData)(const Data&)>
+    auto getNumObjects,
+    auto getObject,
+    auto setData>
 void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
 {
   if (!owner) {
@@ -154,9 +154,9 @@ template <
     class Object,
     class ObjectBase,
     class Data,
-    std::size_t (Owner::*getNumObjects)() const,
-    const Object* (Owner::*getObject)(std::size_t) const,
-    Data (ObjectBase::*getData)() const>
+    auto getNumObjects,
+    auto getObject,
+    auto getData>
 std::vector<Data> getAllMemberObjectData(const Owner* owner)
 {
   if (!owner) {
@@ -424,7 +424,7 @@ ConstSkeletonPtr Skeleton::getSkeleton() const
 }
 
 //==============================================================================
-std::mutex& Skeleton::getMutex() const
+std::mutex& Skeleton::getMutex() const noexcept
 {
   return mMutex;
 }
@@ -716,7 +716,7 @@ void Skeleton::setSelfCollisionCheck(bool enable)
 }
 
 //==============================================================================
-bool Skeleton::getSelfCollisionCheck() const
+bool Skeleton::getSelfCollisionCheck() const noexcept
 {
   return mAspectProperties.mEnabledSelfCollisionCheck;
 }
@@ -734,7 +734,7 @@ void Skeleton::disableSelfCollisionCheck()
 }
 
 //==============================================================================
-bool Skeleton::isEnabledSelfCollisionCheck() const
+bool Skeleton::isEnabledSelfCollisionCheck() const noexcept
 {
   return getSelfCollisionCheck();
 }
@@ -746,7 +746,7 @@ void Skeleton::setAdjacentBodyCheck(bool enable)
 }
 
 //==============================================================================
-bool Skeleton::getAdjacentBodyCheck() const
+bool Skeleton::getAdjacentBodyCheck() const noexcept
 {
   return mAspectProperties.mEnabledAdjacentBodyCheck;
 }
@@ -764,7 +764,7 @@ void Skeleton::disableAdjacentBodyCheck()
 }
 
 //==============================================================================
-bool Skeleton::isEnabledAdjacentBodyCheck() const
+bool Skeleton::isEnabledAdjacentBodyCheck() const noexcept
 {
   return getAdjacentBodyCheck();
 }
@@ -776,7 +776,7 @@ void Skeleton::setMobile(bool _isMobile)
 }
 
 //==============================================================================
-bool Skeleton::isMobile() const
+bool Skeleton::isMobile() const noexcept
 {
   return mAspectProperties.mIsMobile;
 }
@@ -792,7 +792,7 @@ void Skeleton::setTimeStep(double _timeStep)
 }
 
 //==============================================================================
-double Skeleton::getTimeStep() const
+double Skeleton::getTimeStep() const noexcept
 {
   return mAspectProperties.mTimeStep;
 }
@@ -807,31 +807,31 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 }
 
 //==============================================================================
-const Eigen::Vector3d& Skeleton::getGravity() const
+const Eigen::Vector3d& Skeleton::getGravity() const noexcept
 {
   return mAspectProperties.mGravity;
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumBodyNodes() const
+std::size_t Skeleton::getNumBodyNodes() const noexcept
 {
   return mSkelCache.mBodyNodes.size();
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumRigidBodyNodes() const
+std::size_t Skeleton::getNumRigidBodyNodes() const noexcept
 {
   return mSkelCache.mBodyNodes.size() - mSoftBodyNodes.size();
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumSoftBodyNodes() const
+std::size_t Skeleton::getNumSoftBodyNodes() const noexcept
 {
   return mSoftBodyNodes.size();
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumTrees() const
+std::size_t Skeleton::getNumTrees() const noexcept
 {
   return mTreeCache.size();
 }
@@ -1941,7 +1941,7 @@ math::AngularJacobian Skeleton::getAngularJacobianDeriv(
 }
 
 //==============================================================================
-double Skeleton::getMass() const
+double Skeleton::getMass() const noexcept
 {
   return mTotalMass;
 }
