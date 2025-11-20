@@ -669,7 +669,7 @@ void FreeJoint::updateRelativeTransform() const
 }
 
 //==============================================================================
-void FreeJoint::updateRelativeJacobian(bool _mandatory) const
+void FreeJoint::updateRelativeJacobian(bool) const
 {
   const Eigen::Matrix3d rotationTranspose
       = getRelativeTransform().linear().transpose();
