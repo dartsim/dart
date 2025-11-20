@@ -386,8 +386,10 @@ void Viewer(py::module& m)
       .value("SKY_LIGHT", dart::gui::osg::Viewer::SKY_LIGHT);
 
   ::py::enum_<dart::gui::osg::CameraMode>(m, "CameraMode")
-      .value("RGBA", dart::gui::osg::CameraMode::RGBA)
-      .value("DEPTH", dart::gui::osg::CameraMode::DEPTH);
+      .value("Rgba", dart::gui::osg::CameraMode::Rgba)
+      .value("Depth", dart::gui::osg::CameraMode::Depth)
+      .value("RGBA", dart::gui::osg::CameraMode::Rgba)
+      .value("DEPTH", dart::gui::osg::CameraMode::Depth);
 
 } // namespace python
 
