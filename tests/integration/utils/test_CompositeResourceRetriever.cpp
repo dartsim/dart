@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/common_helpers.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 
 #include <gtest/gtest.h>
@@ -40,6 +41,8 @@ using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
 using dart::common::Uri;
 using dart::utils::CompositeResourceRetriever;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {
@@ -294,3 +297,5 @@ TEST(
   EXPECT_TRUE(retriever3->mExists.empty());
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
+
+DART_SUPPRESS_DEPRECATED_END

@@ -32,6 +32,7 @@
 
 #include "dart/common/LocalResourceRetriever.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResource.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
@@ -74,6 +75,7 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string LocalResourceRetriever::getFilePath(const Uri& uri)
 {
   if (uri.mScheme.get_value_or("file") != "file")
@@ -88,6 +90,7 @@ std::string LocalResourceRetriever::getFilePath(const Uri& uri)
   else
     return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 } // namespace common
 } // namespace dart

@@ -32,6 +32,7 @@
 
 #include "dart/utils/PackageResourceRetriever.hpp"
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Uri.hpp"
@@ -119,6 +120,7 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
 {
   std::string packageName, relativePath;
@@ -145,6 +147,7 @@ std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
 
   return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Diagnostics.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 
@@ -38,6 +39,8 @@
 #include <iostream>
 
 using namespace dart;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 //==============================================================================
 TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
@@ -64,3 +67,5 @@ TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
   EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
   EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
 }
+
+DART_SUPPRESS_DEPRECATED_END

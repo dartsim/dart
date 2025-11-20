@@ -31,6 +31,7 @@
  */
 
 #include "../../helpers/common_helpers.hpp"
+#include "dart/common/Diagnostics.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
 
@@ -44,6 +45,8 @@ using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
 using dart::common::Uri;
 using dart::utils::PackageResourceRetriever;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
@@ -337,3 +340,5 @@ TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
   EXPECT_EQ(expected1, mockRetriever->mRetrieve[0]);
   EXPECT_EQ(expected2, mockRetriever->mRetrieve[1]);
 }
+
+DART_SUPPRESS_DEPRECATED_END
