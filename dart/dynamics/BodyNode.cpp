@@ -37,7 +37,6 @@
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/EndEffector.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -68,26 +67,6 @@ double finiteDifferenceStep(double value)
 {
   const double eps = std::sqrt(Eigen::NumTraits<double>::epsilon());
   return eps * std::max(1.0, std::abs(value));
-}
-
-bool hasFreeJointTreeRoot(const BodyNode* node)
-{
-  if (node == nullptr)
-    return false;
-
-  const ConstSkeletonPtr skel = node->getSkeleton();
-  if (!skel)
-    return false;
-
-  const BodyNode* treeRoot = skel->getRootBodyNode(node->getTreeIndex());
-  if (treeRoot == nullptr)
-    return false;
-
-  const Joint* rootJoint = treeRoot->getParentJoint();
-  if (rootJoint == nullptr)
-    return false;
-
-  return rootJoint->getType() == FreeJoint::getStaticType();
 }
 
 } // namespace
@@ -1155,11 +1134,6 @@ const math::Jacobian& BodyNode::getWorldJacobian() const
   if (mIsWorldJacobianDirty)
     updateWorldJacobian();
 
-  if (hasFreeJointTreeRoot(this) && mWorldJacobian.cols() >= 6) {
-    mWorldJacobian.block(0, 3, 3, 3).setZero();
-    mWorldJacobian.block(3, 3, 3, 3) = Eigen::Matrix3d::Identity();
-  }
-
   return mWorldJacobian;
 }
 
@@ -1177,11 +1151,6 @@ const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
 {
   if (mIsWorldJacobianClassicDerivDirty)
     updateWorldJacobianClassicDeriv();
-
-  if (hasFreeJointTreeRoot(this) && mWorldJacobianClassicDeriv.cols() >= 6) {
-    mWorldJacobianClassicDeriv.block(0, 3, 3, 3).setZero();
-    mWorldJacobianClassicDeriv.block(3, 3, 3, 3).setZero();
-  }
 
   return mWorldJacobianClassicDeriv;
 }
