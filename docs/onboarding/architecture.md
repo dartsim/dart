@@ -466,7 +466,8 @@ ConstraintSolver
 **Joint Constraints:**
 - **JointLimitConstraint** - Position/velocity limit enforcement
 - **ServoMotorConstraint** - PD control as constraint
-- **MimicMotorConstraint** - Joint coupling
+- **MimicMotorConstraint** - Joint coupling (unilateral servo)
+- **CouplerConstraint** - Bilateral mimic coupling (equal/opposite impulses)
 
 **Specialized Constraints:**
 - **WeldJointConstraint** - Rigid connection between bodies
