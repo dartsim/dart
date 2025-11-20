@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Diagnostics.hpp>
+
 #include <dart/All.hpp>
 
 #include <pybind11/pybind11.h>
@@ -41,16 +43,29 @@ namespace python {
 
 void ResourceRetriever(py::module& m)
 {
-  ::py::class_<
-      dart::common::ResourceRetriever,
-      std::shared_ptr<dart::common::ResourceRetriever>>(m, "ResourceRetriever")
-      .def("exists", &common::ResourceRetriever::exists, ::py::arg("uri"))
-      .def("retrieve", &common::ResourceRetriever::retrieve, ::py::arg("uri"))
-      .def("readAll", &common::ResourceRetriever::readAll, ::py::arg("uri"))
-      .def(
-          "getFilePath",
-          &common::ResourceRetriever::getFilePath,
-          ::py::arg("uri"));
+  auto resourceRetriever
+      = ::py::class_<
+            dart::common::ResourceRetriever,
+            std::shared_ptr<dart::common::ResourceRetriever>>(
+            m, "ResourceRetriever")
+            .def("exists", &common::ResourceRetriever::exists, ::py::arg("uri"))
+            .def(
+                "retrieve",
+                &common::ResourceRetriever::retrieve,
+                ::py::arg("uri"))
+            .def(
+                "readAll",
+                &common::ResourceRetriever::readAll,
+                ::py::arg("uri"));
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  resourceRetriever.def(
+      "getFilePath",
+      &common::ResourceRetriever::getFilePath,
+      ::py::arg("uri"),
+      "ResourceRetriever.getFilePath() is deprecated and will be removed in "
+      "DART 8.");
+  DART_SUPPRESS_DEPRECATED_END
 
   ::py::class_<
       dart::common::LocalResourceRetriever,

@@ -35,6 +35,7 @@
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -46,7 +47,15 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
+#include <atomic>
+#include <chrono>
+#include <fstream>
 #include <map>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace gui {
@@ -108,6 +117,128 @@ bool isTransparent(const ::osg::Material* material)
     return true;
 
   return false;
+}
+
+common::filesystem::path makeTemporaryTexturePath(const std::string& extension)
+{
+  static std::atomic<uint64_t> counter{0};
+
+  const auto tempDir = common::filesystem::temp_directory_path();
+
+  for (std::size_t attempt = 0; attempt < 64; ++attempt) {
+    std::stringstream name;
+    name << "dart_texture_"
+         << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+         << '_' << counter.fetch_add(1, std::memory_order_relaxed);
+    if (attempt > 0)
+      name << '_' << attempt;
+
+    if (!extension.empty()) {
+      if (extension.front() == '.')
+        name << extension;
+      else
+        name << '.' << extension;
+    }
+
+    const auto candidate = tempDir / name.str();
+    common::error_code ec;
+    if (!common::filesystem::exists(candidate, ec))
+      return candidate;
+  }
+
+  throw std::runtime_error(
+      "Failed to allocate temporary file for texture materialization.");
+}
+
+bool writeTextureFile(
+    const common::filesystem::path& path, const std::string& data)
+{
+  std::ofstream output(path.string(), std::ios::binary);
+  output.write(data.data(), static_cast<std::streamsize>(data.size()));
+  return static_cast<bool>(output);
+}
+
+bool resolveTextureUri(
+    const std::string& imagePath,
+    const common::Uri* meshUri,
+    common::Uri& resolved)
+{
+  if (resolved.fromString(imagePath))
+    return true;
+
+  if (resolved.fromStringOrPath(imagePath))
+    return true;
+
+  if (meshUri) {
+    if (resolved.fromRelativeUri(*meshUri, imagePath))
+      return true;
+  }
+
+  return false;
+}
+
+std::string materializeTextureImage(
+    const std::string& imagePath,
+    const common::Uri* meshUri,
+    const common::ResourceRetrieverPtr& retriever,
+    std::vector<std::string>& temporaryFiles)
+{
+  common::Uri textureUri;
+  if (!resolveTextureUri(imagePath, meshUri, textureUri))
+    return "";
+
+  if (textureUri.mScheme.get_value_or("file") == "file" && textureUri.mPath) {
+    const auto localPath = textureUri.getFilesystemPath();
+    common::error_code ec;
+    if (common::filesystem::exists(localPath, ec) && !ec) {
+      const auto canonical = common::filesystem::canonical(localPath, ec);
+      if (!ec)
+        return canonical.string();
+      else
+        return localPath;
+    }
+  }
+
+  if (!retriever)
+    return "";
+
+  const auto resource = retriever->retrieve(textureUri);
+  if (!resource)
+    return "";
+
+  std::string data;
+  try {
+    data = resource->readAll();
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[MeshShapeNode] Failed to read texture '{}' via retriever: {}",
+        textureUri.toString(),
+        e.what());
+    return "";
+  }
+
+  const auto extension = common::filesystem::path(imagePath).extension();
+  common::filesystem::path tempPath;
+  try {
+    tempPath = makeTemporaryTexturePath(extension.string());
+  } catch (const std::exception& e) {
+    DART_WARN(
+        "[MeshShapeNode] Failed to allocate temporary file for texture '{}': "
+        "{}",
+        textureUri.toString(),
+        e.what());
+    return "";
+  }
+
+  if (!writeTextureFile(tempPath, data)) {
+    DART_WARN(
+        "[MeshShapeNode] Failed to write temporary texture '{}'.",
+        tempPath.string());
+    return "";
+  }
+
+  temporaryFiles.push_back(tempPath.string());
+  return tempPath.string();
 }
 
 } // namespace
@@ -234,8 +365,20 @@ void MeshShapeNode::extractData(bool firstTime)
 
   if (firstTime) // extract material properties
   {
+    clearTemporaryTextures();
+    mMaterials.clear();
+    mTextureImageArrays.clear();
+
     mMaterials.reserve(scene->mNumMaterials);
     mTextureImageArrays.reserve(scene->mNumMaterials);
+
+    const auto retriever = mMeshShape->getResourceRetriever();
+    const std::string meshUriString = mMeshShape->getMeshUri();
+    common::Uri meshUri;
+    const bool hasMeshUri
+        = !meshUriString.empty() && meshUri.fromStringOrPath(meshUriString);
+    const common::filesystem::path meshPath = mMeshShape->getMeshPath();
+    const bool hasMeshFilesystemPath = !meshPath.empty();
 
     for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
       aiMaterial* aiMat = scene->mMaterials[i];
@@ -297,28 +440,50 @@ void MeshShapeNode::extractData(bool firstTime)
       textureImageArray.reserve(count);
 
       aiString imagePath;
-      std::error_code ec;
       for (auto j = 0u; j < count; ++j) {
         if ((textureTypeAndCount.first == aiTextureType_NONE)
             || (textureTypeAndCount.first == aiTextureType_UNKNOWN)) {
           textureImageArray.emplace_back("");
         } else {
           aiMat->GetTexture(type, j, &imagePath);
-          const common::filesystem::path meshPath = mMeshShape->getMeshPath();
           const common::filesystem::path relativeImagePath = imagePath.C_Str();
-          const common::filesystem::path absoluteImagePath
-              = common::filesystem::canonical(
-                  meshPath.parent_path() / relativeImagePath, ec);
+          std::string resolvedTexturePath;
+          bool attemptedFilesystemResolution = false;
 
-          if (ec) {
-            DART_WARN(
-                "[MeshShapeNode] Failed to resolve an file path to a texture "
-                "image from (base: `{}', relative: '{}').",
-                meshPath.parent_path(),
-                relativeImagePath);
+          if (hasMeshFilesystemPath) {
+            attemptedFilesystemResolution = true;
+            std::error_code ec;
+            const auto absoluteImagePath = common::filesystem::canonical(
+                meshPath.parent_path() / relativeImagePath, ec);
+            if (!ec)
+              resolvedTexturePath = absoluteImagePath.string();
+          }
+
+          if (resolvedTexturePath.empty()) {
+            resolvedTexturePath = materializeTextureImage(
+                imagePath.C_Str(),
+                hasMeshUri ? &meshUri : nullptr,
+                retriever,
+                mTemporaryTextureFiles);
+          }
+
+          if (resolvedTexturePath.empty()) {
+            if (attemptedFilesystemResolution) {
+              DART_WARN(
+                  "[MeshShapeNode] Failed to resolve a texture image from base "
+                  "`{}` and relative path '{}'.",
+                  meshPath.parent_path(),
+                  relativeImagePath);
+            } else {
+              DART_WARN(
+                  "[MeshShapeNode] Failed to resolve a texture image '{}' for "
+                  "mesh URI '{}'.",
+                  imagePath.C_Str(),
+                  meshUriString);
+            }
             textureImageArray.emplace_back("");
           } else {
-            textureImageArray.emplace_back(absoluteImagePath.string());
+            textureImageArray.emplace_back(std::move(resolvedTexturePath));
           }
         }
       }
@@ -411,7 +576,21 @@ std::vector<std::string> MeshShapeNode::getTextureImagePaths(
 //==============================================================================
 MeshShapeNode::~MeshShapeNode()
 {
-  // Do nothing
+  clearTemporaryTextures();
+}
+
+//==============================================================================
+void MeshShapeNode::clearTemporaryTextures()
+{
+  for (const auto& path : mTemporaryTextureFiles) {
+    if (path.empty())
+      continue;
+
+    common::error_code ec;
+    common::filesystem::remove(path, ec);
+  }
+
+  mTemporaryTextureFiles.clear();
 }
 
 //==============================================================================

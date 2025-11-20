@@ -32,6 +32,7 @@
 
 #include "dart/utils/HttpResourceRetriever.hpp"
 
+#include <dart/common/Diagnostics.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/Macros.hpp>
 
@@ -180,6 +181,7 @@ common::ResourcePtr HttpResourceRetriever::retrieve(const common::Uri& uri)
 }
 
 //==============================================================================
+DART_SUPPRESS_DEPRECATED_BEGIN
 std::string HttpResourceRetriever::getFilePath(const common::Uri& uri)
 {
   if (!isSupported(uri))
@@ -195,6 +197,7 @@ std::string HttpResourceRetriever::getFilePath(const common::Uri& uri)
   else
     return "";
 }
+DART_SUPPRESS_DEPRECATED_END
 
 //==============================================================================
 void HttpResourceRetriever::setOptions(const Options& options)
