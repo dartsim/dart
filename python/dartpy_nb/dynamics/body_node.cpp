@@ -97,8 +97,7 @@ void defBodyNode(nb::module_& m)
           "createEndEffector",
           [](BodyNode& self, const std::string& name) {
             auto* ee = self.createEndEffector(name);
-            auto skeletonHandle = std::shared_ptr<dart::dynamics::Skeleton>(
-                self.getSkeleton(), [](dart::dynamics::Skeleton*) {});
+            auto skeletonHandle = self.getSkeleton();
             return std::shared_ptr<dart::dynamics::EndEffector>(
                 skeletonHandle, ee);
           },
