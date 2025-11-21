@@ -135,6 +135,9 @@ protected:
   /// Create a clone of this ShapeNode. This may only be called by the Skeleton
   /// class.
   Node* cloneNode(BodyNode* parent) const override;
+
+  /// Hook removal so collision signals fire before the node disappears.
+  void stageForRemoval();
 };
 
 } // namespace dynamics

@@ -1262,6 +1262,7 @@ private:
       const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
 
   friend class CollisionAspect;
+  friend class ShapeNode;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
