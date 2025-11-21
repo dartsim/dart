@@ -237,6 +237,20 @@ std::string Profiler::colorize(const std::string& text, const char* code)
   return std::string(code) + text + "\033[0m";
 }
 
+const char* Profiler::heatColor(double pct)
+{
+  if (!useColor()) {
+    return "";
+  }
+  if (pct >= 20.0) {
+    return "\033[31m"; // red
+  }
+  if (pct >= 5.0) {
+    return "\033[33m"; // yellow
+  }
+  return "\033[36m"; // cyan for low-but-present
+}
+
 void Profiler::collectHotspots(
     const ProfileNode& node,
     const std::string& path,
@@ -281,20 +295,20 @@ void Profiler::printNode(
 
     const auto avgNs
         = child->callCount > 0 ? child->inclusiveNs / child->callCount : 0;
-    const auto minNs = child->callCount > 0 ? child->minNs : 0;
 
     const bool isLast = (idx + 1 == children.size());
     const std::string connector = isLast ? "`- " : "|- ";
     const std::string childIndent = indent + (isLast ? "   " : "|  ");
+    const auto color = heatColor(pct);
 
     std::ostringstream line;
     line << indent << connector
-         << padRight(child->label, 32)
+         << colorize(padRight(child->label, 32), color)
          << " total " << padRight(formatDuration(child->inclusiveNs), 10)
          << " self " << padRight(formatDuration(child->selfNs), 10)
          << " per-call " << padRight(formatDuration(avgNs), 10)
          << " calls " << std::setw(8) << child->callCount
-         << " share " << formatPercent(pct);
+         << " share " << colorize(formatPercent(pct), color);
 
     os << line.str() << '\n';
 
@@ -365,15 +379,16 @@ void Profiler::printSummary(std::ostream& os)
           ? entry.inclusiveNs / entry.callCount
           : 0;
 
-      const std::string tag = isHot ? colorize("[HOT]", "\033[31m") : "     ";
+      const auto color = heatColor(pct);
+      const std::string tag = isHot ? colorize("[HOT]", color) : "     ";
       os << "  " << tag << " "
-         << padRight(entry.path, 38) << " "
+         << colorize(padRight(entry.path, 38), color) << " "
          << padRight(("thr " + entry.threadLabel), 12)
          << " total " << padRight(formatDuration(entry.inclusiveNs), 10)
          << " self " << padRight(formatDuration(entry.selfNs), 10)
          << " per-call " << padRight(formatDuration(avgNs), 10)
          << " calls " << entry.callCount
-         << " share " << formatPercent(pct) << '\n';
+         << " share " << colorize(formatPercent(pct), color) << '\n';
     }
   }
 

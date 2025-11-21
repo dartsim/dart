@@ -37,6 +37,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <cctype>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -84,6 +85,7 @@ private:
   static std::string padRight(const std::string& text, std::size_t width);
   static bool useColor();
   static std::string colorize(const std::string& text, const char* code);
+  static const char* heatColor(double pct);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static void clearNode(ProfileNode& node);
