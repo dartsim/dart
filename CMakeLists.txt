@@ -212,12 +212,18 @@ dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
-dart_option(DART_PROFILE_TEXT "Enable lightweight text profiling backend" ON CATEGORY performance)
+dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
 dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
 dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 
+# Backward compatibility: accept legacy DART_PROFILE_TEXT if provided.
+if(NOT DEFINED DART_PROFILE_BUILTIN AND DEFINED DART_PROFILE_TEXT)
+  set(DART_PROFILE_BUILTIN "${DART_PROFILE_TEXT}")
+endif()
+
 # Keep legacy variable names in scope for consumers (macros expect ENABLE_*).
-set(DART_PROFILE_ENABLE_TEXT "${DART_PROFILE_TEXT}")
+set(DART_PROFILE_TEXT "${DART_PROFILE_BUILTIN}")
+set(DART_PROFILE_ENABLE_TEXT "${DART_PROFILE_BUILTIN}")
 set(DART_PROFILE_ENABLE_TRACY "${DART_PROFILE_TRACY}")
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
