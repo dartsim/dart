@@ -47,6 +47,7 @@ namespace dart::common::profile {
 struct Profiler::ProfileNode
 {
   std::string label;
+  std::string source;
   std::uint64_t callCount{0};
   std::uint64_t inclusiveNs{0};
   std::uint64_t selfNs{0};
@@ -80,7 +81,7 @@ struct Profiler::Flattened
   std::uint64_t callCount{0};
 };
 
-Profiler::Profiler() : m_frameCount(0) {}
+Profiler::Profiler() : m_frameCount(0), m_frameTimeSumNs(0) {}
 
 Profiler& Profiler::instance()
 {
@@ -185,6 +186,20 @@ std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 
 void Profiler::markFrame()
 {
+  const auto now = std::chrono::steady_clock::now();
+  const auto count = m_frameCount.load(std::memory_order_relaxed);
+  if (count == 0) {
+    m_lastFrameTime = now;
+  } else {
+    const auto deltaNs = static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            now - m_lastFrameTime)
+            .count());
+    m_lastFrameTime = now;
+    m_frameTimeSumNs.fetch_add(deltaNs, std::memory_order_relaxed);
+    m_frameMinNs = std::min(m_frameMinNs, deltaNs);
+    m_frameMaxNs = std::max(m_frameMaxNs, deltaNs);
+  }
   m_frameCount.fetch_add(1, std::memory_order_relaxed);
 }
 
@@ -201,6 +216,34 @@ std::string Profiler::formatDuration(std::uint64_t ns)
     const double us = static_cast<double>(ns) / 1'000.0;
     oss << std::fixed << std::setprecision(us >= 10.0 ? 2 : 3) << us << " µs";
   }
+  return oss.str();
+}
+
+std::string Profiler::formatDurationAligned(std::uint64_t ns)
+{
+  std::ostringstream oss;
+  if (ns >= 1'000'000'000ULL) {
+    const double s = static_cast<double>(ns) / 1'000'000'000.0;
+    oss << std::setw(8) << std::fixed << std::setprecision(s >= 10.0 ? 2 : 3)
+        << s << " s ";
+  } else if (ns >= 1'000'000ULL) {
+    const double ms = static_cast<double>(ns) / 1'000'000.0;
+    oss << std::setw(8) << std::fixed << std::setprecision(ms >= 10.0 ? 2 : 3)
+        << ms << " ms";
+  } else if (ns >= 1'000ULL) {
+    const double us = static_cast<double>(ns) / 1'000.0;
+    oss << std::setw(8) << std::fixed << std::setprecision(us >= 10.0 ? 2 : 3)
+        << us << " µs";
+  } else {
+    oss << std::setw(8) << ns << " ns";
+  }
+  return oss.str();
+}
+
+std::string Profiler::formatFps(double fps)
+{
+  std::ostringstream oss;
+  oss << std::fixed << std::setprecision(fps >= 100.0 ? 0 : 1) << fps;
   return oss.str();
 }
 
@@ -320,11 +363,14 @@ void Profiler::printNode(
     std::ostringstream line;
     line << indent << connector
          << colorize(padRight(child->label, 32), color)
-         << " total " << padRight(formatDuration(child->inclusiveNs), 10)
-         << " self " << padRight(formatDuration(child->selfNs), 10)
-         << " per-call " << padRight(formatDuration(avgNs), 10)
+         << " total " << formatDurationAligned(child->inclusiveNs)
+         << " self " << formatDurationAligned(child->selfNs)
+         << " per-call " << formatDurationAligned(avgNs)
          << " calls " << std::setw(8) << child->callCount
          << " share " << padRight(colorize(formatPercent(pct), color), 6);
+    if (!child->source.empty()) {
+      line << " src " << child->source;
+    }
 
     os << line.str() << '\n';
 
@@ -363,7 +409,19 @@ void Profiler::printSummary(std::ostream& os)
 
   os << "\nDART profiler (text backend)\n";
   os << "Threads: " << threads.size() << " | Frames marked: " << frameCount
-     << " | Total scoped time: " << formatDuration(totalNs) << '\n';
+     << " | Total scoped time: " << formatDuration(totalNs);
+
+  const auto frameSumNs = m_frameTimeSumNs.load(std::memory_order_relaxed);
+  if (frameCount > 1 && frameSumNs > 0 && m_frameMaxNs > 0
+      && m_frameMinNs < std::numeric_limits<std::uint64_t>::max()) {
+    const double avgFps
+        = (static_cast<double>(frameCount - 1) * 1e9) / frameSumNs;
+    const double bestFps = 1e9 / static_cast<double>(m_frameMinNs);
+    const double worstFps = 1e9 / static_cast<double>(m_frameMaxNs);
+    os << " | Avg FPS: " << formatFps(avgFps) << " | Best: "
+       << formatFps(bestFps) << " | Worst: " << formatFps(worstFps);
+  }
+  os << '\n';
 
   // Build hotspot list.
   std::vector<Flattened> hotspots;
@@ -400,9 +458,9 @@ void Profiler::printSummary(std::ostream& os)
       os << "  " << tag << " "
          << colorize(padRight(entry.path, 38), color) << " "
          << padRight(("thr " + entry.threadLabel), 12)
-         << " total " << padRight(formatDuration(entry.inclusiveNs), 10)
-         << " self " << padRight(formatDuration(entry.selfNs), 10)
-         << " per-call " << padRight(formatDuration(avgNs), 10)
+         << " total " << formatDurationAligned(entry.inclusiveNs)
+         << " self " << formatDurationAligned(entry.selfNs)
+         << " per-call " << formatDurationAligned(avgNs)
          << " calls " << entry.callCount
          << " share " << colorize(formatPercent(pct), color);
       if (!entry.source.empty()) {
@@ -433,6 +491,10 @@ void Profiler::reset()
     clearNode(record->root);
   }
   m_frameCount.store(0, std::memory_order_relaxed);
+  m_frameTimeSumNs.store(0, std::memory_order_relaxed);
+  m_frameMinNs = std::numeric_limits<std::uint64_t>::max();
+  m_frameMaxNs = 0;
+  m_lastFrameTime = {};
 }
 
 void Profiler::clearNode(ProfileNode& node)
@@ -448,10 +510,11 @@ void Profiler::clearNode(ProfileNode& node)
   node.children.clear();
 }
 
-ProfileScope::ProfileScope(std::string_view name)
+ProfileScope::ProfileScope(
+    std::string_view name, std::string_view file, int line)
   : m_record(Profiler::threadRecord())
 {
-  Profiler::instance().pushScope(*m_record, name);
+  Profiler::instance().pushScope(*m_record, name, file, line);
 }
 
 ProfileScope::~ProfileScope()

@@ -100,10 +100,12 @@
       ::dart::common::profile::Profiler::instance().markFrame()
     #define DART_PROFILE_TEXT_SCOPED(name_literal)                             \
       ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(           \
-          _dart_profile_scope_)(name_literal)
+          _dart_profile_scope_)(                                               \
+          name_literal, __FILE__, static_cast<int>(__LINE__))
     #define DART_PROFILE_TEXT_SCOPED_F()                                       \
       ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(           \
-          _dart_profile_scope_func_)(__func__)
+          _dart_profile_scope_func_)(                                          \
+          __func__, __FILE__, static_cast<int>(__LINE__))
     #define DART_PROFILE_TEXT_DUMP()                                           \
       ::dart::common::profile::Profiler::instance().printSummary()
   #else

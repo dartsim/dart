@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cctype>
+#include <limits>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -91,6 +92,8 @@ private:
   static bool useColor();
   static std::string colorize(const std::string& text, const char* code);
   static const char* heatColor(double pct);
+  static std::string formatDurationAligned(std::uint64_t ns);
+  static std::string formatFps(double fps);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static void clearNode(ProfileNode& node);
@@ -120,6 +123,10 @@ private:
   std::mutex m_threadRegistryMutex;
   std::vector<std::shared_ptr<ThreadRecord>> m_threads;
   std::atomic<std::uint64_t> m_frameCount;
+  std::atomic<std::uint64_t> m_frameTimeSumNs;
+  std::uint64_t m_frameMinNs{std::numeric_limits<std::uint64_t>::max()};
+  std::uint64_t m_frameMaxNs{0};
+  std::chrono::steady_clock::time_point m_lastFrameTime{};
 };
 
 class DART_API ProfileScope
