@@ -437,7 +437,7 @@ void Profiler::printSummary(std::ostream& os)
       }
       const double pos = pct * static_cast<double>(samples.size() - 1);
       return static_cast<std::size_t>(std::clamp(
-          static_cast<std::ptrdiff_t>(std::llround(pos)),
+          static_cast<std::ptrdiff_t>(std::lround(pos)),
           static_cast<std::ptrdiff_t>(0),
           static_cast<std::ptrdiff_t>(samples.size() - 1)));
     };
