@@ -1198,9 +1198,9 @@ config = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART8=ON \
-        -DDART_BUILD_PROFILE=ON \
-        -DDART_PROFILE_TEXT=${DART_PROFILE_TEXT:-ON} \
-        -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON} \
+        -DDART_BUILD_PROFILE={{ build_profile }} \
+        -DDART_PROFILE_TEXT={{ profile_text }} \
+        -DDART_PROFILE_TRACY={{ profile_tracy }} \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1211,6 +1211,9 @@ config = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_text", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1302,16 +1305,20 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
-        -DDART_BUILD_PROFILE=ON \
-        -DDART_PROFILE_TEXT=${DART_PROFILE_TEXT:-ON} \
-        -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON} \
+        -DDART_BUILD_PROFILE={{ build_profile }} \
+        -DDART_PROFILE_TEXT={{ profile_text }} \
+        -DDART_PROFILE_TRACY={{ profile_tracy }} \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" } }
+""", env = { DART_VERBOSE = "OFF" }, args = [
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_text", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
+] }
 
 test = { cmd = [
   "bash",
