@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class PlaneShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -224,7 +222,5 @@ PlaneShapeDrawable::~PlaneShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

@@ -45,9 +45,6 @@ class SphereShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class SphereShapeGeode;
 class SphereShapeDrawable;
 
@@ -69,8 +66,6 @@ protected:
   SphereShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

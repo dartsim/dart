@@ -37,7 +37,7 @@
 #include <osg/PolygonMode>
 #include <osg/Texture2D>
 
-namespace dart::gui::osg {
+namespace dart::gui {
 
 //==============================================================================
 Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
@@ -132,4 +132,4 @@ Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
   return quad.release();
 }
 
-} // namespace dart::gui::osg
+} // namespace dart::gui

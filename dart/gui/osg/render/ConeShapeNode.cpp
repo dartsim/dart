@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 //==============================================================================
 class ConeShapeGeode : public ShapeNode, public ::osg::Geode
@@ -223,7 +221,5 @@ ConeShapeDrawable::~ConeShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

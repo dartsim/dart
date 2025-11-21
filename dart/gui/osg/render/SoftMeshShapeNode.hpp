@@ -44,9 +44,6 @@ class SoftMeshShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
@@ -68,8 +65,6 @@ protected:
   SoftMeshShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

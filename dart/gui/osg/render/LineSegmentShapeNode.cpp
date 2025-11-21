@@ -46,8 +46,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class LineSegmentShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -270,7 +268,5 @@ LineSegmentShapeDrawable::~LineSegmentShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

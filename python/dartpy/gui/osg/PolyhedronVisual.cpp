@@ -46,58 +46,46 @@ namespace python {
 void PolyhedronVisual(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::PolyhedronVisual,
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::PolyhedronVisual>>(m, "PolyhedronVisual")
+      dart::gui::PolyhedronVisual,
+      dart::gui::ViewerAttachment,
+      ::osg::ref_ptr<dart::gui::PolyhedronVisual>>(m, "PolyhedronVisual")
       .def(py::init<>())
       .def(
           "setVertices",
-          +[](dart::gui::osg::PolyhedronVisual* self,
+          +[](dart::gui::PolyhedronVisual* self,
               const std::vector<Eigen::Vector3d>& vertices) {
             self->setVertices(vertices);
           })
       .def(
           "setVerticesMatrix",
-          +[](dart::gui::osg::PolyhedronVisual* self,
+          +[](dart::gui::PolyhedronVisual* self,
               const Eigen::Ref<const Eigen::MatrixXd>& vertices) {
             self->setVertices(vertices);
           },
           ::py::arg("vertices"))
       .def(
           "getVertices",
-          +[](dart::gui::osg::PolyhedronVisual* self) {
+          +[](dart::gui::PolyhedronVisual* self) {
             return self->getVertices();
           })
-      .def("clear", &dart::gui::osg::PolyhedronVisual::clear)
-      .def(
-          "setSurfaceColor", &dart::gui::osg::PolyhedronVisual::setSurfaceColor)
-      .def(
-          "getSurfaceColor", &dart::gui::osg::PolyhedronVisual::getSurfaceColor)
-      .def(
-          "setWireframeColor",
-          &dart::gui::osg::PolyhedronVisual::setWireframeColor)
-      .def(
-          "getWireframeColor",
-          &dart::gui::osg::PolyhedronVisual::getWireframeColor)
-      .def(
-          "setWireframeWidth",
-          &dart::gui::osg::PolyhedronVisual::setWireframeWidth)
-      .def(
-          "getWireframeWidth",
-          &dart::gui::osg::PolyhedronVisual::getWireframeWidth)
-      .def("display", &dart::gui::osg::PolyhedronVisual::display)
-      .def("isDisplayed", &dart::gui::osg::PolyhedronVisual::isDisplayed)
-      .def("displaySurface", &dart::gui::osg::PolyhedronVisual::displaySurface)
+      .def("clear", &dart::gui::PolyhedronVisual::clear)
+      .def("setSurfaceColor", &dart::gui::PolyhedronVisual::setSurfaceColor)
+      .def("getSurfaceColor", &dart::gui::PolyhedronVisual::getSurfaceColor)
+      .def("setWireframeColor", &dart::gui::PolyhedronVisual::setWireframeColor)
+      .def("getWireframeColor", &dart::gui::PolyhedronVisual::getWireframeColor)
+      .def("setWireframeWidth", &dart::gui::PolyhedronVisual::setWireframeWidth)
+      .def("getWireframeWidth", &dart::gui::PolyhedronVisual::getWireframeWidth)
+      .def("display", &dart::gui::PolyhedronVisual::display)
+      .def("isDisplayed", &dart::gui::PolyhedronVisual::isDisplayed)
+      .def("displaySurface", &dart::gui::PolyhedronVisual::displaySurface)
       .def(
           "isSurfaceDisplayed",
-          &dart::gui::osg::PolyhedronVisual::isSurfaceDisplayed)
-      .def(
-          "displayWireframe",
-          &dart::gui::osg::PolyhedronVisual::displayWireframe)
+          &dart::gui::PolyhedronVisual::isSurfaceDisplayed)
+      .def("displayWireframe", &dart::gui::PolyhedronVisual::displayWireframe)
       .def(
           "isWireframeDisplayed",
-          &dart::gui::osg::PolyhedronVisual::isWireframeDisplayed);
+          &dart::gui::PolyhedronVisual::isWireframeDisplayed);
 }
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

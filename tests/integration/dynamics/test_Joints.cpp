@@ -631,7 +631,7 @@ TEST_F(Joints, PositionLimit)
 //==============================================================================
 TEST_F(Joints, PositionAndVelocityLimit)
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   const double tol = 1e-3;
 
@@ -915,7 +915,7 @@ TEST_F(Joints, JointCoulombFriction)
 //==============================================================================
 SkeletonPtr createPendulum(Joint::ActuatorType actType)
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 2);
@@ -947,7 +947,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 //==============================================================================
 TEST_F(Joints, SpringRestPosition)
 {
-  using namespace math::suffixes;
+  using namespace math;
 
   auto skel = createPendulum(Joint::ActuatorType::PASSIVE);
   ASSERT_NE(skel, nullptr);
@@ -994,7 +994,7 @@ TEST_F(Joints, SpringRestPosition)
 //==============================================================================
 void testServoMotor()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   std::size_t numPendulums = 7;
   double timestep = 1e-3;
@@ -1152,7 +1152,7 @@ TEST_F(Joints, ServoMotor)
 //==============================================================================
 void testMimicJoint()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   double timestep = 1e-3;
   double tol = 1e-9;
@@ -1237,7 +1237,7 @@ void testMimicJoint()
 //==============================================================================
 void testMimicCouplerJoint()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   double timestep = 1e-3;
   double tolPos = 1e-3;

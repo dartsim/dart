@@ -52,7 +52,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 class ImGuiWidget;
 
@@ -108,7 +107,6 @@ protected:
   std::vector<std::shared_ptr<ImGuiWidget>> mWidgets;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

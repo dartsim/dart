@@ -42,17 +42,17 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
-class RigidCubesWorldNode : public dart::gui::osg::RealTimeWorldNode
+class RigidCubesWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   RigidCubesWorldNode(
       dart::simulation::WorldPtr world,
       ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
-    : dart::gui::osg::RealTimeWorldNode(std::move(world), std::move(shadow)),
+    : dart::gui::RealTimeWorldNode(std::move(world), std::move(shadow)),
       mForce(Eigen::Vector3d::Zero())
   {
   }
@@ -81,7 +81,7 @@ class RigidCubesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
   RigidCubesEventHandler(
-      dart::gui::osg::Viewer* viewer,
+      dart::gui::Viewer* viewer,
       RigidCubesWorldNode* worldNode,
       const WorldPtr& world)
     : mViewer(viewer), mWorldNode(worldNode), mWorld(world)
@@ -94,39 +94,39 @@ public:
     if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
       static bool eventHandlerOn = true;
       switch (ea.getKey()) {
-        case ' ': // Space bar: toggle simulation
+        case ' ':  // Space bar: toggle simulation
           mViewer->simulate(!mViewer->isSimulating());
           return true;
-        case 'p': // Toggle playback mode
+        case 'p':  // Toggle playback mode
           eventHandlerOn = !eventHandlerOn;
           mViewer->switchDefaultEventHandler(eventHandlerOn);
           return true;
-        case 'v': // Toggle visualization markers
+        case 'v':  // Toggle visualization markers
           if (mWorldNode) {
             // Toggle marker visibility (implementation would depend on specific
             // markers)
             std::cout << "Toggling visualization markers\n";
           }
           return true;
-        case '1': // Apply negative X force
+        case '1':  // Apply negative X force
           if (mWorldNode) {
             mWorldNode->setForce(Eigen::Vector3d(-500, 0, 0));
             std::cout << "Applied -X force\n";
           }
           return true;
-        case '2': // Apply positive X force
+        case '2':  // Apply positive X force
           if (mWorldNode) {
             mWorldNode->setForce(Eigen::Vector3d(500, 0, 0));
             std::cout << "Applied +X force\n";
           }
           return true;
-        case '3': // Apply negative Z force
+        case '3':  // Apply negative Z force
           if (mWorldNode) {
             mWorldNode->setForce(Eigen::Vector3d(0, 0, -500));
             std::cout << "Applied -Z force\n";
           }
           return true;
-        case '4': // Apply positive Z force
+        case '4':  // Apply positive Z force
           if (mWorldNode) {
             mWorldNode->setForce(Eigen::Vector3d(0, 0, 500));
             std::cout << "Applied +Z force\n";
@@ -140,7 +140,7 @@ public:
   }
 
 protected:
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
   RigidCubesWorldNode* mWorldNode;
   WorldPtr mWorld;
 };
@@ -157,11 +157,10 @@ int main()
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   // Create OSG viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
 
   // Create shadow technique
-  auto shadow
-      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 
   // Create custom world node
   ::osg::ref_ptr<RigidCubesWorldNode> worldNode

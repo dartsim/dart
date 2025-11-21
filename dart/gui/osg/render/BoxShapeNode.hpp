@@ -44,9 +44,6 @@ class BoxShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class BoxShapeGeode;
 class BoxShapeDrawable;
 
@@ -66,8 +63,6 @@ protected:
   BoxShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

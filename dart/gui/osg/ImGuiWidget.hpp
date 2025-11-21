@@ -44,7 +44,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 class DART_GUI_API ImGuiWidget
 {
@@ -85,7 +84,6 @@ public:
   void render() override;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

@@ -39,7 +39,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 InteractiveTool::InteractiveTool(
@@ -589,6 +588,5 @@ void InteractiveFrame::deleteAllTools()
       delete mTools[i][j];
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

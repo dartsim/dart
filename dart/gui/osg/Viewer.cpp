@@ -51,7 +51,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 std::string toString(CameraMode mode)
 {
@@ -200,7 +199,7 @@ Viewer::Viewer(const ::osg::Vec4& clearColor)
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  setCameraManipulator(new osg::TrackballManipulator);
+  setCameraManipulator(new TrackballManipulator);
   addInstructionText("Left-click:   Interaction\n");
   addInstructionText("Right-click:  Rotate view\n");
   addInstructionText("Middle-click: Translate view\n");
@@ -613,22 +612,19 @@ SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 }
 
 //==============================================================================
-// Creating a typedef for a very long and ugly template
-namespace sfs_dnd {
-typedef std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>::iterator
-    iterator;
-} // namespace sfs_dnd
+// Convenience alias for a long iterator type
+using SimpleFrameShapeIterator
+    = std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>::iterator;
 
 //==============================================================================
-static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
+static SimpleFrameShapeIterator getSimpleFrameShapeDnDFromMultimap(
     dart::dynamics::SimpleFrame* _frame,
     dart::dynamics::Shape* _shape,
     std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>& map)
 {
-  using namespace sfs_dnd;
-
-  std::pair<iterator, iterator> range = map.equal_range(_shape);
-  iterator it = range.first, end = range.second;
+  std::pair<SimpleFrameShapeIterator, SimpleFrameShapeIterator> range
+      = map.equal_range(_shape);
+  SimpleFrameShapeIterator it = range.first, end = range.second;
   while (it != map.end()) {
     SimpleFrameShapeDnD* dnd = it->second;
     if (dnd->getSimpleFrame() == _frame) {
@@ -650,9 +646,7 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
   if (nullptr == _frame || nullptr == _shape)
     return nullptr;
 
-  using namespace sfs_dnd;
-
-  iterator existingDnD = getSimpleFrameShapeDnDFromMultimap(
+  SimpleFrameShapeIterator existingDnD = getSimpleFrameShapeDnDFromMultimap(
       _frame, _shape, mSimpleFrameShapeDnDMap);
   if (existingDnD != mSimpleFrameShapeDnDMap.end())
     return existingDnD->second;
@@ -666,7 +660,7 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 
 //==============================================================================
 InteractiveFrameDnD* Viewer::enableDragAndDrop(
-    dart::gui::osg::InteractiveFrame* _frame)
+    dart::gui::InteractiveFrame* _frame)
 {
   if (nullptr == _frame)
     return nullptr;
@@ -739,9 +733,7 @@ bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
   if (nullptr == _dnd)
     return false;
 
-  using namespace sfs_dnd;
-
-  iterator it = getSimpleFrameShapeDnDFromMultimap(
+  SimpleFrameShapeIterator it = getSimpleFrameShapeDnDFromMultimap(
       _dnd->getSimpleFrame(), _dnd->getShape(), mSimpleFrameShapeDnDMap);
 
   if (it == mSimpleFrameShapeDnDMap.end())
@@ -903,6 +895,5 @@ CameraMode Viewer::getCameraMode() const
   return mCameraModeCallback->getCameraMode();
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

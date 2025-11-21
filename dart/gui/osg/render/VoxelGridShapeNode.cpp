@@ -47,8 +47,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 //==============================================================================
 VoxelBoxDrawable::VoxelBoxDrawable(double size, const Eigen::Vector4d& color)
@@ -219,8 +217,6 @@ VoxelGridShapeNode::~VoxelGridShapeNode()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

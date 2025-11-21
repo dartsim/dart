@@ -109,11 +109,10 @@ the pendulum in the function `addBody`:
              ),
          )
 ```
-
-These tutorials use the OSG viewer utilities under `dart::gui::osg`. After we
-create the `World` and pendulum skeleton, we instantiate a `Controller`
-plus a GUI event handler, wrap the world in a `RealTimeWorldNode`, and send
-that node to a `Viewer`:
+These tutorials use the OSG viewer utilities under ``dart::gui``. After we
+create the ``World`` and pendulum skeleton, we instantiate a ``Controller``
+plus a GUI event handler, wrap the world in a ``RealTimeWorldNode``, and send
+that node to a ``Viewer``:
 
 ```{eval-rst}
 .. tabs::

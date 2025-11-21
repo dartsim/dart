@@ -357,7 +357,7 @@ void Controller::_buildStateMachines()
 //==============================================================================
 StateMachine* Controller::_createStandingStateMachine()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   StateMachine* standing = new StateMachine("standing");
 
@@ -395,7 +395,7 @@ StateMachine* Controller::_createStandingStateMachine()
 //==============================================================================
 StateMachine* Controller::_createWalkingInPlaceStateMachine()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   const double cd = 0.5;
   const double cv = 0.2;
@@ -604,7 +604,7 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
 //==============================================================================
 StateMachine* Controller::_createWalkingStateMachine()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   const double cd = 0.5;
   const double cv = 0.2;
@@ -813,7 +813,7 @@ StateMachine* Controller::_createWalkingStateMachine()
 //==============================================================================
 StateMachine* Controller::_createRunningStateMachine()
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   const double cd = 0.5;
   const double cv = 0.2;

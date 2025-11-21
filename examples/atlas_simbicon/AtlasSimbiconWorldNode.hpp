@@ -41,7 +41,7 @@
 
 #include <dart/All.hpp>
 
-class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode
+class AtlasSimbiconWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   /// Constructor

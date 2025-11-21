@@ -62,7 +62,7 @@
 
 #include <algorithm>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 /// Get the dot product of two n×1 vectors (templated version)
 /// @param a First vector
@@ -600,10 +600,6 @@ inline int IsPositiveDefinite(const Scalar* A, int n, void* tmpbuf = nullptr)
   return dIsPositiveDefinite(A, n, tmpbuf);
 }
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
 
 // Include template implementations

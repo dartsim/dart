@@ -40,11 +40,11 @@
 
 using namespace dart::dynamics;
 
-class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
+class RecordingWorld : public dart::gui::RealTimeWorldNode
 {
 public:
   RecordingWorld(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
     grabTimeSlice();
     mCurrentIndex = 0;
@@ -207,7 +207,7 @@ int main()
 
   node->simulate(true);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.addEventHandler(new RecordingEventHandler(node));
 

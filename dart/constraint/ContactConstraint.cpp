@@ -678,7 +678,7 @@ void ContactConstraint::updateFirstFrictionalDirection()
 ContactConstraint::TangentBasisMatrix
 ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 {
-  using namespace math::suffixes;
+  using namespace math;
 
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.

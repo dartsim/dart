@@ -44,9 +44,6 @@ class PlaneShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class PlaneShapeGeode;
 class PlaneShapeDrawable;
 
@@ -67,8 +64,6 @@ protected:
   PlaneShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

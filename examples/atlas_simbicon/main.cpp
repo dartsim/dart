@@ -65,8 +65,7 @@ int main()
       = new AtlasSimbiconWorldNode(world, atlas);
 
   // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
 
   // Enable shadow

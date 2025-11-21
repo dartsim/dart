@@ -45,9 +45,6 @@ class EllipsoidShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class EllipsoidShapeGeode;
 class EllipsoidShapeDrawable;
 
@@ -69,8 +66,6 @@ protected:
   EllipsoidShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

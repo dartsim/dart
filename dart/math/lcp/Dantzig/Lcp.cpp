@@ -164,7 +164,7 @@ rows/columns and manipulate C.
 //***************************************************************************
 // code generation parameters
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
@@ -553,6 +553,6 @@ template DART_API bool SolveLCP<double>(
     int* findex,
     bool earlyTermination);
 
-} // namespace dart::math::lcp
+} // namespace dart::math
 
 // Note: Template implementations are in lcp-impl.hpp (included via lcp.h)

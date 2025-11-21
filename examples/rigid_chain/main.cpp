@@ -38,11 +38,11 @@
 
 #include <dart/All.hpp>
 
-class RigidChainWorldNode : public dart::gui::osg::RealTimeWorldNode
+class RigidChainWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   RigidChainWorldNode(dart::simulation::WorldPtr world)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
   }
 
@@ -89,7 +89,7 @@ int main()
   ::osg::ref_ptr<RigidChainWorldNode> node = new RigidChainWorldNode(myWorld);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Set up the window to be 640x480

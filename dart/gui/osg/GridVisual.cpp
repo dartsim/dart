@@ -44,7 +44,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 GridVisual::GridVisual()
@@ -620,6 +619,5 @@ void GridVisual::initialize()
   mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(mMajorLineWidth);
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

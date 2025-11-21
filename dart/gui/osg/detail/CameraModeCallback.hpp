@@ -40,7 +40,7 @@
 
 #include <mutex>
 
-namespace dart::gui::osg::detail {
+namespace dart::gui::detail {
 
 class DART_GUI_API CameraModeCallback : public ::osg::NodeCallback
 {
@@ -78,6 +78,6 @@ private:
   mutable std::mutex mMutex;
 };
 
-} // namespace dart::gui::osg::detail
+} // namespace dart::gui::detail
 
 #endif // DART_GUI_OSG_DETAIL_CAMERAMODECALLBACK_HPP_

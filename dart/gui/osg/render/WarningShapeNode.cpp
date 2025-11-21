@@ -39,8 +39,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 WarningShapeNode::WarningShapeNode(
     std::shared_ptr<dart::dynamics::Shape> shape, ShapeFrameNode* parent)
@@ -48,7 +46,7 @@ WarningShapeNode::WarningShapeNode(
 {
   DART_WARN(
       "Shape type ({}) found in Entity '{}' is not currently supported by "
-      "dart::gui::osg, and will not be rendered",
+      "dart::gui, and will not be rendered",
       shape->getType(),
       parent->getName());
 }
@@ -65,7 +63,5 @@ WarningShapeNode::~WarningShapeNode()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

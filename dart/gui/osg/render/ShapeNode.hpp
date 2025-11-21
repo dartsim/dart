@@ -49,14 +49,11 @@ class VisualAspect;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
 
 class Node;
 class Group;
 class EntityNode;
 class ShapeFrameNode;
-
-namespace render {
 
 class DART_GUI_API ShapeNode
 {
@@ -120,8 +117,6 @@ protected:
   bool mUtilized;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

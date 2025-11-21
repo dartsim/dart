@@ -80,7 +80,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 ShapeFrameNode::ShapeFrameNode(
@@ -211,88 +210,88 @@ void ShapeFrameNode::createShapeNode(
     std::shared_ptr<SphereShape> es
         = std::dynamic_pointer_cast<SphereShape>(shape);
     if (es)
-      mRenderShapeNode = new render::SphereShapeNode(es, this);
+      mRenderShapeNode = new SphereShapeNode(es, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (BoxShape::getStaticType() == shapeType) {
     std::shared_ptr<BoxShape> bs = std::dynamic_pointer_cast<BoxShape>(shape);
     if (bs)
-      mRenderShapeNode = new render::BoxShapeNode(bs, this);
+      mRenderShapeNode = new BoxShapeNode(bs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (EllipsoidShape::getStaticType() == shapeType) {
     std::shared_ptr<EllipsoidShape> es
         = std::dynamic_pointer_cast<EllipsoidShape>(shape);
     if (es)
-      mRenderShapeNode = new render::EllipsoidShapeNode(es, this);
+      mRenderShapeNode = new EllipsoidShapeNode(es, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (CylinderShape::getStaticType() == shapeType) {
     std::shared_ptr<CylinderShape> cs
         = std::dynamic_pointer_cast<CylinderShape>(shape);
     if (cs)
-      mRenderShapeNode = new render::CylinderShapeNode(cs, this);
+      mRenderShapeNode = new CylinderShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (CapsuleShape::getStaticType() == shapeType) {
     std::shared_ptr<CapsuleShape> cs
         = std::dynamic_pointer_cast<CapsuleShape>(shape);
     if (cs)
-      mRenderShapeNode = new render::CapsuleShapeNode(cs, this);
+      mRenderShapeNode = new CapsuleShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (ConeShape::getStaticType() == shapeType) {
     std::shared_ptr<ConeShape> cs = std::dynamic_pointer_cast<ConeShape>(shape);
     if (cs)
-      mRenderShapeNode = new render::ConeShapeNode(cs, this);
+      mRenderShapeNode = new ConeShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (PyramidShape::getStaticType() == shapeType) {
     std::shared_ptr<PyramidShape> cs
         = std::dynamic_pointer_cast<PyramidShape>(shape);
     if (cs)
-      mRenderShapeNode = new render::PyramidShapeNode(cs, this);
+      mRenderShapeNode = new PyramidShapeNode(cs, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (PlaneShape::getStaticType() == shapeType) {
     std::shared_ptr<PlaneShape> ps
         = std::dynamic_pointer_cast<PlaneShape>(shape);
     if (ps)
-      mRenderShapeNode = new render::PlaneShapeNode(ps, this);
+      mRenderShapeNode = new PlaneShapeNode(ps, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (shape->is<MultiSphereConvexHullShape>()) {
     std::shared_ptr<MultiSphereConvexHullShape> ms
         = std::dynamic_pointer_cast<MultiSphereConvexHullShape>(shape);
     if (ms)
-      mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
+      mRenderShapeNode = new MultiSphereShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (MeshShape::getStaticType() == shapeType) {
     std::shared_ptr<MeshShape> ms = std::dynamic_pointer_cast<MeshShape>(shape);
     if (ms)
-      mRenderShapeNode = new render::MeshShapeNode(ms, this);
+      mRenderShapeNode = new MeshShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     std::shared_ptr<SoftMeshShape> sms
         = std::dynamic_pointer_cast<SoftMeshShape>(shape);
     if (sms)
-      mRenderShapeNode = new render::SoftMeshShapeNode(sms, this);
+      mRenderShapeNode = new SoftMeshShapeNode(sms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (LineSegmentShape::getStaticType() == shapeType) {
     std::shared_ptr<LineSegmentShape> lss
         = std::dynamic_pointer_cast<LineSegmentShape>(shape);
     if (lss)
-      mRenderShapeNode = new render::LineSegmentShapeNode(lss, this);
+      mRenderShapeNode = new LineSegmentShapeNode(lss, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   } else if (PointCloudShape::getStaticType() == shapeType) {
     std::shared_ptr<PointCloudShape> lss
         = std::dynamic_pointer_cast<PointCloudShape>(shape);
     if (lss)
-      mRenderShapeNode = new render::PointCloudShapeNode(lss, this);
+      mRenderShapeNode = new PointCloudShapeNode(lss, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
@@ -301,7 +300,7 @@ void ShapeFrameNode::createShapeNode(
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
     if (lss)
-      mRenderShapeNode = new render::VoxelGridShapeNode(lss, this);
+      mRenderShapeNode = new VoxelGridShapeNode(lss, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
@@ -310,7 +309,7 @@ void ShapeFrameNode::createShapeNode(
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);
     if (lss)
-      mRenderShapeNode = new render::HeightmapShapeNode<float>(lss, this);
+      mRenderShapeNode = new HeightmapShapeNode<float>(lss, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
@@ -320,12 +319,12 @@ void ShapeFrameNode::createShapeNode(
   //   std::shared_ptr<HeightmapShaped> lss =
   //       std::dynamic_pointer_cast<HeightmapShaped>(shape);
   //   if(lss)
-  //     mRenderShapeNode = new render::HeightmapShapeNode<double>(lss, this);
+  //     mRenderShapeNode = new HeightmapShapeNode<double>(lss, this);
   //   else
   //     warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   // }
   else {
-    mRenderShapeNode = new render::WarningShapeNode(shape, this);
+    mRenderShapeNode = new WarningShapeNode(shape, this);
   }
 
   if (nullptr == mRenderShapeNode)
@@ -334,6 +333,5 @@ void ShapeFrameNode::createShapeNode(
   addChild(mRenderShapeNode->getNode());
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

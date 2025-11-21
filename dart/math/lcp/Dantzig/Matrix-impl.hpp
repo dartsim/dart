@@ -58,7 +58,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 template <typename Scalar>
 void dMultiply0(
@@ -242,12 +242,12 @@ void dLDLTAddTL(
   W1[0] = static_cast<Scalar>(0.0);
   W2[0] = static_cast<Scalar>(0.0);
   for (int j = 1; j < n; ++j) {
-    W1[j] = W2[j] = (Scalar)(a[j] * constants::sqrt1_2<Scalar>);
+    W1[j] = W2[j] = (Scalar)(a[j] * detail::sqrt1_2<Scalar>);
   }
   Scalar W11
-      = (Scalar)((static_cast<Scalar>(0.5) * a[0] + 1) * constants::sqrt1_2<Scalar>);
+      = (Scalar)((static_cast<Scalar>(0.5) * a[0] + 1) * detail::sqrt1_2<Scalar>);
   Scalar W21
-      = (Scalar)((static_cast<Scalar>(0.5) * a[0] - 1) * constants::sqrt1_2<Scalar>);
+      = (Scalar)((static_cast<Scalar>(0.5) * a[0] - 1) * detail::sqrt1_2<Scalar>);
 
   Scalar alpha1 = static_cast<Scalar>(1.0);
   Scalar alpha2 = static_cast<Scalar>(1.0);
@@ -1203,8 +1203,4 @@ void dSolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
 }
 
 //==============================================================================
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math

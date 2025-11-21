@@ -55,7 +55,7 @@
 
 #include "dart/math/lcp/Dantzig/Misc.hpp"
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 // Random number generation
@@ -89,4 +89,4 @@ double dRandReal()
   return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
 }
 
-} // namespace dart::math::lcp
+} // namespace dart::math

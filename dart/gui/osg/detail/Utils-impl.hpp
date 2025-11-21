@@ -35,7 +35,7 @@
 
 #include <dart/gui/osg/Utils.hpp>
 
-namespace dart::gui::osg {
+namespace dart::gui {
 
 //==============================================================================
 template <typename T>
@@ -155,6 +155,6 @@ eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
       ::osg::Vec4d>(vec[0], vec[1], vec[2], vec[3]);
 }
 
-} // namespace dart::gui::osg
+} // namespace dart::gui
 
 #endif // DART_GUI_OSG_DETAIL_UTILS_IMPL_HPP_

@@ -43,7 +43,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 /// Attach this to a Viewer in order to visualize the support polygon of a
 /// Skeleton
@@ -196,7 +195,6 @@ protected:
   ::osg::ref_ptr<ShapeFrameNode> mComNode;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

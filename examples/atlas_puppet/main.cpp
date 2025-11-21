@@ -130,7 +130,7 @@ protected:
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public dart::gui::osg::WorldNode
+class TeleoperationWorld : public dart::gui::WorldNode
 {
 public:
   enum MoveEnum_t
@@ -148,7 +148,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : dart::gui::osg::WorldNode(_world),
+    : dart::gui::WorldNode(_world),
       mAtlas(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -257,7 +257,7 @@ class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
   InputHandler(
-      dart::gui::osg::Viewer* viewer,
+      dart::gui::Viewer* viewer,
       TeleoperationWorld* teleop,
       const SkeletonPtr& atlas,
       const WorldPtr& world)
@@ -472,7 +472,7 @@ public:
   }
 
 protected:
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -608,8 +608,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the left hand
-  dart::gui::osg::InteractiveFramePtr lh_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "lh_target"));
+  dart::gui::InteractiveFramePtr lh_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "lh_target"));
 
   // Set the target of the left hand to the interactive frame. We pass true into
   // the function to tell it that it should create the IK module if it does not
@@ -645,8 +645,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the right hand
-  dart::gui::osg::InteractiveFramePtr rh_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "rh_target"));
+  dart::gui::InteractiveFramePtr rh_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "rh_target"));
 
   // Create the right hand's IK and set its target
   r_hand->getIK(true)->setTarget(rh_target);
@@ -695,8 +695,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the left foot
-  dart::gui::osg::InteractiveFramePtr lf_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "lf_target"));
+  dart::gui::InteractiveFramePtr lf_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "lf_target"));
 
   // Create the left foot's IK and set its target
   l_foot->getIK(true)->setTarget(lf_target);
@@ -725,8 +725,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the right foot
-  dart::gui::osg::InteractiveFramePtr rf_target(
-      new dart::gui::osg::InteractiveFrame(Frame::World(), "rf_target"));
+  dart::gui::InteractiveFramePtr rf_target(
+      new dart::gui::InteractiveFrame(Frame::World(), "rf_target"));
 
   // Create the right foot's IK module and set its target
   r_foot->getIK(true)->setTarget(rf_target);
@@ -837,8 +837,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
-void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas)
+void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i)
@@ -850,7 +849,7 @@ void enableDragAndDrops(
 
     // Check whether the target is an interactive frame, and add it if it is
     if (const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
+        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
             ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   });
@@ -878,8 +877,8 @@ int main()
       = new TeleoperationWorld(world, atlas);
 
   // Create the OSG viewer
-  dart::gui::osg::Viewer viewer;
-  viewer.allowSimulation(false); // Kinematic control only
+  dart::gui::Viewer viewer;
+  viewer.allowSimulation(false);  // Kinematic control only
   viewer.addWorldNode(worldNode);
 
   // Setup input handling
@@ -892,7 +891,7 @@ int main()
 
   // Add visualizations
   viewer.addAttachment(
-      new dart::gui::osg::SupportPolygonVisual(atlas, display_elevation));
+      new dart::gui::SupportPolygonVisual(atlas, display_elevation));
 
   // Configure viewer window
   viewer.setUpViewInWindow(0, 0, 1280, 960);

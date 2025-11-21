@@ -38,8 +38,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 ShapeNode::ShapeNode(
     std::shared_ptr<dart::dynamics::Shape> shape,
@@ -121,7 +119,5 @@ void ShapeNode::clearUtilization()
   mUtilized = false;
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

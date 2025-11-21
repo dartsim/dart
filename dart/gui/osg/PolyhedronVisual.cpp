@@ -44,7 +44,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 namespace {
 
@@ -390,6 +389,5 @@ void PolyhedronVisual::updateWireframeWidth()
     mWireframeWidth->setWidth(mWireWidth);
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

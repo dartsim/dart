@@ -37,7 +37,7 @@
 
 #include <string>
 
-namespace dart::gui::osg {
+namespace dart::gui {
 
 /// Camera mode
 enum class CameraMode
@@ -53,6 +53,6 @@ enum class CameraMode
 
 DART_GUI_API std::string toString(CameraMode mode);
 
-} // namespace dart::gui::osg
+} // namespace dart::gui
 
 #endif // DART_GUI_OSG_CAMERAMODE_HPP_

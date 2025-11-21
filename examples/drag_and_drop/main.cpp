@@ -43,9 +43,8 @@ int main()
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.translation() = Eigen::Vector3d(4, -4, 0);
-  dart::gui::osg::InteractiveFramePtr frame(
-      new dart::gui::osg::InteractiveFrame(
-          Frame::World(), "interactive frame", tf, 2.0));
+  dart::gui::InteractiveFramePtr frame(new dart::gui::InteractiveFrame(
+      Frame::World(), "interactive frame", tf, 2.0));
   world->addSimpleFrame(frame);
 
   tf.translation() = Eigen::Vector3d(-4, 4, 0);
@@ -78,10 +77,9 @@ int main()
   z_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
   world->addSimpleFrame(z_marker);
 
-  ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-      = new dart::gui::osg::WorldNode(world);
+  ::osg::ref_ptr<dart::gui::WorldNode> node = new dart::gui::WorldNode(world);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.enableDragAndDrop(frame.get());
   viewer.enableDragAndDrop(draggable.get());

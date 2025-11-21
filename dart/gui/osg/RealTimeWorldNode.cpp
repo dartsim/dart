@@ -39,7 +39,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 RealTimeWorldNode::RealTimeWorldNode(
@@ -185,6 +184,5 @@ void RealTimeWorldNode::refresh()
   customPostRefresh();
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

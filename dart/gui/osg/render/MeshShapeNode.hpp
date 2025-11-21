@@ -49,9 +49,6 @@ class MeshShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class osgAiNode;
 class MeshShapeGeode;
 class MeshShapeGeometry;
@@ -82,8 +79,6 @@ protected:
   std::vector<std::string> mTemporaryTextureFiles;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

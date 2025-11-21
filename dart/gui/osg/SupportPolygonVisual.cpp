@@ -41,7 +41,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(
@@ -389,6 +388,5 @@ void SupportPolygonVisual::initialize()
   addChild(mComNode);
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

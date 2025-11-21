@@ -41,14 +41,13 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 class MainMenuWidget;
 class AboutWidget;
 
 class DART_GUI_API ImGuiViewer : public Viewer
 {
 public:
-  /// Constructor for dart::gui::osg::Viewer. This will automatically create the
+  /// Constructor for dart::gui::Viewer. This will automatically create the
   /// default event handler.
   ImGuiViewer(
       const ::osg::Vec4& clearColor = ::osg::Vec4(0.9f, 0.9f, 0.9f, 1.0f));
@@ -76,7 +75,6 @@ protected:
   std::shared_ptr<AboutWidget> mAboutWidget;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

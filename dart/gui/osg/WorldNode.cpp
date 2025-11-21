@@ -47,7 +47,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 class WorldNodeCallback : public ::osg::NodeCallback
 {
@@ -361,6 +360,5 @@ WorldNode::createDefaultShadowTechnique(const Viewer* viewer)
   return sm;
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

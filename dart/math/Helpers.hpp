@@ -252,8 +252,6 @@ inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6)
   return true;
 }
 
-namespace suffixes {
-
 //==============================================================================
 constexpr double operator"" _pi(long double x)
 {
@@ -289,8 +287,6 @@ constexpr double operator"" _deg(unsigned long long int angle)
 {
   return operator"" _deg(static_cast<long double>(angle));
 }
-
-} // namespace suffixes
 
 } // namespace math
 

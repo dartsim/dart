@@ -44,12 +44,12 @@
 
 class AtlasSimbiconWorldNode;
 
-class AtlasSimbiconWidget : public dart::gui::osg::ImGuiWidget
+class AtlasSimbiconWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
   AtlasSimbiconWidget(
-      dart::gui::osg::ImGuiViewer* viewer, AtlasSimbiconWorldNode* node);
+      dart::gui::ImGuiViewer* viewer, AtlasSimbiconWorldNode* node);
 
   // Documentation inherited
   void render() override;
@@ -57,7 +57,7 @@ public:
 protected:
   void setGravity(float gravity);
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  ::osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
 
   ::osg::ref_ptr<AtlasSimbiconWorldNode> mNode;
 

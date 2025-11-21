@@ -45,8 +45,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class EllipsoidShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -249,7 +247,5 @@ EllipsoidShapeDrawable::~EllipsoidShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

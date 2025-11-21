@@ -36,7 +36,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
@@ -80,6 +79,5 @@ bool TrackballManipulator::performMovementRightMouseButton(
       eventTimeDelta, dx, dy);
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

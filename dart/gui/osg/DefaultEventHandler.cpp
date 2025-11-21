@@ -46,7 +46,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -217,8 +216,7 @@ void DefaultEventHandler::pick(
     for (const ::osgUtil::LineSegmentIntersector::Intersection& intersect :
          hlist) {
       ::osg::Drawable* drawable = intersect.drawable;
-      render::ShapeNode* shape
-          = dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
+      ShapeNode* shape = dynamic_cast<ShapeNode*>(drawable->getParent(0));
       if (shape) {
         PickInfo info;
         info.shape = shape->getShape();
@@ -315,7 +313,7 @@ bool DefaultEventHandler::handle(
   switch (ea.getEventType()) {
     case ::osgGA::GUIEventAdapter::KEYDOWN: {
       switch (ea.getKey()) {
-        case 8: // ctrl+h
+        case 8:  // ctrl+h
         {
           mViewer->switchHeadlights(!mViewer->checkHeadlights());
           return true;
@@ -422,6 +420,5 @@ void DefaultEventHandler::handleDestructionNotification(
     mMouseEventHandlers.erase(it);
 }
 
-} // namespace osg
-} // namespace gui
-} // namespace dart
+}  // namespace gui
+}  // namespace dart

@@ -43,7 +43,7 @@
 using namespace dart;
 using dart::simulation::CollisionDetectorType;
 
-class FetchWorldNode : public gui::osg::RealTimeWorldNode
+class FetchWorldNode : public gui::RealTimeWorldNode
 {
 public:
   explicit FetchWorldNode(
@@ -51,7 +51,7 @@ public:
       dynamics::SkeletonPtr robot,
       dynamics::BodyNode* mocap,
       dynamics::Frame* interactiveFrame)
-    : gui::osg::RealTimeWorldNode(std::move(world)),
+    : gui::RealTimeWorldNode(std::move(world)),
       mRobot(std::move(robot)),
       mMocap(mocap),
       mInteractiveFrame(interactiveFrame)
@@ -74,13 +74,13 @@ protected:
   dynamics::Frame* mInteractiveFrame;
 };
 
-class PointCloudWidget : public dart::gui::osg::ImGuiWidget
+class PointCloudWidget : public dart::gui::ImGuiWidget
 {
 public:
   PointCloudWidget(
-      dart::gui::osg::ImGuiViewer* viewer,
+      dart::gui::ImGuiViewer* viewer,
       FetchWorldNode* node,
-      gui::osg::GridVisual* grid)
+      gui::GridVisual* grid)
     : mViewer(viewer), mNode(node), mGrid(grid)
   {
     // Do nothing
@@ -145,14 +145,14 @@ public:
   }
 
 protected:
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   osg::ref_ptr<FetchWorldNode> mNode;
-  osg::ref_ptr<gui::osg::GridVisual> mGrid;
+  osg::ref_ptr<gui::GridVisual> mGrid;
 };
 
 int main()
 {
-  using namespace math::suffixes;
+  using namespace math;
 
   // Create a world from ant.xml
   auto world = utils::MjcfParser::readWorld(
@@ -205,7 +205,7 @@ int main()
   tf.translation() = Eigen::Vector3d(1.3, 0.75, 0.50);
   tf.linear()
       = Eigen::AngleAxisd(0.5_pi, Eigen::Vector3d::UnitY()).toRotationMatrix();
-  auto frame = std::make_shared<gui::osg::InteractiveFrame>(
+  auto frame = std::make_shared<gui::InteractiveFrame>(
       dynamics::Frame::World(), "interactive frame", tf, 0.2);
   world->addSimpleFrame(frame);
 
@@ -214,11 +214,11 @@ int main()
       = new FetchWorldNode(world, robot, mocap->getRootBodyNode(), frame.get());
 
   // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::osg::ImGuiViewer();
+  auto viewer = gui::ImGuiViewer();
   viewer.addWorldNode(node);
 
   // Create grid
-  ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
+  ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
   grid->setOffset(Eigen::Vector3d(1.3, 0.75, 0));
   viewer.addAttachment(grid);
 

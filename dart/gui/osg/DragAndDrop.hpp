@@ -53,13 +53,12 @@ class SimpleFrame;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
 
 class Viewer;
 class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
-/// Entities to be dragged and dropped in an dart::gui::osg environment
+/// Entities to be dragged and dropped in an dart::gui environment
 class DART_GUI_API DragAndDrop : public dart::common::Subject,
                                  public dart::common::Observer
 {
@@ -240,7 +239,7 @@ class DART_GUI_API InteractiveFrameDnD : public DragAndDrop
 {
 public:
   /// Constructor
-  InteractiveFrameDnD(Viewer* viewer, dart::gui::osg::InteractiveFrame* frame);
+  InteractiveFrameDnD(Viewer* viewer, dart::gui::InteractiveFrame* frame);
 
   /// Virtual destructor
   virtual ~InteractiveFrameDnD() = default;
@@ -356,7 +355,6 @@ protected:
   std::size_t mAdditionalBodyNodes;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

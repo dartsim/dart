@@ -37,7 +37,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
@@ -81,6 +80,5 @@ void ImGuiViewer::hideAbout()
   mAboutWidget->hide();
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

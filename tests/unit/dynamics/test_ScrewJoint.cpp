@@ -41,7 +41,7 @@ using namespace dart;
 //==============================================================================
 TEST(ScrewJoint, ThreadPitch)
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   // Create single-body skeleton with a screw joint
   auto skel = dynamics::Skeleton::create();

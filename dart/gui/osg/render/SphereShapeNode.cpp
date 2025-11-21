@@ -46,8 +46,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class SphereShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -227,7 +225,5 @@ SphereShapeDrawable::~SphereShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

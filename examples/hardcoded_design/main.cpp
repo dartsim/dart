@@ -140,12 +140,12 @@ int main(int /*argc*/, char* /*argv*/[])
   world->addSkeleton(skeleton);
 
   // Create OSG viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.setUpwardsDirection(Eigen::Vector3d(0.0, 0.0, 1.0));
 
   // Create world node
-  osg::ref_ptr<dart::gui::osg::WorldNode> worldNode
-      = new dart::gui::osg::WorldNode(world);
+  osg::ref_ptr<dart::gui::WorldNode> worldNode
+      = new dart::gui::WorldNode(world);
 
   // Set wireframe mode to match the legacy example
   worldNode->getStateSet()->setAttributeAndModes(

@@ -42,7 +42,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 class DefaultEventHandler;
 
@@ -70,7 +69,6 @@ protected:
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

@@ -63,7 +63,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 /// Solve the Linear Complementarity Problem using Dantzig's algorithm
 ///
@@ -116,10 +116,6 @@ bool SolveLCP(
     int* findex,
     bool earlyTermination = false);
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
 
 // Template implementations for header-only usage

@@ -47,9 +47,6 @@ class PointCloudShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class PointCloudShapeGeode;
 class PointCloudShapeBillboardGeode;
 class PointNode;
@@ -85,8 +82,6 @@ protected:
   dynamics::PointCloudShape::PointShapeType mPointShapeType;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

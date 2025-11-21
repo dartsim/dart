@@ -37,7 +37,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 /// \brief
 class DART_API ODELCPSolver
@@ -83,10 +83,6 @@ private:
       const Eigen::VectorXd& _x);
 };
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
 
 #endif // DART_MATH_LCP_ODELCPSOLVER_HPP_

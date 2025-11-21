@@ -35,11 +35,11 @@
 #include <dart/All.hpp>
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
+class CustomWorldNode : public dart::gui::WorldNode
 {
 public:
   CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::WorldNode(world)
   {
     // Set up the customized WorldNode
   }
@@ -124,12 +124,11 @@ public:
 };
 
 //==============================================================================
-class TestWidget : public dart::gui::osg::ImGuiWidget
+class TestWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
-  TestWidget(
-      dart::gui::osg::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
+  TestWidget(dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
     : mViewer(viewer),
       mWorld(std::move(world)),
       mGuiGravity(true),
@@ -236,7 +235,7 @@ protected:
       mWorld->setGravity(Eigen::Vector3d::Zero());
   }
 
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   bool mGuiGravity;
   bool mGravity;
@@ -250,16 +249,15 @@ int main()
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
   // Add a target object to the world
-  dart::gui::osg::InteractiveFramePtr target(
-      new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
+  dart::gui::InteractiveFramePtr target(
+      new dart::gui::InteractiveFrame(dart::dynamics::Frame::World()));
   world->addSimpleFrame(target);
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

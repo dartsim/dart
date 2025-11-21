@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class BoxShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -214,7 +212,5 @@ BoxShapeDrawable::~BoxShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

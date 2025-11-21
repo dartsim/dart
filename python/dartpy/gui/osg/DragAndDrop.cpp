@@ -47,124 +47,115 @@ namespace python {
 void DragAndDrop(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::DragAndDrop,
+      dart::gui::DragAndDrop,
       dart::common::Observer,
       dart::common::Subject,
-      ::std::shared_ptr<dart::gui::osg::DragAndDrop>>(m, "DragAndDrop")
+      ::std::shared_ptr<dart::gui::DragAndDrop>>(m, "DragAndDrop")
       .def(
-          "update", +[](dart::gui::osg::DragAndDrop* self) { self->update(); })
+          "update", +[](dart::gui::DragAndDrop* self) { self->update(); })
       .def(
           "setObstructable",
-          +[](dart::gui::osg::DragAndDrop* self, bool _obstructable) {
+          +[](dart::gui::DragAndDrop* self, bool _obstructable) {
             self->setObstructable(_obstructable);
           },
           ::py::arg("obstructable"))
       .def(
           "isObstructable",
-          +[](const dart::gui::osg::DragAndDrop* self) -> bool {
+          +[](const dart::gui::DragAndDrop* self) -> bool {
             return self->isObstructable();
           })
       .def(
-          "move", +[](dart::gui::osg::DragAndDrop* self) { self->move(); })
+          "move", +[](dart::gui::DragAndDrop* self) { self->move(); })
       .def(
-          "saveState",
-          +[](dart::gui::osg::DragAndDrop* self) { self->saveState(); })
+          "saveState", +[](dart::gui::DragAndDrop* self) { self->saveState(); })
       .def(
-          "release",
-          +[](dart::gui::osg::DragAndDrop* self) { self->release(); })
+          "release", +[](dart::gui::DragAndDrop* self) { self->release(); })
       .def(
           "getConstrainedDx",
-          +[](const dart::gui::osg::DragAndDrop* self) -> Eigen::Vector3d {
+          +[](const dart::gui::DragAndDrop* self) -> Eigen::Vector3d {
             return self->getConstrainedDx();
           })
       .def(
           "getConstrainedRotation",
-          +[](const dart::gui::osg::DragAndDrop* self) -> Eigen::AngleAxisd {
+          +[](const dart::gui::DragAndDrop* self) -> Eigen::AngleAxisd {
             return self->getConstrainedRotation();
           })
       .def(
           "unconstrain",
-          +[](dart::gui::osg::DragAndDrop* self) { self->unconstrain(); })
+          +[](dart::gui::DragAndDrop* self) { self->unconstrain(); })
       .def(
           "constrainToLine",
-          +[](dart::gui::osg::DragAndDrop* self, const Eigen::Vector3d& slope) {
+          +[](dart::gui::DragAndDrop* self, const Eigen::Vector3d& slope) {
             self->constrainToLine(slope);
           },
           ::py::arg("slope"))
       .def(
           "constrainToPlane",
-          +[](dart::gui::osg::DragAndDrop* self,
-              const Eigen::Vector3d& normal) {
+          +[](dart::gui::DragAndDrop* self, const Eigen::Vector3d& normal) {
             self->constrainToPlane(normal);
           },
           ::py::arg("normal"))
       .def(
           "isMoving",
-          +[](const dart::gui::osg::DragAndDrop* self) -> bool {
+          +[](const dart::gui::DragAndDrop* self) -> bool {
             return self->isMoving();
           })
       .def(
           "setRotationOption",
-          +[](dart::gui::osg::DragAndDrop* self,
-              dart::gui::osg::DragAndDrop::RotationOption option) {
+          +[](dart::gui::DragAndDrop* self,
+              dart::gui::DragAndDrop::RotationOption option) {
             self->setRotationOption(option);
           },
           ::py::arg("option"))
       .def(
           "getRotationOption",
-          +[](const dart::gui::osg::DragAndDrop* self)
-              -> dart::gui::osg::DragAndDrop::RotationOption {
+          +[](const dart::gui::DragAndDrop* self)
+              -> dart::gui::DragAndDrop::RotationOption {
             return self->getRotationOption();
           })
       .def(
           "setRotationModKey",
-          +[](dart::gui::osg::DragAndDrop* self,
+          +[](dart::gui::DragAndDrop* self,
               osgGA::GUIEventAdapter::ModKeyMask rotationModKey) {
             self->setRotationModKey(rotationModKey);
           },
           ::py::arg("rotationModKey"))
       .def(
           "getRotationModKey",
-          +[](const dart::gui::osg::DragAndDrop* self)
+          +[](const dart::gui::DragAndDrop* self)
               -> osgGA::GUIEventAdapter::ModKeyMask {
             return self->getRotationModKey();
           });
 
   auto attr = m.attr("DragAndDrop");
 
-  ::py::enum_<dart::gui::osg::DragAndDrop::RotationOption>(
-      attr, "RotationOption")
-      .value(
-          "HOLD_MODKEY",
-          dart::gui::osg::DragAndDrop::RotationOption::HOLD_MODKEY)
-      .value(
-          "ALWAYS_ON", dart::gui::osg::DragAndDrop::RotationOption::ALWAYS_ON)
-      .value(
-          "ALWAYS_OFF", dart::gui::osg::DragAndDrop::RotationOption::ALWAYS_OFF)
+  ::py::enum_<dart::gui::DragAndDrop::RotationOption>(attr, "RotationOption")
+      .value("HOLD_MODKEY", dart::gui::DragAndDrop::RotationOption::HOLD_MODKEY)
+      .value("ALWAYS_ON", dart::gui::DragAndDrop::RotationOption::ALWAYS_ON)
+      .value("ALWAYS_OFF", dart::gui::DragAndDrop::RotationOption::ALWAYS_OFF)
       .export_values();
 
   ::py::class_<
-      dart::gui::osg::SimpleFrameDnD,
-      dart::gui::osg::DragAndDrop,
-      ::std::shared_ptr<dart::gui::osg::SimpleFrameDnD>>(m, "SimpleFrameDnD")
+      dart::gui::SimpleFrameDnD,
+      dart::gui::DragAndDrop,
+      ::std::shared_ptr<dart::gui::SimpleFrameDnD>>(m, "SimpleFrameDnD")
       .def(
-          ::py::init<dart::gui::osg::Viewer*, dart::dynamics::SimpleFrame*>(),
+          ::py::init<dart::gui::Viewer*, dart::dynamics::SimpleFrame*>(),
           ::py::arg("viewer"),
           ::py::arg("frame"))
       .def(
-          "move", +[](dart::gui::osg::SimpleFrameDnD* self) { self->move(); })
+          "move", +[](dart::gui::SimpleFrameDnD* self) { self->move(); })
       .def(
           "saveState",
-          +[](dart::gui::osg::SimpleFrameDnD* self) { self->saveState(); });
+          +[](dart::gui::SimpleFrameDnD* self) { self->saveState(); });
 
   ::py::class_<
-      dart::gui::osg::SimpleFrameShapeDnD,
-      dart::gui::osg::SimpleFrameDnD,
-      std::shared_ptr<dart::gui::osg::SimpleFrameShapeDnD>>(
-      m, "SimpleFrameShapeDnD")
+      dart::gui::SimpleFrameShapeDnD,
+      dart::gui::SimpleFrameDnD,
+      std::shared_ptr<dart::gui::SimpleFrameShapeDnD>>(m, "SimpleFrameShapeDnD")
       .def(
           ::py::init<
-              dart::gui::osg::Viewer*,
+              dart::gui::Viewer*,
               dart::dynamics::SimpleFrame*,
               dart::dynamics::Shape*>(),
           ::py::arg("viewer"),
@@ -172,113 +163,102 @@ void DragAndDrop(py::module& m)
           ::py::arg("shape"))
       .def(
           "update",
-          +[](dart::gui::osg::SimpleFrameShapeDnD* self) { self->update(); });
+          +[](dart::gui::SimpleFrameShapeDnD* self) { self->update(); });
 
   ::py::class_<
-      dart::gui::osg::BodyNodeDnD,
-      dart::gui::osg::DragAndDrop,
-      std::shared_ptr<dart::gui::osg::BodyNodeDnD>>(m, "BodyNodeDnD")
+      dart::gui::BodyNodeDnD,
+      dart::gui::DragAndDrop,
+      std::shared_ptr<dart::gui::BodyNodeDnD>>(m, "BodyNodeDnD")
       .def(
-          ::py::init<dart::gui::osg::Viewer*, dart::dynamics::BodyNode*>(),
+          ::py::init<dart::gui::Viewer*, dart::dynamics::BodyNode*>(),
           ::py::arg("viewer"),
           ::py::arg("bn"))
       .def(
-          ::py::
-              init<dart::gui::osg::Viewer*, dart::dynamics::BodyNode*, bool>(),
+          ::py::init<dart::gui::Viewer*, dart::dynamics::BodyNode*, bool>(),
           ::py::arg("viewer"),
           ::py::arg("bn"),
           ::py::arg("useExternalIK"))
       .def(
-          ::py::init<
-              dart::gui::osg::Viewer*,
-              dart::dynamics::BodyNode*,
-              bool,
-              bool>(),
+          ::py::
+              init<dart::gui::Viewer*, dart::dynamics::BodyNode*, bool, bool>(),
           ::py::arg("viewer"),
           ::py::arg("bn"),
           ::py::arg("useExternalIK"),
           ::py::arg("useWholeBody"))
       .def(
-          "update", +[](dart::gui::osg::BodyNodeDnD* self) { self->update(); })
+          "update", +[](dart::gui::BodyNodeDnD* self) { self->update(); })
       .def(
-          "move", +[](dart::gui::osg::BodyNodeDnD* self) { self->move(); })
+          "move", +[](dart::gui::BodyNodeDnD* self) { self->move(); })
       .def(
-          "saveState",
-          +[](dart::gui::osg::BodyNodeDnD* self) { self->saveState(); })
+          "saveState", +[](dart::gui::BodyNodeDnD* self) { self->saveState(); })
       .def(
-          "release",
-          +[](dart::gui::osg::BodyNodeDnD* self) { self->release(); })
+          "release", +[](dart::gui::BodyNodeDnD* self) { self->release(); })
       .def(
           "useExternalIK",
-          +[](dart::gui::osg::BodyNodeDnD* self, bool external) {
+          +[](dart::gui::BodyNodeDnD* self, bool external) {
             self->useExternalIK(external);
           },
           ::py::arg("external"))
       .def(
           "isUsingExternalIK",
-          +[](const dart::gui::osg::BodyNodeDnD* self) -> bool {
+          +[](const dart::gui::BodyNodeDnD* self) -> bool {
             return self->isUsingExternalIK();
           })
       .def(
           "useWholeBody",
-          +[](dart::gui::osg::BodyNodeDnD* self, bool wholeBody) {
+          +[](dart::gui::BodyNodeDnD* self, bool wholeBody) {
             self->useWholeBody(wholeBody);
           },
           ::py::arg("wholeBody"))
       .def(
           "isUsingWholeBody",
-          +[](const dart::gui::osg::BodyNodeDnD* self) -> bool {
+          +[](const dart::gui::BodyNodeDnD* self) -> bool {
             return self->isUsingWholeBody();
           })
       .def(
           "setPreserveOrientationModKey",
-          +[](dart::gui::osg::BodyNodeDnD* self,
+          +[](dart::gui::BodyNodeDnD* self,
               osgGA::GUIEventAdapter::ModKeyMask modkey) {
             self->setPreserveOrientationModKey(modkey);
           },
           ::py::arg("modkey"))
       .def(
           "getPreserveOrientationModKey",
-          +[](const dart::gui::osg::BodyNodeDnD* self)
+          +[](const dart::gui::BodyNodeDnD* self)
               -> osgGA::GUIEventAdapter::ModKeyMask {
             return self->getPreserveOrientationModKey();
           })
       .def(
           "setJointRestrictionModKey",
-          +[](dart::gui::osg::BodyNodeDnD* self,
+          +[](dart::gui::BodyNodeDnD* self,
               osgGA::GUIEventAdapter::ModKeyMask modkey) {
             self->setJointRestrictionModKey(modkey);
           },
           ::py::arg("modkey"))
       .def(
           "getJointRestrictionModKey",
-          +[](const dart::gui::osg::BodyNodeDnD* self)
+          +[](const dart::gui::BodyNodeDnD* self)
               -> osgGA::GUIEventAdapter::ModKeyMask {
             return self->getJointRestrictionModKey();
           });
 
   ::py::class_<
-      dart::gui::osg::InteractiveFrameDnD,
-      dart::gui::osg::DragAndDrop,
-      std::shared_ptr<dart::gui::osg::InteractiveFrameDnD>>(
-      m, "InteractiveFrameDnD")
+      dart::gui::InteractiveFrameDnD,
+      dart::gui::DragAndDrop,
+      std::shared_ptr<dart::gui::InteractiveFrameDnD>>(m, "InteractiveFrameDnD")
       .def(
-          ::py::init<
-              dart::gui::osg::Viewer*,
-              dart::gui::osg::InteractiveFrame*>(),
+          ::py::init<dart::gui::Viewer*, dart::gui::InteractiveFrame*>(),
           ::py::arg("viewer"),
           ::py::arg("frame"))
       .def(
           "update",
-          +[](dart::gui::osg::InteractiveFrameDnD* self) { self->update(); })
+          +[](dart::gui::InteractiveFrameDnD* self) { self->update(); })
       .def(
-          "move",
-          +[](dart::gui::osg::InteractiveFrameDnD* self) { self->move(); })
+          "move", +[](dart::gui::InteractiveFrameDnD* self) { self->move(); })
       .def(
-          "saveState", +[](dart::gui::osg::InteractiveFrameDnD* self) {
-            self->saveState();
-          });
+          "saveState",
+          +[](dart::gui::InteractiveFrameDnD* self) { self->saveState(); });
 }
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

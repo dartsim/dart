@@ -59,7 +59,7 @@
 
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 // Random Number Generation (Used by tests and benchmarks)
@@ -87,8 +87,4 @@ inline Scalar RandReal()
   return static_cast<Scalar>(dRandReal());
 }
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math

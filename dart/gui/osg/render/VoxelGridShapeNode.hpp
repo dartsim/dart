@@ -51,9 +51,6 @@ class VoxelGridShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class VoxelGridShapeGeode;
 
 class VoxelBoxDrawable final : public ::osg::ShapeDrawable
@@ -101,8 +98,6 @@ protected:
   std::size_t mVoxelGridVersion;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

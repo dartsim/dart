@@ -56,7 +56,6 @@ class ShapeFrame;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
 
 class FrameNode;
 class ShapeFrameNode;
@@ -156,9 +155,9 @@ public:
   virtual ~WorldNode();
 
 protected:
-  /// Called when this world gets added to an dart::gui::osg::Viewer. Override
+  /// Called when this world gets added to an dart::gui::Viewer. Override
   /// this function to customize the way your WorldNode starts up in an
-  /// dart::gui::osg::Viewer. Default behavior does nothing.
+  /// dart::gui::Viewer. Default behavior does nothing.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -206,7 +205,6 @@ protected:
   bool mShadowed;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

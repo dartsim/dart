@@ -47,31 +47,28 @@ namespace python {
 void ImGuiViewer(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::ImGuiViewer,
-      dart::gui::osg::Viewer,
-      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
+      dart::gui::ImGuiViewer,
+      dart::gui::Viewer,
+      osg::ref_ptr<dart::gui::ImGuiViewer>>(m, "ImGuiViewer")
       .def(::py::init<>())
       .def(
           ::py::init([](const Eigen::Vector4d& clearColor) {
-            return new ::dart::gui::osg::ImGuiViewer(
-                gui::osg::eigToOsgVec4f(clearColor));
+            return new ::dart::gui::ImGuiViewer(gui::eigToOsgVec4f(clearColor));
           }),
           ::py::arg("clearColor"))
       .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
       .def(
           "getImGuiHandler",
-          +[](dart::gui::osg::ImGuiViewer* self)
-              -> dart::gui::osg::ImGuiHandler* {
+          +[](dart::gui::ImGuiViewer* self) -> dart::gui::ImGuiHandler* {
             return self->getImGuiHandler();
           },
           ::py::return_value_policy::reference_internal)
       .def(
-          "showAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
+          "showAbout", +[](dart::gui::ImGuiViewer* self) { self->showAbout(); })
       .def(
           "hideAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
+          +[](dart::gui::ImGuiViewer* self) { self->hideAbout(); });
 }
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

@@ -356,7 +356,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Added force dependent slip: [#1505](https://github.com/dartsim/dart/pull/1505)
 
 - GUI
-  - Fixed memory leaks from dart::gui::osg::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
+  - Fixed memory leaks from dart::gui::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
   - Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351), [#1355](https://github.com/dartsim/dart/pull/1355)
   - Updated ImGui to 1.71: [#1362](https://github.com/dartsim/dart/pull/1362)
   - Updated ImGui to 1.79: [#1498](https://github.com/dartsim/dart/pull/1498)
@@ -476,7 +476,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Improved voxel rendering by using multiple nodes instead of CompositeShape: [#1334](https://github.com/dartsim/dart/pull/1334)
 
 - Examples and Tutorials
-  - Updated examples directory to make dart::gui::osg more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
+  - Updated examples directory to make dart::gui more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
 
 - dartpy
   - Switched to pybind11: [#1307](https://github.com/dartsim/dart/pull/1307)
@@ -987,9 +987,13 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Added back VSK parser: [#602](https://github.com/dartsim/dart/pull/602), [#561](https://github.com/dartsim/dart/pull/561), [#254](https://github.com/dartsim/dart/issues/254)
   - Fixed segfault of `SdfParser` when `nullptr` `ResourceRetriever` is passed: [#663](https://github.com/dartsim/dart/pull/663)
 
+- Parsers
+  - Added back VSK parser: [#602](https://github.com/dartsim/dart/pull/602), [#561](https://github.com/dartsim/dart/pull/561), [#254](https://github.com/dartsim/dart/issues/254)
+  - Fixed segfault of `SdfParser` when `nullptr` `ResourceRetriever` is passed: [#663](https://github.com/dartsim/dart/pull/663)
+
 - GUI features
   - Merged `renderer` namespace into `gui` namespace: [#652](https://github.com/dartsim/dart/pull/652), [#589](https://github.com/dartsim/dart/issues/589)
-  - Moved `osgDart` under `dart::gui` namespace as `dart::gui::osg`: [#651](https://github.com/dartsim/dart/pull/651)
+  - Moved `osgDart` under `dart::gui` namespace as `dart::gui`: [#651](https://github.com/dartsim/dart/pull/651)
   - Fixed GlutWindow::screenshot(): [#623](https://github.com/dartsim/dart/pull/623), [#395](https://github.com/dartsim/dart/issues/395)
 
 - Simulation
@@ -1029,7 +1033,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Changed Travis-CI to treat warning as errors using `-Werror` flags: [#682](https://github.com/dartsim/dart/pull/682), [#677](https://github.com/dartsim/dart/issues/677)
   - Changed Travis-CI to test DART with bullet collision detector: [#650](https://github.com/dartsim/dart/pull/650), [#376](https://github.com/dartsim/dart/issues/376)
   - Changed the minimum requirement of Visual Studio version to 2015: [#592](https://github.com/dartsim/dart/issues/592)
-  - Changed CMake to build gui::osg examples when `DART_BUILD_EXAMPLES` is on: [#536](https://github.com/dartsim/dart/pull/536)
+  - Changed CMake to build gui examples when `DART_BUILD_EXAMPLES` is on: [#536](https://github.com/dartsim/dart/pull/536)
   - Simplfied Travis-CI tests for general pushes: [#700](https://github.com/dartsim/dart/pull/700)
   - Fixed Eigen memory alignment issue in testCollision.cpp: [#719](https://github.com/dartsim/dart/pull/719)
   - Fixed `BULLET_INCLUDE_DIRS` in `DARTConfig.cmake`: [#697](https://github.com/dartsim/dart/pull/697)

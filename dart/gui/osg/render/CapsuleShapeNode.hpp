@@ -44,9 +44,6 @@ class CapsuleShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class CapsuleShapeGeode;
 class CapsuleShapeDrawable;
 
@@ -67,8 +64,6 @@ protected:
   CapsuleShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

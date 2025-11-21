@@ -64,7 +64,6 @@ class BodyNode;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
 
 namespace detail {
 class CameraModeCallback;
@@ -121,7 +120,7 @@ class DART_GUI_API Viewer : public osgViewer::Viewer,
                             public dart::common::Subject
 {
 public:
-  /// Constructor for dart::gui::osg::Viewer. This will automatically create the
+  /// Constructor for dart::gui::Viewer. This will automatically create the
   /// default event handler.
   Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9, 0.9, 0.9, 1.0));
 
@@ -162,7 +161,7 @@ public:
   /// Returns true if the Viewer is currently recording.
   bool isRecording() const;
 
-  /// Creates the default event handler for this dart::gui::osg::Viewer
+  /// Creates the default event handler for this dart::gui::Viewer
   virtual void switchDefaultEventHandler(bool _on);
 
   /// Return a pointer to the default event handler
@@ -343,7 +342,7 @@ protected:
   /// Name for the next screen capture
   std::string mScreenCapName;
 
-  /// Default WorldNodeEventHandler for this dart::gui::osg::Viewer
+  /// Default WorldNodeEventHandler for this dart::gui::Viewer
   ::osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
 
   /// The root node of this Viewer
@@ -379,7 +378,7 @@ protected:
   /// True iff headlights were last set to be on
   bool mHeadlights;
 
-  /// Map of WorldNodes in this dart::gui::osg::Viewer. A WorldNode will map to
+  /// Map of WorldNodes in this dart::gui::Viewer. A WorldNode will map to
   /// true iff it is currently active
   std::map<::osg::ref_ptr<WorldNode>, bool> mWorldNodes;
 
@@ -413,7 +412,6 @@ private:
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

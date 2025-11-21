@@ -44,9 +44,6 @@ class ConeShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class ConeShapeGeode;
 class ConeShapeDrawable;
 
@@ -66,8 +63,6 @@ protected:
   ConeShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

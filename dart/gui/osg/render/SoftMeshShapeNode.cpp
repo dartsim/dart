@@ -45,8 +45,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class SoftMeshShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -306,7 +304,5 @@ SoftMeshShapeDrawable::~SoftMeshShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

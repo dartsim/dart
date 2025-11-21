@@ -43,7 +43,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class PyRealTimeWorldNodeNode : public dart::gui::osg::RealTimeWorldNode
+class PyRealTimeWorldNodeNode : public dart::gui::RealTimeWorldNode
 {
 public:
   // Inherit the constructors
@@ -103,10 +103,10 @@ public:
 void RealTimeWorldNode(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::RealTimeWorldNode,
-      dart::gui::osg::WorldNode,
+      dart::gui::RealTimeWorldNode,
+      dart::gui::WorldNode,
       PyRealTimeWorldNodeNode,
-      ::osg::ref_ptr<dart::gui::osg::RealTimeWorldNode>>(m, "RealTimeWorldNode")
+      ::osg::ref_ptr<dart::gui::RealTimeWorldNode>>(m, "RealTimeWorldNode")
       .def(::py::init<>())
       .def(
           ::py::init<const std::shared_ptr<dart::simulation::World>&>(),
@@ -137,44 +137,44 @@ void RealTimeWorldNode(py::module& m)
           ::py::arg("targetRealTimeFactor"))
       .def(
           "setTargetFrequency",
-          +[](dart::gui::osg::RealTimeWorldNode* self, double targetFrequency) {
+          +[](dart::gui::RealTimeWorldNode* self, double targetFrequency) {
             self->setTargetFrequency(targetFrequency);
           },
           ::py::arg("targetFrequency"))
       .def(
           "getTargetFrequency",
-          +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
+          +[](const dart::gui::RealTimeWorldNode* self) -> double {
             return self->getTargetFrequency();
           })
       .def(
           "setTargetRealTimeFactor",
-          +[](dart::gui::osg::RealTimeWorldNode* self, double targetRTF) {
+          +[](dart::gui::RealTimeWorldNode* self, double targetRTF) {
             self->setTargetRealTimeFactor(targetRTF);
           },
           ::py::arg("targetRTF"))
       .def(
           "getTargetRealTimeFactor",
-          +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
+          +[](const dart::gui::RealTimeWorldNode* self) -> double {
             return self->getTargetRealTimeFactor();
           })
       .def(
           "getLastRealTimeFactor",
-          +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
+          +[](const dart::gui::RealTimeWorldNode* self) -> double {
             return self->getLastRealTimeFactor();
           })
       .def(
           "getLowestRealTimeFactor",
-          +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
+          +[](const dart::gui::RealTimeWorldNode* self) -> double {
             return self->getLowestRealTimeFactor();
           })
       .def(
           "getHighestRealTimeFactor",
-          +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
+          +[](const dart::gui::RealTimeWorldNode* self) -> double {
             return self->getHighestRealTimeFactor();
           })
       .def(
           "refresh",
-          +[](dart::gui::osg::RealTimeWorldNode* self) { self->refresh(); });
+          +[](dart::gui::RealTimeWorldNode* self) { self->refresh(); });
 }
 
 } // namespace python

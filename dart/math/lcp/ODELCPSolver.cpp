@@ -38,7 +38,7 @@
 
 #include <cstdio>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 ODELCPSolver::ODELCPSolver()
@@ -223,4 +223,4 @@ bool ODELCPSolver::checkIfSolution(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace dart::math

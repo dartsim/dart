@@ -45,11 +45,11 @@
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 using namespace dart::math;
 
 SimulationEventHandler::SimulationEventHandler(
-    WorldPtr world, dart::gui::osg::Viewer* viewer)
+    WorldPtr world, dart::gui::Viewer* viewer)
   : mWorld(world),
     mViewer(viewer),
     mSelectedBody(nullptr),

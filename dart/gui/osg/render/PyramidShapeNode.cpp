@@ -48,8 +48,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class PyramidShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -307,7 +305,5 @@ PyramidShapeDrawable::~PyramidShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

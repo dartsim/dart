@@ -180,7 +180,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
    - Updates world transform from DART to OSG coordinates
 
 2. **Shape Node Management**:
-   - Holds pointer to `render::ShapeNode*`
+   - Holds pointer to `dart::gui::ShapeNode*`
    - Creates appropriate shape node based on shape type
    - Replaces shape node when shape changes
 
@@ -232,7 +232,7 @@ render/
 └── WarningShapeNode                   - Fallback for unsupported shapes
 ```
 
-### render::ShapeNode Base Class (`dart/gui/osg/render/ShapeNode.hpp/cpp`)
+### dart::gui::ShapeNode Base Class (`dart/gui/osg/render/ShapeNode.hpp/cpp`)
 
 **Purpose**: Abstract base class for all shape-specific rendering nodes.
 
@@ -336,7 +336,7 @@ struct PickInfo {
 **Picking Process**:
 
 1. Compute line segment intersection using OSG utilities
-2. Extract `render::ShapeNode` from hit drawable
+2. Extract `dart::gui::ShapeNode` from hit drawable
 3. Retrieve associated DART shape and frame
 4. Convert intersection data to Eigen types
 
@@ -451,7 +451,7 @@ setAllowThrow(false);         // Disable momentum-based camera motion
                    │                   └─> ShapeFrameNode::refresh()
                    │                       ├─> Update Transform
                    │                       └─> refreshShapeNode()
-                   │                           └─> render::ShapeNode::refresh()
+                   │                           └─> dart::gui::ShapeNode::refresh()
                    │                               └─> Update Geometry
                    ├─> refreshSimpleFrames()
                    │   └─> Similar to Skeletons
@@ -678,7 +678,7 @@ Prevent memory leaks from deleted DART entities while avoiding dangling pointers
    - World transforms, frame trees
 
 3. **Shape Geometry**:
-   - `dynamics::Shape` → `render::ShapeNode`
+   - `dynamics::Shape` → `dart::gui::ShapeNode`
    - Geometry data (dimensions, vertices, etc.)
 
 4. **Visual Properties**:
@@ -874,13 +874,13 @@ Common attachments you can reuse without writing custom logic:
 
 ```cpp
 // Create viewer
-dart::gui::osg::Viewer viewer;
+dart::gui::Viewer viewer;
 
 // Create world node
-auto worldNode = new dart::gui::osg::WorldNode(myWorld);
+auto worldNode = new dart::gui::WorldNode(myWorld);
 
 // Configure shadows (optional)
-auto shadowTechnique = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+auto shadowTechnique = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 worldNode->setShadowTechnique(shadowTechnique);
 
 // Add to viewer
@@ -896,17 +896,17 @@ viewer.run();
 ### Implementing Custom Mouse Interaction
 
 ```cpp
-class MyInteractionHandler : public dart::gui::osg::MouseEventHandler {
+class MyInteractionHandler : public dart::gui::MouseEventHandler {
 public:
     void update() override {
         // Check for left mouse button push
-        if (mEventHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE)
-            == dart::gui::osg::BUTTON_PUSH) {
+        if (mEventHandler->getButtonEvent(dart::gui::LEFT_MOUSE)
+            == dart::gui::BUTTON_PUSH) {
 
             // Get picked objects
             const auto& picks = mEventHandler->getButtonPicks(
-                dart::gui::osg::LEFT_MOUSE,
-                dart::gui::osg::BUTTON_PUSH);
+                dart::gui::LEFT_MOUSE,
+                dart::gui::BUTTON_PUSH);
 
             // Handle picks
             for (const auto& pick : picks) {
@@ -924,11 +924,11 @@ viewer.getDefaultEventHandler()->addMouseEventHandler(handler);
 ### Creating Custom Shape Rendering
 
 ```cpp
-class CustomShapeNode : public dart::gui::osg::render::ShapeNode,
+class CustomShapeNode : public dart::gui::dart::gui::ShapeNode,
                         public ::osg::Geode {
 public:
     CustomShapeNode(std::shared_ptr<MyCustomShape> shape,
-                    dart::gui::osg::ShapeFrameNode* parent)
+                    dart::gui::ShapeFrameNode* parent)
         : ShapeNode(shape, parent, this),
           mCustomShape(shape) {
         refresh();
@@ -1036,8 +1036,7 @@ void MyHandler::update() override {
 - Consider reducing simulation complexity if RTF < target
 
 ### OSG Namespace Conflict
-
-- DART's `dart::gui::osg` namespace conflicts with root `::osg`
+- DART's `dart::gui` namespace conflicts with root `::osg`
 - Always use `::osg::` for OSG types (note the leading `::`)
 - Custom META macros to work around namespace issues
 

@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class CylinderShapeGeode : public ShapeNode, public ::osg::Geode
 {
@@ -225,7 +223,5 @@ CylinderShapeDrawable::~CylinderShapeDrawable()
   // Do nothing
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

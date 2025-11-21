@@ -39,7 +39,7 @@
 #include <osg/Camera>
 #include <osg/Matrix>
 
-namespace dart::gui::osg {
+namespace dart::gui {
 
 /// Returns the alpha threshold for demining if the object is a transparent
 /// object or not
@@ -116,7 +116,7 @@ DART_GUI_API ::osg::Camera* createHudCamera(
 DART_GUI_API ::osg::Geode* createScreenQuad(
     float width, float height, float scale = 1.0f);
 
-} // namespace dart::gui::osg
+} // namespace dart::gui
 
 #include <dart/gui/osg/detail/Utils-impl.hpp>
 

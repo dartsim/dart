@@ -44,9 +44,6 @@ class CylinderShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
@@ -67,8 +64,6 @@ protected:
   CylinderShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

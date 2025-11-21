@@ -45,7 +45,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 /// Visualizes a convex polyhedron built from an arbitrary set of input
 /// vertices. The vertices are converted into a convex hull before being sent to
@@ -146,7 +145,6 @@ private:
   float mWireWidth;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

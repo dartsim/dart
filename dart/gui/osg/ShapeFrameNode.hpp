@@ -49,14 +49,11 @@ namespace dynamics {
 class ShapeFrame;
 class Entity;
 class Shape;
-} // namespace dynamics
+}  // namespace dynamics
 
 namespace gui {
-namespace osg {
 
-namespace render {
 class ShapeNode;
-} // namespace render
 
 class WorldNode;
 
@@ -104,7 +101,7 @@ protected:
   /// Pointer to the WorldNode that this ShapeFrameNode belongs to
   WorldNode* mWorldNode;
 
-  render::ShapeNode* mRenderShapeNode;
+  ShapeNode* mRenderShapeNode;
 
   /// True iff this ShapeFrameNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being
@@ -112,8 +109,7 @@ protected:
   bool mUtilized;
 };
 
-} // namespace osg
-} // namespace gui
-} // namespace dart
+}  // namespace gui
+}  // namespace dart
 
-#endif // DART_GUI_OSG_SHAPEFRAMENODE_HPP_
+#endif  // DART_GUI_OSG_SHAPEFRAMENODE_HPP_

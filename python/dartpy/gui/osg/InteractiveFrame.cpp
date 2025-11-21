@@ -47,13 +47,12 @@ void InteractiveFrame(py::module& m)
 {
   auto it
       = ::py::class_<
-            dart::gui::osg::InteractiveTool,
+            dart::gui::InteractiveTool,
             dart::dynamics::SimpleFrame,
-            std::shared_ptr<dart::gui::osg::InteractiveTool>>(
-            m, "InteractiveTool")
+            std::shared_ptr<dart::gui::InteractiveTool>>(m, "InteractiveTool")
             .def(
                 ::py::init<
-                    dart::gui::osg::InteractiveFrame*,
+                    dart::gui::InteractiveFrame*,
                     double,
                     const std::string&>(),
                 ::py::arg("frame"),
@@ -61,73 +60,70 @@ void InteractiveFrame(py::module& m)
                 ::py::arg("name"))
             .def(
                 "setEnabled",
-                +[](dart::gui::osg::InteractiveTool* self, bool enabled) {
+                +[](dart::gui::InteractiveTool* self, bool enabled) {
                   self->setEnabled(enabled);
                 },
                 ::py::arg("enabled"))
             .def(
                 "getEnabled",
-                +[](const dart::gui::osg::InteractiveTool* self) -> bool {
+                +[](const dart::gui::InteractiveTool* self) -> bool {
                   return self->getEnabled();
                 })
             .def(
                 "setAlpha",
-                +[](dart::gui::osg::InteractiveTool* self, double alpha) {
+                +[](dart::gui::InteractiveTool* self, double alpha) {
                   self->setAlpha(alpha);
                 },
                 ::py::arg("alpha"))
             .def(
                 "resetAlpha",
-                +[](dart::gui::osg::InteractiveTool* self) {
-                  self->resetAlpha();
-                })
+                +[](dart::gui::InteractiveTool* self) { self->resetAlpha(); })
             .def(
                 "setDefaultAlpha",
-                +[](dart::gui::osg::InteractiveTool* self, double alpha) {
+                +[](dart::gui::InteractiveTool* self, double alpha) {
                   self->setDefaultAlpha(alpha);
                 },
                 ::py::arg("alpha"))
             .def(
                 "setDefaultAlpha",
-                +[](dart::gui::osg::InteractiveTool* self,
+                +[](dart::gui::InteractiveTool* self,
                     double alpha,
                     bool reset) { self->setDefaultAlpha(alpha, reset); },
                 ::py::arg("alpha"),
                 ::py::arg("reset"))
             .def(
                 "getDefaultAlpha",
-                +[](const dart::gui::osg::InteractiveTool* self) -> double {
+                +[](const dart::gui::InteractiveTool* self) -> double {
                   return self->getDefaultAlpha();
                 })
             .def(
                 "getShapeFrames",
-                +[](dart::gui::osg::InteractiveTool* self)
+                +[](dart::gui::InteractiveTool* self)
                     -> const std::vector<dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
                 })
             .def(
                 "getShapeFrames",
-                +[](const dart::gui::osg::InteractiveTool* self)
+                +[](const dart::gui::InteractiveTool* self)
                     -> const std::vector<const dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
                 })
             .def(
-                "removeAllShapeFrames",
-                +[](dart::gui::osg::InteractiveTool* self) {
+                "removeAllShapeFrames", +[](dart::gui::InteractiveTool* self) {
                   self->removeAllShapeFrames();
                 });
 
-  ::py::enum_<dart::gui::osg::InteractiveTool::Type>(it, "Type")
-      .value("LINEAR", dart::gui::osg::InteractiveTool::Type::LINEAR)
-      .value("ANGULAR", dart::gui::osg::InteractiveTool::Type::ANGULAR)
-      .value("PLANAR", dart::gui::osg::InteractiveTool::Type::PLANAR)
-      .value("NUM_TYPES", dart::gui::osg::InteractiveTool::Type::NUM_TYPES)
+  ::py::enum_<dart::gui::InteractiveTool::Type>(it, "Type")
+      .value("LINEAR", dart::gui::InteractiveTool::Type::LINEAR)
+      .value("ANGULAR", dart::gui::InteractiveTool::Type::ANGULAR)
+      .value("PLANAR", dart::gui::InteractiveTool::Type::PLANAR)
+      .value("NUM_TYPES", dart::gui::InteractiveTool::Type::NUM_TYPES)
       .export_values();
 
   ::py::class_<
-      dart::gui::osg::InteractiveFrame,
+      dart::gui::InteractiveFrame,
       dart::dynamics::SimpleFrame,
-      std::shared_ptr<dart::gui::osg::InteractiveFrame>>(m, "InteractiveFrame")
+      std::shared_ptr<dart::gui::InteractiveFrame>>(m, "InteractiveFrame")
       .def(::py::init<dart::dynamics::Frame*>(), ::py::arg("referenceFrame"))
       .def(
           ::py::init<dart::dynamics::Frame*, const std::string&>(),
@@ -165,18 +161,18 @@ void InteractiveFrame(py::module& m)
           ::py::arg("thicknessScale"))
       .def(
           "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self) {
+          +[](dart::gui::InteractiveFrame* self) {
             self->resizeStandardVisuals();
           })
       .def(
           "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self, double size_scale) {
+          +[](dart::gui::InteractiveFrame* self, double size_scale) {
             self->resizeStandardVisuals(size_scale);
           },
           ::py::arg("sizeScale"))
       .def(
           "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self,
+          +[](dart::gui::InteractiveFrame* self,
               double size_scale,
               double thickness_scale) {
             self->resizeStandardVisuals(size_scale, thickness_scale);
@@ -185,21 +181,21 @@ void InteractiveFrame(py::module& m)
           ::py::arg("thicknessScale"))
       .def(
           "getShapeFrames",
-          +[](dart::gui::osg::InteractiveFrame* self)
+          +[](dart::gui::InteractiveFrame* self)
               -> const std::vector<dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
           })
       .def(
           "getShapeFrames",
-          +[](const dart::gui::osg::InteractiveFrame* self)
+          +[](const dart::gui::InteractiveFrame* self)
               -> const std::vector<const dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
           })
       .def(
-          "removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
+          "removeAllShapeFrames", +[](dart::gui::InteractiveFrame* self) {
             self->removeAllShapeFrames();
           });
 }
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

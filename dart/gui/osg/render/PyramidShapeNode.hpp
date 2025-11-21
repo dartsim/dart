@@ -44,9 +44,6 @@ class PyramidShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class PyramidShapeGeode;
 class PyramidShapeDrawable;
 
@@ -67,8 +64,6 @@ protected:
   PyramidShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

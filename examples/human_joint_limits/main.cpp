@@ -48,11 +48,11 @@ using namespace dart::simulation;
 using namespace dart;
 using namespace utils;
 
-class HumanJointLimitsWorldNode : public dart::gui::osg::WorldNode
+class HumanJointLimitsWorldNode : public dart::gui::WorldNode
 {
 public:
   explicit HumanJointLimitsWorldNode(const WorldPtr& world)
-    : dart::gui::osg::WorldNode(world), ts(0)
+    : dart::gui::WorldNode(world), ts(0)
   {
   }
 
@@ -139,7 +139,7 @@ int main()
       = new HumanJointLimitsWorldNode(world);
 
   // Create the viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Add event handler

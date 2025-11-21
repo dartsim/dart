@@ -53,8 +53,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 template <typename S>
 class HeightmapShapeGeode;
@@ -479,8 +477,6 @@ void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
   }
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

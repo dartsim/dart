@@ -44,9 +44,6 @@ class LineSegmentShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
@@ -67,8 +64,6 @@ protected:
   LineSegmentShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

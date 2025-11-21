@@ -160,7 +160,7 @@ GenericJoint<math::R1Space>::JacobianMatrix
 ScrewJoint::getRelativeJacobianStatic(
     const GenericJoint<math::R1Space>::Vector& /*positions*/) const
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
@@ -202,7 +202,7 @@ void ScrewJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void ScrewJoint::updateRelativeTransform() const
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();

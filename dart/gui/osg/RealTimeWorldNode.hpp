@@ -40,7 +40,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 class DART_GUI_API RealTimeWorldNode : public WorldNode
 {
@@ -123,7 +122,6 @@ protected:
   double mHighestRealTimeFactor;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

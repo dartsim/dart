@@ -56,7 +56,7 @@ int main()
 
   ::osg::ref_ptr<WamWorld> node = new WamWorld(world, wam);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 

@@ -40,7 +40,7 @@ class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
   InputHandler(
-      dart::gui::osg::Viewer* viewer,
+      dart::gui::Viewer* viewer,
       WamWorld* teleop,
       const dart::dynamics::SkeletonPtr& wam,
       const dart::simulation::WorldPtr& world);
@@ -53,7 +53,7 @@ protected:
   void initialize();
 
 protected:
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
 
   WamWorld* mWamWorld;
 

@@ -49,8 +49,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 //==============================================================================
 class BoxDrawable final : public ::osg::ShapeDrawable
@@ -628,7 +626,5 @@ PointCloudShapeNode::~PointCloudShapeNode()
   }
 }
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart

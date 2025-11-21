@@ -39,7 +39,7 @@
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 
 namespace {
 

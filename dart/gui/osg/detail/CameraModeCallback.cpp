@@ -39,7 +39,7 @@
 #include <osg/Geode>
 #include <osg/Texture2D>
 
-namespace dart::gui::osg::detail {
+namespace dart::gui::detail {
 
 //==============================================================================
 CameraModeCallback::CameraModeCallback()
@@ -151,4 +151,4 @@ void CameraModeCallback::setSceneData(::osg::Node* scene)
   mSceneToChange = scene;
 }
 
-} // namespace dart::gui::osg::detail
+} // namespace dart::gui::detail

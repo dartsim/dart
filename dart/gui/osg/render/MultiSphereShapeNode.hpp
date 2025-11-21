@@ -45,9 +45,6 @@ class MultiSphereConvexHullShape;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
-namespace render {
-
 class MultiSphereShapeGeode;
 class MultiSphereShapeDrawable;
 
@@ -69,8 +66,6 @@ protected:
   MultiSphereShapeGeode* mGeode;
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

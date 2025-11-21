@@ -53,8 +53,7 @@ public:
   /// \param world The physics world to control
   /// \param viewer The OSG viewer for visualization
   explicit SimulationEventHandler(
-      dart::simulation::WorldPtr world,
-      dart::gui::osg::Viewer* viewer = nullptr);
+      dart::simulation::WorldPtr world, dart::gui::Viewer* viewer = nullptr);
 
   /// \brief Destructor
   virtual ~SimulationEventHandler() = default;
@@ -152,7 +151,7 @@ private:
   dart::simulation::WorldPtr mWorld;
 
   /// The OSG viewer for visualization
-  dart::gui::osg::Viewer* mViewer;
+  dart::gui::Viewer* mViewer;
 
   /// Currently selected body node for force application
   dart::dynamics::BodyNodePtr mSelectedBody;
@@ -208,4 +207,4 @@ private:
   static constexpr double DEFAULT_TORQUE_MAGNITUDE = 50.0;
 };
 
-#endif // EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_
+#endif  // EXAMPLES_SIMULATIONEVENTHANDLER_SIMULATIONEVENTHANDLER_HPP_

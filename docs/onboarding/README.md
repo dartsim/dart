@@ -1235,12 +1235,12 @@ while (running) {
 
 ```cpp
 // Create viewer
-gui::osg::Viewer viewer;
+gui::Viewer viewer;
 viewer.setUpViewInWindow(0, 0, 1280, 720);
 
 // Wrap world in real-time node
-osg::ref_ptr<gui::osg::RealTimeWorldNode> node
-  = new gui::osg::RealTimeWorldNode(world);
+osg::ref_ptr<gui::RealTimeWorldNode> node
+  = new gui::RealTimeWorldNode(world);
 
 // Add to viewer
 viewer.addWorldNode(node);
@@ -1257,10 +1257,10 @@ viewer.run();
 ### Pattern 3: Custom Simulation Hooks
 
 ```cpp
-class MyWorldNode : public gui::osg::RealTimeWorldNode {
+class MyWorldNode : public gui::RealTimeWorldNode {
 public:
   MyWorldNode(const simulation::WorldPtr& world)
-    : gui::osg::RealTimeWorldNode(world) {}
+    : gui::RealTimeWorldNode(world) {}
 
   void customPreStep() override {
     // Apply control forces before physics step
@@ -1283,8 +1283,8 @@ viewer.addWorldNode(node);
 
 ```cpp
 // Enable drag-and-drop for a frame
-gui::osg::InteractiveFramePtr manipulator
-  = new gui::osg::InteractiveFrame(Frame::World(), "tool", tf);
+gui::InteractiveFramePtr manipulator
+  = new gui::InteractiveFrame(Frame::World(), "tool", tf);
 world->addSimpleFrame(manipulator);
 viewer.enableDragAndDrop(manipulator.get());
 
@@ -1314,7 +1314,7 @@ Note: SKEL stays as a legacy XML format for backward compatibility. There is no 
 ### Pattern 6: Custom ImGui Widgets
 
 ```cpp
-class MyWidget : public gui::osg::ImGuiWidget {
+class MyWidget : public gui::ImGuiWidget {
 public:
   void render() override {
     ImGui::Begin("My Widget", &mIsVisible);

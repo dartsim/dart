@@ -469,7 +469,7 @@ private:
   std::vector<PairData> mPairs;
 };
 
-class CouplerWorldNode : public dart::gui::osg::RealTimeWorldNode
+class CouplerWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   CouplerWorldNode(const WorldPtr& world, CouplerController* controller)
@@ -514,11 +514,10 @@ private:
   CouplerController* mController;
 };
 
-class CouplerOverlay : public dart::gui::osg::ImGuiWidget
+class CouplerOverlay : public dart::gui::ImGuiWidget
 {
 public:
-  CouplerOverlay(
-      dart::gui::osg::ImGuiViewer* viewer, CouplerController* controller)
+  CouplerOverlay(dart::gui::ImGuiViewer* viewer, CouplerController* controller)
     : mViewer(viewer), mController(controller)
   {
   }
@@ -594,11 +593,11 @@ public:
   }
 
 private:
-  dart::gui::osg::ImGuiViewer* mViewer;
+  dart::gui::ImGuiViewer* mViewer;
   CouplerController* mController;
 };
 
-} // namespace
+}  // namespace
 
 int main(int /*argc*/, char* /*argv*/[])
 {
@@ -624,7 +623,7 @@ int main(int /*argc*/, char* /*argv*/[])
   world->addSkeleton(couplerAssembly.skeleton);
   world->addSkeleton(motorAssembly.skeleton);
   const double targetAngle
-      = 45.0 * dart::math::constantsd::pi() / 180.0; // command for references
+      = 45.0 * dart::math::constantsd::pi() / 180.0;  // command for references
 
   std::cout
       << "Coupler constraint demo:\n"
@@ -699,8 +698,7 @@ int main(int /*argc*/, char* /*argv*/[])
   ::osg::ref_ptr<CouplerEventHandler> handler
       = new CouplerEventHandler(controller.get());
 
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
@@ -713,9 +711,9 @@ int main(int /*argc*/, char* /*argv*/[])
   viewer->addInstructionText("'r': reset both rigs\n");
   std::cout << viewer->getInstructions() << std::endl;
 
-  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
-      new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  auto grid
+      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
+  grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(25);
   grid->setMinorLineStepSize(0.05);
   viewer->addAttachment(grid);

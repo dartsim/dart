@@ -42,7 +42,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 //==============================================================================
 ImGuiWidget::ImGuiWidget() : mIsVisible(true)
@@ -102,6 +101,5 @@ void AboutWidget::render()
   ImGui::End();
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

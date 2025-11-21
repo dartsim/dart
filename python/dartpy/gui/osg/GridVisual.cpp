@@ -45,42 +45,42 @@ namespace python {
 void GridVisual(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::GridVisual,
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::GridVisual>>(m, "GridVisual")
+      dart::gui::GridVisual,
+      dart::gui::ViewerAttachment,
+      ::osg::ref_ptr<dart::gui::GridVisual>>(m, "GridVisual")
       .def(py::init<>())
       .def(
           "setNumCells",
-          +[](dart::gui::osg::GridVisual* self, std::size_t cells) {
+          +[](dart::gui::GridVisual* self, std::size_t cells) {
             self->setNumCells(cells);
           })
       .def(
           "setMinorLineStepSize",
-          +[](dart::gui::osg::GridVisual* self, double size) {
+          +[](dart::gui::GridVisual* self, double size) {
             self->setMinorLineStepSize(size);
           })
       .def(
           "setNumMinorLinesPerMajorLine",
-          +[](dart::gui::osg::GridVisual* self, std::size_t size) {
+          +[](dart::gui::GridVisual* self, std::size_t size) {
             self->setNumMinorLinesPerMajorLine(size);
           })
       .def(
           "setPlaneType",
-          +[](dart::gui::osg::GridVisual* self,
-              dart::gui::osg::GridVisual::PlaneType type) {
+          +[](dart::gui::GridVisual* self,
+              dart::gui::GridVisual::PlaneType type) {
             self->setPlaneType(type);
           })
       .def(
           "setOffset",
-          +[](dart::gui::osg::GridVisual* self, const Eigen::Vector3d& offset) {
+          +[](dart::gui::GridVisual* self, const Eigen::Vector3d& offset) {
             self->setOffset(offset);
           });
 
   auto attr = m.attr("GridVisual");
-  ::py::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
-      .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
-      .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
-      .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);
+  ::py::enum_<dart::gui::GridVisual::PlaneType>(attr, "PlaneType")
+      .value("XY", dart::gui::GridVisual::PlaneType::XY)
+      .value("YZ", dart::gui::GridVisual::PlaneType::YZ)
+      .value("ZX", dart::gui::GridVisual::PlaneType::ZX);
 }
 
 } // namespace python

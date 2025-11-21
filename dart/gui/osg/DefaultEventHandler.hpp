@@ -55,7 +55,6 @@ class Entity;
 } // namespace dynamics
 
 namespace gui {
-namespace osg {
 
 struct PickInfo
 {
@@ -199,7 +198,7 @@ protected:
   void handleDestructionNotification(
       const dart::common::Subject* _subject) override;
 
-  /// dart::gui::osg::Viewer that this event handler is tied to
+  /// dart::gui::Viewer that this event handler is tied to
   Viewer* mViewer;
 
   /// Set of MouseEventHandlers that are tied to this DefaultEventHandler
@@ -232,7 +231,6 @@ protected:
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

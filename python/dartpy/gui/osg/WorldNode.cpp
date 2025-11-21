@@ -44,7 +44,7 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-class PyWorldNode : public dart::gui::osg::WorldNode
+class PyWorldNode : public dart::gui::WorldNode
 {
 public:
   // Inherit the constructors
@@ -54,9 +54,9 @@ public:
   void refresh() override
   {
     PYBIND11_OVERLOAD(
-        void,      // Return type
-        WorldNode, // Parent class
-        refresh,   // Name of function in C++ (must match Python name)
+        void,       // Return type
+        WorldNode,  // Parent class
+        refresh,    // Name of function in C++ (must match Python name)
     );
   }
 
@@ -64,9 +64,9 @@ public:
   void customPreRefresh() override
   {
     PYBIND11_OVERLOAD(
-        void,             // Return type
-        WorldNode,        // Parent class
-        customPreRefresh, // Name of function in C++ (must match Python name)
+        void,              // Return type
+        WorldNode,         // Parent class
+        customPreRefresh,  // Name of function in C++ (must match Python name)
     );
   }
 
@@ -74,9 +74,9 @@ public:
   void customPostRefresh() override
   {
     PYBIND11_OVERLOAD(
-        void,              // Return type
-        WorldNode,         // Parent class
-        customPostRefresh, // Name of function in C++ (must match Python name)
+        void,               // Return type
+        WorldNode,          // Parent class
+        customPostRefresh,  // Name of function in C++ (must match Python name)
     );
   }
 
@@ -84,9 +84,9 @@ public:
   void customPreStep() override
   {
     PYBIND11_OVERLOAD(
-        void,          // Return type
-        WorldNode,     // Parent class
-        customPreStep, // Name of function in C++ (must match Python name)
+        void,           // Return type
+        WorldNode,      // Parent class
+        customPreStep,  // Name of function in C++ (must match Python name)
     );
   }
 
@@ -94,9 +94,9 @@ public:
   void customPostStep() override
   {
     PYBIND11_OVERLOAD(
-        void,           // Return type
-        WorldNode,      // Parent class
-        customPostStep, // Name of function in C++ (must match Python name)
+        void,            // Return type
+        WorldNode,       // Parent class
+        customPostStep,  // Name of function in C++ (must match Python name)
     );
   }
 };
@@ -104,9 +104,9 @@ public:
 void WorldNode(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::WorldNode,
+      dart::gui::WorldNode,
       PyWorldNode,
-      ::osg::ref_ptr<dart::gui::osg::WorldNode>>(m, "WorldNode")
+      ::osg::ref_ptr<dart::gui::WorldNode>>(m, "WorldNode")
       .def(::py::init<>())
       .def(
           ::py::init<std::shared_ptr<dart::simulation::World>>(),
@@ -119,81 +119,80 @@ void WorldNode(py::module& m)
           ::py::arg("shadowTechnique"))
       .def(
           "setWorld",
-          +[](dart::gui::osg::WorldNode* self,
+          +[](dart::gui::WorldNode* self,
               std::shared_ptr<dart::simulation::World> newWorld) {
             self->setWorld(newWorld);
           },
           ::py::arg("newWorld"))
       .def(
           "getWorld",
-          +[](const dart::gui::osg::WorldNode* self)
+          +[](const dart::gui::WorldNode* self)
               -> std::shared_ptr<dart::simulation::World> {
             return self->getWorld();
           })
       .def(
-          "refresh", +[](dart::gui::osg::WorldNode* self) { self->refresh(); })
+          "refresh", +[](dart::gui::WorldNode* self) { self->refresh(); })
       .def(
           "customPreRefresh",
-          +[](dart::gui::osg::WorldNode* self) { self->customPreRefresh(); })
+          +[](dart::gui::WorldNode* self) { self->customPreRefresh(); })
       .def(
           "customPostRefresh",
-          +[](dart::gui::osg::WorldNode* self) { self->customPostRefresh(); })
+          +[](dart::gui::WorldNode* self) { self->customPostRefresh(); })
       .def(
           "customPreStep",
-          +[](dart::gui::osg::WorldNode* self) { self->customPreStep(); })
+          +[](dart::gui::WorldNode* self) { self->customPreStep(); })
       .def(
           "customPostStep",
-          +[](dart::gui::osg::WorldNode* self) { self->customPostStep(); })
+          +[](dart::gui::WorldNode* self) { self->customPostStep(); })
       .def(
           "isSimulating",
-          +[](const dart::gui::osg::WorldNode* self) -> bool {
+          +[](const dart::gui::WorldNode* self) -> bool {
             return self->isSimulating();
           })
       .def(
           "simulate",
-          +[](dart::gui::osg::WorldNode* self, bool on) { self->simulate(on); },
+          +[](dart::gui::WorldNode* self, bool on) { self->simulate(on); },
           ::py::arg("on"))
       .def(
           "setNumStepsPerCycle",
-          +[](dart::gui::osg::WorldNode* self, std::size_t steps) {
+          +[](dart::gui::WorldNode* self, std::size_t steps) {
             self->setNumStepsPerCycle(steps);
           },
           ::py::arg("steps"))
       .def(
           "getNumStepsPerCycle",
-          +[](const dart::gui::osg::WorldNode* self) -> std::size_t {
+          +[](const dart::gui::WorldNode* self) -> std::size_t {
             return self->getNumStepsPerCycle();
           })
       .def(
           "isShadowed",
-          +[](const dart::gui::osg::WorldNode* self) -> bool {
+          +[](const dart::gui::WorldNode* self) -> bool {
             return self->isShadowed();
           })
       .def(
           "setShadowTechnique",
-          +[](dart::gui::osg::WorldNode* self) { self->setShadowTechnique(); })
+          +[](dart::gui::WorldNode* self) { self->setShadowTechnique(); })
       .def(
           "setShadowTechnique",
-          +[](dart::gui::osg::WorldNode* self,
+          +[](dart::gui::WorldNode* self,
               osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
             self->setShadowTechnique(shadowTechnique);
           },
           ::py::arg("shadowTechnique"))
       .def(
           "getShadowTechnique",
-          +[](const dart::gui::osg::WorldNode* self)
+          +[](const dart::gui::WorldNode* self)
               -> osg::ref_ptr<osgShadow::ShadowTechnique> {
             return self->getShadowTechnique();
           })
       .def_static(
           "createDefaultShadowTechnique",
-          +[](const dart::gui::osg::Viewer* viewer)
+          +[](const dart::gui::Viewer* viewer)
               -> osg::ref_ptr<osgShadow::ShadowTechnique> {
-            return dart::gui::osg::WorldNode::createDefaultShadowTechnique(
-                viewer);
+            return dart::gui::WorldNode::createDefaultShadowTechnique(viewer);
           },
           ::py::arg("viewer"));
 }
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

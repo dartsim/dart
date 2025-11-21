@@ -57,32 +57,33 @@ void Viewer(py::module& m)
 
   auto viewer
       = ::py::class_<
-            dart::gui::osg::Viewer,
+            dart::gui::Viewer,
             osgViewer::View,
             dart::common::Subject,
-            ::osg::ref_ptr<dart::gui::osg::Viewer>>(m, "Viewer")
+            ::osg::ref_ptr<dart::gui::Viewer>>(m, "Viewer")
             .def(::py::init<>())
             .def(
                 ::py::init([](const Eigen::Vector4f& clearColor) {
-                  return new ::dart::gui::osg::Viewer(
-                      gui::osg::eigToOsgVec4d(clearColor));
+                  return new ::dart::gui::Viewer(
+                      gui::eigToOsgVec4d(clearColor));
                 }),
                 ::py::arg("clearColor"))
             .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
             .def(
                 "captureScreen",
-                +[](dart::gui::osg::Viewer* self, const std::string& filename) {
+                +[](dart::gui::Viewer* self, const std::string& filename) {
                   self->captureScreen(filename);
                 },
                 ::py::arg("filename"))
             .def(
                 "record",
-                +[](dart::gui::osg::Viewer* self,
-                    const std::string& directory) { self->record(directory); },
+                +[](dart::gui::Viewer* self, const std::string& directory) {
+                  self->record(directory);
+                },
                 ::py::arg("directory"))
             .def(
                 "record",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     const std::string& directory,
                     const std::string& prefix) {
                   self->record(directory, prefix);
@@ -91,7 +92,7 @@ void Viewer(py::module& m)
                 ::py::arg("prefix"))
             .def(
                 "record",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     const std::string& directory,
                     const std::string& prefix,
                     bool restart) { self->record(directory, prefix, restart); },
@@ -100,7 +101,7 @@ void Viewer(py::module& m)
                 ::py::arg("restart"))
             .def(
                 "record",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     const std::string& directory,
                     const std::string& prefix,
                     bool restart,
@@ -113,153 +114,148 @@ void Viewer(py::module& m)
                 ::py::arg("digits"))
             .def(
                 "pauseRecording",
-                +[](dart::gui::osg::Viewer* self) { self->pauseRecording(); })
+                +[](dart::gui::Viewer* self) { self->pauseRecording(); })
             .def(
                 "isRecording",
-                +[](const dart::gui::osg::Viewer* self) -> bool {
+                +[](const dart::gui::Viewer* self) -> bool {
                   return self->isRecording();
                 })
             .def(
                 "switchDefaultEventHandler",
-                +[](dart::gui::osg::Viewer* self, bool on) {
+                +[](dart::gui::Viewer* self, bool on) {
                   self->switchDefaultEventHandler(on);
                 },
                 ::py::arg("on"))
             .def(
                 "switchHeadlights",
-                +[](dart::gui::osg::Viewer* self, bool on) {
+                +[](dart::gui::Viewer* self, bool on) {
                   self->switchHeadlights(on);
                 },
                 ::py::arg("on"))
             .def(
                 "checkHeadlights",
-                +[](const dart::gui::osg::Viewer* self) -> bool {
+                +[](const dart::gui::Viewer* self) -> bool {
                   return self->checkHeadlights();
                 })
             .def(
                 "setLightingMode",
-                &dart::gui::osg::Viewer::setLightingMode,
+                &dart::gui::Viewer::setLightingMode,
                 ::py::arg("lightingMode"))
-            .def("getLightingMode", &dart::gui::osg::Viewer::getLightingMode)
+            .def("getLightingMode", &dart::gui::Viewer::getLightingMode)
             .def(
                 "addWorldNode",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::WorldNode* newWorldNode) {
+                +[](dart::gui::Viewer* self,
+                    dart::gui::WorldNode* newWorldNode) {
                   self->addWorldNode(newWorldNode);
                 },
                 ::py::arg("newWorldNode"))
             .def(
                 "addWorldNode",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::WorldNode* newWorldNode,
+                +[](dart::gui::Viewer* self,
+                    dart::gui::WorldNode* newWorldNode,
                     bool active) { self->addWorldNode(newWorldNode, active); },
                 ::py::arg("newWorldNode"),
                 ::py::arg("active"))
             .def(
                 "removeWorldNode",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::WorldNode* oldWorldNode) {
+                +[](dart::gui::Viewer* self,
+                    dart::gui::WorldNode* oldWorldNode) {
                   self->removeWorldNode(oldWorldNode);
                 },
                 ::py::arg("oldWorldNode"))
             .def(
                 "removeWorldNode",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     std::shared_ptr<dart::simulation::World> oldWorld) {
                   self->removeWorldNode(oldWorld);
                 },
                 ::py::arg("oldWorld"))
             .def(
                 "addAttachment",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::ViewerAttachment* attachment) {
+                +[](dart::gui::Viewer* self,
+                    dart::gui::ViewerAttachment* attachment) {
                   self->addAttachment(attachment);
                 },
                 ::py::arg("attachment"))
             .def(
                 "removeAttachment",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::ViewerAttachment* attachment) {
+                +[](dart::gui::Viewer* self,
+                    dart::gui::ViewerAttachment* attachment) {
                   self->removeAttachment(attachment);
                 },
                 ::py::arg("attachment"))
             .def(
                 "setupDefaultLights",
-                +[](dart::gui::osg::Viewer* self) {
-                  self->setupDefaultLights();
-                })
+                +[](dart::gui::Viewer* self) { self->setupDefaultLights(); })
             .def(
                 "setUpwardsDirection",
-                +[](dart::gui::osg::Viewer* self, const osg::Vec3& up) {
+                +[](dart::gui::Viewer* self, const osg::Vec3& up) {
                   self->setUpwardsDirection(up);
                 },
                 ::py::arg("up"))
             .def(
                 "setUpwardsDirection",
-                +[](dart::gui::osg::Viewer* self, const Eigen::Vector3d& up) {
+                +[](dart::gui::Viewer* self, const Eigen::Vector3d& up) {
                   self->setUpwardsDirection(up);
                 },
                 ::py::arg("up"))
             .def(
                 "setWorldNodeActive",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::WorldNode* node) {
+                +[](dart::gui::Viewer* self, dart::gui::WorldNode* node) {
                   self->setWorldNodeActive(node);
                 },
                 ::py::arg("node"))
             .def(
                 "setWorldNodeActive",
-                +[](dart::gui::osg::Viewer* self,
-                    dart::gui::osg::WorldNode* node,
+                +[](dart::gui::Viewer* self,
+                    dart::gui::WorldNode* node,
                     bool active) { self->setWorldNodeActive(node, active); },
                 ::py::arg("node"),
                 ::py::arg("active"))
             .def(
                 "setWorldNodeActive",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     std::shared_ptr<dart::simulation::World> world) {
                   self->setWorldNodeActive(world);
                 },
                 ::py::arg("world"))
             .def(
                 "setWorldNodeActive",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     std::shared_ptr<dart::simulation::World> world,
                     bool active) { self->setWorldNodeActive(world, active); },
                 ::py::arg("world"),
                 ::py::arg("active"))
             .def(
                 "simulate",
-                +[](dart::gui::osg::Viewer* self, bool on) {
-                  self->simulate(on);
-                },
+                +[](dart::gui::Viewer* self, bool on) { self->simulate(on); },
                 ::py::arg("on"))
             .def(
                 "isSimulating",
-                +[](const dart::gui::osg::Viewer* self) -> bool {
+                +[](const dart::gui::Viewer* self) -> bool {
                   return self->isSimulating();
                 })
             .def(
                 "allowSimulation",
-                +[](dart::gui::osg::Viewer* self, bool allow) {
+                +[](dart::gui::Viewer* self, bool allow) {
                   self->allowSimulation(allow);
                 },
                 ::py::arg("allow"))
             .def(
                 "isAllowingSimulation",
-                +[](const dart::gui::osg::Viewer* self) -> bool {
+                +[](const dart::gui::Viewer* self) -> bool {
                   return self->isAllowingSimulation();
                 })
             .def(
                 "enableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::InteractiveFrame*>(
-                    &dart::gui::osg::Viewer::enableDragAndDrop),
+                ::py::overload_cast<dart::gui::InteractiveFrame*>(
+                    &dart::gui::Viewer::enableDragAndDrop),
                 ::py::return_value_policy::reference_internal,
                 ::py::arg("frame"))
             .def(
                 "enableDragAndDrop",
                 ::py::overload_cast<dart::dynamics::SimpleFrame*>(
-                    &dart::gui::osg::Viewer::enableDragAndDrop),
+                    &dart::gui::Viewer::enableDragAndDrop),
                 ::py::return_value_policy::reference_internal,
                 ::py::arg("frame"))
             .def(
@@ -267,14 +263,14 @@ void Viewer(py::module& m)
                 ::py::overload_cast<
                     dart::dynamics::SimpleFrame*,
                     dart::dynamics::Shape*>(
-                    &dart::gui::osg::Viewer::enableDragAndDrop),
+                    &dart::gui::Viewer::enableDragAndDrop),
                 ::py::return_value_policy::reference_internal,
                 ::py::arg("frame"),
                 ::py::arg("shape"))
             .def(
                 "enableDragAndDrop",
                 ::py::overload_cast<dart::dynamics::BodyNode*, bool, bool>(
-                    &dart::gui::osg::Viewer::enableDragAndDrop),
+                    &dart::gui::Viewer::enableDragAndDrop),
                 ::py::return_value_policy::reference_internal,
                 ::py::arg("bodyNode"),
                 ::py::arg_v("useExternalIK", true),
@@ -282,79 +278,75 @@ void Viewer(py::module& m)
             .def(
                 "enableDragAndDrop",
                 ::py::overload_cast<dart::dynamics::Entity*>(
-                    &dart::gui::osg::Viewer::enableDragAndDrop),
+                    &dart::gui::Viewer::enableDragAndDrop),
                 ::py::return_value_policy::reference_internal,
                 ::py::arg("entity"))
             .def(
                 "disableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::InteractiveFrameDnD*>(
-                    &dart::gui::osg::Viewer::disableDragAndDrop),
+                ::py::overload_cast<dart::gui::InteractiveFrameDnD*>(
+                    &dart::gui::Viewer::disableDragAndDrop),
                 ::py::arg("dnd"))
             .def(
                 "disableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::SimpleFrameDnD*>(
-                    &dart::gui::osg::Viewer::disableDragAndDrop),
+                ::py::overload_cast<dart::gui::SimpleFrameDnD*>(
+                    &dart::gui::Viewer::disableDragAndDrop),
                 ::py::arg("dnd"))
             .def(
                 "disableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::SimpleFrameShapeDnD*>(
-                    &dart::gui::osg::Viewer::disableDragAndDrop),
+                ::py::overload_cast<dart::gui::SimpleFrameShapeDnD*>(
+                    &dart::gui::Viewer::disableDragAndDrop),
                 ::py::arg("dnd"))
             .def(
                 "disableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::BodyNodeDnD*>(
-                    &dart::gui::osg::Viewer::disableDragAndDrop),
+                ::py::overload_cast<dart::gui::BodyNodeDnD*>(
+                    &dart::gui::Viewer::disableDragAndDrop),
                 ::py::arg("dnd"))
             .def(
                 "disableDragAndDrop",
-                ::py::overload_cast<dart::gui::osg::DragAndDrop*>(
-                    &dart::gui::osg::Viewer::disableDragAndDrop),
+                ::py::overload_cast<dart::gui::DragAndDrop*>(
+                    &dart::gui::Viewer::disableDragAndDrop),
                 ::py::arg("dnd"))
             .def(
                 "getInstructions",
-                +[](const dart::gui::osg::Viewer* self) -> const std::string& {
+                +[](const dart::gui::Viewer* self) -> const std::string& {
                   return self->getInstructions();
                 },
                 ::py::return_value_policy::reference_internal)
             .def(
                 "addInstructionText",
-                +[](dart::gui::osg::Viewer* self,
-                    const std::string& _instruction) {
+                +[](dart::gui::Viewer* self, const std::string& _instruction) {
                   self->addInstructionText(_instruction);
                 },
                 ::py::arg("instruction"))
             .def(
                 "updateViewer",
-                +[](dart::gui::osg::Viewer* self) { self->updateViewer(); })
+                +[](dart::gui::Viewer* self) { self->updateViewer(); })
             .def(
                 "updateDragAndDrops",
-                +[](dart::gui::osg::Viewer*
-                        self) { self->updateDragAndDrops(); })
+                +[](dart::gui::Viewer* self) { self->updateDragAndDrops(); })
             .def(
                 "setVerticalFieldOfView",
-                +[](dart::gui::osg::Viewer* self, double fov) {
+                +[](dart::gui::Viewer* self, double fov) {
                   self->setVerticalFieldOfView(fov);
                 },
                 ::py::arg("fov"))
             .def(
                 "getVerticalFieldOfView",
-                +[](const dart::gui::osg::Viewer* self) -> double {
+                +[](const dart::gui::Viewer* self) -> double {
                   return self->getVerticalFieldOfView();
                 })
             .def(
                 "run",
-                +[](dart::gui::osg::Viewer* self)
-                    -> int { return self->run(); })
+                +[](dart::gui::Viewer* self) -> int { return self->run(); })
             .def(
-                "frame", +[](dart::gui::osg::Viewer* self) { self->frame(); })
+                "frame", +[](dart::gui::Viewer* self) { self->frame(); })
             .def(
                 "frame",
-                +[](dart::gui::osg::Viewer* self, double simulationTime) {
-                  self->frame(simulationTime);
-                })
+                +[](dart::gui::Viewer* self,
+                    double simulationTime) { self->frame(simulationTime); })
             .def(
                 "setUpViewInWindow",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     int x,
                     int y,
                     int width,
@@ -363,33 +355,30 @@ void Viewer(py::module& m)
                 })
             .def(
                 "setCameraHomePosition",
-                +[](dart::gui::osg::Viewer* self,
+                +[](dart::gui::Viewer* self,
                     const Eigen::Vector3d& eye,
                     const Eigen::Vector3d& center,
                     const Eigen::Vector3d& up) {
                   self->getCameraManipulator()->setHomePosition(
-                      gui::osg::eigToOsgVec3(eye),
-                      gui::osg::eigToOsgVec3(center),
-                      gui::osg::eigToOsgVec3(up));
+                      gui::eigToOsgVec3(eye),
+                      gui::eigToOsgVec3(center),
+                      gui::eigToOsgVec3(up));
 
                   self->setCameraManipulator(self->getCameraManipulator());
                 })
-            .def(
-                "setCameraMode",
-                &gui::osg::Viewer::setCameraMode,
-                py::arg("mode"))
-            .def("getCameraMode", &gui::osg::Viewer::getCameraMode);
+            .def("setCameraMode", &gui::Viewer::setCameraMode, py::arg("mode"))
+            .def("getCameraMode", &gui::Viewer::getCameraMode);
 
-  ::py::enum_<dart::gui::osg::Viewer::LightingMode>(viewer, "LightingMode")
-      .value("NO_LIGHT", dart::gui::osg::Viewer::NO_LIGHT)
-      .value("HEADLIGHT", dart::gui::osg::Viewer::HEADLIGHT)
-      .value("SKY_LIGHT", dart::gui::osg::Viewer::SKY_LIGHT);
+  ::py::enum_<dart::gui::Viewer::LightingMode>(viewer, "LightingMode")
+      .value("NO_LIGHT", dart::gui::Viewer::NO_LIGHT)
+      .value("HEADLIGHT", dart::gui::Viewer::HEADLIGHT)
+      .value("SKY_LIGHT", dart::gui::Viewer::SKY_LIGHT);
 
-  ::py::enum_<dart::gui::osg::CameraMode>(m, "CameraMode")
-      .value("RGBA", dart::gui::osg::CameraMode::RGBA)
-      .value("DEPTH", dart::gui::osg::CameraMode::DEPTH);
+  ::py::enum_<dart::gui::CameraMode>(m, "CameraMode")
+      .value("RGBA", dart::gui::CameraMode::RGBA)
+      .value("DEPTH", dart::gui::CameraMode::DEPTH);
 
-} // namespace python
+}  // namespace python
 
-} // namespace python
-} // namespace dart
+}  // namespace python
+}  // namespace dart

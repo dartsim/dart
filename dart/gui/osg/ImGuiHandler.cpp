@@ -50,7 +50,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 #if IMGUI_VERSION_NUM < 19150
 
@@ -526,6 +525,5 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
-} // namespace osg
 } // namespace gui
 } // namespace dart

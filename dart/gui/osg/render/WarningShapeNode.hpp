@@ -41,8 +41,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
-namespace render {
 
 class DART_GUI_API WarningShapeNode : public ShapeNode, public ::osg::Node
 {
@@ -56,8 +54,6 @@ protected:
   virtual ~WarningShapeNode();
 };
 
-} // namespace render
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

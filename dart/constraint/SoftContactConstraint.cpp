@@ -947,7 +947,7 @@ void SoftContactConstraint::updateFirstFrictionalDirection()
 Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
     const Eigen::Vector3d& _n)
 {
-  using namespace math::suffixes;
+  using namespace math;
 
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.

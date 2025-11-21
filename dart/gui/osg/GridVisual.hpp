@@ -44,7 +44,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 /// Attach this to a Viewer in order to visualize grid.
 class DART_GUI_API GridVisual : public ViewerAttachment
@@ -212,7 +211,6 @@ protected:
   bool mNeedUpdate;
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

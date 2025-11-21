@@ -39,7 +39,6 @@
 
 namespace dart {
 namespace gui {
-namespace osg {
 
 #define DART_META_Object(library, name)                                        \
   ::osg::Object* cloneType() const override                                    \
@@ -63,7 +62,7 @@ namespace osg {
     return #name;                                                              \
   }
 // TODO(JS): Copied from osg/Object. Due to the namespace conflict between osg
-// and dart::gui::osg, we need to explicitly specify the root namespace osg as
+// and dart::gui, we need to explicitly specify the root namespace osg as
 // ::osg
 
 class DART_GUI_API TrackballManipulator : public ::osgGA::OrbitManipulator
@@ -89,10 +88,9 @@ public:
       const double eventTimeDelta, const double dx, const double dy) override;
 
   DART_META_Object(dart - gui - osg, TrackballManipulator)
-  // TODO(MXG): Consider applying the META macros to every dart::gui::osg Node
+  // TODO(MXG): Consider applying the META macros to every dart::gui Node
 };
 
-} // namespace osg
 } // namespace gui
 } // namespace dart
 

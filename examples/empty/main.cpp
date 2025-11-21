@@ -35,11 +35,11 @@
 #include <dart/All.hpp>
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
+class CustomWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }
@@ -130,15 +130,15 @@ int main()
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
   // Add a target object to the world
-  dart::gui::osg::InteractiveFramePtr target(
-      new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
+  dart::gui::InteractiveFramePtr target(
+      new dart::gui::InteractiveFrame(dart::dynamics::Frame::World()));
   world->addSimpleFrame(target);
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Active the drag-and-drop feature for the target

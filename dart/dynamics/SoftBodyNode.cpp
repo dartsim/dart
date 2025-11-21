@@ -2515,7 +2515,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   SoftBodyNode::UniqueProperties properties(
       _vertexStiffness, _edgeStiffness, _dampingCoeff);
@@ -2688,7 +2688,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  using namespace dart::math::suffixes;
+  using namespace dart::math;
 
   SoftBodyNode::UniqueProperties properties(
       _vertexStiffness, _edgeStiffness, _dampingCoeff);

@@ -47,11 +47,11 @@ namespace python {
 void ViewerAttachment(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::ViewerAttachment>>(m, "ViewerAttachment")
+      dart::gui::ViewerAttachment,
+      ::osg::ref_ptr<dart::gui::ViewerAttachment>>(m, "ViewerAttachment")
       .def(
           "refresh",
-          +[](dart::gui::osg::ViewerAttachment* self) { self->refresh(); });
+          +[](dart::gui::ViewerAttachment* self) { self->refresh(); });
 }
 
 } // namespace python
