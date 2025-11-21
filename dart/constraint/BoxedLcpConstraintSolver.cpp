@@ -37,6 +37,7 @@
 #include <fmt/ostream.h>
 
 #include <cassert>
+#include <cmath>
 
 #if DART_BUILD_MODE_DEBUG
   #include <iomanip>
@@ -284,8 +285,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mXBackup;
   }
 
-  if (fallbackSuccess && mX.hasNaN())
-    fallbackSuccess = false;
+  if (!success && fallbackSuccess && mX.hasNaN()) {
+    for (int i = 0; i < mX.size(); ++i) {
+      if (std::isnan(mX[i]))
+        mX[i] = 0.0;
+    }
+  }
 
   const bool finalSuccess = success || fallbackSuccess;
 
