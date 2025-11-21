@@ -45,35 +45,6 @@
 namespace dart {
 namespace dynamics {
 
-namespace {
-
-// Clone all Nodes from |source| onto |target| while preserving world-space
-// poses for FixedFrame-derived Nodes.
-void cloneNodesPreserveWorldPose(
-    const BodyNode* source, BodyNode* target, const Eigen::Isometry3d& parentTf)
-{
-  const Eigen::Isometry3d worldToParent = parentTf.inverse();
-  const auto nodes = source->getNodes();
-
-  for (const Node* node : nodes) {
-    const Frame* frame = dynamic_cast<const Frame*>(node);
-    Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
-    if (frame)
-      worldTf = frame->getTransform();
-
-    Node* clone = node->cloneNode(target);
-    clone->attach();
-
-    if (frame) {
-      if (auto* fixed = dynamic_cast<FixedFrame*>(clone)) {
-        fixed->setRelativeTransform(worldToParent * worldTf);
-      }
-    }
-  }
-}
-
-} // namespace
-
 //==============================================================================
 WeldJoint::Properties::Properties(const Joint::Properties& _properties)
   : ZeroDofJoint::Properties(_properties)
@@ -158,8 +129,23 @@ BodyNode* WeldJoint::merge()
       childExternal.tail<3>(), Eigen::Vector3d::Zero(), true, true);
   parent->addExtTorque(childExternal.head<3>(), true);
 
-  // Clone Nodes that belong to the child onto the parent.
-  cloneNodesPreserveWorldPose(child, parent, parent->getWorldTransform());
+  // Clone Nodes that belong to the child onto the parent while preserving
+  // world-space pose for FixedFrame-derived Nodes.
+  const Eigen::Isometry3d worldToParent = parent->getWorldTransform().inverse();
+  const auto nodes = child->getNodes();
+  for (const Node* node : nodes) {
+    const Frame* frame = dynamic_cast<const Frame*>(node);
+    Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+    if (frame)
+      worldTf = frame->getTransform();
+
+    Node* clone = node->cloneNode(parent);
+    clone->attach();
+
+    if (auto* fixed = dynamic_cast<FixedFrame*>(clone)) {
+      fixed->setRelativeTransform(worldToParent * worldTf);
+    }
+  }
 
   // Reparent grandchildren while keeping their world transforms intact.
   std::vector<BodyNode*> grandchildren;
