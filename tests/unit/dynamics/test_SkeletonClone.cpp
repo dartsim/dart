@@ -55,7 +55,8 @@ TEST(Issue896, SkeletonCloneDeepCopiesShapes)
 
   auto* clonedBody = clone->getBodyNode(body->getName());
   ASSERT_NE(clonedBody, nullptr);
-  const auto& clonedShapeNodes = clonedBody->getShapeNodes();
+  const auto& clonedShapeNodes
+      = clonedBody->getShapeNodes(ShapeNode::BasicProperties{});
   ASSERT_EQ(clonedShapeNodes.size(), 1u);
 
   const auto originalBox = std::dynamic_pointer_cast<BoxShape>(box);
