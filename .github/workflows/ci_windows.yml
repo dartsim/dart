@@ -54,7 +54,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
-          run-install: false
+          run-install: true
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
