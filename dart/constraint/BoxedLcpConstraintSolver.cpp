@@ -270,6 +270,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     success = false;
 
   bool fallbackSuccess = false;
+  bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
     fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
@@ -283,19 +284,26 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         mFIndexBackup.data(),
         false);
     mX = mXBackup;
+    fallbackRan = true;
   }
 
-  if (!success && fallbackSuccess && mX.hasNaN()) {
+  const bool hasNaN = mX.hasNaN();
+  if (!success && fallbackRan && hasNaN) {
+    // If the fallback produced NaNs, zero just those entries but still allow
+    // non-NaN entries to propagate.
     for (int i = 0; i < mX.size(); ++i) {
       if (std::isnan(mX[i]))
         mX[i] = 0.0;
     }
   }
 
-  const bool finalSuccess = success || fallbackSuccess;
+  // Treat a finite fallback solution as usable even if the solver reported
+  // failure to avoid discarding potentially valid impulses.
+  const bool finalSuccess
+      = success || fallbackSuccess || (fallbackRan && !mX.hasNaN());
 
   if (!finalSuccess) {
-    if (mX.hasNaN()) {
+    if (hasNaN) {
       DART_ERROR(
           "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
           "{}. We're setting it zero for safety. Consider using more robust "
