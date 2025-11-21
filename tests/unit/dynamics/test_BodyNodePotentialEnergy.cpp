@@ -30,45 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
-#define DART_COLLISION_COLLISIONOPTION_HPP_
+#include <dart/All.hpp>
 
-#include <dart/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <memory>
+using dart::dynamics::BodyNode;
+using dart::dynamics::Inertia;
+using dart::dynamics::Skeleton;
+using dart::dynamics::SkeletonPtr;
+using dart::dynamics::TranslationalJoint;
 
-#include <cstddef>
-
-namespace dart {
-namespace collision {
-
-class CollisionFilter;
-
-struct DART_API CollisionOption
+// Regression test for https://github.com/dartsim/dart/issues/1681.
+TEST(BodyNodePotentialEnergy, UsesCenterOfMass)
 {
-  /// Flag whether the collision detector computes contact information (contact
-  /// point, normal, and penetration depth). If it is set to false, only the
-  /// result of that which pairs are colliding will be stored in the
-  /// CollisionResult without the contact information.
-  bool enableContact;
+  SkeletonPtr skeleton = Skeleton::create("skeleton");
 
-  /// Maximum number of contacts to detect. Once the contacts are found up to
-  /// this number, the collision checking will terminate at that moment. Set
-  /// this to 1 for binary check. A value of 0 short-circuits collision
-  /// detection and returns false immediately.
-  std::size_t maxNumContacts;
+  TranslationalJoint::Properties jointProps;
+  jointProps.mName = "root_joint";
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "body";
 
-  /// CollisionFilter
-  std::shared_ptr<CollisionFilter> collisionFilter;
+  auto pair
+      = skeleton->createJointAndBodyNodePair<TranslationalJoint, BodyNode>(
+          nullptr, jointProps, bodyProps);
+  auto* joint = pair.first;
+  auto* body = pair.second;
 
-  /// Constructor
-  CollisionOption(
-      bool enableContact = true,
-      std::size_t maxNumContacts = 1000u,
-      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
-};
+  Inertia inertia;
+  inertia.setMass(2.0);
+  inertia.setLocalCOM(Eigen::Vector3d(0.0, 1.0, 0.0));
+  inertia.setMoment(Eigen::Matrix3d::Identity());
+  body->setInertia(inertia);
 
-} // namespace collision
-} // namespace dart
+  // Place the body so the frame origin and COM differ along gravity.
+  joint->setPositions(Eigen::Vector3d(0.3, 0.5, -0.2));
 
-#endif // DART_COLLISION_COLLISIONOPTION_HPP_
+  const Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+
+  const double expected = -body->getMass() * body->getCOM().dot(gravity);
+  const double energy = body->computePotentialEnergy(gravity);
+
+  EXPECT_DOUBLE_EQ(energy, expected);
+}
