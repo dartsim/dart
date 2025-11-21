@@ -1,6 +1,7 @@
 #include "dynamics/body_node.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -81,6 +82,14 @@ void defBodyNode(nb::module_& m)
             return self.getParentJoint();
           },
           nb::rv_policy::reference_internal)
+      .def("getNumEndEffectors", &BodyNode::getNumEndEffectors)
+      .def(
+          "getEndEffector",
+          [](BodyNode& self, std::size_t index) {
+            return self.getEndEffector(index);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("index"))
       .def(
           "getInertia",
           [](BodyNode& self) -> dart::dynamics::Inertia {

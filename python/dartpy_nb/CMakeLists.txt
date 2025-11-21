@@ -117,6 +117,7 @@ set(dartpy_nb_headers
   dynamics/translational_joint2d.hpp
   dynamics/translational_joint.hpp
   dynamics/prismatic_joint.hpp
+  dynamics/end_effector.hpp
   dynamics/linkage.hpp
   dynamics/screw_joint.hpp
   dynamics/universal_joint.hpp
@@ -187,6 +188,7 @@ set(dartpy_nb_sources
   dynamics/translational_joint2d.cpp
   dynamics/translational_joint.cpp
   dynamics/prismatic_joint.cpp
+  dynamics/end_effector.cpp
   dynamics/linkage.cpp
   dynamics/screw_joint.cpp
   dynamics/universal_joint.cpp

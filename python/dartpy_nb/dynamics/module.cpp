@@ -10,6 +10,7 @@
 #include "dynamics/inertia.hpp"
 #include "dynamics/inverse_kinematics.hpp"
 #include "dynamics/joint.hpp"
+#include "dynamics/end_effector.hpp"
 #include "dynamics/meta_skeleton.hpp"
 #include "dynamics/prismatic_joint.hpp"
 #include "dynamics/linkage.hpp"
@@ -79,6 +80,8 @@ void defDynamicsModule(nanobind::module_& m)
   defShape(m);
   traceScope("frame");
   defFrame(m);
+  traceScope("end_effector");
+  defEndEffector(m);
   traceScope("body_node");
   defBodyNode(m);
   traceScope("meta_skeleton");
