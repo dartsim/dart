@@ -28,7 +28,7 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-add_library(dart8 STATIC
+add_library(dart8
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
