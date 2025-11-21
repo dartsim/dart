@@ -521,9 +521,9 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
-        const auto& mimicProps = joint->getMimicDofProperties();
-        const auto dofCount = std::min(
-            joint->getNumDofs(), static_cast<std::size_t>(mimicProps.size()));
+        auto mimicProps = joint->getMimicDofProperties();
+        mimicProps.resize(joint->getNumDofs());
+        const auto dofCount = joint->getNumDofs();
         bool hasValidMimicDof = false;
         bool useCouplerConstraint = false;
         bool allMimicWithReference = true;
@@ -537,6 +537,11 @@ void ConstraintSolver::updateConstraints()
               }
             } else {
               allMimicWithReference = false;
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
             }
           } else {
             allMimicWithReference = false;
