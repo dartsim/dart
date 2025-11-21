@@ -67,6 +67,29 @@ OdeMesh::OdeMesh(
 }
 
 //==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent, const dart::math::TriMeshd& mesh)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
+{
+  fillArrays(mesh);
+
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3 * sizeof(int),
+      mNormals.data());
+
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
+}
+
+//==============================================================================
 OdeMesh::~OdeMesh()
 {
   dGeomDestroy(mGeomId);
@@ -130,6 +153,34 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
     }
 
     offset += mesh->mNumVertices;
+  }
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(const dart::math::TriMeshd& mesh)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  const auto& vertices = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+
+  mVertices.resize(vertices.size() * 3);
+  mNormals.assign(vertices.size() * 3, 0.0);
+
+  auto vertexIndex = 0u;
+  for (const auto& vertex : vertices) {
+    mVertices[vertexIndex++] = vertex.x();
+    mVertices[vertexIndex++] = vertex.y();
+    mVertices[vertexIndex++] = vertex.z();
+  }
+
+  mIndices.reserve(triangles.size() * 3);
+  for (const auto& tri : triangles) {
+    mIndices.push_back(static_cast<int>(tri[0]));
+    mIndices.push_back(static_cast<int>(tri[1]));
+    mIndices.push_back(static_cast<int>(tri[2]));
   }
 }
 

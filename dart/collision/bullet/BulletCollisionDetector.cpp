@@ -48,6 +48,7 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -599,6 +600,30 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
+  } else if (const auto convexMesh = shape->as<dynamics::ConvexMeshShape>()) {
+    const auto mesh = convexMesh->getMesh();
+    if (mesh && mesh->hasVertices()) {
+      auto hullShape = std::make_unique<btConvexHullShape>();
+      const auto& vertices = mesh->getVertices();
+      hullShape->setMargin(0.0f);
+      for (const auto& vertex : vertices) {
+        hullShape->addPoint(
+            btVector3(
+                static_cast<btScalar>(vertex.x()),
+                static_cast<btScalar>(vertex.y()),
+                static_cast<btScalar>(vertex.z())),
+            false);
+      }
+      hullShape->recalcLocalAabb();
+
+      return std::make_unique<BulletCollisionShape>(std::move(hullShape));
+    }
+
+    DART_WARN(
+        "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "
+        "instead.");
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const auto scale = shapeMesh->getScale();
     const auto mesh = shapeMesh->getMesh();

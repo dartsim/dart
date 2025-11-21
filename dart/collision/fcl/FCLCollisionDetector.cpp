@@ -45,6 +45,7 @@
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
@@ -53,6 +54,8 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
+
+#include <fcl/geometry/shape/convex.h>
 
 #include <assimp/scene.h>
 
@@ -999,6 +1002,39 @@ FCLCollisionDetector::createFCLCollisionGeometry(
           "[FCLCollisionDetector] PlaneShape is not supported by "
           "FCLCollisionDetector. We create a thin box mesh instead, where the "
           "size is [1000 0 1000].");
+    }
+  } else if (dynamics::ConvexMeshShape::getStaticType() == shapeType) {
+    DART_ASSERT(dynamic_cast<const dynamics::ConvexMeshShape*>(shape.get()));
+
+    auto convexMesh
+        = static_cast<const dynamics::ConvexMeshShape*>(shape.get());
+    const auto mesh = convexMesh->getMesh();
+
+    if (mesh && mesh->hasVertices() && !mesh->getTriangles().empty()) {
+      auto hullVertices = std::make_shared<std::vector<::fcl::Vector3<double>>>();
+      hullVertices->reserve(mesh->getVertices().size());
+      for (const auto& vertex : mesh->getVertices()) {
+        hullVertices->emplace_back(vertex.x(), vertex.y(), vertex.z());
+      }
+
+      auto faces = std::make_shared<std::vector<int>>();
+      faces->reserve(mesh->getTriangles().size() * 4);
+      for (const auto& tri : mesh->getTriangles()) {
+        faces->push_back(3);
+        faces->push_back(static_cast<int>(tri[0]));
+        faces->push_back(static_cast<int>(tri[1]));
+        faces->push_back(static_cast<int>(tri[2]));
+      }
+
+      geom = new ::fcl::Convex<double>(
+          hullVertices,
+          static_cast<int>(mesh->getTriangles().size()),
+          faces);
+    } else {
+      DART_WARN(
+          "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "
+          "instead.");
+      geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
     }
   } else if (MeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));
