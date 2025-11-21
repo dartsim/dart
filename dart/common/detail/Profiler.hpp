@@ -94,6 +94,7 @@ private:
   static const char* heatColor(double pct);
   static std::string formatDurationAligned(std::uint64_t ns);
   static std::string formatFps(double fps);
+  static std::string formatCount(std::uint64_t v);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static void clearNode(ProfileNode& node);

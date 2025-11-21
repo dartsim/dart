@@ -247,6 +247,24 @@ std::string Profiler::formatFps(double fps)
   return oss.str();
 }
 
+std::string Profiler::formatCount(std::uint64_t v)
+{
+  std::ostringstream oss;
+  if (v >= 1'000'000'000ULL) {
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000'000'000.0 << "B";
+  } else if (v >= 1'000'000ULL) {
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000'000.0 << "M";
+  } else if (v >= 1'000ULL) {
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000.0 << "K";
+  } else {
+    oss << v;
+  }
+  return oss.str();
+}
+
 double Profiler::percentage(std::uint64_t part, std::uint64_t total)
 {
   if (total == 0) {
@@ -418,8 +436,8 @@ void Profiler::printSummary(std::ostream& os)
         = (static_cast<double>(frameCount - 1) * 1e9) / frameSumNs;
     const double bestFps = 1e9 / static_cast<double>(m_frameMinNs);
     const double worstFps = 1e9 / static_cast<double>(m_frameMaxNs);
-    os << " | Avg FPS: " << formatFps(avgFps) << " | Best: "
-       << formatFps(bestFps) << " | Worst: " << formatFps(worstFps);
+    os << " | Avg FPS: " << formatFps(avgFps) << " | Best (min frame): "
+       << formatFps(bestFps) << " | Worst (max frame): " << formatFps(worstFps);
   }
   os << '\n';
 
