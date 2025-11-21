@@ -197,8 +197,7 @@ void Profiler::markFrame()
             .count());
     m_lastFrameTime = now;
     m_frameTimeSumNs.fetch_add(deltaNs, std::memory_order_relaxed);
-    m_frameMinNs = std::min(m_frameMinNs, deltaNs);
-    m_frameMaxNs = std::max(m_frameMaxNs, deltaNs);
+    m_frameSamplesNs.push_back(deltaNs);
   }
   m_frameCount.fetch_add(1, std::memory_order_relaxed);
 }
@@ -430,14 +429,27 @@ void Profiler::printSummary(std::ostream& os)
      << " | Total scoped time: " << formatDuration(totalNs);
 
   const auto frameSumNs = m_frameTimeSumNs.load(std::memory_order_relaxed);
-  if (frameCount > 1 && frameSumNs > 0 && m_frameMaxNs > 0
-      && m_frameMinNs < std::numeric_limits<std::uint64_t>::max()) {
+  if (frameCount > 1 && frameSumNs > 0 && !m_frameSamplesNs.empty()) {
     const double avgFps
         = (static_cast<double>(frameCount - 1) * 1e9) / frameSumNs;
-    const double bestFps = 1e9 / static_cast<double>(m_frameMinNs);
-    const double worstFps = 1e9 / static_cast<double>(m_frameMaxNs);
-    os << " | Avg FPS: " << formatFps(avgFps) << " | Best (min frame): "
-       << formatFps(bestFps) << " | Worst (max frame): " << formatFps(worstFps);
+    std::vector<std::uint64_t> samples = m_frameSamplesNs;
+    std::sort(samples.begin(), samples.end());
+    const auto pickIndex = [&](double pct) -> std::size_t {
+      if (samples.empty()) {
+        return 0;
+      }
+      const double pos = pct * static_cast<double>(samples.size() - 1);
+      return static_cast<std::size_t>(std::clamp(
+          static_cast<std::ptrdiff_t>(std::llround(pos)),
+          static_cast<std::ptrdiff_t>(0),
+          static_cast<std::ptrdiff_t>(samples.size() - 1)));
+    };
+    const auto bestIdx = pickIndex(0.1);   // 10th percentile (short frames)
+    const auto worstIdx = pickIndex(0.9);  // 90th percentile (long frames)
+    const double bestFps = 1e9 / static_cast<double>(samples[bestIdx]);
+    const double worstFps = 1e9 / static_cast<double>(samples[worstIdx]);
+    os << " | Avg FPS: " << formatFps(avgFps) << " | Best 10%: "
+       << formatFps(bestFps) << " | Worst 10%: " << formatFps(worstFps);
   }
   os << '\n';
 
@@ -510,8 +522,7 @@ void Profiler::reset()
   }
   m_frameCount.store(0, std::memory_order_relaxed);
   m_frameTimeSumNs.store(0, std::memory_order_relaxed);
-  m_frameMinNs = std::numeric_limits<std::uint64_t>::max();
-  m_frameMaxNs = 0;
+  m_frameSamplesNs.clear();
   m_lastFrameTime = {};
 }
 

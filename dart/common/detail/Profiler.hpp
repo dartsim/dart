@@ -125,8 +125,7 @@ private:
   std::vector<std::shared_ptr<ThreadRecord>> m_threads;
   std::atomic<std::uint64_t> m_frameCount;
   std::atomic<std::uint64_t> m_frameTimeSumNs;
-  std::uint64_t m_frameMinNs{std::numeric_limits<std::uint64_t>::max()};
-  std::uint64_t m_frameMaxNs{0};
+  std::vector<std::uint64_t> m_frameSamplesNs;
   std::chrono::steady_clock::time_point m_lastFrameTime{};
 };
 
