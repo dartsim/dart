@@ -308,7 +308,7 @@ void Profiler::printNode(
          << " self " << padRight(formatDuration(child->selfNs), 10)
          << " per-call " << padRight(formatDuration(avgNs), 10)
          << " calls " << std::setw(8) << child->callCount
-         << " share " << colorize(formatPercent(pct), color);
+         << " share " << padRight(colorize(formatPercent(pct), color), 6);
 
     os << line.str() << '\n';
 
@@ -322,7 +322,7 @@ void Profiler::printThreadTree(
     std::uint64_t threadTotalNs,
     double minPercent) const
 {
-  printNode(os, record.root, threadTotalNs, "  ", minPercent);
+  printNode(os, record.root, threadTotalNs, "", minPercent);
 }
 
 void Profiler::printSummary(std::ostream& os)
@@ -401,7 +401,7 @@ void Profiler::printSummary(std::ostream& os)
 
     os << "- thread " << record->label << " total "
        << formatDuration(threadTotal) << '\n';
-    printThreadTree(os, *record, threadTotal, /*minPercent=*/1.0);
+    printThreadTree(os, *record, threadTotal, /*minPercent=*/0.25);
   }
   os << std::flush;
 }
