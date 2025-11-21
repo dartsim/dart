@@ -240,7 +240,13 @@ std::string Profiler::formatDurationAligned(std::uint64_t ns)
 std::string Profiler::formatFps(double fps)
 {
   std::ostringstream oss;
-  oss << std::fixed << std::setprecision(fps >= 100.0 ? 0 : 1) << fps;
+  if (fps >= 1000000.0) {
+    oss << std::fixed << std::setprecision(1) << fps / 1000000.0 << "M";
+  } else if (fps >= 1000.0) {
+    oss << std::fixed << std::setprecision(1) << fps / 1000.0 << "k";
+  } else {
+    oss << std::fixed << std::setprecision(fps >= 100.0 ? 0 : 1) << fps;
+  }
   return oss.str();
 }
 
