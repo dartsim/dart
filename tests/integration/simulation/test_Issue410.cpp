@@ -210,9 +210,8 @@ TEST(Simulation, ContactsReportNonZeroForceWithLargeTimeStep)
       nullptr, FreeJoint::Properties(), BodyNode::Properties());
   boxPair.second->setName("box_link");
   auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.3));
-  auto boxNode
-      = boxPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
-          boxShape);
+  boxPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      boxShape);
   boxPair.second->setMass(1.0);
   Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
   boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.6);
