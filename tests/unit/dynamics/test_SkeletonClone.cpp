@@ -50,7 +50,7 @@ TEST(Issue896, SkeletonCloneDeepCopiesShapes)
   const auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 2.0, 3.0));
   body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
 
-  const auto clone = skel->clone();
+  const auto clone = skel->cloneSkeleton();
   ASSERT_TRUE(clone);
 
   const auto* clonedBody = clone->getBodyNode(body->getName());
