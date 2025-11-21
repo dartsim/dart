@@ -41,6 +41,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <memory>
 
 using namespace dart;
 using namespace dart::simulation;
@@ -200,6 +201,19 @@ public:
     return true;
   }
 #endif
+};
+
+// Expose the protected solve entry point for testing.
+class PublicBoxedLcpConstraintSolver
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  using constraint::BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
+
+  void publicSolve(constraint::ConstrainedGroup& group)
+  {
+    solveConstrainedGroup(group);
+  }
 };
 
 } // namespace
@@ -427,12 +441,14 @@ TEST(ConstraintSolver, LcpNanFallsBackToSecondary)
   constraint::ConstrainedGroup group;
   group.addConstraint(constraintPtr);
 
-  constraint::BoxedLcpConstraintSolver solver;
-  solver.setBoxedLcpSolver(std::make_shared<NanBoxedLcpSolver>());
+  PublicBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::static_pointer_cast<constraint::BoxedLcpSolver>(
+      std::make_shared<NanBoxedLcpSolver>()));
   solver.setSecondaryBoxedLcpSolver(
-      std::make_shared<ConstantBoxedLcpSolver>(0.5));
+      std::static_pointer_cast<constraint::BoxedLcpSolver>(
+          std::make_shared<ConstantBoxedLcpSolver>(0.5)));
 
-  solver.solveConstrainedGroup(group);
+  solver.publicSolve(group);
 
   EXPECT_DOUBLE_EQ(0.5, constraintPtr->lastAppliedImpulse);
 }
@@ -444,11 +460,14 @@ TEST(ConstraintSolver, LcpFailureZeroesImpulses)
   constraint::ConstrainedGroup group;
   group.addConstraint(constraintPtr);
 
-  constraint::BoxedLcpConstraintSolver solver;
-  solver.setBoxedLcpSolver(std::make_shared<NanBoxedLcpSolver>());
-  solver.setSecondaryBoxedLcpSolver(std::make_shared<FailingBoxedLcpSolver>());
+  PublicBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::static_pointer_cast<constraint::BoxedLcpSolver>(
+      std::make_shared<NanBoxedLcpSolver>()));
+  solver.setSecondaryBoxedLcpSolver(
+      std::static_pointer_cast<constraint::BoxedLcpSolver>(
+          std::make_shared<FailingBoxedLcpSolver>()));
 
-  solver.solveConstrainedGroup(group);
+  solver.publicSolve(group);
 
   EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse);
 }
