@@ -73,5 +73,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Test gz-physics
+        env:
+          # Limit build parallelism to avoid per-runner process limits (see
+          # https://github.com/ninja-build/ninja/issues/2151 for posix_spawn EAGAIN).
+          DART_PARALLEL_JOBS: 8
         run: |
           pixi r -e gazebo test-gz
