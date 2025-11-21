@@ -14,7 +14,12 @@ except ImportError:  # pragma: no cover
 
     def compute_parallel_jobs() -> int:
         cpus = os.cpu_count() or 1
-        return cpus if cpus <= 8 else max(1, (cpus * 3) // 4)
+        if cpus <= 8:
+            jobs = cpus
+        else:
+            jobs = max(1, (cpus * 3) // 4)
+        # Avoid exhausting process limits on beefy self-hosted runners.
+        return min(jobs, 32)
 
 
 def parse_args() -> argparse.Namespace:
