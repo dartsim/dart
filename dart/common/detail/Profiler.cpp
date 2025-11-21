@@ -219,7 +219,14 @@ std::string Profiler::padRight(const std::string& text, std::size_t width)
 bool Profiler::useColor()
 {
   const char* env = std::getenv("DART_PROFILE_COLOR");
-  return env && (std::string(env) == "1" || std::string(env) == "ON");
+  if (!env) {
+    return true; // enabled by default
+  }
+  std::string val(env);
+  for (auto& c : val) {
+    c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+  }
+  return (val == "1" || val == "ON" || val == "TRUE" || val == "YES");
 }
 
 std::string Profiler::colorize(const std::string& text, const char* code)
