@@ -267,9 +267,10 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (success && mX.hasNaN())
     success = false;
 
+  bool fallbackSuccess = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    mSecondaryBoxedLcpSolver->solve(
+    fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
         n,
         mABackup.data(),
         mXBackup.data(),
@@ -282,13 +283,27 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     mX = mXBackup;
   }
 
-  if (mX.hasNaN()) {
-    DART_ERROR(
-        "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
-        "{}. We're setting it zero for safety. Consider using more robust "
-        "solver such as PGS as a secondary solver. If this happens even with "
-        "PGS solver, please report this as a bug.",
-        fmt::streamed(mX.transpose()));
+  if (fallbackSuccess && mX.hasNaN())
+    fallbackSuccess = false;
+
+  const bool finalSuccess = success || fallbackSuccess;
+
+  if (!finalSuccess) {
+    if (mX.hasNaN()) {
+      DART_ERROR(
+          "[BoxedLcpConstraintSolver] The solution of LCP includes NAN values: "
+          "{}. We're setting it zero for safety. Consider using more robust "
+          "solver such as PGS as a secondary solver. If this happens even with "
+          "PGS solver, please report this as a bug.",
+          fmt::streamed(mX.transpose()));
+    } else {
+      DART_ERROR(
+          "[BoxedLcpConstraintSolver] Primary LCP solver failed to find a "
+          "solution. The constraint impulses are set to zero for safety. "
+          "Consider configuring a secondary solver (e.g., PGS) to provide a "
+          "fallback when Dantzig fails.");
+    }
+
     mX.setZero();
   }
 

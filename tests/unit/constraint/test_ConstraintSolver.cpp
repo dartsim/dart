@@ -32,15 +32,177 @@
 
 #include "helpers/GTestUtils.hpp"
 
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 using namespace dart;
 using namespace dart::simulation;
 using namespace dart::test;
+
+namespace {
+
+// Minimal constraint used to exercise the LCP pipeline.
+class DummyConstraint : public constraint::ConstraintBase
+{
+public:
+  DummyConstraint()
+  {
+    mDim = 1;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    // Populate trivial bounds and bias.
+    info->lo[0] = 0.0;
+    info->hi[0] = 1.0;
+    info->b[0] = 0.0;
+    info->w[0] = 0.0;
+    info->findex[0] = -1;
+  }
+
+  void applyUnitImpulse(std::size_t /*index*/) override {}
+
+  void getVelocityChange(double* vel, bool /*withCfm*/) override
+  {
+    vel[0] = 1.0;
+  }
+
+  void excite() override {}
+  void unexcite() override {}
+
+  void applyImpulse(double* lambda) override
+  {
+    lastAppliedImpulse = lambda[0];
+  }
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  double lastAppliedImpulse{std::numeric_limits<double>::quiet_NaN()};
+};
+
+// Primary solver that reports success but writes NaN into x.
+class NanBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type{"NanBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    for (int i = 0; i < n; ++i)
+      x[i] = std::numeric_limits<double>::quiet_NaN();
+    return true; // claims success despite NaN output
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+};
+
+// Secondary solver that succeeds and writes a constant impulse.
+class ConstantBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  explicit ConstantBoxedLcpSolver(double value) : mValue(value) {}
+
+  const std::string& getType() const override
+  {
+    static const std::string type{"ConstantBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    for (int i = 0; i < n; ++i)
+      x[i] = mValue;
+    return true;
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+
+private:
+  double mValue;
+};
+
+// Secondary solver that fails without touching x.
+class FailingBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type{"FailingBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int /*n*/,
+      double* /*A*/,
+      double* /*x*/,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    return false;
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+};
+
+} // namespace
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
@@ -256,4 +418,37 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIgnoreParent)
   EXPECT_FALSE(customHandler->mCalled);
   EXPECT_TRUE(customHandler2->mCalled);
   EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, LcpNanFallsBackToSecondary)
+{
+  auto constraintPtr = std::make_shared<DummyConstraint>();
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraintPtr);
+
+  constraint::BoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::make_shared<NanBoxedLcpSolver>());
+  solver.setSecondaryBoxedLcpSolver(
+      std::make_shared<ConstantBoxedLcpSolver>(0.5));
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_DOUBLE_EQ(0.5, constraintPtr->lastAppliedImpulse);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, LcpFailureZeroesImpulses)
+{
+  auto constraintPtr = std::make_shared<DummyConstraint>();
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraintPtr);
+
+  constraint::BoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::make_shared<NanBoxedLcpSolver>());
+  solver.setSecondaryBoxedLcpSolver(std::make_shared<FailingBoxedLcpSolver>());
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse);
 }
