@@ -96,6 +96,8 @@ private:
   static std::string formatDurationAligned(std::uint64_t ns);
   static std::string formatFps(double fps);
   static std::string formatCount(std::uint64_t v);
+  static std::size_t maxLabelWidth(
+      const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static void clearNode(ProfileNode& node);
@@ -113,14 +115,16 @@ private:
       std::ostream& os,
       const ThreadRecord& record,
       std::uint64_t threadTotalNs,
-      double minPercent) const;
+      double minPercent,
+      std::size_t labelWidth) const;
 
   void printNode(
       std::ostream& os,
       const ProfileNode& node,
       std::uint64_t threadTotalNs,
       const std::string& indent,
-      double minPercent) const;
+      double minPercent,
+      std::size_t labelWidth) const;
 
   std::mutex m_threadRegistryMutex;
   std::vector<std::shared_ptr<ThreadRecord>> m_threads;

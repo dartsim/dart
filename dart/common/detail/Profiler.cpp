@@ -268,6 +268,16 @@ std::string Profiler::formatCount(std::uint64_t v)
   return oss.str();
 }
 
+std::size_t Profiler::maxLabelWidth(
+    const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth)
+{
+  std::size_t width = node.label.size();
+  for (const auto& [_, child] : node.children) {
+    width = std::max(width, maxLabelWidth(*child, minWidth, maxWidth));
+  }
+  return std::clamp<std::size_t>(width, minWidth, maxWidth);
+}
+
 double Profiler::percentage(std::uint64_t part, std::uint64_t total)
 {
   if (total == 0) {
@@ -351,7 +361,8 @@ void Profiler::printNode(
     const ProfileNode& node,
     std::uint64_t threadTotalNs,
     const std::string& indent,
-    double minPercent) const
+    double minPercent,
+    std::size_t labelWidth) const
 {
   std::vector<const ProfileNode*> children;
   children.reserve(node.children.size());
@@ -382,7 +393,6 @@ void Profiler::printNode(
     const auto color = heatColor(pct);
 
     std::ostringstream line;
-    constexpr std::size_t labelWidth = 28;
     line << indent << connector
          << colorize(padRight(child->label, labelWidth), color) << ' '
          << "total " << formatDurationAligned(child->inclusiveNs) << ' '
@@ -396,7 +406,8 @@ void Profiler::printNode(
 
     os << line.str() << '\n';
 
-    printNode(os, *child, threadTotalNs, childIndent, minPercent * 0.65);
+    printNode(
+        os, *child, threadTotalNs, childIndent, minPercent * 0.65, labelWidth);
   }
 }
 
@@ -404,9 +415,10 @@ void Profiler::printThreadTree(
     std::ostream& os,
     const ThreadRecord& record,
     std::uint64_t threadTotalNs,
-    double minPercent) const
+    double minPercent,
+    std::size_t labelWidth) const
 {
-  printNode(os, record.root, threadTotalNs, "", minPercent);
+  printNode(os, record.root, threadTotalNs, "", minPercent, labelWidth);
 }
 
 void Profiler::printSummary(std::ostream& os)
@@ -480,6 +492,13 @@ void Profiler::printSummary(std::ostream& os)
   if (hotspotCount == 0) {
     os << "  (no measured scopes)\n";
   } else {
+    std::size_t maxHotLabel = 0;
+    for (const auto& entry : hotspots) {
+      maxHotLabel = std::max(maxHotLabel, entry.path.size());
+    }
+    const std::size_t hotLabelWidth
+        = std::clamp<std::size_t>(maxHotLabel, 16, 48);
+
     for (std::size_t i = 0; i < hotspotCount; ++i) {
       const auto& entry = hotspots[i];
       const auto pct = percentage(entry.inclusiveNs, totalNs);
@@ -490,7 +509,8 @@ void Profiler::printSummary(std::ostream& os)
 
       const auto color = heatColor(pct);
       const std::string tag = isHot ? colorize("[HOT]", color) : "     ";
-      os << "  " << tag << " " << colorize(padRight(entry.path, 38), color)
+      os << "  " << tag << " "
+         << colorize(padRight(entry.path, hotLabelWidth), color)
          << " " << padRight(("thr " + entry.threadLabel), 12) << " total "
          << formatDurationAligned(entry.inclusiveNs) << " self "
          << formatDurationAligned(entry.selfNs) << " per-call "
@@ -503,16 +523,23 @@ void Profiler::printSummary(std::ostream& os)
     }
   }
 
-  os << "Per-thread breakdown (inclusive):\n";
+  if (threads.size() > 1) {
+    os << "Per-thread breakdown (inclusive):\n";
+  }
+
   for (const auto& record : threads) {
     const auto threadTotal = sumInclusiveChildren(record->root);
     if (threadTotal == 0) {
       continue;
     }
 
+    const auto labelWidth
+        = maxLabelWidth(record->root, /*minWidth=*/16, /*maxWidth=*/48);
+
     os << "- thread " << record->label << " total "
        << formatDuration(threadTotal) << '\n';
-    printThreadTree(os, *record, threadTotal, /*minPercent=*/0.25);
+    printThreadTree(
+        os, *record, threadTotal, /*minPercent=*/0.25, labelWidth);
   }
   os << std::flush;
 }
