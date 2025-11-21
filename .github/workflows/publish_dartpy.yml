@@ -86,6 +86,10 @@ jobs:
           pixi-version: latest
           cache: true
 
+      - name: Add pixi to PATH
+        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
+
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -105,19 +109,19 @@ jobs:
 
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-build
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
 
       - name: Verify wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
 
       - name: Test wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-test
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
       - uses: actions/upload-artifact@v5
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
