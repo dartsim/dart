@@ -2,6 +2,8 @@
 
 #include <nanobind/nanobind.h>
 
+#include <cstdio>
+#include <cstdlib>
 #include <typeindex>
 #include <unordered_map>
 
