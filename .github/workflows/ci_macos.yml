@@ -52,7 +52,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
+          # Avoid cache key generation failures on macOS self-hosted runners
+          cache: false
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -98,7 +99,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
+          # Avoid cache key generation failures on macOS self-hosted runners
+          cache: false
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
