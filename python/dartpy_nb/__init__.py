@@ -57,3 +57,14 @@ def _alias_extension_submodules() -> None:
 from ._dartpy_nb import *  # noqa: F401,F403
 
 _alias_extension_submodules()
+
+
+def __getattr__(name: str):
+  """Expose pure-Python submodules (e.g., gui) via attribute access."""
+  import importlib
+  try:
+    module = importlib.import_module(f"{__name__}.{name}")
+  except ModuleNotFoundError as exc:  # pragma: no cover - passthrough
+    raise AttributeError(name) from exc
+  globals()[name] = module
+  return module

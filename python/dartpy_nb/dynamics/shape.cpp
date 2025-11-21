@@ -70,6 +70,19 @@ void defShape(nb::module_& m)
             return std::make_shared<dart::dynamics::BoxShape>(size);
           }),
           nb::arg("size"))
+      .def(
+          nb::new_([](const nb::handle& size) {
+            Eigen::Vector3d vec = Eigen::Vector3d::Zero();
+            nb::sequence seq = nb::cast<nb::sequence>(size);
+            if (nb::len(seq) != 3) {
+              throw nb::type_error("BoxShape size must have length 3");
+            }
+            for (size_t i = 0; i < 3; ++i) {
+              vec[i] = nb::cast<double>(seq[i]);
+            }
+            return std::make_shared<dart::dynamics::BoxShape>(vec);
+          }),
+          nb::arg("size"))
       .def("setSize", &dart::dynamics::BoxShape::setSize, nb::arg("size"))
       .def(
           "getSize",

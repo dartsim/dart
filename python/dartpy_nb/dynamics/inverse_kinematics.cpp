@@ -21,6 +21,7 @@ void defInverseKinematics(nb::module_& m)
 {
   using IK = dart::dynamics::InverseKinematics;
   using ErrorMethod = IK::ErrorMethod;
+  using GradientMethod = IK::GradientMethod;
 
   nb::class_<ErrorMethod>(m, "InverseKinematicsErrorMethod")
       .def(
@@ -54,6 +55,15 @@ void defInverseKinematics(nb::module_& m)
           nb::arg("lower"),
           nb::arg("upper"));
 
+  nb::class_<GradientMethod>(m, "InverseKinematicsGradientMethod")
+      .def(
+          "setComponentWeights",
+          &GradientMethod::setComponentWeights,
+          nb::arg("weights"))
+      .def(
+          "getComponentWeights",
+          [](const GradientMethod& self) { return self.getComponentWeights(); });
+
   nb::class_<IK>(m, "InverseKinematics")
       .def("isActive", &IK::isActive)
       .def("setActive", &IK::setActive, nb::arg("active") = true)
@@ -84,6 +94,12 @@ void defInverseKinematics(nb::module_& m)
           nb::arg("solver"),
           nb::keep_alive<1, 2>())
       .def("getProblem", [](IK& self) { return self.getProblem(); })
+      .def(
+          "getGradientMethod",
+          [](IK& self) -> GradientMethod& {
+            return self.getGradientMethod();
+          },
+          nb::rv_policy::reference_internal)
       .def(
           "solveAndApply",
           [](IK& self, bool allowIncompleteResult) {

@@ -108,9 +108,12 @@ void defSkeleton(nb::module_& m)
       .def(nb::new_([]() { return Skeleton::create(); }))
       .def(
           nb::new_([](const std::string& name) { return Skeleton::create(name); }),
-          nb::arg("name"))
+      nb::arg("name"))
       .def("getNumBodyNodes", &Skeleton::getNumBodyNodes)
       .def("getNumJoints", &Skeleton::getNumJoints)
+      .def(
+          "getNumEndEffectors",
+          [](const Skeleton& self) { return self.getNumEndEffectors(); })
       .def("getNumDofs", &Skeleton::getNumDofs)
       .def(
           "getBodyNode",

@@ -146,6 +146,8 @@ set(dartpy_nb_headers
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
+  gui/__init__.py
+  gui/osg.py
 )
 
 set(dartpy_nb_sources
@@ -307,6 +309,13 @@ add_custom_command(
           ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
   COMMENT "Updating dartpy_nb __init__.py"
 )
+add_custom_command(
+  TARGET dartpy_nb POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/gui
+          ${CMAKE_CURRENT_BINARY_DIR}/gui
+  COMMENT "Updating dartpy_nb gui shims"
+)
 
 if(DEFINED DART_DARTPY_NB_RUNTIME_DIR)
   set(_dartpy_nb_output_dir "${DART_DARTPY_NB_RUNTIME_DIR}")
@@ -339,11 +348,17 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
   )
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui
+    DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
+  )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
   install(TARGETS dartpy_nb
     LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
+  )
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
 endif()

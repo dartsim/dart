@@ -25,6 +25,26 @@ void defShapeFrame(nb::module_& m)
 
   nb::class_<VisualAspect>(m, "VisualAspect")
       .def(nb::init<>())
+      .def(
+          "setColor",
+          [](VisualAspect& self, const nb::handle& color) {
+            nb::sequence seq = nb::cast<nb::sequence>(color);
+            ssize_t n = nb::len(seq);
+            if (n == 3) {
+              Eigen::Vector3d vec;
+              for (ssize_t i = 0; i < n; ++i)
+                vec[i] = nb::cast<double>(seq[i]);
+              self.setColor(vec);
+            } else if (n == 4) {
+              Eigen::Vector4d vec;
+              for (ssize_t i = 0; i < n; ++i)
+                vec[i] = nb::cast<double>(seq[i]);
+              self.setColor(vec);
+            } else {
+              throw nb::type_error("Color must be length 3 or 4");
+            }
+          },
+          nb::arg("color"))
       .def("setRGBA", &VisualAspect::setRGBA, nb::arg("color"))
       .def("getRGBA", &VisualAspect::getRGBA, nb::rv_policy::reference_internal)
       .def("setHidden", &VisualAspect::setHidden, nb::arg("value"))
