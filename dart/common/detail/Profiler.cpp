@@ -116,9 +116,7 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
 }
 
 Profiler::ProfileNode* Profiler::findOrCreateChild(
-    ProfileNode& parent,
-    std::string_view label,
-    std::string_view source)
+    ProfileNode& parent, std::string_view label, std::string_view source)
 {
   const std::string key = std::string(label) + " @ " + std::string(source);
   auto it = parent.children.find(key);
@@ -378,13 +376,12 @@ void Profiler::printNode(
     const auto color = heatColor(pct);
 
     std::ostringstream line;
-    line << indent << connector
-         << colorize(padRight(child->label, 32), color)
-         << " total " << formatDurationAligned(child->inclusiveNs)
-         << " self " << formatDurationAligned(child->selfNs)
-         << " per-call " << formatDurationAligned(avgNs)
-         << " calls " << std::setw(8) << child->callCount
-         << " share " << padRight(colorize(formatPercent(pct), color), 6);
+    line << indent << connector << colorize(padRight(child->label, 32), color)
+         << " total " << formatDurationAligned(child->inclusiveNs) << " self "
+         << formatDurationAligned(child->selfNs) << " per-call "
+         << formatDurationAligned(avgNs) << " calls " << std::setw(8)
+         << child->callCount << " share "
+         << padRight(colorize(formatPercent(pct), color), 6);
     if (!child->source.empty()) {
       line << " src " << child->source;
     }
@@ -444,12 +441,13 @@ void Profiler::printSummary(std::ostream& os)
           static_cast<std::ptrdiff_t>(0),
           static_cast<std::ptrdiff_t>(samples.size() - 1)));
     };
-    const auto bestIdx = pickIndex(0.1);   // 10th percentile (short frames)
-    const auto worstIdx = pickIndex(0.9);  // 90th percentile (long frames)
+    const auto bestIdx = pickIndex(0.1);  // 10th percentile (short frames)
+    const auto worstIdx = pickIndex(0.9); // 90th percentile (long frames)
     const double bestFps = 1e9 / static_cast<double>(samples[bestIdx]);
     const double worstFps = 1e9 / static_cast<double>(samples[worstIdx]);
-    os << " | Avg FPS: " << formatFps(avgFps) << " | Best 10%: "
-       << formatFps(bestFps) << " | Worst 10%: " << formatFps(worstFps);
+    os << " | Avg FPS: " << formatFps(avgFps)
+       << " | Best 10%: " << formatFps(bestFps)
+       << " | Worst 10%: " << formatFps(worstFps);
   }
   os << '\n';
 
@@ -479,19 +477,16 @@ void Profiler::printSummary(std::ostream& os)
       const auto pct = percentage(entry.inclusiveNs, totalNs);
       const bool isHot = (i < 3) || (pct >= 20.0);
 
-      const auto avgNs = entry.callCount > 0
-          ? entry.inclusiveNs / entry.callCount
-          : 0;
+      const auto avgNs
+          = entry.callCount > 0 ? entry.inclusiveNs / entry.callCount : 0;
 
       const auto color = heatColor(pct);
       const std::string tag = isHot ? colorize("[HOT]", color) : "     ";
-      os << "  " << tag << " "
-         << colorize(padRight(entry.path, 38), color) << " "
-         << padRight(("thr " + entry.threadLabel), 12)
-         << " total " << formatDurationAligned(entry.inclusiveNs)
-         << " self " << formatDurationAligned(entry.selfNs)
-         << " per-call " << formatDurationAligned(avgNs)
-         << " calls " << entry.callCount
+      os << "  " << tag << " " << colorize(padRight(entry.path, 38), color)
+         << " " << padRight(("thr " + entry.threadLabel), 12) << " total "
+         << formatDurationAligned(entry.inclusiveNs) << " self "
+         << formatDurationAligned(entry.selfNs) << " per-call "
+         << formatDurationAligned(avgNs) << " calls " << entry.callCount
          << " share " << colorize(formatPercent(pct), color);
       if (!entry.source.empty()) {
         os << " src " << entry.source;

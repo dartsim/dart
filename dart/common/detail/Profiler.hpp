@@ -35,16 +35,17 @@
 #include <dart/Export.hpp>
 
 #include <atomic>
-#include <cstdint>
-#include <cstdlib>
-#include <cctype>
-#include <limits>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <cctype>
+#include <cstdint>
+#include <cstdlib>
 
 namespace dart::common::profile {
 
@@ -132,8 +133,7 @@ private:
 class DART_API ProfileScope
 {
 public:
-  explicit ProfileScope(
-      std::string_view name, std::string_view file, int line);
+  explicit ProfileScope(std::string_view name, std::string_view file, int line);
   ~ProfileScope();
 
   ProfileScope(const ProfileScope&) = delete;
