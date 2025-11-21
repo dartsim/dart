@@ -406,10 +406,34 @@ function(dart8_add_test TEST_NAME TEST_PATH)
   )
 
   # Add to CTest with dart8 label for easy filtering
-  add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-  set_tests_properties(${TEST_NAME} PROPERTIES
-    LABELS "dart8"
+  add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}>)
+  set_tests_properties(
+    ${TEST_NAME}
+    PROPERTIES
+      LABELS "dart8"
   )
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+    set_tests_properties(
+      ${TEST_NAME}
+      PROPERTIES
+        ENVIRONMENT_MODIFICATION
+          "PATH=path_list_prepend:$<TARGET_FILE_DIR:dart8>"
+    )
+  else()
+    if(WIN32)
+      # Escape the semicolon so CMake does not treat it as a list separator.
+      set(_dart8_test_path_sep "\\;")
+    else()
+      set(_dart8_test_path_sep ":")
+    endif()
+    set_property(
+      TEST ${TEST_NAME}
+      PROPERTY
+        ENVIRONMENT
+          "PATH=$<TARGET_FILE_DIR:dart8>${_dart8_test_path_sep}$ENV{PATH}"
+    )
+    unset(_dart8_test_path_sep)
+  endif()
 
   # Set target properties
   set_target_properties(${TEST_NAME} PROPERTIES
