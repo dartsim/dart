@@ -69,7 +69,7 @@ DART addresses the need for:
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
 - **Python Bindings**: Complete API coverage via pybind11 with NumPy integration
 - **Optimization Helpers**: Core repo ships gradient-descent + IK primitives; the heavy-duty solver suite (IPOPT, NLopt, pagmo, SNOPT) now lives in [dart-optimization](https://github.com/dartsim/dart-optimization)
-- **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading
+- **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading (SKEL is legacy XML-only; prefer URDF/SDF/MJCF for new work)
 - **Cross-Platform**: Linux, macOS (Intel/ARM), Windows
 
 > Related projects: motion-planning helpers now reside in [dart-planning](https://github.com/dartsim/dart-planning) and the advanced optimizer suite lives in [dart-optimization](https://github.com/dartsim/dart-optimization). This repository focuses on the simulation core plus lightweight gradient-descent utilities.
@@ -1261,6 +1261,8 @@ auto robot = dart::utils::SdfParser::readSkeleton("path/to/model.sdf");
 // SKEL (DART native format)
 auto robot = dart::utils::SkelParser::readSkeleton("path/to/skel.skel");
 ```
+
+Note: SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
 
 ### Pattern 6: Custom ImGui Widgets
 
