@@ -115,6 +115,18 @@ void defSkeleton(nb::module_& m)
             return self.getRootJoint();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "getDof",
+          [](Skeleton& self, std::size_t idx) { return self.getDof(idx); },
+          nb::rv_policy::reference_internal,
+          nb::arg("index"))
+      .def(
+          "getDof",
+          [](Skeleton& self, const std::string& name) {
+            return self.getDof(name);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("name"))
       .def("getPositions", [](Skeleton& self) { return self.getPositions(); })
       .def(
           "setPositions",
