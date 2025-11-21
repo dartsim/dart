@@ -33,6 +33,7 @@
 #include "helpers/GTestUtils.hpp"
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
