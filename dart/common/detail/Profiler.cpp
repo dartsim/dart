@@ -180,8 +180,16 @@ void Profiler::markFrame()
 std::string Profiler::formatDuration(std::uint64_t ns)
 {
   std::ostringstream oss;
-  const double ms = static_cast<double>(ns) / 1'000'000.0;
-  oss << std::fixed << std::setprecision(ms >= 100.0 ? 1 : 3) << ms << " ms";
+  if (ns >= 1'000'000'000ULL) {
+    const double s = static_cast<double>(ns) / 1'000'000'000.0;
+    oss << std::fixed << std::setprecision(s >= 10.0 ? 1 : 3) << s << " s";
+  } else if (ns >= 1'000'000ULL) {
+    const double ms = static_cast<double>(ns) / 1'000'000.0;
+    oss << std::fixed << std::setprecision(ms >= 10.0 ? 2 : 3) << ms << " ms";
+  } else {
+    const double us = static_cast<double>(ns) / 1'000.0;
+    oss << std::fixed << std::setprecision(us >= 10.0 ? 2 : 3) << us << " µs";
+  }
   return oss.str();
 }
 
@@ -247,10 +255,10 @@ void Profiler::printNode(
 
     os << indent << child->label << " | total "
        << formatDuration(child->inclusiveNs) << " | self "
-       << formatDuration(child->selfNs) << " | avg " << formatDuration(avgNs)
-       << " | min " << formatDuration(minNs) << " | max "
-       << formatDuration(child->maxNs) << " | calls " << child->callCount
-       << " | share " << formatPercent(pct) << '\n';
+       << formatDuration(child->selfNs) << " | per-call "
+       << formatDuration(avgNs) << " | min " << formatDuration(minNs)
+       << " | max " << formatDuration(child->maxNs) << " | calls "
+       << child->callCount << " | share " << formatPercent(pct) << '\n';
 
     printNode(os, *child, threadTotalNs, indent + "  ", minPercent * 0.65);
   }
@@ -315,10 +323,15 @@ void Profiler::printSummary(std::ostream& os)
       const auto pct = percentage(entry.inclusiveNs, totalNs);
       const bool isHot = (i < 3) || (pct >= 20.0);
 
+      const auto avgNs = entry.callCount > 0
+          ? entry.inclusiveNs / entry.callCount
+          : 0;
+
       os << "  " << (isHot ? "[HOT] " : "      ") << entry.path << " [thread "
          << entry.threadLabel << "] total " << formatDuration(entry.inclusiveNs)
-         << " (self " << formatDuration(entry.selfNs) << ", calls "
-         << entry.callCount << ", share " << formatPercent(pct) << ")\n";
+         << " | self " << formatDuration(entry.selfNs) << " | per-call "
+         << formatDuration(avgNs) << " | calls " << entry.callCount
+         << " | share " << formatPercent(pct) << '\n';
     }
   }
 
@@ -331,7 +344,7 @@ void Profiler::printSummary(std::ostream& os)
 
     os << "- thread " << record->label << " total "
        << formatDuration(threadTotal) << '\n';
-    printThreadTree(os, *record, threadTotal, /*minPercent=*/0.5);
+    printThreadTree(os, *record, threadTotal, /*minPercent=*/1.0);
   }
   os << std::flush;
 }
