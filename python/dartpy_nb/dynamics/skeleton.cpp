@@ -4,6 +4,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
@@ -23,7 +24,9 @@
 
 #include "common/type_casters.hpp"
 
+#include <cstdlib>
 #include <cstdio>
+#include <memory>
 #include <utility>
 
 namespace nb = nanobind;
@@ -40,8 +43,35 @@ auto create_pair(
 {
   auto pair = self.createJointAndBodyNodePair<JointT, dart::dynamics::BodyNode>(
       parent, properties);
-  return std::make_pair(
-      static_cast<dart::dynamics::Joint*>(pair.first), pair.second);
+  auto skeletonHandle = self.getPtr();
+  if (const char* trace = std::getenv("DARTPY_NB_TRACE_CREATE_PAIR")) {
+    (void) trace;
+    std::fprintf(
+        stderr,
+        "[dartpy_nb][skeleton][create_pair] joint=%p body=%p skel=%p use_count=%ld\n",
+        static_cast<void*>(pair.first),
+        static_cast<void*>(pair.second),
+        static_cast<void*>(skeletonHandle.get()),
+        skeletonHandle ? skeletonHandle.use_count() : 0);
+    std::fflush(stderr);
+  }
+  auto jointHandle = std::shared_ptr<JointT>(skeletonHandle, pair.first);
+  auto bodyHandle = std::shared_ptr<dart::dynamics::BodyNode>(
+      skeletonHandle, pair.second);
+  auto cleanup = [](void* payload) noexcept {
+    delete static_cast<std::shared_ptr<dart::dynamics::Skeleton>*>(payload);
+  };
+  nb::object jointObj = nb::cast(jointHandle, nb::rv_policy::move);
+  nb::detail::keep_alive(
+      jointObj.ptr(),
+      new std::shared_ptr<dart::dynamics::Skeleton>(skeletonHandle),
+      cleanup);
+  nb::object bodyObj = nb::cast(bodyHandle, nb::rv_policy::move);
+  nb::detail::keep_alive(
+      bodyObj.ptr(),
+      new std::shared_ptr<dart::dynamics::Skeleton>(skeletonHandle),
+      cleanup);
+  return nb::make_tuple(jointObj, bodyObj);
 }
 
 template <typename JointT>
@@ -141,7 +171,13 @@ void defSkeleton(nb::module_& m)
           "isEnabledSelfCollisionCheck", &Skeleton::isEnabledSelfCollisionCheck)
       .def("enableAdjacentBodyCheck", &Skeleton::enableAdjacentBodyCheck)
       .def("disableAdjacentBodyCheck", &Skeleton::disableAdjacentBodyCheck)
-      .def("isEnabledAdjacentBodyCheck", &Skeleton::isEnabledAdjacentBodyCheck);
+      .def("isEnabledAdjacentBodyCheck", &Skeleton::isEnabledAdjacentBodyCheck)
+      .def(
+          "getIK",
+          [](Skeleton& self, bool createIfNull) {
+            return self.getIK(createIfNull);
+          },
+          nb::arg("createIfNull") = false);
 
   log("createFreeJointAndBodyNodePair");
   skeletonClass.def(

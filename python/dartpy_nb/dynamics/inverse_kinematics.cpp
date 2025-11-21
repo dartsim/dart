@@ -33,6 +33,20 @@ void defInverseKinematics(nb::module_& m)
             return self.getBounds();
           })
       .def(
+          "setLinearBounds",
+          [](ErrorMethod& self,
+             const Eigen::Vector3d& lower,
+             const Eigen::Vector3d& upper) { self.setLinearBounds(lower, upper); },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def(
+          "setAngularBounds",
+          [](ErrorMethod& self,
+             const Eigen::Vector3d& lower,
+             const Eigen::Vector3d& upper) { self.setAngularBounds(lower, upper); },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def(
           "setBounds",
           [](ErrorMethod& self,
              const Eigen::Vector6d& lower,
@@ -48,6 +62,15 @@ void defInverseKinematics(nb::module_& m)
           [](IK& self) -> std::shared_ptr<dart::dynamics::SimpleFrame> {
             return self.getTarget();
           })
+      .def("useWholeBody", &IK::useWholeBody)
+      .def(
+          "setTarget",
+          [](IK& self,
+             const std::shared_ptr<dart::dynamics::SimpleFrame>& target) {
+            self.setTarget(target);
+          },
+          nb::arg("target"),
+          nb::keep_alive<1, 2>())
       .def(
           "getErrorMethod",
           [](IK& self) -> ErrorMethod& { return self.getErrorMethod(); },

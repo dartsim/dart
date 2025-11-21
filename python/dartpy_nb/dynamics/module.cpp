@@ -6,12 +6,14 @@
 #include "dynamics/degree_of_freedom.hpp"
 #include "dynamics/entity.hpp"
 #include "dynamics/frame.hpp"
+#include "dynamics/jacobian_node.hpp"
 #include "dynamics/free_joint.hpp"
 #include "dynamics/inertia.hpp"
 #include "dynamics/inverse_kinematics.hpp"
 #include "dynamics/joint.hpp"
 #include "dynamics/end_effector.hpp"
 #include "dynamics/meta_skeleton.hpp"
+#include "dynamics/euler_joint.hpp"
 #include "dynamics/prismatic_joint.hpp"
 #include "dynamics/linkage.hpp"
 #include "dynamics/revolute_joint.hpp"
@@ -20,7 +22,9 @@
 #include "dynamics/shape_frame.hpp"
 #include "dynamics/shape_node.hpp"
 #include "dynamics/simple_frame.hpp"
+#include "dynamics/hierarchical_ik.hpp"
 #include "dynamics/skeleton.hpp"
+#include "dynamics/planar_joint.hpp"
 #include "dynamics/translational_joint.hpp"
 #include "dynamics/translational_joint2d.hpp"
 #include "dynamics/universal_joint.hpp"
@@ -66,8 +70,12 @@ void defDynamicsModule(nanobind::module_& m)
   defTranslationalJoint2D(m);
   traceScope("prismatic_joint");
   defPrismaticJoint(m);
+  traceScope("planar_joint");
+  defPlanarJoint(m);
   traceScope("translational_joint");
   defTranslationalJoint(m);
+  traceScope("euler_joint");
+  defEulerJoint(m);
   traceScope("screw_joint");
   defScrewJoint(m);
   traceScope("universal_joint");
@@ -80,6 +88,8 @@ void defDynamicsModule(nanobind::module_& m)
   defShape(m);
   traceScope("frame");
   defFrame(m);
+  traceScope("jacobian_node");
+  defJacobianNode(m);
   traceScope("end_effector");
   defEndEffector(m);
   traceScope("body_node");
@@ -98,6 +108,8 @@ void defDynamicsModule(nanobind::module_& m)
   defSimpleFrame(m);
   traceScope("inverse_kinematics");
   defInverseKinematics(m);
+  traceScope("hierarchical_ik");
+  defHierarchicalIK(m);
   traceScope("skeleton");
   defSkeleton(m);
   traceScope("inertia");

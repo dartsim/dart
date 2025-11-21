@@ -105,6 +105,7 @@ set(dartpy_nb_headers
   dynamics/entity.hpp
   dynamics/degree_of_freedom.hpp
   dynamics/frame.hpp
+  dynamics/jacobian_node.hpp
   dynamics/shape.hpp
   dynamics/shape_frame.hpp
   dynamics/simple_frame.hpp
@@ -114,6 +115,8 @@ set(dartpy_nb_headers
   dynamics/joint.hpp
   dynamics/free_joint.hpp
   dynamics/revolute_joint.hpp
+  dynamics/euler_joint.hpp
+  dynamics/planar_joint.hpp
   dynamics/translational_joint2d.hpp
   dynamics/translational_joint.hpp
   dynamics/prismatic_joint.hpp
@@ -126,6 +129,7 @@ set(dartpy_nb_headers
   dynamics/zero_dof_joint.hpp
   dynamics/chain.hpp
   dynamics/meta_skeleton.hpp
+  dynamics/hierarchical_ik.hpp
   dynamics/inverse_kinematics.hpp
   dynamics/skeleton.hpp
   collision/module.hpp
@@ -176,6 +180,7 @@ set(dartpy_nb_sources
   dynamics/entity.cpp
   dynamics/degree_of_freedom.cpp
   dynamics/frame.cpp
+  dynamics/jacobian_node.cpp
   dynamics/shape.cpp
   dynamics/shape_frame.cpp
   dynamics/simple_frame.cpp
@@ -185,6 +190,8 @@ set(dartpy_nb_sources
   dynamics/joint.cpp
   dynamics/free_joint.cpp
   dynamics/revolute_joint.cpp
+  dynamics/euler_joint.cpp
+  dynamics/planar_joint.cpp
   dynamics/translational_joint2d.cpp
   dynamics/translational_joint.cpp
   dynamics/prismatic_joint.cpp
@@ -197,6 +204,7 @@ set(dartpy_nb_sources
   dynamics/zero_dof_joint.cpp
   dynamics/chain.cpp
   dynamics/meta_skeleton.cpp
+  dynamics/hierarchical_ik.cpp
   dynamics/inverse_kinematics.cpp
   dynamics/skeleton.cpp
   collision/module.cpp

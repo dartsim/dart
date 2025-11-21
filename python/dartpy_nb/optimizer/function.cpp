@@ -18,7 +18,7 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 class PyFunction : public dart::optimizer::Function
 {
 public:
-  NB_TRAMPOLINE(dart::optimizer::Function, 1);
+  NB_TRAMPOLINE(dart::optimizer::Function, 2);
 
   double eval(const Eigen::VectorXd& x) override
   {

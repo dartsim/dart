@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/JacobianNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
@@ -153,14 +154,41 @@ struct type_caster<dart::dynamics::BodyNode>
 {
   template <typename T>
   NB_INLINE static handle from_cpp(
-      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+      T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
+    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    if constexpr (std::is_pointer_v<BareT>
+                  || std::is_lvalue_reference_v<T>) {
+      policy = rv_policy::reference;
+    }
     if (std::getenv("DARTPY_NB_TRACE_BODYNODE_CAST")) {
       std::fprintf(
           stderr, "[dartpy_nb][bodynode] forcing reference policy\n");
     }
     return polymorphic_type_caster<dart::dynamics::BodyNode>::from_cpp(
-        std::forward<T>(value), rv_policy::reference, cleanup);
+        std::forward<T>(value), policy, cleanup);
+  }
+};
+
+template <>
+struct type_caster<dart::dynamics::JacobianNode>
+    : polymorphic_type_caster<dart::dynamics::JacobianNode>
+{
+  template <typename T>
+  NB_INLINE static handle from_cpp(
+      T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
+  {
+    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    if constexpr (std::is_pointer_v<BareT>
+                  || std::is_lvalue_reference_v<T>) {
+      policy = rv_policy::reference;
+    }
+    if (std::getenv("DARTPY_NB_TRACE_JACOBIAN_CAST")) {
+      std::fprintf(
+          stderr, "[dartpy_nb][jacobian_node] forcing reference policy\n");
+    }
+    return polymorphic_type_caster<dart::dynamics::JacobianNode>::from_cpp(
+        std::forward<T>(value), policy, cleanup);
   }
 };
 
@@ -170,13 +198,18 @@ struct type_caster<dart::dynamics::Joint>
 {
   template <typename T>
   NB_INLINE static handle from_cpp(
-      T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
+      T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
+    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    if constexpr (std::is_pointer_v<BareT>
+                  || std::is_lvalue_reference_v<T>) {
+      policy = rv_policy::reference;
+    }
     if (std::getenv("DARTPY_NB_TRACE_JOINT_CAST")) {
       std::fprintf(stderr, "[dartpy_nb][joint] forcing reference policy\n");
     }
     return polymorphic_type_caster<dart::dynamics::Joint>::from_cpp(
-        std::forward<T>(value), rv_policy::reference, cleanup);
+        std::forward<T>(value), policy, cleanup);
   }
 };
 

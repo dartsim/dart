@@ -25,7 +25,7 @@ void defBodyNode(nb::module_& m)
   using BodyNode = dart::dynamics::BodyNode;
   using ShapePtr = dart::dynamics::ShapePtr;
 
-  nb::class_<BodyNode, dart::dynamics::Frame>(m, "BodyNode")
+  nb::class_<BodyNode, dart::dynamics::JacobianNode>(m, "BodyNode")
       .def(
           "getName",
           [](const BodyNode& self) -> const std::string& {
@@ -126,6 +126,7 @@ void defBodyNode(nb::module_& m)
           nb::rv_policy::take_ownership);
 
   registerPolymorphicCaster<dart::dynamics::Frame, BodyNode>();
+  registerPolymorphicCaster<dart::dynamics::JacobianNode, BodyNode>();
 }
 
 } // namespace dart::python_nb

@@ -1,9 +1,12 @@
 #include "dynamics/end_effector.hpp"
 
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
 #include "common/type_casters.hpp"
@@ -82,6 +85,7 @@ void defEndEffector(nb::module_& m)
           nb::arg("createIfNull") = false);
 
   registerPolymorphicCaster<dart::dynamics::Frame, EndEffector>();
+  registerPolymorphicCaster<dart::dynamics::JacobianNode, EndEffector>();
 }
 
 } // namespace dart::python_nb
