@@ -53,7 +53,7 @@ TEST(Issue896, SkeletonCloneDeepCopiesShapes)
   const auto clone = skel->cloneSkeleton();
   ASSERT_TRUE(clone);
 
-  const auto* clonedBody = clone->getBodyNode(body->getName());
+  auto* clonedBody = clone->getBodyNode(body->getName());
   ASSERT_NE(clonedBody, nullptr);
   const auto& clonedShapeNodes = clonedBody->getShapeNodes();
   ASSERT_EQ(clonedShapeNodes.size(), 1u);
