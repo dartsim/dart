@@ -35,14 +35,14 @@
 #include <dart/Export.hpp>
 
 #include <atomic>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <cstdint>
 
 namespace dart::common::profile {
 
@@ -81,6 +81,9 @@ private:
   void popScope(ThreadRecord& record);
 
   ProfileNode* findOrCreateChild(ProfileNode& parent, std::string_view label);
+  static std::string padRight(const std::string& text, std::size_t width);
+  static bool useColor();
+  static std::string colorize(const std::string& text, const char* code);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static void clearNode(ProfileNode& node);

@@ -208,6 +208,28 @@ std::string Profiler::formatPercent(double pct)
   return oss.str();
 }
 
+std::string Profiler::padRight(const std::string& text, std::size_t width)
+{
+  if (text.size() >= width) {
+    return text;
+  }
+  return text + std::string(width - text.size(), ' ');
+}
+
+bool Profiler::useColor()
+{
+  const char* env = std::getenv("DART_PROFILE_COLOR");
+  return env && (std::string(env) == "1" || std::string(env) == "ON");
+}
+
+std::string Profiler::colorize(const std::string& text, const char* code)
+{
+  if (!useColor()) {
+    return text;
+  }
+  return std::string(code) + text + "\033[0m";
+}
+
 void Profiler::collectHotspots(
     const ProfileNode& node,
     const std::string& path,
@@ -243,7 +265,8 @@ void Profiler::printNode(
         return lhs->inclusiveNs > rhs->inclusiveNs;
       });
 
-  for (const auto* child : children) {
+  for (std::size_t idx = 0; idx < children.size(); ++idx) {
+    const auto* child = children[idx];
     const auto pct = percentage(child->inclusiveNs, threadTotalNs);
     if (pct < minPercent && child->inclusiveNs < 1'000'000) {
       continue; // Skip insignificant nodes (<minPercent and <1ms total).
@@ -253,14 +276,22 @@ void Profiler::printNode(
         = child->callCount > 0 ? child->inclusiveNs / child->callCount : 0;
     const auto minNs = child->callCount > 0 ? child->minNs : 0;
 
-    os << indent << child->label << " | total "
-       << formatDuration(child->inclusiveNs) << " | self "
-       << formatDuration(child->selfNs) << " | per-call "
-       << formatDuration(avgNs) << " | min " << formatDuration(minNs)
-       << " | max " << formatDuration(child->maxNs) << " | calls "
-       << child->callCount << " | share " << formatPercent(pct) << '\n';
+    const bool isLast = (idx + 1 == children.size());
+    const std::string connector = isLast ? "`- " : "|- ";
+    const std::string childIndent = indent + (isLast ? "   " : "|  ");
 
-    printNode(os, *child, threadTotalNs, indent + "  ", minPercent * 0.65);
+    std::ostringstream line;
+    line << indent << connector
+         << padRight(child->label, 32)
+         << " total " << padRight(formatDuration(child->inclusiveNs), 10)
+         << " self " << padRight(formatDuration(child->selfNs), 10)
+         << " per-call " << padRight(formatDuration(avgNs), 10)
+         << " calls " << std::setw(8) << child->callCount
+         << " share " << formatPercent(pct);
+
+    os << line.str() << '\n';
+
+    printNode(os, *child, threadTotalNs, childIndent, minPercent * 0.65);
   }
 }
 
@@ -327,11 +358,15 @@ void Profiler::printSummary(std::ostream& os)
           ? entry.inclusiveNs / entry.callCount
           : 0;
 
-      os << "  " << (isHot ? "[HOT] " : "      ") << entry.path << " [thread "
-         << entry.threadLabel << "] total " << formatDuration(entry.inclusiveNs)
-         << " | self " << formatDuration(entry.selfNs) << " | per-call "
-         << formatDuration(avgNs) << " | calls " << entry.callCount
-         << " | share " << formatPercent(pct) << '\n';
+      const std::string tag = isHot ? colorize("[HOT]", "\033[31m") : "     ";
+      os << "  " << tag << " "
+         << padRight(entry.path, 38) << " "
+         << padRight(("thr " + entry.threadLabel), 12)
+         << " total " << padRight(formatDuration(entry.inclusiveNs), 10)
+         << " self " << padRight(formatDuration(entry.selfNs), 10)
+         << " per-call " << padRight(formatDuration(avgNs), 10)
+         << " calls " << entry.callCount
+         << " share " << formatPercent(pct) << '\n';
     }
   }
 
