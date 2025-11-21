@@ -120,6 +120,9 @@ public:
   // Documentation inherited
   const ShapeNode* asShapeNode() const override;
 
+  /// Remove this ShapeNode from its BodyNode.
+  void remove();
+
   /// Hook removal so collision signals fire before the node disappears.
   void stageForRemoval();
 

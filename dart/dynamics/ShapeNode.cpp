@@ -206,6 +206,12 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
 }
 
 //==============================================================================
+void ShapeNode::remove()
+{
+  stageForRemoval();
+}
+
+//==============================================================================
 void ShapeNode::stageForRemoval()
 {
   bool wasCollidable = false;
