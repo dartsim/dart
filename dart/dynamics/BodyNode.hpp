@@ -159,6 +159,12 @@ public:
   /// existing Nodes in this BodyNode will be removed.
   void matchNodes(const BodyNode* otherBodyNode);
 
+  /// Return all the Nodes currently attached to this BodyNode.
+  std::vector<Node*> getNodes();
+
+  /// Return all the Nodes currently attached to this BodyNode (const).
+  std::vector<const Node*> getNodes() const;
+
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;

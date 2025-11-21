@@ -32,13 +32,47 @@
 
 #include "dart/dynamics/WeldJoint.hpp"
 
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FixedFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+// Clone all Nodes from |source| onto |target| while preserving world-space
+// poses for FixedFrame-derived Nodes.
+void cloneNodesPreserveWorldPose(
+    const BodyNode* source, BodyNode* target, const Eigen::Isometry3d& parentTf)
+{
+  const Eigen::Isometry3d worldToParent = parentTf.inverse();
+  const auto nodes = source->getNodes();
+
+  for (const Node* node : nodes) {
+    const Frame* frame = dynamic_cast<const Frame*>(node);
+    Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+    if (frame)
+      worldTf = frame->getTransform();
+
+    Node* clone = node->cloneNode(target);
+    clone->attach();
+
+    if (frame) {
+      if (auto* fixed = dynamic_cast<FixedFrame*>(clone)) {
+        fixed->setRelativeTransform(worldToParent * worldTf);
+      }
+    }
+  }
+}
+
+} // namespace
 
 //==============================================================================
 WeldJoint::Properties::Properties(const Joint::Properties& _properties)
@@ -76,6 +110,71 @@ bool WeldJoint::isCyclic(std::size_t /*_index*/) const
 WeldJoint::Properties WeldJoint::getWeldJointProperties() const
 {
   return getZeroDofJointProperties();
+}
+
+//==============================================================================
+BodyNode* WeldJoint::merge()
+{
+  BodyNode* parent = getParentBodyNode();
+  BodyNode* child = getChildBodyNode();
+
+  if (nullptr == parent || nullptr == child) {
+    dterr << "[WeldJoint::merge] Merge failed because the joint does not have "
+          << "a valid parent or child BodyNode.\n";
+    return nullptr;
+  }
+
+  const SkeletonPtr& parentSkeleton = parent->getSkeleton();
+  const SkeletonPtr& childSkeleton = child->getSkeleton();
+
+  if (!parentSkeleton || parentSkeleton != childSkeleton) {
+    dterr << "[WeldJoint::merge] Merge failed because the parent and child "
+          << "BodyNodes are not in the same Skeleton.\n";
+    return nullptr;
+  }
+
+  if (parent == child) {
+    dterr << "[WeldJoint::merge] Merge failed because the parent and child "
+          << "BodyNodes are identical.\n";
+    return nullptr;
+  }
+
+  const Eigen::Isometry3d parentToChild = getRelativeTransform();
+
+  // Combine inertial properties in the parent frame.
+  const Eigen::Matrix6d parentSpatial = parent->getSpatialInertia();
+  const Eigen::Matrix6d childSpatial = child->getSpatialInertia();
+  const Eigen::Matrix6d childInParent
+      = math::transformInertia(parentToChild, childSpatial);
+  parent->setInertia(Inertia(parentSpatial + childInParent));
+
+  // Preserve accumulated external forces.
+  const Eigen::Vector6d childExternal
+      = math::dAdInvT(parentToChild, child->getExternalForceLocal());
+  parent->addExtForce(
+      childExternal.tail<3>(), Eigen::Vector3d::Zero(), true, true);
+  parent->addExtTorque(childExternal.head<3>(), true);
+
+  // Clone Nodes that belong to the child onto the parent.
+  cloneNodesPreserveWorldPose(child, parent, parent->getWorldTransform());
+
+  // Reparent grandchildren while keeping their world transforms intact.
+  std::vector<BodyNode*> grandchildren;
+  grandchildren.reserve(child->getNumChildBodyNodes());
+  for (std::size_t i = 0; i < child->getNumChildBodyNodes(); ++i)
+    grandchildren.push_back(child->getChildBodyNode(i));
+
+  for (BodyNode* grandchild : grandchildren) {
+    Joint* joint = grandchild->getParentJoint();
+    const Eigen::Isometry3d updated
+        = parentToChild * joint->getTransformFromParentBodyNode();
+    joint->setTransformFromParentBodyNode(updated);
+    grandchild->moveTo(parent);
+  }
+
+  // Remove the child BodyNode (and this WeldJoint) from the Skeleton.
+  child->remove();
+  return parent;
 }
 
 //==============================================================================

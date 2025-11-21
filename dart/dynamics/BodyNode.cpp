@@ -403,6 +403,26 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 }
 
 //==============================================================================
+std::vector<Node*> BodyNode::getNodes()
+{
+  std::vector<Node*> nodes;
+  for (auto& nodeType : mNodeMap)
+    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+
+  return nodes;
+}
+
+//==============================================================================
+std::vector<const Node*> BodyNode::getNodes() const
+{
+  std::vector<const Node*> nodes;
+  for (const auto& nodeType : mNodeMap)
+    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+
+  return nodes;
+}
+
+//==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
