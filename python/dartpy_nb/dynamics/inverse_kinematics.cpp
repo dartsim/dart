@@ -67,6 +67,19 @@ void defInverseKinematics(nb::module_& m)
             return self.solveAndApply(allowIncompleteResult);
           },
           nb::arg("allowIncompleteResult") = true);
+
+  m.def(
+      "createSimpleFrame",
+      [](dart::dynamics::Frame* parent,
+         const std::string& name,
+         const Eigen::Isometry3d& tf) {
+        auto* frame = new dart::dynamics::SimpleFrame(parent, name, tf);
+        return std::shared_ptr<dart::dynamics::SimpleFrame>(frame);
+      },
+      nb::arg("parent"),
+      nb::arg("name"),
+      nb::arg("transform"),
+      nb::rv_policy::take_ownership);
 }
 
 DART_SUPPRESS_DEPRECATED_END

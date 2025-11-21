@@ -252,6 +252,23 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
+  log("getEndEffector");
+  skeletonClass
+      .def(
+          "getEndEffector",
+          [](Skeleton& self, const std::string& name) {
+            return self.getEndEffector(name);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("name"))
+      .def(
+          "getEndEffector",
+          [](Skeleton& self, std::size_t idx) {
+            return self.getEndEffector(idx);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("idx"));
+
   log("end");
 }
 

@@ -84,6 +84,13 @@ void defMetaSkeleton(nb::module_& m)
           nb::rv_policy::reference_internal,
           nb::arg("index"))
       .def(
+          "getDof",
+          [](MetaSkeleton& self, const std::string& name) {
+            return self.getDof(name);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("name"))
+      .def(
           "getDofs",
           [](MetaSkeleton& self) {
             std::vector<dart::dynamics::DegreeOfFreedom*> dofs;

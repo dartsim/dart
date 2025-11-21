@@ -5,6 +5,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -91,7 +92,30 @@ void defBodyNode(nb::module_& m)
           [](BodyNode& self, bool createIfNull) {
             return self.getIK(createIfNull);
           },
-          nb::arg("createIfNull") = false);
+          nb::arg("createIfNull") = false)
+      .def(
+          "createEndEffector",
+          [](BodyNode& self, const std::string& name) {
+            auto* ee = self.createEndEffector(name);
+            return std::shared_ptr<dart::dynamics::EndEffector>(
+                self.getSkeleton(),
+                ee,
+                [](dart::dynamics::EndEffector*) {});
+          },
+          nb::arg("name"),
+          nb::rv_policy::reference_internal)
+      .def(
+          "createSimpleFrame",
+          [](BodyNode& self,
+             const std::string& name,
+             const Eigen::Isometry3d& tf) {
+            auto* frame = new dart::dynamics::SimpleFrame(&self, name, tf);
+            return std::shared_ptr<dart::dynamics::SimpleFrame>(
+                frame); // owned by Python
+          },
+          nb::arg("name"),
+          nb::arg("transform"),
+          nb::rv_policy::take_ownership);
 
   registerPolymorphicCaster<dart::dynamics::Frame, BodyNode>();
 }
