@@ -382,12 +382,14 @@ void Profiler::printNode(
     const auto color = heatColor(pct);
 
     std::ostringstream line;
-    line << indent << connector << colorize(padRight(child->label, 32), color)
-         << " total " << formatDurationAligned(child->inclusiveNs) << " self "
-         << formatDurationAligned(child->selfNs) << " per-call "
-         << formatDurationAligned(avgNs) << " calls " << std::setw(8)
-         << child->callCount << " share "
-         << padRight(colorize(formatPercent(pct), color), 6);
+    constexpr std::size_t labelWidth = 28;
+    line << indent << connector
+         << colorize(padRight(child->label, labelWidth), color) << ' '
+         << "total " << formatDurationAligned(child->inclusiveNs) << ' '
+         << "self " << formatDurationAligned(child->selfNs) << ' '
+         << "per-call " << formatDurationAligned(avgNs) << ' '
+         << "calls " << std::setw(8) << child->callCount << ' '
+         << "share " << padRight(colorize(formatPercent(pct), color), 6);
     if (!child->source.empty()) {
       line << " src " << child->source;
     }
