@@ -888,7 +888,7 @@ wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag
 wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
   { arg = "python_tag" },
   { arg = "arch" },
-], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib" } }
+], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", DELOCATE_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", CONDA_PREFIX = "$CONDA_PREFIX:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME" } }
 
 wheel-repair-windows-core = { cmd = """
     rm -rf dist/repaired &&
