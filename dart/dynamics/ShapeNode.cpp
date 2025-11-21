@@ -198,6 +198,8 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
   shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
+  if (const auto& shape = getShape())
+    shapeNode->setShape(shape->clone());
 
   if (mIK)
     shapeNode->mIK = mIK->clone(shapeNode);
