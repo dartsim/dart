@@ -74,6 +74,7 @@ struct Profiler::Flattened
 {
   std::string path;
   std::string threadLabel;
+  std::string source;
   std::uint64_t inclusiveNs{0};
   std::uint64_t selfNs{0};
   std::uint64_t callCount{0};
@@ -114,21 +115,31 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
 }
 
 Profiler::ProfileNode* Profiler::findOrCreateChild(
-    ProfileNode& parent, std::string_view label)
+    ProfileNode& parent,
+    std::string_view label,
+    std::string_view source)
 {
-  auto it = parent.children.find(std::string(label));
+  const std::string key = std::string(label) + " @ " + std::string(source);
+  auto it = parent.children.find(key);
   if (it == parent.children.end()) {
     auto child = std::make_unique<ProfileNode>();
     child->label = std::string(label);
-    it = parent.children.emplace(child->label, std::move(child)).first;
+    child->source = std::string(source);
+    it = parent.children.emplace(key, std::move(child)).first;
   }
   return it->second.get();
 }
 
-void Profiler::pushScope(Profiler::ThreadRecord& record, std::string_view label)
+void Profiler::pushScope(
+    Profiler::ThreadRecord& record,
+    std::string_view label,
+    std::string_view file,
+    int line)
 {
   auto* parent = record.stack.empty() ? &record.root : record.stack.back().node;
-  auto* node = findOrCreateChild(*parent, label);
+  const std::string source
+      = std::string(file) + ":" + std::to_string(static_cast<long long>(line));
+  auto* node = findOrCreateChild(*parent, label, source);
   record.stack.push_back(
       {node, std::chrono::steady_clock::now(), /*childTimeNs=*/0});
 }
@@ -258,7 +269,12 @@ void Profiler::collectHotspots(
     std::vector<Flattened>& out) const
 {
   out.push_back(
-      {path, threadLabel, node.inclusiveNs, node.selfNs, node.callCount});
+      {path,
+       threadLabel,
+       node.source,
+       node.inclusiveNs,
+       node.selfNs,
+       node.callCount});
   for (const auto& [_, child] : node.children) {
     const auto childPath
         = path.empty() ? child->label : (path + " > " + child->label);
@@ -388,7 +404,11 @@ void Profiler::printSummary(std::ostream& os)
          << " self " << padRight(formatDuration(entry.selfNs), 10)
          << " per-call " << padRight(formatDuration(avgNs), 10)
          << " calls " << entry.callCount
-         << " share " << colorize(formatPercent(pct), color) << '\n';
+         << " share " << colorize(formatPercent(pct), color);
+      if (!entry.source.empty()) {
+        os << " src " << entry.source;
+      }
+      os << '\n';
     }
   }
 

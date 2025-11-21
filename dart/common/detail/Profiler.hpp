@@ -78,10 +78,15 @@ private:
   static std::shared_ptr<ThreadRecord> threadRecord();
 
   std::shared_ptr<ThreadRecord> registerThread();
-  void pushScope(ThreadRecord& record, std::string_view label);
+  void pushScope(
+      ThreadRecord& record,
+      std::string_view label,
+      std::string_view file,
+      int line);
   void popScope(ThreadRecord& record);
 
-  ProfileNode* findOrCreateChild(ProfileNode& parent, std::string_view label);
+  ProfileNode* findOrCreateChild(
+      ProfileNode& parent, std::string_view label, std::string_view source);
   static std::string padRight(const std::string& text, std::size_t width);
   static bool useColor();
   static std::string colorize(const std::string& text, const char* code);
@@ -120,7 +125,8 @@ private:
 class DART_API ProfileScope
 {
 public:
-  explicit ProfileScope(std::string_view name);
+  explicit ProfileScope(
+      std::string_view name, std::string_view file, int line);
   ~ProfileScope();
 
   ProfileScope(const ProfileScope&) = delete;
