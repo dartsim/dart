@@ -10,7 +10,7 @@ Demonstrates the following dartpy functionality:
 """
 
 
-class ContactVisualizingNode(dart.gui.osg.RealTimeWorldNode):
+class ContactVisualizingNode(dart.gui.RealTimeWorldNode):
     """WorldNode subclass, which extracts the contacts of the last simulation
     step and adds them to a pointloud for visualization.
 
@@ -88,12 +88,12 @@ def main():
     node = ContactVisualizingNode(world, pointCloudShape)
 
     # create a viewer with background color (red, green, blue, alpha), here: white
-    viewer = dart.gui.osg.Viewer([1.0, 1.0, 1.0, 1.0])
+    viewer = dart.gui.Viewer([1.0, 1.0, 1.0, 1.0])
     viewer.addWorldNode(node)
 
     # Grid settings
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
     grid.setOffset([0, -0.55, 0])
     viewer.addAttachment(grid)
 

@@ -37,6 +37,7 @@
 #include "constraint/module.hpp"
 #include "dart/config.hpp"
 #include "dynamics/module.hpp"
+#include "gui/module.hpp"
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
@@ -100,6 +101,10 @@ NB_MODULE(_dartpy_nb, m)
   DARTPY_TRACE("optimizer");
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
+
+  DARTPY_TRACE("gui");
+  auto gui = m.def_submodule("gui", "GUI utilities (stubbed for nanobind)");
+  dart::python_nb::defGuiModule(gui);
 
 #undef DARTPY_TRACE
 }

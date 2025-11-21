@@ -32,7 +32,7 @@ class HandTarget:
     rest_translation: np.ndarray
 
 
-class WholeBodyIKWorldNode(dart.gui.osg.RealTimeWorldNode):
+class WholeBodyIKWorldNode(dart.gui.RealTimeWorldNode):
     """Custom world node for handling IK updates."""
 
     def __init__(self, world, robot):
@@ -174,7 +174,7 @@ def update_target_pose(target: HandTarget, offset: np.ndarray):
 # snippet:py-gui-start
 def run_gui_demo(world, atlas, left_hand, right_hand):
     node = WholeBodyIKWorldNode(world, atlas)
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     viewer.enableDragAndDrop(left_hand)

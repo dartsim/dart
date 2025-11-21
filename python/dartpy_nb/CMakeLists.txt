@@ -96,6 +96,7 @@ set(dartpy_nb_headers
   optimizer/problem.hpp
   optimizer/solver.hpp
   optimizer/gradient_descent.hpp
+  gui/module.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -146,8 +147,7 @@ set(dartpy_nb_headers
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
-  gui/__init__.py
-  gui/osg.py
+  gui.py
 )
 
 set(dartpy_nb_sources
@@ -173,6 +173,7 @@ set(dartpy_nb_sources
   optimizer/problem.cpp
   optimizer/solver.cpp
   optimizer/gradient_descent.cpp
+  gui/module.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp
@@ -209,6 +210,7 @@ set(dartpy_nb_sources
   dynamics/hierarchical_ik.cpp
   dynamics/inverse_kinematics.cpp
   dynamics/skeleton.cpp
+  gui/module.cpp
   collision/module.cpp
   collision/collision_option.cpp
   collision/collision_result.cpp
@@ -311,10 +313,10 @@ add_custom_command(
 )
 add_custom_command(
   TARGET dartpy_nb POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_CURRENT_SOURCE_DIR}/gui
-          ${CMAKE_CURRENT_BINARY_DIR}/gui
-  COMMENT "Updating dartpy_nb gui shims"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
+          ${CMAKE_CURRENT_BINARY_DIR}/gui.py
+  COMMENT "Updating dartpy_nb gui shim"
 )
 
 if(DEFINED DART_DARTPY_NB_RUNTIME_DIR)
@@ -348,7 +350,7 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
   )
-  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
@@ -358,7 +360,7 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
-  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
 endif()
