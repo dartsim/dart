@@ -885,7 +885,7 @@ wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag
   { arg = "python_tag" },
 ], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
-wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
+wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} --libpath $CONDA_PREFIX/lib -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
   { arg = "python_tag" },
   { arg = "arch" },
 ], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib" } }
