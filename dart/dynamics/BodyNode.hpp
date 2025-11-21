@@ -68,6 +68,8 @@ class Skeleton;
 class Joint;
 class DegreeOfFreedom;
 class Shape;
+class ShapeNode;
+class CollisionAspect;
 class EndEffector;
 class Marker;
 
@@ -1254,6 +1256,12 @@ private:
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
+
+  /// Notify listeners about collision-shape lifecycle changes.
+  void handleCollisionShapeStateChange(
+      const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
+
+  friend class CollisionAspect;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

@@ -124,12 +124,15 @@ public:
   CollisionAspect(const CollisionAspect&) = delete;
   CollisionAspect(const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Collidable)
-  // void setCollidable(const bool& value);
-  // const bool& getCollidable() const;
+  void setCollidable(const bool& value);
+  const bool& getCollidable() const;
 
   /// Return true if this body can collide with others bodies
   bool isCollidable() const;
+
+protected:
+  void setComposite(common::Composite* newComposite) override;
+  void loseComposite(common::Composite* oldComposite) override;
 };
 
 //==============================================================================
