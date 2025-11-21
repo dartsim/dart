@@ -374,8 +374,8 @@ void Profiler::printNode(
         = child->callCount > 0 ? child->inclusiveNs / child->callCount : 0;
 
     const bool isLast = (idx + 1 == children.size());
-    const std::string connector = isLast ? "`- " : "|- ";
-    const std::string childIndent = indent + (isLast ? "   " : "|  ");
+    const std::string connector = isLast ? "`-- " : "|-- ";
+    const std::string childIndent = indent + (isLast ? "    " : "|   ");
     const auto color = heatColor(pct);
 
     std::ostringstream line;
