@@ -1,0 +1,374 @@
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "dart/common/detail/Profiler.hpp"
+
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <sstream>
+#include <thread>
+#include <unordered_map>
+
+namespace dart::common::profile {
+
+struct Profiler::ProfileNode
+{
+  std::string label;
+  std::uint64_t callCount{0};
+  std::uint64_t inclusiveNs{0};
+  std::uint64_t selfNs{0};
+  std::uint64_t minNs{std::numeric_limits<std::uint64_t>::max()};
+  std::uint64_t maxNs{0};
+  std::unordered_map<std::string, std::unique_ptr<ProfileNode>> children;
+};
+
+struct Profiler::ActiveScope
+{
+  ProfileNode* node{nullptr};
+  std::chrono::steady_clock::time_point start{};
+  std::uint64_t childTimeNs{0};
+};
+
+struct Profiler::ThreadRecord
+{
+  std::string label;
+  std::thread::id id;
+  ProfileNode root{};
+  std::vector<ActiveScope> stack;
+};
+
+struct Profiler::Flattened
+{
+  std::string path;
+  std::string threadLabel;
+  std::uint64_t inclusiveNs{0};
+  std::uint64_t selfNs{0};
+  std::uint64_t callCount{0};
+};
+
+Profiler::Profiler() : m_frameCount(0) {}
+
+Profiler& Profiler::instance()
+{
+  static Profiler profiler;
+  return profiler;
+}
+
+std::shared_ptr<Profiler::ThreadRecord> Profiler::threadRecord()
+{
+  thread_local std::shared_ptr<ThreadRecord> record
+      = Profiler::instance().registerThread();
+  return record;
+}
+
+std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
+{
+  auto record = std::make_shared<ThreadRecord>();
+  record->id = std::this_thread::get_id();
+  {
+    std::ostringstream oss;
+    oss << record->id;
+    record->label = oss.str();
+    record->root.label = "thread " + record->label;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
+    m_threads.push_back(record);
+  }
+
+  return record;
+}
+
+Profiler::ProfileNode* Profiler::findOrCreateChild(
+    ProfileNode& parent, std::string_view label)
+{
+  auto it = parent.children.find(std::string(label));
+  if (it == parent.children.end()) {
+    auto child = std::make_unique<ProfileNode>();
+    child->label = std::string(label);
+    it = parent.children.emplace(child->label, std::move(child)).first;
+  }
+  return it->second.get();
+}
+
+void Profiler::pushScope(Profiler::ThreadRecord& record, std::string_view label)
+{
+  auto* parent = record.stack.empty() ? &record.root : record.stack.back().node;
+  auto* node = findOrCreateChild(*parent, label);
+  record.stack.push_back(
+      {node, std::chrono::steady_clock::now(), /*childTimeNs=*/0});
+}
+
+void Profiler::popScope(Profiler::ThreadRecord& record)
+{
+  if (record.stack.empty()) {
+    return;
+  }
+
+  const auto active = record.stack.back();
+  record.stack.pop_back();
+
+  const auto end = std::chrono::steady_clock::now();
+  const auto durationNs = static_cast<std::uint64_t>(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - active.start)
+          .count());
+
+  auto* node = active.node;
+  ++node->callCount;
+  node->inclusiveNs += durationNs;
+
+  const auto selfNs
+      = durationNs > active.childTimeNs ? durationNs - active.childTimeNs : 0;
+
+  node->selfNs += selfNs;
+  node->minNs = std::min(node->minNs, durationNs);
+  node->maxNs = std::max(node->maxNs, durationNs);
+
+  if (!record.stack.empty()) {
+    record.stack.back().childTimeNs += durationNs;
+  }
+}
+
+std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
+{
+  std::uint64_t total = 0;
+  for (const auto& [_, child] : node.children) {
+    total += child->inclusiveNs;
+  }
+  return total;
+}
+
+void Profiler::markFrame()
+{
+  m_frameCount.fetch_add(1, std::memory_order_relaxed);
+}
+
+std::string Profiler::formatDuration(std::uint64_t ns)
+{
+  std::ostringstream oss;
+  const double ms = static_cast<double>(ns) / 1'000'000.0;
+  oss << std::fixed << std::setprecision(ms >= 100.0 ? 1 : 3) << ms << " ms";
+  return oss.str();
+}
+
+double Profiler::percentage(std::uint64_t part, std::uint64_t total)
+{
+  if (total == 0) {
+    return 0.0;
+  }
+  return (static_cast<double>(part) / static_cast<double>(total)) * 100.0;
+}
+
+std::string Profiler::formatPercent(double pct)
+{
+  std::ostringstream oss;
+  oss << std::fixed << std::setprecision(pct >= 10.0 ? 1 : 2) << pct << '%';
+  return oss.str();
+}
+
+void Profiler::collectHotspots(
+    const ProfileNode& node,
+    const std::string& path,
+    const std::string& threadLabel,
+    std::vector<Flattened>& out) const
+{
+  out.push_back(
+      {path, threadLabel, node.inclusiveNs, node.selfNs, node.callCount});
+  for (const auto& [_, child] : node.children) {
+    const auto childPath
+        = path.empty() ? child->label : (path + " > " + child->label);
+    collectHotspots(*child, childPath, threadLabel, out);
+  }
+}
+
+void Profiler::printNode(
+    std::ostream& os,
+    const ProfileNode& node,
+    std::uint64_t threadTotalNs,
+    const std::string& indent,
+    double minPercent) const
+{
+  std::vector<const ProfileNode*> children;
+  children.reserve(node.children.size());
+  for (const auto& [_, child] : node.children) {
+    children.push_back(child.get());
+  }
+
+  std::sort(
+      children.begin(),
+      children.end(),
+      [](const ProfileNode* lhs, const ProfileNode* rhs) {
+        return lhs->inclusiveNs > rhs->inclusiveNs;
+      });
+
+  for (const auto* child : children) {
+    const auto pct = percentage(child->inclusiveNs, threadTotalNs);
+    if (pct < minPercent && child->inclusiveNs < 1'000'000) {
+      continue; // Skip insignificant nodes (<minPercent and <1ms total).
+    }
+
+    const auto avgNs
+        = child->callCount > 0 ? child->inclusiveNs / child->callCount : 0;
+    const auto minNs = child->callCount > 0 ? child->minNs : 0;
+
+    os << indent << child->label << " | total "
+       << formatDuration(child->inclusiveNs) << " | self "
+       << formatDuration(child->selfNs) << " | avg " << formatDuration(avgNs)
+       << " | min " << formatDuration(minNs) << " | max "
+       << formatDuration(child->maxNs) << " | calls " << child->callCount
+       << " | share " << formatPercent(pct) << '\n';
+
+    printNode(os, *child, threadTotalNs, indent + "  ", minPercent * 0.65);
+  }
+}
+
+void Profiler::printThreadTree(
+    std::ostream& os,
+    const ThreadRecord& record,
+    std::uint64_t threadTotalNs,
+    double minPercent) const
+{
+  printNode(os, record.root, threadTotalNs, "  ", minPercent);
+}
+
+void Profiler::printSummary(std::ostream& os)
+{
+  std::vector<std::shared_ptr<ThreadRecord>> threads;
+  {
+    std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
+    threads = m_threads;
+  }
+
+  if (threads.empty()) {
+    os << "DART profiler (text): no scoped regions were recorded.\n";
+    return;
+  }
+
+  std::uint64_t totalNs = 0;
+  for (const auto& record : threads) {
+    totalNs += sumInclusiveChildren(record->root);
+  }
+
+  const auto frameCount = m_frameCount.load(std::memory_order_relaxed);
+
+  os << "\nDART profiler (text backend)\n";
+  os << "Threads: " << threads.size() << " | Frames marked: " << frameCount
+     << " | Total scoped time: " << formatDuration(totalNs) << '\n';
+
+  // Build hotspot list.
+  std::vector<Flattened> hotspots;
+  for (const auto& record : threads) {
+    for (const auto& [_, child] : record->root.children) {
+      collectHotspots(*child, child->label, record->label, hotspots);
+    }
+  }
+
+  std::sort(
+      hotspots.begin(),
+      hotspots.end(),
+      [](const Flattened& lhs, const Flattened& rhs) {
+        return lhs.inclusiveNs > rhs.inclusiveNs;
+      });
+
+  const std::size_t hotspotCount = std::min<std::size_t>(hotspots.size(), 10);
+
+  os << "Hotspots (inclusive time):\n";
+  if (hotspotCount == 0) {
+    os << "  (no measured scopes)\n";
+  } else {
+    for (std::size_t i = 0; i < hotspotCount; ++i) {
+      const auto& entry = hotspots[i];
+      const auto pct = percentage(entry.inclusiveNs, totalNs);
+      const bool isHot = (i < 3) || (pct >= 20.0);
+
+      os << "  " << (isHot ? "[HOT] " : "      ") << entry.path << " [thread "
+         << entry.threadLabel << "] total " << formatDuration(entry.inclusiveNs)
+         << " (self " << formatDuration(entry.selfNs) << ", calls "
+         << entry.callCount << ", share " << formatPercent(pct) << ")\n";
+    }
+  }
+
+  os << "Per-thread breakdown (inclusive):\n";
+  for (const auto& record : threads) {
+    const auto threadTotal = sumInclusiveChildren(record->root);
+    if (threadTotal == 0) {
+      continue;
+    }
+
+    os << "- thread " << record->label << " total "
+       << formatDuration(threadTotal) << '\n';
+    printThreadTree(os, *record, threadTotal, /*minPercent=*/0.5);
+  }
+  os << std::flush;
+}
+
+void Profiler::reset()
+{
+  std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
+  for (auto& record : m_threads) {
+    clearNode(record->root);
+  }
+  m_frameCount.store(0, std::memory_order_relaxed);
+}
+
+void Profiler::clearNode(ProfileNode& node)
+{
+  node.callCount = 0;
+  node.inclusiveNs = 0;
+  node.selfNs = 0;
+  node.minNs = std::numeric_limits<std::uint64_t>::max();
+  node.maxNs = 0;
+  for (auto& [_, child] : node.children) {
+    clearNode(*child);
+  }
+  node.children.clear();
+}
+
+ProfileScope::ProfileScope(std::string_view name)
+  : m_record(Profiler::threadRecord())
+{
+  Profiler::instance().pushScope(*m_record, name);
+}
+
+ProfileScope::~ProfileScope()
+{
+  if (m_record) {
+    Profiler::instance().popScope(*m_record);
+  }
+}
+
+} // namespace dart::common::profile

@@ -243,7 +243,14 @@ if(DART_CODECOV)
 endif()
 
 if(DART_BUILD_PROFILE)
-  target_link_libraries(dart PUBLIC Tracy::TracyClient)
+  target_compile_definitions(dart PUBLIC
+    DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_TEXT}>
+    DART_PROFILE_ENABLE_TRACY=$<BOOL:${DART_PROFILE_TRACY}>
+  )
+
+  if(DART_PROFILE_TRACY)
+    target_link_libraries(dart PUBLIC Tracy::TracyClient)
+  endif()
 endif()
 
 install(
