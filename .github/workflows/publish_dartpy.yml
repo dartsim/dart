@@ -105,19 +105,19 @@ jobs:
 
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
+        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
+        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
 
       - name: Verify wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
+        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
 
       - name: Test wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
+        run: $HOME/.pixi/bin/pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
       - uses: actions/upload-artifact@v5
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
