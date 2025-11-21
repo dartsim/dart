@@ -32,7 +32,7 @@
 
 #include "dart/dynamics/WeldJoint.hpp"
 
-#include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FixedFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -119,8 +119,9 @@ BodyNode* WeldJoint::merge()
   BodyNode* child = getChildBodyNode();
 
   if (nullptr == parent || nullptr == child) {
-    dterr << "[WeldJoint::merge] Merge failed because the joint does not have "
-          << "a valid parent or child BodyNode.\n";
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the joint does not have a "
+        "valid parent or child BodyNode.");
     return nullptr;
   }
 
@@ -128,14 +129,16 @@ BodyNode* WeldJoint::merge()
   const SkeletonPtr& childSkeleton = child->getSkeleton();
 
   if (!parentSkeleton || parentSkeleton != childSkeleton) {
-    dterr << "[WeldJoint::merge] Merge failed because the parent and child "
-          << "BodyNodes are not in the same Skeleton.\n";
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the parent and child "
+        "BodyNodes are not in the same Skeleton.");
     return nullptr;
   }
 
   if (parent == child) {
-    dterr << "[WeldJoint::merge] Merge failed because the parent and child "
-          << "BodyNodes are identical.\n";
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the parent and child "
+        "BodyNodes are identical.");
     return nullptr;
   }
 
