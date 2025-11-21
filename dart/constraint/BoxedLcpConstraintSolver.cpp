@@ -149,6 +149,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mA.setZero(n, nSkip);
 #endif
   mX.resize(n);
+  mX.setZero();
   mB.resize(n);
   mW.setZero(n); // set w to 0
   mLo.resize(n);
