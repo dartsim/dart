@@ -97,10 +97,10 @@ void defBodyNode(nb::module_& m)
           "createEndEffector",
           [](BodyNode& self, const std::string& name) {
             auto* ee = self.createEndEffector(name);
+            auto skeletonHandle = std::shared_ptr<dart::dynamics::Skeleton>(
+                self.getSkeleton(), [](dart::dynamics::Skeleton*) {});
             return std::shared_ptr<dart::dynamics::EndEffector>(
-                self.getSkeleton(),
-                ee,
-                [](dart::dynamics::EndEffector*) {});
+                skeletonHandle, ee);
           },
           nb::arg("name"),
           nb::rv_policy::reference_internal)
