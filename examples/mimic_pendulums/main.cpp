@@ -109,6 +109,8 @@ struct MimicPairView
   std::string label;
   Joint* follower{};
   Joint* reference{};
+  Joint* middleReference{};   // Reference from middle pendulum
+  std::string middleRefLabel; // Which reference: "short" or "long"
   BodyNode* base{};
   Eigen::Vector3d baseStart = Eigen::Vector3d::Zero();
   Eigen::Vector3d baseNow = Eigen::Vector3d::Zero();
@@ -302,6 +304,10 @@ void configureMimicMotors(
     joint->setDampingCoefficient(0, cfg.damping);
   };
 
+  // Get the middle pendulum (uncoupled) which contains the true reference
+  // joints
+  const auto middlePendulum = world->getSkeleton("pendulum_with_base");
+
   for (const auto& spec : specs) {
     const auto skeleton = world->getSkeleton(spec.model);
     if (!skeleton) {
@@ -310,15 +316,26 @@ void configureMimicMotors(
     }
 
     auto* follower = skeleton->getJoint(spec.followerJoint);
-    auto* reference = skeleton->getJoint(spec.referenceJoint);
-    if (!follower || !reference) {
-      std::cerr << "Missing mimic joints in model [" << spec.model << "]\n";
+    if (!follower) {
+      std::cerr << "Missing follower joint [" << spec.followerJoint
+                << "] in model [" << spec.model << "]\n";
+      continue;
+    }
+
+    // Get reference from middle pendulum (not from the same skeleton)
+    auto* reference = nullptr;
+    if (middlePendulum) {
+      reference = middlePendulum->getJoint(spec.referenceJoint);
+    }
+
+    if (!reference) {
+      std::cerr << "Missing reference joint [" << spec.referenceJoint
+                << "] in middle pendulum\n";
       continue;
     }
 
     if (follower->getNumDofs() == 0 || reference->getNumDofs() == 0) {
-      std::cerr << "Ignoring mimic joint with no DoFs in model [" << spec.model
-                << "]\n";
+      std::cerr << "Ignoring mimic joint with no DoFs\n";
       continue;
     }
 
@@ -342,8 +359,7 @@ void configureMimicMotors(
     follower->setUseCouplerConstraint(false);
 
     setJointLimitsAndDamping(follower);
-    setJointLimitsAndDamping(
-        const_cast<dart::dynamics::Joint*>(prop.mReferenceJoint));
+    setJointLimitsAndDamping(reference);
   }
 }
 
@@ -351,6 +367,11 @@ std::vector<MimicPairView> collectMimicPairs(
     const WorldPtr& world, const std::vector<MimicSpec>& specs)
 {
   std::vector<MimicPairView> pairs;
+
+  // Get the middle pendulum (uncoupled) which contains the true reference
+  // joints
+  const auto middlePendulum = world->getSkeleton("pendulum_with_base");
+
   for (const auto& spec : specs) {
     const auto skeleton = world->getSkeleton(spec.model);
     if (!skeleton)
@@ -369,6 +390,17 @@ std::vector<MimicPairView> collectMimicPairs(
     view.reference = reference;
     view.base = base;
     view.baseStart = translationOf(base);
+
+    // Get the corresponding reference from the middle pendulum
+    if (middlePendulum) {
+      auto* middleRef = middlePendulum->getJoint(spec.referenceJoint);
+      if (middleRef) {
+        view.middleReference = middleRef;
+        view.middleRefLabel
+            = spec.referenceJoint; // "slow_joint" or "fast_joint"
+      }
+    }
+
     pairs.push_back(view);
   }
 
@@ -411,10 +443,9 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(400, 0));
-    const auto windowFlags
-        = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    const auto windowFlags = ImGuiWindowFlags_NoCollapse;
     if (!ImGui::Begin("Mimic constraint debugger", nullptr, windowFlags)) {
       ImGui::End();
       return;
@@ -527,10 +558,11 @@ private:
       return;
 
     ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
-                            | ImGuiTableFlags_SizingStretchProp;
+                            | ImGuiTableFlags_SizingStretchProp
+                            | ImGuiTableFlags_Resizable;
     if (ImGui::BeginTable("mimic_table", 6, flags)) {
       ImGui::TableSetupColumn("Pair");
-      ImGui::TableSetupColumn("Ref (rad)");
+      ImGui::TableSetupColumn("Middle Ref (rad)");
       ImGui::TableSetupColumn("Follower (rad)");
       ImGui::TableSetupColumn("Error (rad)");
       ImGui::TableSetupColumn("Base drift (m)");
@@ -542,12 +574,22 @@ private:
         ImGui::TableSetColumnIndex(0);
         ImGui::TextUnformatted(pair.label.c_str());
 
-        const double ref = pair.reference->getPosition(0);
+        // Use the middle pendulum's reference joint if available
+        double middleRefPos = 0.0;
+        if (pair.middleReference) {
+          middleRefPos = pair.middleReference->getPosition(0);
+        } else {
+          middleRefPos = pair.reference->getPosition(0);
+        }
+
         const double follower = pair.follower->getPosition(0);
-        const double error = follower - ref;
+        const double error = follower - middleRefPos;
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%.3f (%.1f deg)", ref, dart::math::toDegree(ref));
+        ImGui::Text(
+            "%.3f (%.1f deg)",
+            middleRefPos,
+            dart::math::toDegree(middleRefPos));
         ImGui::TableSetColumnIndex(2);
         ImGui::Text(
             "%.3f (%.1f deg)", follower, dart::math::toDegree(follower));

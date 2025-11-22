@@ -188,13 +188,22 @@ void configureMimicMotors(
     const WorldPtr& world,
     const MimicTuning& tuning)
 {
+  // Get the middle pendulum (uncoupled) which contains the true reference
+  // joints
+  const auto middlePendulum = world->getSkeleton("pendulum_with_base");
+
   for (const auto& spec : specs) {
     const auto skeleton = world->getSkeleton(spec.model);
     ASSERT_NE(nullptr, skeleton);
 
     auto* follower = skeleton->getJoint(spec.followerJoint);
-    auto* reference = skeleton->getJoint(spec.referenceJoint);
     ASSERT_NE(nullptr, follower);
+
+    // Get reference from middle pendulum (not from the same skeleton)
+    auto* reference = nullptr;
+    if (middlePendulum) {
+      reference = middlePendulum->getJoint(spec.referenceJoint);
+    }
     ASSERT_NE(nullptr, reference);
     ASSERT_GT(follower->getNumDofs(), 0u);
     ASSERT_GT(reference->getNumDofs(), 0u);
@@ -219,8 +228,7 @@ void configureMimicMotors(
     follower->setUseCouplerConstraint(false);
 
     setJointStabilization(follower, tuning);
-    setJointStabilization(
-        const_cast<dart::dynamics::Joint*>(prop.mReferenceJoint), tuning);
+    setJointStabilization(reference, tuning);
   }
 }
 
