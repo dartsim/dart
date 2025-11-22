@@ -1,6 +1,6 @@
 # Agent Guidelines for DART
 
-This file is a pointer board for agents working in this repository.  Keep it concise and expand other documents instead.
+This file is a pointer board for agents working in this repository. Keep it concise and expand other documents instead.
 
 ## Read First
 

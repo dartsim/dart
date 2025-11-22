@@ -410,6 +410,39 @@ TEST_F(Joints, PlanarJoint)
   kinematicsTest<PlanarJoint>();
 }
 
+//==============================================================================
+TEST_F(Joints, PlanarJointIsometry2dHelpers)
+{
+  SkeletonPtr skel = Skeleton::create("planar_helpers");
+  auto pair = skel->createJointAndBodyNodePair<PlanarJoint>();
+  auto* joint = pair.first;
+
+  const Eigen::Vector3d positions(0.25, -0.15, 0.6);
+  const Eigen::Isometry2d tf = PlanarJoint::convertToTransform(positions);
+  EXPECT_TRUE(PlanarJoint::convertToPositions(tf).isApprox(positions, 1e-12));
+
+  const auto verifyPlane = [&](auto setPlane) {
+    setPlane();
+    joint->setPositions(positions);
+
+    const Eigen::Isometry3d expected
+        = Eigen::Translation3d(joint->getTranslationalAxis1() * positions[0])
+          * Eigen::Translation3d(joint->getTranslationalAxis2() * positions[1])
+          * math::expAngular(joint->getRotationalAxis() * positions[2]);
+
+    EXPECT_TRUE(joint->getRelativeTransform().isApprox(expected, 1e-12));
+  };
+
+  verifyPlane([&]() { joint->setXYPlane(); });
+  verifyPlane([&]() { joint->setYZPlane(); });
+  verifyPlane([&]() { joint->setZXPlane(); });
+  verifyPlane([&]() {
+    const Eigen::Vector3d axis1(1.0, 1.0, 0.0);
+    const Eigen::Vector3d axis2(-1.0, 1.0, 0.0);
+    joint->setArbitraryPlane(axis1.normalized(), axis2.normalized());
+  });
+}
+
 // 6-dof joint
 // TEST_F(Joints, FreeJoint)
 //{
