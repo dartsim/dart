@@ -35,6 +35,7 @@
 #include <dart/Export.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <iostream>
 #include <limits>
 #include <memory>

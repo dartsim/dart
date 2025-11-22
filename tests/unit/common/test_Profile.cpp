@@ -57,10 +57,10 @@ protected:
 TEST_F(ProfileTest, CapturesHierarchyAndHotspots)
 {
   {
-    ProfileScope root("root");
+    ProfileScope root("root", __FILE__, __LINE__);
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
     {
-      ProfileScope child("child");
+      ProfileScope child("child", __FILE__, __LINE__);
       std::this_thread::sleep_for(std::chrono::milliseconds(3));
     }
   }
@@ -81,12 +81,12 @@ TEST_F(ProfileTest, CapturesHierarchyAndHotspots)
 TEST_F(ProfileTest, CapturesMultipleThreads)
 {
   {
-    ProfileScope mainScope("main-work");
+    ProfileScope mainScope("main-work", __FILE__, __LINE__);
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
   }
 
   std::thread worker([] {
-    ProfileScope workerScope("worker-work");
+    ProfileScope workerScope("worker-work", __FILE__, __LINE__);
     std::this_thread::sleep_for(std::chrono::milliseconds(3));
   });
   worker.join();
