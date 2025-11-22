@@ -39,9 +39,13 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 
+#include <cmath>
 #include <iostream>
 
-#define DART_CFM 1e-9
+#define DART_CFM 1e-6
+#define DART_MIMIC_DEFAULT_FORCE_LIMIT 800.0
+#define DART_MIMIC_DEFAULT_VELOCITY_LIMIT 50.0
+#define DART_MIMIC_DEFAULT_ERP 0.4
 
 namespace dart {
 namespace constraint {
@@ -128,21 +132,33 @@ void MimicMotorConstraint::update()
     const auto& mimicProp = mMimicProps[i];
 
     double timeStep = mJoint->getSkeleton()->getTimeStep();
-    double qError
-        = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
-              * mimicProp.mMultiplier
-          + mimicProp.mOffset - mJoint->getPosition(i);
-    double desiredVelocity = math::clip(
-        qError / timeStep,
-        mJoint->getVelocityLowerLimit(i),
-        mJoint->getVelocityUpperLimit(i));
+    double velLower = mJoint->getVelocityLowerLimit(i);
+    double velUpper = mJoint->getVelocityUpperLimit(i);
+    if (!std::isfinite(velLower))
+      velLower = -DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
+    if (!std::isfinite(velUpper))
+      velUpper = DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
+    double qError = mimicProp.mReferenceJoint
+                        ->getPosition(mimicProp.mReferenceDofIndex)
+                    * mimicProp.mMultiplier + mimicProp.mOffset
+                    - mJoint->getPosition(i);
+    const double erp = DART_MIMIC_DEFAULT_ERP;
+    double desiredVelocity
+        = math::clip((erp * qError) / timeStep, velLower, velUpper);
 
     mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
     if (mNegativeVelocityError[i] != 0.0) {
       // Note that we are computing impulse not force
-      mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
-      mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+      double upper = mJoint->getForceUpperLimit(i);
+      double lower = mJoint->getForceLowerLimit(i);
+      if (!std::isfinite(upper))
+        upper = DART_MIMIC_DEFAULT_FORCE_LIMIT;
+      if (!std::isfinite(lower))
+        lower = -DART_MIMIC_DEFAULT_FORCE_LIMIT;
+
+      mUpperBound[i] = upper * timeStep;
+      mLowerBound[i] = lower * timeStep;
 
       if (mActive[i]) {
         ++(mLifeTime[i]);

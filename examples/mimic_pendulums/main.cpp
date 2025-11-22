@@ -45,7 +45,10 @@
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
+#include <dart/constraint/CouplerConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
+#include <dart/constraint/JointConstraint.hpp>
+#include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
@@ -107,6 +110,27 @@ struct MimicPairView
   Eigen::Vector3d baseNow = Eigen::Vector3d::Zero();
 };
 
+struct PaletteEntry
+{
+  std::string model;
+  Eigen::Vector3d color;
+  std::string label;
+};
+
+const std::vector<PaletteEntry>& getPalette()
+{
+  static const std::vector<PaletteEntry> palette = {
+      {"pendulum_with_base", Eigen::Vector3d(0.7, 0.7, 0.7), "uncoupled"},
+      {"pendulum_with_base_mimic_slow_follows_fast",
+       Eigen::Vector3d(0.9, 0.35, 0.35),
+       "slow follows fast"},
+      {"pendulum_with_base_mimic_fast_follows_slow",
+       Eigen::Vector3d(0.35, 0.5, 0.95),
+       "fast follows slow"},
+  };
+  return palette;
+}
+
 Eigen::Vector3d translationOf(const BodyNode* bn)
 {
   if (bn == nullptr)
@@ -148,6 +172,11 @@ struct SolverConfig
   bool usePgsSolver = false;
   bool paused = false;
   bool stepOnce = false;
+  double erp = 0.4;
+  double cfm = 1e-6;
+  double forceLimit = 800.0;
+  double velocityLimit = 20.0;
+  double damping = 2.0;
 };
 
 void applyCollisionDetector(
@@ -185,6 +214,9 @@ void applyLcpSolver(
     boxedSolver->setSecondaryBoxedLcpSolver(
         std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
   }
+
+  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(cfg.cfm);
+  dart::constraint::JointConstraint::setErrorReductionParameter(cfg.erp);
 }
 
 std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
@@ -249,9 +281,24 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
   return specs;
 }
 
-void configureMimicCouplers(
-    const std::vector<MimicSpec>& specs, const WorldPtr& world)
+void configureMimicMotors(
+    const std::vector<MimicSpec>& specs,
+    const WorldPtr& world,
+    const SolverConfig& cfg)
 {
+  auto setJointLimitsAndDamping = [&](dart::dynamics::Joint* joint) {
+    if (!joint)
+      return;
+    joint->setPositionLowerLimit(0, -1.7);
+    joint->setPositionUpperLimit(0, 1.7);
+    joint->setLimitEnforcement(true);
+    joint->setVelocityLowerLimit(0, -cfg.velocityLimit);
+    joint->setVelocityUpperLimit(0, cfg.velocityLimit);
+    joint->setForceLowerLimit(0, -cfg.forceLimit);
+    joint->setForceUpperLimit(0, cfg.forceLimit);
+    joint->setDampingCoefficient(0, cfg.damping);
+  };
+
   for (const auto& spec : specs) {
     const auto skeleton = world->getSkeleton(spec.model);
     if (!skeleton) {
@@ -285,11 +332,15 @@ void configureMimicCouplers(
     prop.mReferenceDofIndex = referenceIndex;
     prop.mMultiplier = spec.multiplier;
     prop.mOffset = spec.offset;
-    prop.mConstraintType = MimicConstraintType::Coupler;
+    prop.mConstraintType = MimicConstraintType::Motor;
 
     follower->setMimicJointDofs(mimicProps);
     follower->setActuatorType(Joint::MIMIC);
-    follower->setUseCouplerConstraint(true);
+    follower->setUseCouplerConstraint(false);
+
+    setJointLimitsAndDamping(follower);
+    setJointLimitsAndDamping(
+        const_cast<dart::dynamics::Joint*>(prop.mReferenceJoint));
   }
 }
 
@@ -321,6 +372,21 @@ std::vector<MimicPairView> collectMimicPairs(
   return pairs;
 }
 
+void tintBases(const WorldPtr& world)
+{
+  for (const auto& entry : getPalette()) {
+    const auto skeleton = world->getSkeleton(entry.model);
+    if (!skeleton)
+      continue;
+
+    auto* base = skeleton->getBodyNode("base");
+    if (!base)
+      continue;
+
+    base->setColor(entry.color);
+  }
+}
+
 class MimicOverlay : public dart::gui::osg::ImGuiWidget
 {
 public:
@@ -329,12 +395,12 @@ public:
       WorldPtr world,
       std::vector<MimicPairView> pairs,
       std::string worldPath,
-      SolverConfig cfg)
-    : mViewer(viewer),
-      mWorld(std::move(world)),
-      mPairs(std::move(pairs)),
-      mWorldPath(std::move(worldPath)),
-      mConfig(std::move(cfg))
+  SolverConfig cfg)
+  : mViewer(viewer),
+    mWorld(std::move(world)),
+    mPairs(std::move(pairs)),
+    mWorldPath(std::move(worldPath)),
+    mConfig(std::move(cfg))
   {
     applyCollisionDetector(mConfig, mWorld);
     applyLcpSolver(mConfig, mWorld);
@@ -359,6 +425,7 @@ public:
     ImGui::TextWrapped("SDF: %s", mWorldPath.c_str());
 
     renderSolverControls();
+    renderLegend();
     ImGui::Separator();
 
     if (mPairs.empty()) {
@@ -415,6 +482,19 @@ private:
     ImGui::SameLine();
     if (ImGui::Checkbox("Force PGS solver", &pgs)) {
       mConfig.usePgsSolver = pgs;
+      applyLcpSolver(mConfig, mWorld);
+    }
+
+    double erp = mConfig.erp;
+    if (ImGui::SliderFloat("ERP", reinterpret_cast<float*>(&erp), 0.0f, 1.0f, "%.3f")) {
+      mConfig.erp = erp;
+      applyLcpSolver(mConfig, mWorld);
+    }
+    double cfm = mConfig.cfm;
+    float cfmFloat = static_cast<float>(cfm);
+    if (ImGui::SliderFloat(
+            "CFM", &cfmFloat, 1e-9f, 1e-3f, "%.1e", ImGuiSliderFlags_Logarithmic)) {
+      mConfig.cfm = static_cast<double>(cfmFloat);
       applyLcpSolver(mConfig, mWorld);
     }
 
@@ -489,6 +569,23 @@ private:
     }
   }
 
+  void renderLegend()
+  {
+    ImGui::Separator();
+    ImGui::Text("Rigs:");
+    for (const auto& entry : getPalette()) {
+      ImGui::Bullet();
+      ImGui::SameLine();
+      ImGui::ColorButton(
+          ("##color_" + entry.model).c_str(),
+          ImVec4(entry.color.x(), entry.color.y(), entry.color.z(), 1.0f),
+          ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs,
+          ImVec2(18, 18));
+      ImGui::SameLine();
+      ImGui::Text("%s (%s)", entry.model.c_str(), entry.label.c_str());
+    }
+  }
+
   void updateBasePositions()
   {
     for (auto& pair : mPairs)
@@ -526,7 +623,10 @@ int main(int /*argc*/, char*[] /*argv*/)
   const auto mimicSpecs = parseMimicSpecs(sdfText);
   if (mimicSpecs.empty())
     std::cerr << "No mimic joints found in " << worldUri << "\n";
-  configureMimicCouplers(mimicSpecs, world);
+
+  SolverConfig cfg;
+  configureMimicMotors(mimicSpecs, world, cfg);
+  tintBases(world);
 
   auto mimicPairs = collectMimicPairs(world, mimicSpecs);
 
@@ -550,8 +650,8 @@ int main(int /*argc*/, char*[] /*argv*/)
 
   viewer->setUpViewInWindow(0, 0, 1280, 720);
   viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(3.5f, 0.0f, 1.8f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f),
+      ::osg::Vec3(8.0f, -7.0f, 4.0f),
+      ::osg::Vec3(0.5f, 0.0f, 1.5f),
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
