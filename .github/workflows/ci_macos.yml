@@ -46,8 +46,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clean pixi cache
-        run: rm -rf "$HOME/.pixi"
+      - name: Ensure pixi home exists
+        run: mkdir -p "${HOME}/.pixi/bin"
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
@@ -97,8 +97,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clean pixi cache
-        run: rm -rf "$HOME/.pixi"
+      - name: Ensure pixi home exists
+        run: mkdir -p "${HOME}/.pixi/bin"
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
