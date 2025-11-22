@@ -339,8 +339,7 @@ TEST(Distance, UsesMinimumAcrossPairs)
   EXPECT_DOUBLE_EQ(expectedDistance, distance);
   EXPECT_DOUBLE_EQ(expectedDistance, result.minDistance);
   EXPECT_TRUE(
-      (result.shapeFrame1 == frame1.get()
-       && result.shapeFrame2 == frame2.get())
+      (result.shapeFrame1 == frame1.get() && result.shapeFrame2 == frame2.get())
       || (result.shapeFrame1 == frame2.get()
           && result.shapeFrame2 == frame1.get()));
 }

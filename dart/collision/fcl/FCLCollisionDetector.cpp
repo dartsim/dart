@@ -54,9 +54,9 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
 
-#include <limits>
-
 #include <assimp/scene.h>
+
+#include <limits>
 
 namespace dart {
 namespace collision {
