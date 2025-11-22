@@ -97,6 +97,9 @@ set(dartpy_nb_headers
   optimizer/solver.hpp
   optimizer/gradient_descent.hpp
   gui/module.hpp
+  gui/osg/osg.hpp
+  gui/osg/utils.hpp
+  gui/osg/support_polygon_visual.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -147,7 +150,6 @@ set(dartpy_nb_headers
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
-  gui.py
 )
 
 set(dartpy_nb_sources
@@ -174,6 +176,15 @@ set(dartpy_nb_sources
   optimizer/solver.cpp
   optimizer/gradient_descent.cpp
   gui/module.cpp
+  gui/osg/gui_event_handler.cpp
+  gui/osg/world_node.cpp
+  gui/osg/interactive_frame.cpp
+  gui/osg/viewer_attachment.cpp
+  gui/osg/support_polygon_visual.cpp
+  gui/osg/drag_and_drop.cpp
+  gui/osg/shadow_technique.cpp
+  gui/osg/viewer.cpp
+  gui/osg/imgui.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp
@@ -210,7 +221,6 @@ set(dartpy_nb_sources
   dynamics/hierarchical_ik.cpp
   dynamics/inverse_kinematics.cpp
   dynamics/skeleton.cpp
-  gui/module.cpp
   collision/module.cpp
   collision/collision_option.cpp
   collision/collision_result.cpp
@@ -279,6 +289,16 @@ if(TARGET dart-collision-bullet)
   endforeach()
 endif()
 
+if(TARGET dart-gui)
+  target_link_libraries(dartpy_nb PRIVATE dart-gui)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_gui_includes dart-gui ${prop})
+    if(_gui_includes)
+      target_include_directories(dartpy_nb PRIVATE ${_gui_includes})
+    endif()
+  endforeach()
+endif()
+
 if(TARGET dart-collision-ode)
   target_link_libraries(dartpy_nb PRIVATE dart-collision-ode)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
@@ -310,13 +330,6 @@ add_custom_command(
           ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
           ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
   COMMENT "Updating dartpy_nb __init__.py"
-)
-add_custom_command(
-  TARGET dartpy_nb POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
-          ${CMAKE_CURRENT_BINARY_DIR}/gui.py
-  COMMENT "Updating dartpy_nb gui shim"
 )
 
 if(DEFINED DART_DARTPY_NB_RUNTIME_DIR)
@@ -350,17 +363,11 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
   )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
-    DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy_nb"
-  )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
   install(TARGETS dartpy_nb
     LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-    DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
-  )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/gui.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy_nb"
   )
 endif()

@@ -29,10 +29,6 @@ void defWorld(nb::module_& m)
   nb::class_<World>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
-      .def(nb::new_([]() { return World::create(); }))
-      .def(
-          nb::new_([](const std::string& name) { return World::create(name); }),
-          nb::arg("name"))
       .def("clone", [](const World& self) { return self.clone(); })
       .def(
           "setName",
