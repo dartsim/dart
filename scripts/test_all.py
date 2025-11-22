@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from shutil import which
 from typing import Dict, Optional, Tuple
 
 from build_helpers import cmake_target_exists, get_build_dir
@@ -54,6 +55,7 @@ class Symbols:
 
 PIXI_DEFAULT_DARTPY = "ON"
 ROOT_DIR = Path(__file__).resolve().parent.parent
+PIXI_BIN = which("pixi")
 
 
 def _env_flag_enabled(name: str, default: str = "ON") -> bool:
@@ -82,10 +84,11 @@ def _cmake_option_enabled(option: str) -> Optional[bool]:
 
 
 def pixi_command(task: str, *args: str) -> str:
-    if args:
-        joined = " ".join(args)
-        return f"pixi run {task} {joined}"
-    return f"pixi run {task}"
+    if PIXI_BIN is None:
+        return f"pixi run {task} {' '.join(args)}".strip()
+
+    joined_args = f" {' '.join(args)}" if args else ""
+    return f"{PIXI_BIN} run {task}{joined_args}"
 
 
 class Colors:
@@ -215,10 +218,14 @@ def run_command(
 
 def check_pixi() -> bool:
     """Check if pixi is available"""
+    if PIXI_BIN is None:
+        print_error("pixi not found. Please install pixi first.")
+        return False
+
     try:
-        subprocess.run(["pixi", "--version"], capture_output=True, check=True)
+        subprocess.run([PIXI_BIN, "--version"], capture_output=True, check=True)
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError:
         print_error("pixi not found. Please install pixi first.")
         return False
 

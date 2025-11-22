@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Limit parallel build jobs to avoid posix_spawn failures on heavily loaded runners
-      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
     steps:
       - name: Checkout
         uses: actions/checkout@v5
