@@ -381,8 +381,6 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
   MimicTuning tuning;
-  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(tuning.cfm);
-  dart::constraint::JointConstraint::setErrorReductionParameter(tuning.erp);
 
   configureMimicMotors(specs, world, tuning);
   setCollisionDetector(world, /*useOde=*/true);
@@ -448,8 +446,6 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
   MimicTuning tuning;
-  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(tuning.cfm);
-  dart::constraint::JointConstraint::setErrorReductionParameter(tuning.erp);
 
   configureMimicMotors(specs, world, tuning);
   setCollisionDetector(world, /*useOde=*/true);
