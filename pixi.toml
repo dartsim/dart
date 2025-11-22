@@ -4,7 +4,7 @@ version = "6.16.0"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
 assimp = ">=5.4.3,<6"
@@ -51,8 +51,6 @@ sphinx_rtd_theme = "*"
 taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
-tracy-profiler-client = ">=0.11.1,<0.12"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 urdfdom = ">=4.0.1,<5"
 
 [tasks]
@@ -64,7 +62,9 @@ config = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
+DART_BUILD_PROFILE={{ build_profile }}
+DART_PROFILE_BUILTIN={{ profile_builtin }}
+DART_PROFILE_TRACY={{ profile_tracy }}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -110,6 +110,8 @@ cmake \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
+  -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} \
+  -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -123,6 +125,9 @@ cmake \
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_builtin", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
 ] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
@@ -146,12 +151,17 @@ lint-yaml = { cmd = """
 
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
+lint-md = { cmd = """
+    prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+""" }
+
 lint = { depends-on = [
   "lint-cpp",
   "lint-dart8",
   "lint-py",
   "lint-yaml",
   "lint-toml",
+  "lint-md",
 ] }
 
 # Check formatting without modifying files (used in CI)
@@ -215,7 +225,9 @@ config-debug = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
-DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
+DART_BUILD_PROFILE={{ build_profile }}
+DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -254,6 +266,8 @@ cmake \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
+  -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} \
+  -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} \
   -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -266,6 +280,9 @@ cmake \
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_builtin", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
 ] }
 
 build-tests = { cmd = [
@@ -357,7 +374,7 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
 config-py = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${DART_BUILD_DARTPY_VALUE}\" ]; then\n  DART_BUILD_DARTPY_VALUE=\"{{ dartpy }}\"\nfi\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nDART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}\nDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}\nDART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}\nDART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}\nDART_VERBOSE=${DART_VERBOSE:-OFF}\nDART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}\nif [ -z \"${DART_BUILD_DARTPY_VALUE}\" ]; then\n  DART_BUILD_DARTPY_VALUE=\"{{ dartpy }}\"\nfi\nif [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  if command -v sccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=sccache\n    CMAKE_CXX_COMPILER_LAUNCHER=sccache\n  elif command -v ccache >/dev/null 2>&1; then\n    CMAKE_C_COMPILER_LAUNCHER=ccache\n    CMAKE_CXX_COMPILER_LAUNCHER=ccache\n  fi\nfi\nLAUNCHER_DEFS=\"\"\nif [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"\nfi\nif [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then\n  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"\nfi\ncmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_DART8=ON -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_PYBIND11=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} $LAUNCHER_DEFS",
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
@@ -1078,6 +1095,8 @@ mesalib = ">=24"
 libglvnd = ">=1.7"
 libgl-devel = ">=1.7"
 libglu = ">=9.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 ################################################################################
 # osx-64
@@ -1085,6 +1104,8 @@ libglu = ">=9.0"
 
 [target.osx-64.dependencies]
 git = ">=2.40.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-64.tasks]
 download-osg = { cmd = """
@@ -1124,6 +1145,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 
 [target.osx-arm64.dependencies]
 git = ">=2.40.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-arm64.tasks]
 download-osg = { cmd = """
@@ -1164,6 +1187,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 [target.win-64.dependencies]
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.win-64.tasks]
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
@@ -1179,7 +1204,9 @@ config = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_DART8=ON \
-        -DDART_BUILD_PROFILE=ON \
+        -DDART_BUILD_PROFILE={{ build_profile }} \
+        -DDART_PROFILE_BUILTIN={{ profile_builtin }} \
+        -DDART_PROFILE_TRACY={{ profile_tracy }} \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1190,6 +1217,9 @@ config = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_builtin", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1281,14 +1311,20 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
-        -DDART_BUILD_PROFILE=ON \
+        -DDART_BUILD_PROFILE={{ build_profile }} \
+        -DDART_PROFILE_BUILTIN={{ profile_builtin }} \
+        -DDART_PROFILE_TRACY={{ profile_tracy }} \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" } }
+""", env = { DART_VERBOSE = "OFF" }, args = [
+  { arg = "build_profile", default = "ON" },
+  { arg = "profile_builtin", default = "ON" },
+  { arg = "profile_tracy", default = "ON" },
+] }
 
 test = { cmd = [
   "bash",

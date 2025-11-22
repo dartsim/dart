@@ -18,6 +18,7 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
 
 if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
@@ -194,6 +195,9 @@ if(TARGET dart-utils)
   target_link_libraries(INTEGRATION_simulation_World dart-utils)
 
   # Additional simulation tests
+  dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_Issue410.cpp)
+  target_link_libraries(INTEGRATION_simulation_Issue410 dart-utils)
+
   dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
   target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-utils)
 endif()
