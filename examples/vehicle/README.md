@@ -14,6 +14,7 @@ This example demonstrates a simple vehicle simulation with steering control and 
 ## Description
 
 The vehicle example showcases:
+
 - Basic vehicle kinematics and dynamics
 - Steering control with angle limits
 - Differential drive control for rear wheels

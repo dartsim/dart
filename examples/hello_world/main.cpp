@@ -40,6 +40,8 @@ using namespace dart;
 
 int main()
 {
+  DART_PROFILE_SCOPED_N("hello_world_main");
+
   // Create a box-shaped rigid body
   auto skeleton = dynamics::Skeleton::create();
   auto jointAndBody
@@ -109,6 +111,9 @@ int main()
 
   // Begin running the application loop
   viewer.run();
+
+  // Emit a text profiling summary on exit.
+  DART_PROFILE_TEXT_DUMP();
 
   return 0;
 }

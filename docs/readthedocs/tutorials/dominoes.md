@@ -22,8 +22,8 @@ very easily.
 ### Lesson 1a: Create a new domino
 
 Creating a new domino is straightforward. Find the
-``DominoEventHandler::attemptToCreateDomino`` function. The event handler keeps
-``mFirstDomino`` as the original domino created when the program starts up. To
+`DominoEventHandler::attemptToCreateDomino` function. The event handler keeps
+`mFirstDomino` as the original domino created when the program starts up. To
 make a new one, we can just clone it:
 
 ```{eval-rst}
@@ -88,7 +88,7 @@ position. First, let's grab the last domino that was placed in the environment:
 ```
 
 Now we should compute what we want its position to be. The event handler keeps a
-member called ``mTotalAngle`` which tracks how much the line of dominoes has
+member called `mTotalAngle` which tracks how much the line of dominoes has
 turned so far. We'll use that to figure out what translational offset the new
 domino should have from the last domino:
 
@@ -174,9 +174,9 @@ Finally, we should add on the change in angle for the new domino:
          :end-before: # snippet:py-dominoes-lesson1a-angle-end
 ```
 
-Be sure to uncomment the ``angle`` argument of the function.
+Be sure to uncomment the `angle` argument of the function.
 
-Now we can use ``x`` to set the positions of the domino:
+Now we can use `x` to set the positions of the domino:
 
 ```{eval-rst}
 .. tabs::
@@ -197,7 +197,7 @@ Now we can use ``x`` to set the positions of the domino:
 ```
 
 The root FreeJoint is the only joint in the domino's Skeleton, so we can just
-use the ``Skeleton::setPositions`` function to set it.
+use the `Skeleton::setPositions` function to set it.
 
 We'll hold off on adding the domino to the world until we confirm that it isn't
 going to spawn inside another object.
@@ -206,7 +206,7 @@ going to spawn inside another object.
 
 Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to make sure
 that the newly inserted Skeleton is not starting out in collision with anything,
-because this could make for a very ugly (perhaps even broken) simulation. 
+because this could make for a very ugly (perhaps even broken) simulation.
 
 We grab the world's constraint solver, create a temporary collision group that
 contains just the new domino, and temporarily remove the floor from the world's
@@ -257,7 +257,7 @@ domino and try again.
 ### Lesson 1c: Delete the last domino added
 
 Ordinarily, removing a Skeleton from a scene is just a matter of calling the
-``World::removeSkeleton`` function, but we have a little bit of bookkeeping to
+`World::removeSkeleton` function, but we have a little bit of bookkeeping to
 take care of for our particular application. First, we should check whether
 there are any dominoes to actually remove:
 
@@ -285,8 +285,8 @@ there are any dominoes to actually remove:
 
 But just setting up dominoes isn't much fun without being able to knock them
 down. We can quickly and easily knock down the dominoes by magically applying
-a force to the first one. Inside ``DominoEventHandler::update()`` there is a
-label for **Lesson 1d**. ``CustomWorldNode`` calls this method each tick, so
+a force to the first one. Inside `DominoEventHandler::update()` there is a
+label for **Lesson 1d**. `CustomWorldNode` calls this method each tick, so
 whenever the user presses 'f' we apply an external force to the first domino:
 
 ```{eval-rst}
@@ -315,7 +315,7 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::io::DartLoader`` class (pending upcoming changes to DART's
+by the `dart::io::DartLoader` class (pending upcoming changes to DART's
 loading system). First, create a loader:
 
 ```{eval-rst}
@@ -336,13 +336,13 @@ loading system). First, create a loader:
          :end-before: # snippet:py-dominoes-lesson2a-loader-end
 ```
 
-Note that many URDF files use ROS's ``package:`` scheme to specify the locations
+Note that many URDF files use ROS's `package:` scheme to specify the locations
 of the resources that need to be loaded. We won't be using this in our example,
-but in general you should use the function ``DartLoader::addPackageDirectory``
+but in general you should use the function `DartLoader::addPackageDirectory`
 to specify the locations of these packages, because DART does not have the same
 package resolving abilities of ROS.
 
-Now we'll have ``loader`` parse the file into a Skeleton:
+Now we'll have `loader` parse the file into a Skeleton:
 
 ```{eval-rst}
 .. tabs::
@@ -447,10 +447,10 @@ although all it will be able to do is collapse pitifully onto the floor.**
 
 ### Lesson 2b: Grab the desired joint angles
 
-To make the manipulator actually useful, we'll want to have the ``Controller``
-control its joint forces. For it to do that, the ``Controller`` class will need
-to be informed of what we want the manipulator's joint angles to be. This is 
-easily done in the constructor of the ``Controller`` class:
+To make the manipulator actually useful, we'll want to have the `Controller`
+control its joint forces. For it to do that, the `Controller` class will need
+to be informed of what we want the manipulator's joint angles to be. This is
+easily done in the constructor of the `Controller` class:
 
 ```{eval-rst}
 .. tabs::
@@ -470,7 +470,7 @@ easily done in the constructor of the ``Controller`` class:
          :end-before: # snippet:py-dominoes-lesson2b-desired-positions-end
 ```
 
-The function ``Skeleton::getPositions`` will get all the generalized coordinate
+The function `Skeleton::getPositions` will get all the generalized coordinate
 positions of all the joints in the Skeleton, stacked in a single vector. These
 Skeleton API functions are useful when commanding or controlling an entire
 Skeleton with a single mathematical expression.
@@ -478,8 +478,8 @@ Skeleton with a single mathematical expression.
 ### Lesson 2c: Write a stable PD controller for the manipulator
 
 Now that we know what configuration we want the manipulator to hold, we can
-write a PD controller that keeps them in place. Find the function ``setPDForces``
-in the ``Controller`` class.
+write a PD controller that keeps them in place. Find the function `setPDForces`
+in the `Controller` class.
 
 First, we'll grab the current positions and velocities:
 
@@ -783,7 +783,7 @@ to push on the domino from a very strange angle:
          :end-before: # snippet:py-dominoes-lesson3a-target-rotation-end
 ```
 
-Now we'll set the target so that it has a transform of ``target_offset`` with
+Now we'll set the target so that it has a transform of `target_offset` with
 respect to the frame of the domino:
 
 ```{eval-rst}
@@ -809,7 +809,7 @@ controller.
 
 ### Lesson 3b: Computing forces for OS Controller
 
-Find the function ``setOperationalSpaceForces()``. This is where we'll compute
+Find the function `setOperationalSpaceForces()`. This is where we'll compute
 the forces for our operational space controller.
 
 One of the key ingredients in an operational space controller is the mass matrix.
@@ -905,7 +905,7 @@ Next we'll want the time derivative of the Jacobian, as well as its pseudoinvers
 Notice that here we're compute the **classic** derivative, which means the
 derivative of the Jacobian with respect to time in classical coordinates rather
 than spatial coordinates. If you use spatial vector arithmetic, then you'll want
-to use ``BodyNode::getJacobianSpatialDeriv`` instead.
+to use `BodyNode::getJacobianSpatialDeriv` instead.
 
 Now we can compute the linear components of error:
 

@@ -1,5 +1,5 @@
 ---
-title: 'DART: Dynamic Animation and Robotics Toolkit'
+title: "DART: Dynamic Animation and Robotics Toolkit"
 tags:
   - robotics
   - computer animation
@@ -7,45 +7,45 @@ tags:
   - inverse kinematics
   - multibody dynamics
 authors:
- - name: Jeongseok Lee
-   orcid: 0000-0002-2146-7502
-   affiliation: 1
- - name: Michael X. Grey
-   orcid: 0000-0002-8159-2428
-   affiliation: 2
- - name: Sehoon Ha
-   orcid: 0000-0002-1972-328X
-   affiliation: 3
- - name: Tobias Kunz
-   orcid: 0000-0002-5614-2265
-   affiliation: 4
- - name: Sumit Jain
-   orcid: 0000-0003-2244-0077
-   affiliation: 5
- - name: Yuting Ye
-   orcid: 0000-0003-2643-7457
-   affiliation: 6
- - name: Siddhartha S. Srinivasa
-   orcid: 0000-0002-5091-106X
-   affiliation: 1
- - name: Mike Stilman
-   affiliation: 4
- - name: C. Karen Liu
-   orcid: 0000-0001-5926-0905
-   affiliation: 4
+  - name: Jeongseok Lee
+    orcid: 0000-0002-2146-7502
+    affiliation: 1
+  - name: Michael X. Grey
+    orcid: 0000-0002-8159-2428
+    affiliation: 2
+  - name: Sehoon Ha
+    orcid: 0000-0002-1972-328X
+    affiliation: 3
+  - name: Tobias Kunz
+    orcid: 0000-0002-5614-2265
+    affiliation: 4
+  - name: Sumit Jain
+    orcid: 0000-0003-2244-0077
+    affiliation: 5
+  - name: Yuting Ye
+    orcid: 0000-0003-2643-7457
+    affiliation: 6
+  - name: Siddhartha S. Srinivasa
+    orcid: 0000-0002-5091-106X
+    affiliation: 1
+  - name: Mike Stilman
+    affiliation: 4
+  - name: C. Karen Liu
+    orcid: 0000-0001-5926-0905
+    affiliation: 4
 affiliations:
- - name: University of Washington
-   index: 1
- - name: Open Source Robotics Foundation
-   index: 2
- - name: Disney Research
-   index: 3
- - name: Georgia Institute of Technology
-   index: 4
- - name: Google Inc.
-   index: 5
- - name: Oculus Research
-   index: 6
+  - name: University of Washington
+    index: 1
+  - name: Open Source Robotics Foundation
+    index: 2
+  - name: Disney Research
+    index: 3
+  - name: Georgia Institute of Technology
+    index: 4
+  - name: Google Inc.
+    index: 5
+  - name: Oculus Research
+    index: 6
 date: 15 November 2017
 bibliography: paper.bib
 ---

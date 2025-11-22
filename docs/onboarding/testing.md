@@ -1,6 +1,7 @@
 # DART Test Suite
 
 This directory contains the complete test suite for DART (Dynamic Animation and Robotics Toolkit). The tests are organized by type and module to facilitate easy navigation, maintenance, and scalability.
+
 ## Directory Structure
 
 ```
@@ -31,12 +32,12 @@ tests/
 └── README.md                # Points to this comprehensive guide
 ```
 
-
 ## Test Categories
 
 ### Integration Tests (`integration/`)
 
 Integration tests verify that **multiple components work correctly together** in end-to-end scenarios. These tests:
+
 - Test interactions between 2+ major subsystems (e.g., dynamics + collision + simulation)
 - Set up complex scenarios with full physics simulations
 - Validate cross-module functionality and data flow
@@ -44,6 +45,7 @@ Integration tests verify that **multiple components work correctly together** in
 - May take longer to run than unit tests
 
 **Key characteristics:**
+
 - Tests system behavior, not component behavior
 - Validates that components integrate correctly
 - Uses file parsing, complete simulations, or multi-object interactions
@@ -61,6 +63,7 @@ Integration tests verify that **multiple components work correctly together** in
 ### Unit Tests (`unit/`)
 
 Unit tests focus on testing **individual classes or functions in isolation**. These tests:
+
 - Test a single component without dependencies on other major subsystems
 - Are fast to execute (milliseconds)
 - Have minimal dependencies (e.g., only dart-math, only the collision module)
@@ -68,6 +71,7 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - Use simple test fixtures (SimpleFrame, basic objects)
 
 **Key characteristics:**
+
 - Tests component behavior, not system behavior
 - Validates correctness of individual algorithms or classes
 - Can run independently without complex setup
@@ -84,13 +88,15 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 ### How to Decide: Integration vs Unit?
 
 **Use Integration Test if:**
+
 - ✅ Tests interaction between World, Skeleton, and ConstraintSolver
 - ✅ Loads files and runs full simulations
 - ✅ Tests multiple modules working together
 - ✅ Validates end-to-end workflows
-- ✅ Depends on dart-utils or multiple dart-* libraries
+- ✅ Depends on dart-utils or multiple dart-\* libraries
 
 **Use Unit Test if:**
+
 - ✅ Tests a single class or function in isolation
 - ✅ Has minimal dependencies (1-2 modules max)
 - ✅ Uses simple test fixtures (not full simulations)
@@ -102,15 +108,18 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 **Note:** The `tests/regression/` directory has been **completely removed**. All issue-based regression tests have been renamed with descriptive names and placed in appropriate unit/ or integration/ directories.
 
 Previously, all issue-based regression tests lived in a separate `tests/regression/` directory with names like `test_Issue1234.cpp`. They have now been:
+
 1. **Renamed** with descriptive names that indicate what they test (e.g., `test_CollisionAccuracy.cpp`, `test_SkeletonState.cpp`)
 2. **Distributed** to appropriate module directories based on their test type
 
 **Migration examples:**
+
 - `test_Issue1184.cpp` → `integration/collision/test_CollisionAccuracy.cpp`
 - `test_Issue1243.cpp` → `integration/dynamics/test_SkeletonState.cpp`
 - `test_Issue986.cpp` → `unit/dynamics/test_CreateShapeNodeApi.cpp`
 
 **Rationale for migration:**
+
 - Descriptive test names improve code readability and maintainability
 - Organizing by module makes related tests easier to find
 - Eliminates redundant categorization (regression vs unit/integration)
@@ -120,6 +129,7 @@ Previously, all issue-based regression tests lived in a separate `tests/regressi
 ### Benchmarks (`benchmark/`)
 
 Performance benchmarks measure execution time and resource usage:
+
 - **collision/**: Collision detection performance with various shapes and scenarios
 - **dynamics/**: Kinematics computation performance
 - **integration/**: End-to-end system performance
@@ -151,6 +161,7 @@ Performance benchmarks measure execution time and resource usage:
    target_link_libraries(test_YourTest dart-utils)
    ```
 3. **Write your test** using GoogleTest framework:
+
    ```cpp
    #include <gtest/gtest.h>
    #include "dart/dynamics/All.hpp"
@@ -161,6 +172,7 @@ Performance benchmarks measure execution time and resource usage:
      EXPECT_TRUE(condition);
    }
    ```
+
 4. **Build and run** your test:
    ```bash
    cmake --build build
@@ -174,6 +186,7 @@ The test helpers are organized by dependency weight to minimize compilation over
 ### GTestUtils.hpp (Lightweight)
 
 Contains utility functions for GoogleTest with **minimal dependencies** (only `dart/math`):
+
 - Custom Eigen matrix/vector comparison macros (`EXPECT_VECTOR_NEAR`, `EXPECT_MATRIX_NEAR`, etc.)
 - Floating-point comparison functions
 - Transform and rotation equality checks
@@ -181,6 +194,7 @@ Contains utility functions for GoogleTest with **minimal dependencies** (only `d
 **Dependencies:** `dart/math`, `Eigen`, `gtest`
 
 **Usage:** Suitable for all tests, especially lightweight unit tests
+
 ```cpp
 #include "helpers/GTestUtils.hpp"
 ```
@@ -188,6 +202,7 @@ Contains utility functions for GoogleTest with **minimal dependencies** (only `d
 ### common_helpers.hpp (Lightweight)
 
 Provides mock utilities for common/utils testing with **lightweight dependencies**:
+
 - `TestResource` - Mock implementation of Resource interface
 - `PresentResourceRetriever` - Mock retriever that always succeeds
 - `AbsentResourceRetriever` - Mock retriever that always fails
@@ -195,6 +210,7 @@ Provides mock utilities for common/utils testing with **lightweight dependencies
 **Dependencies:** `dart/common` only
 
 **Usage:** For IO and utils tests that need resource retriever mocks
+
 ```cpp
 #include "helpers/common_helpers.hpp"
 ```
@@ -202,6 +218,7 @@ Provides mock utilities for common/utils testing with **lightweight dependencies
 ### dynamics_helpers.hpp (Heavy Dependencies)
 
 Provides skeleton and object creation utilities for **integration tests**:
+
 - Skeleton creation (`createThreeLinkRobot`, `createNLinkRobot`, `createNLinkPendulum`, etc.)
 - Object creation (`createGround`, `createBox`, `createSphere`, etc.)
 - Joint configuration utilities
@@ -209,6 +226,7 @@ Provides skeleton and object creation utilities for **integration tests**:
 **Dependencies:** Full DART library (dynamics, collision, math, etc.)
 
 **Usage:** Only for integration tests that need complex skeleton setup
+
 ```cpp
 #include "helpers/dynamics_helpers.hpp"
 ```
@@ -216,6 +234,7 @@ Provides skeleton and object creation utilities for **integration tests**:
 ### Best Practice
 
 Choose helpers based on what you actually need:
+
 - **Math/geometry unit tests**: Use only `GTestUtils.hpp`
 - **Common/utils tests**: Use `GTestUtils.hpp` + `common_helpers.hpp`
 - **Dynamics unit tests**: Avoid helpers if possible; use `dynamics_helpers.hpp` sparingly
@@ -226,12 +245,14 @@ Choose helpers based on what you actually need:
 ## Running Tests
 
 ### Run all tests:
+
 ```bash
 cd build
 ctest
 ```
 
 ### Run tests by category:
+
 ```bash
 ctest -L integration
 ctest -L unit
@@ -239,22 +260,26 @@ ctest -L regression
 ```
 
 ### Run a specific test:
+
 ```bash
 ctest -R test_Collision
 ```
 
 ### Run tests in parallel:
+
 ```bash
 ctest -j8  # Run 8 tests in parallel
 ```
 
 ### Run tests with verbose output:
+
 ```bash
 ctest --verbose
 ctest --output-on-failure  # Only show output for failing tests
 ```
 
 ### Run benchmarks:
+
 ```bash
 ./benchmark/integration/bm_empty
 ./benchmark/collision/bm_boxes
@@ -268,6 +293,7 @@ The test suite uses custom CMake functions defined in `/tests/CMakeLists.txt`:
 ### `dart_add_test(test_type target_name [source_files...])`
 
 Adds a new test executable:
+
 ```cmake
 dart_add_test("integration" test_Collision)
 dart_add_test("unit" test_Factory test_Factory.cpp)
@@ -276,6 +302,7 @@ dart_add_test("unit" test_Factory test_Factory.cpp)
 ### `dart_build_tests(...)`
 
 Builds multiple tests from a list of sources:
+
 ```cmake
 dart_build_tests(
   TYPE integration
@@ -290,6 +317,7 @@ dart_build_tests(
 ### `dart_get_tests(output_var test_type)`
 
 Retrieves all tests of a given type:
+
 ```cmake
 dart_get_tests(integration_tests "integration")
 ```
@@ -317,6 +345,7 @@ dart_get_tests(integration_tests "integration")
 **Problem:** Compilation errors like `'equals' was not declared in this scope` when using helper utilities.
 
 **Solution:** Always include the test namespace when using helpers:
+
 ```cpp
 #include "helpers/GTestUtils.hpp"
 using namespace dart::test;  // Critical for equals(), verifyTransform(), etc.
@@ -327,6 +356,7 @@ using namespace dart::test;  // Critical for equals(), verifyTransform(), etc.
 **Problem:** Clang-format reorders includes causing build issues.
 
 **Solution:** Follow the include ordering pattern (most specific to most general):
+
 1. Test helper headers (quoted paths: `"helpers/GTestUtils.hpp"`)
 2. DART library headers (angle brackets, ordered by layer: `<dart/math/...>`, `<dart/dynamics/...>`, etc.)
 3. External dependencies (`<gtest/gtest.h>`, `<Eigen/Dense>`, etc.)
@@ -337,6 +367,7 @@ using namespace dart::test;  // Critical for equals(), verifyTransform(), etc.
 **Problem:** Compilation errors in test files using Eigen types like `Matrix3d`, `Isometry3d`, etc.
 
 **Solution:** Add Eigen namespace when needed:
+
 ```cpp
 using namespace dart;
 using namespace dart::math;
@@ -348,6 +379,7 @@ using namespace Eigen;  // For Eigen types in test code
 **Problem:** Benchmark tests fail to link with "undefined reference to benchmark::State" errors.
 
 **Solution:** Ensure benchmark tests link against the benchmark library:
+
 ```cmake
 target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 ```
@@ -357,6 +389,7 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 **Problem:** Warnings treated as errors when using deprecated aggregate headers.
 
 **Solution:** Use modern header names:
+
 - `dart/utils/utils.hpp` → `dart/utils/All.hpp`
 - `dart/simulation/simulation.hpp` → `dart/simulation/All.hpp`
 - `dart/constraint/constraint.hpp` → `dart/constraint/All.hpp`
@@ -383,6 +416,7 @@ The test suite follows these core principles:
 ## Continuous Integration
 
 Tests are automatically run on:
+
 - Pull requests (before merging)
 - Commits to main branches
 - Scheduled nightly builds
@@ -392,22 +426,26 @@ All tests must pass before code can be merged.
 ## Debugging Tests
 
 ### Run a test in a debugger:
+
 ```bash
 gdb ./tests/integration/collision/test_Collision
 lldb ./tests/integration/collision/test_Collision
 ```
 
 ### Run a specific test case:
+
 ```bash
 ./tests/integration/collision/test_Collision --gtest_filter="CollisionTest.BoxBox"
 ```
 
 ### List all test cases without running:
+
 ```bash
 ./tests/integration/collision/test_Collision --gtest_list_tests
 ```
 
 ### Run with verbose output:
+
 ```bash
 ./tests/integration/collision/test_Collision --gtest_print_time=1
 ```
@@ -415,6 +453,7 @@ lldb ./tests/integration/collision/test_Collision
 ## Contributing
 
 When contributing tests:
+
 1. Follow the organizational structure outlined in this document
 2. Add your test to the appropriate CMakeLists.txt
 3. Ensure your test passes locally before submitting
@@ -424,6 +463,7 @@ When contributing tests:
 ## Questions?
 
 If you have questions about the test suite or where to add a new test, please:
+
 - Check this README first
 - Review existing tests in the same category
 - Ask in the DART development forum or GitHub discussions
