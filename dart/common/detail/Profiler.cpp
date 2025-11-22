@@ -397,9 +397,9 @@ void Profiler::printNode(
          << colorize(padRight(child->label, labelWidth), color) << ' '
          << "total " << formatDurationAligned(child->inclusiveNs) << ' '
          << "self " << formatDurationAligned(child->selfNs) << ' '
-         << "per-call " << formatDurationAligned(avgNs) << ' '
-         << "calls " << std::setw(8) << child->callCount << ' '
-         << "share " << padRight(colorize(formatPercent(pct), color), 6);
+         << "per-call " << formatDurationAligned(avgNs) << ' ' << "calls "
+         << std::setw(8) << child->callCount << ' ' << "share "
+         << padRight(colorize(formatPercent(pct), color), 6);
     if (!child->source.empty()) {
       line << " src " << child->source;
     }
@@ -510,8 +510,8 @@ void Profiler::printSummary(std::ostream& os)
       const auto color = heatColor(pct);
       const std::string tag = isHot ? colorize("[HOT]", color) : "     ";
       os << "  " << tag << " "
-         << colorize(padRight(entry.path, hotLabelWidth), color)
-         << " " << padRight(("thr " + entry.threadLabel), 12) << " total "
+         << colorize(padRight(entry.path, hotLabelWidth), color) << " "
+         << padRight(("thr " + entry.threadLabel), 12) << " total "
          << formatDurationAligned(entry.inclusiveNs) << " self "
          << formatDurationAligned(entry.selfNs) << " per-call "
          << formatDurationAligned(avgNs) << " calls " << entry.callCount
@@ -538,8 +538,7 @@ void Profiler::printSummary(std::ostream& os)
 
     os << "- thread " << record->label << " total "
        << formatDuration(threadTotal) << '\n';
-    printThreadTree(
-        os, *record, threadTotal, /*minPercent=*/0.25, labelWidth);
+    printThreadTree(os, *record, threadTotal, /*minPercent=*/0.25, labelWidth);
   }
   os << std::flush;
 }
