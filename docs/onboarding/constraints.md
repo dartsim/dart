@@ -11,12 +11,14 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 ### Constraint Module (`dart/constraint`)
 
 **Core Components:**
+
 - ConstraintBase.hpp/cpp - Base class for all constraints
 - ConstraintSolver.hpp/cpp - Main solver managing constraints
 - ConstrainedGroup.hpp/cpp - Groups of interacting skeletons
 - BoxedLcpConstraintSolver.hpp/cpp - LCP-based constraint solver
 
 **Constraint Types:**
+
 - ContactConstraint.hpp/cpp - Contact between rigid bodies
 - SoftContactConstraint.hpp/cpp - Soft body contacts
 - JointConstraint.hpp/cpp - Joint-space constraints
@@ -31,6 +33,7 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 - DynamicJointConstraint.hpp/cpp - Dynamic joint constraints
 
 **LCP Solvers:**
+
 - LCPSolver.hpp/cpp - Base LCP solver
 - BoxedLcpSolver.hpp - Boxed LCP solver interface
 - DantzigLCPSolver.hpp/cpp - Dantzig LCP solver
@@ -40,11 +43,13 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 
 **Dantzig Solver Implementation:**
 Modern C++20 template-based implementation in `dart/math/lcp/Dantzig/` with two key design decisions:
+
 - **PivotMatrix:** Hybrid architecture combining Eigen storage with pointer-based O(1) row swapping
 - **Hybrid SIMD:** Threshold-based strategy switching between raw pointers and Eigen SIMD based on problem size
-See code for implementation details.
+  See code for implementation details.
 
 **Utilities:**
+
 - ContactSurface.hpp/cpp - Contact surface parameters
 - SmartPointer.hpp - Smart pointer definitions
 
@@ -63,6 +68,7 @@ Time integration is no longer a standalone module. `dart::simulation::World::ste
 **Role:** Abstract base class defining the interface for all constraint types.
 
 **Key Responsibilities:**
+
 - Define constraint dimension
 - Update constraint state based on skeleton states
 - Provide constraint information for LCP formulation
@@ -70,6 +76,7 @@ Time integration is no longer a standalone module. `dart::simulation::World::ste
 - Track constraint activation state
 
 **Key Data Structures:**
+
 ```cpp
 struct ConstraintInfo {
     double* x;        // Impulse
@@ -83,6 +90,7 @@ struct ConstraintInfo {
 ```
 
 **Core Interface:**
+
 - `update()` - Update constraint using skeleton states
 - `getInformation(ConstraintInfo*)` - Fill LCP variables
 - `applyUnitImpulse(index)` - Apply unit impulse to constraint space
@@ -98,6 +106,7 @@ struct ConstraintInfo {
 **Role:** Central manager for all constraints in a simulation, orchestrating constraint solving.
 
 **Key Responsibilities:**
+
 - Manage multiple skeletons
 - Handle constraint registration (manual and automatic)
 - Perform collision detection
@@ -105,6 +114,7 @@ struct ConstraintInfo {
 - Coordinate with LCP solvers
 
 **Constraint Categories:**
+
 1. **Automatic Constraints** (created by solver):
    - Contact constraints (from collision detection)
    - Soft contact constraints
@@ -116,6 +126,7 @@ struct ConstraintInfo {
    - Custom constraints added via `addConstraint()`
 
 **Workflow:**
+
 ```
 solve()
   → updateConstraints()
@@ -125,12 +136,14 @@ solve()
 ```
 
 **Collision Detection Integration:**
+
 - Uses `CollisionDetector` to find contacts
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
 - Supports multiple collision detection backends
 
 **Key Features:**
+
 - Separates constraints into independent groups for efficiency
 - Supports skeleton unification for articulated systems
 - Configurable time stepping
@@ -143,6 +156,7 @@ solve()
 **Role:** Represents a group of skeletons that interact through constraints.
 
 **Key Responsibilities:**
+
 - Group constraints affecting the same set of bodies
 - Provide unified interface for group-based solving
 - Track total constraint dimension
@@ -156,11 +170,13 @@ solve()
 **Role:** Concrete implementation of ConstraintSolver using Boxed LCP formulation.
 
 **Key Responsibilities:**
+
 - Formulate constraints as boxed LCP: `A*x = b + w`
 - Solve using primary and optional secondary LCP solvers
 - Handle solver fallback on failure
 
 **LCP Formulation:**
+
 ```
 A*x = b + w
 where each x[i], w[i] satisfies:
@@ -170,6 +186,7 @@ where each x[i], w[i] satisfies:
 ```
 
 **Solver Strategy:**
+
 - Primary solver: DantzigBoxedLcpSolver (default)
 - Secondary solver: PgsBoxedLcpSolver (fallback, default)
 - Caches matrix data (A, x, b, lo, hi, w, findex) for efficiency
@@ -183,6 +200,7 @@ where each x[i], w[i] satisfies:
 **Role:** Handles rigid body contact constraints with friction.
 
 **Key Features:**
+
 - Normal contact impulse (non-penetration)
 - Tangential friction (Coulomb friction model)
 - Restitution (bounce) modeling
@@ -191,12 +209,14 @@ where each x[i], w[i] satisfies:
 - Constraint force mixing (CFM) for soft constraints
 
 **Physics Parameters:**
+
 - Primary and secondary friction coefficients
 - Slip compliance (for soft friction)
 - Restitution coefficient
 - Error allowance and reduction velocity
 
 **Formulation:**
+
 - 3D constraint (1 normal + 2 tangential directions)
 - Uses spatial jacobians for constraint application
 - Supports self-collision detection
@@ -208,6 +228,7 @@ where each x[i], w[i] satisfies:
 **Role:** Handles multiple joint-space constraints (limits, servo motors).
 
 **Key Features:**
+
 - Joint position limits
 - Joint velocity limits
 - Servo motor control
@@ -215,6 +236,7 @@ where each x[i], w[i] satisfies:
 - Per-DOF activation tracking
 
 **Constraint Parameters:**
+
 - Impulse bounds (upper/lower)
 - Desired velocity change
 - Lifetime tracking (for iterative solvers)
@@ -227,12 +249,14 @@ where each x[i], w[i] satisfies:
 **Role:** Specifically handles joint position and velocity limits.
 
 **Key Features:**
+
 - Position limit violation detection and correction
 - Velocity limit enforcement
 - Per-DOF activation (up to 6 DOF)
 - Violation magnitude tracking
 
 **Implementation:**
+
 - Computes required negative velocity to satisfy limits
 - Uses impulse bounds to enforce constraints
 - Tracks lifetime for stability
@@ -244,6 +268,7 @@ where each x[i], w[i] satisfies:
 **Role:** Implements servo motor control as a constraint.
 
 **Key Features:**
+
 - Position/velocity tracking
 - Force limits (impulse bounds)
 - Per-DOF activation
@@ -261,6 +286,7 @@ reference joint and the dependent joint participate in the constraint solve, so
 reaction torques propagate through the articulated system.
 
 **Key Features:**
+
 - Shares the same `MimicDofProperties` multipliers/offsets as mimic motors
 - Activated by `Joint::setUseCouplerConstraint(true)` (per mimic joint)
 - Couples multiple skeletons when reference and dependent joints belong to
@@ -281,6 +307,7 @@ the legacy servo-style behavior when bilateral coupling is not required.
 **Role:** Abstract interface for boxed LCP solvers.
 
 **Key Method:**
+
 ```cpp
 bool solve(int n, double* A, double* x, double* b,
            int nub, double* lo, double* hi,
@@ -288,10 +315,12 @@ bool solve(int n, double* A, double* x, double* b,
 ```
 
 **Available Implementations:**
+
 1. **DantzigBoxedLcpSolver** - Dantzig pivoting method (accurate but slower)
 2. **PgsBoxedLcpSolver** - Projected Gauss-Seidel (fast iterative method)
 
 **Solver Selection Strategy:**
+
 - Dantzig: Better for small, dense systems; guaranteed convergence
 - PGS: Better for large systems; faster but may not converge
 - Default: Dantzig with PGS fallback
@@ -382,26 +411,31 @@ ConstraintSolver::solve()
 ## Key Design Patterns
 
 ### 1. Strategy Pattern
+
 - **Where:** BoxedLcpSolver hierarchy
 - **Purpose:** Allow runtime selection of constraint solving method
 - **Benefit:** Easy to add new solvers without modifying existing code
 
 ### 2. Template Method Pattern
+
 - **Where:** ConstraintSolver with abstract `solveConstrainedGroup()`
 - **Purpose:** Define skeleton of constraint solving algorithm
 - **Benefit:** Concrete solvers only implement specific solving logic
 
 ### 3. Factory Pattern
+
 - **Where:** Automatic constraint creation in ConstraintSolver
 - **Purpose:** Centralized constraint creation based on simulation state
 - **Benefit:** Encapsulates constraint creation logic
 
 ### 4. Visitor Pattern (Implicit)
+
 - **Where:** Constraint iteration with callbacks
 - **Purpose:** `eachConstraint()` allows operations on all constraints
 - **Benefit:** Extensible without modifying ConstraintSolver
 
 ### 5. Object Pool Pattern (Implicit)
+
 - **Where:** Constraint caching in ConstraintSolver
 - **Purpose:** Reuse constraint objects across timesteps
 - **Benefit:** Reduces allocation overhead
@@ -411,6 +445,7 @@ ConstraintSolver::solve()
 ## Performance Considerations
 
 ### Constraint Solving
+
 1. **Group Independence:** Independent groups can be solved in parallel
 2. **LCP Caching:** Matrix data cached and reused when possible
 3. **Solver Selection:** Dantzig for accuracy, PGS for speed
@@ -418,6 +453,7 @@ ConstraintSolver::solve()
 5. **Constraint Activation:** Inactive constraints skipped
 
 ### Integration
+
 1. **Method Selection:**
    - Semi-implicit Euler: Best balance for real-time
    - RK4: Better accuracy, 4x cost
@@ -432,30 +468,33 @@ ConstraintSolver::solve()
 ### Constraint Parameters
 
 **Contact Constraints:**
+
 - `ErrorAllowance` - How much penetration is allowed (default: small value)
 - `ErrorReductionParameter` (ERP) - Constraint stabilization strength (0-1, default: 0.01)
 - `MaxErrorReductionVelocity` - Maximum correction velocity
 - `ConstraintForceMixing` (CFM) - Soft constraint parameter (1e-9 to 1, default: 1e-5)
 
 **Joint Constraints:**
+
 - Similar parameters as contact constraints
 - Configured per constraint type
 
 ### Solver Configuration
 
 **Primary Solver Selection:**
+
 ```cpp
 auto dantzig = std::make_shared<DantzigBoxedLcpSolver>();
 auto solver = std::make_shared<BoxedLcpConstraintSolver>(dantzig);
 ```
 
 **With Fallback:**
+
 ```cpp
 auto primary = std::make_shared<DantzigBoxedLcpSolver>();
 auto secondary = std::make_shared<PgsBoxedLcpSolver>();
 auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 ```
-
 
 ## Extension Points
 
@@ -474,35 +513,42 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 3. Handle the boxed LCP formulation
 4. Register with `BoxedLcpConstraintSolver`
 
-
 ## Common Issues and Solutions
 
 ### Issue 1: Constraint Jitter
+
 **Symptom:** Bodies vibrate at contacts
 **Solution:**
+
 - Reduce ERP (slower correction)
 - Increase CFM (softer constraints)
 - Use smaller timestep
 
 ### Issue 2: Penetration
+
 **Symptom:** Bodies pass through each other
 **Solution:**
+
 - Reduce timestep
 - Increase ERP (faster correction)
 - Check collision detection accuracy
 - Verify constraint activation
 
 ### Issue 3: Instability
+
 **Symptom:** Simulation explodes
 **Solution:**
+
 - Keep timestep modest (semi-implicit Euler remains stable with small dt)
 - Reduce timestep
 - Check mass/inertia values
 - Verify constraint bounds
 
 ### Issue 4: Performance
+
 **Symptom:** Simulation too slow
 **Solution:**
+
 - Use PGS solver for large systems
 - Optimize collision detection
 - Reduce timestep resolution
@@ -543,6 +589,7 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 ### Key Files Analyzed
 
 **Constraint Module:**
+
 - `dart/constraint/ConstraintBase.hpp`
 - `dart/constraint/ConstraintSolver.hpp`
 - `dart/constraint/ConstrainedGroup.hpp`
@@ -554,6 +601,7 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 - `dart/constraint/BoxedLcpSolver.hpp`
 
 ### Related Concepts
+
 - Linear Complementarity Problem (LCP)
 - Dantzig Algorithm
 - Projected Gauss-Seidel (PGS)
@@ -569,12 +617,14 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 The DART constraint and integration modules provide a sophisticated framework for physics-based simulation:
 
 **Constraint Module** handles:
+
 - Multiple constraint types (contact, joint limits, motors)
 - Flexible LCP-based solving with multiple solver options
 - Automatic constraint generation from collisions and joint states
 - Efficient grouping of independent constraints
 
 **Integration Module** provides:
+
 - Multiple numerical integration schemes
 - Configurable accuracy vs. performance tradeoffs
 - Support for special configuration spaces

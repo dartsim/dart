@@ -146,12 +146,17 @@ lint-yaml = { cmd = """
 
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 
+lint-md = { cmd = """
+    prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+""" }
+
 lint = { depends-on = [
   "lint-cpp",
   "lint-dart8",
   "lint-py",
   "lint-yaml",
   "lint-toml",
+  "lint-md",
 ] }
 
 # Check formatting without modifying files (used in CI)
