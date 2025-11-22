@@ -22,6 +22,7 @@ C++ headers and sources should be contained in the same subdirectory of `dart/` 
 DART uses C++20 features to improve code clarity, maintainability, and performance. Use these patterns when appropriate:
 
 **Concepts for Template Constraints:**
+
 ```cpp
 // Prefer concepts over SFINAE
 template <std::floating_point T>
@@ -33,6 +34,7 @@ concept UniformIntCompatible = std::integral<T> && !std::same_as<T, bool>;
 ```
 
 **std::span for Function Parameters:**
+
 ```cpp
 // Prefer std::span over const std::vector<T>&
 void addSkeletons(std::span<const SkeletonPtr> skeletons);
@@ -41,6 +43,7 @@ void addSkeletons(std::span<const SkeletonPtr> skeletons);
 ```
 
 **Spaceship Operator for Comparisons:**
+
 ```cpp
 // Replace 6 operators with 2
 auto operator<=>(const Ptr& other) const {
@@ -50,6 +53,7 @@ bool operator==(const Ptr& other) const = default;
 ```
 
 **Branch Prediction Attributes:**
+
 ```cpp
 // Use [[likely]] / [[unlikely]] for hot paths
 if (objects.empty()) [[unlikely]]
@@ -60,6 +64,7 @@ if (!result.isCollision()) [[likely]]
 ```
 
 **When NOT to use C++20 features:**
+
 - Avoid `std::format` until Ubuntu 24.04 LTS (GCC 13+)
 - Don't replace clear index-based loops with complex range expressions
 - Keep SFINAE for Eigen compile-time traits (not proper constexpr)
@@ -83,7 +88,7 @@ DART now maintains two naming schemes in parallel:
 - **Enum members**: PascalCase (e.g., `enum class Mode { Disabled, Enabled };`)
 - **Member variables**: Prefixed with `m` (e.g., `mExampleMember`)
 - **File extensions**: `.hpp` for headers, `.cpp` for sources
-- **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake_case everywhere in `dart8/` and its dependents; legacy `tests/` use `test_` + PascalCase while dart8-era tests stay fully snake_case
+- **File naming**: PascalCase in `dart/` and `python/dartpy/`; snake*case everywhere in `dart8/` and its dependents; legacy `tests/` use `test*` + PascalCase while dart8-era tests stay fully snake_case
 - **Header guards**: `DART_NAMESPACE_CLASSNAME_HPP_`
 - **Braces**: No "cuddled" braces (except namespaces)
 - **Documentation**: Doxygen-style comments (`///`)
@@ -96,6 +101,7 @@ DART now maintains two naming schemes in parallel:
 ### Header Style
 
 **Rules:**
+
 - Use **two-space** indentation
 - Use **camelCase** function names
 - Use **PascalCase** class names
@@ -190,6 +196,7 @@ private:
 ### Source Style
 
 **Rules:**
+
 - Use **two-space** indentation
 - Use **camelCase** function names
 - Use **PascalCase** class names
@@ -240,6 +247,7 @@ int ExampleClass::exampleMethod(int a, int b, int* out) const
 These guidelines are based on [Herb Sutter's article](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/). Consider looking at the full article for details.
 
 **General Rules:**
+
 - Use a by-value `std::shared_ptr` as a parameter if the function surely takes the shared ownership.
 - Use a `const std::shared_ptr&` as a parameter only if you're not sure whether or not you'll take a copy and share ownership.
 - Use a non-const `std::shared_ptr&` parameter only to modify the `std::shared_ptr`.
@@ -262,13 +270,13 @@ Use all-caps for all macro names to ensure consistency and to visually distingui
 
 The Python bindings use different naming conventions than the C++ code to follow Python community standards:
 
-| Element           | C++ Style     | Python Style  | Example (C++)           | Example (Python)        |
-|-------------------|---------------|---------------|-------------------------|-------------------------|
-| Functions         | camelCase     | snake_case    | `isIdentity()`          | `is_identity()`         |
-| Classes           | PascalCase    | PascalCase    | `MyClass`               | `MyClass`               |
-| Variables         | snake_case    | snake_case    | `my_variable`           | `my_variable`           |
-| Constants         | ALL_CAPS      | ALL_CAPS      | `MY_CONSTANT`           | `MY_CONSTANT`           |
-| Namespaces/Modules| N/A           | snake_case    | `dart::dynamics`        | `dart.dynamics`         |
+| Element            | C++ Style  | Python Style | Example (C++)    | Example (Python) |
+| ------------------ | ---------- | ------------ | ---------------- | ---------------- |
+| Functions          | camelCase  | snake_case   | `isIdentity()`   | `is_identity()`  |
+| Classes            | PascalCase | PascalCase   | `MyClass`        | `MyClass`        |
+| Variables          | snake_case | snake_case   | `my_variable`    | `my_variable`    |
+| Constants          | ALL_CAPS   | ALL_CAPS     | `MY_CONSTANT`    | `MY_CONSTANT`    |
+| Namespaces/Modules | N/A        | snake_case   | `dart::dynamics` | `dart.dynamics`  |
 
 ### Example
 

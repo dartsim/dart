@@ -10,6 +10,7 @@ This example demonstrates hybrid dynamics simulation where some joints are contr
 ## Description
 
 The hybrid dynamics example showcases:
+
 - Mixed joint actuation types (passive, velocity-controlled, locked)
 - Programmed joint commands using sinusoidal patterns
 - Dynamic switching of joint actuator types during simulation

@@ -2,7 +2,7 @@
 
 Describe your changes here.
 
-***
+---
 
 #### Before creating a pull request
 
