@@ -59,17 +59,21 @@ void defWorldNode(nb::module_& m)
   nb::class_<WorldNode, PyWorldNode>(m, "WorldNode", nb::dynamic_attr())
       .def(
           "__init__",
-          [](PyWorldNode* self) { new (self) PyWorldNode(); })
+          [](PyWorldNode* self) {
+            new (self) PyWorldNode();
+          })
       .def(
           "__init__",
           [](PyWorldNode* self,
              dart::simulation::World* world,
-             const ShadowTechniquePtr& shadow) {
-            WorldPtr wptr = world ? WorldPtr(world, [](dart::simulation::World*) {}) : WorldPtr{};
-            new (self) PyWorldNode(wptr, toShadowRef(shadow));
+             const ::osg::ref_ptr<osgShadow::ShadowTechnique>& shadow) {
+            // Create a non-owning shared_ptr from the raw pointer
+            WorldPtr wptr = world ? std::shared_ptr<dart::simulation::World>(
+                world, [](dart::simulation::World*){}) : nullptr;
+            new (self) PyWorldNode(wptr, shadow);
           },
           nb::arg("world") = nullptr,
-          nb::arg("shadowTechnique") = ShadowTechniquePtr{})
+          nb::arg("shadowTechnique") = ::osg::ref_ptr<osgShadow::ShadowTechnique>())
       .def("setWorld", &WorldNode::setWorld, nb::arg("newWorld"))
       .def("getWorld", &WorldNode::getWorld)
       .def("refresh", &WorldNode::refresh)
@@ -112,23 +116,27 @@ void defRealTimeWorldNode(nb::module_& m)
       m, "RealTimeWorldNode", nb::dynamic_attr())
       .def(
           "__init__",
-          [](PyRealTimeWorldNode* self) { new (self) PyRealTimeWorldNode(); })
+          [](PyRealTimeWorldNode* self) {
+            new (self) PyRealTimeWorldNode();
+          })
       .def(
           "__init__",
           [](PyRealTimeWorldNode* self,
              dart::simulation::World* world,
-             const ShadowTechniquePtr& shadower,
+             const ::osg::ref_ptr<osgShadow::ShadowTechnique>& shadower,
              double targetFrequency,
              double targetRealTimeFactor) {
-            WorldPtr wptr = world ? WorldPtr(world, [](dart::simulation::World*) {}) : WorldPtr{};
+            // Create a non-owning shared_ptr from the raw pointer
+            WorldPtr wptr = world ? std::shared_ptr<dart::simulation::World>(
+                world, [](dart::simulation::World*){}) : nullptr;
             new (self) PyRealTimeWorldNode(
                 wptr,
-                toShadowRef(shadower),
+                shadower,
                 targetFrequency,
                 targetRealTimeFactor);
           },
           nb::arg("world") = nullptr,
-          nb::arg("shadower") = ShadowTechniquePtr{},
+          nb::arg("shadower") = ::osg::ref_ptr<osgShadow::ShadowTechnique>(),
           nb::arg("targetFrequency") = 60.0,
           nb::arg("targetRealTimeFactor") = 1.0)
       .def("setTargetFrequency", &RealTimeWorldNode::setTargetFrequency, nb::arg("targetFrequency"))

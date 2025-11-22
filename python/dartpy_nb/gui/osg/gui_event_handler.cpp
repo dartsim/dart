@@ -330,7 +330,9 @@ void defGuiEventHandler(nb::module_& m)
 
   nb::class_<GUIEventHandlerNoRef, osgGA::GUIEventHandler, PyGUIEventHandler>(
       m, "GUIEventHandler")
-      .def(nb::init<>());
+      .def("__init__", [](PyGUIEventHandler* self) {
+        new (self) PyGUIEventHandler();
+      });
 }
 
 } // namespace dart::python_nb
