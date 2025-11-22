@@ -42,4 +42,3 @@ Launch the each executable from the build directory above (e.g.,):
     $ ./tutorial_biped/tutorial_biped
 
 Follow the instructions detailed in the console.
-

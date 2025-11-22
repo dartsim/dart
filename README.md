@@ -21,6 +21,7 @@ dynamics.
 Install DART using your preferred package manager:
 
 **Python**
+
 ```shell
 uv add dartpy                             # uv (preferred)
 pip install dartpy                        # PyPI
@@ -29,6 +30,7 @@ conda install -c conda-forge dartpy       # or Conda
 ```
 
 **C++**
+
 ```shell
 # Cross-platform (recommended)
 pixi add dartsim-cpp  # or: conda install -c conda-forge dartsim-cpp
@@ -56,12 +58,12 @@ An overview of DART is also available on [DeepWiki](https://deepwiki.com/dartsim
 
 ## Project Status
 
-| Item                  | Status |
-| --------------------- | ------ |
-| Build                 | [![CI Ubuntu](https://github.com/dartsim/dart/actions/workflows/ci_ubuntu.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_ubuntu.yml) [![CI macOS](https://github.com/dartsim/dart/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_macos.yml) [![CI Windows](https://github.com/dartsim/dart/actions/workflows/ci_windows.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_windows.yml) |
-| Doc, Coverage, Linter | [![Documentation Status](https://readthedocs.org/projects/dart/badge/?version=latest)](https://dart.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dartsim/dart&amp;utm_campaign=Badge_Grade) |
-| Packages              | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/dartsim/badges/version.svg)](https://anaconda.org/conda-forge/dartsim) [![PyPI Version](https://img.shields.io/pypi/v/dartpy)](https://pypi.org/project/dartpy/) [All Distributions →](https://repology.org/project/dart-sim/versions) |
-| Maintenance           | [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Average time to resolve an issue") [![Percentage of issues still open](http://isitmaintained.com/badge/open/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Percentage of issues still open") |
+| Item                  | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build                 | [![CI Ubuntu](https://github.com/dartsim/dart/actions/workflows/ci_ubuntu.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_ubuntu.yml) [![CI macOS](https://github.com/dartsim/dart/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_macos.yml) [![CI Windows](https://github.com/dartsim/dart/actions/workflows/ci_windows.yml/badge.svg)](https://github.com/dartsim/dart/actions/workflows/ci_windows.yml)                          |
+| Doc, Coverage, Linter | [![Documentation Status](https://readthedocs.org/projects/dart/badge/?version=latest)](https://dart.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/dartsim/dart/branch/main/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2d95a9b951be4b73a71097670ec351e8)](https://www.codacy.com/gh/dartsim/dart/dashboard?utm_source=github.com&utm_medium=referral&utm_content=dartsim/dart&utm_campaign=Badge_Grade) |
+| Packages              | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/dartsim/badges/version.svg)](https://anaconda.org/conda-forge/dartsim) [![PyPI Version](https://img.shields.io/pypi/v/dartpy)](https://pypi.org/project/dartpy/) [All Distributions →](https://repology.org/project/dart-sim/versions)                                                                                                                                                                                                         |
+| Maintenance           | [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Average time to resolve an issue") [![Percentage of issues still open](http://isitmaintained.com/badge/open/dartsim/dart.svg)](http://isitmaintained.com/project/dartsim/dart "Percentage of issues still open")                                                                                                                                       |
 
 ## Citation
 
