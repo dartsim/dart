@@ -1,6 +1,7 @@
 # Collisions
 
 ## Overview
+
 This tutorial will show you how to programmatically create different kinds of
 bodies and set initial conditions for Skeletons. It will also demonstrate some
 use of DART's Frame Semantics.
@@ -17,8 +18,8 @@ Please reference the source code in [**tutorial_collisions/main.cpp**](https://g
 
 ## Lesson 1: Creating a rigid body
 
-Start by opening the Skeleton code in [``tutorials/tutorial_collisions/main.cpp``](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_collisions/main.cpp).
-Find the function named ``addRigidBody``. You will notice that this is a templated
+Start by opening the Skeleton code in [`tutorials/tutorial_collisions/main.cpp`](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_collisions/main.cpp).
+Find the function named `addRigidBody`. You will notice that this is a templated
 function. If you're not familiar with templates, that's okay; we won't be doing
 anything too complicated with them. Different Joint types in DART are managed by
 a bunch of different classes, so we need to use templates if we want the same
@@ -33,24 +34,24 @@ because we need its parent Joint to describe how it's attached to the world. A
 root BodyNode could be attached to the world by any kind of Joint. Most often,
 it will be attached by either a FreeJoint (if the body should be completely
 free to move with respect to the world) or a WeldJoint (if the body should be
-rigidly attached to the world, unable to move at all), but *any* Joint type
+rigidly attached to the world, unable to move at all), but _any_ Joint type
 is permissible.
 
 Joint properties are managed in a nested class, which means it's a class which
-is defined inside of another class. For example, ``RevoluteJoint`` properties are
-managed in a class called ``RevoluteJoint::Properties`` while ``PrismaticJoint``
-properties are managed in a class called ``PrismaticJoint::Properties``. However,
-both ``RevoluteJoint`` and ``PrismaticJoint`` inherit the ``SingleDofJoint`` class
-so the ``RevoluteJoint::Properties`` and ``PrismaticJoint::Properties`` classes
-both inherit the ``SingleDofJoint::Properties`` class. The difference is that
-``RevoluteJoint::Properties`` also inherits ``RevoluteJoint::UniqueProperties``
-whereas ``PrismaticJoint::Properties`` inherits ``PrismaticJoint::UniqueProperties``
-instead. Many DART classes contain nested ``Properties`` classes like this which
-are compositions of their base class's nested ``Properties`` class and their own
-``UniqueProperties`` class. As you'll see later, this is useful for providing a
+is defined inside of another class. For example, `RevoluteJoint` properties are
+managed in a class called `RevoluteJoint::Properties` while `PrismaticJoint`
+properties are managed in a class called `PrismaticJoint::Properties`. However,
+both `RevoluteJoint` and `PrismaticJoint` inherit the `SingleDofJoint` class
+so the `RevoluteJoint::Properties` and `PrismaticJoint::Properties` classes
+both inherit the `SingleDofJoint::Properties` class. The difference is that
+`RevoluteJoint::Properties` also inherits `RevoluteJoint::UniqueProperties`
+whereas `PrismaticJoint::Properties` inherits `PrismaticJoint::UniqueProperties`
+instead. Many DART classes contain nested `Properties` classes like this which
+are compositions of their base class's nested `Properties` class and their own
+`UniqueProperties` class. As you'll see later, this is useful for providing a
 consistent API that works cleanly for fundamentally different types of classes.
 
-To create a ``Properties`` class for our Joint type, we instantiate the nested
+To create a `Properties` class for our Joint type, we instantiate the nested
 struct for the joint, assign it a unique name, and, if needed, offset the joint
 from its parent BodyNode. The block below shows the complete setup, including
 the transforms that align the joint halfway between the two bodies:
@@ -73,7 +74,7 @@ the transforms that align the joint halfway between the two bodies:
          :end-before: # snippet:py-collisions-lesson1a-properties-end
 ```
 
-We need to include the ``typename`` keywords because of how the syntax works for
+We need to include the `typename` keywords because of how the syntax works for
 templated functions. Leaving it out should make your compiler complain.
 
 From here, we can set the Joint properties in any way we'd like. There are only
@@ -87,14 +88,14 @@ wants you to be aware when you are being negligent about naming things). For the
 sake of simplicity, let's just give it a name based off its child BodyNode.
 
 Next we'll want to deal with offsetting the new BodyNode from its parent BodyNode.
-An ``Isometry3`` (python) or ``Isometry3d`` (C++) is the Eigen library's version
+An `Isometry3` (python) or `Isometry3d` (C++) is the Eigen library's version
 of a homogeneous transformation matrix. Initialize it to the identity to ensure
 the contents are well-defined before applying translations. We can easily compute
 the center point between the origins of the two bodies using our default height
 value and then assign that translation to both the parent- and child-to-joint
 transforms.
 
-Remember that all of that code should go inside the ``if(parent)`` condition.
+Remember that all of that code should go inside the `if(parent)` condition.
 We do not want to create this offset for root BodyNodes, because later on we
 will rely on the assumption that the root Joint origin is lined up with the
 root BodyNode origin.
@@ -130,43 +131,43 @@ that new BodyNode:
 
 There's a lot going on in this function, so let's break it down for a moment:
 
-``chain->createJointAndBodyNodePair<JointType>``
+`chain->createJointAndBodyNodePair<JointType>`
 
 This is a Skeleton member function that takes template arguments. The first
 template argument specifies the type of Joint that you want to create. In our
 case, the type of Joint we want to create is actually a template argument of
 our current function, so we just pass that argument along. The second template
-argument of ``createJointAndBodyNodePair`` allows us to specify the BodyNode
-type that we want to create, but the default argument is a standard rigid 
+argument of `createJointAndBodyNodePair` allows us to specify the BodyNode
+type that we want to create, but the default argument is a standard rigid
 BodyNode, so we can leave the second argument blank.
 
-``(parent, joint_properties, BodyNode::AspectProperties(name))``
+`(parent, joint_properties, BodyNode::AspectProperties(name))`
 
 Now for the function arguments: The first specifies the parent BodyNode. In the
 event that you want to create a root BodyNode, you can simply pass in a nullptr
-as the parent. The second argument is a ``JointType::Properties`` struct, so we
-pass in the ``joint_properties`` object that we created earlier. The third argument is
-a ``BodyNode::Properties`` struct, but we're going to set the BodyNode properties
+as the parent. The second argument is a `JointType::Properties` struct, so we
+pass in the `joint_properties` object that we created earlier. The third argument is
+a `BodyNode::Properties` struct, but we're going to set the BodyNode properties
 later, so we'll just toss the name in by wrapping it up in a
-``BodyNode::AspectProperties`` object and leave the rest as default values.
+`BodyNode::AspectProperties` object and leave the rest as default values.
 
 Now notice the very last thing on this line of code:
 
-``.second;``
+`.second;`
 
-The function actually returns a ``std::pair`` of pointers to the new Joint and
-new BodyNode that were just created, but we only care about grabbing the 
-BodyNode once the function is finished, so we can append ``.second`` to the end
-of the line so that we just grab the BodyNode pointer and ignore the Joint 
-pointer. The joint will of course still be created; we just have no need to 
+The function actually returns a `std::pair` of pointers to the new Joint and
+new BodyNode that were just created, but we only care about grabbing the
+BodyNode once the function is finished, so we can append `.second` to the end
+of the line so that we just grab the BodyNode pointer and ignore the Joint
+pointer. The joint will of course still be created; we just have no need to
 access it at this point.
 
 ### Lesson 1c: Make a shape for the body
 
 We'll take advantage of the Shape::ShapeType enumeration to specify what kind of
 Shape we want to produce for the body. In particular, we'll allow the user to
-specify three types of Shapes: ``Shape::BOX``, ``Shape::CYLINDER``, and
-``Shape::ELLIPSOID``. 
+specify three types of Shapes: `Shape::BOX`, `Shape::CYLINDER`, and
+`Shape::ELLIPSOID`.
 
 ```{eval-rst}
 .. tabs::
@@ -186,7 +187,7 @@ specify three types of Shapes: ``Shape::BOX``, ``Shape::CYLINDER``, and
          :end-before: # snippet:py-collisions-lesson1c-shape-selection-end
 ```
 
-``ShapePtr`` is simply a typedef for ``std::shared_ptr<Shape>``. DART has this
+`ShapePtr` is simply a typedef for `std::shared_ptr<Shape>`. DART has this
 typedef in order to improve space usage and readability, because this type gets
 used very often.
 
@@ -227,8 +228,8 @@ should be after all the condition statements.
 
 For the simulations to be physically accurate, it's important for the inertia
 properties of the body to match up with the geometric properties of the shape.
-We can create an ``Inertia`` object and set its values based on the shape's
-geometry, then give that ``Inertia`` to the BodyNode.
+We can create an `Inertia` object and set its values based on the shape's
+geometry, then give that `Inertia` to the BodyNode.
 
 ```{eval-rst}
 .. tabs::
@@ -300,8 +301,8 @@ Joint to a default value.
 
 ## Lesson 2: Creating a soft body
 
-Find the templated function named ``addSoftBody``. This function will have a
-role identical to the ``addRigidBody`` function from earlier.
+Find the templated function named `addSoftBody`. This function will have a
+role identical to the `addRigidBody` function from earlier.
 
 ```{note}
 Soft body helpers are currently exposed only in the C++ API. The dartpy snippets
@@ -322,7 +323,7 @@ we'll set them beforehand.
 First, let's create a struct for the properties that are unique to SoftBodyNodes.
 Up above we defined an enumeration for a couple different SoftBodyNode types.
 There is no official DART-native enumeration for this, we created our own to use
-for this function. We'll want to fill in the ``SoftBodyNode::UniqueProperties``
+for this function. We'll want to fill in the `SoftBodyNode::UniqueProperties`
 struct based off of this enumeration.
 
 ```{eval-rst}
@@ -343,7 +344,7 @@ struct based off of this enumeration.
          :end-before: # snippet:py-collisions-lesson2b-soft-properties-end
 ```
 
-Each of the C++ conditionals leverages ``SoftBodyNodeHelper`` to construct the
+Each of the C++ conditionals leverages `SoftBodyNodeHelper` to construct the
 skin and its mass distribution (feel free to experiment with slice/stack counts,
 keeping in mind the minimum values noted in the comments). The dartpy
 implementation currently falls back to creating a rigid shell with matching
@@ -353,8 +354,8 @@ lesson still applies.
 ### Lesson 2c: Create the Joint and Soft Body pair
 
 This step is very similar to Lesson 1b, except now we'll want to specify
-that we're creating a soft BodyNode. First, let's create a full 
-``SoftBodyNode::Properties``. This will combine the ``UniqueProperties`` of the
+that we're creating a soft BodyNode. First, let's create a full
+`SoftBodyNode::Properties`. This will combine the `UniqueProperties` of the
 SoftBodyNode with the standard properties of a BodyNode. Now we can pass the
 whole thing into the creation function:
 
@@ -376,8 +377,8 @@ whole thing into the creation function:
          :end-before: # snippet:py-collisions-lesson2c-soft-node-end
 ```
 
-Notice that this time it will return a ``SoftBodyNode`` pointer rather than a
-normal ``BodyNode`` pointer. This is one of the advantages of templates!
+Notice that this time it will return a `SoftBodyNode` pointer rather than a
+normal `BodyNode` pointer. This is one of the advantages of templates!
 
 ### Lesson 2d: Zero out the BodyNode inertia
 
@@ -412,7 +413,7 @@ simulation:
 To help us visually distinguish between the soft and rigid portions of a body,
 we can make the soft part of the shape transparent. Upon creation, a SoftBodyNode
 will have exactly one visualization shape: the soft shape visualizer. We can
-reduce the value of its alpha channel (or directly call ``setAlpha`` in dartpy)
+reduce the value of its alpha channel (or directly call `setAlpha` in dartpy)
 so it stands out from the rigid pieces:
 
 ```{eval-rst}
@@ -440,7 +441,7 @@ bones. We can create a rigid shape, place it in the SoftBodyNode, and give some
 inertia to the SoftBodyNode's base BodyNode class, to act as the inertia of the
 bone.
 
-Find the function ``createSoftBody()``. Underneath the call to ``addSoftBody``,
+Find the function `createSoftBody()`. Underneath the call to `addSoftBody`,
 we can create a box shape that matches the dimensions of the soft box, but scaled
 down:
 
@@ -472,8 +473,8 @@ of the SoftBodyNode's skin.
 ### Lesson 2g: Add a rigid body attached by a WeldJoint
 
 To make a more interesting hybrid shape, we can attach a protruding rigid body
-to a SoftBodyNode using a WeldJoint. Find the ``createHybridBody()`` function
-and see where we call the ``addSoftBody`` function. Just below this, we'll
+to a SoftBodyNode using a WeldJoint. Find the `createHybridBody()` function
+and see where we call the `addSoftBody` function. Just below this, we'll
 create a new rigid body with a WeldJoint attachment:
 
 ```{eval-rst}
@@ -500,7 +501,7 @@ expected.
 
 ## Lesson 3: Setting initial conditions and taking advantage of Frames
 
-Find the ``addObject`` function in the ``MyWorld`` class. This function will
+Find the `addObject` function in the `MyWorld` class. This function will
 be called whenever the user requests for an object to be added to the world.
 In this function, we want to set up the initial conditions for the object so
 that it gets thrown at the wall. We also want to make sure that it's not in
@@ -513,6 +514,7 @@ We want to position the object in a reasonable place for us to throw it at the
 wall. We also want to have the ability to randomize its location along the y-axis.
 
 First, let's create a zero vector for the position:
+
 ```cpp
 math::Vector6d positions(math::Vector6d::Zero());
 ```
@@ -578,7 +580,7 @@ ugly printout, we'll make sure the new object has a unique name ahead of time:
 ### Lesson 3c: Add the object to the world without collisions
 
 Before we add the Skeleton to the world, we want to make sure that it
-isn't actually placed inside of something accidentally. If an object in a 
+isn't actually placed inside of something accidentally. If an object in a
 simulation starts off inside of another object, it can result in extremely
 non-physical simulations, perhaps even breaking the simulation entirely.
 We can access the world's collision detector directly to check make sure the
@@ -608,13 +610,13 @@ message explaining why.
 DART has a unique feature that we call Frame Semantics. The Frame Semantics of
 DART allow you to create reference frames and use them to get and set data
 relative to arbitrary frames. There are two crucial Frame types currently used
-in DART: ``BodyNode``s and ``SimpleFrame``s.
+in DART: `BodyNode`s and `SimpleFrame`s.
 
 The BodyNode class does not allow you to explicitly set its transform, velocity,
 or acceleration properties, because those are all strictly functions of the
 degrees of freedom that the BodyNode depends on. Because of this, the BodyNode
 is not a very convenient class if you want to create an arbitrary frame of
-reference. Instead, DART offers the ``SimpleFrame`` class which gives you the
+reference. Instead, DART offers the `SimpleFrame` class which gives you the
 freedom of arbitarily attaching it to any parent Frame and setting its transform,
 velocity, and acceleration to whatever you'd like. This makes SimpleFrame useful
 for specifying arbitrary reference frames.
@@ -641,7 +643,7 @@ SimpleFrame at the Skeleton's center of mass:
          :end-before: # snippet:py-collisions-lesson3d-reference-frame-end
 ```
 
-Calling ``object->getCOM()`` will tell us the center of mass location with
+Calling `object->getCOM()` will tell us the center of mass location with
 respect to the World Frame. We use that to set the translation of the
 SimpleFrame's relative transform so that the origin of the SimpleFrame will be
 located at the object's center of mass.
@@ -668,7 +670,7 @@ speeds into directional velocities and store them on the SimpleFrame:
          :end-before: # snippet:py-collisions-lesson3e-launch-velocity-end
 ```
 
-The ``SimpleFrame::setClassicDerivatives()`` allows you to set the classic linear
+The `SimpleFrame::setClassicDerivatives()` allows you to set the classic linear
 and angular velocities and accelerations of a SimpleFrame with respect to its
 parent Frame, which in this case is the World Frame. In DART, classic velocity and
 acceleration vectors are explicitly differentiated from spatial velocity and
@@ -704,7 +706,7 @@ Now we're ready to toss around objects!
 
 ## Lesson 4: Setting joint spring and damping properties
 
-Find the ``setupRing`` function. This is where we'll setup a chain of BodyNodes
+Find the `setupRing` function. This is where we'll setup a chain of BodyNodes
 so that it behaves more like a closed ring.
 
 ### Lesson 4a: Set the spring and damping coefficients
@@ -785,7 +787,7 @@ root BodyNode) start out in their rest positions:
 
 ## Lesson 5: Create a closed kinematic chain
 
-Find the ``CollisionsEventHandler::addRing`` function. In here, we'll want to
+Find the `CollisionsEventHandler::addRing` function. In here, we'll want to
 create a dynamic constraint that attaches the first and last BodyNodes of the chain
 together by a BallJoint-style constraint.
 

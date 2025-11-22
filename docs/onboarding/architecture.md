@@ -49,6 +49,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 ## Core Modules
 
 ### 1. **Foundation Layer** (common/, math/, lcpsolver/)
+
 > Legacy `dart/integration` has been removed; time stepping now lives alongside the world/simulator code. Advanced optimizers moved into `dart/math/optimization/` with deprecated shims in `dart/optimizer/`.
 
 #### 1.1 Common Module (`dart/common/`)
@@ -90,6 +91,7 @@ DART follows a **modular layered architecture** with clear separation of concern
   - `ResourceRetriever.hpp` - Resource loading abstraction
 
 **Key Design Patterns:**
+
 - Aspect-Oriented Design for extensibility
 - Observer pattern for event handling
 - Factory pattern for polymorphic creation
@@ -124,6 +126,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 - **Icosphere.hpp** - Icosphere generation for spherical structures
 
 **Dependencies:**
+
 - Heavy use of **Eigen** library for linear algebra
 - All math operations designed for real-time performance
 
@@ -153,6 +156,7 @@ Used by constraint solvers to compute contact forces, joint limits, and other co
 **Purpose:** Advance the world state each tick after dynamics and constraints are resolved.
 
 **Implementation Notes:**
+
 - Integration happens inside `dart::simulation::World::step()`.
 - The solver integrates generalized velocities using computed accelerations, then integrates positions using the updated velocities (semi-implicit Euler).
 - The integrator is no longer a standalone module; downstream code does not plug in custom schemes.
@@ -177,35 +181,39 @@ CollisionDetector (Factory)
 #### Key Classes:
 
 **1. CollisionDetector** (`dart/collision/CollisionDetector.hpp`)
-   - Abstract base class for all collision engines
-   - Factory pattern for runtime backend selection
-   - Methods:
-     - `createCollisionGroup()` - Create collision group
-     - `collide(group1, group2, option, result)` - Collision detection
-     - `distance(group1, group2, option, result)` - Distance queries
-     - `raycast(group, from, to, option, result)` - Ray casting
+
+- Abstract base class for all collision engines
+- Factory pattern for runtime backend selection
+- Methods:
+  - `createCollisionGroup()` - Create collision group
+  - `collide(group1, group2, option, result)` - Collision detection
+  - `distance(group1, group2, option, result)` - Distance queries
+  - `raycast(group, from, to, option, result)` - Ray casting
 
 **2. CollisionGroup** (`dart/collision/CollisionGroup.hpp`)
-   - Manages a collection of collision objects
-   - Automatic tracking of BodyNodes/Skeletons
-   - Observer pattern to track ShapeFrame destruction
-   - Backend-specific implementations (FCL, Bullet, etc.)
+
+- Manages a collection of collision objects
+- Automatic tracking of BodyNodes/Skeletons
+- Observer pattern to track ShapeFrame destruction
+- Backend-specific implementations (FCL, Bullet, etc.)
 
 **3. Contact** (`dart/collision/Contact.hpp`)
-   - Represents a single collision contact:
-     - `point` (Vector3d) - Contact point in world frame
-     - `normal` (Vector3d) - Normal from object2 to object1
-     - `penetrationDepth` (double) - Penetration depth
-     - `force` (Vector3d) - Contact force on object1
-     - `collisionObject1/2` - The colliding objects
+
+- Represents a single collision contact:
+  - `point` (Vector3d) - Contact point in world frame
+  - `normal` (Vector3d) - Normal from object2 to object1
+  - `penetrationDepth` (double) - Penetration depth
+  - `force` (Vector3d) - Contact force on object1
+  - `collisionObject1/2` - The colliding objects
 
 **4. Supporting Classes:**
-   - `CollisionObject` - Wraps backend collision geometry
-   - `CollisionOption` - Query configuration (max contacts, filters)
-   - `CollisionResult` - Stores all contacts from query
-   - `DistanceOption/Result` - For distance queries
-   - `RaycastOption/Result` - For ray casting
-   - `CollisionFilter` - Filters collision pairs
+
+- `CollisionObject` - Wraps backend collision geometry
+- `CollisionOption` - Query configuration (max contacts, filters)
+- `CollisionResult` - Stores all contacts from query
+- `DistanceOption/Result` - For distance queries
+- `RaycastOption/Result` - For ray casting
+- `CollisionFilter` - Filters collision pairs
 
 ---
 
@@ -213,21 +221,23 @@ CollisionDetector (Factory)
 
 DART supports **4 pluggable backends** via Strategy Pattern:
 
-| Backend | Directory | Purpose | Pros | Cons |
-|---------|-----------|---------|------|------|
-| **FCL** | `fcl/` | Flexible Collision Library | Fast, good broadphase (AABB tree), **default** | FCL bugs in contact computation |
-| **Bullet** | `bullet/` | Bullet Physics | Robust, well-tested | Heavier dependency |
-| **DART** | `dart/` | Native implementation | No dependencies, lightweight | Limited features |
-| **ODE** | `ode/` | Open Dynamics Engine | Good for ODE integration | No distance queries |
+| Backend    | Directory | Purpose                    | Pros                                           | Cons                            |
+| ---------- | --------- | -------------------------- | ---------------------------------------------- | ------------------------------- |
+| **FCL**    | `fcl/`    | Flexible Collision Library | Fast, good broadphase (AABB tree), **default** | FCL bugs in contact computation |
+| **Bullet** | `bullet/` | Bullet Physics             | Robust, well-tested                            | Heavier dependency              |
+| **DART**   | `dart/`   | Native implementation      | No dependencies, lightweight                   | Limited features                |
+| **ODE**    | `ode/`    | Open Dynamics Engine       | Good for ODE integration                       | No distance queries             |
 
 **Recommendation:** Use **FCL** with MESH mode and DART contact computation (default).
 
 **Backend-specific implementations:**
+
 - Each backend implements `CollisionDetector` and `CollisionGroup`
 - Factory registration allows runtime selection
 - Example: `FCLCollisionDetector`, `BulletCollisionDetector`
 
 **Files:**
+
 - FCL: `dart/collision/fcl/FCLCollisionDetector.hpp`
 - Bullet: `dart/collision/bullet/BulletCollisionDetector.hpp`
 - DART: `dart/collision/dart/DARTCollisionDetector.hpp`
@@ -255,97 +265,105 @@ Skeleton (articulated system)
 #### Key Classes:
 
 **1. Skeleton** (`dart/dynamics/Skeleton.hpp`)
-   - Top-level container for articulated body systems
-   - Manages tree structures (supports multiple trees)
-   - **Key Features:**
-     - Forward/inverse kinematics
-     - Forward/inverse dynamics (Featherstone's ABA)
-     - Mass matrix computation
-     - Jacobian computation (spatial, linear, angular)
-     - Constraint and impulse handling
-     - State management (positions, velocities, accelerations, forces)
-   - **Methods:**
-     - `computeForwardKinematics()` - Update positions/velocities
-     - `computeForwardDynamics()` - Compute accelerations from forces
-     - `computeInverseDynamics()` - Compute forces from accelerations
-     - `getMassMatrix()` - Get mass matrix M
-     - `getCoriolisAndGravityForces()` - Get C + G
-     - `getConstraintForces()` - Get constraint forces
+
+- Top-level container for articulated body systems
+- Manages tree structures (supports multiple trees)
+- **Key Features:**
+  - Forward/inverse kinematics
+  - Forward/inverse dynamics (Featherstone's ABA)
+  - Mass matrix computation
+  - Jacobian computation (spatial, linear, angular)
+  - Constraint and impulse handling
+  - State management (positions, velocities, accelerations, forces)
+- **Methods:**
+  - `computeForwardKinematics()` - Update positions/velocities
+  - `computeForwardDynamics()` - Compute accelerations from forces
+  - `computeInverseDynamics()` - Compute forces from accelerations
+  - `getMassMatrix()` - Get mass matrix M
+  - `getCoriolisAndGravityForces()` - Get C + G
+  - `getConstraintForces()` - Get constraint forces
 
 **2. BodyNode** (`dart/dynamics/BodyNode.hpp`)
-   - Represents a single rigid body (link) in the system
-   - **Physical Properties:**
-     - Mass, center of mass, moment of inertia
-     - Collision shapes
-     - Visualization shapes
-   - **Kinematic State:**
-     - Transform relative to parent and world
-     - Spatial velocity and acceleration
-     - Jacobians (position, velocity)
-   - **Dynamic Quantities:**
-     - External forces
-     - Internal forces (from joint actuators)
-     - Constraint forces
-     - Articulated body inertia
-   - **Relationships:**
-     - Parent/child tree structure
-     - Attached shapes, markers, end effectors
+
+- Represents a single rigid body (link) in the system
+- **Physical Properties:**
+  - Mass, center of mass, moment of inertia
+  - Collision shapes
+  - Visualization shapes
+- **Kinematic State:**
+  - Transform relative to parent and world
+  - Spatial velocity and acceleration
+  - Jacobians (position, velocity)
+- **Dynamic Quantities:**
+  - External forces
+  - Internal forces (from joint actuators)
+  - Constraint forces
+  - Articulated body inertia
+- **Relationships:**
+  - Parent/child tree structure
+  - Attached shapes, markers, end effectors
 
 **3. Joint** (`dart/dynamics/Joint.hpp`)
-   - Defines kinematic constraints between BodyNodes
-   - **Actuator Types:**
-     - `FORCE` - Force/torque control
-     - `PASSIVE` - No actuation
-     - `SERVO` - Position/velocity servo
-     - `ACCELERATION` - Acceleration control
-     - `VELOCITY` - Velocity control
-     - `LOCKED` - Fixed joint
-     - `MIMIC` - Mimics another joint
-   - **DOF Management:**
-     - Position, velocity, acceleration limits
-     - Force/torque limits
-     - Passive forces (spring, damping, friction)
-   - **Joint Types:**
-     - Revolute (1 DOF rotation)
-     - Prismatic (1 DOF translation)
-     - Screw (coupled rotation + translation)
-     - Universal (2 DOF rotation)
-     - Ball (3 DOF rotation)
-     - Euler (3 DOF rotation with Euler angles)
-     - Translational (3 DOF translation)
-     - Planar (2D motion: 2 translation + 1 rotation)
-     - Free (6 DOF)
-     - Weld (0 DOF - fixed)
+
+- Defines kinematic constraints between BodyNodes
+- **Actuator Types:**
+  - `FORCE` - Force/torque control
+  - `PASSIVE` - No actuation
+  - `SERVO` - Position/velocity servo
+  - `ACCELERATION` - Acceleration control
+  - `VELOCITY` - Velocity control
+  - `LOCKED` - Fixed joint
+  - `MIMIC` - Mimics another joint
+- **DOF Management:**
+  - Position, velocity, acceleration limits
+  - Force/torque limits
+  - Passive forces (spring, damping, friction)
+- **Joint Types:**
+  - Revolute (1 DOF rotation)
+  - Prismatic (1 DOF translation)
+  - Screw (coupled rotation + translation)
+  - Universal (2 DOF rotation)
+  - Ball (3 DOF rotation)
+  - Euler (3 DOF rotation with Euler angles)
+  - Translational (3 DOF translation)
+  - Planar (2D motion: 2 translation + 1 rotation)
+  - Free (6 DOF)
+  - Weld (0 DOF - fixed)
 
 **4. DegreeOfFreedom** (`dart/dynamics/DegreeOfFreedom.hpp`)
-   - Proxy for accessing a single generalized coordinate
-   - Unified interface regardless of joint type
-   - Access position, velocity, acceleration, force
+
+- Proxy for accessing a single generalized coordinate
+- Unified interface regardless of joint type
+- Access position, velocity, acceleration, force
 
 **5. Shape** (`dart/dynamics/Shape.hpp`)
-   - Geometric shapes for collision and visualization
-   - Types: Box, Sphere, Cylinder, Capsule, Cone, Mesh, SoftMesh, etc.
-   - Provides bounding boxes and volume computation
+
+- Geometric shapes for collision and visualization
+- Types: Box, Sphere, Cylinder, Capsule, Cone, Mesh, SoftMesh, etc.
+- Provides bounding boxes and volume computation
 
 **6. Inertia** (`dart/dynamics/Inertia.hpp`)
-   - Encapsulates inertial properties:
-     - Mass
-     - Center of mass offset
-     - Moment of inertia tensor
-   - Validation to ensure physical validity
+
+- Encapsulates inertial properties:
+  - Mass
+  - Center of mass offset
+  - Moment of inertia tensor
+- Validation to ensure physical validity
 
 **7. Supporting Classes:**
-   - **EndEffector** - Task-space control points
-   - **Marker** - Tracking points (e.g., for motion capture)
-   - **Frame** - Coordinate frame abstraction
-   - **SimpleFrame** - Standalone frame (not part of skeleton)
-   - **ShapeFrame** - Frame with attached collision/visual shape
+
+- **EndEffector** - Task-space control points
+- **Marker** - Tracking points (e.g., for motion capture)
+- **Frame** - Coordinate frame abstraction
+- **SimpleFrame** - Standalone frame (not part of skeleton)
+- **ShapeFrame** - Frame with attached collision/visual shape
 
 ---
 
 #### Dynamics Computation Flow:
 
 **Forward Kinematics:**
+
 ```
 Skeleton::computeForwardKinematics()
   └─> For each BodyNode (root to leaf):
@@ -358,6 +376,7 @@ Skeleton::computeForwardKinematics()
 ```
 
 **Forward Dynamics (Featherstone's ABA):**
+
 ```
 Skeleton::computeForwardDynamics()
   ├─> Pass 1 (leaf to root): Compute articulated body inertia
@@ -366,6 +385,7 @@ Skeleton::computeForwardDynamics()
 ```
 
 **Mass Matrix:**
+
 ```
 Skeleton::getMassMatrix()
   └─> For each DOF:
@@ -388,6 +408,7 @@ Skeleton::getMassMatrix()
 ---
 
 **Key Files:**
+
 - Skeleton: `dart/dynamics/Skeleton.hpp`
 - BodyNode: `dart/dynamics/BodyNode.hpp`
 - Joint: `dart/dynamics/Joint.hpp`
@@ -412,50 +433,55 @@ ConstraintSolver
 #### Key Classes:
 
 **1. ConstraintSolver** (`dart/constraint/ConstraintSolver.hpp`)
-   - Main orchestrator for constraint-based simulation
-   - **Responsibilities:**
-     - Collision detection
-     - Constraint grouping (independent groups for parallel solving)
-     - LCP construction and solving
-     - Impulse application
-   - **Process:**
-     1. Detect collisions → create ContactConstraints
-     2. Check joint limits → create JointLimitConstraints
-     3. Group interacting skeletons → ConstrainedGroups
-     4. Solve LCP for each group → compute impulses
-     5. Apply impulses to update velocities
+
+- Main orchestrator for constraint-based simulation
+- **Responsibilities:**
+  - Collision detection
+  - Constraint grouping (independent groups for parallel solving)
+  - LCP construction and solving
+  - Impulse application
+- **Process:**
+  1.  Detect collisions → create ContactConstraints
+  2.  Check joint limits → create JointLimitConstraints
+  3.  Group interacting skeletons → ConstrainedGroups
+  4.  Solve LCP for each group → compute impulses
+  5.  Apply impulses to update velocities
 
 **2. ConstraintBase** (`dart/constraint/ConstraintBase.hpp`)
-   - Abstract base for all constraint types
-   - **LCP Interface:**
-     - `getDimension()` - Number of constraint equations
-     - `update()` - Update constraint data
-     - `getInformation()` - Fill LCP matrices (Jacobian, bounds, etc.)
-     - `applyUnitImpulse()` - Apply unit impulse for Jacobian computation
-     - `excite()` - Mark related skeletons as active
-   - **Lifecycle:**
-     - Created → Updated → LCP solved → Applied → Destroyed
+
+- Abstract base for all constraint types
+- **LCP Interface:**
+  - `getDimension()` - Number of constraint equations
+  - `update()` - Update constraint data
+  - `getInformation()` - Fill LCP matrices (Jacobian, bounds, etc.)
+  - `applyUnitImpulse()` - Apply unit impulse for Jacobian computation
+  - `excite()` - Mark related skeletons as active
+- **Lifecycle:**
+  - Created → Updated → LCP solved → Applied → Destroyed
 
 **3. BoxedLcpConstraintSolver** (`dart/constraint/BoxedLcpConstraintSolver.hpp`)
-   - Concrete implementation using boxed LCP formulation
-   - **Strategy:** Primary solver + fallback solver
-     - Primary: DantzigBoxedLcpSolver (accurate but can fail)
-     - Fallback: PgsBoxedLcpSolver (always converges)
-   - **Parameters:**
-     - Collision detection options
-     - Secondary friction cone (5-direction vs 4-direction)
-     - Primary/fallback solver options
+
+- Concrete implementation using boxed LCP formulation
+- **Strategy:** Primary solver + fallback solver
+  - Primary: DantzigBoxedLcpSolver (accurate but can fail)
+  - Fallback: PgsBoxedLcpSolver (always converges)
+- **Parameters:**
+  - Collision detection options
+  - Secondary friction cone (5-direction vs 4-direction)
+  - Primary/fallback solver options
 
 **4. ConstrainedGroup** (`dart/constraint/ConstrainedGroup.hpp`)
-   - Groups skeletons that interact through constraints
-   - Enables parallel solving of independent groups
-   - Efficient for multi-body systems with disconnected components
+
+- Groups skeletons that interact through constraints
+- Enables parallel solving of independent groups
+- Efficient for multi-body systems with disconnected components
 
 ---
 
 #### Constraint Types:
 
 **Contact Constraints:**
+
 - **ContactConstraint** - Rigid body contacts with:
   - Non-penetration constraint
   - Coulomb friction (pyramid approximation)
@@ -464,12 +490,14 @@ ConstraintSolver
   - CFM (Constraint Force Mixing) for soft contacts
 
 **Joint Constraints:**
+
 - **JointLimitConstraint** - Position/velocity limit enforcement
 - **ServoMotorConstraint** - PD control as constraint
 - **MimicMotorConstraint** - Joint coupling (unilateral servo)
 - **CouplerConstraint** - Bilateral mimic coupling (equal/opposite impulses)
 
 **Specialized Constraints:**
+
 - **WeldJointConstraint** - Rigid connection between bodies
 - **BallJointConstraint** - Ball joint constraint
 - **BalanceConstraint** - Balance/support polygon constraint
@@ -480,10 +508,10 @@ ConstraintSolver
 
 #### LCP Solvers:
 
-| Solver | Algorithm | Accuracy | Speed | Robustness |
-|--------|-----------|----------|-------|------------|
-| **DantzigBoxedLcpSolver** | Lemke/Dantzig pivoting | High | Medium | Can fail on ill-conditioned systems |
-| **PgsBoxedLcpSolver** | Projected Gauss-Seidel | Medium | Fast | Always converges |
+| Solver                    | Algorithm              | Accuracy | Speed  | Robustness                          |
+| ------------------------- | ---------------------- | -------- | ------ | ----------------------------------- |
+| **DantzigBoxedLcpSolver** | Lemke/Dantzig pivoting | High     | Medium | Can fail on ill-conditioned systems |
+| **PgsBoxedLcpSolver**     | Projected Gauss-Seidel | Medium   | Fast   | Always converges                    |
 
 **Default Strategy:** Try Dantzig first, fallback to PGS if it fails.
 
@@ -511,6 +539,7 @@ World::step()
 ---
 
 **Key Files:**
+
 - ConstraintSolver: `dart/constraint/ConstraintSolver.hpp`
 - ConstraintBase: `dart/constraint/ConstraintBase.hpp`
 - ContactConstraint: `dart/constraint/ContactConstraint.hpp`
@@ -536,49 +565,52 @@ World (simulation environment)
 #### Key Classes:
 
 **1. World** (`dart/simulation/World.hpp`)
-   - Top-level simulation container
-   - **Manages:**
-     - Multiple Skeletons (articulated systems)
-     - SimpleFrames (independent coordinate frames)
-     - Collision detection
-     - Constraint solving
-     - Time stepping
-   - **Key Properties:**
-     - Gravity (default: -9.81 m/s² in Y)
-     - Time step (default: 0.001s = 1ms)
-     - Current time and frame number
-   - **Key Methods:**
-     - `step(resetCommand)` - Advance simulation by one time step
-     - `checkCollision(option, result)` - Perform collision detection
-     - `getSkeleton(index/name)` - Access skeletons
-     - `addSkeleton(skeleton)` - Add skeleton to world
-     - `setGravity(g)` - Set gravitational acceleration
-     - `setTimeStep(dt)` - Set simulation time step
-   - **Workflow:**
-     ```
-     while (running):
-         world.step()
-           ├─> Compute dynamics
-           ├─> Detect collisions
-           ├─> Solve constraints
-           ├─> Integrate positions
-           └─> Update frame counter
-     ```
+
+- Top-level simulation container
+- **Manages:**
+  - Multiple Skeletons (articulated systems)
+  - SimpleFrames (independent coordinate frames)
+  - Collision detection
+  - Constraint solving
+  - Time stepping
+- **Key Properties:**
+  - Gravity (default: -9.81 m/s² in Y)
+  - Time step (default: 0.001s = 1ms)
+  - Current time and frame number
+- **Key Methods:**
+  - `step(resetCommand)` - Advance simulation by one time step
+  - `checkCollision(option, result)` - Perform collision detection
+  - `getSkeleton(index/name)` - Access skeletons
+  - `addSkeleton(skeleton)` - Add skeleton to world
+  - `setGravity(g)` - Set gravitational acceleration
+  - `setTimeStep(dt)` - Set simulation time step
+- **Workflow:**
+  ```
+  while (running):
+      world.step()
+        ├─> Compute dynamics
+        ├─> Detect collisions
+        ├─> Solve constraints
+        ├─> Integrate positions
+        └─> Update frame counter
+  ```
 
 **2. Recording** (`dart/simulation/Recording.hpp`)
-   - Records simulation state history
-   - Methods:
-     - `bake()` - Store current state
-     - `getNumFrames()` - Get number of recorded frames
-     - `getSkeletonPositions(frame)` - Get skeleton state at frame
-   - Use cases:
-     - Playback of simulations
-     - Analysis of trajectory data
-     - State checkpointing
+
+- Records simulation state history
+- Methods:
+  - `bake()` - Store current state
+  - `getNumFrames()` - Get number of recorded frames
+  - `getSkeletonPositions(frame)` - Get skeleton state at frame
+- Use cases:
+  - Playback of simulations
+  - Analysis of trajectory data
+  - State checkpointing
 
 ---
 
 **Key Files:**
+
 - World: `dart/simulation/World.hpp`
 - Recording: `dart/simulation/Recording.hpp`
 
@@ -591,6 +623,7 @@ The main DART header that includes all modules:
 **File:** `dart/All.hpp`
 
 **Includes (in order):**
+
 ```cpp
 #include <dart/config.hpp>         // Build configuration
 #include <dart/common/All.hpp>     // Common utilities
@@ -662,52 +695,62 @@ User calls: world->step()
 DART employs numerous software design patterns throughout:
 
 ### 1. **Factory Pattern**
-   - `CollisionDetector::Factory` - Create detectors by type string
-   - `constraint::ConstraintFactory` - Create constraints dynamically
-   - Enables runtime polymorphism and plugin architectures
+
+- `CollisionDetector::Factory` - Create detectors by type string
+- `constraint::ConstraintFactory` - Create constraints dynamically
+- Enables runtime polymorphism and plugin architectures
 
 ### 2. **Strategy Pattern**
-   - `CollisionDetector` - Different collision engines (FCL, Bullet, etc.)
-   - `BoxedLcpSolver` - Different LCP solvers (Dantzig, PGS)
-   - Allows swapping algorithms at runtime
+
+- `CollisionDetector` - Different collision engines (FCL, Bullet, etc.)
+- `BoxedLcpSolver` - Different LCP solvers (Dantzig, PGS)
+- Allows swapping algorithms at runtime
 
 ### 3. **Observer Pattern**
-   - `Subject`/`Observer` - General event notification
-   - `Signal` - Typed signal/slot connections
-   - Used for name changes, state updates, etc.
+
+- `Subject`/`Observer` - General event notification
+- `Signal` - Typed signal/slot connections
+- Used for name changes, state updates, etc.
 
 ### 4. **Composite Pattern**
-   - `Skeleton` contains `BodyNode` tree structure
-   - `Composite` base class for extensible objects
-   - Enables hierarchical structures
+
+- `Skeleton` contains `BodyNode` tree structure
+- `Composite` base class for extensible objects
+- Enables hierarchical structures
 
 ### 5. **Aspect Pattern**
-   - `Aspect` - Plugin properties and state to objects
-   - Separates concerns (visual, collision, physics, etc.)
-   - Enables runtime composition
+
+- `Aspect` - Plugin properties and state to objects
+- Separates concerns (visual, collision, physics, etc.)
+- Enables runtime composition
 
 ### 6. **Template Method Pattern**
-   - `Joint` base class with customizable joint types
-   - `ConstraintBase` with standard solving flow
-   - Defines algorithm skeleton with customizable steps
+
+- `Joint` base class with customizable joint types
+- `ConstraintBase` with standard solving flow
+- Defines algorithm skeleton with customizable steps
 
 ### 7. **Singleton Pattern**
-   - `Factory::SingletonFactory` - Global factory instance
-   - Used for registration/lookup of collision detectors
+
+- `Factory::SingletonFactory` - Global factory instance
+- Used for registration/lookup of collision detectors
 
 ### 8. **Lazy Evaluation**
-   - Mass matrices computed only when requested
-   - Jacobians cached until state changes
-   - Version tracking avoids redundant computation
+
+- Mass matrices computed only when requested
+- Jacobians cached until state changes
+- Version tracking avoids redundant computation
 
 ### 9. **Visitor Pattern**
-   - Iteration over skeletons, body nodes, shapes
-   - `eachSkeleton()`, `eachBodyNode()` with callbacks
+
+- Iteration over skeletons, body nodes, shapes
+- `eachSkeleton()`, `eachBodyNode()` with callbacks
 
 ### 10. **RAII (Resource Acquisition Is Initialization)**
-   - Smart pointers throughout (`shared_ptr`, `unique_ptr`)
-   - Automatic resource cleanup
-   - Memory allocators with RAII wrappers
+
+- Smart pointers throughout (`shared_ptr`, `unique_ptr`)
+- Automatic resource cleanup
+- Memory allocators with RAII wrappers
 
 ---
 
@@ -756,44 +799,49 @@ CollisionDetector
 ## Key Algorithms
 
 ### 1. **Featherstone's Articulated Body Algorithm (ABA)**
-   - **Purpose:** Compute forward dynamics (accelerations from forces)
-   - **Complexity:** O(n) where n = number of bodies
-   - **Method:** Two passes through kinematic tree
-     - Pass 1 (leaf→root): Compute articulated body inertia
-     - Pass 2 (root→leaf): Compute accelerations
-   - **Implementation:** `Skeleton::computeForwardDynamics()`
+
+- **Purpose:** Compute forward dynamics (accelerations from forces)
+- **Complexity:** O(n) where n = number of bodies
+- **Method:** Two passes through kinematic tree
+  - Pass 1 (leaf→root): Compute articulated body inertia
+  - Pass 2 (root→leaf): Compute accelerations
+- **Implementation:** `Skeleton::computeForwardDynamics()`
 
 ### 2. **Composite Rigid Body Algorithm (CRBA)**
-   - **Purpose:** Compute mass matrix M
-   - **Complexity:** O(n²)
-   - **Method:** For each DOF, compute inverse dynamics with unit acceleration
-   - **Implementation:** `Skeleton::getMassMatrix()`
+
+- **Purpose:** Compute mass matrix M
+- **Complexity:** O(n²)
+- **Method:** For each DOF, compute inverse dynamics with unit acceleration
+- **Implementation:** `Skeleton::getMassMatrix()`
 
 ### 3. **Recursive Newton-Euler Algorithm (RNEA)**
-   - **Purpose:** Compute inverse dynamics (forces from accelerations)
-   - **Complexity:** O(n)
-   - **Method:** Two passes:
-     - Pass 1 (root→leaf): Forward kinematics
-     - Pass 2 (leaf→root): Backward dynamics
-   - **Implementation:** `Skeleton::computeInverseDynamics()`
+
+- **Purpose:** Compute inverse dynamics (forces from accelerations)
+- **Complexity:** O(n)
+- **Method:** Two passes:
+  - Pass 1 (root→leaf): Forward kinematics
+  - Pass 2 (leaf→root): Backward dynamics
+- **Implementation:** `Skeleton::computeInverseDynamics()`
 
 ### 4. **Linear Complementarity Problem (LCP) Solving**
-   - **Purpose:** Solve constraints (contacts, limits, etc.)
-   - **Formulation:** A·λ + b ≥ 0, λ ≥ 0, λ^T(A·λ + b) = 0
-   - **Solvers:**
-     - Lemke/Dantzig (pivoting method)
-     - PGS (iterative method)
-   - **Implementation:** `math::Lemke()`, `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`
+
+- **Purpose:** Solve constraints (contacts, limits, etc.)
+- **Formulation:** A·λ + b ≥ 0, λ ≥ 0, λ^T(A·λ + b) = 0
+- **Solvers:**
+  - Lemke/Dantzig (pivoting method)
+  - PGS (iterative method)
+- **Implementation:** `math::Lemke()`, `DantzigBoxedLcpSolver`, `PgsBoxedLcpSolver`
 
 ### 5. **Semi-Implicit Euler Integration**
-   - **Purpose:** Numerical time integration
-   - **Method:**
-     ```
-     v_{n+1} = v_n + a_n * dt
-     q_{n+1} = q_n + v_{n+1} * dt  (uses new velocity!)
-     ```
-   - **Benefits:** Energy conservation, symplectic
-   - **Implementation:** `World::step()` (built-in)
+
+- **Purpose:** Numerical time integration
+- **Method:**
+  ```
+  v_{n+1} = v_n + a_n * dt
+  q_{n+1} = q_n + v_{n+1} * dt  (uses new velocity!)
+  ```
+- **Benefits:** Energy conservation, symplectic
+- **Implementation:** `World::step()` (built-in)
 
 ---
 
@@ -801,16 +849,16 @@ CollisionDetector
 
 ### Computational Costs (per time step):
 
-| Operation | Complexity | Cost |
-|-----------|------------|------|
-| Forward Kinematics | O(n) | Very fast |
-| Forward Dynamics (ABA) | O(n) | Fast |
-| Inverse Dynamics (RNEA) | O(n) | Fast |
-| Mass Matrix | O(n²) | Expensive |
-| Jacobians | O(n) | Medium |
-| Collision Detection | O(m log m) | Variable (m = # objects) |
-| LCP Solving | O(c³) | Expensive (c = # constraints) |
-| Integration | O(n) | Fast |
+| Operation               | Complexity | Cost                          |
+| ----------------------- | ---------- | ----------------------------- |
+| Forward Kinematics      | O(n)       | Very fast                     |
+| Forward Dynamics (ABA)  | O(n)       | Fast                          |
+| Inverse Dynamics (RNEA) | O(n)       | Fast                          |
+| Mass Matrix             | O(n²)      | Expensive                     |
+| Jacobians               | O(n)       | Medium                        |
+| Collision Detection     | O(m log m) | Variable (m = # objects)      |
+| LCP Solving             | O(c³)      | Expensive (c = # constraints) |
+| Integration             | O(n)       | Fast                          |
 
 ### Optimization Strategies:
 
@@ -827,18 +875,19 @@ CollisionDetector
 
 ### External Libraries:
 
-| Library | Purpose | Usage |
-|---------|---------|-------|
-| **Eigen** | Linear algebra | Math operations throughout |
-| **FCL** (optional) | Collision detection | Default collision backend |
-| **Bullet** (optional) | Collision detection | Alternative backend |
-| **ODE** (optional) | Collision/physics | Alternative backend |
-| **urdfdom** (optional) | URDF parsing | Robot model loading |
-| **tinyxml2** (optional) | XML parsing | File I/O |
-| **OpenGL/OSG** (optional) | Visualization | GUI applications |
-| **assimp** (optional) | 3D model loading | Mesh import |
+| Library                   | Purpose             | Usage                      |
+| ------------------------- | ------------------- | -------------------------- |
+| **Eigen**                 | Linear algebra      | Math operations throughout |
+| **FCL** (optional)        | Collision detection | Default collision backend  |
+| **Bullet** (optional)     | Collision detection | Alternative backend        |
+| **ODE** (optional)        | Collision/physics   | Alternative backend        |
+| **urdfdom** (optional)    | URDF parsing        | Robot model loading        |
+| **tinyxml2** (optional)   | XML parsing         | File I/O                   |
+| **OpenGL/OSG** (optional) | Visualization       | GUI applications           |
+| **assimp** (optional)     | 3D model loading    | Mesh import                |
 
 ### Build System:
+
 - **CMake** - Cross-platform build configuration
 - Located at: `CMakeLists.txt`
 
@@ -893,6 +942,7 @@ int main() {
 DART is a well-architected physics simulation library with:
 
 ### **Strengths:**
+
 1. ✅ **Modular design** - Clear separation of concerns
 2. ✅ **Extensible** - Aspect system, factory pattern, plugin architecture
 3. ✅ **Efficient** - O(n) algorithms (ABA, RNEA), lazy evaluation
@@ -902,6 +952,7 @@ DART is a well-architected physics simulation library with:
 7. ✅ **Standards-compliant** - Supports URDF, SDF robot models
 
 ### **Core Components:**
+
 - **Foundation:** Math, utilities, memory management, patterns
 - **Collision:** Pluggable detection (FCL, Bullet, ODE, native)
 - **Dynamics:** Skeleton, BodyNode, Joint, efficient algorithms
@@ -910,18 +961,21 @@ DART is a well-architected physics simulation library with:
 - **Integration:** Euler, Semi-Implicit Euler, RK4
 
 ### **Key Algorithms:**
+
 - Featherstone's ABA (forward dynamics)
 - RNEA (inverse dynamics)
 - LCP solving (constraints)
 - Semi-implicit Euler (integration)
 
 ### **Design Philosophy:**
+
 - Performance through algorithmic efficiency (O(n) dynamics)
 - Flexibility through design patterns (Strategy, Factory, Aspect)
 - Maintainability through modularity and clean interfaces
 - Extensibility through plugin architectures
 
 This architecture makes DART suitable for:
+
 - **Robotics** - Manipulation, locomotion, control
 - **Animation** - Character animation, physics-based motion
 - **Simulation** - Training environments, virtual prototyping
