@@ -36,6 +36,8 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
+
 #if !defined(_WIN32)
   #include <LinearMath/btAlignedAllocator.h>
 
@@ -180,7 +182,7 @@ BulletCollisionGroup::BulletCollisionGroup(
         mBulletCollisionConfiguration.get()))
 {
   ensureBulletAllocator();
-  // Do nothing
+  btGImpactCollisionAlgorithm::registerAlgorithm(mBulletDispatcher.get());
 }
 
 //==============================================================================
