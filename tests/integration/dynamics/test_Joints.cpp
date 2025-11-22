@@ -1817,9 +1817,327 @@ TEST_F(Joints, FreeJointRelativeTransformVelocityAcceleration)
         actualAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
 
-        EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
-        EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));
+      EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
+      EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));
+    }
+  }
+}
+
+//==============================================================================
+// Test for GitHub Issue #915: SERVO vs VELOCITY consistency
+// https://github.com/dartsim/dart/issues/915
+//==============================================================================
+void testServoVelocityConsistency()
+  {
+    using namespace dart::math::suffixes;
+
+    double timestep = 1e-3;
+    double tol = 1e-9;
+
+    // Create two identical pendulums - one with SERVO, one with VELOCITY
+    simulation::WorldPtr world = simulation::World::create();
+    EXPECT_TRUE(world != nullptr);
+
+    world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+    world->setTimeStep(timestep);
+
+    // Create two identical single-link pendulums
+    SkeletonPtr servoPendulum = createPendulum(Joint::SERVO);
+    SkeletonPtr velocityPendulum = createPendulum(Joint::VELOCITY);
+
+    EXPECT_NE(servoPendulum, nullptr);
+    EXPECT_NE(velocityPendulum, nullptr);
+
+    // Get the joints
+    JointPtr servoJoint = servoPendulum->getJoint(0);
+    JointPtr velocityJoint = velocityPendulum->getJoint(0);
+
+    // Configure SERVO joint with sufficient force limits
+    double sufficient_force = 1e+5;
+    servoJoint->setForceUpperLimit(0, sufficient_force);
+    servoJoint->setForceLowerLimit(0, -sufficient_force);
+
+    // Set same initial conditions
+    double initialPos = 45.0_deg;
+    servoJoint->setPosition(0, initialPos);
+    velocityJoint->setPosition(0, initialPos);
+
+    // Disable damping, spring stiffness, and friction for pure comparison
+    servoJoint->setDampingCoefficient(0, 0.0);
+    servoJoint->setSpringStiffness(0, 0.0);
+    servoJoint->setCoulombFriction(0, 0.0);
+    velocityJoint->setDampingCoefficient(0, 0.0);
+    velocityJoint->setSpringStiffness(0, 0.0);
+    velocityJoint->setCoulombFriction(0, 0.0);
+
+    world->addSkeleton(servoPendulum);
+    world->addSkeleton(velocityPendulum);
+
+  #if DART_BUILD_MODE_DEBUG
+    double simTime = 0.2;
+  #else
+    double simTime = 2.0;
+  #endif
+    int nSteps = simTime / timestep;
+
+    // Test 1: Zero velocity command
+    for (int i = 0; i < nSteps / 4; i++) {
+      servoJoint->setCommand(0, 0.0);
+      velocityJoint->setCommand(0, 0.0);
+      world->step();
+
+      double servoVel = servoJoint->getVelocity(0);
+      double velocityVel = velocityJoint->getVelocity(0);
+
+      EXPECT_NEAR(servoVel, 0.0, tol);
+      EXPECT_NEAR(velocityVel, 0.0, tol);
+      EXPECT_NEAR(servoVel, velocityVel, tol);
+    }
+
+    // Test 2: Positive velocity command
+    for (int i = 0; i < nSteps / 4; i++) {
+      double desiredVel = 0.5;
+      servoJoint->setCommand(0, desiredVel);
+      velocityJoint->setCommand(0, desiredVel);
+      world->step();
+
+      double servoVel = servoJoint->getVelocity(0);
+      double velocityVel = velocityJoint->getVelocity(0);
+
+      EXPECT_NEAR(servoVel, desiredVel, tol);
+      EXPECT_NEAR(velocityVel, desiredVel, tol);
+      EXPECT_NEAR(servoVel, velocityVel, tol);
+    }
+
+    // Test 3: Negative velocity command (sign consistency test)
+    for (int i = 0; i < nSteps / 4; i++) {
+      double desiredVel = -0.5;
+      servoJoint->setCommand(0, desiredVel);
+      velocityJoint->setCommand(0, desiredVel);
+      world->step();
+
+      double servoVel = servoJoint->getVelocity(0);
+      double velocityVel = velocityJoint->getVelocity(0);
+
+      EXPECT_NEAR(servoVel, desiredVel, tol);
+      EXPECT_NEAR(velocityVel, desiredVel, tol);
+      EXPECT_NEAR(servoVel, velocityVel, tol);
+    }
+
+    // Test 4: Time-varying velocity command
+    for (int i = 0; i < nSteps / 4; i++) {
+      double desiredVel = std::sin(world->getTime());
+      servoJoint->setCommand(0, desiredVel);
+      velocityJoint->setCommand(0, desiredVel);
+      world->step();
+
+      double servoVel = servoJoint->getVelocity(0);
+      double velocityVel = velocityJoint->getVelocity(0);
+
+      EXPECT_NEAR(servoVel, desiredVel, tol);
+      EXPECT_NEAR(velocityVel, desiredVel, tol);
+      EXPECT_NEAR(servoVel, velocityVel, tol);
+    }
+  }
+
+  //==============================================================================
+  TEST_F(Joints, ServoVelocityConsistency)
+  {
+    testServoVelocityConsistency();
+  }
+
+  //==============================================================================
+  // Test for GitHub Issue #915: CoM Jacobian sign consistency
+  //==============================================================================
+  void testCoMJacobianSignConsistency()
+  {
+    using namespace dart::math::suffixes;
+
+    double timestep = 1e-3;
+    double tol = 1e-6;
+
+    // Create two identical 2-DOF robots - one with SERVO, one with VELOCITY
+    simulation::WorldPtr world = simulation::World::create();
+    EXPECT_TRUE(world != nullptr);
+
+    world->setGravity(Eigen::Vector3d(0, 0, 0)); // Zero gravity for this test
+    world->setTimeStep(timestep);
+
+    // Create 2-link pendulums
+    Vector3d dim(1, 1, 1);
+    Vector3d offset(0, 0, 2);
+
+    SkeletonPtr servoPendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+    SkeletonPtr velocityPendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+
+    EXPECT_NE(servoPendulum, nullptr);
+    EXPECT_NE(velocityPendulum, nullptr);
+
+    // Configure joints
+    double sufficient_force = 1e+5;
+    for (std::size_t i = 0; i < 2; ++i) {
+      auto servoJoint = servoPendulum->getJoint(i);
+      auto velocityJoint = velocityPendulum->getJoint(i);
+
+      servoJoint->setActuatorType(Joint::SERVO);
+      velocityJoint->setActuatorType(Joint::VELOCITY);
+
+      servoJoint->setForceUpperLimit(0, sufficient_force);
+      servoJoint->setForceLowerLimit(0, -sufficient_force);
+
+      servoJoint->setDampingCoefficient(0, 0.0);
+      servoJoint->setSpringStiffness(0, 0.0);
+      servoJoint->setCoulombFriction(0, 0.0);
+      velocityJoint->setDampingCoefficient(0, 0.0);
+      velocityJoint->setSpringStiffness(0, 0.0);
+      velocityJoint->setCoulombFriction(0, 0.0);
+
+      // Set same initial position
+      double initialPos = 30.0_deg;
+      servoJoint->setPosition(0, initialPos);
+      velocityJoint->setPosition(0, initialPos);
+    }
+
+    world->addSkeleton(servoPendulum);
+    world->addSkeleton(velocityPendulum);
+
+  #if DART_BUILD_MODE_DEBUG
+    double simTime = 0.2;
+  #else
+    double simTime = 1.0;
+  #endif
+    int nSteps = simTime / timestep;
+
+    // Test that CoM Jacobian produces consistent results
+    for (int i = 0; i < nSteps; i++) {
+      // Set same velocity command for both
+      double desiredVel0 = 0.3 * std::sin(world->getTime());
+      double desiredVel1 = 0.2 * std::cos(world->getTime());
+
+      servoPendulum->getJoint(0)->setCommand(0, desiredVel0);
+      servoPendulum->getJoint(1)->setCommand(0, desiredVel1);
+      velocityPendulum->getJoint(0)->setCommand(0, desiredVel0);
+      velocityPendulum->getJoint(1)->setCommand(0, desiredVel1);
+
+      world->step();
+
+      // Get CoM Jacobian for both skeletons
+      auto servoCoMJacobian = servoPendulum->getCOMLinearJacobian();
+      auto velocityCoMJacobian = velocityPendulum->getCOMLinearJacobian();
+
+      // The CoM Jacobian should be the same regardless of actuator type
+      // since it's a kinematic property
+      for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 2; ++col) {
+          EXPECT_NEAR(
+              servoCoMJacobian(row, col), velocityCoMJacobian(row, col), tol)
+              << "CoM Jacobian differs at (" << row << "," << col << ")";
+        }
+      }
+
+      // Get CoM velocity for both skeletons
+      auto servoCoMVel = servoPendulum->getCOMLinearVelocity();
+      auto velocityCoMVel = velocityPendulum->getCOMLinearVelocity();
+
+      // CoM velocities should be the same since the joint velocities are the same
+      for (int row = 0; row < 3; ++row) {
+        EXPECT_NEAR(servoCoMVel(row), velocityCoMVel(row), tol)
+            << "CoM velocity differs at index " << row;
       }
     }
+  }
+
+  //==============================================================================
+  TEST_F(Joints, CoMJacobianSignConsistency)
+  {
+    testCoMJacobianSignConsistency();
+  }
+
+  //==============================================================================
+  // Test for GitHub Issue #915: Robot stability with SERVO actuators
+  //==============================================================================
+  void testServoActuatorStability()
+  {
+    using namespace dart::math::suffixes;
+
+    double timestep = 1e-3;
+    double tol = 1e-6;
+
+    simulation::WorldPtr world = simulation::World::create();
+    EXPECT_TRUE(world != nullptr);
+
+    world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+    world->setTimeStep(timestep);
+
+    // Create a simple pendulum
+    SkeletonPtr pendulum = createPendulum(Joint::SERVO);
+    EXPECT_NE(pendulum, nullptr);
+
+    auto joint = pendulum->getJoint(0);
+
+    // Set parameters as mentioned in issue #915
+    double sufficient_force = 1e+5;
+    joint->setForceUpperLimit(0, sufficient_force);
+    joint->setForceLowerLimit(0, -sufficient_force);
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setCoulombFriction(0, 0.0);
+    joint->setPositionLimitEnforcement(true);
+
+    // Set position limits
+    joint->setPositionUpperLimit(0, 90.0_deg);
+    joint->setPositionLowerLimit(0, -90.0_deg);
+
+    // Start from upright position
+    joint->setPosition(0, 0.0);
+    joint->setVelocity(0, 0.0);
+
+    world->addSkeleton(pendulum);
+
+  #if DART_BUILD_MODE_DEBUG
+    double simTime = 0.2;
+  #else
+    double simTime = 2.0;
+  #endif
+    int nSteps = simTime / timestep;
+
+    // Test 1: Robot should stay at zero velocity when commanded
+    for (int i = 0; i < nSteps / 2; i++) {
+      joint->setCommand(0, 0.0);
+      world->step();
+
+      double vel = joint->getVelocity(0);
+      double pos = joint->getPosition(0);
+
+      // Velocity should be close to zero (fighting gravity)
+      EXPECT_NEAR(vel, 0.0, tol);
+
+      // Position should remain within bounds
+      EXPECT_GE(pos, -90.0_deg - tol);
+      EXPECT_LE(pos, 90.0_deg + tol);
+    }
+
+    // Test 2: Robot should move with commanded velocity
+    for (int i = 0; i < nSteps / 2; i++) {
+      double desiredVel = 0.1;
+      joint->setCommand(0, desiredVel);
+      world->step();
+
+      double vel = joint->getVelocity(0);
+      double pos = joint->getPosition(0);
+
+      // Velocity should track command
+      EXPECT_NEAR(vel, desiredVel, tol);
+
+      // Position should remain within bounds
+      EXPECT_GE(pos, -90.0_deg - tol);
+      EXPECT_LE(pos, 90.0_deg + tol);
+    }
+  }
+
+  //==============================================================================
+  TEST_F(Joints, ServoActuatorStability)
+  {
+    testServoActuatorStability();
   }
 }
