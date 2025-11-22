@@ -31,6 +31,7 @@
  */
 
 #include <dart/config.hpp>
+
 #include <dart/gui/osg/GridVisual.hpp>
 #include <dart/gui/osg/ImGuiViewer.hpp>
 #include <dart/gui/osg/ImGuiWidget.hpp>
@@ -44,17 +45,20 @@
 #if HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
+#include <dart/simulation/World.hpp>
+
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/CouplerConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/JointConstraint.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
+
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+
 #include <dart/math/Helpers.hpp>
-#include <dart/simulation/World.hpp>
 
 #include <dart/common/Uri.hpp>
 
@@ -224,8 +228,7 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
   sdf::Root root;
   const auto errors = root.LoadSdfString(sdfText);
   if (!errors.empty()) {
-    std::cerr << "Failed to parse provided SDF text:\n"
-              << formatErrors(errors);
+    std::cerr << "Failed to parse provided SDF text:\n" << formatErrors(errors);
     return {};
   }
 
@@ -395,12 +398,12 @@ public:
       WorldPtr world,
       std::vector<MimicPairView> pairs,
       std::string worldPath,
-  SolverConfig cfg)
-  : mViewer(viewer),
-    mWorld(std::move(world)),
-    mPairs(std::move(pairs)),
-    mWorldPath(std::move(worldPath)),
-    mConfig(std::move(cfg))
+      SolverConfig cfg)
+    : mViewer(viewer),
+      mWorld(std::move(world)),
+      mPairs(std::move(pairs)),
+      mWorldPath(std::move(worldPath)),
+      mConfig(std::move(cfg))
   {
     applyCollisionDetector(mConfig, mWorld);
     applyLcpSolver(mConfig, mWorld);
@@ -470,7 +473,8 @@ private:
 
     bool odeSelected = mConfig.useOdeCollision;
 #if HAVE_ODE
-    if (ImGui::Checkbox("Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
+    if (ImGui::Checkbox(
+            "Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
       mConfig.useOdeCollision = odeSelected;
       applyCollisionDetector(mConfig, mWorld);
     }
@@ -486,14 +490,20 @@ private:
     }
 
     double erp = mConfig.erp;
-    if (ImGui::SliderFloat("ERP", reinterpret_cast<float*>(&erp), 0.0f, 1.0f, "%.3f")) {
+    if (ImGui::SliderFloat(
+            "ERP", reinterpret_cast<float*>(&erp), 0.0f, 1.0f, "%.3f")) {
       mConfig.erp = erp;
       applyLcpSolver(mConfig, mWorld);
     }
     double cfm = mConfig.cfm;
     float cfmFloat = static_cast<float>(cfm);
     if (ImGui::SliderFloat(
-            "CFM", &cfmFloat, 1e-9f, 1e-3f, "%.1e", ImGuiSliderFlags_Logarithmic)) {
+            "CFM",
+            &cfmFloat,
+            1e-9f,
+            1e-3f,
+            "%.1e",
+            ImGuiSliderFlags_Logarithmic)) {
       mConfig.cfm = static_cast<double>(cfmFloat);
       applyLcpSolver(mConfig, mWorld);
     }
@@ -505,7 +515,8 @@ private:
     if (mConfig.useOdeCollision) {
       ImGui::TextColored(
           ImVec4(0.9f, 0.7f, 0.2f, 1.0f),
-          "ODE collision detector requested; requires DART_BUILD_COLLISION_ODE.");
+          "ODE collision detector requested; requires "
+          "DART_BUILD_COLLISION_ODE.");
     }
 #endif
   }
@@ -538,10 +549,12 @@ private:
         ImGui::TableSetColumnIndex(1);
         ImGui::Text("%.3f (%.1f deg)", ref, dart::math::toDegree(ref));
         ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%.3f (%.1f deg)", follower, dart::math::toDegree(follower));
+        ImGui::Text(
+            "%.3f (%.1f deg)", follower, dart::math::toDegree(follower));
         ImGui::TableSetColumnIndex(3);
         ImGui::TextColored(
-            std::abs(error) > 0.2 ? ImVec4(1, 0.4f, 0.4f, 1) : ImVec4(0.7f, 0.9f, 0.7f, 1),
+            std::abs(error) > 0.2 ? ImVec4(1, 0.4f, 0.4f, 1)
+                                  : ImVec4(0.7f, 0.9f, 0.7f, 1),
             "%.3f",
             error);
 
@@ -549,7 +562,8 @@ private:
         const double drift = (pair.baseNow - pair.baseStart).norm();
         ImGui::TableSetColumnIndex(4);
         ImGui::TextColored(
-            drift > 0.25 ? ImVec4(1, 0.4f, 0.4f, 1) : ImVec4(0.7f, 0.9f, 0.7f, 1),
+            drift > 0.25 ? ImVec4(1, 0.4f, 0.4f, 1)
+                         : ImVec4(0.7f, 0.9f, 0.7f, 1),
             "%.3f (%.2f, %.2f, %.2f)",
             drift,
             pair.baseNow.x(),
@@ -558,8 +572,7 @@ private:
 
         ImGui::TableSetColumnIndex(5);
         bool useCoupler = pair.follower->isUsingCouplerConstraint();
-        if (ImGui::Checkbox(
-                ("##coupler_" + pair.label).c_str(), &useCoupler)) {
+        if (ImGui::Checkbox(("##coupler_" + pair.label).c_str(), &useCoupler)) {
           pair.follower->setActuatorType(Joint::MIMIC);
           pair.follower->setUseCouplerConstraint(useCoupler);
         }
@@ -657,11 +670,7 @@ int main(int /*argc*/, char*[] /*argv*/)
 
   viewer->simulate(true);
   viewer->getImGuiHandler()->addWidget(std::make_shared<MimicOverlay>(
-      viewer.get(),
-      world,
-      std::move(mimicPairs),
-      worldUri,
-      SolverConfig{}));
+      viewer.get(), world, std::move(mimicPairs), worldUri, SolverConfig{}));
 
   if (!viewer->isRealized())
     viewer->realize();

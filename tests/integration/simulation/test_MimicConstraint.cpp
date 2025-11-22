@@ -37,15 +37,18 @@
 #include "dart/utils/sdf/detail/SdfHelpers.hpp"
 
 #include <dart/config.hpp>
+
 #include <dart/simulation/World.hpp>
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/CouplerConstraint.hpp>
+#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/JointConstraint.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
-#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
-#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
+
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #if HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
@@ -68,6 +71,7 @@
 
 #include <cmath>
 
+using dart::collision::BulletCollisionDetector;
 using dart::common::Uri;
 using dart::dynamics::Joint;
 using dart::dynamics::MimicConstraintType;
@@ -79,7 +83,6 @@ using dart::utils::SdfParser::detail::getElement;
 using dart::utils::SdfParser::detail::getValueDouble;
 using dart::utils::SdfParser::detail::hasAttribute;
 using dart::utils::SdfParser::detail::hasElement;
-using dart::collision::BulletCollisionDetector;
 
 namespace {
 
@@ -157,7 +160,7 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
 
 struct MimicTuning
 {
-  double positionLimit = 1.7;    // ~97 degrees
+  double positionLimit = 1.7; // ~97 degrees
   double velocityLimit = 20.0;
   double forceLimit = 800.0;
   double damping = 2.0;
@@ -165,7 +168,8 @@ struct MimicTuning
   double cfm = 1e-6;
 };
 
-void setJointStabilization(dart::dynamics::Joint* joint, const MimicTuning& tuning)
+void setJointStabilization(
+    dart::dynamics::Joint* joint, const MimicTuning& tuning)
 {
   if (!joint)
     return;
@@ -272,7 +276,10 @@ void setBoxedSolver(WorldPtr world, bool usePgs)
   }
 }
 
-double angleError(const SkeletonPtr& skel, const std::string& ref, const std::string& follower)
+double angleError(
+    const SkeletonPtr& skel,
+    const std::string& ref,
+    const std::string& follower)
 {
   auto* refJoint = skel->getJoint(ref);
   auto* folJoint = skel->getJoint(follower);
@@ -410,10 +417,8 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
   EXPECT_LT((fastBaseNow - fastBaseStart).norm(), 0.5);
 
   // Followers should track their references within a reasonable band.
-  const double slowError
-      = angleError(slowFollower, "fast_joint", "slow_joint");
-  const double fastError
-      = angleError(fastFollower, "slow_joint", "fast_joint");
+  const double slowError = angleError(slowFollower, "fast_joint", "slow_joint");
+  const double fastError = angleError(fastFollower, "slow_joint", "fast_joint");
   EXPECT_LT(std::abs(slowError), 0.5);
   EXPECT_LT(std::abs(fastError), 0.5);
 }
@@ -490,14 +495,14 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   double maxAbsSlowFollow = std::abs(slowFollowJoint->getPosition(0));
   double maxAbsFastFollow = std::abs(fastFollowJoint->getPosition(0));
 
-  double maxAngleDiffBlue = 0.0;  // blue: fast follows slow baseline
+  double maxAngleDiffBlue = 0.0; // blue: fast follows slow baseline
   double maxVelDiffBlue = 0.0;
-  double maxAngleDiffRed = 0.0;   // red: slow follows fast baseline
+  double maxAngleDiffRed = 0.0; // red: slow follows fast baseline
   double maxVelDiffRed = 0.0;
 
-  const double driftTol = 1e-3;  // 1mm base drift tolerance
-  const double angleTol = 7e-3;   // ~0.4 degrees
-  const double velTol = 7e-2;     // 0.07 rad/s
+  const double driftTol = 1e-3; // 1mm base drift tolerance
+  const double angleTol = 7e-3; // ~0.4 degrees
+  const double velTol = 7e-2;   // 0.07 rad/s
 
   const int steps = 10000;
   for (int i = 0; i < steps; ++i) {
@@ -537,14 +542,12 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
     maxAbsSlowFollow = std::max(maxAbsSlowFollow, std::abs(redSlow));
     maxAbsFastFollow = std::max(maxAbsFastFollow, std::abs(blueFast));
 
-    maxAngleDiffBlue = std::max(
-        maxAngleDiffBlue, std::abs(blueFast - baseSlow));
-    maxVelDiffBlue = std::max(
-        maxVelDiffBlue, std::abs(blueFastVel - baseSlowVel));
-    maxAngleDiffRed = std::max(
-        maxAngleDiffRed, std::abs(redSlow - baseFast));
-    maxVelDiffRed = std::max(
-        maxVelDiffRed, std::abs(redSlowVel - baseFastVel));
+    maxAngleDiffBlue
+        = std::max(maxAngleDiffBlue, std::abs(blueFast - baseSlow));
+    maxVelDiffBlue
+        = std::max(maxVelDiffBlue, std::abs(blueFastVel - baseSlowVel));
+    maxAngleDiffRed = std::max(maxAngleDiffRed, std::abs(redSlow - baseFast));
+    maxVelDiffRed = std::max(maxVelDiffRed, std::abs(redSlowVel - baseFastVel));
 
     EXPECT_LT(std::abs(blueFast - baseSlow), angleTol);
     EXPECT_LT(std::abs(redSlow - baseFast), angleTol);

@@ -39,8 +39,9 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 
-#include <cmath>
 #include <iostream>
+
+#include <cmath>
 
 #define DART_CFM 1e-6
 #define DART_MIMIC_DEFAULT_FORCE_LIMIT 800.0
@@ -138,10 +139,10 @@ void MimicMotorConstraint::update()
       velLower = -DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
     if (!std::isfinite(velUpper))
       velUpper = DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
-    double qError = mimicProp.mReferenceJoint
-                        ->getPosition(mimicProp.mReferenceDofIndex)
-                    * mimicProp.mMultiplier + mimicProp.mOffset
-                    - mJoint->getPosition(i);
+    double qError
+        = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
+              * mimicProp.mMultiplier
+          + mimicProp.mOffset - mJoint->getPosition(i);
     const double erp = DART_MIMIC_DEFAULT_ERP;
     double desiredVelocity
         = math::clip((erp * qError) / timeStep, velLower, velUpper);

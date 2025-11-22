@@ -125,10 +125,10 @@ void CouplerConstraint::update()
       velLower = -DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
     if (!std::isfinite(velUpper))
       velUpper = DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
-    double qError = mimicProp.mReferenceJoint
-                        ->getPosition(mimicProp.mReferenceDofIndex)
-                    * mimicProp.mMultiplier + mimicProp.mOffset
-                    - mJoint->getPosition(i);
+    double qError
+        = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
+              * mimicProp.mMultiplier
+          + mimicProp.mOffset - mJoint->getPosition(i);
     const double erp = DART_MIMIC_DEFAULT_ERP;
     double desiredVelocity
         = math::clip((erp * qError) / timeStep, velLower, velUpper);
