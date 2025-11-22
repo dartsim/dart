@@ -87,6 +87,7 @@ jobs:
   build-debug:
     name: Debug Tests (arm64)
     runs-on: macos-latest
+    needs: build-release
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
