@@ -63,6 +63,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Remove any existing pixi
+        run: |
+          if command -v pixi >/dev/null 2>&1; then
+            rm -f "$(command -v pixi)" || true
+          fi
+          rm -f "$HOME/.pixi/bin/pixi"
+
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:

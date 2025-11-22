@@ -50,6 +50,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Remove any existing pixi
+        shell: powershell
+        run: |
+          $pixi = Get-Command pixi -ErrorAction SilentlyContinue
+          if ($pixi) {
+            Remove-Item -Force $pixi.Source -ErrorAction SilentlyContinue
+          }
+
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
