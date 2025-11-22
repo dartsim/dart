@@ -4,7 +4,7 @@ version = "6.16.0"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
 assimp = ">=5.4.3,<6"
@@ -51,8 +51,6 @@ sphinx_rtd_theme = "*"
 taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
-tracy-profiler-client = ">=0.11.1,<0.12"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 urdfdom = ">=4.0.1,<5"
 
 [tasks]
@@ -1097,6 +1095,8 @@ mesalib = ">=24"
 libglvnd = ">=1.7"
 libgl-devel = ">=1.7"
 libglu = ">=9.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 ################################################################################
 # osx-64
@@ -1104,6 +1104,8 @@ libglu = ">=9.0"
 
 [target.osx-64.dependencies]
 git = ">=2.40.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-64.tasks]
 download-osg = { cmd = """
@@ -1143,6 +1145,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 
 [target.osx-arm64.dependencies]
 git = ">=2.40.0"
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.osx-arm64.tasks]
 download-osg = { cmd = """
@@ -1183,6 +1187,8 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 [target.win-64.dependencies]
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
 
 [target.win-64.tasks]
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
