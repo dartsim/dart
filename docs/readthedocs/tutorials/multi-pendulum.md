@@ -25,8 +25,8 @@ scratch. It also loads models in URDF, SDF, and SKEL formats as
 demonstrated in the later tutorials.
 
 In DART, an articulated dynamics model is represented by a
-``Skeleton``. In the ``main`` function, we first create an empty
-skeleton named *pendulum*.
+`Skeleton`. In the `main` function, we first create an empty
+skeleton named _pendulum_.
 
 ```{eval-rst}
 .. tabs::
@@ -44,11 +44,11 @@ skeleton named *pendulum*.
          pendulum = dart.dynamics.Skeleton("pendulum")
 ```
 
-A Skeleton is a structure that consists of ``BodyNode``s (bodies) which are 
-connected by ``Joint``s. Every Joint has a child BodyNode, and every BodyNode 
-has a parent Joint. Even the root BodyNode has a Joint that attaches it to the 
-World. In the function ``makeRootBody``, we create a pair of a
-``BallJoint``  and a BodyNode, and attach this pair to the currently
+A Skeleton is a structure that consists of `BodyNode`s (bodies) which are
+connected by `Joint`s. Every Joint has a child BodyNode, and every BodyNode
+has a parent Joint. Even the root BodyNode has a Joint that attaches it to the
+World. In the function `makeRootBody`, we create a pair of a
+`BallJoint` and a BodyNode, and attach this pair to the currently
 empty pendulum skeleton.
 
 ```{eval-rst}
@@ -81,7 +81,7 @@ this new BodyNode is the root of the pendulum. If we wish to append
 the new BodyNode to an existing BodyNode in the pendulum,
 we can do so by passing the pointer of the existing BodyNode as
 the first parameter. In fact, this is how we add more BodyNodes to
-the pendulum in the function ``addBody``:
+the pendulum in the function `addBody`:
 
 ```{eval-rst}
 .. tabs::
@@ -109,10 +109,11 @@ the pendulum in the function ``addBody``:
              ),
          )
 ```
-These tutorials use the OSG viewer utilities under ``dart::gui::osg``. After we
-create the ``World`` and pendulum skeleton, we instantiate a ``Controller``
-plus a GUI event handler, wrap the world in a ``RealTimeWorldNode``, and send
-that node to a ``Viewer``:
+
+These tutorials use the OSG viewer utilities under `dart::gui::osg`. After we
+create the `World` and pendulum skeleton, we instantiate a `Controller`
+plus a GUI event handler, wrap the world in a `RealTimeWorldNode`, and send
+that node to a `Viewer`:
 
 ```{eval-rst}
 .. tabs::
@@ -132,8 +133,8 @@ that node to a ``Viewer``:
          :end-before: viewer.addInstructionText("space bar
 ```
 
-The ``Viewer`` drives the world through ``CustomWorldNode::customPreStep()``,
-which we override to call ``Controller::update()`` each time step:
+The `Viewer` drives the world through `CustomWorldNode::customPreStep()`,
+which we override to call `Controller::update()` each time step:
 
 ```{eval-rst}
 .. tabs::
@@ -153,7 +154,6 @@ which we override to call ``Controller::update()`` each time step:
          :end-before: def set_geometry
 ```
 
-
 ## Lesson 1: Change shapes and applying forces
 
 We have a pendulum with five bodies, and we want to be able to apply forces to
@@ -167,10 +167,10 @@ At each step, we'll want to make sure that everything starts out with its defaul
 appearance. The default is for everything to be blue and there not to be any
 arrow attached to any body.
 
-Find the ``Controller::update`` function. The top of this function is where we
+Find the `Controller::update` function. The top of this function is where we
 reset everything to the default appearance before advancing the simulation.
 
-Each BodyNode contains visualization ``Shape``s that will be rendered during
+Each BodyNode contains visualization `Shape`s that will be rendered during
 simulation. In our case, each BodyNode has two shapes:
 
 - One shape to visualize the parent joint
@@ -224,9 +224,9 @@ Now everything will be reset to the default appearance.
 
 ### Lesson 1b: Apply joint torques based on user input
 
-The ``Controller`` class keeps a ``mForceCountDown`` vector whose entries get
-set to ``default_countdown`` whenever ``PendulumEventHandler`` sees a numeric key
-press. If an entry in ``mForceCountDown`` is greater than zero, then that implies
+The `Controller` class keeps a `mForceCountDown` vector whose entries get
+set to `default_countdown` whenever `PendulumEventHandler` sees a numeric key
+press. If an entry in `mForceCountDown` is greater than zero, then that implies
 that the user wants a force to be applied for that entry.
 
 There are two ways that forces can be applied:
@@ -235,8 +235,8 @@ There are two ways that forces can be applied:
 - As an external body force
 
 First we'll consider applying a Joint force. Inside the for-loop that goes
-through each ``DegreeOfFreedom`` using ``getNumDofs()``, there is an 
-if-statement for ``mForceCountDown``. In that if-statement, we'll grab the
+through each `DegreeOfFreedom` using `getNumDofs()`, there is an
+if-statement for `mForceCountDown`. In that if-statement, we'll grab the
 relevant DegreeOfFreedom and set its generalized (joint) force:
 
 ```{eval-rst}
@@ -257,7 +257,7 @@ relevant DegreeOfFreedom and set its generalized (joint) force:
          :end-before: # snippet:py-lesson1b-joint-force-end
 ```
 
-The ``mPositiveSign`` boolean gets toggled when the user presses the minus sign
+The `mPositiveSign` boolean gets toggled when the user presses the minus sign
 '-' key. We use this boolean to decide whether the applied force should be
 positive or negative.
 
@@ -307,8 +307,8 @@ So now we will color it red:
 
 If mBodyForce is true, we'll want to apply an external force to the body instead
 of an internal force in the joint. First, inside the for-loop that iterates
-through each ``BodyNode`` using ``getNumBodyNodes()``, there is an if-statement
-for ``mForceCountDown``. In that if-statement, we'll grab the relevant BodyNode:
+through each `BodyNode` using `getNumBodyNodes()`, there is an if-statement
+for `mForceCountDown`. In that if-statement, we'll grab the relevant BodyNode:
 
 ```{eval-rst}
 .. tabs::
@@ -326,10 +326,10 @@ for ``mForceCountDown``. In that if-statement, we'll grab the relevant BodyNode:
          body = self.pendulum.getBodyNode(i)
 ```
 
-Now we'll create an ``math::Vector3d`` that describes the force and another one
-that describes the location for that force. An ``math::Vector3d`` is the Eigen
+Now we'll create an `math::Vector3d` that describes the force and another one
+that describes the location for that force. An `math::Vector3d` is the Eigen
 C++ library's version of a three-dimensional mathematical vector. Note that the
-``d`` at the end of the name stands for ``double``, not for "dimension". An
+`d` at the end of the name stands for `double`, not for "dimension". An
 math::Vector3f would be a three-dimensional vector of floats, and an
 math::Vector3i would be a three-dimensional vector of integers.
 
@@ -351,7 +351,7 @@ math::Vector3i would be a three-dimensional vector of integers.
          location = np.array([-default_width / 2.0, 0.0, default_height / 2.0])
 ```
 
-The force will have a magnitude of ``default_force`` and it will point in the
+The force will have a magnitude of `default_force` and it will point in the
 positive x-direction. The location of the force will be in the center of the
 negative x side of the body, as if a finger on the negative side is pushing the
 body in the positive direction. However, we need to account for sign changes:
@@ -398,7 +398,7 @@ Now we can add the external force:
          body.addExtForce(force, location, True, True)
 ```
 
-The two ``true`` booleans at the end are indicating to DART that both the force
+The two `true` booleans at the end are indicating to DART that both the force
 and the location vectors are being expressed with respect to the body frame.
 
 Now we'll want to visualize the force being applied to the body. First, we'll
@@ -428,7 +428,7 @@ the 1-index visualization shape, because we trust that it is the shape for the
 body.
 
 Now we'll want to add an arrow to the visualization shapes of the body to
-represent the applied force. The ``Controller`` already owns an ``ArrowShape``
+represent the applied force. The `Controller` already owns an `ArrowShape`
 that visualizes the currently applied body force; we just need to show it:
 
 ```{eval-rst}
@@ -452,7 +452,7 @@ that visualizes the currently applied body force; we just need to show it:
 
 DART allows Joints to have implicit spring and damping properties. By default,
 these properties are zeroed out, so a joint will only exhibit the forces that
-are given to it by the ``Joint::setForces`` function. However, you can give a
+are given to it by the `Joint::setForces` function. However, you can give a
 non-zero spring coefficient to a joint so that it behaves according to Hooke's
 Law, and you can give a non-zero damping coefficient to a joint which will
 result in linear damping. These forces are computed using implicit methods in
@@ -462,11 +462,11 @@ order to improve numerical stability.
 
 First let's see how to get and set the rest positions.
 
-Find the function named ``Controller::changeRestPosition``. This function is
-triggered whenever ``PendulumEventHandler`` sees the 'q' or 'a' key. We want
+Find the function named `Controller::changeRestPosition`. This function is
+triggered whenever `PendulumEventHandler` sees the 'q' or 'a' key. We want
 those buttons to curl and uncurl the rest positions for the pendulum. To start,
 we'll go through all the generalized coordinates and change their rest positions
-by ``delta``:
+by `delta`:
 
 ```{eval-rst}
 .. tabs::
@@ -488,7 +488,7 @@ by ``delta``:
 
 However, it's important to note that the system can become somewhat unstable if
 we allow it to curl up too much, so let's put a limit on the magnitude of the
-rest angle. Right before ``dof->setRestPosition(q0);`` we can put:
+rest angle. Right before `dof->setRestPosition(q0);` we can put:
 
 ```{eval-rst}
 .. tabs::
@@ -510,7 +510,7 @@ rest angle. Right before ``dof->setRestPosition(q0);`` we can put:
 
 And there's one last thing to consider: the first joint of the pendulum is a
 BallJoint. BallJoints have three degrees of freedom, which means if we alter
-the rest positions of *all* of the pendulum's degrees of freedom, then the
+the rest positions of _all_ of the pendulum's degrees of freedom, then the
 pendulum will end up curling out of the x-z plane. You can allow this to happen
 if you want, or you can prevent it from happening by zeroing out the rest
 positions of the BallJoint's other two degrees of freedom:
@@ -559,7 +559,7 @@ spring stiffness. We can change the spring stiffness as follows:
 However, it's important to realize that if the spring stiffness were ever to
 become negative, we would get some very nasty explosive behavior. It's also a
 bad idea to just trust the user to avoid decrementing it into being negative.
-So before the line ``dof->setSpringStiffness(stiffness);`` you'll want to put:
+So before the line `dof->setSpringStiffness(stiffness);` you'll want to put:
 
 ```cpp
 if(stiffness < 0.0)
@@ -606,7 +606,7 @@ You can also create a dynamic constraint that attaches a BodyNode to the World
 instead of to another BodyNode.
 
 In our case, we want to attach the last BodyNode to the World with a BallJoint
-style constraint whenever the function ``addConstraint()`` gets called. First,
+style constraint whenever the function `addConstraint()` gets called. First,
 let's grab the last BodyNode in the pendulum:
 
 ```{eval-rst}
@@ -689,7 +689,7 @@ And then add it to the world:
 ```
 
 Now we also want to be able to remove this constraint. In the function
-``removeConstraint()``, we can put the following code:
+`removeConstraint()`, we can put the following code:
 
 ```{eval-rst}
 .. tabs::
