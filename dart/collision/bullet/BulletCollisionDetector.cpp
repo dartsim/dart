@@ -229,8 +229,12 @@ bool BulletCollisionDetector::collide(
   if (result)
     result->clear();
 
-  if (0u == option.maxNumContacts)
+  if (0u == option.maxNumContacts) {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
     return false;
+  }
 
   // Check if 'this' is the collision engine of 'group'.
   if (!checkGroupValidity(this, group))
@@ -268,8 +272,12 @@ bool BulletCollisionDetector::collide(
   if (result)
     result->clear();
 
-  if (0u == option.maxNumContacts)
+  if (0u == option.maxNumContacts) {
+    DART_WARN(
+        "CollisionOption::maxNumContacts is 0; skipping collision detection. "
+        "Use maxNumContacts >= 1 for binary checks.");
     return false;
+  }
 
   if (!checkGroupValidity(this, group1))
     return false;

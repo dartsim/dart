@@ -194,6 +194,9 @@ if(TARGET dart-utils)
   target_link_libraries(INTEGRATION_simulation_World dart-utils)
 
   # Additional simulation tests
+  dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_Issue410.cpp)
+  target_link_libraries(INTEGRATION_simulation_Issue410 dart-utils)
+
   dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
   target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-utils)
 endif()

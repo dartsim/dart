@@ -54,6 +54,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
+          run-install: true
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -82,9 +83,4 @@ jobs:
           $env:BUILD_TYPE = "${{ matrix.build_type }}"
           pixi run test-no-plane OFF
 
-      - name: Install (dartpy disabled)
-        run: |
-          $ErrorActionPreference = "Stop"
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"
-          $env:DART_VERBOSE = "ON"
-          pixi run install OFF
+      # Skip install on Windows to keep job runtimes within limits; Linux covers install path.
