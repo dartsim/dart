@@ -199,6 +199,9 @@ if(TARGET dart-utils)
 
   dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_MomentumConservation.cpp)
   target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-utils)
+
+  dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_MimicConstraint.cpp)
+  target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-utils)
 endif()
 
 # ==============================================================================
