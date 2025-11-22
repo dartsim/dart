@@ -20,6 +20,7 @@ Launch the executable from the build directory above:
 This example demonstrates simulation of articulated bodies consisting of both rigid bodies and soft bodies in a mixed chain configuration. The example loads a world containing articulated bodies with 10 bodies and allows interactive force application to soft body nodes.
 
 Key features demonstrated:
+
 - Mixed rigid-soft body chain simulation
 - Interactive force application to soft body nodes
 - Real-time visualization using OpenSceneGraph (OSG)

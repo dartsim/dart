@@ -7,6 +7,7 @@
 **Choice**: pybind11 for C++/Python bindings
 
 **Rationale**:
+
 - Header-only library, no external dependencies
 - Seamless Eigen ↔ NumPy integration with custom type casters
 - Automatic reference counting and lifetime management
@@ -18,6 +19,7 @@
 **Choice**: scikit-build-core (not setuptools or traditional setup.py)
 
 **Rationale**:
+
 - Modern PEP 517/518 compliant build system
 - Native CMake integration (DART is already CMake-based)
 - Supports editable installs (`pip install -e .`)
@@ -31,6 +33,7 @@
 **Choice**: pixi-based wheel building (not cibuildwheel + Docker)
 
 **Rationale**:
+
 - **No Docker maintenance**: No custom container images to maintain
 - **Local reproducibility**: Same commands work locally and in CI
 - **Unified tooling**: pixi handles both development and distribution
@@ -64,12 +67,14 @@ dartpy/
 **Implementation**: `python/dartpy/eigen_geometry_pybind.h`
 
 **Features**:
+
 - Zero-copy conversions where possible
 - Automatic bidirectional conversion
 - Support for Eigen::Isometry3 (4x4 transforms)
 - Quaternion support
 
 **Usage**:
+
 ```python
 import dartpy as dart
 import numpy as np
@@ -88,7 +93,9 @@ positions = skel.getPositions()  # Returns ndarray
 **Root Cause**: Python bindings previously checked for an undefined `HAVE_DART_GUI_OSG` preprocessor macro
 
 **Solution**:
+
 1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
+
    ```cpp
    #if DART_BUILD_GUI
      // Bind OSG module
@@ -107,6 +114,7 @@ positions = skel.getPositions()  # Returns ndarray
 ## Installation Methods
 
 ### For End Users
+
 ```bash
 # PyPI wheels (pre-built, includes OSG)
 pip install dartpy
@@ -120,6 +128,7 @@ conda install dartpy -c conda-forge
 **See**: `docs/readthedocs/dartpy/developer_guide/build.rst` for detailed instructions
 
 **Quick options**:
+
 - **Editable install**: `pip install -e . -v --no-build-isolation`
 - **Using pixi**: `pixi run build-py-dev`
 - **Traditional CMake**: Configure with `-DDART_BUILD_DARTPY=ON`, then build and install
@@ -129,6 +138,7 @@ conda install dartpy -c conda-forge
 ### Build Infrastructure
 
 Wheels are built using **pixi** environments defined in `pixi.toml`:
+
 - Features: `py312-wheel`, `py313-wheel`
 - Platform-specific build tasks
 - OSG enabled on all platforms
@@ -156,6 +166,7 @@ pixi run -e py313-wheel wheel-upload
 ### Version Management
 
 **Source of truth**: `package.xml`
+
 ```xml
 <version>7.0.0</version>          <!-- Release -->
 <version>7.0.0.dev0</version>     <!-- Development -->
@@ -164,6 +175,7 @@ pixi run -e py313-wheel wheel-upload
 **Extraction**: `pyproject.toml` regex automatically extracts version during build
 
 **Publishing policy** (to avoid PyPI 10GiB limit):
+
 - **Release versions** (`7.0.0`) → Production PyPI
 - **Dev versions** (`7.0.0.dev0`) → Test PyPI only (use `wheel-upload-test`)
 - Manual cleanup: Delete old versions via PyPI web interface when needed
@@ -171,12 +183,14 @@ pixi run -e py313-wheel wheel-upload
 ### CI/CD
 
 **Workflow**: `.github/workflows/publish_dartpy.yml`
+
 - **Every commit**: Build → Repair → Verify → Test → Upload artifacts
 - **Version tags** (`v*.*.*`): All above + Publish to PyPI
 
 ## Key Patterns
 
 ### Pattern 1: Basic Simulation
+
 ```python
 import dartpy as dart
 
@@ -190,6 +204,7 @@ for _ in range(100):
 ```
 
 ### Pattern 2: Visualization with Custom Logic
+
 ```python
 class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
     def customPreStep(self):
@@ -209,6 +224,7 @@ viewer.run()
 ```
 
 ### Pattern 3: Jacobian Computation
+
 ```python
 import numpy as np
 
@@ -221,6 +237,7 @@ robot.setForces(forces)
 ## Testing
 
 **Scripts**:
+
 - `scripts/test_wheel.py` - Test wheel in isolated environment
 - `scripts/verify_version.py` - Verify version consistency
 
