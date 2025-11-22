@@ -57,6 +57,12 @@ jobs:
         with:
           cache: true
 
+      - name: Persist pixi path for scripts
+        run: |
+          PIXI_PATH="$(which pixi)"
+          cp "${PIXI_PATH}" "${RUNNER_TEMP}/pixi"
+          echo "PIXI_BIN=${RUNNER_TEMP}/pixi" >> "$GITHUB_ENV"
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
@@ -106,6 +112,12 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
+
+      - name: Persist pixi path for scripts
+        run: |
+          PIXI_PATH="$(which pixi)"
+          cp "${PIXI_PATH}" "${RUNNER_TEMP}/pixi"
+          echo "PIXI_BIN=${RUNNER_TEMP}/pixi" >> "$GITHUB_ENV"
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9

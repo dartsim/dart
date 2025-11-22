@@ -55,7 +55,14 @@ class Symbols:
 
 PIXI_DEFAULT_DARTPY = "ON"
 ROOT_DIR = Path(__file__).resolve().parent.parent
-PIXI_BIN = which("pixi")
+
+
+def _resolve_pixi_path() -> Optional[str]:
+    """Pick the pixi binary from env override or PATH on demand."""
+    return os.environ.get("PIXI_BIN") or which("pixi")
+
+
+PIXI_BIN = _resolve_pixi_path()
 
 
 def _env_flag_enabled(name: str, default: str = "ON") -> bool:
@@ -84,11 +91,12 @@ def _cmake_option_enabled(option: str) -> Optional[bool]:
 
 
 def pixi_command(task: str, *args: str) -> str:
-    if PIXI_BIN is None:
+    pixi_exe = _resolve_pixi_path()
+    if pixi_exe is None:
         return f"pixi run {task} {' '.join(args)}".strip()
 
     joined_args = f" {' '.join(args)}" if args else ""
-    return f"{PIXI_BIN} run {task}{joined_args}"
+    return f"{pixi_exe} run {task}{joined_args}"
 
 
 class Colors:
@@ -218,12 +226,13 @@ def run_command(
 
 def check_pixi() -> bool:
     """Check if pixi is available"""
-    if PIXI_BIN is None:
+    pixi_exe = _resolve_pixi_path()
+    if pixi_exe is None:
         print_error("pixi not found. Please install pixi first.")
         return False
 
     try:
-        subprocess.run([PIXI_BIN, "--version"], capture_output=True, check=True)
+        subprocess.run([pixi_exe, "--version"], capture_output=True, check=True)
         return True
     except subprocess.CalledProcessError:
         print_error("pixi not found. Please install pixi first.")
