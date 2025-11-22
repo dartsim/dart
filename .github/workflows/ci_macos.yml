@@ -46,8 +46,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Remove preinstalled pixi (if any)
-        run: rm -f "$HOME/.pixi/bin/pixi"
+      - name: Ensure pixi home exists
+        run: mkdir -p "${HOME}/.pixi/bin"
 
       - name: Ensure pixi bin directory exists
         run: mkdir -p "$HOME/.pixi/bin"
@@ -102,8 +102,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Remove preinstalled pixi (if any)
-        run: rm -f "$HOME/.pixi/bin/pixi"
+      - name: Ensure pixi home exists
+        run: mkdir -p "${HOME}/.pixi/bin"
 
       - name: Ensure pixi bin directory exists
         run: mkdir -p "$HOME/.pixi/bin"

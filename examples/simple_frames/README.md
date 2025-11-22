@@ -21,6 +21,7 @@ renderer in DART. It shows various geometric shapes (boxes, ellipsoids, arrows)
 attached to different coordinate frames with different transformations applied.
 
 Key features demonstrated:
+
 - Creating SimpleFrame objects with different transformations
 - Attaching shapes to frames
 - Frame hierarchy and relative transformations

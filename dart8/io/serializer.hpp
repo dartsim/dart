@@ -228,7 +228,7 @@ public:
     ComponentT component;
     loadComponent(in, component);
     if constexpr (std::is_empty_v<ComponentT>) {
-      // Empty tag components do not need constructor arguments
+      // Tag components in EnTT must be emplaced without constructor args
       registry.emplace<ComponentT>(entity);
     } else {
       registry.emplace<ComponentT>(entity, std::move(component));
