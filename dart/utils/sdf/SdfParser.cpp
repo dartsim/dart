@@ -1242,7 +1242,7 @@ static void reportMissingElement(
   DART_ASSERT(0);
 }
 
-static void readAxisElement(
+static bool readAxisElement(
     tinyxml2::XMLElement* axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
     Eigen::Vector3d& axis,
@@ -1254,6 +1254,8 @@ static void readAxisElement(
     double& friction,
     double& spring_stiffness)
 {
+  bool hasFinitePositionLimit = false;
+
   // use_parent_model_frame
   bool useParentModelFrame = false;
   if (hasElement(axisElement, "use_parent_model_frame"))
@@ -1298,11 +1300,13 @@ static void readAxisElement(
     // lower
     if (hasElement(limitElement, "lower")) {
       lower = getValueDouble(limitElement, "lower");
+      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
     }
 
     // upper
     if (hasElement(limitElement, "upper")) {
       upper = getValueDouble(limitElement, "upper");
+      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
     }
   }
 
@@ -1321,6 +1325,8 @@ static void readAxisElement(
     // Apply the same logic to the rest position.
     rest = initial;
   }
+
+  return hasFinitePositionLimit;
 }
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
@@ -1346,7 +1352,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
     tinyxml2::XMLElement* axisElement
         = getElement(_revoluteJointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newRevoluteJoint.mAxis,
@@ -1357,6 +1363,7 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
         newRevoluteJoint.mDampingCoefficients[0],
         newRevoluteJoint.mFrictions[0],
         newRevoluteJoint.mSpringStiffnesses[0]);
+    newRevoluteJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readRevoluteJoint", "axis", "joint", _name);
   }
@@ -1378,7 +1385,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newPrismaticJoint.mAxis,
@@ -1389,6 +1396,7 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
         newPrismaticJoint.mDampingCoefficients[0],
         newPrismaticJoint.mFrictions[0],
         newPrismaticJoint.mSpringStiffnesses[0]);
+    newPrismaticJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readPrismaticJoint", "axis", "joint", _name);
   }
@@ -1410,7 +1418,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    const bool hasLimitedAxis = readAxisElement(
         axisElement,
         _parentModelFrame,
         newScrewJoint.mAxis,
@@ -1421,6 +1429,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
         newScrewJoint.mDampingCoefficients[0],
         newScrewJoint.mFrictions[0],
         newScrewJoint.mSpringStiffnesses[0]);
+    newScrewJoint.mIsPositionLimitEnforced = hasLimitedAxis;
   } else {
     reportMissingElement("readScrewJoint", "axis", "joint", _name);
   }
@@ -1442,13 +1451,15 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   DART_ASSERT(_jointElement != nullptr);
 
   dynamics::UniversalJoint::Properties newUniversalJoint;
+  bool hasLimitedAxis1 = false;
+  bool hasLimitedAxis2 = false;
 
   //--------------------------------------------------------------------------
   // axis
   if (hasElement(_jointElement, "axis")) {
     tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
-    readAxisElement(
+    hasLimitedAxis1 = readAxisElement(
         axisElement,
         _parentModelFrame,
         newUniversalJoint.mAxis[0],
@@ -1468,7 +1479,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   if (hasElement(_jointElement, "axis2")) {
     tinyxml2::XMLElement* axis2Element = getElement(_jointElement, "axis2");
 
-    readAxisElement(
+    hasLimitedAxis2 = readAxisElement(
         axis2Element,
         _parentModelFrame,
         newUniversalJoint.mAxis[1],
@@ -1482,6 +1493,9 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
   } else {
     reportMissingElement("readUniversalJoint", "axis2", "joint", _name);
   }
+
+  newUniversalJoint.mIsPositionLimitEnforced
+      = hasLimitedAxis1 || hasLimitedAxis2;
 
   return newUniversalJoint;
 }
