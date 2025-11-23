@@ -43,9 +43,9 @@ jobs:
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     env:
-      # Cap parallelism to avoid posix_spawn failures on hosted runners
-      DART_PARALLEL_JOBS: 4
-      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      # Keep parallelism modest to avoid posix_spawn failures on hosted runners
+      DART_PARALLEL_JOBS: 8
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
     # Note: No dedicated container image is used; all platforms rely on pixi environments.
     # Linux wheels: auditwheel derives the glibc compatibility tag from bundled symbols.
     # macOS wheels: delocate bundles dylibs. Windows wheels: delvewheel bundles DLLs.
