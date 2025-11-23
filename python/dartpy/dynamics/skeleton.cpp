@@ -165,7 +165,7 @@ void defSkeleton(nb::module_& m)
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
         return create_pair_with_default<dart::dynamics::FreeJoint>(
             self, parent, props);
-        },
+      },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
@@ -180,7 +180,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createEulerJointAndBodyNodePair");
   skeletonClass.def(
       "createEulerJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -191,7 +190,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createRevoluteJointAndBodyNodePair");
   skeletonClass.def(
       "createRevoluteJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -287,7 +285,6 @@ void defSkeleton(nb::module_& m)
           },
           nb::rv_policy::reference_internal,
           nb::arg("idx"));
-
 }
 
 } // namespace dart::python_nb
