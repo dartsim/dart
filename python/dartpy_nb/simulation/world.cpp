@@ -28,7 +28,7 @@ void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
 
-  nb::class_<World>(m, "World", nb::type<std::shared_ptr<World>>())
+  nb::class_<World>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def("clone", [](const World& self) { return self.clone(); })

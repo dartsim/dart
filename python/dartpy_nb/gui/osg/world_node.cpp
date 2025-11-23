@@ -25,7 +25,7 @@ using ShadowTechniquePtr = osgShadow::ShadowTechnique*;
 class PyWorldNode : public dart::gui::osg::WorldNode
 {
 public:
-  NB_TRAMPOLINE(dart::gui::osg::WorldNode, 1);
+  NB_TRAMPOLINE(dart::gui::osg::WorldNode, 5);
   void refresh() override { NB_OVERRIDE(refresh); }
   void customPreRefresh() override { NB_OVERRIDE(customPreRefresh); }
   void customPostRefresh() override { NB_OVERRIDE(customPostRefresh); }
@@ -36,7 +36,7 @@ public:
 class PyRealTimeWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
-  NB_TRAMPOLINE(dart::gui::osg::RealTimeWorldNode, 1);
+  NB_TRAMPOLINE(dart::gui::osg::RealTimeWorldNode, 5);
   void refresh() override { NB_OVERRIDE(refresh); }
   void customPreRefresh() override { NB_OVERRIDE(customPreRefresh); }
   void customPostRefresh() override { NB_OVERRIDE(customPostRefresh); }
@@ -52,18 +52,17 @@ public:
     return {};
   return ::osg::ref_ptr<osgShadow::ShadowTechnique>(shadow);
 }
+
 void defWorldNode(nb::module_& m)
 {
   using dart::gui::osg::WorldNode;
 
   nb::class_<WorldNode, PyWorldNode>(m, "WorldNode", nb::dynamic_attr())
-      .def(nb::new_([]() { return makeOsgShared<WorldNode>(); }))
+      .def(nb::init<>())
       .def(
-          nb::new_([](const WorldPtr& world, ShadowTechniquePtr shadow) {
-            return makeOsgShared<WorldNode>(world, toShadowRef(shadow));
-          }),
+          nb::init<const WorldPtr&, ShadowTechniquePtr>(),
           nb::arg("world") = nullptr,
-          nb::arg("shadowTechnique") = nullptr)
+          nb::arg("shadowTechnique") = ShadowTechniquePtr{})
       .def("setWorld", &WorldNode::setWorld, nb::arg("newWorld"))
       .def("getWorld", &WorldNode::getWorld)
       .def("refresh", &WorldNode::refresh)
@@ -104,20 +103,14 @@ void defRealTimeWorldNode(nb::module_& m)
       dart::gui::osg::WorldNode,
       PyRealTimeWorldNode>(
       m, "RealTimeWorldNode", nb::dynamic_attr())
-      .def(nb::new_([]() { return makeOsgShared<RealTimeWorldNode>(); }))
+      .def(nb::init<>())
       .def(
-          nb::new_([](const WorldPtr& world,
-                      ShadowTechniquePtr shadower,
-                      double targetFrequency,
-                      double targetRealTimeFactor) {
-            return makeOsgShared<RealTimeWorldNode>(
-                world,
-                toShadowRef(shadower),
-                targetFrequency,
-                targetRealTimeFactor);
-          }),
+          nb::init<const WorldPtr&,
+                   ShadowTechniquePtr,
+                   double,
+                   double>(),
           nb::arg("world") = nullptr,
-          nb::arg("shadower") = nullptr,
+          nb::arg("shadower") = ShadowTechniquePtr{},
           nb::arg("targetFrequency") = 60.0,
           nb::arg("targetRealTimeFactor") = 1.0)
       .def("setTargetFrequency", &RealTimeWorldNode::setTargetFrequency, nb::arg("targetFrequency"))
