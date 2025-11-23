@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/LCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -57,4 +58,4 @@ LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep) {}
 LCPSolver::~LCPSolver() {}
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

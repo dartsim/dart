@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/WeldJointConstraint.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -38,7 +39,7 @@
 #include "dart/math/Constants.hpp"
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -403,4 +404,4 @@ bool WeldJointConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

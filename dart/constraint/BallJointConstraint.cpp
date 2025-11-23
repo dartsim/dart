@@ -29,6 +29,7 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/BallJointConstraint.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -39,7 +40,7 @@
 
 #include <iostream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -379,4 +380,4 @@ bool BallJointConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/BalanceConstraint.hpp"
 
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -397,4 +398,4 @@ void BalanceConstraint::convertJacobianMethodOutputToGradient(
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

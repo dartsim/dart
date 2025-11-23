@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -42,7 +43,7 @@
 
 #define DART_CFM 1e-9
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 double JointCoulombFrictionConstraint::mConstraintForceMixing = DART_CFM;
@@ -279,4 +280,4 @@ bool JointCoulombFrictionConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/DantzigLCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -45,7 +46,7 @@
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 #include "dart/math/lcp/Lemke.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -330,4 +331,4 @@ void DantzigLCPSolver::print(
 #endif
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

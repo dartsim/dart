@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ConstraintSolver.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -57,7 +58,7 @@
 
 #include <algorithm>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 using namespace dynamics;
@@ -698,4 +699,4 @@ bool ConstraintSolver::removeContactSurfaceHandler(
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 
 #include "dart/common/Profile.hpp"
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -86,4 +87,4 @@ bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
 #endif
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

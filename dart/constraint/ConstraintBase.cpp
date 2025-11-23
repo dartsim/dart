@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ConstraintBase.hpp"
 
 #include "dart/dynamics/Skeleton.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -96,4 +97,4 @@ dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

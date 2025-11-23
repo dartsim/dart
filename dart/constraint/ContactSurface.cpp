@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ContactSurface.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
@@ -42,7 +43,7 @@
 
 #include <utility>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -350,4 +351,4 @@ double DefaultContactSurfaceHandler::computeRestitutionCoefficient(
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

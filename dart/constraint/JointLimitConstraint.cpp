@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/JointLimitConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -42,7 +43,7 @@
 
 #include <iostream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 #define DART_ERROR_ALLOWANCE 0.0
@@ -442,4 +443,4 @@ bool JointLimitConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

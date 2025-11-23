@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ConstrainedGroup.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -41,7 +42,7 @@
 #include <iostream>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -127,4 +128,4 @@ std::size_t ConstrainedGroup::getTotalDimension() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

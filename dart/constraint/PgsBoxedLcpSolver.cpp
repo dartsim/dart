@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
 #include "dart/math/Constants.hpp"
@@ -43,7 +44,7 @@
 
 #define PGS_EPSILON 10e-9
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 //==============================================================================
@@ -262,4 +263,4 @@ const PgsBoxedLcpSolver::Option& PgsBoxedLcpSolver::getOption() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

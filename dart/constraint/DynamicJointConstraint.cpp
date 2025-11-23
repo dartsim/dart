@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/DynamicJointConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -42,7 +43,7 @@
 #define DART_MAX_ERV 1e+1
 #define DART_CFM 1e-9
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 double DynamicJointConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
@@ -173,4 +174,4 @@ dynamics::BodyNode* DynamicJointConstraint::getBodyNode2() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ContactConstraint.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
@@ -43,7 +44,7 @@
 
 #include <iostream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 #define DART_EPSILON 1e-6
@@ -789,4 +790,4 @@ const collision::Contact& ContactConstraint::getContact() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

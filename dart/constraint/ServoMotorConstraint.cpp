@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/ServoMotorConstraint.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -43,7 +44,7 @@
 
 #define DART_CFM 1e-9
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 double ServoMotorConstraint::mConstraintForceMixing = DART_CFM;
@@ -279,4 +280,4 @@ bool ServoMotorConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END

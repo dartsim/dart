@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/constraint/SoftContactConstraint.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
@@ -54,7 +55,7 @@
 #define DART_CFM 1e-5
 // #define DART_MAX_NUMBER_OF_CONTACTS 32
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
@@ -1035,4 +1036,4 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
 }
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
