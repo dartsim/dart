@@ -41,7 +41,9 @@
 #include <dart/utils/sdf/SdfParser.hpp>
 #include <dart/utils/sdf/detail/SdfHelpers.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 #if HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
@@ -177,8 +179,6 @@ struct SolverConfig
 void applyCollisionDetector(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
 {
-  using dart::collision::BulletCollisionDetector;
-
 #if HAVE_ODE
   if (cfg.useOdeCollision) {
     world->getConstraintSolver()->setCollisionDetector(
@@ -187,8 +187,13 @@ void applyCollisionDetector(
   }
 #endif
 
+#if HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
-      BulletCollisionDetector::create());
+      dart::collision::BulletCollisionDetector::create());
+#else
+  (void)cfg;
+  (void)world;
+#endif
 }
 
 void applyLcpSolver(
