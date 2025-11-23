@@ -238,16 +238,20 @@ void dLDLTAddTL(
   Scalar* W1 = tmpbuf ? (Scalar*)tmpbuf
                       : (Scalar*)ALLOCA((2 * nskip) * sizeof(Scalar));
   Scalar* W2 = W1 + nskip;
+  const Scalar sqrtHalf
+      = ScalarTraits<Scalar>::recip_sqrt(static_cast<Scalar>(2));
 
   W1[0] = static_cast<Scalar>(0.0);
   W2[0] = static_cast<Scalar>(0.0);
   for (int j = 1; j < n; ++j) {
-    W1[j] = W2[j] = (Scalar)(a[j] * constants::sqrt1_2<Scalar>);
+    W1[j] = W2[j] = static_cast<Scalar>(a[j] * sqrtHalf);
   }
   Scalar W11
-      = (Scalar)((static_cast<Scalar>(0.5) * a[0] + 1) * constants::sqrt1_2<Scalar>);
+      = static_cast<Scalar>(
+          (static_cast<Scalar>(0.5) * a[0] + 1) * sqrtHalf);
   Scalar W21
-      = (Scalar)((static_cast<Scalar>(0.5) * a[0] - 1) * constants::sqrt1_2<Scalar>);
+      = static_cast<Scalar>(
+          (static_cast<Scalar>(0.5) * a[0] - 1) * sqrtHalf);
 
   Scalar alpha1 = static_cast<Scalar>(1.0);
   Scalar alpha2 = static_cast<Scalar>(1.0);
