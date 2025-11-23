@@ -57,7 +57,7 @@ public:
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, SoftBodyAspect)
 
-  /// \brief
+  /// @brief
   virtual ~SoftBodyNode();
 
   // Documentation inherited
@@ -98,55 +98,55 @@ public:
   /// Get the update notifier for the PointMasses of this SoftBodyNode
   const PointMassNotifier* getNotifier() const;
 
-  /// \brief Get mass.
+  /// @brief Get mass.
   double getMass() const;
 
-  /// \brief
+  /// @brief
   void setVertexSpringStiffness(double _kv);
 
-  /// \brief
+  /// @brief
   double getVertexSpringStiffness() const;
 
-  /// \brief
+  /// @brief
   void setEdgeSpringStiffness(double _ke);
 
-  /// \brief
+  /// @brief
   double getEdgeSpringStiffness() const;
 
-  /// \brief
+  /// @brief
   void setDampingCoefficient(double _damp);
 
-  /// \brief
+  /// @brief
   double getDampingCoefficient() const;
 
-  /// \brief
+  /// @brief
   void removeAllPointMasses();
 
-  /// \brief
+  /// @brief
   PointMass* addPointMass(const PointMass::Properties& _properties);
 
-  /// \brief
+  /// @brief
   std::size_t getNumPointMasses() const;
 
-  /// \brief
+  /// @brief
   PointMass* getPointMass(std::size_t _idx);
 
-  /// \brief
+  /// @brief
   const PointMass* getPointMass(std::size_t _idx) const;
 
   /// Return all the point masses in this SoftBodyNode
   const std::vector<PointMass*>& getPointMasses() const;
 
-  /// \brief
+  /// @brief
   void connectPointMasses(std::size_t _idx1, std::size_t _idx2);
 
-  /// \brief
+  /// @brief
   void addFace(const Eigen::Vector3i& _face);
 
-  /// \brief
+  /// @brief
   const Eigen::Vector3i& getFace(std::size_t _idx) const;
 
-  /// \brief
+  /// @brief
   std::size_t getNumFaces() const;
 
   // Documentation inherited.
@@ -184,7 +184,7 @@ protected:
   //  _genCoords);
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   /// Update articulated inertia if necessary
@@ -250,7 +250,7 @@ protected:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of motion related routines
+  /// \{ @name Equations of motion related routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
@@ -303,13 +303,13 @@ protected:
   void clearInternalForces() override;
 
 protected:
-  /// \brief List of point masses composing deformable mesh.
+  /// @brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;
 
   /// An Entity which tracks when the point masses need to be updated
   PointMassNotifier* mNotifier;
 
-  /// \brief Soft mesh shape belonging to this node.
+  /// @brief Soft mesh shape belonging to this node.
   WeakShapeNodePtr mSoftShapeNode;
 
   /// Generalized inertia with point masses
@@ -322,10 +322,10 @@ protected:
   math::Inertia mArtInertiaImplicit2;
 
 private:
-  /// \brief
+  /// @brief
   void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const;
 
-  /// \brief
+  /// @brief
   void _addPiToArtInertiaImplicit(
       const Eigen::Vector3d& _p, double _ImplicitPi) const;
 
@@ -346,7 +346,7 @@ public:
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
       double _dampingCoeff = DART_DEFAULT_DAMPING_COEFF);
 
-  /// \brief
+  /// @brief
   /// This should be called before SoftBodyNode::init() is called
   static void setBox(
       SoftBodyNode* _softBodyNode,
@@ -370,19 +370,19 @@ public:
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
       double _dampingCoeff = DART_DEFAULT_DAMPING_COEFF);
 
-  /// \brief
+  /// @brief
   /// This should be called before SoftBodyNode::init() is called
-  /// \param[in] _softBodyNode
-  /// \param[in] _size
-  /// \param[in] _localTransform
-  /// \param[in] _frags Number of vertices of box mesh. Each component should be
+  /// @param[in] _softBodyNode
+  /// @param[in] _size
+  /// @param[in] _localTransform
+  /// @param[in] _frags Number of vertices of box mesh. Each component should be
   ///   equal or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
   ///   not.
   // TODO: The component of _frags should allow 2.
-  /// \param[in] _totalMass
-  /// \param[in] _vertexStiffness
-  /// \param[in] _edgeStiffness
-  /// \param[in] _dampingCoeff
+  /// @param[in] _totalMass
+  /// @param[in] _vertexStiffness
+  /// @param[in] _edgeStiffness
+  /// @param[in] _dampingCoeff
   static void setBox(
       SoftBodyNode* _softBodyNode,
       const Eigen::Vector3d& _size,
@@ -400,7 +400,7 @@ public:
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
       double _dampingCoeff = DART_DEFAULT_DAMPING_COEFF);
 
-  /// \brief
+  /// @brief
   /// This should be called before SoftBodyNode::init() is called
   static void setSinglePointMass(
       SoftBodyNode* _softBodyNode,
@@ -429,7 +429,7 @@ public:
       double _edgeStiffness = DART_DEFAULT_EDGE_STIFNESS,
       double _dampingCoeff = DART_DEFAULT_DAMPING_COEFF);
 
-  /// \brief
+  /// @brief
   /// This should be called before SoftBodyNode::init() is called
   static void setEllipsoid(
       SoftBodyNode* _softBodyNode,

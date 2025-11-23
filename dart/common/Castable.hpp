@@ -57,15 +57,15 @@ template <typename Base>
 class Castable
 {
 public:
-  /// Returns true if the types of this \c Base and the template parameter (a
+  /// Returns true if the types of this @c Base and the template parameter (a
   /// base class) are identical. This function is a syntactic sugar, which
   /// is identical to: (getType() == ShapeType::getStaticType()).
   ///
   /// Example code:
-  /// \code
+  /// @code
   /// if (shape->is<Sphere>())
   ///   std::cout << "The shape type is sphere!\n";
-  /// \endcode
+  /// @endcode
   template <typename Derived>
   [[nodiscard]] bool is() const;
 

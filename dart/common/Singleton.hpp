@@ -38,7 +38,7 @@ namespace common {
 
 /// Singleton template class
 ///
-/// \note This singleton is not thread safe. For use of thread safe singleton,
+/// @note This singleton is not thread safe. For use of thread safe singleton,
 /// use static initialization as:
 ///
 /// // Singletone class Engine

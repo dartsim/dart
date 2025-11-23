@@ -57,7 +57,7 @@ public:
   /// Default constructor
   Site() = default;
 
-  /// \{ \name Attributes
+  /// \{ @name Attributes
 
   const std::string& getName() const;
   GeomType getType() const;

@@ -102,7 +102,7 @@ public:
   /// Alternative Constructor
   explicit Solver(std::shared_ptr<Problem> _problem);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~Solver() = default;
 
   /// Solve optimization problem

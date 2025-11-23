@@ -57,7 +57,7 @@ public:
   /// Default constructor.
   Body() = default;
 
-  /// \{ \name Attributes
+  /// \{ @name Attributes
 
   /// Returns 'name' attribute.
   const std::string& getName() const;
@@ -79,7 +79,7 @@ public:
 
   /// \}
 
-  /// \{ \name Child elements
+  /// \{ @name Child elements
 
   /// Returns <inertial> element.
   ///
@@ -91,25 +91,25 @@ public:
   /// Returns the number of <joint> elements.
   std::size_t getNumJoints() const;
 
-  /// Returns a <joint> element at \c index.
+  /// Returns a <joint> element at @c index.
   const Joint& getJoint(std::size_t index) const;
 
   /// Returns the number of child <body> elements.
   std::size_t getNumChildBodies() const;
 
-  /// Returns a child <body> element at \c index.
+  /// Returns a child <body> element at @c index.
   const Body& getChildBody(std::size_t index) const;
 
   /// Returns the number of <geom> elements.
   std::size_t getNumGeoms() const;
 
-  /// Returns a <geom> element at \c index.
+  /// Returns a <geom> element at @c index.
   const Geom& getGeom(std::size_t index) const;
 
   /// Returns the number of <site> elements.
   std::size_t getNumSites() const;
 
-  /// Returns a <site> element at \c index.
+  /// Returns a <site> element at @c index.
   const Site& getSite(std::size_t index) const;
 
   /// \}
