@@ -30,59 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
-#define DART_MATH_LCP_ODELCPSOLVER_HPP_
+#include "dart/math/lcp/LcpTypes.hpp"
 
-#include "dart/Export.hpp"
+namespace dart {
+namespace math {
 
-#include <Eigen/Dense>
-
-namespace dart::math {
-
-/// \brief
-class DART_API ODELCPSolver
+//==============================================================================
+std::string toString(LcpSolverStatus status)
 {
-public:
-  /// \brief
-  ODELCPSolver();
+  switch (status) {
+    case LcpSolverStatus::Success:
+      return "Success";
+    case LcpSolverStatus::Failed:
+      return "Failed";
+    case LcpSolverStatus::MaxIterations:
+      return "MaxIterations";
+    case LcpSolverStatus::NumericalError:
+      return "NumericalError";
+    case LcpSolverStatus::InvalidProblem:
+      return "InvalidProblem";
+    case LcpSolverStatus::Degenerate:
+      return "Degenerate";
+    case LcpSolverStatus::NotSolved:
+      return "NotSolved";
+    default:
+      return "Unknown";
+  }
+}
 
-  /// \brief
-  virtual ~ODELCPSolver();
-
-  /// \brief
-  bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
-      int numContacts,
-      double mu = 0,
-      int numDir = 0,
-      bool bUseODESolver = false);
-
-private:
-  /// \brief
-  void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
-      int _numDir,
-      int _numContacts);
-
-  /// \brief
-  void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
-
-  /// \brief
-  bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
-};
-
-} // namespace dart::math
-
-#endif // DART_MATH_LCP_ODELCPSOLVER_HPP_
+} // namespace math
+} // namespace dart

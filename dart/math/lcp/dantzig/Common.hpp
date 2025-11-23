@@ -93,13 +93,13 @@
 /* constants */
 
 /* Modern C++ constant for 1/sqrt(2) */
-namespace dart::math::lcp::constants {
+namespace dart::math::constants {
 template <typename T>
 inline constexpr T sqrt1_2 = static_cast<T>(
     0.707106781186547524400844362104849039284835937688474036588339868999782L);
-} // namespace dart::math::lcp::constants
+} // namespace dart::math::constants
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 // Template Type Traits for Scalar Types
@@ -290,8 +290,4 @@ inline void Multiply2(
   }
 }
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math

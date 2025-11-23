@@ -13,19 +13,4 @@
   #endif
 #endif
 
-namespace dart {
-namespace math {
-namespace lcp {
-} // namespace lcp
-} // namespace math
-} // namespace dart
-
-namespace dart {
-namespace
-    [[deprecated("dart::lcpsolver is deprecated; include dart/math/lcp headers "
-                 "and use dart::math instead")]] lcpsolver {
-using namespace math::lcp;
-} // namespace lcpsolver
-} // namespace dart
-
 #endif // DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_

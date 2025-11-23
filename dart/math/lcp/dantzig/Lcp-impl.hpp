@@ -57,16 +57,16 @@
 #define DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/Dantzig/Matrix.hpp"
-#include "dart/math/lcp/Dantzig/Misc.hpp"
-#include "dart/math/lcp/Dantzig/PivotMatrix.hpp"
+#include "dart/math/lcp/dantzig/Matrix.hpp"
+#include "dart/math/lcp/dantzig/Misc.hpp"
+#include "dart/math/lcp/dantzig/PivotMatrix.hpp"
 
 #define ROWPTRS // Keep for compatibility (but now uses PivotMatrix internally)
 #define AROW(i) (m_A[i])
 
 #define NUB_OPTIMIZATIONS
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //***************************************************************************
 // Template implementations
@@ -893,6 +893,6 @@ void LCP<Scalar>::unpermute()
 
 #endif // dLCP_FAST
 
-} // namespace dart::math::lcp
+} // namespace dart::math
 
 #endif // DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_

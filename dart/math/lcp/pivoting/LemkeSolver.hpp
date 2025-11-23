@@ -30,59 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
-#define DART_MATH_LCP_ODELCPSOLVER_HPP_
+#ifndef DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_
+#define DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_
 
-#include "dart/Export.hpp"
+#include <dart/math/lcp/LcpSolver.hpp>
 
-#include <Eigen/Dense>
+#include <dart/Export.hpp>
 
-namespace dart::math {
+namespace dart {
+namespace math {
 
-/// \brief
-class DART_API ODELCPSolver
+//==============================================================================
+/// Lemke's complementary pivot algorithm for LCP
+///
+/// This solver uses Lemke's algorithm with an artificial variable to solve
+/// standard LCPs. It provides exact solutions when they exist.
+///
+/// Reference:
+///   Lemke, C. E. (1965). "Bimatrix equilibrium points and mathematical
+///   programming". Management Science, 11(7), 681-689.
+///
+/// Properties:
+///   - Time Complexity: O(n^4) worst case
+///   - Space Complexity: O(n^2)
+///   - Convergence: Exact solution (finite termination)
+///   - Matrix Requirements: None (general LCP)
+///
+/// Problem formulation:
+///   Find z such that:
+///     Mz = q + w
+///     z >= 0, w >= 0
+///     z^T * w = 0
+class DART_API LemkeSolver : public LcpSolver
 {
 public:
-  /// \brief
-  ODELCPSolver();
+  /// Constructor
+  LemkeSolver();
 
-  /// \brief
-  virtual ~ODELCPSolver();
+  /// Destructor
+  ~LemkeSolver() override = default;
 
-  /// \brief
-  bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
-      int numContacts,
-      double mu = 0,
-      int numDir = 0,
-      bool bUseODESolver = false);
+  // Documentation inherited
+  LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      Eigen::VectorXd& x,
+      const LcpOptions& options) override;
 
-private:
-  /// \brief
-  void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
-      int _numDir,
-      int _numContacts);
+  // Documentation inherited
+  std::string getName() const override;
 
-  /// \brief
-  void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
-
-  /// \brief
-  bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
+  // Documentation inherited
+  std::string getCategory() const override;
 };
 
-} // namespace dart::math
+} // namespace math
+} // namespace dart
 
-#endif // DART_MATH_LCP_ODELCPSOLVER_HPP_
+#endif // DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_

@@ -56,9 +56,9 @@
 #pragma once
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/Dantzig/Common.hpp"
+#include "dart/math/lcp/dantzig/Common.hpp"
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 template <typename Scalar>
 void dMultiply0(
@@ -1203,8 +1203,4 @@ void dSolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
 }
 
 //==============================================================================
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
