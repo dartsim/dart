@@ -44,6 +44,10 @@ def test_revolute_joint_constraint():
     world.setTimeStep(1.0 / 2000)
 
     chain = world.getSkeleton(0)
+    init_pose = np.zeros(chain.getNumDofs())
+    init_pose[[20, 23, 26, 29]] = np.pi * 0.4
+    chain.setPositions(init_pose)
+
     for i in range(chain.getNumJoints()):
         joint = chain.getJoint(i)
         for j in range(joint.getNumDofs()):

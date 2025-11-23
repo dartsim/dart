@@ -576,6 +576,14 @@ simulation::WorldPtr createWorldWithRevoluteConstraint()
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->setTimeStep(1.0 / 2000);
 
+  const auto dof = world->getSkeleton(0)->getNumDofs();
+  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
+  initPose[20] = 3.14159 * 0.4;
+  initPose[23] = 3.14159 * 0.4;
+  initPose[26] = 3.14159 * 0.4;
+  initPose[29] = 3.14159 * 0.4;
+  world->getSkeleton(0)->setPositions(initPose);
+
   BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
   BodyNode* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   EXPECT_TRUE(bd1 != nullptr);
@@ -628,7 +636,7 @@ TEST(World, RevoluteJointConstraintBasics)
   auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
 
-  for (int i = 0; i < 50; ++i)
+  for (int i = 0; i < 200; ++i)
     world->step();
 
   const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
