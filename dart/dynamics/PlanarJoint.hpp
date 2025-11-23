@@ -89,6 +89,12 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  /// Convert a 2D transform to planar joint positions (x, y, yaw).
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert planar joint positions (x, y, yaw) to a 2D transform.
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
