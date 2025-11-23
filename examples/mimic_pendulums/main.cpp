@@ -39,7 +39,6 @@
 
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/sdf/SdfParser.hpp>
-#include <dart/utils/sdf/detail/SdfHelpers.hpp>
 
 #if HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
@@ -66,13 +65,10 @@
 #include <imgui.h>
 #include <osg/GraphicsContext>
 #include <osg/Vec3>
-#include <sdf/Root.hh>
-#include <sdf/sdf.hh>
 
 #include <algorithm>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -85,31 +81,16 @@ using dart::dynamics::SkeletonPtr;
 using dart::gui::osg::ImGuiViewer;
 using dart::gui::osg::RealTimeWorldNode;
 using dart::simulation::WorldPtr;
-using dart::utils::SdfParser::detail::ElementEnumerator;
-using dart::utils::SdfParser::detail::getAttributeString;
-using dart::utils::SdfParser::detail::getElement;
-using dart::utils::SdfParser::detail::getValueDouble;
-using dart::utils::SdfParser::detail::hasAttribute;
-using dart::utils::SdfParser::detail::hasElement;
-
 namespace {
-
-struct MimicSpec
-{
-  std::string model;
-  std::string followerJoint;
-  std::string referenceJoint;
-  std::size_t referenceDof = 0;
-  double multiplier = 1.0;
-  double offset = 0.0;
-};
 
 struct MimicPairView
 {
   std::string label;
-  Joint* follower{};
-  Joint* reference{};
-  BodyNode* base{};
+  const Joint* follower{};
+  const Joint* reference{};
+  std::size_t followerDof = 0;
+  std::size_t referenceDof = 0;
+  const BodyNode* base{};
   Eigen::Vector3d baseStart = Eigen::Vector3d::Zero();
   Eigen::Vector3d baseNow = Eigen::Vector3d::Zero();
 };
@@ -216,161 +197,98 @@ void applyLcpSolver(
   }
 }
 
-std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
+void retargetMimicsToBaseline(
+    const WorldPtr& world, const std::string& baselineName)
 {
-  sdf::Root root;
-  const auto errors = root.LoadSdfString(sdfText);
-  if (!errors.empty()) {
-    std::cerr << "Failed to parse provided SDF text:\n" << formatErrors(errors);
-    return {};
+  const auto baseline = world->getSkeleton(baselineName);
+  if (!baseline) {
+    std::cerr << "Baseline skeleton [" << baselineName << "] not found; "
+              << "leaving parsed mimic joints untouched.\n";
+    return;
   }
 
-  const auto rootElement = root.Element();
-  if (!rootElement)
-    return {};
-
-  const auto worldElement = getElement(rootElement, "world");
-  if (!worldElement)
-    return {};
-
-  std::vector<MimicSpec> specs;
-  ElementEnumerator modelEnum(worldElement, "model");
-  while (modelEnum.next()) {
-    const auto modelElement = modelEnum.get();
-    if (!modelElement)
-      continue;
-
-    const auto modelName = getAttributeString(modelElement, "name");
-    ElementEnumerator jointEnum(modelElement, "joint");
-    while (jointEnum.next()) {
-      const auto jointElement = jointEnum.get();
-      if (!jointElement || !hasElement(jointElement, "axis"))
-        continue;
-
-      const auto axisElement = getElement(jointElement, "axis");
-      if (!hasElement(axisElement, "mimic"))
-        continue;
-
-      const auto mimicElement = getElement(axisElement, "mimic");
-      if (!mimicElement)
-        continue;
-
-      MimicSpec spec;
-      spec.model = modelName;
-      spec.followerJoint = getAttributeString(jointElement, "name");
-      spec.referenceJoint = getAttributeString(mimicElement, "joint");
-      const auto axisAttribute = hasAttribute(mimicElement, "axis")
-                                     ? getAttributeString(mimicElement, "axis")
-                                     : std::string();
-      spec.referenceDof = axisAttribute == "axis2" ? 1u : 0u;
-      spec.multiplier = hasElement(mimicElement, "multiplier")
-                            ? getValueDouble(mimicElement, "multiplier")
-                            : 1.0;
-      spec.offset = hasElement(mimicElement, "offset")
-                        ? getValueDouble(mimicElement, "offset")
-                        : 0.0;
-
-      specs.push_back(spec);
-    }
-  }
-
-  return specs;
-}
-
-void configureMimicMotors(
-    const std::vector<MimicSpec>& specs, const WorldPtr& world)
-{
-  // Get the middle pendulum (uncoupled) which contains the true reference
-  // joints
-  const auto middlePendulum = world->getSkeleton("pendulum_with_base");
-
-  for (const auto& spec : specs) {
-    if (middlePendulum && spec.model == middlePendulum->getName())
-      continue; // keep baseline uncoupled
-
-    const auto skeleton = world->getSkeleton(spec.model);
-    if (!skeleton) {
-      std::cerr << "Skipping missing model [" << spec.model << "]\n";
-      continue;
-    }
-
-    auto* follower = skeleton->getJoint(spec.followerJoint);
-    if (!follower) {
-      std::cerr << "Missing follower joint [" << spec.followerJoint
-                << "] in model [" << spec.model << "]\n";
-      continue;
-    }
-
-    // Get reference from middle pendulum (not from the same skeleton)
-    Joint* reference = nullptr;
-    if (middlePendulum) {
-      reference = middlePendulum->getJoint(spec.referenceJoint);
-    }
-
-    if (!reference) {
-      std::cerr << "Missing reference joint [" << spec.referenceJoint
-                << "] in middle pendulum\n";
-      continue;
-    }
-
-    if (follower->getNumDofs() == 0 || reference->getNumDofs() == 0) {
-      std::cerr << "Ignoring mimic joint with no DoFs\n";
-      continue;
-    }
-
-    std::vector<dart::dynamics::MimicDofProperties> mimicProps
-        = follower->getMimicDofProperties();
-    mimicProps.resize(follower->getNumDofs());
-
-    const std::size_t followerIndex
-        = std::min(spec.referenceDof, follower->getNumDofs() - 1);
-    const std::size_t referenceIndex
-        = std::min(spec.referenceDof, reference->getNumDofs() - 1);
-
-    auto& prop = mimicProps[followerIndex];
-    prop.mReferenceJoint = reference;
-    prop.mReferenceDofIndex = referenceIndex;
-    prop.mMultiplier = spec.multiplier;
-    prop.mOffset = spec.offset;
-    prop.mConstraintType = MimicConstraintType::Motor;
-
-    follower->setMimicJointDofs(mimicProps);
-    follower->setActuatorType(Joint::MIMIC);
-    follower->setUseCouplerConstraint(false);
-  }
-}
-
-std::vector<MimicPairView> collectMimicPairs(
-    const WorldPtr& world, const std::vector<MimicSpec>& specs)
-{
-  std::vector<MimicPairView> pairs;
-
-  // Get the middle pendulum (uncoupled) which contains the true reference
-  // joints
-  const auto middlePendulum = world->getSkeleton("pendulum_with_base");
-
-  for (const auto& spec : specs) {
-    const auto skeleton = world->getSkeleton(spec.model);
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto skeleton = world->getSkeleton(i);
     if (!skeleton)
       continue;
 
-    auto* reference = middlePendulum
-                          ? middlePendulum->getJoint(spec.referenceJoint)
-                          : nullptr;
-    auto* follower = skeleton->getJoint(spec.followerJoint);
-    auto* base = skeleton->getBodyNode("base");
-    if (!follower || !reference || !base)
+    for (std::size_t j = 0; j < skeleton->getNumJoints(); ++j) {
+      auto* joint = skeleton->getJoint(j);
+      if (!joint)
+        continue;
+
+      auto props = joint->getMimicDofProperties();
+      if (props.empty())
+        continue;
+
+      if (skeleton == baseline) {
+        // Leave the baseline uncoupled so it serves as the reference.
+        props.assign(joint->getNumDofs(), {});
+        joint->setMimicJointDofs(props);
+        joint->setActuatorType(dart::dynamics::Joint::FORCE);
+        joint->setUseCouplerConstraint(false);
+        continue;
+      }
+
+      bool updated = false;
+      for (auto& prop : props) {
+        if (prop.mReferenceJoint == nullptr)
+          continue;
+
+        auto* ref = baseline->getJoint(prop.mReferenceJoint->getName());
+        if (!ref)
+          continue;
+
+        prop.mReferenceJoint = ref;
+        updated = true;
+      }
+
+      if (updated) {
+        joint->setMimicJointDofs(props);
+        joint->setActuatorType(dart::dynamics::Joint::MIMIC);
+        joint->setUseCouplerConstraint(false);
+      }
+    }
+  }
+}
+
+std::vector<MimicPairView> collectMimicPairs(const WorldPtr& world)
+{
+  std::vector<MimicPairView> pairs;
+  if (!world)
+    return pairs;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto skeleton = world->getSkeleton(i);
+    if (!skeleton)
       continue;
 
-    MimicPairView view;
-    view.label = spec.model + ": " + spec.followerJoint + " -> middle "
-                 + spec.referenceJoint;
-    view.follower = follower;
-    view.reference = reference;
-    view.base = base;
-    view.baseStart = translationOf(base);
+    const auto* base = skeleton->getBodyNode("base");
+    for (std::size_t j = 0; j < skeleton->getNumJoints(); ++j) {
+      const auto* follower = skeleton->getJoint(j);
+      if (!follower)
+        continue;
 
-    pairs.push_back(view);
+      const auto props = follower->getMimicDofProperties();
+      for (std::size_t k = 0; k < props.size(); ++k) {
+        const auto& prop = props[k];
+        if (prop.mReferenceJoint == nullptr)
+          continue;
+
+        MimicPairView view;
+        view.label = skeleton->getName() + ": " + follower->getName() + "["
+                     + std::to_string(k) + "] -> "
+                     + prop.mReferenceJoint->getName() + "["
+                     + std::to_string(prop.mReferenceDofIndex) + "]";
+        view.follower = follower;
+        view.reference = prop.mReferenceJoint;
+        view.followerDof = k;
+        view.referenceDof = prop.mReferenceDofIndex;
+        view.base = base;
+        view.baseStart = translationOf(base);
+        pairs.push_back(view);
+      }
+    }
   }
 
   return pairs;
@@ -512,7 +430,7 @@ private:
                             | ImGuiTableFlags_Resizable;
     if (ImGui::BeginTable("mimic_table", 6, flags)) {
       ImGui::TableSetupColumn("Pair");
-      ImGui::TableSetupColumn("Middle Ref (rad)");
+      ImGui::TableSetupColumn("Reference (rad)");
       ImGui::TableSetupColumn("Follower (rad)");
       ImGui::TableSetupColumn("Error (rad)");
       ImGui::TableSetupColumn("Velocity error (rad/s)");
@@ -524,10 +442,12 @@ private:
         ImGui::TableSetColumnIndex(0);
         ImGui::TextUnformatted(pair.label.c_str());
 
-        const double middleRefPos = pair.reference->getPosition(0);
-        const double middleRefVel = pair.reference->getVelocity(0);
-        const double follower = pair.follower->getPosition(0);
-        const double followerVel = pair.follower->getVelocity(0);
+        const double middleRefPos
+            = pair.reference->getPosition(pair.referenceDof);
+        const double middleRefVel
+            = pair.reference->getVelocity(pair.referenceDof);
+        const double follower = pair.follower->getPosition(pair.followerDof);
+        const double followerVel = pair.follower->getVelocity(pair.followerDof);
         const double error = follower - middleRefPos;
         const double velError = followerVel - middleRefVel;
 
@@ -616,18 +536,12 @@ int main(int /*argc*/, char*[] /*argv*/)
     return EXIT_FAILURE;
   }
 
-  const std::string sdfText = readSdfText(Uri(worldUri), retriever);
-  if (sdfText.empty())
-    return EXIT_FAILURE;
-
-  const auto mimicSpecs = parseMimicSpecs(sdfText);
-  if (mimicSpecs.empty())
-    std::cerr << "No mimic joints found in " << worldUri << "\n";
-
-  configureMimicMotors(mimicSpecs, world);
+  retargetMimicsToBaseline(world, "pendulum_with_base");
   tintBases(world);
 
-  auto mimicPairs = collectMimicPairs(world, mimicSpecs);
+  auto mimicPairs = collectMimicPairs(world);
+  if (mimicPairs.empty())
+    std::cerr << "No mimic joints found in " << worldUri << "\n";
 
   auto* wsi = osg::GraphicsContext::getWindowingSystemInterface();
   if (wsi == nullptr) {
