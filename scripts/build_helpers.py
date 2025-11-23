@@ -87,7 +87,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         # Retry with minimal parallelism to avoid transient resource limits
         # observed in CI (e.g., ninja posix_spawn failures).
         fallback_cmd = cmd + ["1"]
-        backoff_seconds = (0, 5, 15)
+        backoff_seconds = (0, 10, 30, 60)
         last_error: Optional[subprocess.CalledProcessError] = None
         for delay in backoff_seconds:
             if delay == 0:
