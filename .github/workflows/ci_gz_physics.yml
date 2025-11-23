@@ -43,8 +43,9 @@ jobs:
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     env:
-      # Limit parallel build jobs to avoid posix_spawn failures on heavily loaded runners
-      CMAKE_BUILD_PARALLEL_LEVEL: 2
+      # Limit parallelism aggressively to avoid posix_spawn failures on heavily loaded runners
+      CMAKE_BUILD_PARALLEL_LEVEL: 1
+      DART_PARALLEL_JOBS: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v5
