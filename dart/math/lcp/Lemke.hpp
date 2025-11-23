@@ -33,7 +33,7 @@
 #ifndef DART_MATH_LCP_LEMKE_HPP_
 #define DART_MATH_LCP_LEMKE_HPP_
 
-#include "dart/Export.hpp"
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 

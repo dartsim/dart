@@ -55,6 +55,301 @@ BUILD_SHARED_LIBS           = ON   # Build shared libraries (Linux/macOS)
 
 ## CMake Structure
 
+### Modernized CMake API (DART 7.0+)
+
+**Overview:**
+
+DART 7.0 introduces a modernized, consolidated CMake API that merges the best features from `dart8_defs.cmake` into `dart_defs.cmake`. The new API provides cleaner, more maintainable build scripts with all-in-one function calls.
+
+**Key Improvements:**
+
+1. **Consolidated functions** - Single-call configuration instead of multiple function calls
+2. **Modern CMake practices** - Proper use of generator expressions and target properties
+3. **Better defaults** - C++20 standard, automatic installation, export macros
+4. **Glob pattern support** - Automatic expansion of wildcards in source/header lists
+5. **Backward compatibility** - Old syntax still supported where possible
+
+#### Modern Library Creation: `dart_add_library()`
+
+The improved `dart_add_library()` takes all library properties in a single call:
+
+```cmake
+dart_add_library(
+  NAME dart-collision
+  SOURCES
+    src/CollisionDetector.cpp
+    src/CollisionGroup.cpp
+  HEADERS
+    include/dart/collision/*.hpp
+  PUBLIC_LINK_LIBRARIES
+    dart
+    Eigen3::Eigen
+  PRIVATE_LINK_LIBRARIES
+    fcl
+  PUBLIC_COMPILE_DEFINITIONS
+    DART_HAVE_COLLISION
+)
+```
+
+**Features:**
+
+- All-in-one configuration (sources, headers, includes, links, options)
+- Automatic glob expansion for wildcard patterns
+- Modern CMake with `BUILD_INTERFACE` and `INSTALL_INTERFACE`
+- Auto-generated install rules (disable with `NO_INSTALL`)
+- Export macros (`DART_BUILD_SHARED`, `DART_BUILDING_*`)
+- C++20 standard by default (override with `COMPILE_FEATURES`)
+- Backward compatible with old syntax: `dart_add_library(name source1.cpp source2.cpp...)`
+
+**Supported Parameters:**
+
+- `NAME` - Library name (required)
+- `SOURCES` - Source files (supports globs)
+- `HEADERS` - Header files (supports globs)
+- `GLOB_SOURCES` - Auto-glob all `.cpp` files
+- `GLOB_HEADERS` - Auto-glob all `.hpp` files
+- `PUBLIC_INCLUDE_DIRS` - Public include directories
+- `PRIVATE_INCLUDE_DIRS` - Private include directories
+- `PUBLIC_LINK_LIBRARIES` - Public link libraries
+- `PRIVATE_LINK_LIBRARIES` - Private link libraries
+- `PUBLIC_COMPILE_DEFINITIONS` - Public compile definitions
+- `PRIVATE_COMPILE_DEFINITIONS` - Private compile definitions
+- `PUBLIC_COMPILE_OPTIONS` - Public compile options
+- `PRIVATE_COMPILE_OPTIONS` - Private compile options
+- `COMPILE_FEATURES` - Compile features (defaults to `cxx_std_20`)
+- `VERSION` - Library version (defaults to `DART_VERSION`)
+- `OUTPUT_NAME` - Output library name
+- `NO_INSTALL` - Skip installation rules
+- `NO_EXPORT_MACRO` - Skip export macro generation
+
+#### Consolidated Component Creation: `dart_add_component()`
+
+The new `dart_add_component()` consolidates component creation into a single call:
+
+**Old way (multiple calls):**
+
+```cmake
+add_component(${PROJECT_NAME} utils)
+add_component_targets(${PROJECT_NAME} utils dart-utils)
+add_component_dependencies(${PROJECT_NAME} utils dart)
+add_component_dependency_packages(${PROJECT_NAME} utils Eigen3 fmt)
+```
+
+**New way (single call):**
+
+```cmake
+dart_add_component(
+  NAME utils
+  TARGETS dart-utils
+  DEPENDENCIES dart
+  DEPENDENCY_PACKAGES Eigen3 fmt
+)
+```
+
+**Parameters:**
+
+- `NAME` - Component name (required)
+- `PACKAGE` - Package name (defaults to `PROJECT_NAME`)
+- `TARGETS` - Component library targets
+- `DEPENDENCIES` - Internal component dependencies
+- `DEPENDENCY_PACKAGES` - External package dependencies
+- `INCLUDE_DIRS` - Include directories
+
+#### Dependency Management: `dart_find_package()`
+
+Enhanced package finding with dependency tracking:
+
+```cmake
+dart_find_package(
+  NAME Eigen
+  PACKAGE Eigen3
+  VERSION 3.3
+  REQUIRED
+)
+
+dart_find_package(
+  NAME fmt
+  PACKAGE fmt
+  VERSION 8.0
+  QUIET
+  SET_VAR HAVE_FMT
+)
+```
+
+**Features:**
+
+- Automatic dependency tracking for summary reporting
+- Compatible with `DART_VERBOSE` for compact reports
+- Optional boolean cache variable with `SET_VAR`
+
+#### Testing Utilities
+
+**Single test creation:**
+
+```cmake
+dart_add_test(
+  NAME test_math
+  SOURCES test_math.cpp
+  LINK_LIBRARIES dart-utils Eigen3::Eigen
+  LABELS utils math
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_data
+)
+```
+
+**Automatic test discovery:**
+
+```cmake
+dart_add_unit_test_dir(
+  MODULE_NAME common
+  TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit
+  LINK_LIBRARIES dart
+)
+```
+
+This discovers all `test_*.cpp` files, creates individual tests, adds them to a `tests_common` meta-target, and reports the count.
+
+**Features:**
+
+- Automatic discovery of test files
+- CTest integration with labels
+- Auto-link GTest (`GTest::gtest`, `GTest::gtest_main`)
+- Module-level meta targets
+
+#### Python Bindings: `dart_add_python_module()`
+
+Create Python extension modules with nanobind:
+
+```cmake
+dart_add_python_module(
+  NAME dartpy
+  SOURCES
+    python/module.cpp
+    python/bindings.cpp
+  LINK_LIBRARIES
+    dart
+    dart-utils
+  VERSION 7.0.0
+)
+```
+
+**Features:**
+
+- Automatic nanobind detection via pip
+- Python interpreter and development files auto-found
+- Embedded version information
+- Output directory configured for `PYTHONPATH` compatibility
+
+#### Benchmarking: `dart_add_benchmark()`
+
+Create benchmarks with Google Benchmark:
+
+```cmake
+dart_add_benchmark(
+  NAME bm_collision
+  SOURCES benchmark/collision_benchmark.cpp
+  LINK_LIBRARIES dart dart-collision
+)
+```
+
+**Features:**
+
+- Auto-link Google Benchmark (`benchmark::benchmark`, `benchmark::benchmark_main`)
+- Output to `${DART_BINARY_DIR}/bin`
+- Global tracking via `DART_ALL_BENCHMARKS` property
+
+#### Complete Example
+
+```cmake
+# Define the library with modern API
+dart_add_library(
+  NAME dart-collision
+  SOURCES
+    src/CollisionDetector.cpp
+    src/CollisionGroup.cpp
+  HEADERS
+    include/dart/collision/*.hpp
+  PUBLIC_LINK_LIBRARIES dart Eigen3::Eigen
+  PRIVATE_LINK_LIBRARIES fcl
+)
+
+# Register as a component
+dart_add_component(
+  NAME collision
+  TARGETS dart-collision
+  DEPENDENCIES dart
+  DEPENDENCY_PACKAGES Eigen3 fcl
+)
+
+# Add tests
+dart_add_unit_test_dir(
+  MODULE_NAME collision
+  TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests
+  LINK_LIBRARIES dart-collision
+)
+
+# Add Python bindings
+dart_add_python_module(
+  NAME dartpy_collision
+  SOURCES python/collision_bindings.cpp
+  LINK_LIBRARIES dart-collision
+)
+
+# Add benchmarks
+dart_add_benchmark(
+  NAME bm_collision_detection
+  SOURCES benchmarks/collision_detection.cpp
+  LINK_LIBRARIES dart-collision
+)
+```
+
+#### Migration from Old API
+
+**Library creation:**
+
+```cmake
+# Before
+dart_add_library(my_lib ${sources} ${headers})
+target_include_directories(my_lib PUBLIC ${includes})
+target_link_libraries(my_lib PUBLIC Eigen3::Eigen)
+target_compile_definitions(my_lib PRIVATE MY_DEFINE)
+
+# After
+dart_add_library(
+  NAME my_lib
+  SOURCES ${sources}
+  HEADERS ${headers}
+  PUBLIC_INCLUDE_DIRS ${includes}
+  PUBLIC_LINK_LIBRARIES Eigen3::Eigen
+  PRIVATE_COMPILE_DEFINITIONS MY_DEFINE
+)
+```
+
+**Component creation:**
+
+```cmake
+# Before
+add_component(${PROJECT_NAME} utils)
+add_component_targets(${PROJECT_NAME} utils dart-utils)
+add_component_dependencies(${PROJECT_NAME} utils dart)
+
+# After
+dart_add_component(
+  NAME utils
+  TARGETS dart-utils
+  DEPENDENCIES dart
+)
+```
+
+#### Best Practices
+
+1. **Use `dart_add_library()` for all new libraries** - Clearer intent and less error-prone
+2. **Use `dart_add_component()` for components** - Single-call is more maintainable
+3. **Use test discovery** - `dart_add_unit_test_dir()` automatically handles test files
+4. **Set properties in one place** - Avoid splitting configuration across multiple calls
+5. **Use named arguments** - Always use `NAME`, `SOURCES`, etc. for clarity
+
+---
+
 ### Primary CMakeLists Files
 
 #### 1. Root CMakeLists.txt

@@ -890,6 +890,88 @@ function(add_component_targets package_name component)
 endfunction()
 
 #-------------------------------------------------------------------------------
+# Add a component with all properties in one call (modern, consolidated API)
+# Usage:
+#   dart_add_component(
+#     NAME <component_name>
+#     [PACKAGE <package_name>]  # Default: PROJECT_NAME
+#     [TARGETS target1 target2...]
+#     [DEPENDENCIES dep1 dep2...]  # Internal component dependencies
+#     [DEPENDENCY_PACKAGES pkg1 pkg2...]  # External package dependencies
+#     [INCLUDE_DIRS dir1 dir2...]
+#   )
+#
+# This function consolidates add_component(), add_component_targets(),
+# add_component_dependencies(), and add_component_dependency_packages()
+# into a single, modern API call.
+#
+# Example:
+#   dart_add_component(
+#     NAME utils
+#     TARGETS dart-utils
+#     DEPENDENCIES dart
+#     DEPENDENCY_PACKAGES Eigen3 fmt
+#   )
+#-------------------------------------------------------------------------------
+function(dart_add_component)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    NAME
+    PACKAGE
+  )
+  set(multiValueArgs
+    TARGETS
+    DEPENDENCIES
+    DEPENDENCY_PACKAGES
+    INCLUDE_DIRS
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Validate required arguments
+  if(NOT _ARG_NAME)
+    message(FATAL_ERROR "dart_add_component: NAME is required")
+  endif()
+
+  # Default package to PROJECT_NAME
+  if(NOT _ARG_PACKAGE)
+    set(_ARG_PACKAGE ${PROJECT_NAME})
+  endif()
+
+  # Step 1: Create the component
+  add_component(${_ARG_PACKAGE} ${_ARG_NAME})
+
+  # Step 2: Add targets if specified
+  if(_ARG_TARGETS)
+    add_component_targets(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_TARGETS})
+  else()
+    message(WARNING "dart_add_component: No TARGETS specified for component ${_ARG_NAME}. "
+                    "At least one target should be added.")
+  endif()
+
+  # Step 3: Add internal dependencies if specified
+  if(_ARG_DEPENDENCIES)
+    add_component_dependencies(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCIES})
+  endif()
+
+  # Step 4: Add external package dependencies if specified
+  if(_ARG_DEPENDENCY_PACKAGES)
+    add_component_dependency_packages(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCY_PACKAGES})
+  endif()
+
+  # Step 5: Add include directories if specified
+  if(_ARG_INCLUDE_DIRS)
+    add_component_include_directories(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_INCLUDE_DIRS})
+  endif()
+
+  if(DART_VERBOSE)
+    message(STATUS "Component '${_ARG_NAME}' configured with ${_ARG_PACKAGE}")
+  endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
 # Install component exports
 # Usage:
 #   install_component_exports(package_name)
@@ -1255,47 +1337,308 @@ macro(dart_generate_component_headers)
 endmacro()
 
 #===============================================================================
-# Package Management
+# Package Management and Dependency Finding
 #===============================================================================
 
 #-------------------------------------------------------------------------------
-# Find a DART package using DARTFind<name>.cmake
-# Usage:
-#   dart_find_package(<package_name>)
+# Find a DART package using DARTFind<name>.cmake (legacy compatibility)
+# OR find and track dependencies with enhanced features (new syntax)
+#
+# Legacy usage (backward compatible):
+#   dart_find_package(package_name)
+#   - Simply includes DARTFind${package_name}.cmake
+#
+# Enhanced usage (new syntax):
+#   dart_find_package(
+#     NAME <name>
+#     PACKAGE <package_name>
+#     [REQUIRED]
+#     [QUIET]
+#     [VERSION <version>]
+#     [COMPONENTS <components...>]
+#     [SET_VAR <variable_name>]
+#   )
+#   - Wraps find_package() and tracks found/missing dependencies
+#   - Compatible with DART_VERBOSE for summary reporting
+#
 #-------------------------------------------------------------------------------
-macro(dart_find_package _name)
-  include(DARTFind${_name})
-endmacro()
+function(dart_find_package)
+  # Check if called with legacy syntax (single argument, no keywords)
+  list(LENGTH ARGN arg_count)
+  if(arg_count EQUAL 0)
+    # Legacy syntax: dart_find_package(PackageName)
+    # ARGV0 contains the package name
+    include(DARTFind${ARGV0})
+    return()
+  endif()
+
+  # Check if first argument is a keyword
+  list(GET ARGN 0 first_arg)
+  if(NOT first_arg MATCHES "^(NAME|PACKAGE|REQUIRED|QUIET|VERSION|COMPONENTS|SET_VAR)$")
+    # Legacy syntax with single argument
+    include(DARTFind${ARGV0})
+    return()
+  endif()
+
+  # New enhanced syntax - parse named arguments
+  cmake_parse_arguments(
+    ARG
+    "REQUIRED;QUIET"
+    "NAME;PACKAGE;VERSION;SET_VAR"
+    "COMPONENTS"
+    ${ARGN}
+  )
+
+  # Validate required arguments for new syntax
+  if(NOT ARG_PACKAGE)
+    message(FATAL_ERROR "dart_find_package: PACKAGE is required when using named arguments")
+  endif()
+
+  if(NOT ARG_NAME)
+    set(ARG_NAME ${ARG_PACKAGE})
+  endif()
+
+  # Build find_package arguments
+  set(find_args ${ARG_PACKAGE})
+  if(ARG_VERSION)
+    list(APPEND find_args ${ARG_VERSION})
+  endif()
+  if(ARG_COMPONENTS)
+    list(APPEND find_args COMPONENTS ${ARG_COMPONENTS})
+  endif()
+  if(ARG_REQUIRED)
+    list(APPEND find_args REQUIRED)
+  elseif(ARG_QUIET)
+    list(APPEND find_args QUIET)
+  endif()
+
+  # Find the package
+  find_package(${find_args})
+
+  # Check if found (using standard CMake convention)
+  set(found_var "${ARG_PACKAGE}_FOUND")
+
+  # Track dependency status
+  if(${found_var})
+    set(DART_DEPS_FOUND ${DART_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
+    if(DART_VERBOSE)
+      # Get version if available
+      set(version_var "${ARG_PACKAGE}_VERSION")
+      if(DEFINED ${version_var})
+        message(STATUS "  Found ${ARG_NAME} ${${version_var}}")
+      else()
+        message(STATUS "  Found ${ARG_NAME}")
+      endif()
+    endif()
+
+    # Set optional variable to TRUE if requested
+    if(ARG_SET_VAR)
+      set(${ARG_SET_VAR} TRUE CACHE BOOL "${ARG_NAME} available" FORCE)
+    endif()
+  else()
+    set(DART_DEPS_MISSING ${DART_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
+    if(DART_VERBOSE)
+      message(STATUS "  ${ARG_NAME} not found")
+    endif()
+
+    # Set optional variable to FALSE if requested
+    if(ARG_SET_VAR)
+      set(${ARG_SET_VAR} FALSE CACHE BOOL "${ARG_NAME} available" FORCE)
+    endif()
+  endif()
+endfunction()
 
 #===============================================================================
 # Library and Target Building
 #===============================================================================
 
 #-------------------------------------------------------------------------------
-# Add a library with version properties
+# Add a DART library with modern CMake properties
 # Usage:
-#   dart_add_library(_libname source1 [source2 ...])
+#   dart_add_library(
+#     NAME <library_name>
+#     [SOURCES source1.cpp source2.cpp...]
+#     [HEADERS header1.hpp header2.hpp...]
+#     [GLOB_SOURCES]
+#     [GLOB_HEADERS]
+#     [PUBLIC_INCLUDE_DIRS dir1 dir2...]
+#     [PRIVATE_INCLUDE_DIRS dir1 dir2...]
+#     [PUBLIC_LINK_LIBRARIES lib1 lib2...]
+#     [PRIVATE_LINK_LIBRARIES lib1 lib2...]
+#     [PUBLIC_COMPILE_DEFINITIONS def1 def2...]
+#     [PRIVATE_COMPILE_DEFINITIONS def1 def2...]
+#     [PUBLIC_COMPILE_OPTIONS opt1 opt2...]
+#     [PRIVATE_COMPILE_OPTIONS opt1 opt2...]
+#     [COMPILE_FEATURES feature1 feature2...]
+#     [VERSION version_string]
+#     [OUTPUT_NAME output_name]
+#     [NO_INSTALL]
+#     [NO_EXPORT_MACRO]
+#   )
+#
+# This function creates a library target with all modern CMake best practices:
+# - Automatically handles both SHARED and STATIC builds based on BUILD_SHARED_LIBS
+# - Sets up proper include directories with BUILD_INTERFACE and INSTALL_INTERFACE
+# - Configures installation rules for targets and headers
+# - Applies version properties
+# - Supports globbing of sources and headers
+# - Generates export macros for symbol visibility
 #-------------------------------------------------------------------------------
-macro(dart_add_library _name)
-  if(BUILD_SHARED_LIBS)
-    set(_dart_target_build_shared 1)
-  else()
-    set(_dart_target_build_shared 0)
-  endif()
-  add_library(${_name} ${ARGN})
-  string(REPLACE "-" "_" _dart_export_macro "${_name}")
-  string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
-  string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
-  string(TOUPPER "${_dart_export_macro}" _dart_export_macro)
-  target_compile_definitions(
-    ${_name}
-    PUBLIC
-      DART_BUILD_SHARED=${_dart_target_build_shared}
-    PRIVATE
-      DART_BUILDING_${_dart_export_macro}
+function(dart_add_library)
+  set(prefix _ARG)
+  set(options
+    GLOB_SOURCES
+    GLOB_HEADERS
+    NO_INSTALL
+    NO_EXPORT_MACRO
   )
-  unset(_dart_target_build_shared)
+  set(oneValueArgs
+    NAME
+    VERSION
+    OUTPUT_NAME
+  )
+  set(multiValueArgs
+    SOURCES
+    HEADERS
+    PUBLIC_INCLUDE_DIRS
+    PRIVATE_INCLUDE_DIRS
+    PUBLIC_LINK_LIBRARIES
+    PRIVATE_LINK_LIBRARIES
+    PUBLIC_COMPILE_DEFINITIONS
+    PRIVATE_COMPILE_DEFINITIONS
+    PUBLIC_COMPILE_OPTIONS
+    PRIVATE_COMPILE_OPTIONS
+    COMPILE_FEATURES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
 
+  # Validate required argument
+  if(NOT _ARG_NAME)
+    message(FATAL_ERROR "dart_add_library: NAME is required")
+  endif()
+
+  # Handle backward compatibility: if called as dart_add_library(name source1 source2...)
+  # then treat unparsed arguments as sources
+  if(_ARG_UNPARSED_ARGUMENTS)
+    list(APPEND _ARG_SOURCES ${_ARG_UNPARSED_ARGUMENTS})
+  endif()
+
+  # Glob sources if requested
+  if(_ARG_GLOB_SOURCES)
+    file(GLOB_RECURSE glob_sources "*.cpp")
+    list(APPEND _ARG_SOURCES ${glob_sources})
+  endif()
+
+  # Glob headers if requested
+  if(_ARG_GLOB_HEADERS)
+    file(GLOB_RECURSE glob_headers "*.hpp")
+    list(APPEND _ARG_HEADERS ${glob_headers})
+  endif()
+
+  # Expand glob patterns in SOURCES
+  set(expanded_sources)
+  foreach(source IN LISTS _ARG_SOURCES)
+    if(source MATCHES ".*[*?].*")
+      file(GLOB matched_files "${source}")
+      list(APPEND expanded_sources ${matched_files})
+    else()
+      list(APPEND expanded_sources ${source})
+    endif()
+  endforeach()
+  set(_ARG_SOURCES ${expanded_sources})
+
+  # Expand glob patterns in HEADERS
+  set(expanded_headers)
+  foreach(header IN LISTS _ARG_HEADERS)
+    if(header MATCHES ".*[*?].*")
+      file(GLOB matched_files "${header}")
+      list(APPEND expanded_headers ${matched_files})
+    else()
+      list(APPEND expanded_headers ${header})
+    endif()
+  endforeach()
+  set(_ARG_HEADERS ${expanded_headers})
+
+  # Create the library target
+  add_library(${_ARG_NAME} ${_ARG_SOURCES} ${_ARG_HEADERS})
+
+  # Set output name if specified
+  if(_ARG_OUTPUT_NAME)
+    set_target_properties(${_ARG_NAME} PROPERTIES OUTPUT_NAME ${_ARG_OUTPUT_NAME})
+  endif()
+
+  # Generate export macro for symbol visibility (unless disabled)
+  if(NOT _ARG_NO_EXPORT_MACRO)
+    if(BUILD_SHARED_LIBS)
+      set(_dart_target_build_shared 1)
+    else()
+      set(_dart_target_build_shared 0)
+    endif()
+    string(REPLACE "-" "_" _dart_export_macro "${_ARG_NAME}")
+    string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
+    string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
+    string(TOUPPER "${_dart_export_macro}" _dart_export_macro)
+    target_compile_definitions(
+      ${_ARG_NAME}
+      PUBLIC
+        DART_BUILD_SHARED=${_dart_target_build_shared}
+      PRIVATE
+        DART_BUILDING_${_dart_export_macro}
+    )
+  endif()
+
+  # Set up include directories
+  # Default to parent of current source dir if no public include dirs specified
+  if(NOT _ARG_PUBLIC_INCLUDE_DIRS)
+    set(_ARG_PUBLIC_INCLUDE_DIRS
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_BINARY_DIR}
+    )
+  endif()
+
+  target_include_directories(${_ARG_NAME}
+    PUBLIC
+      $<BUILD_INTERFACE:${_ARG_PUBLIC_INCLUDE_DIRS}>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${_ARG_PRIVATE_INCLUDE_DIRS}
+  )
+
+  # Set compile features (default to C++20 if not specified)
+  if(_ARG_COMPILE_FEATURES)
+    target_compile_features(${_ARG_NAME} PUBLIC ${_ARG_COMPILE_FEATURES})
+  else()
+    target_compile_features(${_ARG_NAME} PUBLIC cxx_std_20)
+  endif()
+
+  # Link libraries
+  if(_ARG_PUBLIC_LINK_LIBRARIES)
+    target_link_libraries(${_ARG_NAME} PUBLIC ${_ARG_PUBLIC_LINK_LIBRARIES})
+  endif()
+  if(_ARG_PRIVATE_LINK_LIBRARIES)
+    target_link_libraries(${_ARG_NAME} PRIVATE ${_ARG_PRIVATE_LINK_LIBRARIES})
+  endif()
+
+  # Compile definitions
+  if(_ARG_PUBLIC_COMPILE_DEFINITIONS)
+    target_compile_definitions(${_ARG_NAME} PUBLIC ${_ARG_PUBLIC_COMPILE_DEFINITIONS})
+  endif()
+  if(_ARG_PRIVATE_COMPILE_DEFINITIONS)
+    target_compile_definitions(${_ARG_NAME} PRIVATE ${_ARG_PRIVATE_COMPILE_DEFINITIONS})
+  endif()
+
+  # Compile options
+  if(_ARG_PUBLIC_COMPILE_OPTIONS)
+    target_compile_options(${_ARG_NAME} PUBLIC ${_ARG_PUBLIC_COMPILE_OPTIONS})
+  endif()
+  if(_ARG_PRIVATE_COMPILE_OPTIONS)
+    target_compile_options(${_ARG_NAME} PRIVATE ${_ARG_PRIVATE_COMPILE_OPTIONS})
+  endif()
+
+  # Set output directories
   set(_dart_use_global_output_dirs TRUE)
   if(DEFINED DART_USE_GLOBAL_OUTPUT_DIRS)
     if(NOT DART_USE_GLOBAL_OUTPUT_DIRS)
@@ -1308,7 +1651,7 @@ macro(dart_add_library _name)
       foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
         string(TOUPPER "${_dart_config}" _dart_config_upper)
         set_target_properties(
-          ${_name}
+          ${_ARG_NAME}
           PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
               "${DART_BINARY_DIR}/lib/${_dart_config}"
@@ -1320,7 +1663,7 @@ macro(dart_add_library _name)
       endforeach()
     else()
       set_target_properties(
-        ${_name}
+        ${_ARG_NAME}
         PROPERTIES
           ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
           LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
@@ -1332,7 +1675,7 @@ macro(dart_add_library _name)
       foreach(_dart_config IN LISTS CMAKE_CONFIGURATION_TYPES)
         string(TOUPPER "${_dart_config}" _dart_config_upper)
         set_target_properties(
-          ${_name}
+          ${_ARG_NAME}
           PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY_${_dart_config_upper}
               "${CMAKE_CURRENT_BINARY_DIR}/${_dart_config}"
@@ -1344,7 +1687,7 @@ macro(dart_add_library _name)
       endforeach()
     else()
       set_target_properties(
-        ${_name}
+        ${_ARG_NAME}
         PROPERTIES
           ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
           LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -1353,12 +1696,71 @@ macro(dart_add_library _name)
     endif()
   endif()
 
-  set_target_properties(
-    ${_name} PROPERTIES
-    SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
-    VERSION "${DART_VERSION}"
-  )
-endmacro()
+  # Set version properties
+  if(_ARG_VERSION)
+    set(lib_version ${_ARG_VERSION})
+  elseif(DEFINED DART_VERSION)
+    set(lib_version ${DART_VERSION})
+  endif()
+
+  if(lib_version)
+    # Extract major.minor for SOVERSION
+    string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" _ ${lib_version})
+    if(CMAKE_MATCH_1 AND CMAKE_MATCH_2)
+      set(lib_soversion "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+    else()
+      set(lib_soversion ${lib_version})
+    endif()
+
+    set_target_properties(
+      ${_ARG_NAME}
+      PROPERTIES
+        VERSION ${lib_version}
+        SOVERSION ${lib_soversion}
+    )
+  endif()
+
+  # Installation rules (unless NO_INSTALL is set)
+  if(NOT _ARG_NO_INSTALL)
+    include(GNUInstallDirs)
+
+    # Install the target
+    install(
+      TARGETS ${_ARG_NAME}
+      EXPORT ${_ARG_NAME}Targets
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    # Install headers with directory structure preserved
+    if(_ARG_HEADERS)
+      foreach(header IN LISTS _ARG_HEADERS)
+        # Compute the relative path of each header from the source dir
+        file(RELATIVE_PATH rel_path "${CMAKE_SOURCE_DIR}" "${header}")
+        get_filename_component(rel_dir "${rel_path}" DIRECTORY)
+
+        # Install the file to the destination, preserving the directory structure
+        install(
+          FILES "${header}"
+          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
+        )
+      endforeach()
+    endif()
+
+    # Install export targets
+    install(
+      EXPORT ${_ARG_NAME}Targets
+      NAMESPACE DART::
+      DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
+    )
+  endif()
+
+  # Add to formatting list
+  dart_format_add(${_ARG_SOURCES} ${_ARG_HEADERS})
+
+endfunction()
 
 #-------------------------------------------------------------------------------
 # Check if a required package is found and print status
@@ -1696,4 +2098,325 @@ function(dart_build_tests)
 
   dart_format_add(${test_files})
 
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Add a single test with CTest integration
+# Usage:
+#   dart_add_test(
+#     NAME <test_name>
+#     SOURCES <source_files...>
+#     [LINK_LIBRARIES lib1 lib2...]
+#     [LABELS label1 label2...]
+#     [WORKING_DIRECTORY dir]
+#   )
+#
+# Automatically adds the test to CTest with the specified labels
+#-------------------------------------------------------------------------------
+function(dart_add_test)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    NAME
+    WORKING_DIRECTORY
+  )
+  set(multiValueArgs
+    SOURCES
+    LINK_LIBRARIES
+    LABELS
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_NAME)
+    message(FATAL_ERROR "dart_add_test: NAME is required")
+  endif()
+
+  if(NOT _ARG_SOURCES)
+    message(FATAL_ERROR "dart_add_test: SOURCES is required")
+  endif()
+
+  # Create the test executable
+  add_executable(${_ARG_NAME} ${_ARG_SOURCES})
+
+  # Link default test libraries
+  target_link_libraries(${_ARG_NAME}
+    PRIVATE
+      GTest::gtest
+      GTest::gtest_main
+      ${_ARG_LINK_LIBRARIES}
+  )
+
+  # Add to CTest with optional labels
+  add_test(NAME ${_ARG_NAME} COMMAND $<TARGET_FILE:${_ARG_NAME}>)
+
+  if(_ARG_LABELS)
+    set_tests_properties(${_ARG_NAME} PROPERTIES LABELS "${_ARG_LABELS}")
+  endif()
+
+  if(_ARG_WORKING_DIRECTORY)
+    set_tests_properties(${_ARG_NAME} PROPERTIES WORKING_DIRECTORY "${_ARG_WORKING_DIRECTORY}")
+  endif()
+
+  # Add to global test list
+  dart_property_add(DART_ALL_TESTS ${_ARG_NAME})
+
+  # Add to formatting list
+  dart_format_add(${_ARG_SOURCES})
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Discover and add all unit tests in a directory
+# Usage:
+#   dart_add_unit_test_dir(
+#     MODULE_NAME <module_name>
+#     TEST_DIR <directory>
+#     [LINK_LIBRARIES lib1 lib2...]
+#   )
+#
+# Finds all test_*.cpp files in TEST_DIR and creates a test for each
+#-------------------------------------------------------------------------------
+function(dart_add_unit_test_dir)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    MODULE_NAME
+    TEST_DIR
+  )
+  set(multiValueArgs
+    LINK_LIBRARIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_MODULE_NAME)
+    message(FATAL_ERROR "dart_add_unit_test_dir: MODULE_NAME is required")
+  endif()
+
+  if(NOT _ARG_TEST_DIR)
+    message(FATAL_ERROR "dart_add_unit_test_dir: TEST_DIR is required")
+  endif()
+
+  # Find all test files in the directory
+  file(GLOB test_files "${_ARG_TEST_DIR}/test_*.cpp")
+
+  if(NOT test_files)
+    message(STATUS "  ${_ARG_MODULE_NAME}: no tests found in ${_ARG_TEST_DIR}")
+    return()
+  endif()
+
+  # Register each test
+  set(module_test_targets)
+  foreach(test_file IN LISTS test_files)
+    # Extract test name from filename (remove .cpp extension)
+    get_filename_component(test_name ${test_file} NAME_WE)
+
+    # Create the test
+    dart_add_test(
+      NAME ${test_name}
+      SOURCES ${test_file}
+      LINK_LIBRARIES ${_ARG_LINK_LIBRARIES}
+      LABELS ${_ARG_MODULE_NAME}
+    )
+
+    # Add to this module's test list
+    list(APPEND module_test_targets ${test_name})
+  endforeach()
+
+  # Create meta target for this module
+  add_custom_target(tests_${_ARG_MODULE_NAME}
+    DEPENDS ${module_test_targets}
+    COMMENT "Building ${_ARG_MODULE_NAME} tests"
+  )
+
+  # Report
+  list(LENGTH test_files num_tests)
+  message(STATUS "  ${_ARG_MODULE_NAME}: ${num_tests} test(s)")
+endfunction()
+
+#===============================================================================
+# Python Bindings
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Add a Python binding module with nanobind
+# Usage:
+#   dart_add_python_module(
+#     NAME <module_name>
+#     SOURCES <source_files...>
+#     [LINK_LIBRARIES lib1 lib2...]
+#     [VERSION <version>]
+#   )
+#
+# Creates a Python extension module using nanobind.
+# Automatically finds Python and nanobind.
+#-------------------------------------------------------------------------------
+function(dart_add_python_module)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs
+    NAME
+    VERSION
+  )
+  set(multiValueArgs
+    SOURCES
+    LINK_LIBRARIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Validate required arguments
+  if(NOT _ARG_NAME)
+    message(FATAL_ERROR "dart_add_python_module: NAME is required")
+  endif()
+
+  if(NOT _ARG_SOURCES)
+    message(FATAL_ERROR "dart_add_python_module: SOURCES is required")
+  endif()
+
+  # Expand glob patterns in SOURCES
+  set(expanded_sources)
+  foreach(source IN LISTS _ARG_SOURCES)
+    if(source MATCHES ".*[*?].*")
+      file(GLOB matched_files "${source}")
+      list(APPEND expanded_sources ${matched_files})
+    else()
+      list(APPEND expanded_sources ${source})
+    endif()
+  endforeach()
+  set(_ARG_SOURCES ${expanded_sources})
+
+  # Use PROJECT_VERSION if VERSION not specified
+  if(NOT _ARG_VERSION)
+    if(PROJECT_VERSION)
+      set(_ARG_VERSION ${PROJECT_VERSION})
+    else()
+      message(FATAL_ERROR "dart_add_python_module: VERSION is required (or set project VERSION)")
+    endif()
+  endif()
+
+  # Find Python
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+  # Try to find nanobind using Python
+  execute_process(
+    COMMAND ${Python_EXECUTABLE} -m nanobind --cmake_dir
+    OUTPUT_VARIABLE nanobind_ROOT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE nanobind_NOTFOUND
+  )
+
+  if(nanobind_NOTFOUND)
+    message(STATUS "nanobind not found. Skipping ${_ARG_NAME}.")
+    message(STATUS "To enable ${_ARG_NAME}, install nanobind: pip install nanobind")
+    return()
+  endif()
+
+  # Find nanobind
+  list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
+  find_package(nanobind CONFIG REQUIRED)
+
+  message(STATUS "Building Python module ${_ARG_NAME} with nanobind at ${nanobind_ROOT}")
+
+  # Build Python extension module using nanobind
+  nanobind_add_module(${_ARG_NAME}
+    NB_STATIC  # Build a static extension module
+    ${_ARG_SOURCES}
+  )
+
+  # Include directories
+  target_include_directories(${_ARG_NAME}
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_BINARY_DIR}
+  )
+
+  # Link libraries
+  if(_ARG_LINK_LIBRARIES)
+    target_link_libraries(${_ARG_NAME} PRIVATE ${_ARG_LINK_LIBRARIES})
+  endif()
+
+  # Set version info
+  target_compile_definitions(${_ARG_NAME}
+    PRIVATE ${_ARG_NAME}_VERSION_INFO="${_ARG_VERSION}"
+  )
+
+  # Remove debug postfix
+  set_target_properties(${_ARG_NAME} PROPERTIES DEBUG_POSTFIX "")
+
+  # Set output directory to match expected PYTHONPATH
+  set_target_properties(${_ARG_NAME} PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug/python"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release/python"
+  )
+
+  # Add to formatting list
+  dart_format_add(${_ARG_SOURCES})
+
+  message(STATUS "${_ARG_NAME}: Configured Python module")
+endfunction()
+
+#===============================================================================
+# Benchmarking
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Add a single benchmark
+# Usage:
+#   dart_add_benchmark(
+#     NAME <benchmark_name>
+#     SOURCES <source_files...>
+#     [LINK_LIBRARIES lib1 lib2...]
+#   )
+#
+# Creates a benchmark executable using Google Benchmark.
+#-------------------------------------------------------------------------------
+function(dart_add_benchmark)
+  set(prefix _ARG)
+  set(options)
+  set(oneValueArgs NAME)
+  set(multiValueArgs
+    SOURCES
+    LINK_LIBRARIES
+  )
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  if(NOT _ARG_NAME)
+    message(FATAL_ERROR "dart_add_benchmark: NAME is required")
+  endif()
+
+  if(NOT _ARG_SOURCES)
+    message(FATAL_ERROR "dart_add_benchmark: SOURCES is required")
+  endif()
+
+  # Create the benchmark executable
+  add_executable(${_ARG_NAME} ${_ARG_SOURCES})
+
+  # Link benchmark libraries
+  target_link_libraries(${_ARG_NAME}
+    PRIVATE
+      benchmark::benchmark
+      benchmark::benchmark_main
+      ${_ARG_LINK_LIBRARIES}
+  )
+
+  # Set benchmark properties
+  set_target_properties(${_ARG_NAME} PROPERTIES
+    FOLDER "benchmarks"
+    RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+  )
+
+  # Add to global benchmark list
+  dart_property_add(DART_ALL_BENCHMARKS ${_ARG_NAME})
+
+  # Add to formatting list
+  dart_format_add(${_ARG_SOURCES})
 endfunction()
