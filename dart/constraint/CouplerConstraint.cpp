@@ -40,15 +40,19 @@
 
 #include <cmath>
 
-#define DART_CFM 1e-6
-#define DART_MIMIC_DEFAULT_FORCE_LIMIT 800.0
-#define DART_MIMIC_DEFAULT_VELOCITY_LIMIT 50.0
-#define DART_MIMIC_DEFAULT_ERP 0.4
+namespace {
+
+constexpr inline double kConstraintForceMixing = 1e-6;
+constexpr inline double kDefaultForceLimit = 800.0;
+constexpr inline double kDefaultVelocityLimit = 50.0;
+constexpr inline double kDefaultErp = 0.4;
+
+} // namespace
 
 namespace dart {
 namespace constraint {
 
-double CouplerConstraint::mConstraintForceMixing = DART_CFM;
+double CouplerConstraint::mConstraintForceMixing = kConstraintForceMixing;
 
 //==============================================================================
 CouplerConstraint::CouplerConstraint(
@@ -122,14 +126,14 @@ void CouplerConstraint::update()
     double velLower = mJoint->getVelocityLowerLimit(i);
     double velUpper = mJoint->getVelocityUpperLimit(i);
     if (!std::isfinite(velLower))
-      velLower = -DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
+      velLower = -kDefaultVelocityLimit;
     if (!std::isfinite(velUpper))
-      velUpper = DART_MIMIC_DEFAULT_VELOCITY_LIMIT;
+      velUpper = kDefaultVelocityLimit;
     double qError
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
           + mimicProp.mOffset - mJoint->getPosition(i);
-    const double erp = DART_MIMIC_DEFAULT_ERP;
+    const double erp = kDefaultErp;
     double desiredVelocity
         = math::clip((erp * qError) / timeStep, velLower, velUpper);
 
@@ -139,9 +143,9 @@ void CouplerConstraint::update()
       double upper = mJoint->getForceUpperLimit(i);
       double lower = mJoint->getForceLowerLimit(i);
       if (!std::isfinite(upper))
-        upper = DART_MIMIC_DEFAULT_FORCE_LIMIT;
+        upper = kDefaultForceLimit;
       if (!std::isfinite(lower))
-        lower = -DART_MIMIC_DEFAULT_FORCE_LIMIT;
+        lower = -kDefaultForceLimit;
 
       mUpperBound[i] = upper * timeStep;
       mLowerBound[i] = lower * timeStep;
