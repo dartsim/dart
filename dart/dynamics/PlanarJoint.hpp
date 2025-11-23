@@ -83,6 +83,12 @@ public:
   /// Same as copy(const PlanarJoint&)
   PlanarJoint& operator=(const PlanarJoint& _otherJoint);
 
+  /// Convert a 2D transform into planar joint positions (x, y, yaw).
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert planar joint positions into a 2D transform.
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+
   // Documentation inherited
   const std::string& getType() const override;
 
