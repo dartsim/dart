@@ -30,59 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
-#define DART_MATH_LCP_ODELCPSOLVER_HPP_
+#include "dart/math/lcp/LcpSolver.hpp"
 
-#include "dart/Export.hpp"
+namespace dart {
+namespace math {
 
-#include <Eigen/Dense>
-
-namespace dart::math {
-
-/// @brief
-class DART_API ODELCPSolver
+//==============================================================================
+LcpResult LcpSolver::solve(
+    const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x)
 {
-public:
-  /// @brief
-  ODELCPSolver();
+  return solve(A, b, x, mDefaultOptions);
+}
 
-  /// @brief
-  virtual ~ODELCPSolver();
+//==============================================================================
+LcpOptions LcpSolver::getDefaultOptions() const
+{
+  return mDefaultOptions;
+}
 
-  /// @brief
-  bool Solve(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::VectorXd* _x,
-      int numContacts,
-      double mu = 0,
-      int numDir = 0,
-      bool bUseODESolver = false);
+//==============================================================================
+void LcpSolver::setDefaultOptions(const LcpOptions& options)
+{
+  mDefaultOptions = options;
+}
 
-private:
-  /// @brief
-  void transferToODEFormulation(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      Eigen::MatrixXd* _AOut,
-      Eigen::VectorXd* _bOut,
-      int _numDir,
-      int _numContacts);
-
-  /// @brief
-  void transferSolFromODEFormulation(
-      const Eigen::VectorXd& _x,
-      Eigen::VectorXd* _xOut,
-      int _numDir,
-      int _numContacts);
-
-  /// @brief
-  bool checkIfSolution(
-      const Eigen::MatrixXd& _A,
-      const Eigen::VectorXd& _b,
-      const Eigen::VectorXd& _x);
-};
-
-} // namespace dart::math
-
-#endif // DART_MATH_LCP_ODELCPSOLVER_HPP_
+} // namespace math
+} // namespace dart
