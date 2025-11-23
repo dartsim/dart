@@ -46,10 +46,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Remove preinstalled pixi (if any)
-        run: |
-          rm -f "$HOME/.pixi/bin/pixi" "$HOME/.pixi/bin/pixi.exe" || true
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -77,9 +73,5 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/ccache"
 
       - name: Test gz-physics
-        env:
-          # Limit build parallelism to avoid per-runner process limits (see
-          # https://github.com/ninja-build/ninja/issues/2151 for posix_spawn EAGAIN).
-          DART_PARALLEL_JOBS: 4
         run: |
           pixi r -e gazebo test-gz
