@@ -52,17 +52,18 @@ public:
     return {};
   return ::osg::ref_ptr<osgShadow::ShadowTechnique>(shadow);
 }
-
 void defWorldNode(nb::module_& m)
 {
   using dart::gui::osg::WorldNode;
 
   nb::class_<WorldNode, PyWorldNode>(m, "WorldNode", nb::dynamic_attr())
-      .def(nb::init<>())
+      .def(nb::new_([]() { return makeOsgShared<WorldNode>(); }))
       .def(
-          nb::init<const WorldPtr&, ShadowTechniquePtr>(),
-          nb::arg("world") = nullptr,
-          nb::arg("shadowTechnique") = ShadowTechniquePtr{})
+          nb::new_([](const WorldPtr& world, ShadowTechniquePtr shadow) {
+            return makeOsgShared<WorldNode>(world, toShadowRef(shadow));
+          }),
+          nb::arg("world"),
+          nb::arg("shadowTechnique") = nullptr)
       .def("setWorld", &WorldNode::setWorld, nb::arg("newWorld"))
       .def("getWorld", &WorldNode::getWorld)
       .def("refresh", &WorldNode::refresh)
@@ -103,14 +104,20 @@ void defRealTimeWorldNode(nb::module_& m)
       dart::gui::osg::WorldNode,
       PyRealTimeWorldNode>(
       m, "RealTimeWorldNode", nb::dynamic_attr())
-      .def(nb::init<>())
+      .def(nb::new_([]() { return makeOsgShared<RealTimeWorldNode>(); }))
       .def(
-          nb::init<const WorldPtr&,
-                   ShadowTechniquePtr,
-                   double,
-                   double>(),
-          nb::arg("world") = nullptr,
-          nb::arg("shadower") = ShadowTechniquePtr{},
+          nb::new_([](const WorldPtr& world,
+                      ShadowTechniquePtr shadower,
+                      double targetFrequency,
+                      double targetRealTimeFactor) {
+            return makeOsgShared<RealTimeWorldNode>(
+                world,
+                toShadowRef(shadower),
+                targetFrequency,
+                targetRealTimeFactor);
+          }),
+          nb::arg("world"),
+          nb::arg("shadower") = nullptr,
           nb::arg("targetFrequency") = 60.0,
           nb::arg("targetRealTimeFactor") = 1.0)
       .def("setTargetFrequency", &RealTimeWorldNode::setTargetFrequency, nb::arg("targetFrequency"))
