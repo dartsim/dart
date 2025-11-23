@@ -5,7 +5,7 @@ Pytests are executed from within ``python/tests`` which means Python discovers
 the source tree (`python/dartpy`) before the freshly built extension under
 ``build/<env>/cpp/<config>/python``.  Those source packages do not contain the
 compiled ``dartpy`` extension, so importing ``dartpy`` during CI fails with
-``ModuleNotFoundError: dartpy._dartpy`` even though the extension exists in the
+``ModuleNotFoundError: dartpy.dartpy`` even though the extension exists in the
 build directory.
 
 To make sure we always import the just-built bindings, re-insert the build
@@ -49,12 +49,11 @@ def _candidate_python_paths() -> list[str]:
             if candidate:
                 _add(candidate)
 
-    for env_var in ("DARTPY_RUNTIME_DIR",):
-        runtime = os.environ.get(env_var)
-        if runtime:
-            runtime_path = Path(runtime)
-            _add(str(runtime_path))
-            _add(str(runtime_path.parent))
+    runtime = os.environ.get("DARTPY_RUNTIME_DIR")
+    if runtime:
+        runtime_path = Path(runtime)
+        _add(str(runtime_path))
+        _add(str(runtime_path.parent))
 
     # Fall back to the pixi build layout if no explicit PYTHONPATH is provided
     # (or if it missed the dartpy directories).
@@ -66,8 +65,8 @@ def _candidate_python_paths() -> list[str]:
         or "Release"
     )
     build_python = repo_root / "build" / pixi_env / "cpp" / build_type / "python"
-    _add(str(build_python / "dartpy"))
     _add(str(build_python))
+    _add(str(build_python / "dartpy"))
 
     return entries
 

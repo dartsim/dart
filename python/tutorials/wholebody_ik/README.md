@@ -48,8 +48,8 @@ Why? The `TaskSpaceRegion` error method only computes non-zero error when the di
 ## Running the Tutorial
 
 ```bash
-# Make sure dartpy is built
-pixi run build-py-dev
+# Make sure dartpy is installed
+pixi run build-py
 
 # Run the tutorial
 python python/tutorials/wholebody_ik/main.py

@@ -99,7 +99,7 @@ def setup_ring(ring: dart.dynamics.Skeleton):
     # snippet:py-collisions-lesson4c-ring-rest-state-end
 
 
-class CollisionsEventHandler(dart.gui.GUIEventHandler):
+class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
     def __init__(
         self,
         world: dart.simulation.World,
@@ -122,11 +122,11 @@ class CollisionsEventHandler(dart.gui.GUIEventHandler):
         self.spawn_index = 0
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
             return False
 
         key = ea.getKey()
-        gea = dart.gui.GUIEventAdapter
+        gea = dart.gui.osg.GUIEventAdapter
 
         if key == gea.KEY_1:
             return self.add_object(self.blueprint_ball.clone("ball_clone"))
@@ -254,7 +254,7 @@ class CollisionsEventHandler(dart.gui.GUIEventHandler):
         self.world.removeSkeleton(skel)
 
 
-class CustomWorldNode(dart.gui.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world):
         super().__init__(world)
 
@@ -534,7 +534,7 @@ def main():
 
     node = CustomWorldNode(world)
 
-    viewer = dart.gui.Viewer()
+    viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
 
@@ -551,8 +551,8 @@ def main():
     )
     print(viewer.getInstructions())
 
-    grid = dart.gui.GridVisual()
-    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XZ)
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XZ)
     grid.setOffset([0.0, -default_wall_thickness / 2.0, 0.0])
     viewer.addAttachment(grid)
 

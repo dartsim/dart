@@ -29,205 +29,421 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-import dartpy as dart
 import numpy as np
 
-DEFAULT_FORCE = 40.0
+import dartpy as dart
+
+DEFAULT_SPEED_INCREMENT = 0.5
+DEFAULT_FORCE = 50.0
 DEFAULT_COUNTDOWN = 100
+DEFAULT_IK_ITERATIONS = 4500
 
 
-class InputHandler(dart.gui.GUIEventHandler):
-    def __init__(self, node):
-        super(InputHandler, self).__init__()
-        self.node = node
-        self.force = np.zeros(3)
-        self.impulse_duration = 0
+class Controller:
+    def __init__(self, biped: dart.dynamics.Skeleton):
+        self.biped = biped
+        self.speed = 0.0
+        dofs = biped.getNumDofs()
+        self.forces = np.zeros(dofs)
+        self.Kp = np.eye(dofs)
+        self.Kd = np.eye(dofs)
 
-    def handle(self, ea, aa):
-        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
-            return False
-
-        gea = dart.gui.GUIEventAdapter
-        if ea.getKey() == gea.KEY_Comma:
-            ext_force = np.zeros(3)
-            ext_force[0] = -DEFAULT_FORCE
-            self.node.set_external_force(ext_force, DEFAULT_COUNTDOWN)
-            return True
-        if ea.getKey() == gea.KEY_Period:
-            ext_force = np.zeros(3)
-            ext_force[0] = DEFAULT_FORCE
-            self.node.set_external_force(ext_force, DEFAULT_COUNTDOWN)
-            return True
-
-        return False
-
-
-class MyWorldNode(dart.gui.RealTimeWorldNode):
-    def __init__(self, world, skel):
-        super(MyWorldNode, self).__init__(world)
-        self.world = world
-        self.skel = skel
-        self.dofs = self.skel.getNumDofs()
-        self.left_heel = self.skel.getBodyNode("h_heel_left")
-        self.left_foot = [
-            self.skel.getDof("j_heel_left_1").getIndexInSkeleton(),
-            self.skel.getDof("j_toe_left").getIndexInSkeleton(),
-        ]
-        self.right_foot = [
-            self.skel.getDof("j_heel_right_1").getIndexInSkeleton(),
-            self.skel.getDof("j_toe_right").getIndexInSkeleton(),
-        ]
-        self.timestep = world.getTimeStep()
-        self.Kp = np.eye(self.dofs)
-        self.Kd = np.eye(self.dofs)
-
-        self.torques = np.zeros(self.dofs)
-
-        self.q_d = self.skel.getPositions()
-
-        # Using SPD results in simple Kp coefficients
+        # snippet:py-biped-lesson2-controller-gains-start
         for i in range(6):
             self.Kp[i, i] = 0.0
             self.Kd[i, i] = 0.0
+        for i in range(6, dofs):
+            self.Kp[i, i] = 1000.0
+            self.Kd[i, i] = 50.0
+        # snippet:py-biped-lesson2-controller-gains-end
 
-        for i in range(6, self.dofs):
-            self.Kp[i, i] = 400.0
-            self.Kd[i, i] = 40.0
+        # snippet:py-biped-lesson2-controller-target-start
+        self.set_target_positions(biped.getPositions())
+        # snippet:py-biped-lesson2-controller-target-end
 
-        self.pre_offset = 0
+    def set_target_positions(self, pose: np.ndarray):
+        # snippet:py-biped-lesson2-target-set-start
+        self.target_positions = pose.copy()
+        # snippet:py-biped-lesson2-target-set-end
 
-        self.ext_force = np.zeros(3)
-        self.ext_force_duration = 0
+    def clear_forces(self):
+        self.forces[:] = 0.0
 
-        self.ext_force_arrow_shape = dart.dynamics.ArrowShape([0, 0, 0], [0, 0, 0])
+    def add_pd_forces(self):
+        # snippet:py-biped-lesson2-pd-start
+        q = self.biped.getPositions()
+        dq = self.biped.getVelocities()
+        p = -self.Kp @ (q - self.target_positions)
+        d = -self.Kd @ dq
+        self.forces += p + d
+        self.biped.setForces(self.forces)
+        # snippet:py-biped-lesson2-pd-end
 
-        self.ext_force_simple_frame = dart.dynamics.SimpleFrame()
-        self.ext_force_simple_frame.setShape(self.ext_force_arrow_shape)
-        self.ext_force_visual = self.ext_force_simple_frame.createVisualAspect()
-        self.ext_force_visual.setColor([1.0, 0.0, 0.0])
-        self.ext_force_visual.hide()
+    def add_spd_forces(self):
+        # snippet:py-biped-lesson3-spd-start
+        q = self.biped.getPositions()
+        dq = self.biped.getVelocities()
+        dt = self.biped.getTimeStep()
 
-        self.world.addSimpleFrame(self.ext_force_simple_frame)
-
-    def customPreStep(self):
-        q = self.skel.getPositions()
-        dq = self.skel.getVelocities()
-        constraint_forces = self.skel.getConstraintForces()
-
-        # SPD tracking
-        invM = np.linalg.inv(self.skel.getMassMatrix() + self.Kd * self.timestep)
-        p = np.matmul(-self.Kp, q + dq * self.timestep - self.q_d)
-        d = np.matmul(-self.Kd, dq)
-        ddq = np.matmul(
-            invM, -self.skel.getCoriolisAndGravityForces() + p + d + constraint_forces
+        inv_mass = np.linalg.inv(self.biped.getMassMatrix() + self.Kd * dt)
+        p = -self.Kp @ (q + dq * dt - self.target_positions)
+        d = -self.Kd @ dq
+        qddot = inv_mass @ (
+            -self.biped.getCoriolisAndGravityForces()
+            + p
+            + d
+            + self.biped.getConstraintForces()
         )
 
-        self.torques = p + d + np.matmul(-self.Kd, ddq) * self.timestep
+        self.forces += p + d - (self.Kd @ qddot) * dt
+        self.biped.setForces(self.forces)
+        # snippet:py-biped-lesson3-spd-end
 
-        # Ankle strategy for sagital plane
-        com = self.skel.getCOM()
-        cop = self.left_heel.getTransform().multiply([0.05, 0, 0])
+    def add_ankle_strategy_forces(self):
+        # snippet:py-biped-lesson4-deviation-start
+        com = self.biped.getCOM()
+        offset = np.array([0.05, 0.0, 0.0])
+        heel = self.biped.getBodyNode("h_heel_left")
+        cop = heel.getTransform().multiply(offset)
+        diff = com[0] - cop[0]
+        # snippet:py-biped-lesson4-deviation-end
 
-        offset = com[0] - cop[0]
-        if offset < 0.1 and offset > 0.0:
-            k1 = 200
-            k2 = 100
-            kd = 10
-            self.torques[self.left_foot[0]] += -k1 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.left_foot[1]] += -k2 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.right_foot[0]] += -k1 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.right_foot[1]] += -k2 * offset + kd * (
-                self.pre_offset - offset
-            )
-        elif offset > -0.2 and offset < -0.05:
-            k1 = 2000
-            k2 = 100
-            kd = 100
-            self.torques[self.left_foot[0]] += -k1 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.left_foot[1]] += -k2 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.right_foot[0]] += -k1 * offset + kd * (
-                self.pre_offset - offset
-            )
-            self.torques[self.right_foot[1]] += -k2 * offset + kd * (
-                self.pre_offset - offset
-            )
+        # snippet:py-biped-lesson4-velocity-start
+        dcom = self.biped.getCOMLinearVelocity()
+        dcop = heel.getLinearVelocity(offset)
+        ddiff = dcom[0] - dcop[0]
+        # snippet:py-biped-lesson4-velocity-end
 
-        # Track the previous offset so the derivative term is evaluated against the
-        # last frame, mirroring the C++ ankle strategy implementation.
-        self.pre_offset = offset
+        dof_names = {
+            "l_heel": "j_heel_left_1",
+            "r_heel": "j_heel_right_1",
+            "l_toe": "j_toe_left",
+            "r_toe": "j_toe_right",
+        }
+        indices = {
+            key: self.biped.getDof(name).getIndexInSkeleton()
+            for key, name in dof_names.items()
+        }
 
-        # Just to make sure no illegal torque is used
-        for i in range(6):
-            self.torques[i] = 0
-
-        self.skel.setForces(self.torques * 0.8)
-
-        # Apply external force
-        self.ext_force_duration = self.ext_force_duration - 1
-        if self.ext_force_duration <= 0:
-            self.ext_force_duration = 0
-            self.ext_force = np.zeros(3)
-        spine = self.skel.getBodyNode("h_spine")
-        spine.addExtForce(self.ext_force)
-        if self.ext_force_duration > 0:
-            arrow_head = spine.getTransform().translation()
-            arrow_tail = arrow_head - self.ext_force / 30
-            self.ext_force_arrow_shape.setPositions(arrow_tail, arrow_head)
-            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.DYNAMIC)
-            self.ext_force_visual.show()
+        if 0.0 <= diff < 0.1:
+            k1, k2, kd = 200.0, 100.0, 10.0
+        elif -0.2 < diff < -0.05:
+            k1, k2, kd = 2000.0, 100.0, 100.0
         else:
-            self.ext_force_arrow_shape.setDataVariance(dart.dynamics.Shape.STATIC)
-            self.ext_force_visual.hide()
+            k1 = k2 = kd = None
 
-    def set_external_force(self, force, duration=10):
-        self.ext_force = force
-        self.ext_force_duration = duration
+        if k1 is not None:
+            self.forces[indices["l_heel"]] += -k1 * diff - kd * ddiff
+            self.forces[indices["r_heel"]] += -k1 * diff - kd * ddiff
+            self.forces[indices["l_toe"]] += -k2 * diff - kd * ddiff
+            self.forces[indices["r_toe"]] += -k2 * diff - kd * ddiff
+            self.biped.setForces(self.forces)
 
-    def external_force(self):
-        return self.ext_force
+    def set_wheel_commands(self):
+        # snippet:py-biped-lesson6-wheel-commands-start
+        wheel_names = [
+            "joint_front_left_1",
+            "joint_front_left_2",
+            "joint_front_right_1",
+            "joint_front_right_2",
+            "joint_back_left",
+            "joint_back_right",
+        ]
+        first = self.biped.getDof("joint_front_left_1").getIndexInSkeleton()
+        for i in range(first, self.biped.getNumDofs()):
+            self.Kp[i, i] = 0.0
+            self.Kd[i, i] = 0.0
+
+        for name in ["joint_front_left_2", "joint_front_right_2", "joint_back_left", "joint_back_right"]:
+            self.biped.setCommand(
+                self.biped.getDof(name).getIndexInSkeleton(), self.speed
+            )
+        # snippet:py-biped-lesson6-wheel-commands-end
+
+    def change_wheel_speed(self, increment: float):
+        self.speed += increment
+        print(f"wheel speed = {self.speed:.2f}")
+
+
+class BipedEventHandler(dart.gui.osg.GUIEventHandler):
+    def __init__(self, world: dart.simulation.World, controller: Controller):
+        super().__init__()
+        self.world = world
+        self.controller = controller
+        self.force_countdown = 0
+        self.push_positive = True
+
+    def handle(self, ea, _aa):
+        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+            return False
+
+        gea = dart.gui.osg.GUIEventAdapter
+        key = ea.getKey()
+        if key == gea.KEY_Comma:
+            self.force_countdown = DEFAULT_COUNTDOWN
+            self.push_positive = False
+            return True
+        if key == gea.KEY_Period:
+            self.force_countdown = DEFAULT_COUNTDOWN
+            self.push_positive = True
+            return True
+        if key in (ord("a"), ord("A")):
+            self.controller.change_wheel_speed(DEFAULT_SPEED_INCREMENT)
+            return True
+        if key in (ord("s"), ord("S")):
+            self.controller.change_wheel_speed(-DEFAULT_SPEED_INCREMENT)
+            return True
+        return False
+
+    def update(self):
+        self.controller.clear_forces()
+        self.controller.add_spd_forces()
+        self.controller.add_ankle_strategy_forces()
+        self.controller.set_wheel_commands()
+
+        if self.force_countdown > 0:
+            biped = self.world.getSkeleton("biped")
+            body = biped.getBodyNode("h_abdomen")
+            direction = np.array([1.0, 0.0, 0.0])
+            if not self.push_positive:
+                direction *= -1
+            body.addExtForce(DEFAULT_FORCE * direction, body.getCOM(), False, False)
+            self.force_countdown -= 1
+
+
+class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+    def __init__(self, world, handler):
+        super().__init__(world)
+        self.handler = handler
+
+    def customPreStep(self):
+        self.handler.update()
+
+
+def load_biped() -> dart.dynamics.Skeleton:
+    # snippet:py-biped-lesson1-load-start
+    world = dart.utils.SkelParser.readWorld("dart://sample/skel/biped.skel")
+    biped = world.getSkeleton("biped")
+    # snippet:py-biped-lesson1-load-end
+
+    # snippet:py-biped-lesson1-limits-start
+    for i in range(biped.getNumJoints()):
+        biped.getJoint(i).setLimitEnforcement(True)
+    # snippet:py-biped-lesson1-limits-end
+
+    # snippet:py-biped-lesson1-self-start
+    biped.enableSelfCollisionCheck()
+    biped.disableAdjacentBodyCheck()
+    # snippet:py-biped-lesson1-self-end
+    return biped
+
+
+def set_initial_pose(biped: dart.dynamics.Skeleton):
+    # snippet:py-biped-lesson2-initial-pose-start
+    biped.getDof("j_thigh_left_z").setPosition(0.15)
+    biped.getDof("j_thigh_right_z").setPosition(0.15)
+    biped.getDof("j_shin_left").setPosition(-0.40)
+    biped.getDof("j_shin_right").setPosition(-0.40)
+    biped.getDof("j_heel_left_1").setPosition(0.25)
+    biped.getDof("j_heel_right_1").setPosition(0.25)
+    # snippet:py-biped-lesson2-initial-pose-end
+
+
+def _add_wheel(
+    biped: dart.dynamics.Skeleton,
+    parent: dart.dynamics.BodyNode,
+    name: str,
+    translation,
+):
+    yaw_props = dart.dynamics.RevoluteJointProperties()
+    yaw_props.mName = f"{name}_1"
+    yaw_props.mAxis = np.array([0.0, 0.0, 1.0])
+    yaw_props.mT_ParentBodyToJoint.set_translation(translation)
+    _, yaw_body = biped.createRevoluteJointAndBodyNodePair(
+        parent,
+        yaw_props,
+        dart.dynamics.BodyNodeProperties(
+            dart.dynamics.BodyNodeAspectProperties(f"{name}_yaw")
+        ),
+    )
+
+    roll_props = dart.dynamics.RevoluteJointProperties()
+    roll_props.mName = f"{name}_2"
+    roll_props.mAxis = np.array([0.0, 1.0, 0.0])
+    joint, wheel_body = biped.createRevoluteJointAndBodyNodePair(
+        yaw_body,
+        roll_props,
+        dart.dynamics.BodyNodeProperties(
+            dart.dynamics.BodyNodeAspectProperties(f"{name}_wheel")
+        ),
+    )
+
+    cyl = dart.dynamics.CylinderShape(0.05, 0.02)
+    node = wheel_body.createShapeNode(cyl)
+    node.createCollisionAspect()
+    node.createDynamicsAspect()
+    node.createVisualAspect().setColor([0.2, 0.2, 0.2, 1.0])
+    return joint
+
+
+def modify_biped_with_skateboard(biped: dart.dynamics.Skeleton):
+    # snippet:py-biped-lesson5-skateboard-start
+    props = dart.dynamics.EulerJointProperties()
+    props.mName = "skateboard_mount"
+    props.mT_ChildBodyToJoint.set_translation([0.0, 0.1, 0.0])
+    _, board = biped.createEulerJointAndBodyNodePair(
+        biped.getBodyNode("h_heel_left"),
+        props,
+        dart.dynamics.BodyNodeProperties(
+            dart.dynamics.BodyNodeAspectProperties("skateboard")
+        ),
+    )
+
+    deck = dart.dynamics.BoxShape([0.5, 0.02, 0.2])
+    deck_node = board.createShapeNode(deck)
+    deck_node.createCollisionAspect()
+    deck_node.createDynamicsAspect()
+    deck_node.createVisualAspect().setColor([0.4, 0.2, 0.1, 1.0])
+
+    offsets = {
+        "joint_front_left": np.array([0.2, -0.02, 0.08]),
+        "joint_front_right": np.array([0.2, -0.02, -0.08]),
+    }
+    for name, translation in offsets.items():
+        _add_wheel(biped, board, name, translation)
+
+    back_left_props = dart.dynamics.RevoluteJointProperties()
+    back_left_props.mName = "joint_back_left"
+    back_left_props.mAxis = np.array([0.0, 1.0, 0.0])
+    back_left_props.mT_ParentBodyToJoint.set_translation([-0.2, -0.02, 0.08])
+    _, back_left = biped.createRevoluteJointAndBodyNodePair(
+        board,
+        back_left_props,
+        dart.dynamics.BodyNodeProperties(
+            dart.dynamics.BodyNodeAspectProperties("joint_back_left_wheel")
+        ),
+    )
+    node_left = back_left.createShapeNode(dart.dynamics.CylinderShape(0.05, 0.02))
+    node_left.createCollisionAspect()
+    node_left.createDynamicsAspect()
+    node_left.createVisualAspect().setColor([0.2, 0.2, 0.2, 1.0])
+
+    back_right_props = dart.dynamics.RevoluteJointProperties()
+    back_right_props.mName = "joint_back_right"
+    back_right_props.mAxis = np.array([0.0, 1.0, 0.0])
+    back_right_props.mT_ParentBodyToJoint.set_translation([-0.2, -0.02, -0.08])
+    _, back_right = biped.createRevoluteJointAndBodyNodePair(
+        board,
+        back_right_props,
+        dart.dynamics.BodyNodeProperties(
+            dart.dynamics.BodyNodeAspectProperties("joint_back_right_wheel")
+        ),
+    )
+    node_right = back_right.createShapeNode(dart.dynamics.CylinderShape(0.05, 0.02))
+    node_right.createCollisionAspect()
+    node_right.createDynamicsAspect()
+    node_right.createVisualAspect().setColor([0.2, 0.2, 0.2, 1.0])
+    # snippet:py-biped-lesson5-skateboard-end
+
+
+def set_velocity_actuators(biped: dart.dynamics.Skeleton):
+    # snippet:py-biped-lesson6-velocity-actuators-start
+    for name in [
+        "joint_front_left_2",
+        "joint_front_right_2",
+        "joint_back_left",
+        "joint_back_right",
+    ]:
+        biped.getJoint(name).setActuatorType(dart.dynamics.Joint.VELOCITY)
+    # snippet:py-biped-lesson6-velocity-actuators-end
+
+
+def solve_ik(biped: dart.dynamics.Skeleton) -> np.ndarray:
+    # snippet:py-biped-lesson7-ik-start
+    biped.getDof("j_shin_right").setPosition(-1.4)
+    biped.getDof("j_bicep_left_x").setPosition(0.8)
+    biped.getDof("j_bicep_right_x").setPosition(-0.8)
+
+    target = biped.getPositions().copy()
+    left_heel = biped.getBodyNode("h_heel_left")
+    left_toe = biped.getBodyNode("h_toe_left")
+    initial_height = -0.8
+
+    for _ in range(DEFAULT_IK_ITERATIONS):
+        deviation = biped.getCOM() - left_heel.getCOM()
+        local_com = left_heel.getCOM(left_heel)
+        jacobian = biped.getCOMLinearJacobian() - biped.getLinearJacobian(
+            left_heel, local_com
+        )
+
+        error = deviation[0]
+        direction = -0.2 * error * jacobian[0]
+        error = deviation[2]
+        direction += -0.2 * error * jacobian[2]
+
+        offset = np.array([0.0, -0.04, -0.03])
+        error = (left_heel.getTransform().multiply(offset))[1] - initial_height
+        direction += -0.2 * error * biped.getLinearJacobian(left_heel, offset)[1]
+
+        offset[2] = 0.03
+        error = (left_heel.getTransform().multiply(offset))[1] - initial_height
+        direction += -0.2 * error * biped.getLinearJacobian(left_heel, offset)[1]
+
+        offset[0] = 0.04
+        error = (left_toe.getTransform().multiply(offset))[1] - initial_height
+        direction += -0.2 * error * biped.getLinearJacobian(left_toe, offset)[1]
+
+        offset[2] = -0.03
+        error = (left_toe.getTransform().multiply(offset))[1] - initial_height
+        direction += -0.2 * error * biped.getLinearJacobian(left_toe, offset)[1]
+
+        target += direction
+        biped.setPositions(target)
+        biped.computeForwardKinematics(True, False, False)
+    # snippet:py-biped-lesson7-ik-end
+    return target
+
+
+def create_floor() -> dart.dynamics.Skeleton:
+    floor = dart.dynamics.Skeleton("floor")
+    _, body = floor.createWeldJointAndBodyNodePair()
+    shape = dart.dynamics.BoxShape([10.0, 0.01, 10.0])
+    node = body.createShapeNode(shape)
+    node.createVisualAspect().setColor([0.0, 0.0, 0.0, 1.0])
+    node.createCollisionAspect()
+    node.createDynamicsAspect()
+    tf = dart.math.Isometry3()
+    tf.set_translation([0.0, -1.0, 0.0])
+    body.getParentJoint().setTransformFromParentBodyNode(tf)
+    return floor
 
 
 def main():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
-    world.setGravity([0, -9.81, 0])
+    floor = create_floor()
+    biped = load_biped()
+    set_initial_pose(biped)
+    modify_biped_with_skateboard(biped)
+    set_velocity_actuators(biped)
+    balanced_pose = solve_ik(biped)
+    biped.setPositions(balanced_pose)
 
-    biped = world.getSkeleton("fullbody1")
-    biped.getDof("j_pelvis_rot_y").setPosition(-0.20)
-    biped.getDof("j_thigh_left_z").setPosition(0.15)
-    biped.getDof("j_shin_left").setPosition(-0.40)
-    biped.getDof("j_heel_left_1").setPosition(0.25)
-    biped.getDof("j_thigh_right_z").setPosition(0.15)
-    biped.getDof("j_shin_right").setPosition(-0.40)
-    biped.getDof("j_heel_right_1").setPosition(0.25)
-    biped.getDof("j_abdomen_2").setPosition(0.00)
+    world = dart.simulation.World()
+    world.setGravity([0.0, -9.81, 0.0])
+    world.addSkeleton(floor)
+    world.addSkeleton(biped)
 
-    node = MyWorldNode(world, biped)
+    controller = Controller(biped)
+    handler = BipedEventHandler(world, controller)
+    node = CustomWorldNode(world, handler)
 
-    # Create world node and add it to viewer
-    viewer = dart.gui.Viewer()
+    viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
-
-    input_handler = InputHandler(node)
-    viewer.addEventHandler(input_handler)
-
+    viewer.addEventHandler(handler)
     viewer.addInstructionText("space bar: simulation on/off")
+    viewer.addInstructionText("',' or '.': apply a push backward/forward")
+    viewer.addInstructionText("'a'/'s': increase or decrease wheel speed")
     viewer.addInstructionText("'p': replay simulation")
-    viewer.addInstructionText("'.': apply a forward push")
-    viewer.addInstructionText("',': apply a backward push")
-    print(viewer.getInstructions())
-
     viewer.setUpViewInWindow(0, 0, 640, 480)
-    viewer.setCameraHomePosition([3, 1.5, 3], [0, 0, 0], [0, 0, 1])
     viewer.run()
 
 

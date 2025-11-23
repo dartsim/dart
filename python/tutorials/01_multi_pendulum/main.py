@@ -174,17 +174,17 @@ class Controller:
         # snippet:py-lesson1c-body-force-end
 
 
-class PendulumEventHandler(dart.gui.GUIEventHandler):
+class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
     def __init__(self, controller: Controller):
         super().__init__()
         self.controller = controller
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
             return False
 
         key = ea.getKey()
-        gea = dart.gui.GUIEventAdapter
+        gea = dart.gui.osg.GUIEventAdapter
 
         digit_keys = {
             gea.KEY_1: 0,
@@ -235,7 +235,7 @@ class PendulumEventHandler(dart.gui.GUIEventHandler):
         return False
 
 
-class CustomWorldNode(dart.gui.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world, controller):
         super().__init__(world)
         self.controller = controller
@@ -335,12 +335,12 @@ def main():
 
     node = CustomWorldNode(world, controller)
 
-    viewer = dart.gui.Viewer()
+    viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
 
-    grid = dart.gui.GridVisual()
-    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XY)
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
     grid.setOffset([0.0, 0.0, -5.0])
     viewer.addAttachment(grid)
 

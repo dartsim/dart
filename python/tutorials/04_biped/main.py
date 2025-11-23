@@ -36,7 +36,7 @@ DEFAULT_FORCE = 40.0
 DEFAULT_COUNTDOWN = 100
 
 
-class InputHandler(dart.gui.GUIEventHandler):
+class InputHandler(dart.gui.osg.GUIEventHandler):
     def __init__(self, node):
         super(InputHandler, self).__init__()
         self.node = node
@@ -44,10 +44,10 @@ class InputHandler(dart.gui.GUIEventHandler):
         self.impulse_duration = 0
 
     def handle(self, ea, aa):
-        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
             return False
 
-        gea = dart.gui.GUIEventAdapter
+        gea = dart.gui.osg.GUIEventAdapter
         if ea.getKey() == gea.KEY_Comma:
             ext_force = np.zeros(3)
             ext_force[0] = -DEFAULT_FORCE
@@ -62,7 +62,7 @@ class InputHandler(dart.gui.GUIEventHandler):
         return False
 
 
-class MyWorldNode(dart.gui.RealTimeWorldNode):
+class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
     def __init__(self, world, skel):
         super(MyWorldNode, self).__init__(world)
         self.world = world
@@ -144,7 +144,7 @@ def main():
     node = MyWorldNode(world, biped)
 
     # Create world node and add it to viewer
-    viewer = dart.gui.Viewer()
+    viewer = dart.gui.osg.Viewer()
     viewer.addWorldNode(node)
 
     input_handler = InputHandler(node)
