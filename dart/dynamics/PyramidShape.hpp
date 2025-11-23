@@ -51,11 +51,11 @@ class DART_API PyramidShape : public Shape
 public:
   /// Constructor.
   ///
-  /// \param[in] baseWidth Lateral length (along X-axis) of the rectangular
+  /// @param[in] baseWidth Lateral length (along X-axis) of the rectangular
   /// base.
-  /// \param[in] baseDepth Longitudinal length (along Y-axis) of the rectangular
+  /// @param[in] baseDepth Longitudinal length (along Y-axis) of the rectangular
   /// base.
-  /// \param[in] height Perpendicular height from the base to the apex.
+  /// @param[in] height Perpendicular height from the base to the apex.
   PyramidShape(double baseWidth, double baseDepth, double height);
 
   // Documentation inherited.
@@ -84,11 +84,11 @@ public:
 
   /// Computes the volume given properties.
   ///
-  /// \param[in] baseWidth Lateral length (along X-axis) of the rectangular
+  /// @param[in] baseWidth Lateral length (along X-axis) of the rectangular
   /// base.
-  /// \param[in] baseDepth Longitudinal length (along Y-axis) of the rectangular
+  /// @param[in] baseDepth Longitudinal length (along Y-axis) of the rectangular
   /// base.
-  /// \param[in] height Perpendicular height from the base to the apex.
+  /// @param[in] height Perpendicular height from the base to the apex.
   static double computeVolume(
       double baseWidth, double baseDepth, double height);
 

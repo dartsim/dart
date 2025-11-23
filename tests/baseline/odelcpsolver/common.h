@@ -315,9 +315,9 @@ enum {
   dParamERP, \
 
   //////////////////////////////////////////////////////////////////////////////
-  /// \enum  D_ALL_PARAM_NAMES_X
+  /// @enum  D_ALL_PARAM_NAMES_X
   ///
-  /// \var dParamGroup This is the starting value of the different group
+  /// @var dParamGroup This is the starting value of the different group
   ///                  (i.e. dParamGroup1, dParamGroup2, dParamGroup3)
   ///                  It also helps in the use of parameter
   ///                  (dParamGroup2 | dParamFMax) == dParamFMax2
