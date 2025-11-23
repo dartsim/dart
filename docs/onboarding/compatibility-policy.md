@@ -30,6 +30,10 @@ Rather than documenting specific version numbers here (which become outdated), r
 - **Managed Dependencies**: See [`pixi.toml`](../../pixi.toml) - lists all dependencies with pinned versions for reproducible builds
 - **Ubuntu Packages**: See [`docs/onboarding/building.md`](building.md) for platform-specific installation commands
 
+### ABI Stability
+
+- ABI stability and the inline-namespace plan are tracked in [`docs/onboarding/abi-stability.md`](abi-stability.md). The short version: avoid ABI breaks within a major release, version the install layout, and add CI ABI checks.
+
 ## Rationale
 
 This approach provides:
