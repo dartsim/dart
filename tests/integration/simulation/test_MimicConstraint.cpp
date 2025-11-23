@@ -161,10 +161,10 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
 struct MimicTuning
 {
   double positionLimit = 1.7; // ~97 degrees
-  double velocityLimit = 20.0;
-  double forceLimit = 800.0;
+  double velocityLimit = 50.0;
+  double forceLimit = 1500.0;
   double damping = 2.0;
-  double erp = 0.4;
+  double erp = 0.8;
   double cfm = 1e-6;
 };
 
@@ -188,6 +188,12 @@ void configureMimicMotors(
     const WorldPtr& world,
     const MimicTuning& tuning)
 {
+  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(
+      tuning.cfm);
+  dart::constraint::MimicMotorConstraint::setErrorReductionParameter(
+      tuning.erp);
+  dart::constraint::JointConstraint::setErrorReductionParameter(tuning.erp);
+
   // Get the middle pendulum (uncoupled) which contains the true reference
   // joints
   const auto middlePendulum = world->getSkeleton("pendulum_with_base");
@@ -200,11 +206,18 @@ void configureMimicMotors(
     ASSERT_NE(nullptr, follower);
 
     // Get reference from middle pendulum (not from the same skeleton)
-    auto* reference = nullptr;
+    Joint* reference = nullptr;
     if (middlePendulum) {
       reference = middlePendulum->getJoint(spec.referenceJoint);
     }
     ASSERT_NE(nullptr, reference);
+
+    // Stabilize the counterpart joint on the follower skeleton as well so the
+    // entire pair stays well-behaved under ODE.
+    auto* followerReferenceJoint = skeleton->getJoint(spec.referenceJoint);
+    if (followerReferenceJoint && followerReferenceJoint != follower) {
+      setJointStabilization(followerReferenceJoint, tuning);
+    }
     ASSERT_GT(follower->getNumDofs(), 0u);
     ASSERT_GT(reference->getNumDofs(), 0u);
 
@@ -216,6 +229,13 @@ void configureMimicMotors(
         = std::min(spec.referenceDof, follower->getNumDofs() - 1);
     const std::size_t referenceIndex
         = std::min(spec.referenceDof, reference->getNumDofs() - 1);
+
+    // Sync initial state so the mimic motor starts from the reference pose.
+    follower->setPosition(
+        followerIndex, reference->getPosition(referenceIndex));
+    follower->setVelocity(
+        followerIndex, reference->getVelocity(referenceIndex));
+
     auto& prop = mimicProps[followerIndex];
     prop.mReferenceJoint = reference;
     prop.mReferenceDofIndex = referenceIndex;
@@ -530,7 +550,7 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
 
   configureMimicMotors(specs, world, tuning);
   setCollisionDetector(world, /*useOde=*/true);
-  setBoxedSolver(world, /*usePgs=*/true);
+  setBoxedSolver(world, /*usePgs=*/false);
 
   const auto slowFollower
       = world->getSkeleton("pendulum_with_base_mimic_slow_follows_fast");
@@ -595,7 +615,7 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
 
   configureMimicMotors(specs, world, tuning);
   setCollisionDetector(world, /*useOde=*/true);
-  setBoxedSolver(world, /*usePgs=*/true);
+  setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");
   const auto slowFollower

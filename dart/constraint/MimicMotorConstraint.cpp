@@ -52,6 +52,7 @@ namespace dart {
 namespace constraint {
 
 double MimicMotorConstraint::mConstraintForceMixing = DART_CFM;
+double MimicMotorConstraint::mErrorReductionParameter = DART_MIMIC_DEFAULT_ERP;
 
 //==============================================================================
 MimicMotorConstraint::MimicMotorConstraint(
@@ -123,6 +124,31 @@ double MimicMotorConstraint::getConstraintForceMixing()
 }
 
 //==============================================================================
+void MimicMotorConstraint::setErrorReductionParameter(double erp)
+{
+  double clamped = erp;
+  if (clamped < 0.0) {
+    DART_WARN(
+        "Error reduction parameter [{}] is lower than 0.0. It is set to 0.0.",
+        erp);
+    clamped = 0.0;
+  } else if (clamped > 1.0) {
+    DART_WARN(
+        "Error reduction parameter [{}] is greater than 1.0. It is set to 1.0.",
+        erp);
+    clamped = 1.0;
+  }
+
+  mErrorReductionParameter = clamped;
+}
+
+//==============================================================================
+double MimicMotorConstraint::getErrorReductionParameter()
+{
+  return mErrorReductionParameter;
+}
+
+//==============================================================================
 void MimicMotorConstraint::update()
 {
   // Reset dimension
@@ -143,7 +169,7 @@ void MimicMotorConstraint::update()
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
           + mimicProp.mOffset - mJoint->getPosition(i);
-    const double erp = DART_MIMIC_DEFAULT_ERP;
+    const double erp = mErrorReductionParameter;
     double desiredVelocity
         = math::clip((erp * qError) / timeStep, velLower, velUpper);
 

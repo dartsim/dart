@@ -175,10 +175,10 @@ struct SolverConfig
   bool usePgsSolver = false;
   bool paused = false;
   bool stepOnce = false;
-  double erp = 0.4;
+  double erp = 0.8;
   double cfm = 1e-6;
-  double forceLimit = 800.0;
-  double velocityLimit = 20.0;
+  double forceLimit = 1500.0;
+  double velocityLimit = 50.0;
   double damping = 2.0;
 };
 
@@ -219,6 +219,7 @@ void applyLcpSolver(
   }
 
   dart::constraint::MimicMotorConstraint::setConstraintForceMixing(cfg.cfm);
+  dart::constraint::MimicMotorConstraint::setErrorReductionParameter(cfg.erp);
   dart::constraint::JointConstraint::setErrorReductionParameter(cfg.erp);
 }
 
@@ -320,7 +321,7 @@ void configureMimicMotors(
     }
 
     // Get reference from middle pendulum (not from the same skeleton)
-    auto* reference = nullptr;
+    Joint* reference = nullptr;
     if (middlePendulum) {
       reference = middlePendulum->getJoint(spec.referenceJoint);
     }
@@ -344,6 +345,9 @@ void configureMimicMotors(
         = std::min(spec.referenceDof, follower->getNumDofs() - 1);
     const std::size_t referenceIndex
         = std::min(spec.referenceDof, reference->getNumDofs() - 1);
+
+    // Keep the corresponding joint on the follower skeleton stable as well.
+    setJointLimitsAndDamping(skeleton->getJoint(spec.referenceJoint));
 
     follower->setPosition(followerIndex, reference->getPosition(referenceIndex));
     follower->setVelocity(followerIndex, reference->getVelocity(referenceIndex));

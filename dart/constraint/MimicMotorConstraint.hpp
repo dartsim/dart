@@ -84,6 +84,12 @@ public:
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
+  /// Set global error reduction parameter applied to mimic motors.
+  static void setErrorReductionParameter(double erp);
+
+  /// Get global error reduction parameter applied to mimic motors.
+  static double getErrorReductionParameter();
+
   //----------------------------------------------------------------------------
   // Friendship
   //----------------------------------------------------------------------------
@@ -160,6 +166,9 @@ private:
   /// default is 1e-5
   /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
+
+  /// Global error reduction parameter that scales mimic motor position error.
+  static double mErrorReductionParameter;
 };
 
 } // namespace constraint
