@@ -1,8 +1,8 @@
 #include "optimizer/solver.hpp"
 
 #include "dart/common/Diagnostics.hpp"
-#include "dart/optimizer/Problem.hpp"
-#include "dart/optimizer/Solver.hpp"
+#include "dart/math/optimization/Problem.hpp"
+#include "dart/math/optimization/Solver.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -13,12 +13,10 @@ namespace nb = nanobind;
 
 namespace dart::python_nb {
 
-DART_SUPPRESS_DEPRECATED_BEGIN
-
-class PySolver : public dart::optimizer::Solver
+class PySolver : public dart::math::Solver
 {
 public:
-  NB_TRAMPOLINE(dart::optimizer::Solver, 1);
+  NB_TRAMPOLINE(dart::math::Solver, 1);
 
   bool solve() override
   {
@@ -30,7 +28,7 @@ public:
     NB_OVERRIDE_PURE(getType);
   }
 
-  std::shared_ptr<dart::optimizer::Solver> clone() const override
+  std::shared_ptr<dart::math::Solver> clone() const override
   {
     NB_OVERRIDE_PURE(clone);
   }
@@ -38,20 +36,20 @@ public:
 
 void defOptimizerSolver(nb::module_& m)
 {
-  using Solver = dart::optimizer::Solver;
+  using Solver = dart::math::Solver;
 
   nb::class_<Solver::Properties>(m, "SolverProperties")
       .def(nb::init<>())
       .def(
-          nb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::init<std::shared_ptr<dart::math::Problem>>(),
           nb::arg("problem"))
       .def(
-          nb::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
+          nb::init<std::shared_ptr<dart::math::Problem>, double>(),
           nb::arg("problem"),
           nb::arg("tolerance"))
       .def(
           nb::init<
-              std::shared_ptr<dart::optimizer::Problem>,
+              std::shared_ptr<dart::math::Problem>,
               double,
               std::size_t>(),
           nb::arg("problem"),
@@ -59,7 +57,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::arg("numMaxIterations"))
       .def(
           nb::init<
-              std::shared_ptr<dart::optimizer::Problem>,
+              std::shared_ptr<dart::math::Problem>,
               double,
               std::size_t,
               std::size_t>(),
@@ -69,7 +67,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::arg("iterationsPerPrint"))
       .def(
           nb::init<
-              std::shared_ptr<dart::optimizer::Problem>,
+              std::shared_ptr<dart::math::Problem>,
               double,
               std::size_t,
               std::size_t,
@@ -81,7 +79,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::arg("ostream"))
       .def(
           nb::init<
-              std::shared_ptr<dart::optimizer::Problem>,
+              std::shared_ptr<dart::math::Problem>,
               double,
               std::size_t,
               std::size_t,
@@ -95,7 +93,7 @@ void defOptimizerSolver(nb::module_& m)
           nb::arg("printFinalResult"))
       .def(
           nb::init<
-              std::shared_ptr<dart::optimizer::Problem>,
+              std::shared_ptr<dart::math::Problem>,
               double,
               std::size_t,
               std::size_t,
@@ -121,7 +119,7 @@ void defOptimizerSolver(nb::module_& m)
       .def(nb::init<>())
       .def(nb::init<Solver::Properties>(), nb::arg("properties"))
       .def(
-          nb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::init<std::shared_ptr<dart::math::Problem>>(),
           nb::arg("problem"))
       .def("solve", &Solver::solve)
       .def("getType", &Solver::getType)
@@ -157,7 +155,5 @@ void defOptimizerSolver(nb::module_& m)
           &Solver::getResultFileName,
           nb::rv_policy::reference_internal);
 }
-
-DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb

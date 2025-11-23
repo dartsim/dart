@@ -2,7 +2,7 @@
 
 #include "common/eigen_utils.hpp"
 #include "dart/common/Diagnostics.hpp"
-#include "dart/optimizer/Problem.hpp"
+#include "dart/math/optimization/Problem.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -16,7 +16,7 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 
 void defOptimizerProblem(nb::module_& m)
 {
-  using Problem = dart::optimizer::Problem;
+  using Problem = dart::math::Problem;
 
   nb::class_<Problem>(m, "Problem")
       .def(nb::init<>())

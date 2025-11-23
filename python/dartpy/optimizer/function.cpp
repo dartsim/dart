@@ -1,7 +1,7 @@
 #include "optimizer/function.hpp"
 
 #include "dart/common/Diagnostics.hpp"
-#include "dart/optimizer/Function.hpp"
+#include "dart/math/optimization/Function.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -13,12 +13,10 @@ namespace nb = nanobind;
 
 namespace dart::python_nb {
 
-DART_SUPPRESS_DEPRECATED_BEGIN
-
-class PyFunction : public dart::optimizer::Function
+class PyFunction : public dart::math::Function
 {
 public:
-  NB_TRAMPOLINE(dart::optimizer::Function, 2);
+  NB_TRAMPOLINE(dart::math::Function, 2);
 
   double eval(const Eigen::VectorXd& x) override
   {
@@ -34,33 +32,31 @@ public:
 
 void defOptimizerFunction(nb::module_& m)
 {
-  nb::class_<dart::optimizer::Function, PyFunction>(m, "Function")
+  nb::class_<dart::math::Function, PyFunction>(m, "Function")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(
           "setName",
-          [](dart::optimizer::Function& self, const std::string& name) {
+          [](dart::math::Function& self, const std::string& name) {
             self.setName(name);
           },
           nb::arg("name"))
       .def(
           "getName",
-          [](const dart::optimizer::Function& self) -> const std::string& {
+          [](const dart::math::Function& self) -> const std::string& {
             return self.getName();
           },
           nb::rv_policy::reference_internal);
 
-  nb::class_<dart::optimizer::NullFunction, dart::optimizer::Function>(
+  nb::class_<dart::math::NullFunction, dart::math::Function>(
       m, "NullFunction")
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(
           "eval",
-          [](dart::optimizer::NullFunction& self, const Eigen::VectorXd& x) {
+          [](dart::math::NullFunction& self, const Eigen::VectorXd& x) {
             return self.eval(x);
           },
           nb::arg("x"));
 }
-
-DART_SUPPRESS_DEPRECATED_END
 
 } // namespace dart::python_nb
