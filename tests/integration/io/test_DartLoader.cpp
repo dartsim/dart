@@ -203,8 +203,9 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
       <joint name="planar_joint" type="planar">
         <parent link="base"/>
         <child link="tip"/>
-        <limit lower="-0.5" upper="1.5" velocity="2.5" effort="3.5"/>
+        <limit lower="0.1" upper="1.1" velocity="2.5" effort="3.5"/>
         <axis xyz="0 0 1"/>
+        <dynamics damping="0.3" friction="0.7"/>
       </joint>
     </robot>
   )";
@@ -226,9 +227,9 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
   EXPECT_TRUE(joint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitZ()));
 
   const Eigen::VectorXd lower
-      = Eigen::VectorXd::Constant(joint->getNumDofs(), -0.5);
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 0.1);
   const Eigen::VectorXd upper
-      = Eigen::VectorXd::Constant(joint->getNumDofs(), 1.5);
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 1.1);
   const Eigen::VectorXd velocityUpper
       = Eigen::VectorXd::Constant(joint->getNumDofs(), 2.5);
   const Eigen::VectorXd effortUpper
@@ -240,6 +241,47 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
   EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velocityUpper));
   EXPECT_TRUE(joint->getForceLowerLimits().isApprox(-effortUpper));
   EXPECT_TRUE(joint->getForceUpperLimits().isApprox(effortUpper));
+  EXPECT_TRUE(joint->getRestPositions().isApprox(
+      Eigen::VectorXd::Constant(joint->getNumDofs(), 0.6)));
+  EXPECT_TRUE(joint->getDampingCoefficients().isConstant(0.3));
+  EXPECT_TRUE(joint->getFrictions().isConstant(0.7));
+}
+
+//==============================================================================
+TEST(DartLoader, parsePlanarJointArbitraryAxis)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <axis xyz="1 1 1"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::Vector3d axis = Eigen::Vector3d::Ones().normalized();
+  EXPECT_TRUE(joint->getRotationalAxis().isApprox(axis));
+  EXPECT_NEAR(joint->getTranslationalAxis1().dot(axis), 0.0, 1e-12);
+  EXPECT_NEAR(joint->getTranslationalAxis2().dot(axis), 0.0, 1e-12);
+  EXPECT_NEAR(
+      joint->getTranslationalAxis1().dot(joint->getTranslationalAxis2()),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(joint->getTranslationalAxis1().norm(), 1.0, 1e-12);
+  EXPECT_NEAR(joint->getTranslationalAxis2().norm(), 1.0, 1e-12);
 }
 
 //==============================================================================
@@ -253,7 +295,8 @@ TEST(DartLoader, parseFloatingJointLimits)
       <joint name="floating_joint" type="floating">
         <parent link="base"/>
         <child link="child"/>
-        <limit lower="-0.1" upper="0.2" velocity="1.1" effort="2.2"/>
+        <limit lower="0.1" upper="0.2" velocity="1.1" effort="2.2"/>
+        <dynamics damping="0.4" friction="0.5"/>
       </joint>
     </robot>
   )";
@@ -268,7 +311,7 @@ TEST(DartLoader, parseFloatingJointLimits)
   ASSERT_TRUE(joint);
 
   const Eigen::VectorXd lower
-      = Eigen::VectorXd::Constant(joint->getNumDofs(), -0.1);
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 0.1);
   const Eigen::VectorXd upper
       = Eigen::VectorXd::Constant(joint->getNumDofs(), 0.2);
   const Eigen::VectorXd velocityUpper
@@ -282,6 +325,9 @@ TEST(DartLoader, parseFloatingJointLimits)
   EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velocityUpper));
   EXPECT_TRUE(joint->getForceLowerLimits().isApprox(-effortUpper));
   EXPECT_TRUE(joint->getForceUpperLimits().isApprox(effortUpper));
+  EXPECT_TRUE(joint->getRestPositions().isConstant(0.15));
+  EXPECT_TRUE(joint->getDampingCoefficients().isConstant(0.4));
+  EXPECT_TRUE(joint->getFrictions().isConstant(0.5));
 }
 
 //==============================================================================
