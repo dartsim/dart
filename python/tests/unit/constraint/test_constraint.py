@@ -38,5 +38,40 @@ def test_ball_joint_constraint():
         assert np.isclose(pos1, pos2).all()
 
 
+def test_revolute_joint_constraint():
+    world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
+    world.setGravity([0, -9.81, 0])
+    world.setTimeStep(1.0 / 2000)
+
+    chain = world.getSkeleton(0)
+    for i in range(chain.getNumJoints()):
+        joint = chain.getJoint(i)
+        for j in range(joint.getNumDofs()):
+            joint.setDampingCoefficient(j, 0.01)
+
+    bd1 = chain.getBodyNode("link 6")
+    bd2 = chain.getBodyNode("link 10")
+    offset = [0, 0.025, 0]
+    joint_pos = bd1.getTransform().multiply(offset)
+    axis = [0, 1, 0]
+
+    constraint = dart.constraint.RevoluteJointConstraint(
+        bd1, bd2, joint_pos, axis, axis
+    )
+    assert (
+        constraint.getType()
+        == dart.constraint.RevoluteJointConstraint.getStaticType()
+    )
+
+    constraint_solver = world.getConstraintSolver()
+    constraint_solver.addConstraint(constraint)
+
+    for _ in range(100):
+        world.step()
+        pos1 = bd1.getTransform().multiply(offset)
+        pos2 = bd2.getTransform().multiply(offset)
+        assert np.isclose(pos1, pos2).all()
+
+
 if __name__ == "__main__":
     pytest.main()

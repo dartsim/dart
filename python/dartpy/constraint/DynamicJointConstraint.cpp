@@ -122,6 +122,36 @@ void DynamicJointConstraint(py::module& m)
           });
 
   ::py::class_<
+      dart::constraint::RevoluteJointConstraint,
+      dart::constraint::DynamicJointConstraint,
+      std::shared_ptr<dart::constraint::RevoluteJointConstraint>>(
+      m, "RevoluteJointConstraint")
+      .def(
+          ::py::init<
+              dart::dynamics::BodyNode*,
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&>(),
+          ::py::arg("body"),
+          ::py::arg("jointPos"),
+          ::py::arg("axis"))
+      .def(
+          ::py::init<
+              dart::dynamics::BodyNode*,
+              dart::dynamics::BodyNode*,
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&,
+              const Eigen::Vector3d&>(),
+          ::py::arg("body1"),
+          ::py::arg("body2"),
+          ::py::arg("jointPos"),
+          ::py::arg("axis1"),
+          ::py::arg("axis2"))
+      .def_static(
+          "getStaticType", +[]() -> std::string {
+            return dart::constraint::RevoluteJointConstraint::getStaticType();
+          });
+
+  ::py::class_<
       dart::constraint::WeldJointConstraint,
       dart::constraint::DynamicJointConstraint,
       std::shared_ptr<dart::constraint::WeldJointConstraint>>(

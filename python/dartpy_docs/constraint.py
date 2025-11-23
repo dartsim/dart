@@ -4,7 +4,7 @@ import dartpy.dynamics
 import dartpy.math
 import numpy
 import typing
-__all__: list[str] = ['BallJointConstraint', 'BoxedLcpConstraintSolver', 'BoxedLcpSolver', 'ConstraintBase', 'ConstraintSolver', 'DantzigBoxedLcpSolver', 'DynamicJointConstraint', 'JointConstraint', 'JointCoulombFrictionConstraint', 'PgsBoxedLcpSolver', 'PgsBoxedLcpSolverOption', 'WeldJointConstraint']
+__all__: list[str] = ['BallJointConstraint', 'BoxedLcpConstraintSolver', 'BoxedLcpSolver', 'ConstraintBase', 'ConstraintSolver', 'DantzigBoxedLcpSolver', 'DynamicJointConstraint', 'JointConstraint', 'JointCoulombFrictionConstraint', 'PgsBoxedLcpSolver', 'PgsBoxedLcpSolverOption', 'RevoluteJointConstraint', 'WeldJointConstraint']
 class BallJointConstraint(DynamicJointConstraint):
     @staticmethod
     def getStaticType() -> str:
@@ -14,6 +14,16 @@ class BallJointConstraint(DynamicJointConstraint):
         ...
     @typing.overload
     def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
+        ...
+class RevoluteJointConstraint(DynamicJointConstraint):
+    @staticmethod
+    def getStaticType() -> str:
+        ...
+    @typing.overload
+    def __init__(self, body: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
+        ...
+    @typing.overload
+    def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis1: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis2: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
         ...
 class BoxedLcpConstraintSolver(ConstraintSolver):
     @typing.overload
