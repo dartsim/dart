@@ -52,32 +52,32 @@ public:
       const common::ResourceRetrieverPtr& _resourceRetriever);
   virtual ~AssimpInputResourceRetrieverAdaptor();
 
-  /// \brief Tests for the existence of a file at the given path.
+  /// @brief Tests for the existence of a file at the given path.
   ///
-  /// \param pFile Path to the file
-  /// \return true if there is a file with this path, else false.
+  /// @param pFile Path to the file
+  /// @return true if there is a file with this path, else false.
   bool Exists(const char* pFile) const override;
 
-  ///  \brief Returns the system specific directory separator
+  ///  @brief Returns the system specific directory separator
   ///
-  /// \return  System specific directory separator
+  /// @return  System specific directory separator
   char getOsSeparator() const override;
 
-  /// \brief Open a new file with a given path.
+  /// @brief Open a new file with a given path.
   ///
   /// When the access to the file is finished, call Close() to release
   /// all associated resources (or the virtual dtor of the IOStream).
   ///
-  /// \param pFile Path to the file
-  /// \param pMode Desired file I/O mode. Required are: "wb", "w", "wt",
+  /// @param pFile Path to the file
+  /// @param pMode Desired file I/O mode. Required are: "wb", "w", "wt",
   ///        "rb", "r", "rt".
-  /// \return New IOStream interface allowing the lib to access
+  /// @return New IOStream interface allowing the lib to access
   ///        the underlying file.
   Assimp::IOStream* Open(const char* pFile, const char* pMode = "rb") override;
 
-  /// \brief Closes the given file and releases all resources
+  /// @brief Closes the given file and releases all resources
   ///   associated with it.
-  /// \param pFile The file instance previously created by Open().
+  /// @param pFile The file instance previously created by Open().
   void Close(Assimp::IOStream* pFile) override;
 
 private:
@@ -90,33 +90,33 @@ public:
   explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
   virtual ~AssimpInputResourceAdaptor();
 
-  /// \brief Read from the file
+  /// @brief Read from the file
   ///
   /// See fread() for more details
   std::size_t Read(
       void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
-  /// \brief Not implemented. This is a read-only stream.
+  /// @brief Not implemented. This is a read-only stream.
   std::size_t Write(
       const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
-  /// \brief Set the read/write cursor of the file
+  /// @brief Set the read/write cursor of the file
   ///
   /// Note that the offset is _negative_ for aiOrigin_END.
   /// See fseek() for more details
   aiReturn Seek(std::size_t pOffset, aiOrigin pOrigin) override;
 
-  /// \brief Get the current position of the read/write cursor
+  /// @brief Get the current position of the read/write cursor
   ///
   /// See ftell() for more details
   std::size_t Tell() const override;
 
-  /// \brief Returns filesize
+  /// @brief Returns filesize
   ///
   /// Returns the filesize.
   std::size_t FileSize() const override;
 
-  /// \brief Not implemented. This is a read-only stream.
+  /// @brief Not implemented. This is a read-only stream.
   void Flush() override;
 
 private:

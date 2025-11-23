@@ -43,31 +43,31 @@ class Recording;
 
 namespace utils {
 
-/// \brief class FileInfoWorld
+/// @brief class FileInfoWorld
 class DART_UTILS_API FileInfoWorld
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   FileInfoWorld();
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~FileInfoWorld();
 
-  /// \brief Load file
+  /// @brief Load file
   bool loadFile(const char* _fileName);
 
-  /// \brief Save file
-  /// \note Down sampling not implemented yet
+  /// @brief Save file
+  /// @note Down sampling not implemented yet
   bool saveFile(const char* _fileName, simulation::Recording* _record);
 
-  /// \brief Get recording
+  /// @brief Get recording
   simulation::Recording* getRecording() const;
 
 protected:
-  /// \brief File name
+  /// @brief File name
   char mFileName[256];
 
-  /// \brief Recording
+  /// @brief Recording
   simulation::Recording* mRecord;
 };
 

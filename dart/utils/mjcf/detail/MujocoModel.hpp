@@ -61,9 +61,9 @@ public:
 
   /// Reads MJCF XML file
   ///
-  /// \param[in] uri URI to the XML file
-  /// \param[in] retrieverOrNull Retriever to acquire the XML file from \c uri
-  /// \return Errors occurred in parsing
+  /// @param[in] uri URI to the XML file
+  /// @param[in] retrieverOrNull Retriever to acquire the XML file from @c uri
+  /// @return Errors occurred in parsing
   Errors read(
       const common::Uri& uri,
       const common::ResourceRetrieverPtr& retrieverOrNull = nullptr);
