@@ -358,7 +358,7 @@ public:
       const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
+  /// \{ @name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -406,7 +406,7 @@ protected:
   void updateDegreeOfFreedomNames() override;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -509,7 +509,7 @@ protected:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive algorithm routines for equations of motion
+  /// \{ @name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   /// Add child's bias force to parent's one

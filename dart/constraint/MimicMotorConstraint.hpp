@@ -58,8 +58,8 @@ class MimicMotorConstraint : public ConstraintBase
 public:
   /// Constructor that creates a MimicMotorConstraint using the given
   /// MimicDofProperties for each dependent joint's DoF.
-  /// \param[in] joint The dependent joint.
-  /// \param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
+  /// @param[in] joint The dependent joint.
+  /// @param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
   /// of the dependent joint.
   explicit MimicMotorConstraint(
       dynamics::Joint* joint,
@@ -158,7 +158,7 @@ private:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 

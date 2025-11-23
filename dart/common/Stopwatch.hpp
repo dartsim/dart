@@ -49,7 +49,7 @@ class Stopwatch final
 public:
   /// Constructor
   ///
-  /// \param[in] start: (optional) Whether to start the stopwatch on
+  /// @param[in] start: (optional) Whether to start the stopwatch on
   /// construction
   explicit Stopwatch(bool start = true);
 
@@ -112,10 +112,10 @@ private:
 
 /// MATLAB like timer
 ///
-/// \code
+/// @code
 /// tic();
 /// auto elapsedS = toc();  // prints and returns the elapsed time
-/// \endcode
+/// @endcode
 DART_API void tic();
 
 /// Returns the elapsed time in seconds since the last tic() call.

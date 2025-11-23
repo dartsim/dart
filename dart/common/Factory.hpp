@@ -47,13 +47,13 @@ namespace common {
 /// Implementation of the Abstract Factory Pattern.
 ///
 /// Example:
-/// \code
+/// @code
 /// using CdFactory = Factory<std::string, CollisionDetector>;
 ///
 /// auto factory = CdFactory();
 /// factory.registerCreator<FclCollisionDetector>("fcl");
 /// auto fclCd = CdFactory::create("fcl");
-/// \endcode
+/// @endcode
 template <
     typename KeyT,
     typename BaseT,

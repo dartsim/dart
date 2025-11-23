@@ -143,8 +143,8 @@ public:
   /// Required brief description of constructor. This will often be as simple as:
   /// "Creates an instance of ExampleClass."
   ///
-  /// \param[in] foo This is an example parameter description.
-  /// \param[in] bar This is a longer example parameter description that needs
+  /// @param[in] foo This is an example parameter description.
+  /// @param[in] bar This is a longer example parameter description that needs
   /// to wrap across multiple lines.
   ExampleClass(std::unique_ptr<util::RNG> foo,
                const Eigen::Isometry3d& bar = Eigen::Isometry3d::Identity());
@@ -169,12 +169,12 @@ public:
   int exampleInterfaceFunction() const override;  // <-- Always explicitly `override` interface functions without `virtual`
 
   /// Required brief description of method.
-  /// \note If a method has output parameters, they should be the last
+  /// @note If a method has output parameters, they should be the last
   /// arguments.
   ///
-  /// \param[in] a A description of a
-  /// \param[in] b A description of b
-  /// \param[out] out A description of out
+  /// @param[in] a A description of a
+  /// @param[in] b A description of b
+  /// @param[out] out A description of out
   int exampleMethod(int a, int b, int* out) const;
 
 private:

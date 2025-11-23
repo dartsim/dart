@@ -74,7 +74,7 @@ public:
   /// Returns true if the mesh has no vertices.
   bool isEmpty() const;
 
-  /// Translates the mesh vertices by adding \c translation to the vertices.
+  /// Translates the mesh vertices by adding @c translation to the vertices.
   void translate(const Vector3& translation);
 
   /// Addition operator.
