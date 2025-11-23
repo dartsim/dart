@@ -42,9 +42,7 @@
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
-#include <dart/constraint/CouplerConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
-#include <dart/constraint/JointConstraint.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
@@ -65,7 +63,6 @@
 #include <sdf/sdf.hh>
 
 #include <algorithm>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -158,42 +155,9 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
   return specs;
 }
 
-struct MimicTuning
-{
-  double positionLimit = 1.7; // ~97 degrees
-  double velocityLimit = 50.0;
-  double forceLimit = 1500.0;
-  double damping = 2.0;
-  double erp = 0.8;
-  double cfm = 1e-6;
-};
-
-void setJointStabilization(
-    dart::dynamics::Joint* joint, const MimicTuning& tuning)
-{
-  if (!joint)
-    return;
-  joint->setPositionLowerLimit(0, -tuning.positionLimit);
-  joint->setPositionUpperLimit(0, tuning.positionLimit);
-  joint->setLimitEnforcement(true);
-  joint->setVelocityLowerLimit(0, -tuning.velocityLimit);
-  joint->setVelocityUpperLimit(0, tuning.velocityLimit);
-  joint->setForceLowerLimit(0, -tuning.forceLimit);
-  joint->setForceUpperLimit(0, tuning.forceLimit);
-  joint->setDampingCoefficient(0, tuning.damping);
-}
-
 void configureMimicMotors(
-    const std::vector<MimicSpec>& specs,
-    const WorldPtr& world,
-    const MimicTuning& tuning)
+    const std::vector<MimicSpec>& specs, const WorldPtr& world)
 {
-  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(
-      tuning.cfm);
-  dart::constraint::MimicMotorConstraint::setErrorReductionParameter(
-      tuning.erp);
-  dart::constraint::JointConstraint::setErrorReductionParameter(tuning.erp);
-
   // Get the middle pendulum (uncoupled) which contains the true reference
   // joints
   const auto middlePendulum = world->getSkeleton("pendulum_with_base");
@@ -212,12 +176,6 @@ void configureMimicMotors(
     }
     ASSERT_NE(nullptr, reference);
 
-    // Stabilize the counterpart joint on the follower skeleton as well so the
-    // entire pair stays well-behaved under ODE.
-    auto* followerReferenceJoint = skeleton->getJoint(spec.referenceJoint);
-    if (followerReferenceJoint && followerReferenceJoint != follower) {
-      setJointStabilization(followerReferenceJoint, tuning);
-    }
     ASSERT_GT(follower->getNumDofs(), 0u);
     ASSERT_GT(reference->getNumDofs(), 0u);
 
@@ -230,12 +188,6 @@ void configureMimicMotors(
     const std::size_t referenceIndex
         = std::min(spec.referenceDof, reference->getNumDofs() - 1);
 
-    // Sync initial state so the mimic motor starts from the reference pose.
-    follower->setPosition(
-        followerIndex, reference->getPosition(referenceIndex));
-    follower->setVelocity(
-        followerIndex, reference->getVelocity(referenceIndex));
-
     auto& prop = mimicProps[followerIndex];
     prop.mReferenceJoint = reference;
     prop.mReferenceDofIndex = referenceIndex;
@@ -246,9 +198,6 @@ void configureMimicMotors(
     follower->setMimicJointDofs(mimicProps);
     follower->setActuatorType(Joint::MIMIC);
     follower->setUseCouplerConstraint(false);
-
-    setJointStabilization(follower, tuning);
-    setJointStabilization(reference, tuning);
   }
 }
 
@@ -304,18 +253,6 @@ void setBoxedSolver(WorldPtr world, bool usePgs)
   }
 }
 
-double angleError(
-    const SkeletonPtr& skel,
-    const std::string& ref,
-    const std::string& follower)
-{
-  auto* refJoint = skel->getJoint(ref);
-  auto* folJoint = skel->getJoint(follower);
-  if (!refJoint || !folJoint)
-    return 0.0;
-  return folJoint->getPosition(0) - refJoint->getPosition(0);
-}
-
 } // namespace
 
 //==============================================================================
@@ -338,9 +275,12 @@ TEST(MimicConstraint, PendulumMimicWorldFromSdf)
 
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
-  MimicTuning tuning;
-  configureMimicMotors(specs, world, tuning);
+  configureMimicMotors(specs, world);
+  setCollisionDetector(world, /*useOde=*/true);
+  setBoxedSolver(world, /*usePgs=*/false);
 
+  const auto baseline = world->getSkeleton("pendulum_with_base");
+  ASSERT_TRUE(baseline);
   const auto slowFollower
       = world->getSkeleton("pendulum_with_base_mimic_slow_follows_fast");
   ASSERT_TRUE(slowFollower);
@@ -352,36 +292,48 @@ TEST(MimicConstraint, PendulumMimicWorldFromSdf)
   const auto fastBase = fastFollower->getBodyNode("base");
   ASSERT_NE(nullptr, slowBase);
   ASSERT_NE(nullptr, fastBase);
+  const auto baselineBase = baseline->getBodyNode("base");
+  ASSERT_NE(nullptr, baselineBase);
+
+  auto* baselineFast = baseline->getJoint("fast_joint");
+  auto* baselineSlow = baseline->getJoint("slow_joint");
+  ASSERT_NE(nullptr, baselineFast);
+  ASSERT_NE(nullptr, baselineSlow);
+  auto* slowJoint = slowFollower->getJoint("slow_joint");
+  auto* fastFollowJoint = fastFollower->getJoint("fast_joint");
+  ASSERT_NE(nullptr, slowJoint);
+  ASSERT_NE(nullptr, fastFollowJoint);
 
   const Eigen::Vector3d slowBaseStart = getTranslation(slowBase);
   const Eigen::Vector3d fastBaseStart = getTranslation(fastBase);
+  const Eigen::Vector3d baselineBaseStart = getTranslation(baselineBase);
 
   constexpr int steps = 32;
   for (int i = 0; i < steps; ++i) {
     world->step();
     ASSERT_TRUE(hasFiniteState(slowFollower));
     ASSERT_TRUE(hasFiniteState(fastFollower));
+    ASSERT_TRUE(hasFiniteState(baseline));
   }
 
   const Eigen::Vector3d slowBaseNow = getTranslation(slowBase);
   const Eigen::Vector3d fastBaseNow = getTranslation(fastBase);
+  const Eigen::Vector3d baselineBaseNow = getTranslation(baselineBase);
 
-  EXPECT_LT((slowBaseNow.head<2>() - slowBaseStart.head<2>()).norm(), 0.5);
-  EXPECT_LT((fastBaseNow.head<2>() - fastBaseStart.head<2>()).norm(), 0.5);
-  EXPECT_LT(std::abs(slowBaseNow.z() - slowBaseStart.z()), 0.5);
-  EXPECT_LT(std::abs(fastBaseNow.z() - fastBaseStart.z()), 0.5);
+  const double baseDriftTol = 1e-3;
+  EXPECT_LT((slowBaseNow - slowBaseStart).norm(), baseDriftTol);
+  EXPECT_LT((fastBaseNow - fastBaseStart).norm(), baseDriftTol);
+  EXPECT_LT((baselineBaseNow - baselineBaseStart).norm(), baseDriftTol);
 
-  auto* slowJoint = slowFollower->getJoint("slow_joint");
-  auto* fastJoint = slowFollower->getJoint("fast_joint");
-  ASSERT_NE(nullptr, slowJoint);
-  ASSERT_NE(nullptr, fastJoint);
-
-  const double slowAngle = slowJoint->getPosition(0);
-  const double fastAngle = fastJoint->getPosition(0);
-
-  ASSERT_TRUE(std::isfinite(slowAngle));
-  ASSERT_TRUE(std::isfinite(fastAngle));
-  EXPECT_LT(std::abs(slowAngle - fastAngle), 0.2);
+  const double angleTol = 5e-3;
+  const double velTol = 5e-2;
+  EXPECT_NEAR(
+      slowJoint->getPosition(0), baselineFast->getPosition(0), angleTol);
+  EXPECT_NEAR(
+      fastFollowJoint->getPosition(0), baselineSlow->getPosition(0), angleTol);
+  EXPECT_NEAR(slowJoint->getVelocity(0), baselineFast->getVelocity(0), velTol);
+  EXPECT_NEAR(
+      fastFollowJoint->getVelocity(0), baselineSlow->getVelocity(0), velTol);
 }
 
 //==============================================================================
@@ -404,8 +356,9 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
 
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
-  MimicTuning tuning;
-  configureMimicMotors(specs, world, tuning);
+  configureMimicMotors(specs, world);
+  setCollisionDetector(world, /*useOde=*/true);
+  setBoxedSolver(world, /*usePgs=*/false);
 
   const auto baseline = world->getSkeleton("pendulum_with_base");
   const auto slowFollower
@@ -442,10 +395,6 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
   EXPECT_EQ(slowProps[0].mReferenceJoint, baseFastJoint);
   EXPECT_EQ(fastProps[0].mReferenceJoint, baseSlowJoint);
 
-  // Help keep baseline pendulum stable so followers have a clean target.
-  setJointStabilization(baseSlowJoint, tuning);
-  setJointStabilization(baseFastJoint, tuning);
-
   const Eigen::Vector3d baselineBaseStart
       = getTranslation(baseline->getBodyNode("base"));
   const Eigen::Vector3d slowBaseStart
@@ -472,6 +421,7 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
     world->step();
     ASSERT_TRUE(hasFiniteState(slowFollower));
     ASSERT_TRUE(hasFiniteState(fastFollower));
+    ASSERT_TRUE(hasFiniteState(baseline));
 
     maxDriftBaseline = std::max(
         maxDriftBaseline,
@@ -501,8 +451,7 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
     maxAngleDiffRed = std::max(maxAngleDiffRed, std::abs(redSlow - baseFast));
     maxVelDiffBlue
         = std::max(maxVelDiffBlue, std::abs(blueFastVel - baseSlowVel));
-    maxVelDiffRed
-        = std::max(maxVelDiffRed, std::abs(redSlowVel - baseFastVel));
+    maxVelDiffRed = std::max(maxVelDiffRed, std::abs(redSlowVel - baseFastVel));
     maxBaseSlowVel = std::max(maxBaseSlowVel, std::abs(baseSlowVel));
     maxBaseFastVel = std::max(maxBaseFastVel, std::abs(baseFastVel));
   }
@@ -546,45 +495,72 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
 
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
-  MimicTuning tuning;
-
-  configureMimicMotors(specs, world, tuning);
+  configureMimicMotors(specs, world);
   setCollisionDetector(world, /*useOde=*/true);
   setBoxedSolver(world, /*usePgs=*/false);
 
+  const auto baseline = world->getSkeleton("pendulum_with_base");
   const auto slowFollower
       = world->getSkeleton("pendulum_with_base_mimic_slow_follows_fast");
   const auto fastFollower
       = world->getSkeleton("pendulum_with_base_mimic_fast_follows_slow");
+  ASSERT_TRUE(baseline);
   ASSERT_TRUE(slowFollower);
   ASSERT_TRUE(fastFollower);
 
-  const Eigen::Vector3d slowBaseStart
-      = getTranslation(slowFollower->getBodyNode("base"));
-  const Eigen::Vector3d fastBaseStart
-      = getTranslation(fastFollower->getBodyNode("base"));
+  const auto slowBase = slowFollower->getBodyNode("base");
+  const auto fastBase = fastFollower->getBodyNode("base");
+  const auto baselineBase = baseline->getBodyNode("base");
+  ASSERT_NE(nullptr, slowBase);
+  ASSERT_NE(nullptr, fastBase);
+  ASSERT_NE(nullptr, baselineBase);
+
+  auto* baselineSlow = baseline->getJoint("slow_joint");
+  auto* baselineFast = baseline->getJoint("fast_joint");
+  auto* slowJoint = slowFollower->getJoint("slow_joint");
+  auto* fastJoint = fastFollower->getJoint("fast_joint");
+  ASSERT_NE(nullptr, baselineSlow);
+  ASSERT_NE(nullptr, baselineFast);
+  ASSERT_NE(nullptr, slowJoint);
+  ASSERT_NE(nullptr, fastJoint);
+
+  const Eigen::Vector3d slowBaseStart = getTranslation(slowBase);
+  const Eigen::Vector3d fastBaseStart = getTranslation(fastBase);
+  const Eigen::Vector3d baselineBaseStart = getTranslation(baselineBase);
 
   const int steps = 1500;
   for (int i = 0; i < steps; ++i) {
     world->step();
     ASSERT_TRUE(hasFiniteState(slowFollower));
     ASSERT_TRUE(hasFiniteState(fastFollower));
+    ASSERT_TRUE(hasFiniteState(baseline));
   }
 
-  const Eigen::Vector3d slowBaseNow
-      = getTranslation(slowFollower->getBodyNode("base"));
-  const Eigen::Vector3d fastBaseNow
-      = getTranslation(fastFollower->getBodyNode("base"));
+  const Eigen::Vector3d slowBaseNow = getTranslation(slowBase);
+  const Eigen::Vector3d fastBaseNow = getTranslation(fastBase);
+  const Eigen::Vector3d baselineBaseNow = getTranslation(baselineBase);
 
   // Bases should not drift significantly (instability moves them meters).
-  EXPECT_LT((slowBaseNow - slowBaseStart).norm(), 0.5);
-  EXPECT_LT((fastBaseNow - fastBaseStart).norm(), 0.5);
+  constexpr double driftTol = 1e-2;
+  EXPECT_LT((slowBaseNow - slowBaseStart).norm(), driftTol);
+  EXPECT_LT((fastBaseNow - fastBaseStart).norm(), driftTol);
+  EXPECT_LT((baselineBaseNow - baselineBaseStart).norm(), driftTol);
 
   // Followers should track their references within a reasonable band.
-  const double slowError = angleError(slowFollower, "fast_joint", "slow_joint");
-  const double fastError = angleError(fastFollower, "slow_joint", "fast_joint");
-  EXPECT_LT(std::abs(slowError), 0.5);
-  EXPECT_LT(std::abs(fastError), 0.5);
+  const double slowError
+      = slowJoint->getPosition(0) - baselineFast->getPosition(0);
+  const double fastError
+      = fastJoint->getPosition(0) - baselineSlow->getPosition(0);
+  const double slowVelError
+      = slowJoint->getVelocity(0) - baselineFast->getVelocity(0);
+  const double fastVelError
+      = fastJoint->getVelocity(0) - baselineSlow->getVelocity(0);
+  const double angleTol = 5e-2;
+  const double velTol = 1e-1;
+  EXPECT_LT(std::abs(slowError), angleTol);
+  EXPECT_LT(std::abs(fastError), angleTol);
+  EXPECT_LT(std::abs(slowVelError), velTol);
+  EXPECT_LT(std::abs(fastVelError), velTol);
 }
 
 //==============================================================================
@@ -611,9 +587,7 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
 
   const auto specs = parseMimicSpecs(sdfText);
   ASSERT_FALSE(specs.empty());
-  MimicTuning tuning;
-
-  configureMimicMotors(specs, world, tuning);
+  configureMimicMotors(specs, world);
   setCollisionDetector(world, /*useOde=*/true);
   setBoxedSolver(world, /*usePgs=*/false);
 
@@ -625,9 +599,6 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   ASSERT_TRUE(baseline);
   ASSERT_TRUE(slowFollower);
   ASSERT_TRUE(fastFollower);
-
-  setJointStabilization(baseline->getJoint("slow_joint"), tuning);
-  setJointStabilization(baseline->getJoint("fast_joint"), tuning);
 
   const Eigen::Vector3d baselineBaseStart
       = getTranslation(baseline->getBodyNode("base"));
@@ -665,12 +636,15 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   const double driftTol = 1e-3; // 1mm base drift tolerance
   const double angleTol = 7e-3; // ~0.4 degrees
   const double velTol = 7e-2;   // 0.07 rad/s
+  const double maxAngle = 1.75;
+  const double minAngle = 1.2;
 
   const int steps = 10000;
   for (int i = 0; i < steps; ++i) {
     world->step();
     ASSERT_TRUE(hasFiniteState(slowFollower));
     ASSERT_TRUE(hasFiniteState(fastFollower));
+    ASSERT_TRUE(hasFiniteState(baseline));
 
     maxDriftBase = std::max(
         maxDriftBase,
@@ -715,10 +689,10 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
     EXPECT_LT(std::abs(redSlow - baseFast), angleTol);
     EXPECT_LT(std::abs(blueFastVel - baseSlowVel), velTol);
     EXPECT_LT(std::abs(redSlowVel - baseFastVel), velTol);
-    EXPECT_LT(std::abs(baseSlow), tuning.positionLimit);
-    EXPECT_LT(std::abs(baseFast), tuning.positionLimit);
-    EXPECT_LT(std::abs(blueFast), tuning.positionLimit);
-    EXPECT_LT(std::abs(redSlow), tuning.positionLimit);
+    EXPECT_LT(std::abs(baseSlow), maxAngle);
+    EXPECT_LT(std::abs(baseFast), maxAngle);
+    EXPECT_LT(std::abs(blueFast), maxAngle);
+    EXPECT_LT(std::abs(redSlow), maxAngle);
   }
 
   // Bases should stay nearly stationary (free-floating but heavy).
@@ -727,14 +701,14 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   EXPECT_LT(maxDriftFast, 1e-3);
 
   // Swing amplitude should stay within limits and not collapse to zero.
-  EXPECT_LT(maxAbsSlow, 1.72);
-  EXPECT_LT(maxAbsFast, 1.72);
-  EXPECT_LT(maxAbsSlowFollow, 1.72);
-  EXPECT_LT(maxAbsFastFollow, 1.72);
-  EXPECT_GT(maxAbsSlow, 1.2);
-  EXPECT_GT(maxAbsFast, 1.2);
-  EXPECT_GT(maxAbsSlowFollow, 1.2);
-  EXPECT_GT(maxAbsFastFollow, 1.2);
+  EXPECT_LT(maxAbsSlow, maxAngle);
+  EXPECT_LT(maxAbsFast, maxAngle);
+  EXPECT_LT(maxAbsSlowFollow, maxAngle);
+  EXPECT_LT(maxAbsFastFollow, maxAngle);
+  EXPECT_GT(maxAbsSlow, minAngle);
+  EXPECT_GT(maxAbsFast, minAngle);
+  EXPECT_GT(maxAbsSlowFollow, minAngle);
+  EXPECT_GT(maxAbsFastFollow, minAngle);
 
   // Mimic tracking against baseline joints (per-step tracking validated above).
   EXPECT_LT(maxAngleDiffBlue, 1e-2);

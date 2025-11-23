@@ -49,7 +49,6 @@
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
-#include <dart/constraint/JointConstraint.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
@@ -173,13 +172,6 @@ struct SolverConfig
 {
   bool useOdeCollision = true;
   bool usePgsSolver = false;
-  bool paused = false;
-  bool stepOnce = false;
-  double erp = 0.8;
-  double cfm = 1e-6;
-  double forceLimit = 1500.0;
-  double velocityLimit = 50.0;
-  double damping = 2.0;
 };
 
 void applyCollisionDetector(
@@ -217,10 +209,6 @@ void applyLcpSolver(
     boxedSolver->setSecondaryBoxedLcpSolver(
         std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
   }
-
-  dart::constraint::MimicMotorConstraint::setConstraintForceMixing(cfg.cfm);
-  dart::constraint::MimicMotorConstraint::setErrorReductionParameter(cfg.erp);
-  dart::constraint::JointConstraint::setErrorReductionParameter(cfg.erp);
 }
 
 std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
@@ -285,23 +273,8 @@ std::vector<MimicSpec> parseMimicSpecs(const std::string& sdfText)
 }
 
 void configureMimicMotors(
-    const std::vector<MimicSpec>& specs,
-    const WorldPtr& world,
-    const SolverConfig& cfg)
+    const std::vector<MimicSpec>& specs, const WorldPtr& world)
 {
-  auto setJointLimitsAndDamping = [&](dart::dynamics::Joint* joint) {
-    if (!joint)
-      return;
-    joint->setPositionLowerLimit(0, -1.7);
-    joint->setPositionUpperLimit(0, 1.7);
-    joint->setLimitEnforcement(true);
-    joint->setVelocityLowerLimit(0, -cfg.velocityLimit);
-    joint->setVelocityUpperLimit(0, cfg.velocityLimit);
-    joint->setForceLowerLimit(0, -cfg.forceLimit);
-    joint->setForceUpperLimit(0, cfg.forceLimit);
-    joint->setDampingCoefficient(0, cfg.damping);
-  };
-
   // Get the middle pendulum (uncoupled) which contains the true reference
   // joints
   const auto middlePendulum = world->getSkeleton("pendulum_with_base");
@@ -346,12 +319,6 @@ void configureMimicMotors(
     const std::size_t referenceIndex
         = std::min(spec.referenceDof, reference->getNumDofs() - 1);
 
-    // Keep the corresponding joint on the follower skeleton stable as well.
-    setJointLimitsAndDamping(skeleton->getJoint(spec.referenceJoint));
-
-    follower->setPosition(followerIndex, reference->getPosition(referenceIndex));
-    follower->setVelocity(followerIndex, reference->getVelocity(referenceIndex));
-
     auto& prop = mimicProps[followerIndex];
     prop.mReferenceJoint = reference;
     prop.mReferenceDofIndex = referenceIndex;
@@ -362,9 +329,6 @@ void configureMimicMotors(
     follower->setMimicJointDofs(mimicProps);
     follower->setActuatorType(Joint::MIMIC);
     follower->setUseCouplerConstraint(false);
-
-    setJointLimitsAndDamping(follower);
-    setJointLimitsAndDamping(reference);
   }
 }
 
@@ -382,17 +346,17 @@ std::vector<MimicPairView> collectMimicPairs(
     if (!skeleton)
       continue;
 
-    auto* reference = middlePendulum ? middlePendulum->getJoint(spec.referenceJoint)
-                                     : nullptr;
+    auto* reference = middlePendulum
+                          ? middlePendulum->getJoint(spec.referenceJoint)
+                          : nullptr;
     auto* follower = skeleton->getJoint(spec.followerJoint);
     auto* base = skeleton->getBodyNode("base");
     if (!follower || !reference || !base)
       continue;
 
     MimicPairView view;
-    view.label
-        = spec.model + ": " + spec.followerJoint + " -> middle "
-          + spec.referenceJoint;
+    view.label = spec.model + ": " + spec.followerJoint + " -> middle "
+                 + spec.referenceJoint;
     view.follower = follower;
     view.reference = reference;
     view.base = base;
@@ -514,25 +478,6 @@ private:
     ImGui::SameLine();
     if (ImGui::Checkbox("Force PGS solver", &pgs)) {
       mConfig.usePgsSolver = pgs;
-      applyLcpSolver(mConfig, mWorld);
-    }
-
-    double erp = mConfig.erp;
-    if (ImGui::SliderFloat(
-            "ERP", reinterpret_cast<float*>(&erp), 0.0f, 1.0f, "%.3f")) {
-      mConfig.erp = erp;
-      applyLcpSolver(mConfig, mWorld);
-    }
-    double cfm = mConfig.cfm;
-    float cfmFloat = static_cast<float>(cfm);
-    if (ImGui::SliderFloat(
-            "CFM",
-            &cfmFloat,
-            1e-9f,
-            1e-3f,
-            "%.1e",
-            ImGuiSliderFlags_Logarithmic)) {
-      mConfig.cfm = static_cast<double>(cfmFloat);
       applyLcpSolver(mConfig, mWorld);
     }
 
@@ -671,8 +616,7 @@ int main(int /*argc*/, char*[] /*argv*/)
   if (mimicSpecs.empty())
     std::cerr << "No mimic joints found in " << worldUri << "\n";
 
-  SolverConfig cfg;
-  configureMimicMotors(mimicSpecs, world, cfg);
+  configureMimicMotors(mimicSpecs, world);
   tintBases(world);
 
   auto mimicPairs = collectMimicPairs(world, mimicSpecs);
