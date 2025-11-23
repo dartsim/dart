@@ -54,7 +54,7 @@ namespace dart8 {
 /// Used for child links (not root links).
 ///
 /// Usage:
-/// \code
+/// @code
 ///   auto root = robot.addLink("base");  // Root link (no options)
 ///
 ///   // Revolute joint
@@ -72,7 +72,7 @@ namespace dart8 {
 ///       .jointType = comps::JointType::Prismatic,
 ///       .axis = {1, 0, 0}
 ///   });
-/// \endcode
+/// @endcode
 struct LinkOptions
 {
   Link parentLink;       ///< Parent link handle
@@ -101,7 +101,7 @@ struct LinkOptions
 /// The term "MultiBody" is used for consistency with other classes in
 /// this library (e.g., RigidBody, SoftBody, FixedFrame, FreeFrame).
 ///
-/// \note Handles are lightweight (entity ID + pointer) and safe to copy.
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
 ///       or the World is destroyed.
 class DART8_API MultiBody

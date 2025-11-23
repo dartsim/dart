@@ -41,7 +41,6 @@
 #include <vector>
 
 namespace dart {
-
 namespace constraint {
 
 /// MimicMotorConstraint behaves like a servo motor: it drives only the
@@ -54,8 +53,8 @@ class MimicMotorConstraint : public ConstraintBase
 public:
   /// Constructor that creates a MimicMotorConstraint using the given
   /// MimicDofProperties for each dependent joint's DoF.
-  /// \param[in] joint The dependent joint.
-  /// \param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
+  /// @param[in] joint The dependent joint.
+  /// @param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
   /// of the dependent joint.
   explicit MimicMotorConstraint(
       dynamics::Joint* joint,
@@ -79,12 +78,6 @@ public:
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
-
-  /// Set global error reduction parameter applied to mimic motors.
-  static void setErrorReductionParameter(double erp);
-
-  /// Get global error reduction parameter applied to mimic motors.
-  static double getErrorReductionParameter();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -160,11 +153,8 @@ private:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-6
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
-
-  /// Global error reduction parameter that scales mimic motor position error.
-  static double mErrorReductionParameter;
 };
 
 } // namespace constraint

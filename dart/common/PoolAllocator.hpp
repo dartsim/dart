@@ -52,8 +52,8 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] baseAllocator: (optional) Base memory allocator.
-  /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] baseAllocator: (optional) Base memory allocator.
+  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
   explicit PoolAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
 

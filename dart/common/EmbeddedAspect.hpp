@@ -76,9 +76,9 @@ public:
 ///
 /// Your derived class must implement the following functions:
 ///
-/// \code{.cpp}
+/// @code{.cpp}
 /// void setAspectState(const AspectState& state);
-/// \endcode
+/// @endcode
 ///
 /// To embed both state and properties information, use EmbedStateAndProperties.
 ///
@@ -186,9 +186,9 @@ public:
 ///
 /// Your derived class must implement the following function:
 ///
-/// \code{.cpp}
+/// @code{.cpp}
 /// void setAspectProperties(const AspectProperties& state);
-/// \endcode
+/// @endcode
 ///
 /// To embed both state and properties information, use EmbedStateAndProperties.
 ///
@@ -367,10 +367,10 @@ public:
 ///
 /// Your derived class must implement the following functions:
 ///
-/// \code{.cpp}
+/// @code{.cpp}
 /// void setAspectState(const AspectState& state);
 /// void setAspectProperties(const AspectProperties& state);
-/// \endcode
+/// @endcode
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class DerivedT, typename StateDataT, typename PropertiesDataT>
 class EmbedStateAndProperties : public virtual common::RequiresAspect<

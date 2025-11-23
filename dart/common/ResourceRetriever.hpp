@@ -60,14 +60,14 @@ public:
 
   /// Reads all data from the resource of uri, and returns it as a string.
   ///
-  /// \param[in] uri URI to the resource to be retrieved.
-  /// \return The string retrieved from the resource.
-  /// \throw std::runtime_error when failed to read successfully.
+  /// @param[in] uri URI to the resource to be retrieved.
+  /// @return The string retrieved from the resource.
+  /// @throw std::runtime_error when failed to read successfully.
   virtual std::string readAll(const Uri& uri);
 
-  /// Returns absolute file path to \c uri; an empty string if unavailable.
+  /// Returns absolute file path to @c uri; an empty string if unavailable.
   ///
-  /// \deprecated Since DART 7.0; slated for removal in DART 8.0. Prefer
+  /// @deprecated Since DART 7.0; slated for removal in DART 8.0. Prefer
   /// resource-materialization helpers instead.
   DART_DEPRECATED(7.0)
   virtual std::string getFilePath(const Uri& uri);

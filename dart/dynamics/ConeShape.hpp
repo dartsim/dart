@@ -44,8 +44,8 @@ class DART_API ConeShape : public Shape
 {
 public:
   /// Constructor.
-  /// \param[in] radius Radius of the circular base.
-  /// \param[in] height Lateral height of the cone.
+  /// @param[in] radius Radius of the circular base.
+  /// @param[in] height Lateral height of the cone.
   ConeShape(double radius, double height);
 
   // Documentation inherited.
@@ -67,16 +67,16 @@ public:
   void setHeight(double height);
 
   /// Compute volume from given properties.
-  /// \param[in] radius Radius of the circular base.
-  /// \param[in] height Lateral height of the cone.
+  /// @param[in] radius Radius of the circular base.
+  /// @param[in] height Lateral height of the cone.
   static double computeVolume(double radius, double height);
 
   /// Compute moments of inertia of a cone at the center of geometric center
   /// (half of the z-axis segment between the tip and the center of the base
   /// disk).
-  /// \param[in] radius Radius of the circular base.
-  /// \param[in] height Lateral height of the cone.
-  /// \param[in] mass The mass of the cone.
+  /// @param[in] radius Radius of the circular base.
+  /// @param[in] height Lateral height of the cone.
+  /// @param[in] mass The mass of the cone.
   static Eigen::Matrix3d computeInertia(
       double radius, double height, double mass);
 

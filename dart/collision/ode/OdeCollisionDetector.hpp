@@ -104,13 +104,13 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
-  /// \warning Not implemented yet.
+  /// @warning Not implemented yet.
   double distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
-  /// \warning Not implemented yet.
+  /// @warning Not implemented yet.
   double distance(
       CollisionGroup* group1,
       CollisionGroup* group2,

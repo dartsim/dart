@@ -40,7 +40,7 @@ namespace dynamics {
 
 /// Shape for a height map.
 ///
-/// \tparam S_ Data type used for height map. At this point, only double and
+/// @tparam S_ Data type used for height map. At this point, only double and
 /// float are supported. Short and char can be added at a later point.
 template <typename S_>
 class HeightmapShape : public Shape
@@ -64,7 +64,7 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \copydoc Shape::computeInertia()
+  /// @copydoc Shape::computeInertia()
   ///
   /// This base class computes the intertia based on the bounding box.
   /// Subclasses may choose to provide a more accurate computation of the
@@ -72,7 +72,7 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   /// Sets scale of this heightmap.
-  /// \param[in] scale Scale of the height map.
+  /// @param[in] scale Scale of the height map.
   void setScale(const Vector3& scale);
 
   /// Returns scale of this heightmap.
@@ -80,20 +80,20 @@ public:
 
   /// Sets the height field.
   ///
-  /// The data in \e heights will be copied locally. It would be nice to have
-  /// the option to use the values in \e heights directly instead of copying
+  /// The data in @e heights will be copied locally. It would be nice to have
+  /// the option to use the values in @e heights directly instead of copying
   /// them locally to a vector in this class (this would avoid any data being
   /// kept twice). However some collision engine implementations may require to
   /// transform the height values, e.g. bullet needs the y values flipped.
-  /// Therefore, a (mutable) copy of the height values passed in \e heights will
+  /// Therefore, a (mutable) copy of the height values passed in @e heights will
   /// be kept in this class. The copied data can be modified via
   /// getHeightFieldModifiable() and with flipY().
   ///
-  /// \param[in] width Width of the field (x axis)
-  /// \param[in] depth Depth of the field (-y axis)
-  /// \param[in] heights The height data of size \e width * \e depth. The
-  /// heights are interpreted as z values, while \e width goes in x direction
-  /// and \e depth in -y (it goes to -y because traditionally images are read
+  /// @param[in] width Width of the field (x axis)
+  /// @param[in] depth Depth of the field (-y axis)
+  /// @param[in] heights The height data of size @e width * @e depth. The
+  /// heights are interpreted as z values, while @e width goes in x direction
+  /// and @e depth in -y (it goes to -y because traditionally images are read
   /// from top row to bottom row). In the geometry which is to be generated from
   /// this shape, the min/max height value is also the min/max z value (so if
   /// the minimum height value is -100, the lowest terrain point will be -100,
@@ -105,19 +105,19 @@ public:
 
   /// Sets the height field.
   ///
-  /// The data in \e heights will be copied locally. It would be nice to have
-  /// the option to use the values in \e heights directly instead of copying
+  /// The data in @e heights will be copied locally. It would be nice to have
+  /// the option to use the values in @e heights directly instead of copying
   /// them locally to a vector in this class (this would avoid any data being
   /// kept twice). However some collision engine implementations may require to
   /// transform the height values, e.g. bullet needs the y values flipped.
-  /// Therefore, a (mutable) copy of the height values passed in \e heights will
+  /// Therefore, a (mutable) copy of the height values passed in @e heights will
   /// be kept in this class. The copied data can be modified via
   /// getHeightFieldModifiable() and with flipY().
   ///
-  /// \param[in] heights The height data of size \e width * \e depth where
+  /// @param[in] heights The height data of size @e width * @e depth where
   /// number of columns and number of rows are the width of the field (x axis)
   /// and the depth of the field (-y axis), respectively. The heights are
-  /// interpreted as z values, while \e width goes in x direction and \e depth
+  /// interpreted as z values, while @e width goes in x direction and @e depth
   /// in -y (it goes to -y because traditionally images are read from top row to
   /// bottom row). In the geometry which is to be generated from this shape, the
   /// min/max height value is also the min/max z value (so if the minimum height
@@ -156,7 +156,7 @@ protected:
   // Documentation inherited.
   void updateBoundingBox() const override;
 
-  /// \copydoc Shape::updateVolume()
+  /// @copydoc Shape::updateVolume()
   ///
   /// This base class provides a simple implementation which returns
   /// the volume of the bounding box. Subclasses may opt to provide a more
@@ -164,8 +164,8 @@ protected:
   void updateVolume() const override;
 
   /// Computes the bounding box of the height field.
-  /// \param[out] min Mininum of box
-  /// \param[out] max Maxinum of box
+  /// @param[out] min Mininum of box
+  /// @param[out] max Maxinum of box
   void computeBoundingBox(Eigen::Vector3d& min, Eigen::Vector3d& max) const;
 
 private:
