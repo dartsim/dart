@@ -1355,7 +1355,9 @@ macro(dart_add_library _name)
 
   set_target_properties(
     ${_name} PROPERTIES
-    SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
+    # Encode major-only ABI in the SONAME; minor/patch are for source
+    # compatibility only. See docs/onboarding/abi-stability.md.
+    SOVERSION "${DART_MAJOR_VERSION}"
     VERSION "${DART_VERSION}"
   )
 endmacro()
