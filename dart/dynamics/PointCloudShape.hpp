@@ -70,7 +70,7 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] visualSize The size of cube that represents each point.
+  /// @param[in] visualSize The size of cube that represents each point.
   explicit PointCloudShape(double visualSize = 0.01);
 
   /// Destructor
@@ -85,7 +85,7 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// Reserves the point list by \c size.
+  /// Reserves the point list by @c size.
   void reserve(std::size_t size);
 
   /// Adds a point to this point cloud.
@@ -94,11 +94,11 @@ public:
   /// Adds points to this point cloud.
   void addPoint(std::span<const Eigen::Vector3d> points);
 
-  /// Replaces points with \c points.
+  /// Replaces points with @c points.
   void setPoint(std::span<const Eigen::Vector3d> points);
 
 #if HAVE_OCTOMAP
-  /// Replaces points with \c pointCloud.
+  /// Replaces points with @c pointCloud.
   void setPoints(const ::octomap::Pointcloud& pointCloud);
 
   /// Adds points from Octomap PointCloud.

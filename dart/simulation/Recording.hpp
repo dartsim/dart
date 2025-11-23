@@ -55,62 +55,62 @@ class Skeleton;
 
 namespace simulation {
 
-/// \brief class Recording
+/// @brief class Recording
 class DART_API Recording
 {
 public:
-  /// \brief Create Recording with a list of skeletons
+  /// @brief Create Recording with a list of skeletons
   explicit Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
-  /// \brief Create Recording with a list of number of dofs
+  /// @brief Create Recording with a list of number of dofs
   explicit Recording(const std::vector<int>& _skelDofs);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~Recording();
 
-  /// \brief Get number of frames
+  /// @brief Get number of frames
   int getNumFrames() const;
 
-  /// \brief Get number of skeletons
+  /// @brief Get number of skeletons
   int getNumSkeletons() const;
 
-  /// \brief Get number of generalized coordinates of skeleton whoes index is
+  /// @brief Get number of generalized coordinates of skeleton whoes index is
   /// _skelIdx
   int getNumDofs(int _skelIdx) const;
 
-  /// \brief Get number of contacts at frame number _frameIdx
+  /// @brief Get number of contacts at frame number _frameIdx
   int getNumContacts(int _frameIdx) const;
 
-  /// \brief Get skeleton configurations whose index is _skelIdx at frame number
+  /// @brief Get skeleton configurations whose index is _skelIdx at frame number
   /// _frameIdx
   Eigen::VectorXd getConfig(int _frameIdx, int _skelIdx) const;
 
-  /// \brief Get _dofIdx-th single configruation of a skeleton whose index is
+  /// @brief Get _dofIdx-th single configruation of a skeleton whose index is
   /// _skelIdx at frame number _frameIdx
   double getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const;
 
-  /// \brief Get contact point whose index is _contactIdx at frame number
+  /// @brief Get contact point whose index is _contactIdx at frame number
   /// _frameIdx
   Eigen::Vector3d getContactPoint(int _frameIdx, int _contactIdx) const;
 
-  /// \brief Get contact force whose index is _contactIdx at frame number
+  /// @brief Get contact force whose index is _contactIdx at frame number
   /// _frameIdx
   Eigen::Vector3d getContactForce(int _frameIdx, int _contactIdx) const;
 
-  /// \brief Clear the saved histories
+  /// @brief Clear the saved histories
   void clear();
 
-  /// \brief Add state
+  /// @brief Add state
   void addState(const Eigen::VectorXd& _state);
 
-  /// \brief Update list for number of generalized coordinates
+  /// @brief Update list for number of generalized coordinates
   void updateNumGenCoords(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
 private:
-  /// \brief Baked states
+  /// @brief Baked states
   std::vector<Eigen::VectorXd> mBakedStates;
 
-  /// \brief Number of generalized coordinates for skeletons
+  /// @brief Number of generalized coordinates for skeletons
   std::vector<int> mNumGenCoordsForSkeletons;
 };
 

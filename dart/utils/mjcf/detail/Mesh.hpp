@@ -52,7 +52,7 @@ public:
   /// Default constructor
   Mesh() = default;
 
-  /// \{ \name Attributes
+  /// \{ @name Attributes
 
   const std::string& getName() const;
   const std::string& getFile() const;

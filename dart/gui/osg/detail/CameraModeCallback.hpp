@@ -53,17 +53,17 @@ public:
 
   /// Sets the camera mode of the primary camera.
   ///
-  /// \note Thread safe
+  /// @note Thread safe
   void setCameraMode(CameraMode mode);
 
   /// Returns the camera mode of the primary camera.
   ///
-  /// \note Thread safe
+  /// @note Thread safe
   CameraMode getCameraMode() const;
 
   /// Sets the scene to render the depth
   ///
-  /// \note Thread safe
+  /// @note Thread safe
   void setSceneData(::osg::Node* scene);
 
 private:

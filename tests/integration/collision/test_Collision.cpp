@@ -1065,16 +1065,16 @@ TEST_F(Collision, testPlane)
 }
 
 //==============================================================================
-/// \param[in] collidesUnderTerrain Set to true if the collision engine returns
+/// @param[in] collidesUnderTerrain Set to true if the collision engine returns
 /// collisions when a shape is underneath the terrain, but still above the
 /// minimum height. If false, only intersections with the surface mesh will be
 /// detected.
-/// \param[in] extendsUntilGroundPlane Set to true if the collision engine
+/// @param[in] extendsUntilGroundPlane Set to true if the collision engine
 /// extends the terrain until the plane z=0
-/// \param[in] odeThck: for ODE, use this thickness underneath the heightfield
+/// @param[in] odeThck: for ODE, use this thickness underneath the heightfield
 /// to adjust collision checks.
 ///
-/// \sa dGeomHeightfieldDataBuild*().
+/// @sa dGeomHeightfieldDataBuild*().
 template <typename S>
 void testHeightmapBox(
     CollisionDetector* cd,

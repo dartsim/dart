@@ -56,7 +56,7 @@ class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
-/// \sa class ConstraintSolver
+/// @sa class ConstraintSolver
 class ConstrainedGroup
 {
 public:

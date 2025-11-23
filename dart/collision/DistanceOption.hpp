@@ -49,7 +49,7 @@ struct DART_API DistanceOption
   /// Whether to calculate the nearest points.
   ///
   /// The default is false.
-  /// \sa DistanceResult::nearestPoint1, DistanceResult::nearestPoint2
+  /// @sa DistanceResult::nearestPoint1, DistanceResult::nearestPoint2
   bool enableNearestPoints;
 
   /// Stopping criteria for distance calculation in broadphase.
@@ -66,7 +66,7 @@ struct DART_API DistanceOption
   /// in broadphase.
   ///
   /// If nullptr, every pairs of ShapeFrames in the CollisionGroup(s) are
-  /// checked. The default is nullptr. \sa DistanceFilter
+  /// checked. The default is nullptr. @sa DistanceFilter
   std::shared_ptr<DistanceFilter> distanceFilter;
 
   /// Constructor

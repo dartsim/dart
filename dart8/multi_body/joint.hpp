@@ -62,7 +62,7 @@ namespace dart8 {
 /// - Natural integration with ECS systems
 ///
 /// Usage:
-/// \code
+/// @code
 ///   auto link = robot.addLink("link1", {
 ///       .parentLink = root,
 ///       .jointName = "shoulder",
@@ -72,7 +72,7 @@ namespace dart8 {
 ///   Joint joint = link.getParentJoint();
 ///   joint.setPosition(0.5);
 ///   joint.setLimits(-M_PI, M_PI);
-/// \endcode
+/// @endcode
 ///
 /// @note Joint handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
