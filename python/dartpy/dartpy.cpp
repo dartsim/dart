@@ -30,49 +30,80 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include "collision/module.hpp"
+#include "common/module.hpp"
+#include "common/type_casters.hpp"
+#include "constraint/module.hpp"
+#include "dart/config.hpp"
+#include "dynamics/module.hpp"
+#include "gui/module.hpp"
+#include "math/module.hpp"
+#include "optimizer/module.hpp"
+#include "simulation/module.hpp"
+#include "utils/module.hpp"
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
-namespace dart {
-namespace python {
-
-void eigen_geometry(py::module& m);
-
-void dart_common(py::module& m);
-void dart_math(py::module& m);
-void dart_optimizer(py::module& m);
-void dart_dynamics(py::module& m);
-void dart_collision(py::module& m);
-void dart_constraint(py::module& m);
-void dart_simulation(py::module& m);
-void dart_utils(py::module& m);
-void dart_gui(py::module& m);
-
-PYBIND11_MODULE(dartpy, m)
+NB_MODULE(_dartpy, m)
 {
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  m.doc() = "dartpy: Nanobind bindings for DART";
+
+#define DARTPY_TRACE(stage)                                                    \
+  do {                                                                         \
+    const char* trace = std::getenv("DARTPY_TRACE_INIT");                      \
+    if (trace) {                                                               \
+      std::fprintf(stderr, "[dartpy][init] %s\n", (stage));                    \
+    }                                                                          \
+  } while (0)
 
 #ifdef DARTPY_VERSION_INFO
   m.attr("__version__") = DARTPY_VERSION_INFO;
 #else
-  m.attr("__version__") = "dev";
+  m.attr("__version__") = DART_VERSION;
 #endif
 
-  eigen_geometry(m);
+  DARTPY_TRACE("common");
+  auto common
+      = m.def_submodule("common", "Common utilities backed by nanobind");
+  dart::python_nb::defCommonModule(common);
 
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
+  DARTPY_TRACE("math");
+  auto math = m.def_submodule("math", "Math utilities backed by nanobind");
+  dart::python_nb::defMathModule(math);
+
+  DARTPY_TRACE("dynamics");
+  auto dynamics
+      = m.def_submodule("dynamics", "Dynamics utilities backed by nanobind");
+  dart::python_nb::defDynamicsModule(dynamics);
+
+  DARTPY_TRACE("utils");
+  auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
+  dart::python_nb::defUtilsModule(utils);
+
+  DARTPY_TRACE("collision");
+  auto collision
+      = m.def_submodule("collision", "Collision utilities backed by nanobind");
+  dart::python_nb::defCollisionModule(collision);
+
+  DARTPY_TRACE("simulation");
+  auto simulation = m.def_submodule(
+      "simulation", "Simulation utilities backed by nanobind");
+  dart::python_nb::defSimulationModule(simulation);
+
+  DARTPY_TRACE("constraint");
+  auto constraint = m.def_submodule(
+      "constraint", "Constraint utilities backed by nanobind");
+  dart::python_nb::defConstraintModule(constraint);
+
+  DARTPY_TRACE("optimizer");
+  auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
+  dart::python_nb::defOptimizerModule(optimizer);
+
+  DARTPY_TRACE("gui");
+  auto gui = m.def_submodule("gui", "GUI utilities (stubbed for nanobind)");
+  dart::python_nb::defGuiModule(gui);
+
+#undef DARTPY_TRACE
 }
-
-} // namespace python
-} // namespace dart

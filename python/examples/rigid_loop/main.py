@@ -1,6 +1,6 @@
 import math
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 
 

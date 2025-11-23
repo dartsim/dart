@@ -54,9 +54,9 @@ set(dartpy_test_utils
   util.py
 )
 
-set(dartpy_nb_tests_dirs "${CMAKE_CURRENT_SOURCE_DIR}")
+set(dartpy_tests_dirs "${CMAKE_CURRENT_SOURCE_DIR}")
 set(dartpy_nanobind_tests "")
-foreach(_nb_dir IN LISTS dartpy_nb_tests_dirs)
+foreach(_nb_dir IN LISTS dartpy_tests_dirs)
   if(EXISTS "${_nb_dir}")
     file(GLOB_RECURSE _nb_tests "${_nb_dir}/test_*.py")
     list(APPEND dartpy_nanobind_tests ${_nb_tests})
@@ -65,18 +65,18 @@ endforeach()
 list(REMOVE_DUPLICATES dartpy_nanobind_tests)
 
 set(_pytest_dependencies)
-if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy_nb)
+if(DARTPY_PYTEST_FOUND AND dartpy_nanobind_tests AND TARGET dartpy)
   add_custom_target(pytest_nb
-    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [nanobind] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy_nb]"
+    COMMAND ${CMAKE_COMMAND} -E echo "Running pytest [nanobind] with: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} -m pytest [dartpy]"
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}" "${Python3_EXECUTABLE}" -m pytest ${dartpy_nanobind_tests} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_nanobind_tests} ${dartpy_test_utils}
-    DEPENDS dartpy_nb
+    DEPENDS dartpy
   )
   list(APPEND _pytest_dependencies pytest_nb)
-elseif(dartpy_nanobind_tests AND NOT TARGET dartpy_nb)
+elseif(dartpy_nanobind_tests AND NOT TARGET dartpy)
   add_custom_target(pytest_nb
-    COMMAND ${CMAKE_COMMAND} -E echo "Skipping nanobind tests because dartpy_nb target is not built."
+    COMMAND ${CMAKE_COMMAND} -E echo "Skipping nanobind tests because dartpy target is not built."
   )
   list(APPEND _pytest_dependencies pytest_nb)
 endif()
@@ -113,13 +113,13 @@ function(dartpy_add_test test_name dependency_target source)
   )
 endfunction()
 
-if(TARGET dartpy_nb)
+if(TARGET dartpy)
   foreach(dartpy_test_file ${dartpy_nanobind_tests})
     file(RELATIVE_PATH _dartpy_rel_path "${CMAKE_SOURCE_DIR}/python" "${dartpy_test_file}")
     string(REGEX REPLACE "[^A-Za-z0-9_]" "_" _dartpy_rel_path "${_dartpy_rel_path}")
     set(_dartpy_target_name "py_nb_${_dartpy_rel_path}")
     get_filename_component(_dartpy_workdir "${dartpy_test_file}" DIRECTORY)
-    dartpy_add_test(${_dartpy_target_name} dartpy_nb ${dartpy_test_file}
+    dartpy_add_test(${_dartpy_target_name} dartpy ${dartpy_test_file}
       WORKING_DIRECTORY ${_dartpy_workdir})
   endforeach()
 endif()

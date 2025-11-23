@@ -4,9 +4,8 @@ Python API Reference
 The complete ``dartpy`` API reference now lives on GitHub Pages so it can be
 rendered directly from the compiled wheels that ship with each release. Read
 the Docs focuses on the narrative guides only and therefore no longer attempts
-to import ``dartpy`` or the in-progress ``dartpy_nb`` bindings during its
-builds—this avoids the ``stbrp_pack_rects`` linker errors that cropped up when
-the binary extension was unavailable.
+to import ``dartpy`` during its builds—this avoids the ``stbrp_pack_rects``
+linker errors that cropped up when the binary extension was unavailable.
 
 .. note:: Why the API docs moved
 
@@ -14,8 +13,8 @@ the binary extension was unavailable.
      members always match the packaged wheel.
    * Read the Docs does not compile the bindings, and mocking the modules would
      result in empty pages.
-   * The nanobind port (``dartpy_nb``) shares the same public surface. Once it
-     reaches parity we will publish equivalent documentation next to ``dartpy``.
+   * The nanobind port (``dartpy``) shares the same public surface and ships
+     its API docs with the built wheels.
 
 Where to read the API docs
 --------------------------

@@ -33,8 +33,8 @@ import math
 import random
 from typing import List, Optional, Tuple
 
-import dartpy_nb as dart
-import dartpy_nb.collision as dart_collision
+import dartpy as dart
+import dartpy.collision as dart_collision
 import numpy as np
 
 default_shape_density = 1000.0  # kg/m^3

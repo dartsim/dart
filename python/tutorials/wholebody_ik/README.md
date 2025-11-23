@@ -1,6 +1,6 @@
 # Whole-Body Inverse Kinematics Tutorial (Python)
 
-This tutorial demonstrates how to use whole-body inverse kinematics (IK) to control a humanoid robot's posture using DART's Python bindings (dartpy_nb).
+This tutorial demonstrates how to use whole-body inverse kinematics (IK) to control a humanoid robot's posture using DART's Python bindings (dartpy).
 
 ## Learning Objectives
 
@@ -48,7 +48,7 @@ Why? The `TaskSpaceRegion` error method only computes non-zero error when the di
 ## Running the Tutorial
 
 ```bash
-# Make sure dartpy_nb is built
+# Make sure dartpy is built
 pixi run build-py-dev
 
 # Run the tutorial
@@ -87,7 +87,7 @@ Try adding:
 
 ## Differences from C++ Version
 
-The Python version uses dartpy_nb bindings which have slightly different APIs:
+The Python version uses dartpy bindings which have slightly different APIs:
 
 - `dart.math.Isometry3()` instead of `Eigen::Isometry3d`
 - `set_translation()` instead of `.translation() =`
@@ -102,6 +102,6 @@ The Python version uses dartpy_nb bindings which have slightly different APIs:
 
 ## References
 
-- dartpy_nb Documentation: https://dartsim.github.io/
+- dartpy Documentation: https://dartsim.github.io/
 - DART IK Documentation: https://dartsim.github.io/
 - Atlas Robot: https://www.bostondynamics.com/atlas

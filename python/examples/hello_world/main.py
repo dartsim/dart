@@ -1,4 +1,4 @@
-import dartpy_nb as dart
+import dartpy as dart
 
 
 def main():

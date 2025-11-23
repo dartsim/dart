@@ -1,129 +1,119 @@
-/*
- * Copyright (c) 2011-2025, The DART development contributors
- * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
- *
- * This file is provided under the following "BSD-style" License:
- *   Redistribution and use in source and binary forms, with or
- *   without modification, are permitted provided that the following
- *   conditions are met:
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
- */
+#include "dynamics/module.hpp"
 
-#include <pybind11/pybind11.h>
+#include "dynamics/ball_joint.hpp"
+#include "dynamics/body_node.hpp"
+#include "dynamics/chain.hpp"
+#include "dynamics/degree_of_freedom.hpp"
+#include "dynamics/end_effector.hpp"
+#include "dynamics/entity.hpp"
+#include "dynamics/euler_joint.hpp"
+#include "dynamics/frame.hpp"
+#include "dynamics/free_joint.hpp"
+#include "dynamics/hierarchical_ik.hpp"
+#include "dynamics/inertia.hpp"
+#include "dynamics/inverse_kinematics.hpp"
+#include "dynamics/jacobian_node.hpp"
+#include "dynamics/joint.hpp"
+#include "dynamics/linkage.hpp"
+#include "dynamics/meta_skeleton.hpp"
+#include "dynamics/planar_joint.hpp"
+#include "dynamics/prismatic_joint.hpp"
+#include "dynamics/revolute_joint.hpp"
+#include "dynamics/screw_joint.hpp"
+#include "dynamics/shape.hpp"
+#include "dynamics/shape_frame.hpp"
+#include "dynamics/shape_node.hpp"
+#include "dynamics/simple_frame.hpp"
+#include "dynamics/skeleton.hpp"
+#include "dynamics/translational_joint.hpp"
+#include "dynamics/translational_joint2d.hpp"
+#include "dynamics/universal_joint.hpp"
+#include "dynamics/weld_joint.hpp"
+#include "dynamics/zero_dof_joint.hpp"
 
-namespace py = pybind11;
+#include <cstdio>
+#include <cstdlib>
 
-namespace dart {
-namespace python {
+namespace {
 
-void Shape(py::module& sm);
-
-void Entity(py::module& sm);
-void Frame(py::module& sm);
-void ShapeFrame(py::module& sm);
-void SimpleFrame(py::module& sm);
-
-void Node(py::module& sm);
-void JacobianNode(py::module& sm);
-void ShapeNode(py::module& sm);
-void HierarchicalIK(py::module& sm);
-
-void DegreeOfFreedom(py::module& sm);
-
-void BodyNode(py::module& sm);
-void EndEffector(py::module& sm);
-
-void Joint(py::module& sm);
-void ZeroDofJoint(py::module& sm);
-void WeldJoint(py::module& sm);
-void GenericJoint(py::module& sm);
-void RevoluteJoint(py::module& sm);
-void PrismaticJoint(py::module& sm);
-void ScrewJoint(py::module& sm);
-void UniversalJoint(py::module& sm);
-void TranslationalJoint2D(py::module& sm);
-void PlanarJoint(py::module& sm);
-void EulerJoint(py::module& sm);
-void BallJoint(py::module& sm);
-void TranslationalJoint(py::module& sm);
-void FreeJoint(py::module& sm);
-
-void MetaSkeleton(py::module& sm);
-void ReferentialSkeleton(py::module& sm);
-void Linkage(py::module& sm);
-void Chain(py::module& sm);
-void Skeleton(py::module& sm);
-
-void InverseKinematics(py::module& sm);
-void Inertia(py::module& sm);
-
-void dart_dynamics(py::module& m)
+bool shouldTrace()
 {
-  auto sm = m.def_submodule("dynamics");
-
-  Shape(sm);
-
-  Entity(sm);
-  Frame(sm);
-  ShapeFrame(sm);
-  SimpleFrame(sm);
-
-  Node(sm);
-  JacobianNode(sm);
-  ShapeNode(sm);
-  HierarchicalIK(sm);
-
-  DegreeOfFreedom(sm);
-
-  BodyNode(sm);
-  EndEffector(sm);
-
-  Joint(sm);
-  ZeroDofJoint(sm);
-  WeldJoint(sm);
-  GenericJoint(sm);
-  RevoluteJoint(sm);
-  PrismaticJoint(sm);
-  ScrewJoint(sm);
-  UniversalJoint(sm);
-  TranslationalJoint2D(sm);
-  PlanarJoint(sm);
-  EulerJoint(sm);
-  BallJoint(sm);
-  TranslationalJoint(sm);
-  FreeJoint(sm);
-
-  MetaSkeleton(sm);
-  ReferentialSkeleton(sm);
-  Linkage(sm);
-  Chain(sm);
-  Skeleton(sm);
-
-  InverseKinematics(sm);
-
-  Inertia(sm);
+  static const bool enabled = std::getenv("DARTPY_TRACE") != nullptr;
+  return enabled;
 }
 
-} // namespace python
-} // namespace dart
+void traceScope(const char* name)
+{
+  if (shouldTrace())
+    std::fprintf(stderr, "[dartpy][dynamics] %s\n", name);
+}
+
+} // namespace
+
+namespace dart::python_nb {
+
+void defDynamicsModule(nanobind::module_& m)
+{
+  traceScope("entity");
+  defEntity(m);
+  traceScope("joint");
+  defJoint(m);
+  traceScope("zero_dof_joint");
+  defZeroDofJoint(m);
+  traceScope("dof");
+  defDegreeOfFreedom(m);
+  traceScope("free_joint");
+  defFreeJoint(m);
+  traceScope("revolute_joint");
+  defRevoluteJoint(m);
+  traceScope("translational_joint2d");
+  defTranslationalJoint2D(m);
+  traceScope("prismatic_joint");
+  defPrismaticJoint(m);
+  traceScope("planar_joint");
+  defPlanarJoint(m);
+  traceScope("translational_joint");
+  defTranslationalJoint(m);
+  traceScope("euler_joint");
+  defEulerJoint(m);
+  traceScope("screw_joint");
+  defScrewJoint(m);
+  traceScope("universal_joint");
+  defUniversalJoint(m);
+  traceScope("ball_joint");
+  defBallJoint(m);
+  traceScope("weld_joint");
+  defWeldJoint(m);
+  traceScope("shape");
+  defShape(m);
+  traceScope("frame");
+  defFrame(m);
+  traceScope("jacobian_node");
+  defJacobianNode(m);
+  traceScope("end_effector");
+  defEndEffector(m);
+  traceScope("body_node");
+  defBodyNode(m);
+  traceScope("meta_skeleton");
+  defMetaSkeleton(m);
+  traceScope("linkage");
+  defLinkage(m);
+  traceScope("chain");
+  defChain(m);
+  traceScope("shape_frame");
+  defShapeFrame(m);
+  traceScope("shape_node");
+  defShapeNode(m);
+  traceScope("simple_frame");
+  defSimpleFrame(m);
+  traceScope("inverse_kinematics");
+  defInverseKinematics(m);
+  traceScope("hierarchical_ik");
+  defHierarchicalIK(m);
+  traceScope("skeleton");
+  defSkeleton(m);
+  traceScope("inertia");
+  defInertia(m);
+}
+
+} // namespace dart::python_nb

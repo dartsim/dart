@@ -1,4 +1,4 @@
-import dartpy_nb as dart
+import dartpy as dart
 
 """
 Displays Contacts between a Robot arm in a GUI as a pointcloud

@@ -12,7 +12,7 @@ This guided tutorial now covers:
 
 import argparse
 import numpy as np
-import dartpy_nb as dart
+import dartpy as dart
 
 
 class WholeBodyIKWorldNode(dart.gui.RealTimeWorldNode):

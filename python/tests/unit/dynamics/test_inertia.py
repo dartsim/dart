@@ -1,7 +1,7 @@
 import math
 import platform
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 import pytest
 

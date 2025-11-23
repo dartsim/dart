@@ -28,7 +28,7 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 
 

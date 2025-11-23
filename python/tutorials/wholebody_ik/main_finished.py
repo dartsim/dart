@@ -22,7 +22,7 @@ import time
 from dataclasses import dataclass
 from typing import Iterable
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 
 

@@ -4,8 +4,8 @@ pytest configuration helpers.
 Pytests are executed from within ``python/tests`` which means Python discovers
 the source tree (`python/dartpy`) before the freshly built extension under
 ``build/<env>/cpp/<config>/python``.  Those source packages do not contain the
-compiled ``dartpy_nb`` extension, so importing ``dartpy_nb`` during CI fails with
-``ModuleNotFoundError: dartpy_nb._dartpy_nb`` even though the extension exists in the
+compiled ``dartpy`` extension, so importing ``dartpy`` during CI fails with
+``ModuleNotFoundError: dartpy._dartpy`` even though the extension exists in the
 build directory.
 
 To make sure we always import the just-built bindings, re-insert the build
@@ -49,7 +49,7 @@ def _candidate_python_paths() -> list[str]:
             if candidate:
                 _add(candidate)
 
-    for env_var in ("DARTPY_NB_RUNTIME_DIR", "DARTPY_RUNTIME_DIR"):
+    for env_var in ("DARTPY_RUNTIME_DIR",):
         runtime = os.environ.get(env_var)
         if runtime:
             runtime_path = Path(runtime)
@@ -57,7 +57,7 @@ def _candidate_python_paths() -> list[str]:
             _add(str(runtime_path.parent))
 
     # Fall back to the pixi build layout if no explicit PYTHONPATH is provided
-    # (or if it missed the dartpy_nb directories).
+    # (or if it missed the dartpy directories).
     repo_root = Path(__file__).resolve().parents[2]
     pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     build_type = (
@@ -66,7 +66,7 @@ def _candidate_python_paths() -> list[str]:
         or "Release"
     )
     build_python = repo_root / "build" / pixi_env / "cpp" / build_type / "python"
-    _add(str(build_python / "dartpy_nb"))
+    _add(str(build_python / "dartpy"))
     _add(str(build_python))
 
     return entries
@@ -107,7 +107,7 @@ def _prepend_pythonpath() -> None:
     _demote(repo_root)
 
     if os.environ.get("DARTPY_SYS_PATH_DEBUG") == "1":
-        print("dartpy_nb sys.path head:", sys.path[:5])
+        print("dartpy sys.path head:", sys.path[:5])
 
 
 _prepend_pythonpath()

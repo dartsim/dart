@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-import dartpy_nb as dart
+import dartpy as dart
 import pytest
 
 

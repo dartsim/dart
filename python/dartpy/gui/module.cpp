@@ -1,56 +1,29 @@
-/*
- * Copyright (c) 2011-2025, The DART development contributors
- * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
- *
- * This file is provided under the following "BSD-style" License:
- *   Redistribution and use in source and binary forms, with or
- *   without modification, are permitted provided that the following
- *   conditions are met:
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
- */
+// Nanobind bindings for DART's OSG GUI.
 
-#include <dart/config.hpp>
+#include "gui/module.hpp"
 
-#include <pybind11/pybind11.h>
+#include "gui/osg/osg.hpp"
 
-namespace py = pybind11;
+#include <nanobind/nanobind.h>
 
-namespace dart {
-namespace python {
+namespace dart::python_nb {
 
-#if DART_BUILD_GUI
-void dart_gui_osg(py::module& m);
-#endif
-
-void dart_gui(py::module& m)
+void defGuiModule(nanobind::module_& m)
 {
-  auto sm = m.def_submodule("gui");
-
-#if DART_BUILD_GUI
-  dart_gui_osg(sm);
-#endif
+  std::fprintf(stderr, "[dartpy][gui] gui_event_handler\\n");
+  defGuiEventHandler(m);
+  std::fprintf(stderr, "[dartpy][gui] viewer_attachment\\n");
+  defViewerAttachment(m);
+  std::fprintf(stderr, "[dartpy][gui] grid_visual\\n");
+  defGridVisual(m);
+  std::fprintf(stderr, "[dartpy][gui] interactive_frame\\n");
+  defInteractiveFrame(m);
+  std::fprintf(stderr, "[dartpy][gui] world_node\\n");
+  defWorldNode(m);
+  std::fprintf(stderr, "[dartpy][gui] realtime_world_node\\n");
+  defRealTimeWorldNode(m);
+  std::fprintf(stderr, "[dartpy][gui] viewer\\n");
+  defViewer(m);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python_nb

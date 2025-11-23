@@ -6,7 +6,7 @@ import sys
 
 
 def _prepend_build_python():
-    """Ensure the built dartpy_nb extension is importable when running from source."""
+    """Ensure the built dartpy extension is importable when running from source."""
     build_type = os.environ.get("BUILD_TYPE", "Release")
     pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     candidate = (
@@ -25,7 +25,7 @@ def _prepend_build_python():
 
 _prepend_build_python()
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 import pytest
 

@@ -34,7 +34,7 @@
 import math
 from typing import List, Tuple
 
-import dartpy_nb as dart
+import dartpy as dart
 import numpy as np
 
 default_height = 1.0  # m

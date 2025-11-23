@@ -1,6 +1,6 @@
 import platform
 
-import dartpy_nb as dart
+import dartpy as dart
 import pytest
 
 # TODO(JS): Move this to integration category once created

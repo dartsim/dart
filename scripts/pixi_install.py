@@ -3,7 +3,7 @@
 Helper invoked by pixi tasks to build optional targets before installation.
 
 This script mirrors the install logic used in CI workflows, ensuring we build
-the configured `dartpy_nb` target (when enabled) prior to running `cmake --build`
+the configured `dartpy` target (when enabled) prior to running `cmake --build`
 for installation. Keeping this logic in Python avoids shell-syntax nuances
 across the various shells pixi may use (bash, PowerShell, deno_task_shell).
 """
@@ -24,12 +24,12 @@ def main(argv: List[str]) -> int:
     build_dir = get_build_dir(build_type)
 
     if dartpy_flag.upper() != "OFF":
-        if cmake_target_exists(build_dir, build_type, "dartpy_nb"):
-            run_cmake_build(build_dir, build_type, "dartpy_nb")
+        if cmake_target_exists(build_dir, build_type, "dartpy"):
+            run_cmake_build(build_dir, build_type, "dartpy")
         else:
             print(
-                "Skipping dartpy_nb build during install because the "
-                "'dartpy_nb' target was not generated in this configuration."
+                "Skipping dartpy build during install because the "
+                "'dartpy' target was not generated in this configuration."
             )
 
     run_cmake_build(build_dir, build_type, "install")
