@@ -53,7 +53,6 @@
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
@@ -74,7 +73,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -363,30 +361,6 @@ void configureMimicMotors(
 
     setJointLimitsAndDamping(follower);
     setJointLimitsAndDamping(reference);
-  }
-}
-
-void anchorPendulumBases(
-    const std::vector<MimicSpec>& specs, const WorldPtr& world)
-{
-  std::unordered_set<std::string> skeletonNames = {"pendulum_with_base"};
-  for (const auto& spec : specs)
-    skeletonNames.insert(spec.model);
-
-  for (const auto& name : skeletonNames) {
-    const auto skeleton = world->getSkeleton(name);
-    if (!skeleton || skeleton->getNumBodyNodes() == 0)
-      continue;
-
-    auto* rootJoint = skeleton->getRootJoint();
-    auto* freeJoint = dynamic_cast<dart::dynamics::FreeJoint*>(rootJoint);
-    if (!freeJoint)
-      continue;
-
-    // Hold the base at its initial pose while keeping the joint type Free.
-    freeJoint->setActuatorType(dart::dynamics::Joint::LOCKED);
-    freeJoint->setPositions(freeJoint->getPositions());
-    freeJoint->setVelocities(Eigen::VectorXd::Zero(freeJoint->getNumDofs()));
   }
 }
 
@@ -692,8 +666,6 @@ int main(int /*argc*/, char*[] /*argv*/)
   const auto mimicSpecs = parseMimicSpecs(sdfText);
   if (mimicSpecs.empty())
     std::cerr << "No mimic joints found in " << worldUri << "\n";
-
-  anchorPendulumBases(mimicSpecs, world);
 
   SolverConfig cfg;
   configureMimicMotors(mimicSpecs, world, cfg);
