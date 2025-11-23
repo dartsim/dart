@@ -10,6 +10,13 @@ if(TARGET dart-utils)
   target_link_libraries(INTEGRATION_collision_Collision dart-utils)
 endif()
 
+if(DART_BUILD_COLLISION_FCL)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_MeshContactRegression
+    collision/test_MeshContactRegression.cpp)
+endif()
+
 # Additional collision tests
 if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_SelfCollisionFiltering collision/test_SelfCollisionFiltering.cpp)
