@@ -46,7 +46,9 @@
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 #if HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
@@ -70,7 +72,6 @@
 
 #include <cmath>
 
-using dart::collision::BulletCollisionDetector;
 using dart::common::Uri;
 using dart::dynamics::Joint;
 using dart::dynamics::MimicConstraintType;
@@ -232,8 +233,10 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 #else
   (void)useOde;
 #endif
+#if HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
-      BulletCollisionDetector::create());
+      dart::collision::BulletCollisionDetector::create());
+#endif
 }
 
 void setBoxedSolver(WorldPtr world, bool usePgs)
