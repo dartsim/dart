@@ -41,10 +41,10 @@ namespace dynamics {
 class DART_API BoxShape : public Shape
 {
 public:
-  /// \brief Constructor.
+  /// @brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);
 
-  /// \brief Destructor.
+  /// @brief Destructor.
   virtual ~BoxShape();
 
   // Documentation inherited.
@@ -53,16 +53,16 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief Set size of this box.
+  /// @brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);
 
-  /// \brief Get size of this box.
+  /// @brief Get size of this box.
   const Eigen::Vector3d& getSize() const;
 
-  /// \brief Compute volume from given properties
+  /// @brief Compute volume from given properties
   static double computeVolume(const Eigen::Vector3d& size);
 
-  /// \brief Compute moments of inertia of a box
+  /// @brief Compute moments of inertia of a box
   static Eigen::Matrix3d computeInertia(
       const Eigen::Vector3d& size, double mass);
 
@@ -80,7 +80,7 @@ protected:
   void updateVolume() const override;
 
 private:
-  /// \brief Side lengths of the box
+  /// @brief Side lengths of the box
   Eigen::Vector3d mSize;
 };
 

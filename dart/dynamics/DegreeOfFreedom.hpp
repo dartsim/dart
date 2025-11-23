@@ -74,7 +74,7 @@ public:
   const std::string& setName(
       const std::string& _name, bool _preserveName = true);
 
-  /// \brief Get the name of this DegreeOfFreedom
+  /// @brief Get the name of this DegreeOfFreedom
   ///
   /// DegreeOfFreedom's name will be automatically given by the joint it belongs
   /// to. Below is the naming policy:
@@ -113,7 +113,7 @@ public:
   std::size_t getTreeIndex() const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Command
+  /// \{ @name Command
   //----------------------------------------------------------------------------
 
   /// Set the command of this DegreeOfFreedom
@@ -128,7 +128,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Position
+  /// \{ @name Position
   //----------------------------------------------------------------------------
 
   /// Set the position of this DegreeOfFreedom
@@ -179,7 +179,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity
+  /// \{ @name Velocity
   //----------------------------------------------------------------------------
 
   /// Set the velocity of this DegreeOfFreedom
@@ -221,7 +221,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Acceleration
+  /// \{ @name Acceleration
   //----------------------------------------------------------------------------
 
   /// Set the acceleration of this DegreeOfFreedom
@@ -257,7 +257,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Force
+  /// \{ @name Force
   //----------------------------------------------------------------------------
 
   /// Set the generalized force of this DegreeOfFreedom
@@ -293,7 +293,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ @name Velocity change
   //----------------------------------------------------------------------------
 
   /// Set the velocity change of this DegreeOfFreedom
@@ -308,7 +308,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
+  /// \{ @name Constraint impulse
   //----------------------------------------------------------------------------
 
   /// Set the constraint impulse of this generalized coordinate
@@ -323,7 +323,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
+  /// \{ @name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   /// Set stiffness of the spring force for this generalized coordinate
@@ -355,7 +355,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Relationships
+  /// \{ @name Relationships
   //----------------------------------------------------------------------------
 
   /// Get the Joint that this DegreeOfFreedom belongs to
@@ -389,7 +389,7 @@ protected:
   /// DegreeOfFreedom classes
   DegreeOfFreedom(Joint* _joint, std::size_t _indexInJoint);
 
-  /// \brief Index of this DegreeOfFreedom within its Joint
+  /// @brief Index of this DegreeOfFreedom within its Joint
   ///
   /// The index is determined when this DegreeOfFreedom is created by the Joint
   /// it belongs to. Note that the index should be unique within the Joint.

@@ -1,0 +1,11 @@
+version: '{build}'
+
+# AppVeyor is no longer part of the required CI for this repo; keep a minimal
+# config to mark builds as skipped/disabled and avoid spurious status failures.
+skip_branch_with_pr: true
+branches:
+  only:
+    - main
+
+build: off
+test: off

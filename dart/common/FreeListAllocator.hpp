@@ -63,8 +63,8 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] baseAllocator: (optional) Base memory allocator.
-  /// \param[in] initialAllocation: (optional) Bytes to initially allocate.
+  /// @param[in] baseAllocator: (optional) Base memory allocator.
+  /// @param[in] initialAllocation: (optional) Bytes to initially allocate.
   explicit FreeListAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
       size_t initialAllocation = 1048576 /* 1 MB */);
@@ -135,10 +135,10 @@ private:
 #endif
   };
 
-  /// Allocates a new memory block for \c sizeToAllocate bytes
+  /// Allocates a new memory block for @c sizeToAllocate bytes
   ///
-  /// \param[in] sizeToAllocate: The bytes to allocate.
-  /// \return The success
+  /// @param[in] sizeToAllocate: The bytes to allocate.
+  /// @return The success
   bool allocateMemoryBlock(size_t sizeToAllocate);
 
   struct AllocatedBlock

@@ -92,7 +92,7 @@ public:
 
   /// Generates a convex hull that encloses the trimesh.
   ///
-  /// \param[in] optimize: (Optional) Whether to discard vertices that are not
+  /// @param[in] optimize: (Optional) Whether to discard vertices that are not
   /// used in the convex hull.
   std::shared_ptr<TriMesh<S>> generateConvexHull(bool optimize = true) const;
 
