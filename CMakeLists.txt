@@ -112,6 +112,8 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # DART_VERSION_FULL: Complete version including suffix (X.Y.Z or X.Y.Z.devN)
 # Already set above
 
+set(DART_INLINE_NAMESPACE "dart${DART_MAJOR_VERSION}")
+
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
