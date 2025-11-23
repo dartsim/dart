@@ -26,9 +26,6 @@
 #include <memory>
 #include <utility>
 
-#include <cstdio>
-#include <cstdlib>
-
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -44,18 +41,6 @@ auto create_pair(
   auto pair = self.createJointAndBodyNodePair<JointT, dart::dynamics::BodyNode>(
       parent, properties);
   auto skeletonHandle = self.getPtr();
-  if (const char* trace = std::getenv("DARTPY_TRACE_CREATE_PAIR")) {
-    (void)trace;
-    std::fprintf(
-        stderr,
-        "[dartpy][skeleton][create_pair] joint=%p body=%p skel=%p "
-        "use_count=%ld\n",
-        static_cast<void*>(pair.first),
-        static_cast<void*>(pair.second),
-        static_cast<void*>(skeletonHandle.get()),
-        skeletonHandle ? skeletonHandle.use_count() : 0);
-    std::fflush(stderr);
-  }
   auto jointHandle = std::shared_ptr<JointT>(skeletonHandle, pair.first);
   auto bodyHandle
       = std::shared_ptr<dart::dynamics::BodyNode>(skeletonHandle, pair.second);
@@ -93,14 +78,6 @@ void defSkeleton(nb::module_& m)
 {
   using Skeleton = dart::dynamics::Skeleton;
   using BodyNode [[maybe_unused]] = dart::dynamics::BodyNode;
-
-  const bool trace = std::getenv("DARTPY_TRACE_SKELETON") != nullptr;
-  auto log = [&](const char* stage) {
-    if (trace)
-      std::fprintf(stderr, "[dartpy][skeleton] %s\n", stage);
-  };
-
-  log("begin");
 
   auto skeletonClass
       = nb::class_<Skeleton, dart::dynamics::MetaSkeleton>(m, "Skeleton");
@@ -183,18 +160,16 @@ void defSkeleton(nb::module_& m)
           },
           nb::arg("createIfNull") = false);
 
-  log("createFreeJointAndBodyNodePair");
   skeletonClass.def(
       "createFreeJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
         return create_pair_with_default<dart::dynamics::FreeJoint>(
             self, parent, props);
-      },
+        },
       nb::rv_policy::reference_internal,
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createBallJointAndBodyNodePair");
   skeletonClass.def(
       "createBallJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -227,7 +202,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createPrismaticJointAndBodyNodePair");
   skeletonClass.def(
       "createPrismaticJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -238,7 +212,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createScrewJointAndBodyNodePair");
   skeletonClass.def(
       "createScrewJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -249,7 +222,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createPlanarJointAndBodyNodePair");
   skeletonClass.def(
       "createPlanarJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -260,7 +232,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createUniversalJointAndBodyNodePair");
   skeletonClass.def(
       "createUniversalJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -271,7 +242,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createTranslationalJointAndBodyNodePair");
   skeletonClass.def(
       "createTranslationalJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -282,7 +252,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createTranslationalJoint2DAndBodyNodePair");
   skeletonClass.def(
       "createTranslationalJoint2DAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -293,7 +262,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("createWeldJointAndBodyNodePair");
   skeletonClass.def(
       "createWeldJointAndBodyNodePair",
       [](Skeleton& self, BodyNode* parent, const nb::handle& props) {
@@ -304,7 +272,6 @@ void defSkeleton(nb::module_& m)
       nb::arg("parent") = nullptr,
       nb::arg("jointProperties") = nb::none());
 
-  log("getEndEffector");
   skeletonClass
       .def(
           "getEndEffector",
@@ -321,7 +288,6 @@ void defSkeleton(nb::module_& m)
           nb::rv_policy::reference_internal,
           nb::arg("idx"));
 
-  log("end");
 }
 
 } // namespace dart::python_nb

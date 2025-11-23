@@ -17,22 +17,9 @@ inline Base* castHandleTo(nanobind::handle h)
   const std::type_info* info
       = nanobind::detail::nb_type_info(reinterpret_cast<PyObject*>(type));
   void* raw = nanobind::detail::nb_inst_ptr(obj);
-  if (const char* trace = std::getenv("DARTPY_TRACE_POLY_HANDLE")) {
-    std::fprintf(
-        stderr,
-        "[dartpy][handle] base=%s actual=%s raw=%p has=%d\n",
-        typeid(Base).name(),
-        info ? info->name() : "(null)",
-        raw,
-        info ? hasPolymorphicCaster<Base>(*info) : 0);
-  }
 
   if (info && hasPolymorphicCaster<Base>(*info)) {
-    Base* adjusted = convertPolymorphicPointer<Base>(raw, *info);
-    if (std::getenv("DARTPY_TRACE_POLY_HANDLE")) {
-      std::fprintf(stderr, "[dartpy][handle] adjusted=%p\n", adjusted);
-    }
-    return adjusted;
+    return convertPolymorphicPointer<Base>(raw, *info);
   }
 
   return static_cast<Base*>(raw);

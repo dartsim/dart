@@ -866,6 +866,43 @@ tracy = { cmd = "tracy-profiler" }
 # Python package build
 build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
+# Drop into a Python shell using an existing build tree dartpy (assumes dartpy has been built)
+shell-dartpy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+SO_GLOB="build/default/cpp/{{ build_type }}/python/dartpy/_dartpy*.so"
+if ! compgen -G "$SO_GLOB" > /dev/null; then
+  echo "dartpy extension not found in build/default/cpp/{{ build_type }}/python; run 'pixi run build-py-dev' or 'pixi run shell-dartpy-forced' first." >&2
+  exit 1
+fi
+echo "Env: default  Build: {{ build_type }}"
+echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+""",
+], args = [
+  { arg = "build_type", default = "Release" },
+] }
+
+# Rebuild dartpy in-tree, then open a Python shell with it available
+shell-dartpy-forced = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+""",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "ON",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "build_type", default = "Release" },
+] }
+
 # Build wheel package (without installing)
 build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
 

@@ -4,9 +4,6 @@
 
 #include <nanobind/nanobind.h>
 
-#include <cstdio>
-#include <cstdlib>
-
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -33,16 +30,6 @@ struct polymorphic_type_caster : type_caster_base_tag {
     PyObject* obj = src.ptr();
     const std::type_info* info = nanobind::detail::nb_type_info(
         reinterpret_cast<PyObject*>(Py_TYPE(obj)));
-    if (const char* trace = std::getenv("DARTPY_TRACE_POLY")) {
-      (void) trace;
-      std::fprintf(
-          stderr,
-          "[dartpy][poly] base=%s actual=%s has=%d\n",
-          typeid(Type).name(),
-          info ? info->name() : "(null)",
-          (info != nullptr
-           && dart::python_nb::hasPolymorphicCaster<Type>(*info)));
-    }
 
     if (info != nullptr
         && dart::python_nb::hasPolymorphicCaster<Type>(*info)) {
@@ -51,25 +38,11 @@ struct polymorphic_type_caster : type_caster_base_tag {
         return false;
       value_ = dart::python_nb::convertPolymorphicPointer<Type>(
           static_cast<void*>(raw_), *info);
-      if (std::getenv("DARTPY_TRACE_POLY")) {
-        std::fprintf(
-            stderr,
-            "[dartpy][poly] raw=%p adjusted=%p\n",
-            static_cast<void*>(raw_),
-            static_cast<void*>(value_));
-      }
     } else {
       if (!nb_type_get(&typeid(Type), obj, flags, cleanup,
                        reinterpret_cast<void**>(&raw_)))
         return false;
       value_ = dart::python_nb::adjustPolymorphicPointer<Type>(obj, raw_);
-      if (std::getenv("DARTPY_TRACE_POLY")) {
-        std::fprintf(
-            stderr,
-            "[dartpy][poly][fallback] raw=%p adjusted=%p\n",
-            static_cast<void*>(raw_),
-            static_cast<void*>(value_));
-      }
     }
 
     return value_ != nullptr;
@@ -89,17 +62,6 @@ struct polymorphic_type_caster : type_caster_base_tag {
       if (ptr != nullptr && actual_type != nullptr) {
         adjusted = dart::python_nb::restorePolymorphicPointer<Type>(
             ptr, *actual_type);
-      }
-      const char* trace = std::getenv("DARTPY_TRACE_POLY_FROM_CPP");
-      if (trace) {
-        (void) trace;
-        std::fprintf(
-            stderr,
-            "[dartpy][poly][from_cpp] base=%s actual=%s raw=%p adjusted=%p\n",
-            typeid(Type).name(),
-            actual_type ? actual_type->name() : "(null)",
-            static_cast<void*>(ptr),
-            adjusted);
       }
       return nb_type_put_p(
           &typeid(Type), actual_type, adjusted, policy, cleanup, nullptr);
@@ -161,10 +123,6 @@ struct type_caster<dart::dynamics::BodyNode>
                   || std::is_lvalue_reference_v<T>) {
       policy = rv_policy::reference;
     }
-    if (std::getenv("DARTPY_TRACE_BODYNODE_CAST")) {
-      std::fprintf(
-          stderr, "[dartpy][bodynode] forcing reference policy\n");
-    }
     return polymorphic_type_caster<dart::dynamics::BodyNode>::from_cpp(
         std::forward<T>(value), policy, cleanup);
   }
@@ -182,10 +140,6 @@ struct type_caster<dart::dynamics::JacobianNode>
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
       policy = rv_policy::reference;
-    }
-    if (std::getenv("DARTPY_TRACE_JACOBIAN_CAST")) {
-      std::fprintf(
-          stderr, "[dartpy][jacobian_node] forcing reference policy\n");
     }
     return polymorphic_type_caster<dart::dynamics::JacobianNode>::from_cpp(
         std::forward<T>(value), policy, cleanup);
@@ -205,9 +159,6 @@ struct type_caster<dart::dynamics::Joint>
                   || std::is_lvalue_reference_v<T>) {
       policy = rv_policy::reference;
     }
-    if (std::getenv("DARTPY_TRACE_JOINT_CAST")) {
-      std::fprintf(stderr, "[dartpy][joint] forcing reference policy\n");
-    }
     return polymorphic_type_caster<dart::dynamics::Joint>::from_cpp(
         std::forward<T>(value), policy, cleanup);
   }
@@ -225,12 +176,6 @@ struct type_caster<
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy /*policy*/, cleanup_list* cleanup) noexcept
   {
-    if (std::getenv("DARTPY_TRACE_JOINT_CAST")) {
-      std::fprintf(
-          stderr,
-          "[dartpy][joint][derived] forcing reference policy for %s\n",
-          typeid(JointT).name());
-    }
     return polymorphic_type_caster<JointT>::from_cpp(
         std::forward<T>(value), rv_policy::reference, cleanup);
   }

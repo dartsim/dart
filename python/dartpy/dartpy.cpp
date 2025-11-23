@@ -50,60 +50,41 @@ NB_MODULE(_dartpy, m)
 {
   m.doc() = "dartpy: Nanobind bindings for DART";
 
-#define DARTPY_TRACE(stage)                                                    \
-  do {                                                                         \
-    const char* trace = std::getenv("DARTPY_TRACE_INIT");                      \
-    if (trace) {                                                               \
-      std::fprintf(stderr, "[dartpy][init] %s\n", (stage));                    \
-    }                                                                          \
-  } while (0)
-
 #ifdef DARTPY_VERSION_INFO
   m.attr("__version__") = DARTPY_VERSION_INFO;
 #else
   m.attr("__version__") = DART_VERSION;
 #endif
 
-  DARTPY_TRACE("common");
   auto common
       = m.def_submodule("common", "Common utilities backed by nanobind");
   dart::python_nb::defCommonModule(common);
 
-  DARTPY_TRACE("math");
   auto math = m.def_submodule("math", "Math utilities backed by nanobind");
   dart::python_nb::defMathModule(math);
 
-  DARTPY_TRACE("dynamics");
   auto dynamics
       = m.def_submodule("dynamics", "Dynamics utilities backed by nanobind");
   dart::python_nb::defDynamicsModule(dynamics);
 
-  DARTPY_TRACE("utils");
   auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
   dart::python_nb::defUtilsModule(utils);
 
-  DARTPY_TRACE("collision");
   auto collision
       = m.def_submodule("collision", "Collision utilities backed by nanobind");
   dart::python_nb::defCollisionModule(collision);
 
-  DARTPY_TRACE("simulation");
   auto simulation = m.def_submodule(
       "simulation", "Simulation utilities backed by nanobind");
   dart::python_nb::defSimulationModule(simulation);
 
-  DARTPY_TRACE("constraint");
   auto constraint = m.def_submodule(
       "constraint", "Constraint utilities backed by nanobind");
   dart::python_nb::defConstraintModule(constraint);
 
-  DARTPY_TRACE("optimizer");
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
 
-  DARTPY_TRACE("gui");
   auto gui = m.def_submodule("gui", "GUI utilities (stubbed for nanobind)");
   dart::python_nb::defGuiModule(gui);
-
-#undef DARTPY_TRACE
 }

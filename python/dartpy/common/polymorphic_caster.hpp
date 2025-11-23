@@ -2,8 +2,6 @@
 
 #include <nanobind/nanobind.h>
 
-#include <cstdio>
-#include <cstdlib>
 #include <typeindex>
 #include <unordered_map>
 
@@ -97,14 +95,6 @@ private:
 template <typename Base, typename Derived>
 inline void registerPolymorphicCaster()
 {
-  const char* trace = std::getenv("DARTPY_TRACE_POLY_REGISTER");
-  if (trace) {
-    std::fprintf(
-        stderr,
-        "[dartpy][poly][register] base=%s derived=%s\n",
-        typeid(Base).name(),
-        typeid(Derived).name());
-  }
   detail::PolymorphicCasterRegistry<Base>::registerType(
       typeid(Derived),
       [](void* ptr) -> Base* {
