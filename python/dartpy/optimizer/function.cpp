@@ -48,8 +48,7 @@ void defOptimizerFunction(nb::module_& m)
           },
           nb::rv_policy::reference_internal);
 
-  nb::class_<dart::math::NullFunction, dart::math::Function>(
-      m, "NullFunction")
+  nb::class_<dart::math::NullFunction, dart::math::Function>(m, "NullFunction")
       .def(nb::init<const std::string&>(), nb::arg("name"))
       .def(
           "eval",

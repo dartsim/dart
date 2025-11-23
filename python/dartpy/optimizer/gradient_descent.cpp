@@ -39,9 +39,7 @@ void defGradientDescentSolver(nb::module_& m)
   nb::class_<Solver, dart::math::Solver>(m, "GradientDescentSolver")
       .def(nb::init<>())
       .def(nb::init<const Solver::Properties&>(), nb::arg("properties"))
-      .def(
-          nb::init<std::shared_ptr<dart::math::Problem>>(),
-          nb::arg("problem"))
+      .def(nb::init<std::shared_ptr<dart::math::Problem>>(), nb::arg("problem"))
       .def("solve", &Solver::solve)
       .def("getLastConfiguration", &Solver::getLastConfiguration)
       .def("getType", &Solver::getType)

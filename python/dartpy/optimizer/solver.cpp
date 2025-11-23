@@ -40,18 +40,13 @@ void defOptimizerSolver(nb::module_& m)
 
   nb::class_<Solver::Properties>(m, "SolverProperties")
       .def(nb::init<>())
-      .def(
-          nb::init<std::shared_ptr<dart::math::Problem>>(),
-          nb::arg("problem"))
+      .def(nb::init<std::shared_ptr<dart::math::Problem>>(), nb::arg("problem"))
       .def(
           nb::init<std::shared_ptr<dart::math::Problem>, double>(),
           nb::arg("problem"),
           nb::arg("tolerance"))
       .def(
-          nb::init<
-              std::shared_ptr<dart::math::Problem>,
-              double,
-              std::size_t>(),
+          nb::init<std::shared_ptr<dart::math::Problem>, double, std::size_t>(),
           nb::arg("problem"),
           nb::arg("tolerance"),
           nb::arg("numMaxIterations"))
@@ -118,9 +113,7 @@ void defOptimizerSolver(nb::module_& m)
   nb::class_<Solver, PySolver>(m, "Solver")
       .def(nb::init<>())
       .def(nb::init<Solver::Properties>(), nb::arg("properties"))
-      .def(
-          nb::init<std::shared_ptr<dart::math::Problem>>(),
-          nb::arg("problem"))
+      .def(nb::init<std::shared_ptr<dart::math::Problem>>(), nb::arg("problem"))
       .def("solve", &Solver::solve)
       .def("getType", &Solver::getType)
       .def("clone", &Solver::clone)
