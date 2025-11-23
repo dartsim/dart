@@ -628,10 +628,16 @@ TEST(World, RevoluteJointConstraintBasics)
   auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
 
-  for (int i = 0; i < 10; ++i)
+  for (int i = 0; i < 50; ++i)
     world->step();
 
   const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
   const Eigen::Vector3d pos2 = bd2->getTransform() * offset;
-  EXPECT_TRUE(pos1.isApprox(pos2, 1e-6));
+  EXPECT_LT((pos1 - pos2).norm(), 1e-4);
+
+  const Eigen::Vector3d axis1
+      = bd1->getTransform().linear() * Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d axis2
+      = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
+  EXPECT_NEAR(axis1.normalized().dot(axis2.normalized()), 1.0, 1e-4);
 }

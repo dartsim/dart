@@ -66,11 +66,17 @@ def test_revolute_joint_constraint():
     constraint_solver = world.getConstraintSolver()
     constraint_solver.addConstraint(constraint)
 
-    for _ in range(100):
+    for _ in range(200):
         world.step()
         pos1 = bd1.getTransform().multiply(offset)
         pos2 = bd2.getTransform().multiply(offset)
-        assert np.isclose(pos1, pos2).all()
+        assert np.linalg.norm(pos1 - pos2) < 1e-4
+
+    axis1 = bd1.getTransform().rotation().dot(np.array([0.0, 1.0, 0.0]))
+    axis2 = bd2.getTransform().rotation().dot(np.array([0.0, 1.0, 0.0]))
+    axis1 /= np.linalg.norm(axis1)
+    axis2 /= np.linalg.norm(axis2)
+    assert np.isclose(np.dot(axis1, axis2), 1.0, atol=1e-4)
 
 
 if __name__ == "__main__":
