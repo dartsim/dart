@@ -55,8 +55,9 @@
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/common/Uri.hpp>
 #include <dart/math/Constants.hpp>
+
+#include <dart/common/Uri.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>
@@ -637,7 +638,8 @@ TEST(MimicConstraint, OdeTracksReferenceLongRun)
   const double driftTol = 1e-3; // 1mm base drift tolerance
   const double angleTol = 2e-2; // ~1.15 degrees
   const double velTol = 1e-1;   // 0.1 rad/s
-  const double maxAngle = dart::math::pi + 1e-2; // allow full swing with small margin
+  const double maxAngle
+      = dart::math::pi + 1e-2; // allow full swing with small margin
   const double minAngle = 1.0;
 
   const int steps = 10000;
