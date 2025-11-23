@@ -1198,14 +1198,10 @@ config = { cmd = """
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" }, args = [
-<<<<<<< HEAD
   { arg = "dartpy", default = "OFF" },
-=======
-  { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
   { arg = "profile_tracy", default = "ON" },
->>>>>>> main
 ] }
 
 # Multi-config generator uses same build directory for all configurations
