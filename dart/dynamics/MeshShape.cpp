@@ -137,6 +137,8 @@ MeshShape::MeshShape(
     const common::Uri& path,
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
+    mMesh(nullptr),
+    mMeshCleanup(MeshCleanupMode::AssimpImporter),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
     mAlphaMode(BLEND),
@@ -149,7 +151,25 @@ MeshShape::MeshShape(
 //==============================================================================
 MeshShape::~MeshShape()
 {
-  aiReleaseImport(mMesh);
+  releaseMesh();
+}
+
+//==============================================================================
+void MeshShape::releaseMesh()
+{
+  if (!mMesh)
+    return;
+
+  switch (mMeshCleanup) {
+    case MeshCleanupMode::AssimpImporter:
+      aiReleaseImport(mMesh);
+      break;
+    case MeshCleanupMode::ClonedScene:
+      delete mMesh;
+      break;
+  }
+
+  mMesh = nullptr;
 }
 
 //==============================================================================
@@ -216,6 +236,14 @@ void MeshShape::setMesh(
     const common::Uri& uri,
     common::ResourceRetrieverPtr resourceRetriever)
 {
+  if (mesh == mMesh) {
+    // Nothing to do.
+    return;
+  }
+
+  releaseMesh();
+
+  mMeshCleanup = MeshCleanupMode::AssimpImporter;
   mMesh = mesh;
 
   if (!mMesh) {
@@ -326,6 +354,7 @@ ShapePtr MeshShape::clone() const
 
   auto new_shape = std::make_shared<MeshShape>(
       mScale, new_scene, mMeshUri, mResourceRetriever);
+  new_shape->mMeshCleanup = MeshCleanupMode::ClonedScene;
   new_shape->mMeshPath = mMeshPath;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mColorMode = mColorMode;

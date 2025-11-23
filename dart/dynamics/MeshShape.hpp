@@ -192,7 +192,20 @@ protected:
 
   aiScene* cloneMesh() const;
 
+  /// How to clean up the owned mesh.
+  enum class MeshCleanupMode
+  {
+    /// Mesh allocated by Assimp import; free with aiReleaseImport.
+    AssimpImporter,
+    /// Mesh allocated by MeshShape::cloneMesh; free with delete.
+    ClonedScene,
+  };
+
+  void releaseMesh();
+
   const aiScene* mMesh;
+
+  MeshCleanupMode mMeshCleanup;
 
   /// URI the mesh, if available).
   common::Uri mMeshUri;
