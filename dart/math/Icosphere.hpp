@@ -73,8 +73,8 @@ public:
 
   /// Construct an icosphere given radius and subdivisions.
   ///
-  /// \param[in] radius: The radius of the icosphere.
-  /// \param[in] subdivisions: The number of subdividing an icosahedron. Passing
+  /// @param[in] radius: The radius of the icosphere.
+  /// @param[in] subdivisions: The number of subdividing an icosahedron. Passing
   /// 1 generates icosahedron without subdividing.
   Icosphere(S radius, std::size_t subdivisions);
 

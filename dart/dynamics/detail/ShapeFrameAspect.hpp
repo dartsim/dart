@@ -56,6 +56,7 @@ struct DART_API VisualAspectProperties
   /// Color for the primitive shape
   Eigen::Vector4d mRGBA;
 
+  /// True if no explicit color was provided and the default should be used.
   bool mUseDefaultColor;
 
   /// True if this shape node should be kept from rendering
@@ -64,9 +65,12 @@ struct DART_API VisualAspectProperties
   /// True if this shape node should be shadowed
   bool mShadowed;
 
+  /// Default color for visual aspects without an explicit override.
+  static Eigen::Vector4d getDefaultRGBA();
+
   /// Constructor
   VisualAspectProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
+      const Eigen::Vector4d& color = getDefaultRGBA(),
       const bool hidden = false,
       const bool shadowed = true);
 

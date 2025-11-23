@@ -54,17 +54,17 @@ namespace dart8 {
 /// ## Frame Interface
 ///
 /// Link inherits from Frame, providing full access to frame-related queries:
-/// \code
+/// @code
 ///   auto base = robot.addLink("base");
 ///   auto ee = robot.addLink("end_effector");
 ///
 ///   // Use Frame methods directly on Link
 ///   auto T_world_ee = ee.getWorldTransform();
 ///   auto T_base_ee = ee.getTransform(base);
-/// \endcode
+/// @endcode
 ///
 /// Usage:
-/// \code
+/// @code
 ///   auto root = robot.addLink("base");
 ///   auto link1 = robot.addLink("link1", {
 ///       .parentLink = root.getEntity(),
@@ -72,7 +72,7 @@ namespace dart8 {
 ///       .jointType = JointType::REVOLUTE
 ///   });
 ///   std::cout << link1.getName() << std::endl;
-/// \endcode
+/// @endcode
 ///
 /// @note Link handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed

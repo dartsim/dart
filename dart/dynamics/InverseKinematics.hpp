@@ -101,7 +101,7 @@ public:
   ///
   /// Here is the pseudocode as described above:
   ///
-  /// \code
+  /// @code
   /// attempts <- 0
   /// initial_guess <- current_joint_positions
   /// while attempts <= max_attempts:
@@ -114,7 +114,7 @@ public:
   ///       initial_guess <- seed[attempts - 1]
   ///     else:
   ///       initial_guess <- random_configuration  // within the bounds
-  /// \endcode
+  /// @endcode
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
@@ -144,7 +144,7 @@ public:
   ///
   /// Here is the pseudocode as described above:
   ///
-  /// \code
+  /// @code
   /// attempts <- 0
   /// initial_guess <- current_joint_positions
   /// while attempts <= max_attempts:
@@ -157,7 +157,7 @@ public:
   ///       initial_guess <- seed[attempts - 1]
   ///     else:
   ///       initial_guess <- random_configuration  // within the bounds
-  /// \endcode
+  /// @endcode
   ///
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
@@ -174,39 +174,39 @@ public:
   /// taken care of automatically, and Problem::setInitialGuess(~) will be
   /// called with the current positions of the Degrees Of Freedom.
   ///
-  /// \param[out] positions The solution of the IK problem. If the solver failed
+  /// @param[out] positions The solution of the IK problem. If the solver failed
   /// to find a solution then it will still set the position with the best
-  /// guess. For example, iterative solvers will fill \c positions with the last
+  /// guess. For example, iterative solvers will fill @c positions with the last
   /// result of the iterations.
-  /// \return True if a solution is successfully found.
-  /// \sa solveAndApply()
+  /// @return True if a solution is successfully found.
+  /// @sa solveAndApply()
   bool findSolution(Eigen::VectorXd& positions);
 
   /// Identical to findSolution(), but this function applies the solution when
-  /// the solver successfully found a solution or \c allowIncompleteResult is
+  /// the solver successfully found a solution or @c allowIncompleteResult is
   /// set to true.
   ///
-  /// \param[in] allowIncompleteResult Allow to apply the solution even when
+  /// @param[in] allowIncompleteResult Allow to apply the solution even when
   /// the solver failed to find solution. This option would be useful when an
   /// iterative solver is used because they will often do a decent job of
   /// getting a result close to a solution even if it failed to find the
   /// solution.
-  /// \return True if a solution is successfully found
+  /// @return True if a solution is successfully found
   bool solveAndApply(bool allowIncompleteResult = true);
 
-  /// Identical to solveAndApply(bool), but \c position will be filled with the
+  /// Identical to solveAndApply(bool), but @c position will be filled with the
   /// solved positions.
   ///
-  /// \param[out] positions The solution of the IK problem. If the solver failed
+  /// @param[out] positions The solution of the IK problem. If the solver failed
   /// to find a solution then it will still set the position with the best
-  /// guess. For example, iterative solvers will fill \c positions with the last
+  /// guess. For example, iterative solvers will fill @c positions with the last
   /// result of the iterations.
-  /// \param[in] allowIncompleteResult Allow to apply the solution even when
+  /// @param[in] allowIncompleteResult Allow to apply the solution even when
   /// the solver failed to find solution. This option would be useful when an
   /// iterative solver is used because they will often do a decent job of
   /// getting a result close to a solution even if it failed to find the
   /// solution.
-  /// \return True if a solution is successfully found
+  /// @return True if a solution is successfully found
   bool solveAndApply(
       Eigen::VectorXd& positions, bool allowIncompleteResult = true);
 

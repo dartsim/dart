@@ -41,162 +41,162 @@
 
 class StateMachine;
 
-/// \brief Implementation of Simbicon (Simple biped locomotion control) for
+/// @brief Implementation of Simbicon (Simple biped locomotion control) for
 /// Atlas robot
 ///
 /// Reference: http://dl.acm.org/citation.cfm?id=1276509
 class Controller
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   Controller(
       dart::dynamics::SkeletonPtr _atlasRobot,
       dart::constraint::ConstraintSolver* _collisionSolver);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~Controller();
 
-  /// \brief Called before every simulation time step in MyWindow class.
+  /// @brief Called before every simulation time step in MyWindow class.
   /// Compute control force and apply it to Atlas robot
   virtual void update();
 
-  /// \brief
+  /// @brief
   dart::dynamics::SkeletonPtr getAtlasRobot();
 
-  /// \brief Get current state machine
+  /// @brief Get current state machine
   StateMachine* getCurrentState();
 
-  /// \brief Change state to _stateMachine
+  /// @brief Change state to _stateMachine
   void changeStateMachine(StateMachine* _stateMachine, double _currentTime);
 
-  /// \brief Change state machine to a state machine whose names is _name
+  /// @brief Change state machine to a state machine whose names is _name
   void changeStateMachine(const std::string& _name, double _currentTime);
 
-  /// \brief Change state machine to a state machine whose index is _idx
+  /// @brief Change state machine to a state machine whose index is _idx
   void changeStateMachine(std::size_t _idx, double _currentTime);
 
-  /// \brief Get true iff this controller is currently allowing to control the
+  /// @brief Get true iff this controller is currently allowing to control the
   /// Atlas robot
   bool isAllowingControl() const;
 
-  /// \brief Keyboard control
+  /// @brief Keyboard control
   void keyboard(unsigned char _key, int _x, int _y, double _currentTime);
 
-  /// \brief Print debug information
+  /// @brief Print debug information
   void printDebugInfo() const;
 
-  /// \brief Harness the robot
+  /// @brief Harness the robot
   void harnessPelvis();
 
-  /// \brief Unharness the robot
+  /// @brief Unharness the robot
   void unharnessPelvis();
 
-  /// \brief Harness the robot
+  /// @brief Harness the robot
   void harnessLeftFoot();
 
-  /// \brief Harness the robot
+  /// @brief Harness the robot
   void unharnessLeftFoot();
 
-  /// \brief Harness the robot
+  /// @brief Harness the robot
   void harnessRightFoot();
 
-  /// \brief Harness the robot
+  /// @brief Harness the robot
   void unharnessRightFoot();
 
-  /// \brief Reset the robot
+  /// @brief Reset the robot
   void resetRobot();
 
-  /// \brief Set the verbosity
+  /// @brief Set the verbosity
   void setVerbosity(bool verbosity);
 
 protected:
-  /// \brief Atlas robot skeleton
+  /// @brief Atlas robot skeleton
   dart::dynamics::SkeletonPtr mAtlasRobot;
 
-  /// \brief Conllision detector
+  /// @brief Conllision detector
   dart::constraint::ConstraintSolver* mConstratinSolver;
 
-  /// \brief List of state machines
+  /// @brief List of state machines
   std::vector<StateMachine*> mStateMachines;
 
-  /// \brief Current state machine
+  /// @brief Current state machine
   StateMachine* mCurrentStateMachine;
 
-  /// \brief Flag for pelvis harnessing
+  /// @brief Flag for pelvis harnessing
   bool mPelvisHarnessOn;
 
-  /// \brief Flag for left foot harnessing
+  /// @brief Flag for left foot harnessing
   bool mLeftFootHarnessOn;
 
-  /// \brief Flag for right foot harnessing
+  /// @brief Flag for right foot harnessing
   bool mRightFootHarnessOn;
 
-  /// \brief Index for coronal left hip
+  /// @brief Index for coronal left hip
   std::size_t mCoronalLeftHip;
 
-  /// \brief Index for coronal right hip
+  /// @brief Index for coronal right hip
   std::size_t mCoronalRightHip;
 
-  /// \brief Index for sagital left hip
+  /// @brief Index for sagital left hip
   std::size_t mSagitalLeftHip;
 
-  /// \brief Index for sagital right hip
+  /// @brief Index for sagital right hip
   std::size_t mSagitalRightHip;
 
-  /// \brief Lower bound for emergency stop
+  /// @brief Lower bound for emergency stop
   double mMinPelvisHeight;
 
-  /// \brief Upper bound for emergency stop
+  /// @brief Upper bound for emergency stop
   double mMaxPelvisHeight;
 
 private:
-  /// \brief Check if this controller contains _stateMachine
+  /// @brief Check if this controller contains _stateMachine
   bool _containStateMachine(const StateMachine* _stateMachine) const;
 
-  /// \brief Check if this controller contains a state machine whose name is
+  /// @brief Check if this controller contains a state machine whose name is
   ///        _name
   bool _containStateMachine(const std::string& _name) const;
 
-  /// \brief Find a state machine whose name is _name
+  /// @brief Find a state machine whose name is _name
   StateMachine* _findStateMachine(const std::string& _name) const;
 
-  /// \brief Build state machines
+  /// @brief Build state machines
   void _buildStateMachines();
 
-  /// \brief Create standing controller
+  /// @brief Create standing controller
   StateMachine* _createStandingStateMachine();
 
-  /// \brief Create standing controller
+  /// @brief Create standing controller
   StateMachine* _createWalkingInPlaceStateMachine();
 
-  /// \brief Create standing controller
+  /// @brief Create standing controller
   StateMachine* _createWalkingStateMachine();
 
-  /// \brief Create running controller
+  /// @brief Create running controller
   StateMachine* _createRunningStateMachine();
 
-  /// \brief Set joint damping
+  /// @brief Set joint damping
   void _setJointDamping();
 
-  /// \brief Get left foot
+  /// @brief Get left foot
   dart::dynamics::BodyNode* _getLeftFoot() const;
 
-  /// \brief Get right foot
+  /// @brief Get right foot
   dart::dynamics::BodyNode* _getRightFoot() const;
 
-  /// \brief Weld joint constraint for pelvis harnessing
+  /// @brief Weld joint constraint for pelvis harnessing
   dart::constraint::WeldJointConstraintPtr mWeldJointConstraintPelvis;
 
-  /// \brief Weld joint constraint for left foot harnessing
+  /// @brief Weld joint constraint for left foot harnessing
   dart::constraint::WeldJointConstraintPtr mWeldJointConstraintLeftFoot;
 
-  /// \brief Weld joint constraint for right foot harnessing
+  /// @brief Weld joint constraint for right foot harnessing
   dart::constraint::WeldJointConstraintPtr mWeldJointConstraintRightFoot;
 
-  /// \brief Initial state of the robot
+  /// @brief Initial state of the robot
   dart::dynamics::Skeleton::Configuration mInitialState;
 
-  /// \brief Whether to print messages about the internal state
+  /// @brief Whether to print messages about the internal state
   bool mVerbosity;
 };
 

@@ -257,56 +257,56 @@ void log(
 
 namespace dart::common {
 
-/// \brief Logs for a trace message
+/// @brief Logs for a trace message
 ///
 /// Logs for the most fine-grained information than any other log levels.
 ///
-/// \sa info
+/// @sa info
 template <typename S, typename... Args>
 void trace(const S& format_str, Args&&... args);
 
-/// \brief Logs for a debug message
+/// @brief Logs for a debug message
 ///
 /// Logs for fine-grained information that is useful for debugging.
 ///
-/// \sa info
+/// @sa info
 template <typename S, typename... Args>
 void debug(const S& format_str, Args&&... args);
 
-/// \brief Logs for a information message
+/// @brief Logs for a information message
 ///
 /// Logs for useful information from normal operations.
 ///
 /// You can use a Python like formatting API as
-/// \code
+/// @code
 /// dart::common::info("Hello {}!", "World");  // logged as "Hello World!"
-/// \endcode
+/// @endcode
 template <typename S, typename... Args>
 void info(const S& format_str, Args&&... args);
 
-/// \brief Logs for a warning message
+/// @brief Logs for a warning message
 ///
 /// Logs for warning information that is potentially harmful.
 ///
-/// \sa info
+/// @sa info
 template <typename S, typename... Args>
 void warn(const S& format_str, Args&&... args);
 
-/// \brief Logs for a error message
+/// @brief Logs for a error message
 ///
 /// Logs for errors that might still allow the application to continue running,
 /// but the application might lead to unexpected behavior.
 ///
-/// \sa info
+/// @sa info
 template <typename S, typename... Args>
 void error(const S& format_str, Args&&... args);
 
-/// \brief Logs for a fatal error message
+/// @brief Logs for a fatal error message
 ///
 /// Logs for highly sever errors that will presumably lead the application to
 /// crash.
 ///
-/// \sa info
+/// @sa info
 template <typename S, typename... Args>
 void fatal(const S& format_str, Args&&... args);
 

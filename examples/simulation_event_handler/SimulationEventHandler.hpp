@@ -39,7 +39,7 @@
 
 #include <osgGA/GUIEventHandler>
 
-/// \brief Comprehensive event handler for rigid body physics simulation
+/// @brief Comprehensive event handler for rigid body physics simulation
 ///
 /// This class replaces MyWindow.cpp functionality and provides:
 /// - Force application on rigid bodies
@@ -49,102 +49,102 @@
 class SimulationEventHandler : public osgGA::GUIEventHandler
 {
 public:
-  /// \brief Constructor
-  /// \param world The physics world to control
-  /// \param viewer The OSG viewer for visualization
+  /// @brief Constructor
+  /// @param world The physics world to control
+  /// @param viewer The OSG viewer for visualization
   explicit SimulationEventHandler(
       dart::simulation::WorldPtr world,
       dart::gui::osg::Viewer* viewer = nullptr);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~SimulationEventHandler() = default;
 
-  /// \brief Handle GUI events (keyboard input, etc.)
+  /// @brief Handle GUI events (keyboard input, etc.)
   bool handle(
       const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override;
 
-  /// \brief Update simulation state (called each frame)
+  /// @brief Update simulation state (called each frame)
   void update();
 
-  /// \brief Set the time step for the simulation
+  /// @brief Set the time step for the simulation
   void setTimeStep(double timeStep)
   {
     mTimeStep = timeStep;
   }
 
-  /// \brief Get the current time step
+  /// @brief Get the current time step
   double getTimeStep() const
   {
     return mTimeStep;
   }
 
-  /// \brief Enable/disable force visualization arrows
+  /// @brief Enable/disable force visualization arrows
   void setShowForceArrows(bool show)
   {
     mShowForceArrows = show;
   }
 
-  /// \brief Check if force arrows are shown
+  /// @brief Check if force arrows are shown
   bool getShowForceArrows() const
   {
     return mShowForceArrows;
   }
 
-  /// \brief Set the magnitude of applied forces
+  /// @brief Set the magnitude of applied forces
   void setForceMagnitude(double magnitude)
   {
     mForceMagnitude = magnitude;
   }
 
-  /// \brief Get the force magnitude
+  /// @brief Get the force magnitude
   double getForceMagnitude() const
   {
     return mForceMagnitude;
   }
 
 protected:
-  /// \brief Apply force to the selected rigid body
-  /// \param force The force vector to apply (in world coordinates)
+  /// @brief Apply force to the selected rigid body
+  /// @param force The force vector to apply (in world coordinates)
   void applyForceToSelectedBody(const Eigen::Vector3d& force);
 
-  /// \brief Apply torque to the selected rigid body
-  /// \param torque The torque vector to apply (in world coordinates)
+  /// @brief Apply torque to the selected rigid body
+  /// @param torque The torque vector to apply (in world coordinates)
   void applyTorqueToSelectedBody(const Eigen::Vector3d& torque);
 
-  /// \brief Update force visualization arrows
+  /// @brief Update force visualization arrows
   void updateForceArrows();
 
-  /// \brief Create and add force arrow visualization
-  /// \param bodyNode The body node to attach arrow to
-  /// \param force The force vector to visualize
+  /// @brief Create and add force arrow visualization
+  /// @param bodyNode The body node to attach arrow to
+  /// @param force The force vector to visualize
   void addForceArrow(
       dart::dynamics::BodyNodePtr bodyNode, const Eigen::Vector3d& force);
 
-  /// \brief Clear all force arrows
+  /// @brief Clear all force arrows
   void clearForceArrows();
 
-  /// \brief Select the next rigid body in the world
+  /// @brief Select the next rigid body in the world
   void selectNextBody();
 
-  /// \brief Select the previous rigid body in the world
+  /// @brief Select the previous rigid body in the world
   void selectPreviousBody();
 
-  /// \brief Reset the simulation to initial state
+  /// @brief Reset the simulation to initial state
   void resetSimulation();
 
-  /// \brief Step the simulation forward one time step
+  /// @brief Step the simulation forward one time step
   void stepSimulation();
 
-  /// \brief Toggle simulation play/pause
+  /// @brief Toggle simulation play/pause
   void toggleSimulation();
 
-  /// \brief Print current simulation state
+  /// @brief Print current simulation state
   void printSimulationState();
 
-  /// \brief Print usage instructions
+  /// @brief Print usage instructions
   void printInstructions();
 
-  /// \brief Get all rigid bodies (bodies with FreeJoint or similar)
+  /// @brief Get all rigid bodies (bodies with FreeJoint or similar)
   std::vector<dart::dynamics::BodyNodePtr> getRigidBodies();
 
 private:

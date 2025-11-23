@@ -72,15 +72,15 @@ struct DART_API Contact
   double penetrationDepth;
 
   // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
-  /// \brief
+  /// @brief
   int triID1;
 
   // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
-  /// \brief
+  /// @brief
   int triID2;
 
   // TODO(JS): userData is an experimental variable.
-  /// \brief User data.
+  /// @brief User data.
   void* userData;
 
   /// Return the ShapeFrame of collisionObject1 if available.
