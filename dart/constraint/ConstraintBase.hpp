@@ -33,14 +33,14 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 #define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
 #include <dart/Export.hpp>
 
 #include <cstddef>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class Skeleton;
 } // namespace dynamics
@@ -138,6 +138,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_CONSTRAINTBASE_HPP_

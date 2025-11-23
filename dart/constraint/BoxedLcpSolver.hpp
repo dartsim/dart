@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/common/Castable.hpp>
@@ -41,7 +42,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 class BoxedLcpSolver : public common::Castable<BoxedLcpSolver>
@@ -96,6 +97,6 @@ public:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_

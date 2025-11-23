@@ -33,9 +33,10 @@
 #ifndef DART_CONSTRAINT_FWD_HPP_
 #define DART_CONSTRAINT_FWD_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/SmartPointer.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 class BalanceConstraint;
@@ -99,6 +100,6 @@ DART_COMMON_DECLARE_SHARED_WEAK(WeldJointConstraint)
 DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_FWD_HPP_

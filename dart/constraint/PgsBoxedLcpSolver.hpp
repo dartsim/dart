@@ -33,13 +33,14 @@
 #ifndef DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
 #include <dart/Export.hpp>
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 /// Implementation of projected Gauss-Seidel (PGS) LCP solver.
@@ -103,6 +104,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_

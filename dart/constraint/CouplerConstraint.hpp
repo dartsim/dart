@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_
 #define DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 
 #include <dart/dynamics/MimicDofProperties.hpp>
@@ -41,7 +42,7 @@
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 /// CouplerConstraint enforces the mimic relationship between two joints by
@@ -150,6 +151,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_

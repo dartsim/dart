@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 #include <dart/constraint/ContactSurface.hpp>
 
@@ -40,8 +41,7 @@
 
 #include <dart/math/MathTypes.hpp>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class BodyNode;
 class Skeleton;
@@ -255,6 +255,6 @@ private:
 // TODO(JS): Create SelfContactConstraint.
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_CONTACTCONSTRAINT_HPP_

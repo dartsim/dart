@@ -33,13 +33,14 @@
 #ifndef DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_
 #define DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/constraint/LCPSolver.hpp>
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
@@ -79,6 +80,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_DANTZIGLCPSOLVER_HPP_

@@ -33,14 +33,14 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <dart/math/MathTypes.hpp>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 class SoftCollisionInfo;
 } // namespace collision
@@ -257,6 +257,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_

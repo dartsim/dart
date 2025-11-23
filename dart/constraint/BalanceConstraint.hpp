@@ -33,11 +33,12 @@
 #ifndef DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 #define DART_CONSTRAINT_BALANCECONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/HierarchicalIK.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 /// BalanceConstraint is a kinematic constraint function designed to be passed
@@ -199,6 +200,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_BALANCECONSTRAINT_HPP_

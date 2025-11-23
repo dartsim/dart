@@ -33,9 +33,11 @@
 #ifndef DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
 #define DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 
-namespace dart::constraint {
+DART_INLINE_NAMESPACE_BEGIN
+namespace constraint {
 
 //==============================================================================
 template <typename Func>
@@ -73,6 +75,7 @@ void ConstraintSolver::eachConstraint(Func func)
   }
 }
 
-} // namespace dart::constraint
+} // namespace constraint
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_

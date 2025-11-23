@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 #define DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstrainedGroup.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 #include <dart/constraint/Fwd.hpp>
@@ -48,8 +49,7 @@
 #include <span>
 #include <vector>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class Skeleton;
 class ShapeNodeCollisionObject;
@@ -284,7 +284,7 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/constraint/detail/ConstraintSolver-impl.hpp>
 

@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 #define DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/constraint/Fwd.hpp>
@@ -42,8 +43,7 @@
 #include <memory>
 #include <vector>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class Skeleton;
 } // namespace dynamics
@@ -115,6 +115,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_

@@ -33,11 +33,12 @@
 #ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
 #define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
@@ -68,6 +69,6 @@ public:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_

@@ -33,7 +33,9 @@
 #ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
 #define DART_CONSTRAINT_LCPSOLVER_HPP_
 
-namespace dart {
+#include <dart/common/Namespace.hpp>
+
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 class ConstrainedGroup;
@@ -64,6 +66,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_LCPSOLVER_HPP_

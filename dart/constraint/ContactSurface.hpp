@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
 #define DART_CONSTRAINT_CONTACTSURFACE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/Fwd.hpp>
 
 #include <dart/collision/Contact.hpp>
@@ -49,7 +50,7 @@
 #define DART_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON_SQUARED 1e-12
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
@@ -188,6 +189,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_CONTACTSURFACE_HPP_

@@ -33,10 +33,10 @@
 #ifndef DART_CONSTRAINT_SERVOMOTORCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SERVOMOTORCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class BodyNode;
 class Joint;
@@ -146,6 +146,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_SERVOMOTORCONSTRAINT_HPP_

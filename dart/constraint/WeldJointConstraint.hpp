@@ -33,6 +33,7 @@
 #ifndef DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/DynamicJointConstraint.hpp>
 
 #include <dart/math/MathTypes.hpp>
@@ -41,7 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace constraint {
 
 /// WeldJointConstraint represents weld joint constraint between a body and the
@@ -130,6 +131,6 @@ public:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_WELDJOINTCONSTRAINT_HPP_

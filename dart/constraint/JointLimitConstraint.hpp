@@ -33,12 +33,12 @@
 #ifndef DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
 #define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/constraint/ConstraintBase.hpp>
 
 #include <Eigen/Dense>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class BodyNode;
 class Joint;
@@ -180,6 +180,6 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
