@@ -52,15 +52,15 @@ public:
 
   /// Constructors with specific primary LCP solver.
   ///
-  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// @param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, which is discouraged, Dantzig solver will be used.
   BoxedLcpConstraintSolver(BoxedLcpSolverPtr boxedLcpSolver);
 
   /// Constructs with specific primary and secondary LCP solvers.
   ///
-  /// \param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
+  /// @param[in] boxedLcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, which is discouraged, Dantzig solver will be used.
-  /// \param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. Pass
+  /// @param[in] secondaryBoxedLcpSolver The secondary boxed-LCP solver. Pass
   /// nullptr to disable using secondary LCP solver.
   BoxedLcpConstraintSolver(
       BoxedLcpSolverPtr boxedLcpSolver,
@@ -68,7 +68,7 @@ public:
 
   /// Sets boxed LCP (BLCP) solver
   ///
-  /// \param[in] lcpSolver The primary boxed LCP solver. When nullptr is
+  /// @param[in] lcpSolver The primary boxed LCP solver. When nullptr is
   /// passed, Dantzig solver will be used.
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
 

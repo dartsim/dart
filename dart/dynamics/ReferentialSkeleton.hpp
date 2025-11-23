@@ -61,7 +61,7 @@ public:
       const override;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Name
+  /// \{ @name Name
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -73,14 +73,14 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Structural Properties
+  /// \{ @name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Returns number of skeletons associated with this ReferentialSkeleton.
   std::size_t getNumSkeletons() const noexcept;
 
   /// Returns whether this ReferentialSkeleton contains any BodyNode or Joint
-  /// from \c skel.
+  /// from @c skel.
   bool hasSkeleton(const Skeleton* skel) const noexcept;
 
   // Documentation inherited
@@ -92,17 +92,17 @@ public:
   // Documentation inherited
   const BodyNode* getBodyNode(std::size_t _idx) const override;
 
-  /// \copydoc MetaSkeleton::getBodyNode(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNode(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
+  /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when this ReferentialSkeleton contains BodyNodes from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
   BodyNode* getBodyNode(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getBodyNode(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNode(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
+  /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when this ReferentialSkeleton contains BodyNodes from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
@@ -114,15 +114,15 @@ public:
   // Documentation inherited
   const std::vector<const BodyNode*>& getBodyNodes() const override;
 
-  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
+  /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when ReferentialSkeleton contains BodyNodes from multiple Skeletons.
   std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple BodyNodes with the same
+  /// @note ReferentialSkeleton can contain multiple BodyNodes with the same
   /// name when ReferentialSkeleton contains BodyNodes from multiple Skeletons.
   std::vector<const BodyNode*> getBodyNodes(
       const std::string& name) const override;
@@ -143,17 +143,17 @@ public:
   // Documentation inherited
   const Joint* getJoint(std::size_t _idx) const override;
 
-  /// \copydoc MetaSkeleton::getJoint(const std::string&).
+  /// @copydoc MetaSkeleton::getJoint(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple Joints with the same
+  /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when this ReferentialSkeleton contains Joints from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
   Joint* getJoint(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getJoint(const std::string&).
+  /// @copydoc MetaSkeleton::getJoint(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple Joints with the same
+  /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when this ReferentialSkeleton contains Joints from multiple
   /// Skeletons. In this case, this function returns the first one, which is
   /// implementation dependent, and prints a warning.
@@ -165,15 +165,15 @@ public:
   // Documentation inherited
   std::vector<const Joint*> getJoints() const override;
 
-  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple Joints with the same
+  /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when ReferentialSkeleton contains Joints from multiple Skeletons.
   std::vector<Joint*> getJoints(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(const std::string&).
   ///
-  /// \note ReferentialSkeleton can contain multiple Joints with the same
+  /// @note ReferentialSkeleton can contain multiple Joints with the same
   /// name when ReferentialSkeleton contains Joints from multiple Skeletons.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
 
@@ -206,7 +206,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobians
+  /// \{ @name Jacobians
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -303,7 +303,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of Motion
+  /// \{ @name Equations of Motion
   //----------------------------------------------------------------------------
 
   /// Get the total mass of all BodyNodes in this ReferentialSkeleton. For
@@ -354,7 +354,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Center of Mass Jacobian
+  /// \{ @name Center of Mass Jacobian
   //----------------------------------------------------------------------------
 
   // Documentation inherited

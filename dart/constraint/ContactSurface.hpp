@@ -112,7 +112,7 @@ class DART_API ContactSurfaceHandler
 {
 public:
   /// Constructor
-  /// \param[in] parent Optional parent handler. In ConstraintSolver, the parent
+  /// @param[in] parent Optional parent handler. In ConstraintSolver, the parent
   ///                   handler is automatically set to the previous handler
   ///                   when adding a new one. It is suggested to keep this
   ///                   paradigm if used elsewhere.
