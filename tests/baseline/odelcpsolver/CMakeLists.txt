@@ -6,17 +6,20 @@ file(GLOB srcs "*.cpp")
 set(target_name ${PROJECT_NAME}-external-odelcpsolver)
 set(component_name external-odelcpsolver)
 
-dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(${target_name}
-  PUBLIC
-    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
+dart_add_library(
+  NAME ${target_name}
+  HEADERS ${hdrs}
+  SOURCES ${srcs}
+  PUBLIC_INCLUDE_DIRS ${DART_SOURCE_DIR} ${DART_BINARY_DIR}
+  COMPILE_FEATURES cxx_std_17
 )
-target_compile_features(${target_name} PUBLIC cxx_std_17)
 
 # Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+dart_add_component(
+  NAME ${component_name}
+  PACKAGE ${PROJECT_NAME}
+  TARGETS ${target_name}
+)
 
 # Install
 install(

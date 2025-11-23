@@ -43,14 +43,21 @@ install(FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
 )
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs})
-target_link_libraries(${target_name} PUBLIC dart-utils urdfdom)
+dart_add_library(
+  NAME ${target_name}
+  HEADERS ${hdrs}
+  SOURCES ${srcs}
+  PUBLIC_LINK_LIBRARIES dart-utils urdfdom
+)
 
 # Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} utils)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} urdfdom)
+dart_add_component(
+  NAME ${component_name}
+  PACKAGE ${PROJECT_NAME}
+  TARGETS ${target_name}
+  DEPENDENCIES utils
+  DEPENDENCY_PACKAGES urdfdom
+)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_urdf headers" ${hdrs})

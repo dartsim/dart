@@ -136,15 +136,22 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_io_UrdfMaterialParsing io/test_UrdfMaterialParsing.cpp)
   target_link_libraries(INTEGRATION_io_UrdfMaterialParsing dart-utils-urdf)
 
-  dart_add_library(SharedLibraryWamIkFast io/SharedLibraryWamIkFast.hpp io/SharedLibraryWamIkFast.cpp)
-  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
-  target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
-  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+  dart_add_library(
+    NAME SharedLibraryWamIkFast
+    HEADERS io/SharedLibraryWamIkFast.hpp
+    SOURCES io/SharedLibraryWamIkFast.cpp
+    PUBLIC_LINK_LIBRARIES dart
+    PUBLIC_COMPILE_DEFINITIONS IKFAST_NO_MAIN IKFAST_CLIBRARY
+    PRIVATE_COMPILE_OPTIONS -w
+  )
 
-  dart_add_library(GeneratedWamIkFast io/GeneratedWamIkFast.cpp)
-  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
-  target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
-  target_compile_options(GeneratedWamIkFast PRIVATE -w)
+  dart_add_library(
+    NAME GeneratedWamIkFast
+    SOURCES io/GeneratedWamIkFast.cpp
+    PUBLIC_LINK_LIBRARIES dart
+    PUBLIC_COMPILE_DEFINITIONS IKFAST_NO_MAIN IKFAST_CLIBRARY
+    PRIVATE_COMPILE_OPTIONS -w
+  )
 
   if(BUILD_SHARED_LIBS)
     dart_add_test("integration" test_IkFast io/test_IkFast.cpp)

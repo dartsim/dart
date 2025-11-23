@@ -117,7 +117,7 @@ dart_add_library(
 - `PUBLIC_COMPILE_OPTIONS` - Public compile options
 - `PRIVATE_COMPILE_OPTIONS` - Private compile options
 - `COMPILE_FEATURES` - Compile features (defaults to `cxx_std_20`)
-- `VERSION` - Library version (defaults to `DART_VERSION`)
+- `VERSION` - Library version (defaults to `DART_VERSION`, falls back to `PROJECT_VERSION`)
 - `OUTPUT_NAME` - Output library name
 - `NO_INSTALL` - Skip installation rules
 - `NO_EXPORT_MACRO` - Skip export macro generation
@@ -196,6 +196,8 @@ dart_add_test(
 )
 ```
 
+Optional knobs: `INCLUDE_DIRS`, `COMPILE_DEFINITIONS`, `COMPILE_OPTIONS`, `COMPILE_FEATURES`, `FOLDER`, and `RUNTIME_PATH_TARGET` (defaults to the first linked target) so you rarely need extra `target_*` calls.
+
 **Automatic test discovery:**
 
 ```cmake
@@ -212,7 +214,8 @@ This discovers all `test_*.cpp` files, creates individual tests, adds them to a 
 
 - Automatic discovery of test files
 - CTest integration with labels
-- Auto-link GTest (`GTest::gtest`, `GTest::gtest_main`)
+- Auto-link GTest (`GTest::gtest`, `GTest::gtest_main`) and defaults to C++20
+- Prepends the linked target's runtime directory to `PATH` automatically for CTest
 - Module-level meta targets
 
 #### Python Bindings: `dart_add_python_module()`
@@ -254,6 +257,7 @@ dart_add_benchmark(
 **Features:**
 
 - Auto-link Google Benchmark (`benchmark::benchmark`, `benchmark::benchmark_main`)
+- Optional include dirs/compile options without extra `target_*` calls (defaults to C++20)
 - Output to `${DART_BINARY_DIR}/bin`
 - Global tracking via `DART_ALL_BENCHMARKS` property
 

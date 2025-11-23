@@ -41,8 +41,12 @@ add_subdirectory(render)
 file(GLOB render_hdrs "render/*.hpp")
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
+dart_add_library(
+  NAME ${target_name}
+  HEADERS ${dart_gui_osg_hdrs}
+  SOURCES ${dart_gui_osg_srcs}
+  PUBLIC_LINK_LIBRARIES dart-utils osg::osg ${link_libraries}
+)
 
 if(MSVC AND BUILD_SHARED_LIBS)
   if(CMAKE_CONFIGURATION_TYPES)
@@ -65,10 +69,13 @@ if(MSVC AND BUILD_SHARED_LIBS)
 endif()
 
 # Component
-add_component(${PROJECT_NAME} ${component_name})
-add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} utils ${component_dependencies})
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
+dart_add_component(
+  NAME ${component_name}
+  PACKAGE ${PROJECT_NAME}
+  TARGETS ${target_name}
+  DEPENDENCIES utils ${component_dependencies}
+  DEPENDENCY_PACKAGES ${component_dependency_packages}
+)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})

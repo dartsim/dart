@@ -47,8 +47,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
 
-# Component. This should be called before adding subdirectories.
-add_component(${PROJECT_NAME} dart)
+# Component. Register early so other components can depend on it; the library
+# target is attached after it is created below.
+dart_add_component(
+  NAME dart
+  PACKAGE ${PROJECT_NAME}
+)
 
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
@@ -102,13 +106,17 @@ get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
-dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(
-  dart BEFORE
-  PUBLIC
-    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
+dart_add_library(
+  NAME dart
+  HEADERS ${dart_core_headers}
+  SOURCES ${dart_core_sources}
+  PUBLIC_LINK_LIBRARIES
+    ${CMAKE_DL_LIBS}
+    Eigen3::Eigen
+    fcl
+    assimp
+  PUBLIC_COMPILE_DEFINITIONS
+    BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS
 )
 get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
 if(_dart_extra_includes)
@@ -120,15 +128,6 @@ if(_dart_system_includes)
   list(REMOVE_DUPLICATES _dart_system_includes)
   target_include_directories(dart SYSTEM PUBLIC ${_dart_system_includes})
 endif()
-target_link_libraries(
-  dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    fcl
-    assimp
-)
-target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
 if(_dart_extra_compile_options)
   list(REMOVE_DUPLICATES _dart_extra_compile_options)

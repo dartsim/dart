@@ -666,8 +666,9 @@ endfunction()
 
 #-------------------------------------------------------------------------------
 # Initialize component helpers
-# This must be called before any other component function as it initializes the
-# required global properties.
+# Initializes global properties for component bookkeeping. `add_component()` will
+# auto-initialize if this has not been called, but calling it once up front
+# keeps the intent explicit.
 # Usage:
 #   initialize_component_helpers(package_name)
 #-------------------------------------------------------------------------------
@@ -719,6 +720,11 @@ endfunction()
 #   add_component(package_name component)
 #-------------------------------------------------------------------------------
 function(add_component package_name component)
+  get_property(_components_defined GLOBAL PROPERTY "${package_name}_COMPONENTS" DEFINED)
+  if(NOT _components_defined)
+    initialize_component_helpers(${package_name})
+  endif()
+
   set(component_prefix "${package_name}_component_")
   set(target "${component_prefix}${component}")
   add_custom_target("${target}")
@@ -946,9 +952,6 @@ function(dart_add_component)
   # Step 2: Add targets if specified
   if(_ARG_TARGETS)
     add_component_targets(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_TARGETS})
-  else()
-    message(WARNING "dart_add_component: No TARGETS specified for component ${_ARG_NAME}. "
-                    "At least one target should be added.")
   endif()
 
   # Step 3: Add internal dependencies if specified
@@ -1701,6 +1704,8 @@ function(dart_add_library)
     set(lib_version ${_ARG_VERSION})
   elseif(DEFINED DART_VERSION)
     set(lib_version ${DART_VERSION})
+  elseif(DEFINED PROJECT_VERSION)
+    set(lib_version ${PROJECT_VERSION})
   endif()
 
   if(lib_version)
@@ -1914,13 +1919,15 @@ endfunction()
 #     [LINK_LIBRARIES library1...]
 #     [COMPILE_FEATURES feature1...]
 #     [COMPILE_OPTIONS option1...]
+#     [INCLUDE_DIRS dir1...]
+#     [COMPILE_DEFINITIONS def1...]
 #   )
 #-------------------------------------------------------------------------------
 function(dart_build_target_in_source target)
   set(prefix _ARG)
   set(options)
   set(oneValueArgs)
-  set(multiValueArgs LINK_LIBRARIES COMPILE_FEATURES COMPILE_OPTIONS)
+  set(multiValueArgs LINK_LIBRARIES COMPILE_FEATURES COMPILE_OPTIONS INCLUDE_DIRS COMPILE_DEFINITIONS)
   cmake_parse_arguments("${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(_ARG_LINK_LIBRARIES)
@@ -1944,10 +1951,20 @@ function(dart_build_target_in_source target)
 
   if(_ARG_COMPILE_FEATURES)
     target_compile_features(${target} PUBLIC ${_ARG_COMPILE_FEATURES})
+  else()
+    target_compile_features(${target} PUBLIC cxx_std_20)
   endif()
 
   if(_ARG_COMPILE_OPTIONS)
     target_compile_options(${target} PUBLIC ${_ARG_COMPILE_OPTIONS})
+  endif()
+
+  if(_ARG_INCLUDE_DIRS)
+    target_include_directories(${target} PRIVATE ${_ARG_INCLUDE_DIRS})
+  endif()
+
+  if(_ARG_COMPILE_DEFINITIONS)
+    target_compile_definitions(${target} PRIVATE ${_ARG_COMPILE_DEFINITIONS})
   endif()
 
   set_target_properties(${target}
@@ -2109,6 +2126,12 @@ endfunction()
 #     [LINK_LIBRARIES lib1 lib2...]
 #     [LABELS label1 label2...]
 #     [WORKING_DIRECTORY dir]
+#     [INCLUDE_DIRS dir1 dir2...]
+#     [COMPILE_DEFINITIONS def1 def2...]
+#     [COMPILE_OPTIONS opt1 opt2...]
+#     [COMPILE_FEATURES feature1 feature2...]
+#     [RUNTIME_PATH_TARGET target]  # defaults to first linked target
+#     [FOLDER folder_name]
 #   )
 #
 # Automatically adds the test to CTest with the specified labels
@@ -2119,11 +2142,17 @@ function(dart_add_test)
   set(oneValueArgs
     NAME
     WORKING_DIRECTORY
+    RUNTIME_PATH_TARGET
+    FOLDER
   )
   set(multiValueArgs
     SOURCES
     LINK_LIBRARIES
     LABELS
+    INCLUDE_DIRS
+    COMPILE_DEFINITIONS
+    COMPILE_OPTIONS
+    COMPILE_FEATURES
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
@@ -2139,6 +2168,24 @@ function(dart_add_test)
 
   # Create the test executable
   add_executable(${_ARG_NAME} ${_ARG_SOURCES})
+
+  if(_ARG_INCLUDE_DIRS)
+    target_include_directories(${_ARG_NAME} PRIVATE ${_ARG_INCLUDE_DIRS})
+  endif()
+
+  if(_ARG_COMPILE_DEFINITIONS)
+    target_compile_definitions(${_ARG_NAME} PRIVATE ${_ARG_COMPILE_DEFINITIONS})
+  endif()
+
+  if(_ARG_COMPILE_OPTIONS)
+    target_compile_options(${_ARG_NAME} PRIVATE ${_ARG_COMPILE_OPTIONS})
+  endif()
+
+  if(_ARG_COMPILE_FEATURES)
+    target_compile_features(${_ARG_NAME} PUBLIC ${_ARG_COMPILE_FEATURES})
+  else()
+    target_compile_features(${_ARG_NAME} PUBLIC cxx_std_20)
+  endif()
 
   # Link default test libraries
   target_link_libraries(${_ARG_NAME}
@@ -2159,6 +2206,48 @@ function(dart_add_test)
     set_tests_properties(${_ARG_NAME} PROPERTIES WORKING_DIRECTORY "${_ARG_WORKING_DIRECTORY}")
   endif()
 
+  if(_ARG_FOLDER)
+    set_target_properties(${_ARG_NAME} PROPERTIES FOLDER "${_ARG_FOLDER}")
+  endif()
+
+  set_target_properties(${_ARG_NAME}
+    PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+  )
+
+  # Propagate a dependency's runtime path to the test if requested or discoverable
+  set(_dart_runtime_path_target "${_ARG_RUNTIME_PATH_TARGET}")
+  if(NOT _dart_runtime_path_target)
+    foreach(_dart_candidate IN LISTS _ARG_LINK_LIBRARIES)
+      if(TARGET ${_dart_candidate})
+        set(_dart_runtime_path_target ${_dart_candidate})
+        break()
+      endif()
+    endforeach()
+  endif()
+
+  if(_dart_runtime_path_target)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
+      set_tests_properties(${_ARG_NAME}
+        PROPERTIES
+          ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_dart_runtime_path_target}>"
+      )
+    else()
+      if(WIN32)
+        set(_dart_test_path_sep "\\;")
+      else()
+        set(_dart_test_path_sep ":")
+      endif()
+      set_property(
+        TEST ${_ARG_NAME}
+        PROPERTY ENVIRONMENT
+          "PATH=$<TARGET_FILE_DIR:${_dart_runtime_path_target}>${_dart_test_path_sep}$ENV{PATH}"
+      )
+      unset(_dart_test_path_sep)
+    endif()
+  endif()
+
   # Add to global test list
   dart_property_add(DART_ALL_TESTS ${_ARG_NAME})
 
@@ -2173,6 +2262,11 @@ endfunction()
 #     MODULE_NAME <module_name>
 #     TEST_DIR <directory>
 #     [LINK_LIBRARIES lib1 lib2...]
+#     [INCLUDE_DIRS dir1 dir2...]
+#     [COMPILE_DEFINITIONS def1 def2...]
+#     [COMPILE_OPTIONS opt1 opt2...]
+#     [COMPILE_FEATURES feature1 feature2...]
+#     [RUNTIME_PATH_TARGET target]
 #   )
 #
 # Finds all test_*.cpp files in TEST_DIR and creates a test for each
@@ -2183,9 +2277,14 @@ function(dart_add_unit_test_dir)
   set(oneValueArgs
     MODULE_NAME
     TEST_DIR
+    RUNTIME_PATH_TARGET
   )
   set(multiValueArgs
     LINK_LIBRARIES
+    INCLUDE_DIRS
+    COMPILE_DEFINITIONS
+    COMPILE_OPTIONS
+    COMPILE_FEATURES
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
@@ -2213,13 +2312,47 @@ function(dart_add_unit_test_dir)
     # Extract test name from filename (remove .cpp extension)
     get_filename_component(test_name ${test_file} NAME_WE)
 
+    # Pick a runtime path target if one of the linked libraries is a target
+    set(_dart_runtime_path_target "${_ARG_RUNTIME_PATH_TARGET}")
+    if(NOT _dart_runtime_path_target)
+      foreach(_dart_candidate IN LISTS _ARG_LINK_LIBRARIES)
+        if(TARGET ${_dart_candidate})
+          set(_dart_runtime_path_target ${_dart_candidate})
+          break()
+        endif()
+      endforeach()
+    endif()
+
     # Create the test
-    dart_add_test(
+    set(_dart_add_test_args
       NAME ${test_name}
       SOURCES ${test_file}
       LINK_LIBRARIES ${_ARG_LINK_LIBRARIES}
       LABELS ${_ARG_MODULE_NAME}
+      FOLDER "tests/${_ARG_MODULE_NAME}"
     )
+
+    if(_ARG_INCLUDE_DIRS)
+      list(APPEND _dart_add_test_args INCLUDE_DIRS ${_ARG_INCLUDE_DIRS})
+    endif()
+
+    if(_ARG_COMPILE_DEFINITIONS)
+      list(APPEND _dart_add_test_args COMPILE_DEFINITIONS ${_ARG_COMPILE_DEFINITIONS})
+    endif()
+
+    if(_ARG_COMPILE_OPTIONS)
+      list(APPEND _dart_add_test_args COMPILE_OPTIONS ${_ARG_COMPILE_OPTIONS})
+    endif()
+
+    if(_ARG_COMPILE_FEATURES)
+      list(APPEND _dart_add_test_args COMPILE_FEATURES ${_ARG_COMPILE_FEATURES})
+    endif()
+
+    if(_dart_runtime_path_target)
+      list(APPEND _dart_add_test_args RUNTIME_PATH_TARGET ${_dart_runtime_path_target})
+    endif()
+
+    dart_add_test(${_dart_add_test_args})
 
     # Add to this module's test list
     list(APPEND module_test_targets ${test_name})
@@ -2373,6 +2506,11 @@ endfunction()
 #     NAME <benchmark_name>
 #     SOURCES <source_files...>
 #     [LINK_LIBRARIES lib1 lib2...]
+#     [INCLUDE_DIRS dir1 dir2...]
+#     [COMPILE_DEFINITIONS def1 def2...]
+#     [COMPILE_OPTIONS opt1 opt2...]
+#     [COMPILE_FEATURES feature1 feature2...]
+#     [FOLDER folder_name]
 #   )
 #
 # Creates a benchmark executable using Google Benchmark.
@@ -2380,10 +2518,14 @@ endfunction()
 function(dart_add_benchmark)
   set(prefix _ARG)
   set(options)
-  set(oneValueArgs NAME)
+  set(oneValueArgs NAME FOLDER)
   set(multiValueArgs
     SOURCES
     LINK_LIBRARIES
+    INCLUDE_DIRS
+    COMPILE_DEFINITIONS
+    COMPILE_OPTIONS
+    COMPILE_FEATURES
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
@@ -2400,6 +2542,24 @@ function(dart_add_benchmark)
   # Create the benchmark executable
   add_executable(${_ARG_NAME} ${_ARG_SOURCES})
 
+  if(_ARG_INCLUDE_DIRS)
+    target_include_directories(${_ARG_NAME} PRIVATE ${_ARG_INCLUDE_DIRS})
+  endif()
+
+  if(_ARG_COMPILE_DEFINITIONS)
+    target_compile_definitions(${_ARG_NAME} PRIVATE ${_ARG_COMPILE_DEFINITIONS})
+  endif()
+
+  if(_ARG_COMPILE_OPTIONS)
+    target_compile_options(${_ARG_NAME} PRIVATE ${_ARG_COMPILE_OPTIONS})
+  endif()
+
+  if(_ARG_COMPILE_FEATURES)
+    target_compile_features(${_ARG_NAME} PUBLIC ${_ARG_COMPILE_FEATURES})
+  else()
+    target_compile_features(${_ARG_NAME} PUBLIC cxx_std_20)
+  endif()
+
   # Link benchmark libraries
   target_link_libraries(${_ARG_NAME}
     PRIVATE
@@ -2409,8 +2569,11 @@ function(dart_add_benchmark)
   )
 
   # Set benchmark properties
+  if(NOT _ARG_FOLDER)
+    set(_ARG_FOLDER "benchmarks")
+  endif()
   set_target_properties(${_ARG_NAME} PROPERTIES
-    FOLDER "benchmarks"
+    FOLDER "${_ARG_FOLDER}"
     RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
   )
 
