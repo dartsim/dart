@@ -365,6 +365,144 @@ TEST(MimicConstraint, PendulumMimicWorldFromSdf)
 }
 
 //==============================================================================
+TEST(MimicConstraint, FollowersMatchMiddlePendulum)
+{
+  const std::string worldUri
+      = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
+
+  auto retriever = std::make_shared<dart::utils::DartResourceRetriever>();
+  dart::utils::SdfParser::Options options(retriever);
+
+  WorldPtr world = dart::utils::SdfParser::readWorld(Uri(worldUri), options);
+  ASSERT_TRUE(world);
+
+  auto resource = retriever->retrieve(Uri(worldUri));
+  ASSERT_TRUE(resource);
+  std::string sdfText(resource->getSize(), '\0');
+  const auto read = resource->read(sdfText.data(), 1, sdfText.size());
+  ASSERT_EQ(read, resource->getSize());
+
+  const auto specs = parseMimicSpecs(sdfText);
+  ASSERT_FALSE(specs.empty());
+  MimicTuning tuning;
+  configureMimicMotors(specs, world, tuning);
+
+  const auto baseline = world->getSkeleton("pendulum_with_base");
+  const auto slowFollower
+      = world->getSkeleton("pendulum_with_base_mimic_slow_follows_fast");
+  const auto fastFollower
+      = world->getSkeleton("pendulum_with_base_mimic_fast_follows_slow");
+  ASSERT_TRUE(baseline);
+  ASSERT_TRUE(slowFollower);
+  ASSERT_TRUE(fastFollower);
+
+  auto* baseSlowJoint = baseline->getJoint("slow_joint");
+  auto* baseFastJoint = baseline->getJoint("fast_joint");
+  auto* slowFollowJoint = slowFollower->getJoint("slow_joint");
+  auto* fastFollowJoint = fastFollower->getJoint("fast_joint");
+  ASSERT_NE(nullptr, baseSlowJoint);
+  ASSERT_NE(nullptr, baseFastJoint);
+  ASSERT_NE(nullptr, slowFollowJoint);
+  ASSERT_NE(nullptr, fastFollowJoint);
+
+  // Followers must use mimic motors (unilateral), never couplers.
+  EXPECT_FALSE(slowFollowJoint->isUsingCouplerConstraint());
+  EXPECT_FALSE(fastFollowJoint->isUsingCouplerConstraint());
+  EXPECT_EQ(slowFollowJoint->getActuatorType(), Joint::MIMIC);
+  EXPECT_EQ(fastFollowJoint->getActuatorType(), Joint::MIMIC);
+
+  const auto slowProps = slowFollowJoint->getMimicDofProperties();
+  const auto fastProps = fastFollowJoint->getMimicDofProperties();
+  ASSERT_FALSE(slowProps.empty());
+  ASSERT_FALSE(fastProps.empty());
+  EXPECT_EQ(slowProps[0].mConstraintType, MimicConstraintType::Motor);
+  EXPECT_EQ(fastProps[0].mConstraintType, MimicConstraintType::Motor);
+  ASSERT_NE(slowProps[0].mReferenceJoint, nullptr);
+  ASSERT_NE(fastProps[0].mReferenceJoint, nullptr);
+  EXPECT_EQ(slowProps[0].mReferenceJoint, baseFastJoint);
+  EXPECT_EQ(fastProps[0].mReferenceJoint, baseSlowJoint);
+
+  // Help keep baseline pendulum stable so followers have a clean target.
+  setJointStabilization(baseSlowJoint, tuning);
+  setJointStabilization(baseFastJoint, tuning);
+
+  const Eigen::Vector3d baselineBaseStart
+      = getTranslation(baseline->getBodyNode("base"));
+  const Eigen::Vector3d slowBaseStart
+      = getTranslation(slowFollower->getBodyNode("base"));
+  const Eigen::Vector3d fastBaseStart
+      = getTranslation(fastFollower->getBodyNode("base"));
+
+  double maxDriftBaseline = 0.0;
+  double maxDriftSlow = 0.0;
+  double maxDriftFast = 0.0;
+  double maxAngleDiffBlue = 0.0; // blue: fast joint follows baseline slow
+  double maxAngleDiffRed = 0.0;  // red: slow joint follows baseline fast
+  double maxVelDiffBlue = 0.0;
+  double maxVelDiffRed = 0.0;
+  double maxBaseSlowVel = 0.0;
+  double maxBaseFastVel = 0.0;
+
+  const double angleTol = 5e-3; // ~0.29 degrees
+  const double velTol = 5e-2;   // 0.05 rad/s
+  const double driftTol = 2e-3; // 2 mm
+  const int steps = 800;
+
+  for (int i = 0; i < steps; ++i) {
+    world->step();
+    ASSERT_TRUE(hasFiniteState(slowFollower));
+    ASSERT_TRUE(hasFiniteState(fastFollower));
+
+    maxDriftBaseline = std::max(
+        maxDriftBaseline,
+        (getTranslation(baseline->getBodyNode("base")) - baselineBaseStart)
+            .norm());
+    maxDriftSlow = std::max(
+        maxDriftSlow,
+        (getTranslation(slowFollower->getBodyNode("base")) - slowBaseStart)
+            .norm());
+    maxDriftFast = std::max(
+        maxDriftFast,
+        (getTranslation(fastFollower->getBodyNode("base")) - fastBaseStart)
+            .norm());
+
+    const double baseSlow = baseSlowJoint->getPosition(0);
+    const double baseFast = baseFastJoint->getPosition(0);
+    const double baseSlowVel = baseSlowJoint->getVelocity(0);
+    const double baseFastVel = baseFastJoint->getVelocity(0);
+
+    const double blueFast = fastFollowJoint->getPosition(0);
+    const double blueFastVel = fastFollowJoint->getVelocity(0);
+    const double redSlow = slowFollowJoint->getPosition(0);
+    const double redSlowVel = slowFollowJoint->getVelocity(0);
+
+    maxAngleDiffBlue
+        = std::max(maxAngleDiffBlue, std::abs(blueFast - baseSlow));
+    maxAngleDiffRed = std::max(maxAngleDiffRed, std::abs(redSlow - baseFast));
+    maxVelDiffBlue
+        = std::max(maxVelDiffBlue, std::abs(blueFastVel - baseSlowVel));
+    maxVelDiffRed
+        = std::max(maxVelDiffRed, std::abs(redSlowVel - baseFastVel));
+    maxBaseSlowVel = std::max(maxBaseSlowVel, std::abs(baseSlowVel));
+    maxBaseFastVel = std::max(maxBaseFastVel, std::abs(baseFastVel));
+  }
+
+  EXPECT_LT(maxDriftBaseline, driftTol);
+  EXPECT_LT(maxDriftSlow, driftTol);
+  EXPECT_LT(maxDriftFast, driftTol);
+
+  // Followers must mirror the middle pendulum on every step.
+  EXPECT_LT(maxAngleDiffBlue, angleTol);
+  EXPECT_LT(maxAngleDiffRed, angleTol);
+  EXPECT_LT(maxVelDiffBlue, velTol);
+  EXPECT_LT(maxVelDiffRed, velTol);
+
+  // Baseline pendulum rods should actually swing (not stuck at rest).
+  EXPECT_GT(maxBaseSlowVel, 1e-1);
+  EXPECT_GT(maxBaseFastVel, 1e-1);
+}
+
+//==============================================================================
 TEST(MimicConstraint, OdeMimicDoesNotExplode)
 {
 #if !HAVE_ODE
