@@ -79,7 +79,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     try:
         _run_build(cmd)
         return
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, OSError):
         # If parallelism was explicitly configured, honor that failure.
         if parallel and parallel.strip():
             raise
@@ -88,7 +88,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         # observed in CI (e.g., ninja posix_spawn failures).
         fallback_cmd = cmd + ["1"]
         backoff_seconds = (0, 10, 30, 60)
-        last_error: Optional[subprocess.CalledProcessError] = None
+        last_error: Optional[BaseException] = None
         for delay in backoff_seconds:
             if delay == 0:
                 print(
@@ -105,7 +105,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
             try:
                 _run_build(fallback_cmd)
                 return
-            except subprocess.CalledProcessError as err:
+            except (subprocess.CalledProcessError, OSError) as err:
                 last_error = err
                 continue
         if last_error:
