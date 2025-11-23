@@ -38,7 +38,7 @@ ik.getErrorMethod().setAngularBounds(
 )
 ```
 
-Why? The `TaskSpaceRegion` error method only computes non-zero error when the displacement is *outside* the specified bounds. With infinite bounds (the default), any displacement is "within bounds", producing zero error and zero gradient. This prevents the optimizer from finding the solution.
+Why? The `TaskSpaceRegion` error method only computes non-zero error when the displacement is _outside_ the specified bounds. With infinite bounds (the default), any displacement is "within bounds", producing zero error and zero gradient. This prevents the optimizer from finding the solution.
 
 ## Interactive Features
 

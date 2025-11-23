@@ -7,6 +7,7 @@ This directory contains the source for DART's documentation, including both C++ 
 ### Prerequisites
 
 1. Install pixi (if not already installed):
+
    ```bash
    curl -fsSL https://pixi.sh/install.sh | bash
    ```
@@ -45,11 +46,13 @@ pixi run docs-serve-ko
 The Python API documentation is generated using Sphinx autodoc, which requires the `dartpy` module to be importable.
 
 **Local builds:**
+
 - The `docs-build` task sets `PYTHONPATH` to the compiled dartpy module
 - Sphinx autodoc imports and introspects the module to generate full API documentation
 - All classes, methods, type hints, and docstrings are included
 
 **Read the Docs builds:**
+
 - dartpy is a C++ extension built with pybind11 and cannot be compiled on Read the Docs
 - API documentation pages will be empty until we implement pre-built wheels
 - The documentation structure and navigation will still work correctly
@@ -80,6 +83,7 @@ pixi run docs-serve-ko  # Korean at http://localhost:8001
 ```
 
 The `docs-build` task:
+
 1. Builds the compiled dartpy module (`build-py-dev`)
 2. Sets PYTHONPATH to the compiled module location
 3. Runs Sphinx autodoc to introspect and document the module
@@ -140,6 +144,7 @@ When adding new Python API documentation:
 4. Test locally with `pixi run docs-build` and `pixi run docs-serve`
 
 Example module file:
+
 ```rst
 dartpy.simulation Module
 ========================

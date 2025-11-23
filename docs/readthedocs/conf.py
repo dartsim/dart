@@ -117,13 +117,17 @@ def _ensure_dartpy_available() -> None:
 
     try:
         importlib.import_module("dartpy")
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ImportError) as exc:
         if _prepare_stub_modules("dartpy"):
             sys.stderr.write("Using generated dartpy stubs for autodoc.\n")
         else:
             sys.stderr.write(
                 "WARNING: dartpy module and stubs are unavailable; "
                 "dartpy API pages will be empty.\n"
+            )
+        if not isinstance(exc, ModuleNotFoundError):
+            sys.stderr.write(
+                f"Ignoring installed dartpy due to import failure: {exc}\n"
             )
 
 

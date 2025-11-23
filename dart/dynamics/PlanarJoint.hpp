@@ -37,6 +37,8 @@
 
 #include <dart/Export.hpp>
 
+#include <Eigen/Geometry>
+
 namespace dart {
 namespace dynamics {
 
@@ -91,6 +93,12 @@ public:
 
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
+
+  /// Convert a planar transform into a 3D position vector usable by the joint
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert a PlanarJoint-style position vector into a planar transform
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
 
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be

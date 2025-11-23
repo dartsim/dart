@@ -1,20 +1,24 @@
 # DART Dynamics Module Exploration
 
 ## Overview
+
 This document provides an exploration of the core dynamics classes in DART (Dynamic Animation and Robotics Toolkit), located in the `dart/dynamics` directory.
 
 ## Coding Conventions
+
 - Follow `CONTRIBUTING.md` for formatting (two-space indentation, camelCase functions, PascalCase classes, no cuddled braces).
 - Always wrap conditional bodies in braces, even when the branch contains a single statement. This keeps future edits safe and matches the repository style enforced in current work.
 
 ## Core Dynamics Classes
 
 ### 1. Skeleton (`Skeleton.hpp`)
+
 **File Path:** `dart/dynamics/Skeleton.hpp`
 
 **Purpose:** The Skeleton class represents a complete articulated rigid body system. It is the top-level container that manages the entire kinematic tree.
 
 **Key Features:**
+
 - **Hierarchical Structure:** Contains multiple trees of interconnected BodyNodes and Joints
 - **State Management:** Manages positions, velocities, accelerations, forces, and commands for all degrees of freedom
 - **Configuration:** Provides `Configuration` struct for joint configurations (positions, velocities, accelerations, forces, commands)
@@ -25,6 +29,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - Time step and gravity settings
 
 **Key Methods:**
+
 - **Structure:** `createJointAndBodyNodePair()` - Creates Joint and BodyNode pairs
 - **Kinematics:** `computeForwardKinematics()` - Computes transforms, velocities, and accelerations
 - **Dynamics:**
@@ -40,6 +45,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 - **Impulse-based Dynamics:** Support for constraint impulses and impulse-based forward dynamics
 
 **Internal Structure:**
+
 - Manages multiple trees (allows for disconnected kinematic structures)
 - Uses `DataCache` for computational efficiency
 - Implements dirty flags for lazy evaluation
@@ -48,11 +54,13 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 ---
 
 ### 2. BodyNode (`BodyNode.hpp`)
+
 **File Path:** `dart/dynamics/BodyNode.hpp`
 
 **Purpose:** Represents a single rigid body (link) in the articulated system. BodyNodes are hierarchically connected through Joints.
 
 **Key Features:**
+
 - **Physical Properties:**
   - Mass
   - Moment of inertia (spatial inertia)
@@ -79,6 +87,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - Collidable flag
 
 **Key Methods:**
+
 - **Property Management:**
   - `setMass()`, `getMass()`
   - `setMomentOfInertia()`, `getMomentOfInertia()`
@@ -115,6 +124,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - Marker support
 
 **Internal Dynamics Routines:**
+
 - `updateTransform()`, `updateVelocity()` - Kinematic updates
 - `updateArtInertia()` - Articulated body inertia computation
 - `updateBiasForce()`, `updateBiasImpulse()` - Bias force updates
@@ -124,11 +134,13 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 ---
 
 ### 3. Joint (`Joint.hpp`)
+
 **File Path:** `dart/dynamics/Joint.hpp`
 
 **Purpose:** Abstract base class representing a kinematic constraint between two BodyNodes. Defines the degrees of freedom and their constraints.
 
 **Key Features:**
+
 - **Actuator Types:**
   - `FORCE` - Force-controlled (dynamic)
   - `PASSIVE` - No actuation (dynamic)
@@ -150,6 +162,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - Relative transform between parent and child
 
 **Key Methods (All Pure Virtual):**
+
 - **DOF Access:**
   - `getNumDofs()` - Number of degrees of freedom
   - `getDof(index)` - Access specific DOF
@@ -203,6 +216,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - `setVelocityChange()`, `getVelocityChange()`
 
 **Mimic Joint Feature:**
+
 - Allows a joint to mimic the motion of another joint
 - Supports different multipliers and offsets per DOF
 - Useful for coupled mechanisms
@@ -212,6 +226,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   the original MimicMotorConstraint behavior.
 
 **Internal Update Methods:**
+
 - `updateRelativeTransform()`, `updateRelativeSpatialVelocity()`
 - `updateRelativeSpatialAcceleration()`, `updateRelativePrimaryAcceleration()`
 - `updateRelativeJacobian()`, `updateRelativeJacobianTimeDeriv()`
@@ -220,11 +235,13 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 ---
 
 ### 4. DegreeOfFreedom (`DegreeOfFreedom.hpp`)
+
 **File Path:** `dart/dynamics/DegreeOfFreedom.hpp`
 
 **Purpose:** Proxy class for accessing individual degrees of freedom (generalized coordinates). Provides a unified interface to control single DOFs.
 
 **Key Features:**
+
 - **Naming:** Automatic naming based on Joint, with option to preserve custom names
 - **Indexing:**
   - Index within Skeleton
@@ -242,6 +259,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - Passive force parameters (spring, damping, friction)
 
 **Key Methods:**
+
 - **Naming:**
   - `setName()`, `getName()`
   - `preserveName()` - Prevent automatic renaming
@@ -262,6 +280,7 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
   - `getChildBodyNode()`, `getParentBodyNode()` - Connected bodies
 
 **Usage Pattern:**
+
 ```cpp
 // Access DOF through Skeleton or Joint
 DegreeOfFreedom* dof = skeleton->getDof(index);
@@ -272,11 +291,13 @@ double pos = dof->getPosition();
 ---
 
 ### 5. Inertia (`Inertia.hpp`)
+
 **File Path:** `dart/dynamics/Inertia.hpp`
 
 **Purpose:** Represents the inertial properties of a rigid body (mass, center of mass, moment of inertia).
 
 **Key Features:**
+
 - **Minimal Parameters:**
   - Mass
   - Center of mass (3D vector)
@@ -286,6 +307,7 @@ double pos = dof->getPosition();
 - **Validation:** Methods to verify physical validity of inertia parameters
 
 **Key Capabilities:**
+
 - Manage minimal mass properties (mass, COM, moment of inertia) or work directly
   with the 6x6 spatial inertia tensor for Featherstone-style algorithms.
 - Convert between parameter sets on demand; the class keeps the spatial tensor
@@ -297,6 +319,7 @@ double pos = dof->getPosition();
   downstream dynamics code can safely assume well-formed inertias.
 
 **Physical Constraints:**
+
 - Mass must be positive
 - Moment of inertia must be positive semi-definite
 - Triangle inequality for principal moments
@@ -304,11 +327,13 @@ double pos = dof->getPosition();
 ---
 
 ### 6. Shape (`Shape.hpp`)
+
 **File Path:** `dart/dynamics/Shape.hpp`
 
 **Purpose:** Abstract base class for geometric shapes used for collision detection and visualization.
 
 **Key Features:**
+
 - **Shape Types:** (legacy enumeration; prefer `Shape::getType()` for new code)
   - Primitive shapes: Sphere, Box, Ellipsoid, Cylinder, Capsule, Cone, Pyramid
   - Complex shapes: Mesh, SoftMesh, MultiSphere, HeightMap, LineSegment, Plane
@@ -327,6 +352,7 @@ double pos = dof->getPosition();
 - **Inertia:** Can compute inertia tensor from mass or density
 
 **Key Methods:**
+
 - **Type:**
   - `getType()` - String representing shape type
   - `is<Type>()` - Template method for type checking (from Castable)
@@ -385,6 +411,7 @@ DegreeOfFreedom
 ## Dynamics Computation Flow
 
 ### Forward Kinematics
+
 1. Start from root BodyNode
 2. For each BodyNode in tree order:
    - Update Joint transform (`updateRelativeTransform()`)
@@ -393,12 +420,14 @@ DegreeOfFreedom
    - Update spatial accelerations
 
 ### Inverse Dynamics
+
 1. Forward kinematics (compute transforms, velocities, accelerations)
 2. Backward recursion from leaves to root:
    - Compute spatial forces at each BodyNode
    - Project forces to joint space to get required torques
 
 ### Forward Dynamics
+
 1. Forward kinematics (transforms and velocities)
 2. Forward pass (root to leaves):
    - Compute articulated body inertias
@@ -409,35 +438,42 @@ DegreeOfFreedom
    - Update body accelerations
 
 ### Impulse-based Dynamics
+
 Similar to forward dynamics but works with impulses and velocity changes instead of forces and accelerations. Used for contact resolution.
 
 ## Important Design Patterns
 
 ### 1. Lazy Evaluation
+
 - Uses dirty flags to avoid redundant computations
 - Jacobians, mass matrices, force vectors are computed only when needed
 - Example: `mNeedTransformUpdate`, `mIsBodyJacobianDirty`
 
 ### 2. Aspect-Oriented Programming
+
 - Uses Aspects to add properties/behaviors to classes
 - Example: ShapeNode can have VisualAspect, CollisionAspect, DynamicsAspect
 
 ### 3. Smart Pointers
+
 - Uses std::shared_ptr and std::weak_ptr for memory management
 - Defines type aliases like SkeletonPtr, BodyNodePtr, etc.
 
 ### 4. Composite Pattern
+
 - Skeleton contains trees of BodyNodes
 - Each BodyNode can have multiple children
 - Properties can be aggregated from components
 
 ### 5. Template Specialization
+
 - GenericJoint<SpaceT> provides concrete joint types
 - TemplatedJacobianNode<NodeT> provides Jacobian functionality
 
 ## Common Joint Types (Derived from Joint)
 
 While not in the files we examined, DART provides several concrete Joint types:
+
 - `RevoluteJoint` - 1-DOF rotational joint
 - `PrismaticJoint` - 1-DOF translational joint
 - `UniversalJoint` - 2-DOF joint (2 perpendicular revolute axes)
@@ -484,6 +520,7 @@ const Eigen::VectorXd& g = skeleton->getGravityForces();
 ## Summary
 
 The DART dynamics module provides a comprehensive framework for:
+
 1. **Modeling** articulated rigid body systems with arbitrary topology
 2. **Kinematics** - Computing positions, velocities, accelerations, and Jacobians
 3. **Dynamics** - Computing forces, torques, mass matrices, and solving equations of motion

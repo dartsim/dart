@@ -1,10 +1,9 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: ''
-labels: 'type: enhancement'
-assignees: ''
-
+title: ""
+labels: "type: enhancement"
+assignees: ""
 ---
 
 > For general questions, use [Discussions](https://github.com/dartsim/dart/discussions) instead.
@@ -19,6 +18,7 @@ Describe your proposed solution.
 Alternative solutions considered.
 
 **Target API:**
+
 - [ ] C++
 - [ ] Python (dartpy)
 - [ ] Both

@@ -23,7 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 # Mujoco models
+
 This work is derived from [MuJuCo models](http://www.mujoco.org/forum/index.php?resources/) used under the following license:
+
 ```
 This file is part of MuJoCo.
 Copyright 2009-2015 Roboti LLC.

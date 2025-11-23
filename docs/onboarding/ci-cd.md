@@ -8,13 +8,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger                    |
-| -------------------- | --------------------- | -------------- | -------------------------- |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule         |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule         |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule         |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule         |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule, tags       |
+| Workflow             | Purpose               | Platforms      | Trigger              |
+| -------------------- | --------------------- | -------------- | -------------------- |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule   |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule   |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule   |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule   |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule, tags |
 
 ### Design Principles
 

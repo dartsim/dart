@@ -246,6 +246,18 @@ void PlanarJoint(py::module& m)
           },
           ::py::arg("positions"))
       .def_static(
+          "convertToPositions",
+          +[](const Eigen::Isometry2d& tf) {
+            return dart::dynamics::PlanarJoint::convertToPositions(tf);
+          },
+          ::py::arg("transform"))
+      .def_static(
+          "convertToTransform",
+          +[](const Eigen::Vector3d& positions) {
+            return dart::dynamics::PlanarJoint::convertToTransform(positions);
+          },
+          ::py::arg("positions"))
+      .def_static(
           "getStaticType",
           +[]() -> const std::
                     string& {

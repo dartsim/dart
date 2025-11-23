@@ -193,6 +193,7 @@ TEST(SdfParser, SDFJointProperties)
   const double epsilon = 1e-7;
 
   auto testProperties = [epsilon](const Joint* joint, const size_t idx) {
+    EXPECT_TRUE(joint->areLimitsEnforced()) << joint->getName();
     EXPECT_NEAR(joint->getPositionLowerLimit(idx), 0, epsilon);
     EXPECT_NEAR(joint->getPositionUpperLimit(idx), 3, epsilon);
     EXPECT_NEAR(joint->getDampingCoefficient(idx), 0, epsilon);
@@ -209,6 +210,8 @@ TEST(SdfParser, SDFJointProperties)
     } else if (joint->getType() == UniversalJoint::getStaticType()) {
       testProperties(joint, 0);
       testProperties(joint, 1);
+    } else if (joint->getType() == FreeJoint::getStaticType()) {
+      EXPECT_FALSE(joint->areLimitsEnforced());
     }
   });
 }
