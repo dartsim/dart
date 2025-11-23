@@ -48,12 +48,12 @@
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
-#include <dart/constraint/CouplerConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/JointConstraint.hpp>
 #include <dart/constraint/MimicMotorConstraint.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Skeleton.hpp>
@@ -74,6 +74,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -109,8 +110,6 @@ struct MimicPairView
   std::string label;
   Joint* follower{};
   Joint* reference{};
-  Joint* middleReference{};   // Reference from middle pendulum
-  std::string middleRefLabel; // Which reference: "short" or "long"
   BodyNode* base{};
   Eigen::Vector3d baseStart = Eigen::Vector3d::Zero();
   Eigen::Vector3d baseNow = Eigen::Vector3d::Zero();
@@ -347,6 +346,10 @@ void configureMimicMotors(
         = std::min(spec.referenceDof, follower->getNumDofs() - 1);
     const std::size_t referenceIndex
         = std::min(spec.referenceDof, reference->getNumDofs() - 1);
+
+    follower->setPosition(followerIndex, reference->getPosition(referenceIndex));
+    follower->setVelocity(followerIndex, reference->getVelocity(referenceIndex));
+
     auto& prop = mimicProps[followerIndex];
     prop.mReferenceJoint = reference;
     prop.mReferenceDofIndex = referenceIndex;
@@ -360,6 +363,30 @@ void configureMimicMotors(
 
     setJointLimitsAndDamping(follower);
     setJointLimitsAndDamping(reference);
+  }
+}
+
+void anchorPendulumBases(
+    const std::vector<MimicSpec>& specs, const WorldPtr& world)
+{
+  std::unordered_set<std::string> skeletonNames = {"pendulum_with_base"};
+  for (const auto& spec : specs)
+    skeletonNames.insert(spec.model);
+
+  for (const auto& name : skeletonNames) {
+    const auto skeleton = world->getSkeleton(name);
+    if (!skeleton || skeleton->getNumBodyNodes() == 0)
+      continue;
+
+    auto* rootJoint = skeleton->getRootJoint();
+    auto* freeJoint = dynamic_cast<dart::dynamics::FreeJoint*>(rootJoint);
+    if (!freeJoint)
+      continue;
+
+    // Hold the base at its initial pose while keeping the joint type Free.
+    freeJoint->setActuatorType(dart::dynamics::Joint::LOCKED);
+    freeJoint->setPositions(freeJoint->getPositions());
+    freeJoint->setVelocities(Eigen::VectorXd::Zero(freeJoint->getNumDofs()));
   }
 }
 
@@ -377,29 +404,21 @@ std::vector<MimicPairView> collectMimicPairs(
     if (!skeleton)
       continue;
 
+    auto* reference = middlePendulum ? middlePendulum->getJoint(spec.referenceJoint)
+                                     : nullptr;
     auto* follower = skeleton->getJoint(spec.followerJoint);
-    auto* reference = skeleton->getJoint(spec.referenceJoint);
     auto* base = skeleton->getBodyNode("base");
     if (!follower || !reference || !base)
       continue;
 
     MimicPairView view;
     view.label
-        = spec.model + ": " + spec.followerJoint + " -> " + spec.referenceJoint;
+        = spec.model + ": " + spec.followerJoint + " -> middle "
+          + spec.referenceJoint;
     view.follower = follower;
     view.reference = reference;
     view.base = base;
     view.baseStart = translationOf(base);
-
-    // Get the corresponding reference from the middle pendulum
-    if (middlePendulum) {
-      auto* middleRef = middlePendulum->getJoint(spec.referenceJoint);
-      if (middleRef) {
-        view.middleReference = middleRef;
-        view.middleRefLabel
-            = spec.referenceJoint; // "slow_joint" or "fast_joint"
-      }
-    }
 
     pairs.push_back(view);
   }
@@ -565,8 +584,8 @@ private:
       ImGui::TableSetupColumn("Middle Ref (rad)");
       ImGui::TableSetupColumn("Follower (rad)");
       ImGui::TableSetupColumn("Error (rad)");
+      ImGui::TableSetupColumn("Velocity error (rad/s)");
       ImGui::TableSetupColumn("Base drift (m)");
-      ImGui::TableSetupColumn("Coupler?");
       ImGui::TableHeadersRow();
 
       for (auto& pair : mPairs) {
@@ -574,16 +593,12 @@ private:
         ImGui::TableSetColumnIndex(0);
         ImGui::TextUnformatted(pair.label.c_str());
 
-        // Use the middle pendulum's reference joint if available
-        double middleRefPos = 0.0;
-        if (pair.middleReference) {
-          middleRefPos = pair.middleReference->getPosition(0);
-        } else {
-          middleRefPos = pair.reference->getPosition(0);
-        }
-
+        const double middleRefPos = pair.reference->getPosition(0);
+        const double middleRefVel = pair.reference->getVelocity(0);
         const double follower = pair.follower->getPosition(0);
+        const double followerVel = pair.follower->getVelocity(0);
         const double error = follower - middleRefPos;
+        const double velError = followerVel - middleRefVel;
 
         ImGui::TableSetColumnIndex(1);
         ImGui::Text(
@@ -599,10 +614,16 @@ private:
                                   : ImVec4(0.7f, 0.9f, 0.7f, 1),
             "%.3f",
             error);
+        ImGui::TableSetColumnIndex(4);
+        ImGui::TextColored(
+            std::abs(velError) > 0.2 ? ImVec4(1, 0.4f, 0.4f, 1)
+                                     : ImVec4(0.7f, 0.9f, 0.7f, 1),
+            "%.3f",
+            velError);
 
         pair.baseNow = translationOf(pair.base);
         const double drift = (pair.baseNow - pair.baseStart).norm();
-        ImGui::TableSetColumnIndex(4);
+        ImGui::TableSetColumnIndex(5);
         ImGui::TextColored(
             drift > 0.25 ? ImVec4(1, 0.4f, 0.4f, 1)
                          : ImVec4(0.7f, 0.9f, 0.7f, 1),
@@ -611,13 +632,6 @@ private:
             pair.baseNow.x(),
             pair.baseNow.y(),
             pair.baseNow.z());
-
-        ImGui::TableSetColumnIndex(5);
-        bool useCoupler = pair.follower->isUsingCouplerConstraint();
-        if (ImGui::Checkbox(("##coupler_" + pair.label).c_str(), &useCoupler)) {
-          pair.follower->setActuatorType(Joint::MIMIC);
-          pair.follower->setUseCouplerConstraint(useCoupler);
-        }
       }
 
       ImGui::EndTable();
@@ -678,6 +692,8 @@ int main(int /*argc*/, char*[] /*argv*/)
   const auto mimicSpecs = parseMimicSpecs(sdfText);
   if (mimicSpecs.empty())
     std::cerr << "No mimic joints found in " << worldUri << "\n";
+
+  anchorPendulumBases(mimicSpecs, world);
 
   SolverConfig cfg;
   configureMimicMotors(mimicSpecs, world, cfg);
