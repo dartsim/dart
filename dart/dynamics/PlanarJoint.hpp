@@ -130,6 +130,12 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
+  /// Convert a 2D transform to planar joint positions.
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert planar joint positions to a 2D transform.
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+
   // Documentation inherited
   Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
