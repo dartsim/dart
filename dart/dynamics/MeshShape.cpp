@@ -171,28 +171,6 @@ void MeshShape::releaseMesh()
       break;
     case MeshCleanupMode::ClonedScene: {
       auto* scene = const_cast<aiScene*>(mMesh);
-      if (scene->mMaterials && scene->mNumMaterials > 0) {
-        for (unsigned int i = 0; i < scene->mNumMaterials; ++i) {
-          aiMaterial* mat = scene->mMaterials[i];
-          if (!mat)
-            continue;
-          for (unsigned int j = 0; j < mat->mNumProperties; ++j) {
-            aiMaterialProperty* prop = mat->mProperties[j];
-            if (!prop)
-              continue;
-            delete[] prop->mData;
-            delete prop;
-          }
-          delete[] mat->mProperties;
-          mat->mProperties = nullptr;
-          mat->mNumProperties = 0;
-          mat->mNumAllocated = 0;
-          delete mat;
-        }
-        delete[] scene->mMaterials;
-        scene->mMaterials = nullptr;
-        scene->mNumMaterials = 0;
-      }
       delete scene;
       break;
     }
