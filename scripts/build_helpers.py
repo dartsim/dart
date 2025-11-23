@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Iterable, Optional, Set
 
@@ -72,23 +73,43 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     if parallel and parallel.strip():
         cmd.append(parallel)
 
+    def _run_build(args):
+        subprocess.check_call(args)
+
     try:
-        subprocess.check_call(cmd)
+        _run_build(cmd)
         return
     except subprocess.CalledProcessError:
         # If parallelism was explicitly configured, honor that failure.
         if parallel and parallel.strip():
             raise
 
-        # Retry once with minimal parallelism to avoid transient resource limits
+        # Retry with minimal parallelism to avoid transient resource limits
         # observed in CI (e.g., ninja posix_spawn failures).
         fallback_cmd = cmd + ["1"]
-        print(
-            "Initial build failed; retrying with --parallel 1 to reduce "
-            "resource pressure.",
-            file=sys.stderr,
-        )
-        subprocess.check_call(fallback_cmd)
+        backoff_seconds = (0, 5, 15)
+        last_error: Optional[subprocess.CalledProcessError] = None
+        for delay in backoff_seconds:
+            if delay == 0:
+                print(
+                    "Initial build failed; retrying with --parallel 1 to reduce "
+                    "resource pressure.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"Retrying with --parallel 1 after {delay}s backoff...",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+            try:
+                _run_build(fallback_cmd)
+                return
+            except subprocess.CalledProcessError as err:
+                last_error = err
+                continue
+        if last_error:
+            raise last_error
 
 
 def _locate_cache(build_dir: Path) -> Optional[Path]:
