@@ -166,6 +166,9 @@ void configureMimicMotors(
   const auto middlePendulum = world->getSkeleton("pendulum_with_base");
 
   for (const auto& spec : specs) {
+    if (middlePendulum && spec.model == middlePendulum->getName())
+      continue; // baseline remains uncoupled
+
     const auto skeleton = world->getSkeleton(spec.model);
     ASSERT_NE(nullptr, skeleton);
 

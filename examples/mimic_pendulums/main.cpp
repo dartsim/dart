@@ -285,6 +285,9 @@ void configureMimicMotors(
   const auto middlePendulum = world->getSkeleton("pendulum_with_base");
 
   for (const auto& spec : specs) {
+    if (middlePendulum && spec.model == middlePendulum->getName())
+      continue; // keep baseline uncoupled
+
     const auto skeleton = world->getSkeleton(spec.model);
     if (!skeleton) {
       std::cerr << "Skipping missing model [" << spec.model << "]\n";
