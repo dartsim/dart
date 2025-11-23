@@ -1,40 +1,42 @@
 Python API Reference
 ====================
 
-The complete ``dartpy`` API reference now lives on GitHub Pages so it can be
-rendered directly from the compiled wheels that ship with each release. Read
-the Docs focuses on the narrative guides only and therefore no longer attempts
-to import ``dartpy`` during its builds—this avoids the ``stbrp_pack_rects``
-linker errors that cropped up when the binary extension was unavailable.
+The full ``dartpy`` API reference is built directly on Read the Docs using the
+wheel pinned in ``docs/readthedocs/requirements.txt``. Sphinx imports the
+modules under ``docs/python_api/`` and auto-documents them using the installed
+package. Local builds use the compiled extension in ``build/.../python`` so the
+API pages always reflect the current nanobind bindings.
 
-.. note:: Why the API docs moved
+.. note::
+   If a compatible wheel is unavailable, ``conf.py`` falls back to the stub
+   package in ``python/stubs/dartpy`` so RTD still renders the module layout.
+   Local builds can always use ``pixi run docs-build`` or ``pixi run api-docs-py``.
 
-   * CI publishes the API reference right after each build, so the rendered
-     members always match the packaged wheel.
-   * Read the Docs does not compile the bindings, and mocking the modules would
-     result in empty pages.
-   * The nanobind port (``dartpy``) shares the same public surface and ships
-     its API docs with the built wheels.
+Getting Started
+---------------
 
-Where to read the API docs
---------------------------
-
-* `Current release (|python_api_url|) <|python_api_url|>`_
-* `Latest main branch build <https://dartsim.github.io/dart/main-py/>`_
-
-Local exploration
------------------
-
-You can continue browsing the API locally via the published wheels:
+To explore the bindings locally:
 
 .. code-block:: bash
 
-   pip install --pre dartpy
+   pip install dartpy
    python - <<'PY'
    import dartpy as dart
    world = dart.simulation.World()
    print(world.getGravity())
    PY
 
-``pixi run api-docs-py`` produces the exact same API pages locally, which is
-especially useful when iterating on new nanobind bindings.
+Module Reference
+----------------
+
+The sections below mirror the module layout from ``docs/python_api/``.
+
+* :doc:`dartpy.common <modules/common>`
+* :doc:`dartpy.math <modules/math>`
+* :doc:`dartpy.dynamics <modules/dynamics>`
+* :doc:`dartpy.simulation <modules/simulation>`
+* :doc:`dartpy.collision <modules/collision>`
+* :doc:`dartpy.constraint <modules/constraint>`
+* :doc:`dartpy.optimizer <modules/optimizer>`
+* :doc:`dartpy.utils <modules/utils>`
+* :doc:`dartpy.gui <modules/gui>`
