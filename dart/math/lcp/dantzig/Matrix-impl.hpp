@@ -239,7 +239,7 @@ void dLDLTAddTL(
                       : (Scalar*)ALLOCA((2 * nskip) * sizeof(Scalar));
   Scalar* W2 = W1 + nskip;
   const Scalar sqrtHalf
-      = ScalarTraits<Scalar>::recip_sqrt(static_cast<Scalar>(2));
+      = ScalarTraits<Scalar>::reciprocalSqrt(static_cast<Scalar>(2));
 
   W1[0] = static_cast<Scalar>(0.0);
   W2[0] = static_cast<Scalar>(0.0);
