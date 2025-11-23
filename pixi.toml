@@ -42,6 +42,7 @@ scikit-build-core = ">=0.10"
 setuptools = ">=80.1.0,<81"
 spdlog = ">=1.15.3,<2"
 sphinx = "*"
+sphinx-lint = "*"
 sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
@@ -152,6 +153,8 @@ lint-md = { cmd = """
     prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 lint = { depends-on = [
   "lint-cpp",
   "lint-dart8",
@@ -159,6 +162,7 @@ lint = { depends-on = [
   "lint-yaml",
   "lint-toml",
   "lint-md",
+  "lint-rst",
 ] }
 
 # Check formatting without modifying files (used in CI)
@@ -180,11 +184,14 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
 ] }
 
 build = { cmd = [
@@ -1263,16 +1270,21 @@ lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml", "lint-rst"] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
 ] }
 
 build = { cmd = """
