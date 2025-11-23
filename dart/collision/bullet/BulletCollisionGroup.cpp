@@ -182,7 +182,8 @@ BulletCollisionGroup::BulletCollisionGroup(
         mBulletCollisionConfiguration.get()))
 {
   ensureBulletAllocator();
-  btGImpactCollisionAlgorithm::registerAlgorithm(mBulletDispatcher.get());
+  btGImpactCollisionAlgorithm::registerAlgorithm(
+      static_cast<btCollisionDispatcher*>(mBulletDispatcher.get()));
 }
 
 //==============================================================================
