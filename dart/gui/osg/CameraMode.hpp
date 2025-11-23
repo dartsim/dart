@@ -47,7 +47,7 @@ enum class CameraMode
 
   /// To render the depth buffer
   ///
-  /// \warning The DEPTH mode currently not compatible with the ImGui widgets.
+  /// @warning The DEPTH mode currently not compatible with the ImGui widgets.
   DEPTH,
 };
 

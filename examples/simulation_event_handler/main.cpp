@@ -47,7 +47,7 @@ using namespace dart::gui::osg;
 using namespace dart::utils;
 using namespace dart::math;
 
-/// \brief Create a simple box rigid body
+/// @brief Create a simple box rigid body
 SkeletonPtr createBox(
     const std::string& name,
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
@@ -91,7 +91,7 @@ SkeletonPtr createBox(
   return skeleton;
 }
 
-/// \brief Create a simple sphere rigid body
+/// @brief Create a simple sphere rigid body
 SkeletonPtr createSphere(
     const std::string& name,
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
@@ -135,7 +135,7 @@ SkeletonPtr createSphere(
   return skeleton;
 }
 
-/// \brief Create a ground plane
+/// @brief Create a ground plane
 SkeletonPtr createGround()
 {
   SkeletonPtr ground = Skeleton::create("ground");
@@ -169,7 +169,7 @@ SkeletonPtr createGround()
   return ground;
 }
 
-/// \brief Custom world node that calls our event handler's update function
+/// @brief Custom world node that calls our event handler's update function
 class CustomWorldNode : public RealTimeWorldNode
 {
 public:

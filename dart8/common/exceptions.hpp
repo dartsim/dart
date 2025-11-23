@@ -171,21 +171,21 @@ using ErrorHandler = void (*)(
 /// When DART8_DISABLE_EXCEPTIONS is defined, this handler will be called
 /// instead of the default behavior (print to stderr + std::terminate).
 ///
-/// \param[in] handler Function pointer to custom handler, or nullptr to reset
+/// @param[in] handler Function pointer to custom handler, or nullptr to reset
 ///
 /// Example:
-/// \code
+/// @code
 ///   dart8::setErrorHandler([](const char* type, const char* msg, auto loc) {
 ///     myLogger.fatal("{} at {}:{}: {}", type, loc.file_name(), loc.line(),
 ///     msg);
 ///     // Can attempt recovery or exit gracefully
 ///   });
-/// \endcode
+/// @endcode
 DART8_API void setErrorHandler(ErrorHandler handler);
 
 /// Get the current error handler
 ///
-/// \return Current handler, or nullptr if using default behavior
+/// @return Current handler, or nullptr if using default behavior
 DART8_API ErrorHandler getErrorHandler();
 
 } // namespace dart8

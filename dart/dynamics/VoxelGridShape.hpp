@@ -52,11 +52,11 @@ class DART_API VoxelGridShape : public Shape
 {
 public:
   /// Constructor.
-  /// \param[in] resolution Size of voxel. Default is 0.01.
+  /// @param[in] resolution Size of voxel. Default is 0.01.
   explicit VoxelGridShape(double resolution = 0.01);
 
   /// Constructs from a octomap::OcTree.
-  /// \param[in] octree Octree.
+  /// @param[in] octree Octree.
   explicit VoxelGridShape(std::shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
@@ -77,13 +77,13 @@ public:
   /// Returns octree.
   std::shared_ptr<const octomap::OcTree> getOctree() const;
 
-  /// Updates the occupancy probability of the voxels where \c point is located.
+  /// Updates the occupancy probability of the voxels where @c point is located.
   ///
   /// Note that the probability is computed by both of the current probability
   /// and the new sensor measurement.
   ///
-  /// \param[in] point Location of the sensor measurement.
-  /// \param[in] occupied True if the location was measured occupied.
+  /// @param[in] point Location of the sensor measurement.
+  /// @param[in] occupied True if the location was measured occupied.
   void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
   /// Updates the occupancy probability of the voxels given sensor measurement,
@@ -95,8 +95,8 @@ public:
   /// If you have a ray cloud, then using updateOccupancy(PointClout, ...) is
   /// more efficient.
   ///
-  /// \param from Origin of sensor in global coordinates.
-  /// \param to Endpoint of measurement in global coordinates.
+  /// @param from Origin of sensor in global coordinates.
+  /// @param to Endpoint of measurement in global coordinates.
   void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
 
   /// Updates the occupancy probability of the voxels given sensor measurement.
@@ -109,10 +109,10 @@ public:
   /// hand, the voxels that the rays pass through will decrease the
   /// probabilities because it means there are no objects.
   ///
-  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// @param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
-  /// \param[in] sensorOrigin Origin of sensor relative to frame.
-  /// \param[in] relativeTo Reference frame, determines transform to be
+  /// @param[in] sensorOrigin Origin of sensor relative to frame.
+  /// @param[in] relativeTo Reference frame, determines transform to be
   /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
@@ -129,17 +129,17 @@ public:
   /// hand, the voxels that the rays pass through will decrease the
   /// probabilities because it means there are no objects.
   ///
-  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// @param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
-  /// \param[in] sensorOrigin Origin of sensor relative to frame.
-  /// \param[in] relativeTo Reference frame, determines transform to be
+  /// @param[in] sensorOrigin Origin of sensor relative to frame.
+  /// @param[in] relativeTo Reference frame, determines transform to be
   /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
       const Eigen::Vector3d& sensorOrigin,
       const Eigen::Isometry3d& relativeTo);
 
-  /// Returns occupancy probability of a node that contains \c point.
+  /// Returns occupancy probability of a node that contains @c point.
   double getOccupancy(const Eigen::Vector3d& point) const;
 
   // Documentation inherited.

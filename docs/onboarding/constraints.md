@@ -42,7 +42,7 @@ This document provides a comprehensive analysis of the constraint subsystem in t
 - PgsBoxedLcpSolver.hpp/cpp - PGS boxed LCP solver
 
 **Dantzig Solver Implementation:**
-Modern C++20 template-based implementation in `dart/math/lcp/Dantzig/` with two key design decisions:
+Modern C++20 template-based implementation in `dart/math/lcp/dantzig/` with two key design decisions:
 
 - **PivotMatrix:** Hybrid architecture combining Eigen storage with pointer-based O(1) row swapping
 - **Hybrid SIMD:** Threshold-based strategy switching between raw pointers and Eigen SIMD based on problem size

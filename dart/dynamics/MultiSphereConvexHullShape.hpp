@@ -80,7 +80,7 @@ public:
 
   /// Compute the inertia of this MultiSphereConvexHullShape.
   ///
-  /// \note The return value is an approximated inertia that is the inertia of
+  /// @note The return value is an approximated inertia that is the inertia of
   /// the axis-alinged bounding box of this MultiSphereConvexHullShape.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
@@ -93,7 +93,7 @@ protected:
 
   /// Update the volume of this MultiSphereConvexHullShape.
   ///
-  /// \note The result volume is an approximated volumen that is the volume of
+  /// @note The result volume is an approximated volumen that is the volume of
   /// the axis-alinged bounding box of this MultiSphereConvexHullShape.
   void updateVolume() const override;
 
