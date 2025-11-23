@@ -247,11 +247,9 @@ void dLDLTAddTL(
     W1[j] = W2[j] = static_cast<Scalar>(a[j] * sqrtHalf);
   }
   Scalar W11
-      = static_cast<Scalar>(
-          (static_cast<Scalar>(0.5) * a[0] + 1) * sqrtHalf);
+      = static_cast<Scalar>((static_cast<Scalar>(0.5) * a[0] + 1) * sqrtHalf);
   Scalar W21
-      = static_cast<Scalar>(
-          (static_cast<Scalar>(0.5) * a[0] - 1) * sqrtHalf);
+      = static_cast<Scalar>((static_cast<Scalar>(0.5) * a[0] - 1) * sqrtHalf);
 
   Scalar alpha1 = static_cast<Scalar>(1.0);
   Scalar alpha2 = static_cast<Scalar>(1.0);
