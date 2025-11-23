@@ -95,6 +95,12 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  /// Convert an SE(2) transform to joint positions [x, y, theta]
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert joint positions [x, y, theta] to an SE(2) transform
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
