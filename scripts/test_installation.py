@@ -55,7 +55,7 @@ def test_basic_functionality():
 def test_available_modules():
     """Check which dartpy modules are available."""
     try:
-        import dartpy as dartpy  # type: ignore
+        import dartpy  # type: ignore
 
         modules = [
             "common",
