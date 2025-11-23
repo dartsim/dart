@@ -120,8 +120,13 @@ aiMaterial::aiMaterial()
 
 aiMaterial::~aiMaterial()
 {
-  for (std::size_t i = 0; i < mNumProperties; ++i)
-    delete mProperties[i];
+  for (std::size_t i = 0; i < mNumProperties; ++i) {
+    auto* prop = mProperties[i];
+    if (!prop)
+      continue;
+    delete[] prop->mData;
+    delete prop;
+  }
 
   delete[] mProperties;
 }
