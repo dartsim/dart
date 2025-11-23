@@ -95,10 +95,22 @@ public:
   bool isCyclic(std::size_t _index) const override;
 
   /// Convert a planar transform into a 3D position vector usable by the joint
-  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf)
+  {
+    Eigen::Vector3d positions;
+    positions.head<2>() = tf.translation();
+    positions[2] = Eigen::Rotation2Dd(tf.linear()).angle();
+    return positions;
+  }
 
   /// Convert a PlanarJoint-style position vector into a planar transform
-  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions)
+  {
+    Eigen::Isometry2d tf(Eigen::Isometry2d::Identity());
+    tf.translation() = positions.head<2>();
+    tf.linear() = Eigen::Rotation2Dd(positions[2]).toRotationMatrix();
+    return tf;
+  }
 
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be

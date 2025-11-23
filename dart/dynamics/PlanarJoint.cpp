@@ -116,25 +116,6 @@ const std::string& PlanarJoint::getStaticType()
 }
 
 //==============================================================================
-Eigen::Vector3d PlanarJoint::convertToPositions(const Eigen::Isometry2d& tf)
-{
-  Eigen::Vector3d positions;
-  positions.head<2>() = tf.translation();
-  positions[2] = Eigen::Rotation2Dd(tf.linear()).angle();
-  return positions;
-}
-
-//==============================================================================
-Eigen::Isometry2d PlanarJoint::convertToTransform(
-    const Eigen::Vector3d& positions)
-{
-  Eigen::Isometry2d tf(Eigen::Isometry2d::Identity());
-  tf.translation() = positions.head<2>();
-  tf.linear() = Eigen::Rotation2Dd(positions[2]).toRotationMatrix();
-  return tf;
-}
-
-//==============================================================================
 bool PlanarJoint::isCyclic(std::size_t _index) const
 {
   return _index == 2 && !hasPositionLimit(_index);
