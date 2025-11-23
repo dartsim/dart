@@ -88,16 +88,9 @@ jobs:
           pixi-version: latest
           cache: true
 
-      - name: Pin action-installed pixi
+      - name: Add pixi to PATH
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: |
-          ACTION_PIXI="$HOME/.pixi/bin/pixi"
-          if [ ! -x "$ACTION_PIXI" ]; then
-            echo "Pixi not found at $ACTION_PIXI" >&2
-            exit 1
-          fi
-          echo "PIXI=$ACTION_PIXI" >> "$GITHUB_ENV"
-          echo "$HOME/.pixi/bin" >> "$GITHUB_PATH"
+        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
 
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
@@ -118,19 +111,19 @@ jobs:
 
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $PIXI run -e py${{ matrix.python-version }}-wheel wheel-build
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $PIXI run -e py${{ matrix.python-version }}-wheel wheel-repair
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
 
       - name: Verify wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $PIXI run -e py${{ matrix.python-version }}-wheel wheel-verify
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
 
       - name: Test wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: $PIXI run -e py${{ matrix.python-version }}-wheel wheel-test
+        run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
       - uses: actions/upload-artifact@v5
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
