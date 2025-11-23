@@ -149,6 +149,7 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
 
       - name: Test with AddressSanitizer
@@ -205,4 +206,5 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
