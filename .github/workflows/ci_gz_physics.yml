@@ -43,7 +43,8 @@ jobs:
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     env:
-      DART_PARALLEL_JOBS: 12
+      # Keep parallelism modest to avoid process limits on shared runners.
+      DART_PARALLEL_JOBS: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v5
