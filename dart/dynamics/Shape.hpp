@@ -102,20 +102,20 @@ public:
     DYNAMIC = 0xFF /// All data is subject to changing
   };
 
-  /// \brief Constructor
+  /// @brief Constructor
   explicit Shape(ShapeType _type);
 
-  /// \brief Constructor
+  /// @brief Constructor
   Shape();
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~Shape();
 
   /// Returns a string representing the shape type
-  /// \sa is()
+  /// @sa is()
   virtual const std::string& getType() const = 0;
 
-  /// \brief Get the bounding box of the shape in its local coordinate frame.
+  /// @brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   const math::BoundingBox& getBoundingBox() const;
@@ -133,7 +133,7 @@ public:
   /// BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
-  /// \brief
+  /// @brief
   std::size_t getID() const;
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
@@ -177,7 +177,7 @@ protected:
   /// Updates bounding box
   virtual void updateBoundingBox() const = 0;
 
-  /// \brief The bounding box (in the local coordinate frame) of the shape.
+  /// @brief The bounding box (in the local coordinate frame) of the shape.
   mutable math::BoundingBox mBoundingBox;
 
   /// Whether bounding box needs update
@@ -189,13 +189,13 @@ protected:
   /// Whether volume needs update
   mutable bool mIsVolumeDirty;
 
-  /// \brief Unique id.
+  /// @brief Unique id.
   const std::size_t mID;
 
   /// The DataVariance of this Shape
   unsigned int mVariance;
 
-  /// \brief
+  /// @brief
   static std::atomic_int mCounter;
 
   /// Type of primitive shpae.

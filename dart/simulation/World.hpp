@@ -157,8 +157,8 @@ public:
   dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
-  /// \param[in] _name The name of the Skeleton you are looking for.
-  /// \return If the skeleton does not exist then return nullptr.
+  /// @param[in] _name The name of the Skeleton you are looking for.
+  /// @return If the skeleton does not exist then return nullptr.
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
@@ -177,7 +177,7 @@ public:
   /// Returns whether this World contains a Skeleton.
   bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
-  /// Returns whether this World contains a Skeleton named \c skeletonName.
+  /// Returns whether this World contains a Skeleton named @c skeletonName.
   bool hasSkeleton(const std::string& skeletonName) const;
 
   /// Get the dof index for the indexed skeleton
@@ -243,7 +243,7 @@ public:
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
-  /// \param[in] _resetCommand True if you want to reset to zero the joint
+  /// @param[in] _resetCommand True if you want to reset to zero the joint
   /// command after simulation step.
   void step(bool _resetCommand = true);
 
@@ -265,7 +265,7 @@ public:
 
   /// Sets the constraint solver
   ///
-  /// Note that the internal properties of \c solver will be overwritten by this
+  /// Note that the internal properties of @c solver will be overwritten by this
   /// World.
   void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
@@ -281,12 +281,12 @@ public:
   /// Get recording
   Recording* getRecording();
 
-  /// \{ \name Iterations
+  /// \{ @name Iterations
 
   /// Iterates all the Skeletons and invokes the callback function.
   ///
   /// Example:
-  /// \code{.cpp}
+  /// @code{.cpp}
   /// bodyNode->eachSkeleton([](const Skeleton* skel) {
   ///   // ...
   /// });
@@ -299,47 +299,47 @@ public:
   ///   }
   ///   return true;
   /// });
-  /// \endcode
+  /// @endcode
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const Skeleton*) or \c bool(const Skeleton*). If
-  /// you want to conditionally iterate, use \c bool(const Skeleton*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const Skeleton*) or @c bool(const Skeleton*). If
+  /// you want to conditionally iterate, use @c bool(const Skeleton*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each Skeleton.
+  /// @param[in] func: The callback function to be called for each Skeleton.
   template <typename Func>
   void eachSkeleton(Func func) const;
 
   /// Iterates all the Skeletons and invokes the callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(Skeleton*) or \c bool(Skeleton*). If
-  /// you want to conditionally iterate, use \c bool(Skeleton*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(Skeleton*) or @c bool(Skeleton*). If
+  /// you want to conditionally iterate, use @c bool(Skeleton*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each Skeleton.
+  /// @param[in] func: The callback function to be called for each Skeleton.
   template <typename Func>
   void eachSkeleton(Func func);
 
   /// Iterates all the SimpleFrames and invokes the callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const SimpleFrame*) or \c bool(const SimpleFrame*).
-  /// If you want to conditionally iterate, use \c bool(const SimpleFrame*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const SimpleFrame*) or @c bool(const SimpleFrame*).
+  /// If you want to conditionally iterate, use @c bool(const SimpleFrame*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each SimpleFrame.
+  /// @param[in] func: The callback function to be called for each SimpleFrame.
   template <typename Func>
   void eachSimpleFrame(Func func) const;
 
   /// Iterates all the SimpleFrames and invokes the callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(SimpleFrame*) or \c bool(SimpleFrame*). If
-  /// you want to conditionally iterate, use \c bool(SimpleFrame*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(SimpleFrame*) or @c bool(SimpleFrame*). If
+  /// you want to conditionally iterate, use @c bool(SimpleFrame*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each SimpleFrame.
+  /// @param[in] func: The callback function to be called for each SimpleFrame.
   template <typename Func>
   void eachSimpleFrame(Func func);
 

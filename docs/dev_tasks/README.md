@@ -39,7 +39,7 @@ Documentation for development tasks in DART.
 - ❌ **Performance numbers** - These change with optimizations
 - ✅ **DO**: High-level design decisions with "why" rationale
 - ✅ **DO**: Architectural patterns used (e.g., "hybrid approach", "threshold-based")
-- ✅ **DO**: Directory pointers (e.g., "see `dart/math/lcp/Dantzig/`")
+- ✅ **DO**: Directory pointers (e.g., "see `dart/math/lcp/dantzig/`")
 
 **Remember**: Code is the source of truth. Documentation explains _why_, code shows _how_.
 

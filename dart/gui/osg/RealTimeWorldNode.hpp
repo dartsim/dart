@@ -49,21 +49,21 @@ public:
   /// to real-time playback. If a simulation is too computationally expensive,
   /// the simulation might not be able to keep up with real time.
   ///
-  /// \param[in] world
+  /// @param[in] world
   ///   The world to simulate
   ///
-  /// \param[in] targetFrequency
+  /// @param[in] targetFrequency
   ///   The expected refresh rate. The actual refresh rate may depend on your
   ///   monitor and your computer's display settings.
   ///
-  /// \param[in] targetRealTimeFactor
+  /// @param[in] targetRealTimeFactor
   ///   This factor at which the simulation should run. A value of 1.0 (default)
   ///   means it will try to run at real time. A value 2.0 means the simulation
   ///   will try to run at double real time speed (fast-forward). A value of 0.5
   ///   means the simulation will try to run at half of real-time speed (slowed
   ///   down).
   ///
-  /// \param[in] shadower
+  /// @param[in] shadower
   ///   The shading technique to use when rendering this world.
   RealTimeWorldNode(
       const std::shared_ptr<dart::simulation::World>& world = nullptr,

@@ -59,7 +59,7 @@ namespace detail {
 /// the actuator types if the coefficients are non-zero. The default
 /// coefficients are zero.
 ///
-/// \sa setActuatorType(), getActuatorType(),
+/// @sa setActuatorType(), getActuatorType(),
 /// setSpringStiffness(), setDampingCoefficient(),
 enum ActuatorType
 {

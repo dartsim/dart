@@ -41,7 +41,7 @@ namespace dynamics {
 class DART_API CylinderShape : public Shape
 {
 public:
-  /// \brief Constructor.
+  /// @brief Constructor.
   CylinderShape(double _radius, double _height);
 
   // Documentation inherited.
@@ -50,22 +50,22 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief
+  /// @brief
   double getRadius() const;
 
-  /// \brief
+  /// @brief
   void setRadius(double _radius);
 
-  /// \brief
+  /// @brief
   double getHeight() const;
 
-  /// \brief
+  /// @brief
   void setHeight(double _height);
 
-  /// \brief Compute volume from given properties
+  /// @brief Compute volume from given properties
   static double computeVolume(double radius, double height);
 
-  /// \brief Compute moments of inertia of a cylinder
+  /// @brief Compute moments of inertia of a cylinder
   static Eigen::Matrix3d computeInertia(
       double radius, double height, double mass);
 
@@ -83,10 +83,10 @@ protected:
   void updateVolume() const override;
 
 private:
-  /// \brief
+  /// @brief
   double mRadius;
 
-  /// \brief Height along z-axis.
+  /// @brief Height along z-axis.
   double mHeight;
 };
 

@@ -268,6 +268,15 @@ def run_dart8_tests() -> bool:
     """Run dart8-specific tests (ctest filtered to dart8 labels)."""
     print_header("DART8 TESTS")
 
+    if not _env_flag_enabled("DART_BUILD_DART8_OVERRIDE", "ON"):
+        print_warning("Skipping dart8 tests because DART_BUILD_DART8_OVERRIDE is OFF")
+        return True
+
+    cmake_flag = _cmake_option_enabled("DART_BUILD_DART8")
+    if cmake_flag is False:
+        print_warning("Skipping dart8 tests because DART_BUILD_DART8 is OFF in build")
+        return True
+
     result, _ = run_command(
         pixi_command("test-dart8", PIXI_DEFAULT_DARTPY), "dart8 C++ tests"
     )

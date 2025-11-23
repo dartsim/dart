@@ -46,15 +46,15 @@ namespace utils {
 
 /// Retrieve local resources specified by package:// URIs by: (1) resolving
 /// the package path and (2) passing the resolved URI to another
-/// \ref ResourceRetriever. This class uses requires you to manually provide the
+/// @ref ResourceRetriever. This class uses requires you to manually provide the
 /// base URI of every package that you wish to resolve using the
-/// \ref addPackageDirectory method.
+/// @ref addPackageDirectory method.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_UTILS_API PackageResourceRetriever
   : public virtual common::ResourceRetriever
 {
 public:
-  /// Construct a PackageResourceRetriever that uses the specified \a
+  /// Construct a PackageResourceRetriever that uses the specified @a
   /// _localRetriever to load resolved URIs.
   explicit PackageResourceRetriever(
       const common::ResourceRetrieverPtr& _localRetriever = nullptr);
@@ -64,13 +64,13 @@ public:
   /// Specify the directory of a ROS package. In your URDF files, you may see
   /// strings with a package URI pattern such as:
   ///
-  /// \code
+  /// @code
   /// "package://my_robot/meshes/mesh_for_my_robot.stl"
   ///  \______/  \______/\___________________________/
   ///      |        |                 |
   ///   package  package   file path with respect to
   ///   keyword   name       the package directory
-  /// \endcode
+  /// @endcode
   ///
   /// For us to successfully parse a URDF, we need to be told what the path
   /// to the package directory is, using addPackageDirectory(). In this case,
@@ -81,13 +81,13 @@ public:
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
   ///
-  /// You can call this method multiple times with the same \a _packageName to
+  /// You can call this method multiple times with the same @a _packageName to
   /// provide multiple candidates for resolution. This is necessary if your
   /// resources are split between the Catkin devel and source spaces. Multiple
   /// candidates will be tested in the same order in which they were added.
   ///
-  /// This class supports arbitrary URIs for \a _packageDirectory, as long as
-  /// they are supported by the \a _localRetriever passed to the constructor.
+  /// This class supports arbitrary URIs for @a _packageDirectory, as long as
+  /// they are supported by the @a _localRetriever passed to the constructor.
   void addPackageDirectory(
       const std::string& _packageName, const std::string& _packageDirectory);
 

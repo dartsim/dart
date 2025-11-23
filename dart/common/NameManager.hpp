@@ -39,10 +39,10 @@
 namespace dart {
 namespace common {
 
-/// \brief class NameManager
+/// @brief class NameManager
 ///
 /// Typical usage:
-/// \code{.cpp}
+/// @code{.cpp}
 /// using namespace dart;
 ///
 /// NameManager<BodyNode*> nameMgr;
@@ -56,7 +56,7 @@ namespace common {
 ///   name = nameMgr.issueNewNameAndAdd(name, bodyNode);  // "Link1"
 ///
 /// bodyNode->setName(name);
-/// \endcode
+/// @endcode
 template <typename T>
 class NameManager
 {
@@ -114,9 +114,9 @@ public:
   std::size_t getCount() const;
 
   /// Get object by given name
-  /// \param[in] _name
+  /// @param[in] _name
   ///   Name of the requested object
-  /// \return
+  /// @return
   ///   The object if it exists, or nullptr if it does not exist
   T getObject(const std::string& _name) const;
 

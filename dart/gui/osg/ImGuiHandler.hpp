@@ -72,7 +72,7 @@ public:
   void setCameraCallbacks(::osg::Camera* camera);
 
   //----------------------------------------------------------------------------
-  /// \{ \name Widget management
+  /// \{ @name Widget management
   //----------------------------------------------------------------------------
 
   /// Returns true if this Viewer contains given widget.

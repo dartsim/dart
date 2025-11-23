@@ -85,7 +85,7 @@ public:
   /// Destructor
   virtual ~CollisionDetector() = default;
 
-  /// \brief Create a clone of this CollisionDetector. All the properties will
+  /// @brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
   virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const = 0;
@@ -174,12 +174,12 @@ public:
 
   /// Performs raycast to a collision group.
   ///
-  /// \param[in] group The collision group the ray will be casted onto.
-  /// \param[in] from The start point of the ray in world coordinates.
-  /// \param[in] to The end point of the ray in world coordinates.
-  /// \param[in] option The raycast option.
-  /// \param[in] result The raycast result.
-  /// \return True if the ray hit an collision object.
+  /// @param[in] group The collision group the ray will be casted onto.
+  /// @param[in] from The start point of the ray in world coordinates.
+  /// @param[in] to The end point of the ray in world coordinates.
+  /// @param[in] option The raycast option.
+  /// @param[in] result The raycast result.
+  /// @return True if the ray hit an collision object.
   virtual bool raycast(
       CollisionGroup* group,
       const Eigen::Vector3d& from,

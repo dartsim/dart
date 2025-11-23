@@ -54,7 +54,7 @@ public:
   /// Default constructor
   Geom() = default;
 
-  /// \{ \name Attributes
+  /// \{ @name Attributes
 
   const std::string& getName() const;
   GeomType getType() const;
