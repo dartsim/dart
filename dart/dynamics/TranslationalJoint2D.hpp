@@ -94,24 +94,24 @@ public:
 
   /// Sets plane type as XY-plane
   /// @param[in] renameDofs If true, the names of dofs in this joint will be
-  /// renmaed according to the plane type.
+  /// renamed according to the plane type.
   void setXYPlane(bool renameDofs = true);
 
   /// Sets plane type as YZ-plane
   /// @param[in] renameDofs If true, the names of dofs in this joint will be
-  /// renmaed according to the plane type.
+  /// renamed according to the plane type.
   void setYZPlane(bool renameDofs = true);
 
   /// Sets plane type as ZX-plane
   /// @param[in] renameDofs If true, the names of dofs in this joint will be
-  /// renmaed according to the plane type.
+  /// renamed according to the plane type.
   void setZXPlane(bool renameDofs = true);
 
   /// Sets plane type as arbitrary plane with two orthogonal translational axes
   /// @param[in] transAxis1 First translational axis
   /// @param[in] transAxis2 Second translational axis
   /// @param[in] renameDofs If true, the names of dofs in this joint will be
-  /// renmaed according to the plane type.
+  /// renamed according to the plane type.
   void setArbitraryPlane(
       const Eigen::Vector3d& transAxis1,
       const Eigen::Vector3d& transAxis2,

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/All.hpp>
 
@@ -72,7 +72,7 @@ const double default_soft_damping = 5.0;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 
 void setupRing(const SkeletonPtr& ring)
 {

@@ -1,8 +1,8 @@
-// Nanobind bindings for DART's OSG GUI.
+// Nanobind bindings for DART's GUI.
 
 #include "gui/module.hpp"
 
-#include "gui/osg/osg.hpp"
+#include "gui/gui.hpp"
 
 #include <nanobind/nanobind.h>
 

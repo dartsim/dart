@@ -8,7 +8,7 @@ The DART GUI uses OpenSceneGraph (OSG) as its rendering backend to visualize phy
 
 ## Core Architecture Components
 
-### 1. Viewer (`dart/gui/osg/Viewer.hpp/cpp`)
+### 1. Viewer (`dart/gui/Viewer.hpp/cpp`)
 
 **Purpose**: Main visualization window that manages the rendering loop and coordinates all visual components.
 
@@ -66,7 +66,7 @@ bool mAllowSimulation;                             // Simulation permission
 
 ---
 
-### 2. WorldNode (`dart/gui/osg/WorldNode.hpp/cpp`)
+### 2. WorldNode (`dart/gui/WorldNode.hpp/cpp`)
 
 **Purpose**: Encapsulates a DART `simulation::World` for OSG rendering.
 
@@ -123,7 +123,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
 
 ---
 
-### 3. RealTimeWorldNode (`dart/gui/osg/RealTimeWorldNode.hpp/cpp`)
+### 3. RealTimeWorldNode (`dart/gui/RealTimeWorldNode.hpp/cpp`)
 
 **Purpose**: Specialized `WorldNode` that attempts real-time simulation playback.
 
@@ -159,7 +159,7 @@ Frame Discovery → ShapeFrameNode Creation → Refresh → Utilization Check �
 
 ---
 
-### 4. ShapeFrameNode (`dart/gui/osg/ShapeFrameNode.hpp/cpp`)
+### 4. ShapeFrameNode (`dart/gui/ShapeFrameNode.hpp/cpp`)
 
 **Purpose**: Represents a DART `ShapeFrame` (a frame with an attached visual shape) in the OSG scene graph.
 
@@ -232,7 +232,7 @@ render/
 └── WarningShapeNode                   - Fallback for unsupported shapes
 ```
 
-### render::ShapeNode Base Class (`dart/gui/osg/render/ShapeNode.hpp/cpp`)
+### render::ShapeNode Base Class (`dart/gui/render/ShapeNode.hpp/cpp`)
 
 **Purpose**: Abstract base class for all shape-specific rendering nodes.
 
@@ -288,7 +288,7 @@ class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform {
 
 ## Event Handling System
 
-### 1. DefaultEventHandler (`dart/gui/osg/DefaultEventHandler.hpp/cpp`)
+### 1. DefaultEventHandler (`dart/gui/DefaultEventHandler.hpp/cpp`)
 
 **Purpose**: Central event processor for mouse and keyboard input.
 
@@ -362,7 +362,7 @@ struct PickInfo {
 
 ---
 
-### 2. MouseEventHandler (`dart/gui/osg/MouseEventHandler.hpp`)
+### 2. MouseEventHandler (`dart/gui/MouseEventHandler.hpp`)
 
 **Purpose**: Abstract base class for custom mouse event behaviors.
 
@@ -401,7 +401,7 @@ class MyHandler : public MouseEventHandler {
 
 ---
 
-### 3. TrackballManipulator (`dart/gui/osg/TrackballManipulator.hpp/cpp`)
+### 3. TrackballManipulator (`dart/gui/TrackballManipulator.hpp/cpp`)
 
 **Purpose**: Camera controller for interactive viewpoint manipulation.
 
@@ -777,59 +777,59 @@ Common attachments you can reuse without writing custom logic:
 
 ### Core Components
 
-- `dart/gui/osg/Viewer.hpp/cpp`
+- `dart/gui/Viewer.hpp/cpp`
   - Main viewer class
-- `dart/gui/osg/WorldNode.hpp/cpp`
+- `dart/gui/WorldNode.hpp/cpp`
   - World visualization
-- `dart/gui/osg/RealTimeWorldNode.hpp/cpp`
+- `dart/gui/RealTimeWorldNode.hpp/cpp`
   - Real-time simulation support
-- `dart/gui/osg/ShapeFrameNode.hpp/cpp`
+- `dart/gui/ShapeFrameNode.hpp/cpp`
   - Frame-to-node mapping
 
 ### Event Handling
 
-- `dart/gui/osg/DefaultEventHandler.hpp/cpp`
+- `dart/gui/DefaultEventHandler.hpp/cpp`
   - Central event processor
-- `dart/gui/osg/MouseEventHandler.hpp`
+- `dart/gui/MouseEventHandler.hpp`
   - Custom handler base class
-- `dart/gui/osg/TrackballManipulator.hpp/cpp`
+- `dart/gui/TrackballManipulator.hpp/cpp`
   - Camera controller
 
 ### Rendering
 
-- `dart/gui/osg/render/ShapeNode.hpp/cpp`
+- `dart/gui/render/ShapeNode.hpp/cpp`
   - Base shape renderer
-- `dart/gui/osg/render/BoxShapeNode.hpp/cpp`
+- `dart/gui/render/BoxShapeNode.hpp/cpp`
   - Box geometry rendering
-- `dart/gui/osg/render/SphereShapeNode.hpp/cpp`
+- `dart/gui/render/SphereShapeNode.hpp/cpp`
   - Sphere geometry rendering
-- `dart/gui/osg/render/CylinderShapeNode.hpp/cpp`
+- `dart/gui/render/CylinderShapeNode.hpp/cpp`
   - Cylinder geometry rendering
-- `dart/gui/osg/render/CapsuleShapeNode.hpp/cpp`
+- `dart/gui/render/CapsuleShapeNode.hpp/cpp`
   - Capsule geometry rendering
-- `dart/gui/osg/render/ConeShapeNode.hpp/cpp`
+- `dart/gui/render/ConeShapeNode.hpp/cpp`
   - Cone geometry rendering
-- `dart/gui/osg/render/PyramidShapeNode.hpp/cpp`
+- `dart/gui/render/PyramidShapeNode.hpp/cpp`
   - Pyramid geometry rendering
-- `dart/gui/osg/render/EllipsoidShapeNode.hpp/cpp`
+- `dart/gui/render/EllipsoidShapeNode.hpp/cpp`
   - Ellipsoid geometry rendering
-- `dart/gui/osg/render/PlaneShapeNode.hpp/cpp`
+- `dart/gui/render/PlaneShapeNode.hpp/cpp`
   - Plane geometry rendering
-- `dart/gui/osg/render/MultiSphereShapeNode.hpp/cpp`
+- `dart/gui/render/MultiSphereShapeNode.hpp/cpp`
   - Multi-sphere convex hull rendering
-- `dart/gui/osg/render/MeshShapeNode.hpp/cpp`
+- `dart/gui/render/MeshShapeNode.hpp/cpp`
   - Mesh geometry rendering (using Assimp)
-- `dart/gui/osg/render/SoftMeshShapeNode.hpp/cpp`
+- `dart/gui/render/SoftMeshShapeNode.hpp/cpp`
   - Deformable mesh rendering
-- `dart/gui/osg/render/LineSegmentShapeNode.hpp/cpp`
+- `dart/gui/render/LineSegmentShapeNode.hpp/cpp`
   - Line segment rendering
-- `dart/gui/osg/render/PointCloudShapeNode.hpp/cpp`
+- `dart/gui/render/PointCloudShapeNode.hpp/cpp`
   - Point cloud rendering
-- `dart/gui/osg/render/VoxelGridShapeNode.hpp/cpp`
+- `dart/gui/render/VoxelGridShapeNode.hpp/cpp`
   - Voxel grid rendering (requires OCTOMAP)
-- `dart/gui/osg/render/HeightmapShapeNode.hpp`
+- `dart/gui/render/HeightmapShapeNode.hpp`
   - Heightmap terrain rendering
-- `dart/gui/osg/render/WarningShapeNode.hpp/cpp`
+- `dart/gui/render/WarningShapeNode.hpp/cpp`
   - Fallback renderer for unsupported shapes
 
 ---
@@ -874,13 +874,13 @@ Common attachments you can reuse without writing custom logic:
 
 ```cpp
 // Create viewer
-dart::gui::osg::Viewer viewer;
+dart::gui::Viewer viewer;
 
 // Create world node
-auto worldNode = new dart::gui::osg::WorldNode(myWorld);
+auto worldNode = new dart::gui::WorldNode(myWorld);
 
 // Configure shadows (optional)
-auto shadowTechnique = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+auto shadowTechnique = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 worldNode->setShadowTechnique(shadowTechnique);
 
 // Add to viewer
@@ -896,17 +896,17 @@ viewer.run();
 ### Implementing Custom Mouse Interaction
 
 ```cpp
-class MyInteractionHandler : public dart::gui::osg::MouseEventHandler {
+class MyInteractionHandler : public dart::gui::MouseEventHandler {
 public:
     void update() override {
         // Check for left mouse button push
-        if (mEventHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE)
-            == dart::gui::osg::BUTTON_PUSH) {
+        if (mEventHandler->getButtonEvent(dart::gui::LEFT_MOUSE)
+            == dart::gui::BUTTON_PUSH) {
 
             // Get picked objects
             const auto& picks = mEventHandler->getButtonPicks(
-                dart::gui::osg::LEFT_MOUSE,
-                dart::gui::osg::BUTTON_PUSH);
+                dart::gui::LEFT_MOUSE,
+                dart::gui::BUTTON_PUSH);
 
             // Handle picks
             for (const auto& pick : picks) {
@@ -924,11 +924,11 @@ viewer.getDefaultEventHandler()->addMouseEventHandler(handler);
 ### Creating Custom Shape Rendering
 
 ```cpp
-class CustomShapeNode : public dart::gui::osg::render::ShapeNode,
+class CustomShapeNode : public dart::gui::render::ShapeNode,
                         public ::osg::Geode {
 public:
     CustomShapeNode(std::shared_ptr<MyCustomShape> shape,
-                    dart::gui::osg::ShapeFrameNode* parent)
+                    dart::gui::ShapeFrameNode* parent)
         : ShapeNode(shape, parent, this),
           mCustomShape(shape) {
         refresh();
@@ -1037,7 +1037,7 @@ void MyHandler::update() override {
 
 ### OSG Namespace Conflict
 
-- DART's `dart::gui::osg` namespace conflicts with root `::osg`
+- DART's `dart::gui` namespace conflicts with root `::osg`
 - Always use `::osg::` for OSG types (note the leading `::`)
 - Custom META macros to work around namespace issues
 
