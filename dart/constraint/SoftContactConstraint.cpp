@@ -43,7 +43,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <iostream>
 

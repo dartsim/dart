@@ -39,7 +39,7 @@
 
 #include <cmath>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 // double RandDouble(double _low, double _high) {
 //  double temp;
@@ -320,4 +320,4 @@ bool validate(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace dart::math
