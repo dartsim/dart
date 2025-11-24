@@ -22,14 +22,21 @@ To explore the bindings locally:
    pip install dartpy
    python - <<'PY'
    import dartpy as dart
-   world = dart.simulation.World()
-   print(world.getGravity())
+   world = dart.World()
+   print(world.get_gravity())
    PY
 
 Module Reference
 ----------------
 
-The sections below mirror the module layout from ``docs/python_api/``.
+.. note::
+   The dartpy API is now flattened: core classes/functions live on the
+   top-level ``dartpy`` package and file parsers under ``dartpy.io``. The
+   legacy submodules below remain importable in DART 7.x for compatibility but
+   are deprecated and scheduled for removal in DART 8.0. Prefer importing from
+   ``dartpy`` / ``dartpy.io`` in new code.
+
+The sections below mirror the legacy module layout from ``docs/python_api/`` (kept for compatibility):
 
 .. toctree::
    :maxdepth: 1
