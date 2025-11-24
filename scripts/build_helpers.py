@@ -61,7 +61,12 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     parallel_env = os.environ.get("DART_PARALLEL_JOBS") or os.environ.get(
         "CMAKE_BUILD_PARALLEL_LEVEL"
     )
-    raw_parallel = (parallel_env or "1").strip()
+    if parallel_env:
+        raw_parallel = parallel_env.strip()
+    elif os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+        raw_parallel = "1"
+    else:
+        raw_parallel = str(max(os.cpu_count() or 1, 1))
     try:
         jobs = int(raw_parallel)
     except ValueError:
