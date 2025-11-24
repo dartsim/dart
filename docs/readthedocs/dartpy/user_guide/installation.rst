@@ -36,4 +36,4 @@ Pre-built wheels on PyPI currently cover the following configurations:
 Building from source
 --------------------
 
-If you need a configuration that is not covered by the pre-built packages, build the Python bindings locally by following the instructions in :doc:`../python_api_reference` or the developer onboarding guide. Building requires a full DART build with pybind11 enabled and a matching Python toolchain.
+If you need a configuration that is not covered by the pre-built packages, build the Python bindings locally by following the instructions in :doc:`../python_api_reference` or the developer onboarding guide. Building requires a full DART build with the nanobind-based `dartpy` target enabled and a matching Python toolchain.

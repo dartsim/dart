@@ -28,7 +28,7 @@ def test_import():
 def test_basic_functionality():
     """Test basic dartpy functionality."""
     try:
-        import dartpy as dart  # type: ignore
+        import dartpy as dart
 
         # Test creating a world
         world = dart.simulation.World()
