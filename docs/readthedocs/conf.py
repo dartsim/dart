@@ -167,6 +167,7 @@ def _render_doxyfile(output_path: Path):
         "DOXYGEN_INPUT_ROOT": _posix_path(REPO_ROOT / "dart"),
         "DOXYGEN_OUTPUT_ROOT": _posix_path(CPP_API_OUTPUT_DIR),
         "DOXYGEN_STRIP_FROM_PATH": _posix_path(REPO_ROOT),
+        "DOXYGEN_WARN_LOGFILE": _posix_path(CPP_API_OUTPUT_DIR / "doxygen_warnings.log"),
     }
 
     doxyfile_contents = DOXYFILE_TEMPLATE.read_text()
