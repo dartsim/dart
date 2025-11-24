@@ -105,82 +105,81 @@ dart_add_core_headers(${dart_hpp} ${dart_all_hpp} ${dart_export_hpp})
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
-# Add target
-dart_add_library(
-  NAME dart
-  HEADERS ${dart_core_headers}
-  SOURCES ${dart_core_sources}
-  PUBLIC_INCLUDE_DIRS
-    ${DART_SOURCE_DIR}
-    ${DART_BINARY_DIR}
-  PUBLIC_LINK_LIBRARIES
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    fcl
-    assimp
-  PUBLIC_COMPILE_DEFINITIONS
-    BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS
-)
-set_property(TARGET dart PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+# Collect include directories
+set(_dart_public_includes ${DART_SOURCE_DIR} ${DART_BINARY_DIR})
 get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
 if(_dart_extra_includes)
   list(REMOVE_DUPLICATES _dart_extra_includes)
-  target_include_directories(dart
-    PUBLIC
-      $<BUILD_INTERFACE:${_dart_extra_includes}>
-  )
+  list(APPEND _dart_public_includes ${_dart_extra_includes})
 endif()
-get_property(_dart_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
-if(_dart_system_includes)
-  list(REMOVE_DUPLICATES _dart_system_includes)
-  target_include_directories(dart SYSTEM
-    PUBLIC
-      $<BUILD_INTERFACE:${_dart_system_includes}>
-  )
+get_property(_dart_public_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
+if(_dart_public_system_includes)
+  list(REMOVE_DUPLICATES _dart_public_system_includes)
 endif()
 
-get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
-if(_dart_extra_compile_options)
-  list(REMOVE_DUPLICATES _dart_extra_compile_options)
-  target_compile_options(dart PRIVATE ${_dart_extra_compile_options})
-endif()
+# Collect link libraries
+set(_dart_public_link_libs
+  ${CMAKE_DL_LIBS}
+  Eigen3::Eigen
+  fcl
+  assimp
+)
 if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PUBLIC fmt::fmt-header-only)
+  list(APPEND _dart_public_link_libs fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)
-  target_link_libraries(dart PUBLIC fmt::fmt)
+  list(APPEND _dart_public_link_libs fmt::fmt)
 else()
   message(FATAL_ERROR "Failed to find fmt targets")
 endif()
 get_property(_dart_extra_link_libs GLOBAL PROPERTY DART_EXTRA_LINK_LIBS)
 if(_dart_extra_link_libs)
-  target_link_libraries(dart PUBLIC ${_dart_extra_link_libs})
+  list(APPEND _dart_public_link_libs ${_dart_extra_link_libs})
+endif()
+
+# Collect compile options
+get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
+if(_dart_extra_compile_options)
+  list(REMOVE_DUPLICATES _dart_extra_compile_options)
 endif()
 
 # spdlog settings
-if(spdlog_FOUND)
-  # Prefer header only target
+set(_dart_public_compile_defs BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
+set(_dart_has_spdlog FALSE)
+if(NOT DART_SKIP_spdlog)
   if(TARGET spdlog::spdlog_header_only)
-    target_link_libraries(dart PUBLIC spdlog::spdlog_header_only)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
+    list(APPEND _dart_public_link_libs spdlog::spdlog_header_only)
+    set(_dart_has_spdlog TRUE)
   elseif(TARGET spdlog::spdlog)
-    target_link_libraries(dart PUBLIC spdlog::spdlog)
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
-  else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
-    target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
+    list(APPEND _dart_public_link_libs spdlog::spdlog)
+    set(_dart_has_spdlog TRUE)
+  elseif(spdlog_FOUND)
+    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or spdlog::spdlog_header_only")
   endif()
+endif()
+
+if(_dart_has_spdlog)
+  list(APPEND _dart_public_compile_defs DART_HAVE_spdlog=1)
 else()
-  target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
+  list(APPEND _dart_public_compile_defs DART_HAVE_spdlog=0)
 endif()
 
 # octomap settings
 if(TARGET octomap)
-  target_link_libraries(dart PUBLIC octomap)
+  list(APPEND _dart_public_link_libs octomap)
 endif()
+
+# Add target
+dart_add_library(
+  NAME dart
+  HEADERS ${dart_core_headers}
+  SOURCES ${dart_core_sources}
+  PUBLIC_INCLUDE_DIRS ${_dart_public_includes}
+  PUBLIC_SYSTEM_INCLUDE_DIRS ${_dart_public_system_includes}
+  PRIVATE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+  PUBLIC_LINK_LIBRARIES ${_dart_public_link_libs}
+  PUBLIC_COMPILE_DEFINITIONS ${_dart_public_compile_defs}
+  PRIVATE_COMPILE_OPTIONS ${_dart_extra_compile_options}
+)
 
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_20)
@@ -241,7 +240,7 @@ add_component_dependency_packages(${PROJECT_NAME} dart
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)
 endif()
-if(spdlog_FOUND)
+if(_dart_has_spdlog)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 

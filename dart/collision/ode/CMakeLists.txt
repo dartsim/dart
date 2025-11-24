@@ -11,6 +11,7 @@ if(NOT ODE_FOUND)
     "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
     "Skipping ODE collision backend. Install libode-dev or disable DART_BUILD_COLLISION_ODE."
   )
+  set(HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
   return()
 endif()
 set(HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)

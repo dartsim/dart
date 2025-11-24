@@ -1570,6 +1570,8 @@ function(dart_add_library)
     HEADERS
     PUBLIC_INCLUDE_DIRS
     PRIVATE_INCLUDE_DIRS
+    PUBLIC_SYSTEM_INCLUDE_DIRS
+    PRIVATE_SYSTEM_INCLUDE_DIRS
     PUBLIC_LINK_LIBRARIES
     PRIVATE_LINK_LIBRARIES
     PUBLIC_COMPILE_DEFINITIONS
@@ -1631,6 +1633,8 @@ function(dart_add_library)
 
   # Create the library target
   add_library(${_ARG_NAME} ${_ARG_SOURCES} ${_ARG_HEADERS})
+  # Clear any directory-scoped include directories to avoid unintended propagation
+  set_target_properties(${_ARG_NAME} PROPERTIES INCLUDE_DIRECTORIES "")
 
   # Set output name if specified
   if(_ARG_OUTPUT_NAME)
@@ -1668,12 +1672,24 @@ function(dart_add_library)
 
   target_include_directories(${_ARG_NAME}
     PUBLIC
-      $<BUILD_INTERFACE:${_ARG_PUBLIC_INCLUDE_DIRS}>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+      "$<BUILD_INTERFACE:${_ARG_PUBLIC_INCLUDE_DIRS}>"
+      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${_ARG_PRIVATE_INCLUDE_DIRS}
   )
+  if(_ARG_PUBLIC_SYSTEM_INCLUDE_DIRS)
+    target_include_directories(${_ARG_NAME}
+      SYSTEM PUBLIC
+        "$<BUILD_INTERFACE:${_ARG_PUBLIC_SYSTEM_INCLUDE_DIRS}>"
+    )
+  endif()
+  if(_ARG_PRIVATE_SYSTEM_INCLUDE_DIRS)
+    target_include_directories(${_ARG_NAME}
+      SYSTEM PRIVATE
+        ${_ARG_PRIVATE_SYSTEM_INCLUDE_DIRS}
+    )
+  endif()
 
   # Set compile features (default to C++20 if not specified)
   if(_ARG_COMPILE_FEATURES)

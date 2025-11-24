@@ -14,6 +14,9 @@ if(NOT BULLET_FOUND)
     "Skipping Bullet collision backend. Install libbullet-dev (>= 3.25) or disable "
     "DART_BUILD_COLLISION_BULLET."
   )
+  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  unset(BT_USE_DOUBLE_PRECISION CACHE)
+  unset(BT_USE_DOUBLE_PRECISION)
   return()
 endif()
 

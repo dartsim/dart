@@ -60,7 +60,9 @@ dart_add_test("unit" UNIT_dynamics_GenericJoints dynamics/test_GenericJoints.cpp
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
-dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+if(TARGET dart-utils)
+  dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+endif()
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
@@ -103,5 +105,7 @@ endif()
 # ==============================================================================
 # Utils Tests
 # ==============================================================================
-dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
-target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
+if(TARGET dart-utils)
+  dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)
+  target_link_libraries(test_SdfHelpers dart-utils sdformat::sdformat)
+endif()

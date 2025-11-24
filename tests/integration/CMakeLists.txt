@@ -16,12 +16,12 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_NoFalseContacts.cpp)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET)
+if(DART_BUILD_COLLISION_BULLET AND HAVE_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_BULLET AND HAVE_BULLET AND DART_BUILD_COLLISION_ODE AND HAVE_ODE)
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_PlaneShapeCollision.cpp)
   target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-utils)
 
@@ -48,7 +48,7 @@ dart_build_tests(
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_ContactConstraint.cpp)
 
-if(DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_ODE AND HAVE_ODE)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_ForceDependentSlip.cpp)
 endif()
 
