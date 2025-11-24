@@ -169,8 +169,34 @@ void MeshShape::releaseMesh()
     case MeshCleanupMode::AssimpImporter:
       aiReleaseImport(mMesh);
       break;
-    case MeshCleanupMode::ClonedScene: {
+    case MeshCleanupMode::ClonedSceneManual: {
       auto* scene = const_cast<aiScene*>(mMesh);
+      // Free materials and their properties explicitly to avoid leaks when
+      // using cloned scenes.
+      if (scene->mMaterials && scene->mNumMaterials > 0) {
+        for (unsigned int i = 0; i < scene->mNumMaterials; ++i) {
+          aiMaterial* mat = scene->mMaterials[i];
+          if (!mat)
+            continue;
+          if (mat->mProperties && mat->mNumProperties > 0) {
+            for (unsigned int j = 0; j < mat->mNumProperties; ++j) {
+              aiMaterialProperty* prop = mat->mProperties[j];
+              if (!prop)
+                continue;
+              delete[] prop->mData;
+              delete prop;
+            }
+            delete[] mat->mProperties;
+          }
+          mat->mProperties = nullptr;
+          mat->mNumProperties = 0;
+          mat->mNumAllocated = 0;
+          delete mat;
+        }
+        delete[] scene->mMaterials;
+        scene->mMaterials = nullptr;
+        scene->mNumMaterials = 0;
+      }
       delete scene;
       break;
     }
@@ -361,7 +387,7 @@ ShapePtr MeshShape::clone() const
 
   auto new_shape = std::make_shared<MeshShape>(
       mScale, new_scene, mMeshUri, mResourceRetriever);
-  new_shape->mMeshCleanup = MeshCleanupMode::ClonedScene;
+  new_shape->mMeshCleanup = MeshCleanupMode::ClonedSceneManual;
   new_shape->mMeshPath = mMeshPath;
   new_shape->mDisplayList = mDisplayList;
   new_shape->mColorMode = mColorMode;

@@ -197,8 +197,8 @@ protected:
   {
     /// Mesh allocated by Assimp import; free with aiReleaseImport.
     AssimpImporter,
-    /// Mesh allocated by MeshShape::cloneMesh; free with delete.
-    ClonedScene,
+    /// Mesh allocated by MeshShape::cloneMesh; free manually.
+    ClonedSceneManual,
   };
 
   void releaseMesh();
