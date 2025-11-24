@@ -16,7 +16,7 @@ Mx^{k+1} = Nx^k + b  (fixed-point iteration)
 x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
 ```
 
-The split is chosen so that `M` is cheap to invert. If `M` is a Q-matrix (every LCP with `M` has a solution), then fixed-point convergence implies an LCP solution for `A`.
+The split is chosen so that `M` is cheap to invert (non-zero diagonal is mandatory; diagonal dominance or triangular structure helps). If `M` is a Q-matrix (its LCP is always solvable), then any fixed point of this iteration is also a solution of the original LCP.
 
 ### Derivation sketch
 
@@ -42,6 +42,10 @@ x^{k+1} = max(0, z^k)
 ```
 
 All specific methods below are specializations of this formula.
+
+### Sweep order and symmetry
+
+Gauss-Seidel style methods update `x_i` in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
 ## 1. Jacobi Method ❌ (Not Implemented)
 
@@ -83,9 +87,11 @@ Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 ### Update Rule
 
 ```
-for i = 1 to n:
-  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
-  x_i = max(0, -r_i / A_{ii})
+for i = 1 to n:   # forward sweep
+  r_i = b_i
+      + sum_{j < i} A_{ij} * x_j^{k+1}   # uses freshly updated values
+      + sum_{j >= i} A_{ij} * x_j^{k}
+  x_i^{k+1} = max(0, x_i^{k} - r_i / A_{ii})
 ```
 
 ### Pseudocode
@@ -138,8 +144,14 @@ function PGS(A, b, x, max_iter, epsilon):
 
 ```
 for i = 1 to n:
-  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
-  x_i = max(0, x_i - lambda * r_i / A_{ii})
+  r_i = b_i
+      + sum_{j < i} A_{ij} * x_j^{k+1}
+      + sum_{j >= i} A_{ij} * x_j^{k}
+
+  # Coordinate-wise relaxation step
+  tau_star   = -r_i / A_{ii}            # minimizer of local quadratic
+  tau_lambda = -λ * r_i / A_{ii}        # relaxed step
+  x_i^{k+1} = max(0, x_i^{k} + tau_lambda)
 ```
 
 Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax + b`.
@@ -150,6 +162,25 @@ Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = 
 - **0 < λ < 1**: Under-relaxation (more stable)
 - **1 < λ < 2**: Over-relaxation (faster convergence)
 - **Typical**: λ = 1.2 to 1.5
+
+### Coordinate-descent view
+
+For symmetric `A`, PGS/PSOR are equivalent to coordinate descent on the quadratic objective
+
+```
+f(x) = 0.5 xᵀ A x + bᵀ x
+```
+
+Updating coordinate `i` minimizes the 1D polynomial
+
+```
+g_i(tau) = 0.5 A_ii tau² + r_i tau + const
+tau_star  = -r_i / A_ii           # minimizer
+tau_lambda = -λ r_i / A_ii        # relaxed minimizer (PSOR)
+x_i^{k+1} = max(0, x_i^k + tau_lambda)
+```
+
+If `A_ii <= 0`, the local quadratic is non-convex; clip with the projection above and consider regularizing the diagonal to keep the method stable.
 
 ### Properties
 
@@ -252,6 +283,26 @@ For common contact splittings:
 - One block per contact point
 - When sub-problems are small and cheap
 - Hierarchical blocking: partition a configuration into sub-blocks (e.g., joints vs contacts) and apply specialized solvers per block, repeating sweeps until convergence.
+
+### Practical blocking tips
+
+- Keep the **normal block** tiny (often 1×1) so it can be solved by direct projection.
+- Friction blocks may be **non-symmetric**; small dimension allows direct enumeration or a tiny PCG even when symmetry is missing.
+- For joints or tightly coupled contacts, group them into a single block and solve with a symmetric solver (e.g., PCG) while keeping the scalar per-contact structure for the rest.
+- Hierarchical strategies work well: first block by joint/contact type, then run BGS sweeps inside each group.
+
+### Staggered normal/friction solve (contact-specific)
+
+When contacts are split into normal (`x_N`) and friction (`x_F`) variables (plus optional slack):
+
+```
+# repeat until fixed point
+solve normal LCP:      x_N = PGS/PSOR/PCG on A_NN, with x_F held fixed
+update friction bounds: |x_F| ≤ μ x_N
+solve friction subproblem: small LCP or QP on A_FF, with x_N fixed
+```
+
+Normal blocks are often symmetric PSD, making the normal step amenable to QP/PCG; the friction block can be treated as a cone-constrained QP. One sweep already gives a useful warm start for higher-accuracy methods.
 
 ### Extension to Boxed LCP (BLCP)
 
@@ -449,6 +500,28 @@ if |delta_k - delta_{k-1}| / max(1, delta_{k-1}) < epsilon_rel: converged
 ```
 
 The infinity norm can be accumulated during the sweep with no extra passes.
+
+**Practical sweep-time test** (cheap and easy to implement):
+
+```
+delta_old = ∞
+rho = ∞
+for k = 1..max_iter:
+  delta = 0
+  for each i:
+    x_i = update_i(...)
+    delta = max(delta, |x_i|)
+
+  # Divergence: getting larger
+  if delta > rho: return "diverging"
+  rho = max(delta, delta_old)
+  delta_old = delta
+
+  # Relative contraction
+  if delta < rho * (1 - eps_rel): return "converged"
+```
+
+This uses only per-iteration maxima; no vector norms are required.
 
 ### Maximum Iterations
 

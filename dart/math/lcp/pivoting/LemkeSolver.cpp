@@ -43,15 +43,20 @@ namespace math {
 
 namespace {
 
+bool ValidateImpl(
+    const Eigen::MatrixXd& M,
+    const Eigen::VectorXd& z,
+    const Eigen::VectorXd& q);
+
 // Legacy Lemke implementation (was LemkeImpl) kept locally.
 int LemkeImpl(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z)
 {
-  const int n = q.size();
+  int n = q.size();
 
   const double zer_tol = 1e-5;
   const double piv_tol = 1e-8;
-  const int maxiter = 1000;
+  int maxiter = 1000;
   int err = 0;
 
   if (q.minCoeff() >= 0) {
@@ -68,8 +73,11 @@ int LemkeImpl(
   std::vector<int> bas;
   std::vector<int> nonbas;
 
-  const int t = 2 * n;
+  int t = 2 * n;
   int entering = t;
+
+  bas.clear();
+  nonbas.clear();
 
   for (int i = 0; i < n; ++i) {
     nonbas.push_back(i);
@@ -86,8 +94,8 @@ int LemkeImpl(
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(B);
-    const double cond = svd.singularValues()(0)
-                        / svd.singularValues()(svd.singularValues().size() - 1);
+    double cond = svd.singularValues()(0)
+                  / svd.singularValues()(svd.singularValues().size() - 1);
     if (cond > 1e16) {
       (*z) = Eigen::VectorXd::Zero(n);
       err = 3;
@@ -99,7 +107,7 @@ int LemkeImpl(
   if (x.minCoeff() >= 0) {
     Eigen::VectorXd __z = Eigen::VectorXd::Zero(2 * n);
     for (std::size_t i = 0; i < bas.size(); ++i) {
-      (__z).row(bas[i]) = x.row(static_cast<int>(i));
+      (__z).row(bas[i]) = x.row(i);
     }
     (*z) = __z.head(n);
     return err;
@@ -149,12 +157,12 @@ int LemkeImpl(
       break;
     }
 
-    const std::size_t jSize = j.size();
+    std::size_t jSize = j.size();
     Eigen::VectorXd minRatio(jSize);
     for (std::size_t i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
-    const double theta = minRatio.minCoeff();
+    double theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
     std::vector<double> tmpd;
@@ -164,25 +172,40 @@ int LemkeImpl(
         tmpd.push_back(d[j[i]]);
       }
     }
-    j = tmpJ;
 
-    if (std::find(j.begin(), j.end(), lvindex) != j.end()) {
-      int pos = 0;
-      for (std::size_t i = 0; i < j.size(); ++i) {
-        if (j[i] == lvindex) {
-          pos = static_cast<int>(i);
-          break;
+    j = tmpJ;
+    jSize = j.size();
+    if (jSize == 0) {
+      err = 4;
+      break;
+    }
+    lvindex = -1;
+
+    // Check if artificial among these
+    for (std::size_t i = 0; i < jSize; ++i) {
+      if (bas[j[i]] == t)
+        lvindex = static_cast<int>(i);
+    }
+
+    if (lvindex != -1) {
+      lvindex = j[lvindex]; // Always use artificial if possible
+    } else {
+      theta = tmpd[0];
+      lvindex = 0;
+      for (std::size_t i = 0; i < jSize; ++i) {
+        if (tmpd[i] - theta > piv_tol) { // Bubble sorting
+          theta = tmpd[i];
+          lvindex = static_cast<int>(i);
         }
       }
-      j[pos] = j[j.size() - 1];
-      j[j.size() - 1] = lvindex;
-      tmpd[pos] = tmpd[tmpd.size() - 1];
-      tmpd[tmpd.size() - 1] = d[lvindex];
-      d[lvindex] = tmpd[pos];
+      lvindex = j[lvindex]; // choose the first if there are multiple
     }
+
+    leaving = bas[lvindex];
 
     ratio = x[lvindex] / d[lvindex];
 
+    // Perform pivot
     x = x - ratio * d;
     x[lvindex] = ratio;
     B.col(lvindex) = Be;
@@ -202,6 +225,36 @@ int LemkeImpl(
 
     Eigen::VectorXd __z = z->head(n);
     *z = __z;
+
+    // Optional refinement: if tiny negative w values remain, try a single
+    // corrective solve to nudge them to the feasible side without changing
+    // the basis structure.
+    const double residualTol = 1e-6;
+    Eigen::VectorXd w = M * (*z) + q;
+    if (w.minCoeff() < -residualTol) {
+      const Eigen::VectorXd rhs = -w;
+      const Eigen::VectorXd delta = M.colPivHouseholderQr().solve(rhs);
+
+      // Backtracking on the correction to keep feasibility and improve w
+      double step = 1.0;
+      for (int i = 0; i < 6; ++i) {
+        const Eigen::VectorXd zCandidate
+            = (*z + step * delta).cwiseMax(0.0);
+        const Eigen::VectorXd wCandidate = M * zCandidate + q;
+        if (wCandidate.minCoeff() > w.minCoeff()) {
+          *z = zCandidate;
+          w = wCandidate;
+          break;
+        }
+        step *= 0.5;
+      }
+    }
+
+    if (!ValidateImpl(M, *z, q)) {
+      err = 3;
+    }
+  } else {
+    *z = Eigen::VectorXd::Zero(n); // solve failed, return a 0 vector
   }
 
   return err;

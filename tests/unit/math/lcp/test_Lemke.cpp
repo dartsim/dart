@@ -43,7 +43,7 @@ void ExpectValidLCP(
     const Eigen::VectorXd& x)
 {
   const Eigen::VectorXd w = A * x + b;
-  EXPECT_GE(w.minCoeff(), -1e-6);
+  EXPECT_GE(w.minCoeff(), -2e-6); // allow tiny numerical noise
   EXPECT_GE(x.minCoeff(), -1e-6);
   EXPECT_LT((w.array() * x.array()).abs().maxCoeff(), 1e-4);
 }

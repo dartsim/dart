@@ -59,8 +59,6 @@ class JointConstraint;
 class JointCoulombFrictionConstraint;
 class JointLimitConstraint;
 
-class LCPSolver;
-
 class MimicMotorConstraint;
 
 class PgsBoxedLcpSolver;

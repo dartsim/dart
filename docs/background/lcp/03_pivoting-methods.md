@@ -16,17 +16,26 @@ Let `y = Ax + b`. Partition the indices into:
 Strict complementarity implies `A ∩ F = ∅` and `A ∪ F = I`, where `I = {1, …, n}`. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
 
 ```
-[ I_F  -A_FA ] [ y_F ] = b
-         A_AF   x_A
+[ I_F   -A_FA ] [ y_F ] = b_F
+  A_AF    A_AA   x_A   = -b_A
 ```
 
-The matrix `[I_F; -A_AF]` is a **complementarity matrix**. Each choice of columns from `I` or `-A` yields one such matrix; there are up to `2^n` of them, giving the exponential worst-case for direct enumeration.
+The stacked matrix built from identity columns (for `y_F`) and negated `A` columns (for `x_A`) is a **complementarity matrix**. Choosing, for every index, whether the column comes from `I` or from `-A` enumerates up to `2^n` distinct matrices; this combinatorial explosion is what gives pivoting its exponential worst case. For symmetric positive (semi-)definite `A`, the same conditions can instead be written as a quadratic program, avoiding explicit pivot enumeration.
+
+### Constructing a complementarity matrix
+
+1. Decide the membership of each index (active vs free).
+2. Zero out columns in `A` that belong to `F` (since `x_F = 0`) and rows that belong to `A` (since `y_A = 0`).
+3. Reorder unknowns to `[y_F; x_A]` and build `C = [I_F, -A_FA]`.
+4. Solve `C s = b` for `s = [y_F; x_A]` and keep only solutions with `s ≥ 0`.
+
+Each feasible `s` corresponds to one candidate LCP solution. Pivoting methods search these candidates without testing all `2^n` possibilities when possible.
 
 ## 1. Direct Methods for Small-Sized Problems
 
 ### Description
 
-Geometric approaches for 2D and 3D LCPs using complementarity cones and angle intersection tests.
+Geometric approaches for 2D and 3D LCPs using complementarity cones and angle intersection tests. They explicitly enumerate all complementarity matrices but remain cheap because the dimension is tiny.
 
 ### 2D Algorithm
 
@@ -64,6 +73,7 @@ for k = 1..4:
   mask = 2^(k-1)
   c1 = (mask & 0b01) ? e1 : -a1
   c2 = (mask & 0b10) ? e2 : -a2
+  # b inside cone iff signed areas with b have opposite sign
   if det(c1, b) * det(c2, b) <= 0:
     x = [c1 c2]^{-1} b
     return x
@@ -226,6 +236,12 @@ bool valid = validate(M, z, q);
 
 Incrementally builds active/free index sets while maintaining complementarity constraints as invariants.
 
+The method keeps three sets:
+
+- **Active A**: indices where `x_i > 0`
+- **Free F**: indices where `y_i = (Ax+b)_i > 0`
+- **Unprocessed U**: indices not yet assigned
+
 ### Key Concepts
 
 - **Index Sets**:
@@ -237,29 +253,41 @@ Incrementally builds active/free index sets while maintaining complementarity co
 ### Algorithm Pseudocode
 
 ```
-Given: A, b (symmetric PSD for Baraff), start with A = ∅, F = ∅, U = I
+Given symmetric PSD A, b. Start with x = 0, y = b, A = ∅, F = ∅, U = I
 
 while U not empty:
-  pick j in U with most negative y_j (violates complementarity the most)
-  # grow x_j until blocked
-  Δx_j = min( B_A , B_F )
-  if B_A blocks (index q in A):
-    move q from A to F    # pivot
-  else if B_F blocks (index q in F):
-    move q from F to A    # pivot
-  else:
-    if x_j + Δx_j > 0: add j to A else add j to F
-    remove j from U
+  j = argmin_{i in U} y_i           # most negative residual
+  enter j into tentative active set
+
+  repeat:  # pivoting loop
+    # Solve for search direction that increases x_j
+    Δx = 0; Δx_j = 1
+    Δy = A * Δx
+
+    # Blocking values: how far can we move before violating complementarity?
+    B_A = { -x_i / Δx_i | i in A and Δx_i < 0 }
+    B_F = { -y_i / Δy_i | i in F and Δy_i < 0 }
+    α = min( B_A ∪ B_F ∪ {∞} )
+
+    x = x + α * Δx
+    y = y + α * Δy
+
+    if α came from B_A with index q:
+      move q from A to F            # swap its complement
+    else if α came from B_F with index q:
+      move q from F to A
+    else:
+      # no blocking constraint hit; finalize j
+      if x_j > 0: A = A ∪ {j} else F = F ∪ {j}
+      U = U \ {j}
+      break
+  until false
 ```
 
-where the blocking sets are
+Notes:
 
-```
-B_A = { -x_i / Δx_i | i in A, Δx_i < 0 }
-B_F = { -y_i / Δy_i | i in F, Δy_i < 0 }
-```
-
-Pivoting only swaps one index at a time, so an incremental factorization of `A_AA` can be maintained; inner pivots cost O(n²) with the outer loop running O(n) times, giving practical O(n³) behavior (worst-case O(n⁴)).
+- Only one index swaps at a time, so an incremental factorization of `A_AA` keeps the inner loop O(n²) while the outer loop runs O(n) times (practical O(n³), worst-case O(n⁴)).
+- Works best when `A` is symmetric positive semidefinite (common for contact problems), where it mirrors an active-set QP solve.
 
 ### Properties
 
