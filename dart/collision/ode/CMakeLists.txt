@@ -48,27 +48,13 @@ dart_pkgconfig_append_libraries(${_dart_ode_public_link})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_ode headers" ${hdrs})
-dart_generate_component_headers(
-  COMPONENT_NAME ode
-  TARGET_DIR "dart/collision/ode/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs}
+dart_add_component(
+  NAME ode
+  PACKAGE ${PROJECT_NAME}
+  COMPONENT_HEADERS ${header_names}
+  COMPONENT_HEADER_SOURCES ${hdrs} ${detail_hdrs}
+  COMPONENT_TARGET_DIR "dart/collision/ode/"
+  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
-# Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
-  DESTINATION include/dart/collision/ode
-  COMPONENT headers
-)
-
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/ode/detail
-  COMPONENT headers
-)
-
-dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/ode)
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

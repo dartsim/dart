@@ -728,12 +728,6 @@ function(add_component package_name component)
   set(component_prefix "${package_name}_component_")
   set(target "${component_prefix}${component}")
   add_custom_target("${target}")
-
-  install(
-    EXPORT "${target}"
-    FILE "${package_name}_${component}Targets.cmake"
-    DESTINATION "${CONFIG_INSTALL_DIR}"
-  )
   # TODO(JS): It would be nice if we could check if ${target} has at least one
   # dependency target.
 
@@ -887,6 +881,14 @@ function(add_component_targets package_name component)
       LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
     )
   endforeach()
+
+  if(dependency_targets)
+    install(
+      EXPORT "${target}"
+      FILE "${package_name}_${component}Targets.cmake"
+      DESTINATION "${CONFIG_INSTALL_DIR}"
+    )
+  endif()
 
   set_property(
     TARGET "${target}"

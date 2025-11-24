@@ -21,28 +21,16 @@ set(
   dart/All.hpp
   fcl/All.hpp
 )
-dart_generate_component_headers(
-  COMPONENT_NAME collision
-  TARGET_DIR "dart/collision/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${dart_hdrs} ${fcl_hdrs} ${ode_hdrs} ${ode_detail_hdrs} ${bullet_hdrs} ${bullet_detail_hdrs}
+dart_add_component(
+  NAME collision
+  PACKAGE ${PROJECT_NAME}
+  COMPONENT_HEADERS ${header_names}
+  COMPONENT_HEADER_SOURCES
+    ${hdrs} ${detail_hdrs} ${dart_hdrs} ${fcl_hdrs}
+    ${ode_hdrs} ${ode_detail_hdrs} ${bullet_hdrs} ${bullet_detail_hdrs}
+  COMPONENT_TARGET_DIR "dart/collision/"
+  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
-# Install headers and generated component headers
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
-  DESTINATION include/dart/collision
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/detail
-  COMPONENT headers
-)
-
-# Install generated PascalCase compatibility headers, preserving directory structure
-dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision)
 
 # Add subdirectories
 add_subdirectory(dart)

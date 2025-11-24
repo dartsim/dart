@@ -13,8 +13,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # common
 # math
-# lcpsolver
-# optimizer (legacy alias headers for backward compatibility)
+# lcpsolver (legacy alias; use math/lcp)
+# optimizer (legacy alias; use math/optimization)
 # dynamics
 # collision
 #   dart
@@ -183,7 +183,6 @@ dart_add_library(
 )
 
 # C++ standard settings
-target_compile_features(dart PUBLIC cxx_std_20)
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
