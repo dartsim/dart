@@ -1038,19 +1038,6 @@ test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
 
-# Docker build tasks - Test Docker images locally
-# Requires Docker to be installed on the system
-# Usage:
-#   pixi run docker-build                              # Build all Ubuntu versions
-#   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
-#   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
-#   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
-docker-build = { cmd = "python scripts/build_docker.py all" }
-
-docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [
-  { arg = "distro", default = "jammy" },
-] }
-
 config-asan = { cmd = [
   "bash",
   "-lc",
