@@ -71,7 +71,15 @@ jobs:
           - os: macos-latest
             python-version: "314"
             skip-on-commit: true
-          # Windows builds temporarily disabled
+          # Windows builds
+          - os: windows-latest
+            python-version: "312"
+          - os: windows-latest
+            python-version: "313"
+            skip-on-commit: true
+          - os: windows-latest
+            python-version: "314"
+            skip-on-commit: true
     steps:
       - uses: actions/checkout@v5
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
