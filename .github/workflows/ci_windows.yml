@@ -53,8 +53,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          cache: true
-          run-install: true
+          cache: false
+          run-install: false
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
