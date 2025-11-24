@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -44,11 +44,11 @@ using namespace dynamics;
 using namespace simulation;
 using namespace constraint;
 
-class RigidLoopWorldNode : public dart::gui::osg::WorldNode
+class RigidLoopWorldNode : public dart::gui::WorldNode
 {
 public:
   RigidLoopWorldNode(dart::simulation::WorldPtr world)
-    : dart::gui::osg::WorldNode(world), mWorld(world)
+    : dart::gui::WorldNode(world), mWorld(world)
   {
   }
 
@@ -109,7 +109,7 @@ int main()
   myWorld->getConstraintSolver()->addConstraint(cl);
 
   // Create OSG viewer
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(new RigidLoopWorldNode(myWorld));
 
   // Print instructions

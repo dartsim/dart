@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -39,14 +39,14 @@
 using namespace dart;
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
+class CustomWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   CustomWorldNode(
       dart::simulation::WorldPtr world,
       dart::dynamics::SkeletonPtr biped,
       ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
-    : dart::gui::osg::RealTimeWorldNode(std::move(world), std::move(shadow)),
+    : dart::gui::RealTimeWorldNode(std::move(world), std::move(shadow)),
       mBiped(std::move(biped))
   {
     mLeftHeel = mBiped->getBodyNode("h_heel_left");
@@ -250,8 +250,8 @@ int main()
   biped->getDof("j_abdomen_2")->setPosition(0.00);
 
   // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::osg::Viewer();
-  auto shadow = gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+  auto viewer = gui::Viewer();
+  auto shadow = gui::WorldNode::createDefaultShadowTechnique(&viewer);
 
   // Wrap a WorldNode around it
   ::osg::ref_ptr<CustomWorldNode> node

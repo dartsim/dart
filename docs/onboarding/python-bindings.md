@@ -2,16 +2,17 @@
 
 ## Design Decisions
 
-### Why nanobind?
+### Why pybind11?
 
-**Choice**: nanobind for C++/Python bindings
+**Choice**: pybind11 for C++/Python bindings
 
 **Rationale**:
 
-- Lean binding layer with smaller extension binaries and faster import times
-- Built-in signature metadata (`__nb_signature__`) for high-quality stub generation
-- Solid NumPy/ndarray support with zero-copy paths for contiguous buffers
-- Familiar API to the previous bindings while reducing template bloat/compile time
+- Header-only library, no external dependencies
+- Seamless Eigen ↔ NumPy integration with custom type casters
+- Automatic reference counting and lifetime management
+- Modern C++17 features support
+- Excellent performance (zero-copy when possible)
 
 ### Why scikit-build-core?
 
@@ -54,16 +55,16 @@ dartpy/
 ├── constraint    # Constraint solving
 ├── simulation    # World simulation
 ├── utils         # File parsers (URDF, SDF, SKEL, MJCF)
-└── gui.osg       # 3D visualization (OpenSceneGraph + ImGui)
+└── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
 
 **Source**: See `python/dartpy/` directory for module implementations
 
 ### Eigen ↔ NumPy Integration
 
-**Key Design**: nanobind ndarray helpers + custom Eigen converters keep the C++ API ergonomic from Python.
+**Key Design**: Custom pybind11 type casters enable seamless conversion
 
-**Implementation**: `python/dartpy/common/eigen_utils.hpp`, `python/dartpy/math/eigen_geometry.{hpp,cpp}`, and shared casters in `python/dartpy/common/type_casters.hpp`
+**Implementation**: `python/dartpy/eigen_geometry_pybind.h`
 
 **Features**:
 
@@ -87,7 +88,28 @@ positions = skel.getPositions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Build Flow**: `python/dartpy/CMakeLists.txt` appends the `gui/osg` sources only when `DART_BUILD_GUI=ON`, and the pixi wheel environments enable that flag. The resulting nanobind module exposes `dartpy.gui.osg` on every platform where OpenSceneGraph is available.
+**Issue**: `dartpy.gui` was not available in wheels despite `DART_BUILD_GUI=ON`
+
+**Root Cause**: Python bindings previously checked for an undefined GUI feature macro
+
+**Solution**:
+
+1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
+
+   ```cpp
+   #if DART_BUILD_GUI
+     // Bind OSG module
+   #endif
+   ```
+
+2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
+   ```cmake
+   if(DART_BUILD_GUI)
+     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
+   endif()
+   ```
+
+**Result**: OSG now works on all platforms where OpenSceneGraph is available (Linux, macOS, Windows via conda-forge)
 
 ## Installation Methods
 
@@ -184,7 +206,7 @@ for _ in range(100):
 ### Pattern 2: Visualization with Custom Logic
 
 ```python
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def customPreStep(self):
         # Apply controls before physics step
         pass
@@ -196,7 +218,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 world = dart.simulation.World()
 node = MyWorldNode(world)
 
-viewer = dart.gui.osg.Viewer()
+viewer = dart.gui.Viewer()
 viewer.addWorldNode(node)
 viewer.run()
 ```
