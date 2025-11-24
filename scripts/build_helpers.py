@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Iterable, Optional, Set
 
@@ -56,11 +58,10 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     """
     Invoke `cmake --build` for the provided target.
     """
-    parallel = (
-        os.environ.get("DART_PARALLEL_JOBS")
-        or os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL")
-        or "1"
-    ).strip()
+    parallel_env = os.environ.get("DART_PARALLEL_JOBS") or os.environ.get(
+        "CMAKE_BUILD_PARALLEL_LEVEL"
+    )
+    parallel = (parallel_env or "1").strip()
 
     cmd = [
         "cmake",
@@ -73,7 +74,43 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     ]
     cmd.extend(["--parallel", parallel])
 
-    subprocess.check_call(cmd)
+    def _run_build(args):
+        subprocess.check_call(args)
+
+    try:
+        _run_build(cmd)
+        return
+    except (subprocess.CalledProcessError, OSError):
+        # If parallelism was explicitly configured, honor that failure.
+        if parallel_env and parallel_env.strip():
+            raise
+
+        # Retry with minimal parallelism to avoid transient resource limits
+        # observed in CI (e.g., ninja posix_spawn failures).
+        fallback_cmd = cmd[:-1] + ["1"]
+        backoff_seconds = (0, 10, 30, 60)
+        last_error: Optional[BaseException] = None
+        for delay in backoff_seconds:
+            if delay == 0:
+                print(
+                    "Initial build failed; retrying with --parallel 1 to reduce "
+                    "resource pressure.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"Retrying with --parallel 1 after {delay}s backoff...",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+            try:
+                _run_build(fallback_cmd)
+                return
+            except (subprocess.CalledProcessError, OSError) as err:
+                last_error = err
+                continue
+        if last_error:
+            raise last_error
 
 
 def _locate_cache(build_dir: Path) -> Optional[Path]:
