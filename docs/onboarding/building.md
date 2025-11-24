@@ -150,6 +150,9 @@ SCRIPT=python/demo_hub/app.py BUILD_TYPE=Debug pixi run debug-py-native
 
 # Run the demo hub headless without a debugger
 BUILD_TYPE=Debug pixi run demo-hub -- --list
+
+# Run the minimal ImGui GUI shell (install pip deps first: imgui[glfw], glfw, PyOpenGL)
+BUILD_TYPE=Debug pixi run demo-hub-gui
 ```
 
 All tasks default to a Debug build of dartpy. Pass extra arguments to the Python

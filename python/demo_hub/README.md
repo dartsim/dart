@@ -10,6 +10,7 @@ you can browse and run them from one entrypoint.
 pixi run demo-hub                    # run default scene (hello_world)
 pixi run demo-hub -- --list          # list scenes
 pixi run demo-hub -- --scene hello_world --steps 300 --dt 0.002
+pixi run demo-hub -- --scene pendulum --steps 400
 ```
 
 For debugging, use the pixi helpers:
@@ -26,3 +27,19 @@ pixi run debug-py-native     # gdb/lldb for stepping into native code
 2. Keep assets in that scene folder when possible.
 3. The registry auto-discovers `*.scene` modules under `demo_hub.scenes` and
    registers any `Scene` subclasses that expose `metadata`.
+
+## GUI scaffold
+
+A minimal ImGui + GLFW shell lives in `demo_hub/gui/app.py` (no 3D rendering
+yet; it drives scenes and shows their state). Run it with:
+
+```bash
+pixi run demo-hub-gui             # GUI shell
+```
+
+Optional dependencies (install into the pixi env): `imgui[glfw]`, `glfw`, and
+`PyOpenGL`, e.g.
+
+```bash
+pixi run pip install "imgui[glfw]" glfw PyOpenGL
+```

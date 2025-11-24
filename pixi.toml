@@ -934,6 +934,27 @@ python python/demo_hub/app.py ${APP_ARGS} "$@"
   { arg = "build_type", default = "Debug" },
 ], env = { PYTHONUNBUFFERED = "1" } }
 
+demo-hub-gui = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
+APP_ARGS=${APP_ARGS:-{{ app_args }}}
+export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
+python -m demo_hub.gui.app ${APP_ARGS} "$@"
+""",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "app_args", default = "" },
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Debug" },
+], env = { PYTHONUNBUFFERED = "1" } }
+
 # Launch a Python entrypoint under debugpy for IDE attach
 debug-py = { cmd = [
   "bash",

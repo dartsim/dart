@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+import argparse
+import logging
+import time
+from typing import Iterable
+
+from demo_hub.core import build_default_registry
+
+logger = logging.getLogger(__name__)
+
+
+def _check_optional_deps() -> None:
+    try:
+        import imgui  # noqa: F401
+        import glfw  # noqa: F401
+        from OpenGL import GL  # noqa: F401
+    except ImportError as exc:  # pragma: no cover - exercised manually
+        raise SystemExit(
+            "Missing optional GUI dependencies. Install imgui[glfw], glfw, and PyOpenGL "
+            "in the pixi environment (e.g., `pixi run pip install \"imgui[glfw]\" glfw PyOpenGL`)."
+        ) from exc
+
+
+def _init_window(width: int, height: int):
+    import glfw
+
+    if not glfw.init():
+        raise RuntimeError("Failed to initialize GLFW")
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+    window = glfw.create_window(width, height, "DART Demo Hub (Python)", None, None)
+    if not window:
+        glfw.terminate()
+        raise RuntimeError("Failed to create GLFW window")
+    glfw.make_context_current(window)
+    glfw.swap_interval(1)
+    return window
+
+
+def _render_loop(window, registry, scene_id: str, dt: float) -> None:  # pragma: no cover - manual UI
+    import imgui
+    import glfw
+    from imgui.integrations.glfw import GlfwRenderer
+    from OpenGL import GL
+
+    imgui.create_context()
+    impl = GlfwRenderer(window, attach_callbacks=False)
+
+    scene = registry.create(scene_id)
+    scene.setup(dt)
+    paused = False
+    step_once = False
+    accumulator = 0.0
+    last_time = time.perf_counter()
+    scene_ids = registry.scene_ids
+    selected_idx = scene_ids.index(scene_id)
+
+    while not glfw.window_should_close(window):
+        glfw.poll_events()
+        impl.process_inputs()
+
+        now = time.perf_counter()
+        frame_time = now - last_time
+        last_time = now
+
+        if not paused:
+            accumulator += frame_time
+        if step_once:
+            accumulator += dt
+            step_once = False
+
+        while accumulator >= dt:
+            scene.update(dt)
+            accumulator -= dt
+
+        imgui.new_frame()
+        imgui.begin("Demo Hub")
+
+        changed, selected_idx = imgui.combo("Scene", selected_idx, scene_ids)
+        if changed:
+            selected_id = scene_ids[selected_idx]
+            scene = registry.create(selected_id)
+            scene.setup(dt)
+            paused = False
+            accumulator = 0.0
+
+        imgui.text(f"dt: {dt:.4f}s")
+        if imgui.button("Play/Pause"):
+            paused = not paused
+        imgui.same_line()
+        if imgui.button("Step"):
+            step_once = True
+            paused = True
+        imgui.same_line()
+        if imgui.button("Reset"):
+            scene.reset()
+            accumulator = 0.0
+
+        state = scene.export_state() or {}
+        if state:
+            imgui.separator()
+            imgui.text("State")
+            for key, value in state.items():
+                imgui.text(f"{key}: {value}")
+
+        imgui.end()
+
+        GL.glViewport(0, 0, int(glfw.get_framebuffer_size(window)[0]), int(glfw.get_framebuffer_size(window)[1]))
+        GL.glClearColor(0.1, 0.1, 0.1, 1)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        imgui.render()
+        impl.render(imgui.get_draw_data())
+        glfw.swap_buffers(window)
+
+    impl.shutdown()
+    glfw.terminate()
+
+
+def main(argv: list[str] | None = None) -> None:
+    _check_optional_deps()
+    registry = build_default_registry()
+
+    parser = argparse.ArgumentParser(description="Minimal ImGui shell for demo_hub scenes")
+    parser.add_argument("--scene", default="hello_world", choices=registry.scene_ids, help="Scene id to start with")
+    parser.add_argument("--dt", type=float, default=1.0 / 240.0, help="Simulation timestep")
+    args = parser.parse_args(argv)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    window = _init_window(1280, 720)
+    logger.info("Launching GUI shell (scene=%s)", args.scene)
+    _render_loop(window, registry, args.scene, args.dt)
+
+
+if __name__ == "__main__":  # pragma: no cover - manual UI
+    main()
