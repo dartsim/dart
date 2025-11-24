@@ -46,7 +46,13 @@ get_property(dart_utils_sources GLOBAL PROPERTY DART_UTILS_SOURCES)
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-utils)
-set(component_name utils)
+set(component_header_extras
+  mjcf/All.hpp
+  sdf/All.hpp
+)
+if(urdfdom_FOUND)
+  list(APPEND component_header_extras urdf/All.hpp)
+endif()
 
 set(_dart_utils_private_includes)
 set(_dart_utils_private_links)
@@ -73,48 +79,16 @@ dart_add_library(
 
 # Component
 dart_add_component(
-  NAME ${component_name}
+  NAME utils
   PACKAGE ${PROJECT_NAME}
   TARGETS ${target_name}
   DEPENDENCIES dart
   DEPENDENCY_PACKAGES tinyxml2 sdformat
-)
-
-# Generate header for this namespace
-dart_get_filename_components(header_names "utils headers" ${hdrs})
-if(urdfdom_FOUND)
-  list(APPEND header_names "urdf/All.hpp")
-endif()
-set(
-  header_names
-  ${header_names}
-  mjcf/All.hpp
-  sdf/All.hpp
-)
-dart_generate_component_headers(
-  COMPONENT_NAME utils
-  TARGET_DIR "dart/utils/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${dart_utils_headers}
-)
-
-# Install (includes All.hpp, utils.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
-  DESTINATION include/dart/utils
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/utils/detail
-  COMPONENT headers
-)
-# Install generated compatibility headers preserving subdirectory structure
-dart_install_compat_headers(
-  COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
-  DESTINATION_PREFIX include/dart/utils
+  COMPONENT_HEADERS ${hdrs}
+  COMPONENT_HEADER_EXTRAS ${component_header_extras}
+  COMPONENT_HEADER_SOURCES ${hdrs} ${detail_hdrs} ${dart_utils_headers}
+  COMPONENT_TARGET_DIR "dart/utils/"
+  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 # Add subdirectories (components)

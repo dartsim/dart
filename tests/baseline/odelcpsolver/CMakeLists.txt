@@ -4,7 +4,6 @@ file(GLOB srcs "*.cpp")
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-external-odelcpsolver)
-set(component_name external-odelcpsolver)
 
 dart_add_library(
   NAME ${target_name}
@@ -16,7 +15,7 @@ dart_add_library(
 
 # Component
 dart_add_component(
-  NAME ${component_name}
+  NAME external-odelcpsolver
   PACKAGE ${PROJECT_NAME}
   TARGETS ${target_name}
 )

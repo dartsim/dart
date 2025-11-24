@@ -35,6 +35,7 @@ file(GLOB detail_srcs "detail/*.cpp")
 
 set(dart_gui_osg_hdrs ${hdrs} ${detail_hdrs})
 set(dart_gui_osg_srcs ${srcs} ${detail_srcs})
+set(component_header_extras render/All.hpp)
 
 add_subdirectory(render)
 
@@ -75,35 +76,11 @@ dart_add_component(
   TARGETS ${target_name}
   DEPENDENCIES utils ${component_dependencies}
   DEPENDENCY_PACKAGES ${component_dependency_packages}
-)
-
-# Generate header for this namespace
-dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/All.hpp")
-dart_generate_component_headers(
-  COMPONENT_NAME osg
-  TARGET_DIR "dart/gui/osg/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${render_hdrs}
-)
-
-# Install (includes All.hpp, osg.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
-  DESTINATION include/dart/gui/osg
-  COMPONENT headers
-)
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/gui/osg/detail
-  COMPONENT headers
-)
-# Install generated compat headers while preserving subdirectory structure
-dart_install_compat_headers(
-  COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
-  DESTINATION_PREFIX include/dart/gui/osg
+  COMPONENT_HEADERS ${hdrs} ${detail_hdrs}
+  COMPONENT_HEADER_EXTRAS ${component_header_extras}
+  COMPONENT_HEADER_SOURCES ${hdrs} ${detail_hdrs} ${render_hdrs}
+  COMPONENT_TARGET_DIR "dart/gui/osg/"
+  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 dart_format_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})

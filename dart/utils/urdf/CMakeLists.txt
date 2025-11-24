@@ -22,7 +22,6 @@ file(GLOB srcs "*.cpp")
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-utils-urdf)
-set(component_name utils-urdf)
 
 set(DART_UTILS_BACKWARDCOMPATIBILITY_HPP_IN
   ${CMAKE_CURRENT_SOURCE_DIR}/BackwardCompatibility.hpp.in
@@ -52,28 +51,15 @@ dart_add_library(
 
 # Component
 dart_add_component(
-  NAME ${component_name}
+  NAME utils-urdf
   PACKAGE ${PROJECT_NAME}
   TARGETS ${target_name}
   DEPENDENCIES utils
   DEPENDENCY_PACKAGES urdfdom
-)
-
-# Generate header for this namespace
-dart_get_filename_components(header_names "utils_urdf headers" ${hdrs})
-dart_generate_component_headers(
-  COMPONENT_NAME urdf
-  TARGET_DIR "dart/utils/urdf/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs}
-)
-
-# Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
-  DESTINATION include/dart/utils/urdf
-  COMPONENT headers
+  COMPONENT_HEADERS ${hdrs}
+  COMPONENT_HEADER_SOURCES ${hdrs}
+  COMPONENT_TARGET_DIR "dart/utils/urdf/"
+  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 dart_format_add(${hdrs} ${srcs})

@@ -905,6 +905,11 @@ endfunction()
 #     [DEPENDENCIES dep1 dep2...]  # Internal component dependencies
 #     [DEPENDENCY_PACKAGES pkg1 pkg2...]  # External package dependencies
 #     [INCLUDE_DIRS dir1 dir2...]
+#     [COMPONENT_HEADERS header1.hpp header2.hpp...]  # full paths; names auto-derived
+#     [COMPONENT_HEADER_EXTRAS extra1.hpp extra2.hpp...]  # names or relative paths to include in All.hpp
+#     [COMPONENT_HEADER_SOURCES source_header1.hpp ...]  # for PascalCase compat generation
+#     [COMPONENT_TARGET_DIR dir/]  # e.g., "dart/utils/"
+#     [COMPONENT_OUTPUT_DIR dir]  # defaults to CMAKE_CURRENT_BINARY_DIR
 #   )
 #
 # This function consolidates add_component(), add_component_targets(),
@@ -925,12 +930,17 @@ function(dart_add_component)
   set(oneValueArgs
     NAME
     PACKAGE
+    COMPONENT_TARGET_DIR
+    COMPONENT_OUTPUT_DIR
   )
   set(multiValueArgs
     TARGETS
     DEPENDENCIES
     DEPENDENCY_PACKAGES
     INCLUDE_DIRS
+    COMPONENT_HEADERS
+    COMPONENT_HEADER_EXTRAS
+    COMPONENT_HEADER_SOURCES
   )
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
@@ -967,6 +977,60 @@ function(dart_add_component)
   # Step 5: Add include directories if specified
   if(_ARG_INCLUDE_DIRS)
     add_component_include_directories(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_INCLUDE_DIRS})
+  endif()
+
+  # Step 6: Generate component meta headers if requested
+  if(_ARG_COMPONENT_HEADERS OR _ARG_COMPONENT_HEADER_EXTRAS
+      OR _ARG_COMPONENT_HEADER_SOURCES OR _ARG_COMPONENT_TARGET_DIR
+      OR _ARG_COMPONENT_OUTPUT_DIR)
+    if(NOT _ARG_COMPONENT_TARGET_DIR)
+      message(FATAL_ERROR "dart_add_component: COMPONENT_TARGET_DIR is required when generating component headers")
+    endif()
+    if(NOT _ARG_COMPONENT_OUTPUT_DIR)
+      set(_ARG_COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+    # Reset compat header list to avoid leaking from previous invocations
+    set(DART_GENERATED_COMPAT_HEADERS "")
+
+    set(_dart_component_header_names)
+    foreach(_dart_header IN LISTS _ARG_COMPONENT_HEADERS)
+      get_filename_component(_dart_header_name "${_dart_header}" NAME)
+      list(APPEND _dart_component_header_names "${_dart_header_name}")
+    endforeach()
+    list(APPEND _dart_component_header_names ${_ARG_COMPONENT_HEADER_EXTRAS})
+
+    if(_dart_component_header_names)
+      dart_generate_component_headers(
+        COMPONENT_NAME ${_ARG_NAME}
+        TARGET_DIR "${_ARG_COMPONENT_TARGET_DIR}"
+        OUTPUT_DIR "${_ARG_COMPONENT_OUTPUT_DIR}"
+        HEADERS ${_dart_component_header_names}
+        SOURCE_HEADERS ${_ARG_COMPONENT_HEADER_SOURCES}
+      )
+
+      # Install generated meta headers and compatibility headers when possible
+      set(_dart_component_target_dir "${_ARG_COMPONENT_TARGET_DIR}")
+      string(REGEX REPLACE "/$" "" _dart_component_target_dir "${_dart_component_target_dir}")
+      set(_dart_component_install_dir "${CMAKE_INSTALL_INCLUDEDIR}/${_dart_component_target_dir}")
+
+      set(_dart_component_all_header "${_ARG_COMPONENT_OUTPUT_DIR}/All.hpp")
+      set(_dart_component_primary_header "${_ARG_COMPONENT_OUTPUT_DIR}/${_ARG_NAME}.hpp")
+
+      if(EXISTS "${_dart_component_all_header}" OR EXISTS "${_dart_component_primary_header}")
+        install(
+          FILES ${_dart_component_all_header} ${_dart_component_primary_header}
+          DESTINATION "${_dart_component_install_dir}"
+          COMPONENT headers
+        )
+      endif()
+
+      if(DART_GENERATED_COMPAT_HEADERS)
+        dart_install_compat_headers(
+          COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
+          DESTINATION_PREFIX "${_dart_component_install_dir}"
+        )
+      endif()
+    endif()
   endif()
 
   if(DART_VERBOSE)
