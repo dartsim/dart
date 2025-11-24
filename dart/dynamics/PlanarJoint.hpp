@@ -43,7 +43,7 @@ namespace dynamics {
 /// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
 /// axes and one rotational axis.
 ///
-/// First and second coordiantes represent translation along first and second
+/// First and second coordinates represent translation along first and second
 /// translational axes, respectively. Third coordinate represents rotation
 /// along rotational axis.
 class DART_API PlanarJoint : public detail::PlanarJointBase

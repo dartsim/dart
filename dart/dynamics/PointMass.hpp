@@ -152,7 +152,7 @@ public:
   };
 
   //--------------------------------------------------------------------------
-  // Constructor and Desctructor
+  // Constructor and Destructor
   //--------------------------------------------------------------------------
 
   /// Default destructor
@@ -435,7 +435,7 @@ protected:
   void updatePartialAcceleration() const;
 
   /// @brief Update articulated body inertia. Forward dynamics routine.
-  /// @param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   void updateArtInertiaFD(double _timeStep) const;
 
   /// @brief Update bias force associated with the articulated body inertia.
@@ -472,7 +472,7 @@ protected:
   void updateJointForceID(
       double _timeStep, double _withDampingForces, double _withSpringForces);
 
-  /// @brief Update constrained terms due to the constraint impulses. Foward
+  /// @brief Update constrained terms due to the constraint impulses. Forward
   /// dynamics routine.
   void updateConstrainedTermsFD(double _timeStep);
 
@@ -646,7 +646,7 @@ protected:
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
 
-  //------------------------- Impulse-based Dyanmics ---------------------------
+  //------------------------- Impulse-based Dynamics ---------------------------
   /// Velocity change due to constraint impulse
   Eigen::Vector3d mDelV;
 

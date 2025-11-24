@@ -84,7 +84,7 @@ public:
   // Documentation inherited.
   ShapePtr clone() const override;
 
-  /// @brief True if all the radii are exactly eqaul.
+  /// @brief True if all the radii are exactly equal.
   bool isSphere(void) const;
 
 protected:

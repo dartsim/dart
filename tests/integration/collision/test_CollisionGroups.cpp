@@ -286,7 +286,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
 
   auto group = world->getConstraintSolver()->getCollisionGroup();
 
-  // Check that there are no subscribtions before adding the skeletons to the
+  // Check that there are no subscriptions before adding the skeletons to the
   // world
   EXPECT_FALSE(group->isSubscribedTo(skel_A.get()));
   EXPECT_FALSE(group->isSubscribedTo(skel_B.get()));
@@ -294,7 +294,7 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   world->addSkeleton(skel_A);
   world->addSkeleton(skel_B);
 
-  // Check that there are subscribtions after adding the skeletons to the
+  // Check that there are subscriptions after adding the skeletons to the
   // world
   EXPECT_TRUE(group->isSubscribedTo(skel_A.get()));
   EXPECT_TRUE(group->isSubscribedTo(skel_B.get()));
@@ -308,13 +308,13 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   auto sn = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
       boxShape);
 
-  // Needed to update subscribtions
+  // Needed to update subscriptions
   world->step();
 
   EXPECT_TRUE(group->hasShapeFrame(sn));
   const auto* skel_A_ptr = skel_A.get();
   const auto* skel_B_ptr = skel_B.get();
-  // Check that there are no subscribtions after removing the skeletons from the
+  // Check that there are no subscriptions after removing the skeletons from the
   // world
   world->removeSkeleton(skel_A);
   world->removeSkeleton(skel_B);

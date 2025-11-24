@@ -776,7 +776,7 @@ void FCLCollisionDetector::setPrimitiveShapeType(
       "You chose to use FCL's primitive shape collision feature while it's not "
       "complete (at least until 0.4.0) especially in use of dynamics "
       "simulation. It's recommended to use mesh even for primitive shapes by "
-      "settting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
+      "setting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
 
   mPrimitiveShapeType = type;
 }

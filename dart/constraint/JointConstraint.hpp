@@ -145,7 +145,7 @@ private:
   /// Life time of constraint of each DOF.
   Eigen::Matrix<std::size_t, 6, 1> mLifeTime;
 
-  /// Whether any of the joint contraint is active of each joint.
+  /// Whether any of the joint constraint is active of each joint.
   Eigen::Matrix<bool, 6, 1> mActive;
 
   /// The desired delta velocity to satisfy the joint limit constraint.

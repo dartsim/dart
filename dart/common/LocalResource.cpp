@@ -151,7 +151,7 @@ std::size_t LocalResource::tell()
     return -1L;
   }
 
-  // We return -1 to match the beahvior of DefaultIoStream in Assimp.
+  // We return -1 to match the behavior of DefaultIoStream in Assimp.
   return offset;
 }
 

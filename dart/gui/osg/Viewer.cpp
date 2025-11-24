@@ -855,7 +855,7 @@ void Viewer::setVerticalFieldOfView(const double fov)
 
   if (!result) {
     DART_WARN(
-        "Attemping to set vertical field of view while the camera isn't "
+        "Attempting to set vertical field of view while the camera isn't "
         "perspective view. Ignoring this request.");
     return;
   }

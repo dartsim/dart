@@ -176,7 +176,7 @@ private:
   /// Set secondary slip compliance
   void setSecondarySlipCompliance(double slip);
 
-  /// Get contact object associated witht this constraint
+  /// Get contact object associated with this constraint
   const collision::Contact& getContact() const;
 
 private:

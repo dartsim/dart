@@ -173,7 +173,7 @@ TEST(Optimizer, OutStream)
   GradientDescentSolver solver(prob);
   solver.setIterationsPerPrint(50);
 
-  // Print the progess to a std::string
+  // Print the progress to a std::string
   std::stringstream ss;
   solver.setOutStream(&ss);
   EXPECT_TRUE(solver.solve());

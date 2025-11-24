@@ -809,7 +809,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 
   if (nullptr == frame) {
     DART_ERROR(
-        "Received a callback for a nullptr enity. This is most likely a bug. "
+        "Received a callback for a nullptr entity. This is most likely a bug. "
         "Please report this!");
     DART_ASSERT(false);
     return;
