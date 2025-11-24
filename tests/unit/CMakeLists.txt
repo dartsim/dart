@@ -66,6 +66,8 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
+dart_add_test(
+  "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_BodyNodeCollisionSignals.cpp)
 dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_VisualAspect.cpp)
 dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_WeldJointMerge.cpp)
 
