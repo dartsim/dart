@@ -93,5 +93,3 @@ dart_add_component(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
-
-dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
