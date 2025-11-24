@@ -85,6 +85,7 @@ NB_MODULE(_dartpy, m)
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
 
-  auto gui = m.def_submodule("gui", "GUI utilities (stubbed for nanobind)");
+  auto gui = m.def_submodule(
+      "gui", "GUI utilities (OpenSceneGraph + ImGui) backed by nanobind");
   dart::python_nb::defGuiModule(gui);
 }

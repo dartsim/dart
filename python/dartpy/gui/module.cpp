@@ -17,6 +17,9 @@ void defGuiModule(nanobind::module_& m)
   defWorldNode(m);
   defRealTimeWorldNode(m);
   defViewer(m);
+  defImGuiWidget(m);
+  defImGuiHandler(m);
+  defImGuiViewer(m);
 }
 
 } // namespace dart::python_nb

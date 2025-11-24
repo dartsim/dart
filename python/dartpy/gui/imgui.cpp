@@ -7,14 +7,34 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/trampoline.h>
 
 namespace nb = nanobind;
 
 namespace dart::python_nb {
 
+namespace {
+
+class PyImGuiWidget : public dart::gui::ImGuiWidget
+{
+public:
+  NB_TRAMPOLINE(dart::gui::ImGuiWidget, 1);
+
+  void render() override
+  {
+    NB_OVERRIDE_PURE(render);
+  }
+};
+
+} // namespace
+
 void defImGuiWidget(nb::module_& m)
 {
-  nb::class_<dart::gui::ImGuiWidget>(m, "ImGuiWidget")
+  nb::class_<
+      dart::gui::ImGuiWidget,
+      PyImGuiWidget,
+      std::shared_ptr<dart::gui::ImGuiWidget>>(m, "ImGuiWidget")
+      .def(nb::init<>())
       .def("render", &dart::gui::ImGuiWidget::render)
       .def(
           "setVisible",
