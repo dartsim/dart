@@ -1,7 +1,7 @@
 import platform
 
 import pytest
-from dartpy.math import Random
+from dartpy import Random
 
 
 def test_create():

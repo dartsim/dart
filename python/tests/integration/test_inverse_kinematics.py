@@ -12,60 +12,60 @@ def test_solve_for_free_joint():
     ensure that the target is reachable
     """
 
-    skel = dart.dynamics.Skeleton()
-    [joint0, body0] = skel.createFreeJointAndBodyNodePair()
+    skel = dart.Skeleton()
+    [joint0, body0] = skel.create_free_joint_and_body_node_pair()
 
-    ik = body0.getOrCreateIK()
-    assert ik.isActive()
+    ik = body0.get_or_create_ik()
+    assert ik.is_active()
 
-    tf = dart.math.Isometry3()
+    tf = dart.Isometry3()
     tf.set_translation([0, 0, 0.8])
-    tf.set_rotation(dart.math.AngleAxis(math.pi / 8.0, [0, 1, 0]).to_rotation_matrix())
-    ik.getTarget().setTransform(tf)
+    tf.set_rotation(dart.AngleAxis(math.pi / 8.0, [0, 1, 0]).to_rotation_matrix())
+    ik.get_target().set_transform(tf)
 
-    error_method = ik.getErrorMethod()
-    assert error_method.getMethodName() == "TaskSpaceRegion"
-    [lb, ub] = error_method.getBounds()
+    error_method = ik.get_error_method()
+    assert error_method.get_method_name() == "TaskSpaceRegion"
+    [lb, ub] = error_method.get_bounds()
     assert len(lb) == 6
     assert len(ub) == 6
-    error_method.setBounds(np.ones(6) * -1e-8, np.ones(6) * 1e-8)
-    [lb, ub] = error_method.getBounds()
+    error_method.set_bounds(np.ones(6) * -1e-8, np.ones(6) * 1e-8)
+    [lb, ub] = error_method.get_bounds()
     assert lb == pytest.approx(-1e-8)
     assert ub == pytest.approx(1e-8)
 
-    solver = ik.getSolver()
-    solver.setNumMaxIterations(100)
+    solver = ik.get_solver()
+    solver.set_num_max_iterations(100)
 
-    prob = ik.getProblem()
+    prob = ik.get_problem()
 
-    tf_actual = ik.getTarget().getTransform().matrix()
-    tf_expected = body0.getTransform().matrix()
+    tf_actual = ik.get_target().get_transform().matrix()
+    tf_expected = body0.get_transform().matrix()
     assert not np.isclose(tf_actual, tf_expected).all()
 
     success = solver.solve()
     assert success
 
-    tf_actual = ik.getTarget().getTransform().matrix()
-    tf_expected = body0.getTransform().matrix()
+    tf_actual = ik.get_target().get_transform().matrix()
+    tf_expected = body0.get_transform().matrix()
     assert np.isclose(tf_actual, tf_expected).all()
 
 
-class FailingSolver(dart.optimizer.Solver):
+class FailingSolver(dart.Solver):
     def __init__(self, constant):
         super(FailingSolver, self).__init__()
         self.constant = constant
 
     def solve(self):
-        problem = self.getProblem()
+        problem = self.get_problem()
         if problem is None:
             print(
                 "[FailingSolver::solve] Attempting to solve a nullptr problem! We will return false."
             )
             return False
 
-        dim = problem.getDimension()
+        dim = problem.get_dimension()
         wrong_solution = np.ones(dim) * self.constant
-        problem.setOptimalSolution(wrong_solution)
+        problem.set_optimal_solution(wrong_solution)
 
         return False
 
@@ -77,21 +77,21 @@ class FailingSolver(dart.optimizer.Solver):
 
 
 def test_do_not_apply_solution_on_failure():
-    skel = dart.dynamics.Skeleton()
-    [joint, body] = skel.createFreeJointAndBodyNodePair()
+    skel = dart.Skeleton()
+    [joint, body] = skel.create_free_joint_and_body_node_pair()
 
-    ik = body.getIK(True)
+    ik = body.get_ik(True)
     solver = FailingSolver(10)
-    ik.setSolver(solver)
+    ik.set_solver(solver)
 
-    dofs = skel.getNumDofs()
-    skel.resetPositions()
+    dofs = skel.get_num_dofs()
+    skel.reset_positions()
 
-    assert not ik.solveAndApply(allowIncompleteResult=False)
-    assert np.isclose(skel.getPositions(), np.zeros(dofs)).all()
+    assert not ik.solve_and_apply(allow_incomplete_result=False)
+    assert np.isclose(skel.get_positions(), np.zeros(dofs)).all()
 
-    assert not ik.solveAndApply(allowIncompleteResult=True)
-    assert not np.isclose(skel.getPositions(), np.zeros(dofs)).all()
+    assert not ik.solve_and_apply(allow_incomplete_result=True)
+    assert not np.isclose(skel.get_positions(), np.zeros(dofs)).all()
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import platform
 
 import pytest
-from dartpy.common import Uri
+from dartpy import Uri
 
 
 def test_from_string_valid_uri_returns_true():

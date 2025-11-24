@@ -21,6 +21,10 @@ import os
 import sys
 from pathlib import Path
 
+# Silence dartpy deprecation warnings during tests while we migrate call sites
+os.environ.setdefault("DARTPY_WARN_ON_CAMELCASE", "0")
+os.environ.setdefault("DARTPY_WARN_ON_LEGACY_MODULES", "0")
+
 
 def _candidate_python_paths() -> list[str]:
     """

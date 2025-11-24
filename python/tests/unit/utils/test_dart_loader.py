@@ -3,7 +3,7 @@ import platform
 
 import dartpy
 import pytest
-from dartpy.utils import DartLoader
+from dartpy.io import DartLoader
 from tests.util import get_asset_path
 
 
