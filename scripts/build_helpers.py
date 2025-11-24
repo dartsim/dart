@@ -66,7 +66,8 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     elif os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
         raw_parallel = "1"
     else:
-        raw_parallel = str(max(os.cpu_count() or 1, 1))
+        cores = os.cpu_count() or 1
+        raw_parallel = str(max(int(cores * 0.75), 1))
     try:
         jobs = int(raw_parallel)
     except ValueError:
