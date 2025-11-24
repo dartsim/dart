@@ -11,6 +11,7 @@ dart_add_library(
   SOURCES ${srcs}
   PUBLIC_INCLUDE_DIRS ${DART_SOURCE_DIR} ${DART_BINARY_DIR}
   COMPILE_FEATURES cxx_std_17
+  NO_FORMAT
 )
 
 # Component

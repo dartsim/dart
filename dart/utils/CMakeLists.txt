@@ -1,3 +1,13 @@
+if(NOT DEFINED TINYXML2_FOUND)
+  set(TINYXML2_FOUND FALSE)
+endif()
+if(NOT DEFINED SDFORMAT_FOUND)
+  set(SDFORMAT_FOUND FALSE)
+endif()
+if(NOT DEFINED CURL_FOUND)
+  set(CURL_FOUND FALSE)
+endif()
+
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
 dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
@@ -6,6 +16,12 @@ if(NOT HAVE_SDFORMAT)
     FATAL_ERROR
     "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "
     "set CMAKE_PREFIX_PATH so CMake can find sdformat-config.cmake.")
+  message(WARNING "Skipping dart-utils: required dependency sdformat missing.")
+  return()
+endif()
+if(NOT HAVE_TINYXML2)
+  message(WARNING "Skipping dart-utils: required dependency tinyxml2 missing.")
+  return()
 endif()
 if(TARGET sdformat::sdformat)
   set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)

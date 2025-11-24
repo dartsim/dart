@@ -19,6 +19,7 @@ dart_add_library(
   PUBLIC_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}
   NO_EXPORT_MACRO
   NO_INSTALL
+  NO_FORMAT
 )
 set(BUILD_SHARED_LIBS ${_dart_prev_build_shared_libs})
 unset(_dart_prev_build_shared_libs)

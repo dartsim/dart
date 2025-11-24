@@ -9,11 +9,12 @@ endif()
 message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
 if(NOT BULLET_FOUND)
   message(
-    FATAL_ERROR
+    WARNING
     "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
-    "Please install libbullet-dev (>= 3.25) or disable "
+    "Skipping Bullet collision backend. Install libbullet-dev (>= 3.25) or disable "
     "DART_BUILD_COLLISION_BULLET."
   )
+  return()
 endif()
 
 # Test whether Bullet was built with double precision. If so, we need to

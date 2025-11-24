@@ -7,10 +7,11 @@ endif()
 message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
 if(NOT ODE_FOUND)
   message(
-    FATAL_ERROR
+    WARNING
     "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
-    "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
+    "Skipping ODE collision backend. Install libode-dev or disable DART_BUILD_COLLISION_ODE."
   )
+  return()
 endif()
 set(HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
 set(_dart_ode_public_link ${ODE_LIBRARIES})

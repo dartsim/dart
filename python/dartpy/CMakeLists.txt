@@ -43,6 +43,15 @@ set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources "*.cpp")
 
+# Ensure required C++ targets exist
+set(_dartpy_required_targets dart dart-utils)
+foreach(_dartpy_required IN LISTS _dartpy_required_targets)
+  if(NOT TARGET ${_dartpy_required})
+    message(WARNING "Skipping dartpy: required dependency target '${_dartpy_required}' is missing.")
+    return()
+  endif()
+endforeach()
+
 # Exclude GUI OSG bindings if GUI is not built
 if(NOT DART_BUILD_GUI)
   list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
@@ -83,13 +92,12 @@ target_include_directories(${pybind_module}
 set(dartpy_libraries
   dart
   dart-utils
-  dart-utils-urdf
 )
-foreach(dartpy_library ${dartpy_libraries})
-  if(NOT TARGET ${dartpy_library})
-    message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")
-  endif()
-endforeach()
+if(TARGET dart-utils-urdf)
+  list(APPEND dartpy_libraries dart-utils-urdf)
+else()
+  message(WARNING "dart-utils-urdf not found; URDF bindings will be skipped.")
+endif()
 
 target_link_libraries(${pybind_module}
   PUBLIC ${dartpy_libraries}

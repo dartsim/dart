@@ -1558,6 +1558,7 @@ function(dart_add_library)
     GLOB_HEADERS
     NO_INSTALL
     NO_EXPORT_MACRO
+    NO_FORMAT
   )
   set(oneValueArgs
     NAME
@@ -1827,7 +1828,9 @@ function(dart_add_library)
   endif()
 
   # Add to formatting list
-  dart_format_add(${_ARG_SOURCES} ${_ARG_HEADERS})
+  if(NOT _ARG_NO_FORMAT)
+    dart_format_add(${_ARG_SOURCES} ${_ARG_HEADERS})
+  endif()
 
 endfunction()
 
@@ -1954,6 +1957,15 @@ endfunction()
 #   dart_format_add(source1 [source2...])
 #-------------------------------------------------------------------------------
 function(dart_format_add)
+  set(options NO_FORMAT)
+  set(oneValueArgs)
+  set(multiValueArgs)
+  cmake_parse_arguments(DFA "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(DFA_NO_FORMAT)
+    return()
+  endif()
+
   foreach(source ${ARGN})
     if(IS_ABSOLUTE "${source}")
       set(source_abs "${source}")

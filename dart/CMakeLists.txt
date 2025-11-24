@@ -110,6 +110,9 @@ dart_add_library(
   NAME dart
   HEADERS ${dart_core_headers}
   SOURCES ${dart_core_sources}
+  PUBLIC_INCLUDE_DIRS
+    ${DART_SOURCE_DIR}
+    ${DART_BINARY_DIR}
   PUBLIC_LINK_LIBRARIES
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
@@ -118,16 +121,28 @@ dart_add_library(
   PUBLIC_COMPILE_DEFINITIONS
     BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS
 )
+set_property(TARGET dart PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${DART_BINARY_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
 if(_dart_extra_includes)
   list(REMOVE_DUPLICATES _dart_extra_includes)
-  target_include_directories(dart PUBLIC ${_dart_extra_includes})
+  target_include_directories(dart
+    PUBLIC
+      $<BUILD_INTERFACE:${_dart_extra_includes}>
+  )
 endif()
 get_property(_dart_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
 if(_dart_system_includes)
   list(REMOVE_DUPLICATES _dart_system_includes)
-  target_include_directories(dart SYSTEM PUBLIC ${_dart_system_includes})
+  target_include_directories(dart SYSTEM
+    PUBLIC
+      $<BUILD_INTERFACE:${_dart_system_includes}>
+  )
 endif()
+
 get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
 if(_dart_extra_compile_options)
   list(REMOVE_DUPLICATES _dart_extra_compile_options)
