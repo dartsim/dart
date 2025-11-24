@@ -14,6 +14,7 @@ bullet-cpp = ">=3.25,<4"
 clang-format = ">=14.0.0,<15"
 cli11 = ">=2.4.2,<3"
 cmake = ">=4.0.2,<5"
+codespell = ">=2.4.1,<3"
 console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
@@ -44,6 +45,7 @@ scikit-build-core = ">=0.10"
 setuptools = ">=80.1.0,<81"
 spdlog = ">=1.15.3,<2"
 sphinx = "*"
+sphinx-lint = "*"
 sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
@@ -138,7 +140,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
@@ -155,13 +157,19 @@ lint-md = { cmd = """
     prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
 lint = { depends-on = [
+  "lint-spell",
   "lint-cpp",
   "lint-dart8",
   "lint-py",
   "lint-yaml",
   "lint-toml",
   "lint-md",
+  "lint-rst",
 ] }
 
 # Check formatting without modifying files (used in CI)
@@ -172,7 +180,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -183,11 +191,17 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
+  "check-lint-spell",
 ] }
 
 build = { cmd = [
@@ -906,7 +920,7 @@ wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag
 wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
   { arg = "python_tag" },
   { arg = "arch" },
-], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib" } }
+], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", DELOCATE_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", CONDA_PREFIX = "$CONDA_PREFIX:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME" } }
 
 wheel-repair-windows-core = { cmd = """
     rm -rf dist/repaired &&
@@ -1244,16 +1258,32 @@ lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = [
+  "lint-spell",
+  "lint-cpp",
+  "lint-py",
+  "lint-yaml",
+  "lint-rst",
+] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
+  "check-lint-spell",
 ] }
 
 build = { cmd = """

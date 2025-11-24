@@ -105,7 +105,7 @@ enum ActuatorType
   VELOCITY,
 
   /// Locked joint always set the velocity and acceleration to zero so that
-  /// the joint dosen't move at all (locked), and the output is joint force.
+  /// the joint doesn't move at all (locked), and the output is joint force.
   /// force.
   ///
   /// All the joint constraints are invalid.

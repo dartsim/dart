@@ -56,6 +56,8 @@
 
 #include <assimp/scene.h>
 
+#include <limits>
+
 namespace dart {
 namespace collision {
 
@@ -224,8 +226,15 @@ struct FCLDistanceCallbackData
   /// @brief Whether the distance iteration can stop
   bool done;
 
+  /// Whether at least one distance query was evaluated
+  bool hasResult;
+
   FCLDistanceCallbackData(const DistanceOption& option, DistanceResult* result)
-    : option(option), result(result), done(false)
+    : option(option),
+      unclampedMinDistance(std::numeric_limits<double>::infinity()),
+      result(result),
+      done(false),
+      hasResult(false)
   {
     convertOption(option, fclRequest);
   }
@@ -733,6 +742,9 @@ double FCLCollisionDetector::distance(
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
 
+  if (!distData.hasResult)
+    distData.unclampedMinDistance = 0.0;
+
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
@@ -764,6 +776,9 @@ double FCLCollisionDetector::distance(
 
   broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
 
+  if (!distData.hasResult)
+    distData.unclampedMinDistance = 0.0;
+
   return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
@@ -776,7 +791,7 @@ void FCLCollisionDetector::setPrimitiveShapeType(
       "You chose to use FCL's primitive shape collision feature while it's not "
       "complete (at least until 0.4.0) especially in use of dynamics "
       "simulation. It's recommended to use mesh even for primitive shapes by "
-      "settting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
+      "setting FCLCollisionDetector::setPrimitiveShapeType(MESH).");
 
   mPrimitiveShapeType = type;
 }
@@ -1147,13 +1162,23 @@ bool distanceCallback(
   // Perform narrow-phase check
   ::fcl::distance(o1, o2, fclRequest, fclResult);
 
-  // Store the minimum distance just in case result is nullptr.
-  distData->unclampedMinDistance = fclResult.min_distance;
+  const auto currentDistance = fclResult.min_distance;
 
-  if (result)
-    interpreteDistanceResult(fclResult, o1, o2, option, *result);
+  if (!distData->hasResult
+      || currentDistance < distData->unclampedMinDistance) {
+    distData->unclampedMinDistance = currentDistance;
 
-  if (distData->unclampedMinDistance <= option.distanceLowerBound)
+    if (result)
+      interpreteDistanceResult(fclResult, o1, o2, option, *result);
+
+    distData->hasResult = true;
+  }
+
+  dist = distData->hasResult ? distData->unclampedMinDistance
+                             : std::numeric_limits<double>::infinity();
+
+  if (distData->hasResult
+      && distData->unclampedMinDistance <= option.distanceLowerBound)
     distData->done = true;
 
   return distData->done;

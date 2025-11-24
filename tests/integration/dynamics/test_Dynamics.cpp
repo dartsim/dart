@@ -81,8 +81,8 @@ public:
   // difference.
   void testJacobians(const common::Uri& uri);
 
-  // Compare velocities and accelerations with actual vaules and approximates
-  // using finite differece method.
+  // Compare velocities and accelerations with actual values and approximates
+  // using finite difference method.
   void testFiniteDifferenceGeneralizedCoordinates(const common::Uri& uri);
 
   // Compare spatial velocities computed by forward kinematics and finite
@@ -1434,16 +1434,16 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
           dVmap[body] = relDV;
         }
 
-        bool checkT
+        bool checked
             = equals(body->getTransform().matrix(), Tmap[body].matrix());
         bool checkV = equals(body->getSpatialVelocity(), Vmap[body]);
         bool checkDV = equals(body->getSpatialAcceleration(), dVmap[body]);
 
-        EXPECT_TRUE(checkT);
+        EXPECT_TRUE(checked);
         EXPECT_TRUE(checkV);
         EXPECT_TRUE(checkDV);
 
-        if (!checkT) {
+        if (!checked) {
           std::cout << "[" << body->getName() << "]" << std::endl;
           std::cout << "actual T  : " << std::endl
                     << body->getTransform().matrix() << std::endl;

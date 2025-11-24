@@ -195,7 +195,7 @@ DART_API Eigen::Vector3d logMap(const Eigen::Matrix3d& _R);
 DART_API Eigen::Vector6d logMap(const Eigen::Isometry3d& _T);
 
 //------------------------------------------------------------------------------
-/// @brief Rectify the rotation part so as that it satifies the orthogonality
+/// @brief Rectify the rotation part so as that it satisfies the orthogonality
 /// condition.
 ///
 /// It is one step of @f$R_{i_1}=1/2(R_i + R_i^{-T})@f$.

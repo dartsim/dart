@@ -68,6 +68,8 @@ class Skeleton;
 class Joint;
 class DegreeOfFreedom;
 class Shape;
+class ShapeNode;
+class CollisionAspect;
 class EndEffector;
 class Marker;
 
@@ -158,6 +160,12 @@ public:
   /// Make the Nodes of this BodyNode match the Nodes of otherBodyNode. All
   /// existing Nodes in this BodyNode will be removed.
   void matchNodes(const BodyNode* otherBodyNode);
+
+  /// Return all the Nodes currently attached to this BodyNode.
+  std::vector<Node*> getNodes();
+
+  /// Return all the Nodes currently attached to this BodyNode (const).
+  std::vector<const Node*> getNodes() const;
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
@@ -254,7 +262,7 @@ public:
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Return the linear acceleration of the center of mass, expressed in terms
-  /// of arbitary Frames
+  /// of arbitrary Frames
   Eigen::Vector3d getCOMLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
@@ -727,7 +735,7 @@ public:
   /// last two parameters specify frames of the first two parameters.
   /// Coordinate transformations are applied when needed. The point of
   /// application and the force in local coordinates are stored in mContacts.
-  /// When conversion is needed, make sure the transformations are avaialble.
+  /// When conversion is needed, make sure the transformations are available.
   void addExtForce(
       const Eigen::Vector3d& _force,
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
@@ -934,13 +942,13 @@ protected:
   virtual void updatePartialAcceleration() const;
 
   /// Update articulated body inertia for forward dynamics.
-  /// @param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateArtInertia(double _timeStep) const;
 
   /// Update bias force associated with the articulated body inertia for forward
   /// dynamics.
   /// @param[in] _gravity Vector of gravitational acceleration
-  /// @param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateBiasForce(
       const Eigen::Vector3d& _gravity, double _timeStep);
 
@@ -993,7 +1001,7 @@ protected:
   /// Update the joint impulse for forward dynamics.
   virtual void updateJointImpulseFD();
 
-  /// Update constrained terms due to the constraint impulses for foward
+  /// Update constrained terms due to the constraint impulses for forward
   /// dynamics.
   virtual void updateConstrainedTerms(double _timeStep);
 
@@ -1205,7 +1213,7 @@ protected:
   /// Cache data for arbitrary spatial value
   Eigen::Vector6d mArbitrarySpatial;
 
-  //------------------------- Impulse-based Dyanmics ---------------------------
+  //------------------------- Impulse-based Dynamics ---------------------------
   /// Velocity change due to to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mDelV;
@@ -1254,6 +1262,20 @@ private:
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
+
+  /// Notify listeners about collision-shape lifecycle changes.
+  void handleCollisionShapeStateChange(
+      const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
+
+  /// Notify listeners when a collidable ShapeNode swaps its Shape.
+  void handleCollisionShapeUpdated(
+      const ShapeNode* shapeNode,
+      ConstShapePtr oldShape,
+      ConstShapePtr newShape);
+
+  friend class CollisionAspect;
+  friend class ShapeNode;
+  friend class ShapeFrame;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

@@ -53,7 +53,7 @@ public:
   /// Returns the type
   virtual const std::string& getType() const = 0;
 
-  /// Solves constriant impulses for a constrained group. The LCP formulation
+  /// Solves constraint impulses for a constrained group. The LCP formulation
   /// setting that this function solve is A*x = b + w where each x[i], w[i]
   /// satisfies one of
   ///   (1) x = lo, w >= 0
@@ -69,7 +69,7 @@ public:
   /// @param[in] hi Upper bound of x where it's enforced to be hi >= 0.
   /// @param[in] findex Indices to corresponding normal contact constraint. Set
   /// the index to itself (e.g., findex[k] = k) for normal contacts or
-  /// non-contact constraints. For friction constraint, set the cooresponding
+  /// non-contact constraints. For friction constraint, set the corresponding
   /// normal contact constraint.
   /// @param[in] earlyTermination Set true to return false as soon as the solver
   /// find the solution doesn't exist. Otherwise, the solver will continue to

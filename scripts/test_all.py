@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from shutil import which
 from typing import Dict, Optional, Tuple
 
 from build_helpers import cmake_target_exists, get_build_dir
@@ -56,6 +57,14 @@ PIXI_DEFAULT_DARTPY = "ON"
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
+def _resolve_pixi_path() -> Optional[str]:
+    """Pick the pixi binary from env override or PATH on demand."""
+    return os.environ.get("PIXI_BIN") or which("pixi")
+
+
+PIXI_BIN = _resolve_pixi_path()
+
+
 def _env_flag_enabled(name: str, default: str = "ON") -> bool:
     """Helper to treat ON/OFF/0/1 env values as booleans."""
     value = os.environ.get(name, default)
@@ -82,10 +91,12 @@ def _cmake_option_enabled(option: str) -> Optional[bool]:
 
 
 def pixi_command(task: str, *args: str) -> str:
-    if args:
-        joined = " ".join(args)
-        return f"pixi run {task} {joined}"
-    return f"pixi run {task}"
+    pixi_exe = _resolve_pixi_path()
+    if pixi_exe is None:
+        return f"pixi run {task} {' '.join(args)}".strip()
+
+    joined_args = f" {' '.join(args)}" if args else ""
+    return f"{pixi_exe} run {task}{joined_args}"
 
 
 class Colors:
@@ -215,10 +226,15 @@ def run_command(
 
 def check_pixi() -> bool:
     """Check if pixi is available"""
+    pixi_exe = _resolve_pixi_path()
+    if pixi_exe is None:
+        print_error("pixi not found. Please install pixi first.")
+        return False
+
     try:
-        subprocess.run(["pixi", "--version"], capture_output=True, check=True)
+        subprocess.run([pixi_exe, "--version"], capture_output=True, check=True)
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError:
         print_error("pixi not found. Please install pixi first.")
         return False
 

@@ -989,7 +989,7 @@ Coriolis forces:
 ```
 
 The gains for the operational space controller need to be in matrix form, but
-we're storing the gains as scalars, so we'll need to conver them:
+we're storing the gains as scalars, so we'll need to convert them:
 
 ```{eval-rst}
 .. tabs::
