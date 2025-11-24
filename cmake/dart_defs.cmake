@@ -928,7 +928,9 @@ endfunction()
 #-------------------------------------------------------------------------------
 function(dart_add_component)
   set(prefix _ARG)
-  set(options)
+  set(options
+    NO_REGISTER
+  )
   set(oneValueArgs
     NAME
     PACKAGE
@@ -958,27 +960,34 @@ function(dart_add_component)
     set(_ARG_PACKAGE ${PROJECT_NAME})
   endif()
 
-  # Step 1: Create the component
-  add_component(${_ARG_PACKAGE} ${_ARG_NAME})
-
-  # Step 2: Add targets if specified
-  if(_ARG_TARGETS)
-    add_component_targets(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_TARGETS})
+  # Step 1: Create the component (optional)
+  set(_dart_register_component TRUE)
+  if(_ARG_NO_REGISTER)
+    set(_dart_register_component FALSE)
   endif()
 
-  # Step 3: Add internal dependencies if specified
-  if(_ARG_DEPENDENCIES)
-    add_component_dependencies(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCIES})
-  endif()
+  if(_dart_register_component)
+    add_component(${_ARG_PACKAGE} ${_ARG_NAME})
 
-  # Step 4: Add external package dependencies if specified
-  if(_ARG_DEPENDENCY_PACKAGES)
-    add_component_dependency_packages(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCY_PACKAGES})
-  endif()
+    # Step 2: Add targets if specified
+    if(_ARG_TARGETS)
+      add_component_targets(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_TARGETS})
+    endif()
 
-  # Step 5: Add include directories if specified
-  if(_ARG_INCLUDE_DIRS)
-    add_component_include_directories(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_INCLUDE_DIRS})
+    # Step 3: Add internal dependencies if specified
+    if(_ARG_DEPENDENCIES)
+      add_component_dependencies(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCIES})
+    endif()
+
+    # Step 4: Add external package dependencies if specified
+    if(_ARG_DEPENDENCY_PACKAGES)
+      add_component_dependency_packages(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_DEPENDENCY_PACKAGES})
+    endif()
+
+    # Step 5: Add include directories if specified
+    if(_ARG_INCLUDE_DIRS)
+      add_component_include_directories(${_ARG_PACKAGE} ${_ARG_NAME} ${_ARG_INCLUDE_DIRS})
+    endif()
   endif()
 
   # Step 6: Generate component meta headers if requested
@@ -1035,7 +1044,7 @@ function(dart_add_component)
     endif()
   endif()
 
-  if(DART_VERBOSE)
+  if(DART_VERBOSE AND _dart_register_component)
     message(STATUS "Component '${_ARG_NAME}' configured with ${_ARG_PACKAGE}")
   endif()
 endfunction()
@@ -1271,6 +1280,194 @@ function(dart_generate_case_compat_headers)
 
   # Return generated headers to parent scope
   set(DART_GENERATED_COMPAT_HEADERS "${generated_headers}" PARENT_SCOPE)
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Generate and install component headers without registering a component
+# Usage:
+#   dart_generate_component_headers_only(
+#     COMPONENT_NAME <name>
+#     TARGET_DIR <dir/>
+#     OUTPUT_DIR <dir>
+#     HEADERS <names>
+#     SOURCE_HEADERS <paths...>
+#     [HEADER_EXTRAS <names...>]
+#   )
+#-------------------------------------------------------------------------------
+function(dart_generate_component_headers_only)
+  set(options)
+  set(oneValueArgs COMPONENT_NAME TARGET_DIR OUTPUT_DIR)
+  set(multiValueArgs HEADERS SOURCE_HEADERS HEADER_EXTRAS)
+  cmake_parse_arguments(DGCHO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(NOT DGCHO_COMPONENT_NAME OR NOT DGCHO_TARGET_DIR OR NOT DGCHO_OUTPUT_DIR)
+    message(FATAL_ERROR "dart_generate_component_headers_only requires COMPONENT_NAME, TARGET_DIR, OUTPUT_DIR")
+  endif()
+
+  set(DART_GENERATED_COMPAT_HEADERS "")
+  dart_generate_component_headers(
+    COMPONENT_NAME ${DGCHO_COMPONENT_NAME}
+    TARGET_DIR "${DGCHO_TARGET_DIR}"
+    OUTPUT_DIR "${DGCHO_OUTPUT_DIR}"
+    HEADERS ${DGCHO_HEADERS} ${DGCHO_HEADER_EXTRAS}
+    SOURCE_HEADERS ${DGCHO_SOURCE_HEADERS}
+  )
+
+  set(_dgcho_target_dir "${DGCHO_TARGET_DIR}")
+  string(REGEX REPLACE "/$" "" _dgcho_target_dir "${_dgcho_target_dir}")
+  set(_dgcho_install_dir "${CMAKE_INSTALL_INCLUDEDIR}/${_dgcho_target_dir}")
+
+  set(_dgcho_all_header "${DGCHO_OUTPUT_DIR}/All.hpp")
+  set(_dgcho_primary_header "${DGCHO_OUTPUT_DIR}/${DGCHO_COMPONENT_NAME}.hpp")
+  if(EXISTS "${_dgcho_all_header}" OR EXISTS "${_dgcho_primary_header}")
+    install(
+      FILES ${_dgcho_all_header} ${_dgcho_primary_header}
+      DESTINATION "${_dgcho_install_dir}"
+      COMPONENT headers
+    )
+  endif()
+
+  if(DART_GENERATED_COMPAT_HEADERS)
+    dart_install_compat_headers(
+      COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
+      DESTINATION_PREFIX "${_dgcho_install_dir}"
+    )
+  endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Generate and install namespace headers for non-component subsystems
+# Usage is internal to dart_add_subsystem_library below.
+#-------------------------------------------------------------------------------
+function(dart_add_subsystem_headers)
+  set(options)
+  set(oneValueArgs NAME TARGET_DIR OUTPUT_DIR)
+  set(multiValueArgs HEADERS SOURCE_HEADERS HEADER_EXTRAS)
+  cmake_parse_arguments(DASH "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(NOT DASH_NAME OR NOT DASH_TARGET_DIR)
+    message(FATAL_ERROR "dart_add_subsystem_headers requires NAME and TARGET_DIR")
+  endif()
+  if(NOT DASH_OUTPUT_DIR)
+    set(DASH_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
+
+  dart_generate_component_headers_only(
+    COMPONENT_NAME ${DASH_NAME}
+    TARGET_DIR "${DASH_TARGET_DIR}"
+    OUTPUT_DIR "${DASH_OUTPUT_DIR}"
+    HEADERS ${DASH_HEADERS}
+    HEADER_EXTRAS ${DASH_HEADER_EXTRAS}
+    SOURCE_HEADERS ${DASH_SOURCE_HEADERS}
+  )
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Convenience helper for subsystems that are part of the main library (not standalone components)
+# Usage:
+#   dart_add_subsystem_library(
+#     NAME <name>
+#     TARGET_DIR <dir/>
+#     [OUTPUT_DIR <dir>]
+#     [HEADER_GLOBS <patterns...>]           # default "*.hpp"
+#     [DETAIL_HEADER_GLOBS <patterns...>]    # default "detail/*.hpp"
+#     [EXTRA_HEADER_GLOBS <patterns...>]     # optional additional headers
+#     [SOURCE_GLOBS <patterns...>]           # default "*.cpp"
+#     [DETAIL_SOURCE_GLOBS <patterns...>]    # default "detail/*.cpp"
+#     [HEADER_EXTRAS <names...>]             # extra entries to include in All.hpp
+#     [HEADER_EXCLUDE <names...>]            # file names to exclude from All.hpp
+#     [SUBDIRECTORIES <dirs...>]             # add_subdirectory for each
+#   )
+#-------------------------------------------------------------------------------
+function(dart_add_subsystem_library)
+  set(options)
+  set(oneValueArgs NAME TARGET_DIR OUTPUT_DIR)
+  set(multiValueArgs
+    HEADER_GLOBS
+    DETAIL_HEADER_GLOBS
+    EXTRA_HEADER_GLOBS
+    SOURCE_GLOBS
+    DETAIL_SOURCE_GLOBS
+    HEADER_EXTRAS
+    HEADER_EXCLUDE
+    SUBDIRECTORIES
+    SUB_DIRS
+  )
+  cmake_parse_arguments(DASL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(NOT DASL_NAME OR NOT DASL_TARGET_DIR)
+    message(FATAL_ERROR "dart_add_subsystem_library requires NAME and TARGET_DIR")
+  endif()
+  if(NOT DASL_OUTPUT_DIR)
+    set(DASL_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
+
+  if(NOT DASL_HEADER_GLOBS)
+    set(DASL_HEADER_GLOBS "*.hpp")
+  endif()
+  if(NOT DASL_DETAIL_HEADER_GLOBS)
+    set(DASL_DETAIL_HEADER_GLOBS "detail/*.hpp")
+  endif()
+  if(NOT DASL_SOURCE_GLOBS)
+    set(DASL_SOURCE_GLOBS "*.cpp")
+  endif()
+  if(NOT DASL_DETAIL_SOURCE_GLOBS)
+    set(DASL_DETAIL_SOURCE_GLOBS "detail/*.cpp")
+  endif()
+
+  set(hdrs)
+  foreach(pattern IN LISTS DASL_HEADER_GLOBS)
+    file(GLOB _tmp "${pattern}")
+    list(APPEND hdrs ${_tmp})
+  endforeach()
+
+  set(detail_hdrs)
+  foreach(pattern IN LISTS DASL_DETAIL_HEADER_GLOBS)
+    file(GLOB _tmp "${pattern}")
+    list(APPEND detail_hdrs ${_tmp})
+  endforeach()
+
+  set(extra_hdrs)
+  foreach(pattern IN LISTS DASL_EXTRA_HEADER_GLOBS)
+    file(GLOB _tmp "${pattern}")
+    list(APPEND extra_hdrs ${_tmp})
+  endforeach()
+
+  set(srcs)
+  foreach(pattern IN LISTS DASL_SOURCE_GLOBS)
+    file(GLOB _tmp "${pattern}")
+    list(APPEND srcs ${_tmp})
+  endforeach()
+
+  set(detail_srcs)
+  foreach(pattern IN LISTS DASL_DETAIL_SOURCE_GLOBS)
+    file(GLOB _tmp "${pattern}")
+    list(APPEND detail_srcs ${_tmp})
+  endforeach()
+
+  dart_add_core_headers(${hdrs} ${detail_hdrs})
+  dart_add_core_sources(${srcs} ${detail_srcs})
+
+  dart_get_filename_components(header_names "${DASL_NAME} headers" ${hdrs})
+  if(DASL_HEADER_EXCLUDE)
+    foreach(exclude_name IN LISTS DASL_HEADER_EXCLUDE)
+      list(REMOVE_ITEM header_names ${exclude_name})
+    endforeach()
+  endif()
+  list(APPEND header_names ${DASL_HEADER_EXTRAS})
+
+  dart_add_subsystem_headers(
+    NAME ${DASL_NAME}
+    TARGET_DIR "${DASL_TARGET_DIR}"
+    OUTPUT_DIR "${DASL_OUTPUT_DIR}"
+    HEADERS ${header_names}
+    SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${extra_hdrs}
+  )
+
+  set(DASL_ALL_SUBDIRS ${DASL_SUBDIRECTORIES} ${DASL_SUB_DIRS})
+  foreach(subdir IN LISTS DASL_ALL_SUBDIRS)
+    add_subdirectory(${subdir})
+  endforeach()
 endfunction()
 
 #-------------------------------------------------------------------------------
@@ -1566,6 +1763,9 @@ function(dart_add_library)
   set(multiValueArgs
     SOURCES
     HEADERS
+    FORMAT_EXCLUDE
+    SUBDIRECTORIES
+    SUB_DIRS
     PUBLIC_INCLUDE_DIRS
     PRIVATE_INCLUDE_DIRS
     PUBLIC_SYSTEM_INCLUDE_DIRS
@@ -1629,6 +1829,47 @@ function(dart_add_library)
   endforeach()
   set(_ARG_HEADERS ${expanded_headers})
 
+  # Add requested subdirectories before creating the target so they can
+  # contribute sources/headers via global properties.
+  set(_dart_all_subdirs ${_ARG_SUBDIRECTORIES} ${_ARG_SUB_DIRS})
+  foreach(_dart_subdir IN LISTS _dart_all_subdirs)
+    add_subdirectory(${_dart_subdir})
+  endforeach()
+
+  # If no explicit headers/sources were provided, fall back to accumulated
+  # core lists so subsystem additions can populate the target.
+  if(NOT _ARG_HEADERS)
+    get_property(_dart_fallback_headers GLOBAL PROPERTY DART_CORE_HEADERS)
+    set(_ARG_HEADERS ${_dart_fallback_headers})
+  endif()
+  if(NOT _ARG_SOURCES)
+    get_property(_dart_fallback_sources GLOBAL PROPERTY DART_CORE_SOURCES)
+    set(_ARG_SOURCES ${_dart_fallback_sources})
+  endif()
+
+  # Incorporate contributions from subdirectories via global properties
+  get_property(_dart_extra_public_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
+  if(_dart_extra_public_includes)
+    list(REMOVE_DUPLICATES _dart_extra_public_includes)
+    list(APPEND _ARG_PUBLIC_INCLUDE_DIRS ${_dart_extra_public_includes})
+  endif()
+
+  get_property(_dart_extra_public_system_includes GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS)
+  if(_dart_extra_public_system_includes)
+    list(REMOVE_DUPLICATES _dart_extra_public_system_includes)
+    list(APPEND _ARG_PUBLIC_SYSTEM_INCLUDE_DIRS ${_dart_extra_public_system_includes})
+  endif()
+
+  get_property(_dart_extra_link_libs GLOBAL PROPERTY DART_EXTRA_LINK_LIBS)
+  if(_dart_extra_link_libs)
+    list(APPEND _ARG_PUBLIC_LINK_LIBRARIES ${_dart_extra_link_libs})
+  endif()
+
+  get_property(_dart_extra_compile_opts GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
+  if(_dart_extra_compile_opts)
+    list(APPEND _ARG_PRIVATE_COMPILE_OPTIONS ${_dart_extra_compile_opts})
+  endif()
+
   # Create the library target
   add_library(${_ARG_NAME} ${_ARG_SOURCES} ${_ARG_HEADERS})
   # Clear any directory-scoped include directories to avoid unintended propagation
@@ -1666,6 +1907,12 @@ function(dart_add_library)
       ${CMAKE_SOURCE_DIR}
       ${CMAKE_BINARY_DIR}
     )
+  endif()
+  if(_ARG_PUBLIC_INCLUDE_DIRS)
+    list(REMOVE_DUPLICATES _ARG_PUBLIC_INCLUDE_DIRS)
+  endif()
+  if(_ARG_PUBLIC_SYSTEM_INCLUDE_DIRS)
+    list(REMOVE_DUPLICATES _ARG_PUBLIC_SYSTEM_INCLUDE_DIRS)
   endif()
 
   target_include_directories(${_ARG_NAME}
@@ -1862,7 +2109,10 @@ function(dart_add_library)
 
   # Add to formatting list
   if(NOT _ARG_NO_FORMAT)
-    dart_format_add(${_ARG_SOURCES} ${_ARG_HEADERS})
+    dart_format_add(
+      EXCLUDE_PATTERNS ${_ARG_FORMAT_EXCLUDE}
+      FILES ${_ARG_SOURCES} ${_ARG_HEADERS}
+    )
   endif()
 
 endfunction()
@@ -1992,19 +2242,34 @@ endfunction()
 function(dart_format_add)
   set(options NO_FORMAT)
   set(oneValueArgs)
-  set(multiValueArgs)
+  set(multiValueArgs EXCLUDE_PATTERNS FILES)
   cmake_parse_arguments(DFA "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(DFA_NO_FORMAT)
     return()
   endif()
 
-  foreach(source ${ARGN})
+  get_property(_dart_format_excludes GLOBAL PROPERTY DART_FORMAT_EXCLUDE_PATTERNS)
+  list(APPEND _dart_format_excludes ${DFA_EXCLUDE_PATTERNS})
+
+  set(_dart_format_files ${DFA_FILES} ${DFA_UNPARSED_ARGUMENTS})
+
+  foreach(source IN LISTS _dart_format_files)
+    set(_dart_skip FALSE)
     if(IS_ABSOLUTE "${source}")
       set(source_abs "${source}")
     else()
       get_filename_component(source_abs
         "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
+    endif()
+    foreach(_dart_exclude IN LISTS _dart_format_excludes)
+      if(_dart_exclude AND "${source_abs}" MATCHES "${_dart_exclude}")
+        set(_dart_skip TRUE)
+        break()
+      endif()
+    endforeach()
+    if(_dart_skip)
+      continue()
     endif()
     if(EXISTS "${source_abs}")
       dart_property_add(DART_FORMAT_FILES "${source_abs}")

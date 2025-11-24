@@ -51,6 +51,16 @@ if(DART_VERBOSE)
 endif()
 
 set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
+list(GET BULLET_INCLUDE_DIRS 0 _dart_bullet_inc_dir)
+if(NOT EXISTS "${_dart_bullet_inc_dir}/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h")
+  message(
+    WARNING
+    "Bullet include path missing btHeightfieldTerrainShape.h; skipping Bullet backend."
+  )
+  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  set(DART_BUILD_COLLISION_BULLET OFF CACHE BOOL "Build Bullet collision backend" FORCE)
+  return()
+endif()
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
@@ -93,13 +103,10 @@ dart_pkgconfig_append_libraries(${_dart_bullet_link_items})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})
-dart_add_component(
+dart_add_subsystem_headers(
   NAME bullet
-  PACKAGE ${PROJECT_NAME}
-  COMPONENT_HEADERS ${header_names}
-  COMPONENT_HEADER_SOURCES ${hdrs} ${detail_hdrs}
-  COMPONENT_TARGET_DIR "dart/collision/bullet/"
-  COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  TARGET_DIR "dart/collision/bullet/"
+  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+  HEADERS ${header_names}
+  SOURCE_HEADERS ${hdrs} ${detail_hdrs}
 )
-
-dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

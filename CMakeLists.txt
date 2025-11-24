@@ -119,6 +119,9 @@ set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_EXTRA_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS "")
+set_property(GLOBAL PROPERTY DART_FORMAT_EXCLUDE_PATTERNS "")
+# Skip legacy baseline ODE sources from formatting
+set_property(GLOBAL APPEND PROPERTY DART_FORMAT_EXCLUDE_PATTERNS "tests/baseline/odelcpsolver/")
 
 function(_dart_pkgconfig_collect output_var)
   set(_converted "")

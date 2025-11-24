@@ -54,6 +54,10 @@ dart_add_component(
   PACKAGE ${PROJECT_NAME}
 )
 
+# Reset core aggregation lists each configure
+set_property(GLOBAL PROPERTY DART_CORE_HEADERS "")
+set_property(GLOBAL PROPERTY DART_CORE_SOURCES "")
+
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
 endfunction()
@@ -61,17 +65,6 @@ endfunction()
 function(dart_add_core_sources)
   dart_property_add(DART_CORE_SOURCES ${ARGN})
 endfunction()
-
-add_subdirectory(common)
-add_subdirectory(math)
-add_subdirectory(lcpsolver)
-add_subdirectory(optimizer)
-add_subdirectory(dynamics)
-add_subdirectory(collision)
-add_subdirectory(constraint)
-add_subdirectory(simulation)
-add_subdirectory(utils) # tinyxml2, libsdformat
-add_subdirectory(gui) # osg
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
@@ -102,8 +95,6 @@ get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 get_filename_component(dart_all_hpp "All.hpp" ABSOLUTE)
 get_filename_component(dart_export_hpp "Export.hpp" ABSOLUTE)
 dart_add_core_headers(${dart_hpp} ${dart_all_hpp} ${dart_export_hpp})
-get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
-get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Collect include directories
 set(_dart_public_includes ${DART_SOURCE_DIR} ${DART_BINARY_DIR})
@@ -171,9 +162,18 @@ endif()
 # Add target
 dart_add_library(
   NAME dart
-  HEADERS ${dart_core_headers}
-  SOURCES ${dart_core_sources}
   NO_EXPORT
+  SUB_DIRS
+    common
+    math
+    lcpsolver
+    optimizer
+    dynamics
+    collision
+    constraint
+    simulation
+    utils # tinyxml2, libsdformat
+    gui # osg
   PUBLIC_INCLUDE_DIRS ${_dart_public_includes}
   PUBLIC_SYSTEM_INCLUDE_DIRS ${_dart_public_system_includes}
   PRIVATE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
@@ -271,5 +271,3 @@ install(
   DESTINATION include/dart/
   COMPONENT headers
 )
-
-dart_format_add(${dart_core_headers} ${dart_core_sources})
