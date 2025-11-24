@@ -245,7 +245,7 @@ bool equals(
 }
 
 //==============================================================================
-bool rotationEquals(
+inline bool rotationEquals(
     const Eigen::Matrix3d& rot1, const Eigen::Matrix3d& rot2, double tol = 1e-5)
 {
   const Eigen::Matrix3d rotError = rot1.transpose() * rot2;
@@ -254,7 +254,7 @@ bool rotationEquals(
 }
 
 //==============================================================================
-bool equals(
+inline bool equals(
     const Eigen::Isometry3d& tf1,
     const Eigen::Isometry3d& tf2,
     double tol = 1e-5)
