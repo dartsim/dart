@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/EulerJoint.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 namespace detail {
 
@@ -55,4 +56,4 @@ EulerJointProperties::EulerJointProperties(
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

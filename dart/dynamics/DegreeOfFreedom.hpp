@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 #define DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/ClassWithVirtualBase.hpp>
@@ -45,7 +46,7 @@
 #include <memory>
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Skeleton;
@@ -412,6 +413,6 @@ protected:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DEGREEOFFREEDOM_HPP_

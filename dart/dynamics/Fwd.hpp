@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_FWD_HPP_
 #define DART_DYNAMICS_FWD_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
 #include <dart/dynamics/detail/DegreeOfFreedomPtr.hpp>
 #include <dart/dynamics/detail/InverseKinematicsPtr.hpp>
@@ -41,7 +42,7 @@
 
 #include <dart/common/SmartPointer.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class ArrowShape;
@@ -238,6 +239,6 @@ DART_DYNAMICS_MAKE_NODEPTR(ShapeNode)
 DART_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_FWD_HPP_

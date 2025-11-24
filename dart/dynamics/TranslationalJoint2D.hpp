@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
 #define DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 #include <dart/dynamics/detail/TranslationalJoint2DAspect.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// TranslationalJoint2D represents a 2-dof joint, which has two orthogonal
@@ -153,6 +154,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_

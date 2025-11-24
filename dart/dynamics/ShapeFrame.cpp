@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/ShapeFrame.hpp"
 
 #include "dart/common/Macros.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace detail {
@@ -369,4 +370,4 @@ ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

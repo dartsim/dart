@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/InverseKinematics.hpp>
 
 #include <type_traits>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -78,6 +79,6 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_

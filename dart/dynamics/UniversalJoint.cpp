@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/UniversalJoint.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -38,7 +39,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -223,4 +224,4 @@ void UniversalJoint::updateRelativeJacobianTimeDeriv() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

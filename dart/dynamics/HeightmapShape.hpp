@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 #define DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// Shape for a height map.
@@ -188,7 +189,7 @@ using HeightmapShapef = HeightmapShape<float>;
 using HeightmapShaped = HeightmapShape<double>;
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/HeightmapShape-impl.hpp>
 

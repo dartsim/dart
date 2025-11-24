@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/FixedFrame.hpp"
 
 #include "dart/common/Macros.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace detail {
@@ -128,4 +129,4 @@ FixedFrame::FixedFrame(ConstructAbstractTag)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

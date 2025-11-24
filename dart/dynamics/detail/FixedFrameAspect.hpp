@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Geometry>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 namespace detail {
 
@@ -55,6 +56,6 @@ struct DART_API FixedFrameProperties
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_

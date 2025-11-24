@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/NodeManagerJoiner.hpp>
 #include <dart/dynamics/detail/BasicNodeManager.hpp>
 
 #include <dart/common/Virtual.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class BodyNode;
@@ -238,7 +239,7 @@ class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...>
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/SpecializedNodeManager.hpp>
 

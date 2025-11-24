@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -37,7 +38,7 @@
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
@@ -160,4 +161,4 @@ void SoftMeshShape::update()
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

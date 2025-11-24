@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_FREEJOINT_HPP_
 #define DART_DYNAMICS_FREEJOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/GenericJoint.hpp>
 
 #include <dart/common/Deprecated.hpp>
@@ -43,7 +44,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// class FreeJoint
@@ -333,6 +334,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_FREEJOINT_HPP_

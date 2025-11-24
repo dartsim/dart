@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/Entity.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -38,7 +39,7 @@
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -266,4 +267,4 @@ Detachable::Detachable() : Entity(ConstructAbstract)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

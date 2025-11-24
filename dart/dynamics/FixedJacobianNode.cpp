@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/FixedJacobianNode.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -215,4 +216,4 @@ void FixedJacobianNode::updateWorldJacobianClassicDeriv() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

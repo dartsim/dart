@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_METASKELETON_HPP_
 #define DART_DYNAMICS_METASKELETON_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/InvalidIndex.hpp>
 
@@ -50,7 +51,7 @@
 #include <string>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class BodyNode;
@@ -1012,7 +1013,7 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/MetaSkeleton-impl.hpp>
 

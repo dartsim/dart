@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_HPP_
 #define DART_DYNAMICS_FIXEDFRAME_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/detail/FixedFrameAspect.hpp>
 
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/VersionCounter.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// The FixedFrame class represents a Frame with zero relative velocity and
@@ -100,6 +101,6 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_FIXEDFRAME_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_IKFAST_HPP_
 #define DART_DYNAMICS_IKFAST_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <array>
@@ -42,7 +43,7 @@
 
 #include <dart/dynamics/InverseKinematics.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// A base class for IkFast-based analytical inverse kinematics classes.
@@ -275,6 +276,6 @@ DART_API bool wrapCyclicSolution(
     double curr, double lb, double ub, double& sol);
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_IKFAST_HPP_

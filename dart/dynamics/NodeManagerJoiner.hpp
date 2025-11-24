@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_NODEMANAGERJOINER_HPP_
 #define DART_DYNAMICS_NODEMANAGERJOINER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Empty.hpp>
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -183,7 +184,7 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/NodeManagerJoiner.hpp>
 

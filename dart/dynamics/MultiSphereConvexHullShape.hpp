@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_
 #define DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// MultiSphereConvexHullShape represents the convex hull of a collection of
@@ -103,6 +104,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_MULTISPHERECONVEXHULLSHAPE_HPP_

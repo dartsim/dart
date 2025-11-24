@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_SPHERESHAPE_HPP_
 #define DART_DYNAMICS_SPHERESHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class DART_API SphereShape : public Shape
@@ -84,6 +85,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SPHERESHAPE_HPP_

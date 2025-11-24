@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/ReferentialSkeleton.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -38,7 +39,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -1451,4 +1452,4 @@ bool ReferentialSkeleton::IndexMap::isExpired() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_INERTIA_HPP_
 #define DART_DYNAMICS_INERTIA_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/MathTypes.hpp>
 
 #include <dart/Export.hpp>
 
 #include <array>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class DART_API Inertia
@@ -182,6 +183,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_INERTIA_HPP_

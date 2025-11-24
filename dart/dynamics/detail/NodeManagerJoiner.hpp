@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 #define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/NodeManagerJoiner.hpp>
 
 #include <dart/common/detail/TemplateJoinerDispatchMacro.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -179,6 +180,6 @@ NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_

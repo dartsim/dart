@@ -33,9 +33,11 @@
 #ifndef DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
 #define DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
 
-namespace dart::dynamics {
+DART_INLINE_NAMESPACE_BEGIN
+namespace dynamics {
 
 //==============================================================================
 template <typename Func>
@@ -146,6 +148,7 @@ void MetaSkeleton::eachDof(Func func)
   }
 }
 
-} // namespace dart::dynamics
+} // namespace dynamics
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_METASKELETON_IMPL_HPP_

@@ -39,6 +39,7 @@
 #ifndef DART_SIMULATION_RECORDING_HPP_
 #define DART_SIMULATION_RECORDING_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/Export.hpp>
@@ -47,8 +48,7 @@
 
 #include <vector>
 
-namespace dart {
-
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 class Skeleton;
 } // namespace dynamics
@@ -115,6 +115,6 @@ private:
 };
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_SIMULATION_RECORDING_HPP_

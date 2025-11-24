@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_ENTITYNODE_HPP_
 #define DART_DYNAMICS_ENTITYNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/EntityNodeAspect.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -70,7 +71,7 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/EntityNode.hpp>
 

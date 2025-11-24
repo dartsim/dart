@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/HierarchicalIK.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -39,7 +40,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -781,4 +782,4 @@ WholeBodyIK::WholeBodyIK(const SkeletonPtr& _skel) : HierarchicalIK(_skel)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

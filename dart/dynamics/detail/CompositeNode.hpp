@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_
 #define DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/CompositeNode.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -88,6 +89,6 @@ void CompositePropertiesNode<Base>::copyNodePropertiesTo(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Composite.hpp>
 #include <dart/common/EmbeddedAspect.hpp>
 #include <dart/common/ProxyAspect.hpp>
@@ -40,7 +41,7 @@
 
 #include <Eigen/Core>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Skeleton;
@@ -176,6 +177,6 @@ using SkeletonAspectBase = common::EmbedPropertiesOnTopOf<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_

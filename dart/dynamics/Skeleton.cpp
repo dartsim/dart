@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/Skeleton.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -80,7 +81,7 @@
       nonzero_size = V.size();                                                 \
   }
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace detail {
@@ -4098,4 +4099,4 @@ Skeleton::DirtyFlags::DirtyFlags()
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

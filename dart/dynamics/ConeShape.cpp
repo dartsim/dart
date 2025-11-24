@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/ConeShape.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -39,7 +40,7 @@
 
 #include <cmath>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -149,4 +150,4 @@ Eigen::Matrix3d ConeShape::computeInertia(double mass) const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

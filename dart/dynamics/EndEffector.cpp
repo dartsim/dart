@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/EndEffector.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace detail {
@@ -179,4 +180,4 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

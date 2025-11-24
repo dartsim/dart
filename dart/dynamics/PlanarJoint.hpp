@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_PLANARRJOINT_HPP_
 #define DART_DYNAMICS_PLANARRJOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 
 #include <dart/Export.hpp>
 
 #include <Eigen/Geometry>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
@@ -166,6 +167,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_PLANARRJOINT_HPP_

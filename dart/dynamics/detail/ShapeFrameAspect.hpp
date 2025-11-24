@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/EmbeddedAspect.hpp>
@@ -41,7 +42,7 @@
 
 #include <Eigen/Core>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class VisualAspect;
@@ -166,6 +167,6 @@ using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_

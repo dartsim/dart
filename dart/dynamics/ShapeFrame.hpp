@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SHAPEFRAME_HPP_
 #define DART_DYNAMICS_SHAPEFRAME_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/FixedFrame.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
@@ -46,7 +47,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -291,6 +292,6 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SHAPEFRAME_HPP_

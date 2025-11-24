@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 #define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 #include <Eigen/Dense>
 #include <assimp/scene.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class SoftBodyNode;
@@ -95,6 +96,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SOFTMESHSHAPE_HPP_

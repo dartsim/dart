@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
 #define DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Joint;
@@ -67,6 +68,6 @@ struct MimicDofProperties
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_

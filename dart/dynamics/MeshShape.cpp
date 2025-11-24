@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/MeshShape.hpp"
 
 #include "dart/common/Diagnostics.hpp"
@@ -127,7 +128,7 @@ aiMaterial::~aiMaterial()
 }
 #endif // #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -681,4 +682,4 @@ const aiScene* MeshShape::loadMesh(const std::string& filePath)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

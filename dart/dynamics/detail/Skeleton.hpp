@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETON_HPP_
 #define DART_DYNAMICS_DETAIL_SKELETON_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -87,6 +88,6 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SKELETON_HPP_

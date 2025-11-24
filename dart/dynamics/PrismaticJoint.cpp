@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/PrismaticJoint.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -39,7 +40,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -201,4 +202,4 @@ void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

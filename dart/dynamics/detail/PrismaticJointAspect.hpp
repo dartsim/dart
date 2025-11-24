@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/GenericJoint.hpp>
 
 #include <dart/Export.hpp>
@@ -41,7 +42,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class PrismaticJoint;
@@ -83,6 +84,6 @@ using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_

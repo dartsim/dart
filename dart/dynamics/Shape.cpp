@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/Shape.hpp"
 
 #include "dart/common/Logging.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -171,4 +172,4 @@ std::size_t Shape::incrementVersion()
 std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

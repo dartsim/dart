@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/Node.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -42,7 +43,7 @@
       #func);                                                                  \
   DART_ASSERT(false);
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -291,4 +292,4 @@ void Node::stageForRemoval()
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

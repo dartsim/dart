@@ -33,14 +33,15 @@
 #ifndef DART_DYNAMICS_INVALIDINDEX_HPP_
 #define DART_DYNAMICS_INVALIDINDEX_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 constexpr std::size_t INVALID_INDEX = static_cast<std::size_t>(-1);
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_INVALIDINDEX_HPP_

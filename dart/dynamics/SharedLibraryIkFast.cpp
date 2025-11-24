@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/SharedLibraryIkFast.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -40,7 +41,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace {
@@ -255,4 +256,4 @@ void SharedLibraryIkFast::configure() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

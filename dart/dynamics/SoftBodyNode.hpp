@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_HPP_
 #define DART_DYNAMICS_SOFTBODYNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/SoftBodyNodeAspect.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// SoftBodyNode represent a soft body that has one deformable skin
@@ -469,6 +470,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SOFTBODYNODE_HPP_

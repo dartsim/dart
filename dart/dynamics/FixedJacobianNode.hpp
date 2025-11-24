@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_
 #define DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/FixedJacobianNode.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class FixedJacobianNode : public detail::FixedJacobianNodeCompositeBase,
@@ -166,6 +167,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_

@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/JacobianNode.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -127,4 +128,4 @@ void JacobianNode::dirtyJacobianDeriv()
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

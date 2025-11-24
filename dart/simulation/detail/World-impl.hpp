@@ -39,9 +39,10 @@
 #ifndef DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
 #define DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/simulation/World.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace simulation {
 
 //==============================================================================
@@ -124,6 +125,6 @@ void World::eachSimpleFrame(Func func)
 }
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_

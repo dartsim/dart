@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_SIMPLEFRAME_HPP_
 #define DART_DYNAMICS_SIMPLEFRAME_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// The SimpleFrame class offers a user-friendly way of creating arbitrary
@@ -244,6 +245,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SIMPLEFRAME_HPP_

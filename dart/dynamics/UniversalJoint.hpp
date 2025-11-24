@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_UNIVERSALJOINT_HPP_
 #define DART_DYNAMICS_UNIVERSALJOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/UniversalJointAspect.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// class UniversalJoint
@@ -125,6 +126,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_UNIVERSALJOINT_HPP_

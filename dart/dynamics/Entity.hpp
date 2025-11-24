@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_ENTITY_HPP_
 #define DART_DYNAMICS_ENTITY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Shape.hpp>
 
@@ -47,7 +48,7 @@
 #include <string>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Frame;
@@ -240,6 +241,6 @@ protected:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_ENTITY_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 #define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
 
@@ -41,7 +42,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// ReferentialSkeleton is a base class used to implement Linkage, Group, and
@@ -543,6 +544,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_REFERENTIALSKELETON_HPP_

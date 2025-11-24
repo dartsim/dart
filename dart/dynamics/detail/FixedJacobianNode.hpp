@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_
 #define DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/EntityNode.hpp>
 #include <dart/dynamics/FixedFrame.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class FixedJacobianNode;
@@ -50,6 +51,6 @@ using FixedJacobianNodeCompositeBase = common::CompositeJoiner<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_

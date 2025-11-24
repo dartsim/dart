@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SHAPE_HPP_
 #define DART_DYNAMICS_SHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
 #include <dart/math/Geometry.hpp>
@@ -49,7 +50,7 @@
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -212,6 +213,6 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SHAPE_HPP_

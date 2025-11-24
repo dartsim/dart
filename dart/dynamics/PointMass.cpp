@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/PointMass.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -41,7 +42,7 @@
 
 using namespace Eigen;
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 #define RETURN_FALSE_IF_OTHER_IS_EQUAL(X)                                      \
@@ -1164,4 +1165,4 @@ const std::string& PointMassNotifier::getName() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

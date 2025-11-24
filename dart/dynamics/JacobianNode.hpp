@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_JACOBIANNODE_HPP_
 #define DART_DYNAMICS_JACOBIANNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/Node.hpp>
@@ -42,7 +43,7 @@
 #include <memory>
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Skeleton;
@@ -299,6 +300,6 @@ protected:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_JACOBIANNODE_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_MESHSHAPE_HPP_
 #define DART_DYNAMICS_MESHSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
@@ -41,7 +42,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class DART_API MeshShape : public Shape
@@ -220,6 +221,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_MESHSHAPE_HPP_

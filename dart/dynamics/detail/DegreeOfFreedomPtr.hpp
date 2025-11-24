@@ -33,12 +33,13 @@
 #ifndef DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_HPP_
 #define DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/InvalidIndex.hpp>
 #include <dart/dynamics/detail/BodyNodePtr.hpp>
 
 #include <compare>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// TemplateDegreeOfFreedomPtr is a templated class that enables users to create
@@ -294,6 +295,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_HPP_

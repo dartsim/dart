@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 #define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/dynamics/SpecializedNodeManager.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 // This preprocessor token should only be used by the unittest that is
@@ -287,6 +288,6 @@ SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
 
 //==============================================================================
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_

@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_HPP_
 #define DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// TemplatedJacobianNode provides a curiously recurring template pattern
@@ -121,7 +122,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/TemplatedJacobianNode.hpp>
 

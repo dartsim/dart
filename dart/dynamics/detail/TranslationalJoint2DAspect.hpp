@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/GenericJoint.hpp>
 #include <dart/dynamics/detail/PlanarJointAspect.hpp>
 
@@ -42,7 +43,7 @@
 
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class TranslationalJoint2D;
@@ -138,6 +139,6 @@ using TranslationalJoint2DBase = common::EmbedPropertiesOnTopOf<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_

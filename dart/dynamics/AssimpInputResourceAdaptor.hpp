@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Resource.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
@@ -42,7 +43,7 @@
 #include <assimp/IOSystem.hpp>
 #include <assimp/cfileio.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class DART_API AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
@@ -126,6 +127,6 @@ private:
 DART_API aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_

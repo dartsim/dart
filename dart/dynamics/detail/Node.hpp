@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_NODE_HPP_
 #define DART_DYNAMICS_DETAIL_NODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/dynamics/Node.hpp>
@@ -41,7 +42,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -87,9 +88,7 @@ void AccessoryNode<NodeType>::reattach()
 }
 
 } // namespace dynamics
-} // namespace dart
-
-//==============================================================================
+DART_INLINE_NAMESPACE_END//==============================================================================
 // Macros for specializing Nodes within BodyNodes
 //==============================================================================
 #define DART_ENABLE_NODE_SPECIALIZATION()                                      \

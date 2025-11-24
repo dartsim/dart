@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_HPP_
 #define DART_DYNAMICS_REVOLUTEJOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/RevoluteJointAspect.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// class RevoluteJoint
@@ -117,6 +118,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_REVOLUTEJOINT_HPP_

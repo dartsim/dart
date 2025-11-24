@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_JOINT_HPP_
 #define DART_DYNAMICS_JOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
@@ -50,7 +51,7 @@
 #include <string>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Joint;
@@ -1060,6 +1061,6 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_JOINT_HPP_

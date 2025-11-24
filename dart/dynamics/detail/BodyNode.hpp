@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODE_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <utility>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -364,6 +365,6 @@ std::optional<Inertia> BodyNode::computeInertiaFromShapeNodes(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_BODYNODE_HPP_

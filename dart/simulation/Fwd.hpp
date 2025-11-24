@@ -33,9 +33,10 @@
 #ifndef DART_SIMULATION_FWD_HPP_
 #define DART_SIMULATION_FWD_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/SmartPointer.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace simulation {
 
 class World;
@@ -43,6 +44,6 @@ class World;
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_SIMULATION_FWD_HPP_

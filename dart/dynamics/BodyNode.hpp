@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_BODYNODE_HPP_
 #define DART_DYNAMICS_BODYNODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/dynamics/EndEffector.hpp>
@@ -60,7 +61,7 @@
 #include <string>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class GenCoord;
@@ -1258,7 +1259,7 @@ private:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/BodyNode.hpp>
 

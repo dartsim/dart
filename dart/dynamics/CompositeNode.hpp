@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_COMPOSITENODE_HPP_
 #define DART_DYNAMICS_COMPOSITENODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Node.hpp>
 
 #include <dart/common/Composite.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -107,7 +108,7 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/CompositeNode.hpp>
 

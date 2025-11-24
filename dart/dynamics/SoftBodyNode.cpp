@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -47,7 +48,7 @@
 
 #include <cmath>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace detail {
@@ -3018,4 +3019,4 @@ void SoftBodyNodeHelper::setCylinder(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

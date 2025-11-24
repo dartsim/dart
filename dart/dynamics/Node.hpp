@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_NODE_HPP_
 #define DART_DYNAMICS_NODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 
 #include <dart/common/Cloneable.hpp>
@@ -44,7 +45,7 @@
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class BodyNode;
@@ -268,7 +269,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/Node.hpp>
 

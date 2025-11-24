@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_POINTCLOUDSHAPE_HPP_
 #define DART_DYNAMICS_POINTCLOUDSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
 #include <span>
@@ -41,7 +42,7 @@
   #include <octomap/Pointcloud.h>
 #endif
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// The PointCloudShape represents point cloud data.
@@ -183,6 +184,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_POINTCLOUDSHAPE_HPP_

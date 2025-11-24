@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/PointMass.hpp>
 
@@ -40,7 +41,7 @@
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
@@ -129,6 +130,6 @@ using SoftBodyNodeBase = common::EmbedStateAndPropertiesOnTopOf<
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_

@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_CHAIN_HPP_
 #define DART_DYNAMICS_CHAIN_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Linkage.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// Chain is a specialized type of Linkage that represents a single unbranching
@@ -139,6 +140,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_CHAIN_HPP_

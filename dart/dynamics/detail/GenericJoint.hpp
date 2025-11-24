@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/config.hpp>
@@ -100,7 +101,7 @@ inline std::string formatCommandVector(const Eigen::VectorXd& commands)
 
 } // namespace dart::dynamics::detail
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -2500,6 +2501,6 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getSpatialToGeneralized(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_GenericJoint_HPP_

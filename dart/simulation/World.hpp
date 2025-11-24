@@ -39,6 +39,7 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/simulation/Fwd.hpp>
 #include <dart/simulation/Recording.hpp>
 
@@ -64,7 +65,7 @@
 #include <utility>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace simulation {
 
 /// Available collision detector backends for a World.
@@ -421,7 +422,7 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/simulation/detail/World-impl.hpp>
 

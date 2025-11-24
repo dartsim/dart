@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_HIERARCHICALIK_HPP_
 #define DART_DYNAMICS_HIERARCHICALIK_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/InverseKinematics.hpp>
 
 #include <dart/Export.hpp>
 
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// An IKHierarchy is a sorted set of IK modules. The outer vector represents
@@ -399,6 +400,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_HIERARCHICALIK_HPP_

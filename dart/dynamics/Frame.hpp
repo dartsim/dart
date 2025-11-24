@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_FRAME_HPP_
 #define DART_DYNAMICS_FRAME_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Entity.hpp>
 
 #include <dart/math/MathTypes.hpp>
@@ -43,7 +44,7 @@
 
 #include <set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// The Frame class serves as the backbone of DART's kinematic tree structure.
@@ -385,6 +386,6 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_FRAME_HPP_

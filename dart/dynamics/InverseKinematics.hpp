@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 #define DART_DYNAMICS_INVERSEKINEMATICS_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
 
@@ -53,7 +54,7 @@
 #include <memory>
 #include <span>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 const double DefaultIKTolerance = 1e-6;
@@ -1384,7 +1385,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/InverseKinematics.hpp>
 

@@ -36,13 +36,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/simulation/Recording.hpp"
 
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <iostream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace simulation {
 
 //==============================================================================
@@ -147,4 +148,4 @@ void Recording::updateNumGenCoords(
 }
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END

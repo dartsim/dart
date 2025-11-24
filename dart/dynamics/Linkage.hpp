@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_LINKAGE_HPP_
 #define DART_DYNAMICS_LINKAGE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/ReferentialSkeleton.hpp>
 
 #include <dart/Export.hpp>
 
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// A Linkage is a ReferentialSkeleton with the special property that all the
@@ -243,6 +244,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_LINKAGE_HPP_

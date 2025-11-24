@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/BodyNode.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -50,7 +51,7 @@
 
 #include <cmath>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace {
@@ -2647,4 +2648,4 @@ void BodyNode::updateTransformSecondDerivatives() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

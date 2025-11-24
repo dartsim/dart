@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 #define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #if HAVE_OCTOMAP
@@ -44,7 +45,7 @@
 
   #include <octomap/octomap.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
@@ -164,7 +165,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // HAVE_OCTOMAP
 

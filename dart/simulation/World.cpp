@@ -36,6 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/simulation/World.hpp"
 
 #include "dart/collision/CollisionDetector.hpp"
@@ -55,7 +56,7 @@
 
 #include <cmath>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace simulation {
 
 namespace {
@@ -850,4 +851,4 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 }
 
 } // namespace simulation
-} // namespace dart
+DART_INLINE_NAMESPACE_END

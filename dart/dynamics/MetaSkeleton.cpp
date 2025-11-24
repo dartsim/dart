@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/MetaSkeleton.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -40,7 +41,7 @@
 
 #include <algorithm>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -1149,4 +1150,4 @@ MetaSkeleton::MetaSkeleton() : onNameChanged(mNameChangedSignal)
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

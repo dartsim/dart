@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_HPP_
 #define DART_DYNAMICS_SCREWJOINT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/detail/ScrewJointAspect.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// class ScrewJoint
@@ -123,6 +124,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SCREWJOINT_HPP_

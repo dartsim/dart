@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/VoxelGridShape.hpp"
 
 #if HAVE_OCTOMAP
@@ -37,7 +38,7 @@
   #include "dart/common/Logging.hpp"
   #include "dart/math/Helpers.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 namespace {
@@ -235,6 +236,6 @@ void VoxelGridShape::updateVolume() const
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // HAVE_OCTOMAP

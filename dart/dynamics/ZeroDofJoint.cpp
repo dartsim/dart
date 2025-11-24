@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/dynamics/ZeroDofJoint.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -38,7 +39,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Helpers.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 //==============================================================================
@@ -934,4 +935,4 @@ Eigen::VectorXd ZeroDofJoint::getSpatialToGeneralized(
 }
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END

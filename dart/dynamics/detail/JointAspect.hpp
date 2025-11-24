@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
 
 #include <dart/Export.hpp>
@@ -42,7 +43,7 @@
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 namespace detail {
 
@@ -158,6 +159,6 @@ public:
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_

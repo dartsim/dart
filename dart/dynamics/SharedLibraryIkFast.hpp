@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_
 #define DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/IkFast.hpp>
 
 #include <dart/common/SharedLibrary.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// IkFast-based analytical inverse kinematics class.
@@ -142,6 +143,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_

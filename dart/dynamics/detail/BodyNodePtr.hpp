@@ -33,13 +33,14 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <atomic>
 #include <memory>
 #include <mutex>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class Skeleton;
@@ -348,6 +349,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_

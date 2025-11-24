@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_HPP_
 #define DART_DYNAMICS_ENDEFFECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/CompositeNode.hpp>
 #include <dart/dynamics/FixedJacobianNode.hpp>
 #include <dart/dynamics/detail/EndEffectorAspect.hpp>
@@ -43,7 +44,7 @@
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 class BodyNode;
@@ -156,6 +157,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_ENDEFFECTOR_HPP_

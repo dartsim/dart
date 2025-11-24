@@ -33,11 +33,12 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPENODE_HPP_
 #define DART_DYNAMICS_DETAIL_SHAPENODE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/CompositeNode.hpp>
 #include <dart/dynamics/FixedJacobianNode.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 namespace detail {
 
@@ -46,6 +47,6 @@ using ShapeNodeCompositeBase
 
 } // namespace detail
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_DETAIL_SHAPENODE_HPP_

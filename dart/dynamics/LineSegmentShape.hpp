@@ -33,9 +33,10 @@
 #ifndef DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
 #define DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/Shape.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// The LineSegmentShape facilitates creating graphs of line segments. The graph
@@ -135,6 +136,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_DYNAMICS_LINESEGMENTSHAPE_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SKELETON_HPP_
 #define DART_DYNAMICS_SKELETON_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/HierarchicalIK.hpp>
@@ -52,7 +53,7 @@
 
 #include <mutex>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace dynamics {
 
 /// class Skeleton
@@ -1319,7 +1320,7 @@ public:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/dynamics/detail/Skeleton.hpp>
 
