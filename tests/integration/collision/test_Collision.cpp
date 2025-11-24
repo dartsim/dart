@@ -186,7 +186,7 @@ void Collision::dropWithRotation(
   dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
   //==========================================================================
-  // Dropping test in x, y, z aixs each.
+  // Dropping test in x, y, z axis each.
   //==========================================================================
   for (int _idxAxis = 0; _idxAxis < 3; ++_idxAxis) {
     result.clear();
@@ -675,7 +675,7 @@ void testBoxBox(
   const auto checkNumContacts = (numContacts <= 4u);
   EXPECT_TRUE(checkNumContacts);
   if (!checkNumContacts)
-    std::cout << "# of contants: " << numContacts << "\n";
+    std::cout << "# of contacts: " << numContacts << "\n";
 
   for (const auto& contact : result.getContacts()) {
     const auto& point = contact.point;
@@ -1065,16 +1065,16 @@ TEST_F(Collision, testPlane)
 }
 
 //==============================================================================
-/// \param[in] collidesUnderTerrain Set to true if the collision engine returns
+/// @param[in] collidesUnderTerrain Set to true if the collision engine returns
 /// collisions when a shape is underneath the terrain, but still above the
 /// minimum height. If false, only intersections with the surface mesh will be
 /// detected.
-/// \param[in] extendsUntilGroundPlane Set to true if the collision engine
+/// @param[in] extendsUntilGroundPlane Set to true if the collision engine
 /// extends the terrain until the plane z=0
-/// \param[in] odeThck: for ODE, use this thickness underneath the heightfield
+/// @param[in] odeThck: for ODE, use this thickness underneath the heightfield
 /// to adjust collision checks.
 ///
-/// \sa dGeomHeightfieldDataBuild*().
+/// @sa dGeomHeightfieldDataBuild*().
 template <typename S>
 void testHeightmapBox(
     CollisionDetector* cd,
@@ -1585,7 +1585,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
 {
   // There are one red plate (static skeleton) and 5 pendulums with different
   // actuator types. This test check if the motion prescribed joints are exactly
-  // tracking the prescribed motion eventhough there are collision with other
+  // tracking the prescribed motion even though there are collision with other
   // objects.
 
   const double tol = 1e-9;
@@ -1648,7 +1648,7 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
     EXPECT_TRUE(joint3->isDynamic());
 
     // Check if the motion prescribed joints are following the prescribed motion
-    // eventhough there is a collision with other objects
+    // even though there is a collision with other objects
     EXPECT_TRUE(joint4->isKinematic());
     EXPECT_NEAR(joint4->getAcceleration(0), joint4->getCommand(0), tol);
     EXPECT_TRUE(joint5->isKinematic());

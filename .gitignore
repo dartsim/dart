@@ -59,6 +59,7 @@ docs/doxygen/html/
 docs/readthedocs/site
 docs/readthedocs/_build/
 docs/readthedocs/_generated/
+docs/readthedocs/_generated_stubs/
 docs/python_api/_build/
 
 # Data files

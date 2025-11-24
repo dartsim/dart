@@ -53,7 +53,7 @@ namespace dynamics {
 /// velocities, and accelerations. It also notifies every child Entity when
 /// a transform, velocity, or acceleration has changed locally or globally.
 ///
-/// Entity class is inherited by using virtual inheritence to solve the
+/// Entity class is inherited by using virtual inheritance to solve the
 /// so-called "diamond problem". Because of that, the Entity's constructor will
 /// be called directly by the most derived class's constructor.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -71,7 +71,7 @@ public:
 
   static Frame* World();
 
-  // Shared pointer version for Pythong binding. In the current binding setting,
+  // Shared pointer version for Python binding. In the current binding setting,
   // Frame is always held in std::shared_ptr. This means it will double free
   // when Frame* World() is used because Frame* World() returns a raw pointer of
   // static instance. This workaround wouldn't heart the performance too much

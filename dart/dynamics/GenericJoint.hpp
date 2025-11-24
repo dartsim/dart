@@ -97,7 +97,7 @@ public:
   ThisClass& operator=(const ThisClass& other);
 
   //----------------------------------------------------------------------------
-  /// \{ \name Interface for generalized coordinates
+  /// \{ @name Interface for generalized coordinates
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -133,7 +133,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Command
+  /// \{ @name Command
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -154,7 +154,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Position
+  /// \{ @name Position
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -217,7 +217,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Fixed-size mutators and accessors
+  /// \{ @name Fixed-size mutators and accessors
   //----------------------------------------------------------------------------
 
   // Note: The fixed-size versions of these functions exist to make it easier
@@ -247,7 +247,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity
+  /// \{ @name Velocity
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -307,7 +307,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Acceleration
+  /// \{ @name Acceleration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -353,7 +353,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Force
+  /// \{ @name Force
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -398,7 +398,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ @name Velocity change
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -413,7 +413,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
+  /// \{ @name Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -428,7 +428,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Integration and finite difference
+  /// \{ @name Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -448,7 +448,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
+  /// \{ @name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -463,11 +463,23 @@ public:
   // Documentation inherited
   double getRestPosition(std::size_t index) const override;
 
+  /// Set rest positions for all degrees of freedom.
+  void setRestPositions(const Eigen::VectorXd& restPositions);
+
+  /// Get rest positions for all degrees of freedom.
+  Eigen::VectorXd getRestPositions() const;
+
   // Documentation inherited
   void setDampingCoefficient(std::size_t index, double coeff) override;
 
   // Documentation inherited
   double getDampingCoefficient(std::size_t index) const override;
+
+  /// Set damping coefficients for all degrees of freedom.
+  void setDampingCoefficients(const Eigen::VectorXd& dampingCoefficients);
+
+  /// Get damping coefficients for all degrees of freedom.
+  Eigen::VectorXd getDampingCoefficients() const;
 
   // Documentation inherited
   void setCoulombFriction(std::size_t index, double friction) override;
@@ -475,10 +487,16 @@ public:
   // Documentation inherited
   double getCoulombFriction(std::size_t index) const override;
 
+  /// Set Coulomb friction for all degrees of freedom.
+  void setFrictions(const Eigen::VectorXd& frictions);
+
+  /// Get Coulomb friction for all degrees of freedom.
+  Eigen::VectorXd getFrictions() const;
+
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Energy
+  /// \{ @name Energy
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -490,7 +508,7 @@ public:
   Eigen::Vector6d getBodyConstraintWrench() const override;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobians
+  /// \{ @name Jacobians
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -523,7 +541,7 @@ protected:
   void registerDofs() override;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   /// Get the inverse of the projected articulated inertia
@@ -632,7 +650,7 @@ protected:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive algorithm routines for equations of motion
+  /// \{ @name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -737,7 +755,7 @@ protected:
 
 private:
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   void addChildArtInertiaToDynamic(

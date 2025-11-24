@@ -47,13 +47,13 @@ namespace utils {
 /// and authority should be "file" and "sample", respectively.
 ///
 /// Example of a sample data URI:
-/// \code
+/// @code
 /// "dart://sample/skel/shapes.skel"
 ///                \______________/
 ///                       |
 ///            file path with respect to
 ///            the sample data directory
-/// \endcode
+/// @endcode
 ///
 /// DartResourceRetriever searches files in the following order:
 /// 1) The source tree's data directory (see dart::config::kDataLocalPath),

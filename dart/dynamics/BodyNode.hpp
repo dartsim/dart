@@ -68,6 +68,8 @@ class Skeleton;
 class Joint;
 class DegreeOfFreedom;
 class Shape;
+class ShapeNode;
+class CollisionAspect;
 class EndEffector;
 class Marker;
 
@@ -159,6 +161,12 @@ public:
   /// existing Nodes in this BodyNode will be removed.
   void matchNodes(const BodyNode* otherBodyNode);
 
+  /// Return all the Nodes currently attached to this BodyNode.
+  std::vector<Node*> getNodes();
+
+  /// Return all the Nodes currently attached to this BodyNode (const).
+  std::vector<const Node*> getNodes() const;
+
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
@@ -167,7 +175,7 @@ public:
   const std::string& getName() const override;
 
   /// Set whether gravity affects this body
-  /// \param[in] _gravityMode True to enable gravity
+  /// @param[in] _gravityMode True to enable gravity
   void setGravityMode(bool _gravityMode);
 
   /// Return true if gravity mode is enabled
@@ -177,7 +185,7 @@ public:
   bool isCollidable() const noexcept;
 
   /// Set whether this body node will collide with others in the world
-  /// \param[in] _isCollidable True to enable collisions
+  /// @param[in] _isCollidable True to enable collisions
   void setCollidable(bool _isCollidable);
 
   /// Set the mass of the bodynode
@@ -254,7 +262,7 @@ public:
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Return the linear acceleration of the center of mass, expressed in terms
-  /// of arbitary Frames
+  /// of arbitrary Frames
   Eigen::Vector3d getCOMLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
@@ -495,14 +503,14 @@ public:
 
   /// Return the list of ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// @deprecated Use eachShapeNode() instead. Retained until gz-physics stops
   /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<ShapeNode*> getShapeNodes();
 
   /// Return the list of (const) ShapeNodes (deprecated)
   ///
-  /// \deprecated Use eachShapeNode() instead. Retained until gz-physics stops
+  /// @deprecated Use eachShapeNode() instead. Retained until gz-physics stops
   /// relying on it.
   DART_DEPRECATED(6.13)
   const std::vector<const ShapeNode*> getShapeNodes() const;
@@ -526,7 +534,7 @@ public:
 
   /// Return the list of ShapeNodes containing given Aspect
   ///
-  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// @deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
   /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
@@ -534,7 +542,7 @@ public:
 
   /// Return the list of ShapeNodes containing given Aspect (const)
   ///
-  /// \deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
+  /// @deprecated Use eachShapeNodeWith() instead. Retained until gz-physics
   /// stops relying on it.
   template <class Aspect>
   DART_DEPRECATED(6.13)
@@ -558,20 +566,20 @@ public:
   /// callback function.
   ///
   /// Example:
-  /// \code{.cpp}
+  /// @code{.cpp}
   /// bodyNode->eachShapeNodeWith<VisualAspect>([](const ShapeNode* shapeNode)
   /// {
   ///   shapeNode->getVisualAspect()->getAlpha();
   /// });
-  /// \endcode
+  /// @endcode
   ///
-  /// \tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const ShapeNode*) or \c bool(const ShapeNode*). If
-  /// you want to conditionally iterate, use \c bool(const ShapeNode*) and
+  /// @tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const ShapeNode*) or @c bool(const ShapeNode*). If
+  /// you want to conditionally iterate, use @c bool(const ShapeNode*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each ShapeNode.
+  /// @param[in] func: The callback function to be called for each ShapeNode.
   template <typename Aspect, typename Func>
   void eachShapeNodeWith(Func func) const;
 
@@ -579,19 +587,19 @@ public:
   /// callback function.
   ///
   /// Example:
-  /// \code{.cpp}
+  /// @code{.cpp}
   /// bodyNode->eachShapeNodeWith<VisualAspect>([&](ShapeNode* shapeNode) {
   ///   shapeNode->getVisualAspect()->setAlpha(0.5);
   /// });
-  /// \endcode
+  /// @endcode
   ///
-  /// \tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(ShapeNode*) or \c bool(ShapeNode*). If
-  /// you want to conditionally iterate, use \c bool(ShapeNode*) and return
+  /// @tparam Aspect: The Aspect type that ShapeNodes should have to be visited.
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(ShapeNode*) or @c bool(ShapeNode*). If
+  /// you want to conditionally iterate, use @c bool(ShapeNode*) and return
   /// false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each ShapeNode.
+  /// @param[in] func: The callback function to be called for each ShapeNode.
   template <typename Aspect, typename Func>
   void eachShapeNodeWith(Func func);
 
@@ -727,7 +735,7 @@ public:
   /// last two parameters specify frames of the first two parameters.
   /// Coordinate transformations are applied when needed. The point of
   /// application and the force in local coordinates are stored in mContacts.
-  /// When conversion is needed, make sure the transformations are avaialble.
+  /// When conversion is needed, make sure the transformations are available.
   void addExtForce(
       const Eigen::Vector3d& _force,
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
@@ -787,11 +795,11 @@ public:
   bool isReactive() const;
 
   /// Set constraint impulse
-  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  /// @param[in] _constImp Spatial constraint impulse w.r.t. body frame
   void setConstraintImpulse(const Eigen::Vector6d& _constImp);
 
   /// Add constraint impulse
-  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  /// @param[in] _constImp Spatial constraint impulse w.r.t. body frame
   void addConstraintImpulse(const Eigen::Vector6d& _constImp);
 
   /// Add constraint impulse
@@ -914,7 +922,7 @@ protected:
   void addChildBodyNode(BodyNode* _body);
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   /// Separate generic child Entities from child BodyNodes for more efficient
@@ -934,13 +942,13 @@ protected:
   virtual void updatePartialAcceleration() const;
 
   /// Update articulated body inertia for forward dynamics.
-  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateArtInertia(double _timeStep) const;
 
   /// Update bias force associated with the articulated body inertia for forward
   /// dynamics.
-  /// \param[in] _gravity Vector of gravitational acceleration
-  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _gravity Vector of gravitational acceleration
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateBiasForce(
       const Eigen::Vector3d& _gravity, double _timeStep);
 
@@ -993,14 +1001,14 @@ protected:
   /// Update the joint impulse for forward dynamics.
   virtual void updateJointImpulseFD();
 
-  /// Update constrained terms due to the constraint impulses for foward
+  /// Update constrained terms due to the constraint impulses for forward
   /// dynamics.
   virtual void updateConstrainedTerms(double _timeStep);
 
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of motion related routines
+  /// \{ @name Equations of motion related routines
   //----------------------------------------------------------------------------
 
   ///
@@ -1205,7 +1213,7 @@ protected:
   /// Cache data for arbitrary spatial value
   Eigen::Vector6d mArbitrarySpatial;
 
-  //------------------------- Impulse-based Dyanmics ---------------------------
+  //------------------------- Impulse-based Dynamics ---------------------------
   /// Velocity change due to to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mDelV;
@@ -1235,7 +1243,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   //----------------------------------------------------------------------------
-  /// \{ \name Slot registers
+  /// \{ @name Slot registers
   //----------------------------------------------------------------------------
 
   /// Slot register for collision shape added signal
@@ -1254,6 +1262,20 @@ private:
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
+
+  /// Notify listeners about collision-shape lifecycle changes.
+  void handleCollisionShapeStateChange(
+      const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
+
+  /// Notify listeners when a collidable ShapeNode swaps its Shape.
+  void handleCollisionShapeUpdated(
+      const ShapeNode* shapeNode,
+      ConstShapePtr oldShape,
+      ConstShapePtr newShape);
+
+  friend class CollisionAspect;
+  friend class ShapeNode;
+  friend class ShapeFrame;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

@@ -45,157 +45,157 @@
 namespace dart {
 namespace math {
 
-/// \brief
+/// @brief
 DART_API Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v);
 
-/// \brief
+/// @brief
 DART_API Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m);
 
 //------------------------------------------------------------------------------
-/// \brief
+/// @brief
 DART_API Eigen::Quaterniond expToQuat(const Eigen::Vector3d& _v);
 
-/// \brief
+/// @brief
 DART_API Eigen::Vector3d quatToExp(const Eigen::Quaterniond& _q);
 
-/// \brief
+/// @brief
 DART_API Eigen::Vector3d rotatePoint(
     const Eigen::Quaterniond& _q, const Eigen::Vector3d& _pt);
 
-/// \brief
+/// @brief
 DART_API Eigen::Vector3d rotatePoint(
     const Eigen::Quaterniond& _q, double _x, double _y, double _z);
 
-/// \brief
+/// @brief
 DART_API Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& _q, int _el);
 
-/// \brief
+/// @brief
 DART_API Eigen::Matrix3d quatSecondDeriv(
     const Eigen::Quaterniond& _q, int _el1, int _el2);
 
 //------------------------------------------------------------------------------
-/// \brief Given Euler XYX angles, return a 3x3 rotation matrix, which is
+/// @brief Given Euler XYX angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotX(angle(0)) * RotY(angle(1)) * RotX(angle(2)).
 DART_API Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerXYZ angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerXYZ angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotX(angle(0)) * RotY(angle(1)) * RotZ(angle(2)).
 DART_API Eigen::Matrix3d eulerXYZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerXZX angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerXZX angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotX(angle(0)) * RotZ(angle(1)) * RotX(angle(2)).
 DART_API Eigen::Matrix3d eulerXZXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerXZY angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerXZY angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotX(angle(0)) * RotZ(angle(1)) * RotY(angle(2)).
 DART_API Eigen::Matrix3d eulerXZYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerYXY angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerYXY angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotY(angle(0)) * RotX(angle(1)) * RotY(angle(2)).
 DART_API Eigen::Matrix3d eulerYXYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerYXZ angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerYXZ angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotY(angle(0)) * RotX(angle(1)) * RotZ(angle(2)).
 DART_API Eigen::Matrix3d eulerYXZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerYZX angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerYZX angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotY(angle(0)) * RotZ(angle(1)) * RotX(angle(2)).
 DART_API Eigen::Matrix3d eulerYZXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerYZY angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerYZY angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotY(angle(0)) * RotZ(angle(1)) * RotY(angle(2)).
 DART_API Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerZXY angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerZXY angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotZ(angle(0)) * RotX(angle(1)) * RotY(angle(2)).
 DART_API Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerZYX angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerZYX angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotZ(angle(0)) * RotY(angle(1)) * RotX(angle(2)).
 /// singularity : angle[1] = -+ 0.5*PI
 DART_API Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerZXZ angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerZXZ angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotZ(angle(0)) * RotX(angle(1)) * RotZ(angle(2)).
 DART_API Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Given EulerZYZ angles, return a 3x3 rotation matrix, which is
+/// @brief Given EulerZYZ angles, return a 3x3 rotation matrix, which is
 /// equivalent to RotZ(angle(0)) * RotY(angle(1)) * RotZ(angle(2)).
 /// singularity : angle[1] = 0, PI
 DART_API Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& _angle);
 
 //------------------------------------------------------------------------------
-/// \brief get the Euler XYX angle from R
+/// @brief get the Euler XYX angle from R
 DART_API Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& _R);
 
-/// \brief get the Euler XYZ angle from R
+/// @brief get the Euler XYZ angle from R
 DART_API Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R);
 
-///// \brief get the Euler XZX angle from R
+///// @brief get the Euler XZX angle from R
 // Eigen::Vector3d matrixToEulerXZX(const Eigen::Matrix3d& R);
 
-/// \brief get the Euler XZY angle from R
+/// @brief get the Euler XZY angle from R
 DART_API Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R);
 
-///// \brief get the Euler YXY angle from R
+///// @brief get the Euler YXY angle from R
 // Eigen::Vector3d matrixToEulerYXY(const Eigen::Matrix3d& R);
 
-/// \brief get the Euler YXZ angle from R
+/// @brief get the Euler YXZ angle from R
 DART_API Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R);
 
-/// \brief get the Euler YZX angle from R
+/// @brief get the Euler YZX angle from R
 DART_API Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R);
 
-///// \brief get the Euler YZY angle from R
+///// @brief get the Euler YZY angle from R
 // Eigen::Vector3d matrixToEulerYZY(const Eigen::Matrix3d& R);
 
-/// \brief get the Euler ZXY angle from R
+/// @brief get the Euler ZXY angle from R
 DART_API Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R);
 
-/// \brief get the Euler ZYX angle from R
+/// @brief get the Euler ZYX angle from R
 DART_API Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R);
 
-///// \brief get the Euler ZXZ angle from R
+///// @brief get the Euler ZXZ angle from R
 // Eigen::Vector3d matrixToEulerZXZ(const Eigen::Matrix3d& R);
 
-///// \brief get the Euler ZYZ angle from R
+///// @brief get the Euler ZYZ angle from R
 // Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R);
 
 //------------------------------------------------------------------------------
-/// \brief Exponential mapping
+/// @brief Exponential mapping
 DART_API Eigen::Isometry3d expMap(const Eigen::Vector6d& _S);
 
-/// \brief fast version of Exp(se3(s, 0))
-/// \todo This expAngular() can be replaced by Eigen::AngleAxis() but we need
+/// @brief fast version of Exp(se3(s, 0))
+/// @todo This expAngular() can be replaced by Eigen::AngleAxis() but we need
 /// to verify that they have exactly same functionality.
 /// See: https://github.com/dartsim/dart/issues/88
 DART_API Eigen::Isometry3d expAngular(const Eigen::Vector3d& _s);
 
-/// \brief Computes the Rotation matrix from a given expmap vector.
+/// @brief Computes the Rotation matrix from a given expmap vector.
 DART_API Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _expmap);
 
-/// \brief Computes the Jacobian of the expmap
+/// @brief Computes the Jacobian of the expmap
 DART_API Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _expmap);
 
-/// \brief Computes the time derivative of the expmap Jacobian.
+/// @brief Computes the time derivative of the expmap Jacobian.
 DART_API Eigen::Matrix3d expMapJacDot(
     const Eigen::Vector3d& _expmap, const Eigen::Vector3d& _qdot);
 
-/// \brief computes the derivative of the Jacobian of the expmap wrt to _qi
-/// indexed dof; _qi \f$ \in \f$ {0,1,2}
+/// @brief computes the derivative of the Jacobian of the expmap wrt to _qi
+/// indexed dof; _qi @f$ \in @f$ {0,1,2}
 DART_API Eigen::Matrix3d expMapJacDeriv(
     const Eigen::Vector3d& _expmap, int _qi);
 
-/// \brief Log mapping
-/// \note When @f$|Log(R)| = @pi@f$, Exp(LogR(R) = Exp(-Log(R)).
+/// @brief Log mapping
+/// @note When @f$|Log(R)| = @pi@f$, Exp(LogR(R) = Exp(-Log(R)).
 /// The implementation returns only the positive one.
 DART_API Eigen::Vector3d logMap(const Eigen::Matrix3d& _R);
 
-/// \brief Log mapping
+/// @brief Log mapping
 DART_API Eigen::Vector6d logMap(const Eigen::Isometry3d& _T);
 
 //------------------------------------------------------------------------------
-/// \brief Rectify the rotation part so as that it satifies the orthogonality
+/// @brief Rectify the rotation part so as that it satisfies the orthogonality
 /// condition.
 ///
 /// It is one step of @f$R_{i_1}=1/2(R_i + R_i^{-T})@f$.
@@ -203,17 +203,17 @@ DART_API Eigen::Vector6d logMap(const Eigen::Isometry3d& _T);
 /// closer to SO(3).
 // SE3 Normalize(const SE3& T);
 
-/// \brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
+/// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
 // Axis Reparameterize(const Axis& s);
 
 //------------------------------------------------------------------------------
-/// \brief adjoint mapping
-/// \note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
+/// @brief adjoint mapping
+/// @note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
 /// where @f$T=(R,p)@in SE(3), @quad V=(w,v)@in se(3) @f$.
 DART_API Eigen::Vector6d AdT(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 
-/// \brief Get linear transformation matrix of Adjoint mapping
+/// @brief Get linear transformation matrix of Adjoint mapping
 DART_API Eigen::Matrix6d getAdTMatrix(const Eigen::Isometry3d& T);
 
 /// Adjoint mapping for dynamic size Jacobian
@@ -259,22 +259,22 @@ typename Derived::PlainObject AdTJacFixed(
   return ret;
 }
 
-/// \brief Fast version of Ad([R 0; 0 1], V)
+/// @brief Fast version of Ad([R 0; 0 1], V)
 DART_API Eigen::Vector6d AdR(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 
-/// \brief fast version of Ad(T, se3(w, 0))
+/// @brief fast version of Ad(T, se3(w, 0))
 DART_API Eigen::Vector6d AdTAngular(
     const Eigen::Isometry3d& _T, const Eigen::Vector3d& _w);
 
-/// \brief fast version of Ad(T, se3(0, v))
+/// @brief fast version of Ad(T, se3(0, v))
 DART_API Eigen::Vector6d AdTLinear(
     const Eigen::Isometry3d& _T, const Eigen::Vector3d& _v);
 
-///// \brief fast version of Ad([I p; 0 1], V)
+///// @brief fast version of Ad([I p; 0 1], V)
 // se3 AdP(const Vec3& p, const se3& s);
 
-/// \brief Change coordinate Frame of a Jacobian
+/// @brief Change coordinate Frame of a Jacobian
 template <typename Derived>
 typename Derived::PlainObject AdRJac(
     const Eigen::Isometry3d& _T, const Eigen::MatrixBase<Derived>& _J)
@@ -332,7 +332,7 @@ typename Derived::PlainObject adJac(
   return ret;
 }
 
-/// \brief fast version of Ad(Inv(T), V)
+/// @brief fast version of Ad(Inv(T), V)
 DART_API Eigen::Vector6d AdInvT(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 
@@ -381,59 +381,59 @@ typename Derived::PlainObject AdInvTJacFixed(
   return ret;
 }
 
-///// \brief fast version of Ad(Inv(T), se3(Eigen_Vec3(0), v))
+///// @brief fast version of Ad(Inv(T), se3(Eigen_Vec3(0), v))
 // Eigen::Vector3d AdInvTLinear(const Eigen::Isometry3d& T,
 //                             const Eigen::Vector3d& v);
 
-///// \brief fast version of Ad(Inv(T), se3(w, Eigen_Vec3(0)))
+///// @brief fast version of Ad(Inv(T), se3(w, Eigen_Vec3(0)))
 // Axis AdInvTAngular(const SE3& T, const Axis& w);
 
-///// \brief Fast version of Ad(Inv([R 0; 0 1]), V)
+///// @brief Fast version of Ad(Inv([R 0; 0 1]), V)
 // se3 AdInvR(const SE3& T, const se3& V);
 
-/// \brief Fast version of Ad(Inv([R 0; 0 1]), se3(0, v))
+/// @brief Fast version of Ad(Inv([R 0; 0 1]), se3(0, v))
 DART_API Eigen::Vector6d AdInvRLinear(
     const Eigen::Isometry3d& _T, const Eigen::Vector3d& _v);
 
-/// \brief dual adjoint mapping
-/// \note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$,
+/// @brief dual adjoint mapping
+/// @note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$,
 /// where @f$T=(R,p)@in SE(3), F=(m,f)@in se(3)^*@f$.
 DART_API Eigen::Vector6d dAdT(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
 
-///// \brief fast version of Ad(Inv(T), dse3(Eigen_Vec3(0), F))
+///// @brief fast version of Ad(Inv(T), dse3(Eigen_Vec3(0), F))
 // dse3 dAdTLinear(const SE3& T, const Vec3& F);
 
-/// \brief fast version of dAd(Inv(T), F)
+/// @brief fast version of dAd(Inv(T), F)
 DART_API Eigen::Vector6d dAdInvT(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
 
-/// \brief fast version of dAd(Inv([R 0; 0 1]), F)
+/// @brief fast version of dAd(Inv([R 0; 0 1]), F)
 DART_API Eigen::Vector6d dAdInvR(
     const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
 
-///// \brief fast version of dAd(Inv(SE3(p)), dse3(Eigen_Vec3(0), F))
+///// @brief fast version of dAd(Inv(SE3(p)), dse3(Eigen_Vec3(0), F))
 // dse3 dAdInvPLinear(const Vec3& p, const Vec3& F);
 
-/// \brief adjoint mapping
-/// \note @f$ad_X Y = ( w_X @times w_Y@,,~w_X @times v_Y - w_Y @times v_X),@f$,
+/// @brief adjoint mapping
+/// @note @f$ad_X Y = ( w_X @times w_Y@,,~w_X @times v_Y - w_Y @times v_X),@f$,
 /// where @f$X=(w_X,v_X)@in se(3), @quad Y=(w_Y,v_Y)@in se(3) @f$.
 DART_API Eigen::Vector6d ad(
     const Eigen::Vector6d& _X, const Eigen::Vector6d& _Y);
 
-/// \brief fast version of ad(se3(Eigen_Vec3(0), v), S)
+/// @brief fast version of ad(se3(Eigen_Vec3(0), v), S)
 // Vec3 ad_Vec3_se3(const Vec3& v, const se3& S);
 
-/// \brief fast version of ad(se3(w, 0), se3(v, 0)) -> check
+/// @brief fast version of ad(se3(w, 0), se3(v, 0)) -> check
 // Axis ad_Axis_Axis(const Axis& w, const Axis& v);
 
-/// \brief dual adjoint mapping
-/// \note @f$ad^{@,*}_V F = (m @times w + f @times v@,,~ f @times w),@f$
+/// @brief dual adjoint mapping
+/// @note @f$ad^{@,*}_V F = (m @times w + f @times v@,,~ f @times w),@f$
 /// , where @f$F=(m,f)@in se^{@,*}(3), @quad V=(w,v)@in se(3) @f$.
 DART_API Eigen::Vector6d dad(
     const Eigen::Vector6d& _s, const Eigen::Vector6d& _t);
 
-/// \brief
+/// @brief
 DART_API Inertia
 transformInertia(const Eigen::Isometry3d& _T, const Inertia& _AI);
 
@@ -465,11 +465,11 @@ DART_API Eigen::Isometry3d computeTransform(
     const Eigen::Vector3d& translation,
     AxisType axisType = AxisType::AXIS_X);
 
-/// \brief Check if determinant of _R is equat to 1 and all the elements are not
+/// @brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.
 DART_API bool verifyRotation(const Eigen::Matrix3d& _R);
 
-/// \brief Check if determinant of the rotational part of _T is equat to 1 and
+/// @brief Check if determinant of the rotational part of _T is equat to 1 and
 /// all the elements are not NaN values.
 DART_API bool verifyTransform(const Eigen::Isometry3d& _T);
 
@@ -539,13 +539,13 @@ SupportPolygon computeConvexHull(
 
 /// Generates a 3D convex hull given vertices and indices.
 ///
-/// \tparam S: The scalar type of the vertices.
-/// \tparam Index: The index type of the triangles.
-/// \param[in] vertices: The given vertices to generate a convex hull from.
-/// \param[in] optimize: (Optional) Whether to discard vertices that are not
+/// @tparam S: The scalar type of the vertices.
+/// @tparam Index: The index type of the triangles.
+/// @param[in] vertices: The given vertices to generate a convex hull from.
+/// @param[in] optimize: (Optional) Whether to discard vertices that are not
 /// referred to in the resulted convex hull. The resulted indices will be
 /// updated accordingly.
-/// \return A tuple of the vertices and indices of the resulted convex hull.
+/// @return A tuple of the vertices and indices of the resulted convex hull.
 template <typename S = double, typename Index = std::size_t>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>>,
@@ -634,26 +634,26 @@ public:
     mMax = max;
   }
 
-  // \brief Centroid of the bounding box (i.e average of min and max)
+  // @brief Centroid of the bounding box (i.e average of min and max)
   inline Eigen::Vector3d computeCenter() const
   {
     return (mMax + mMin) * 0.5;
   }
-  // \brief Coordinates of the maximum corner with respect to the centroid.
+  // @brief Coordinates of the maximum corner with respect to the centroid.
   inline Eigen::Vector3d computeHalfExtents() const
   {
     return (mMax - mMin) * 0.5;
   }
-  // \brief Length of each of the sides of the bounding box.
+  // @brief Length of each of the sides of the bounding box.
   inline Eigen::Vector3d computeFullExtents() const
   {
     return (mMax - mMin);
   }
 
 protected:
-  // \brief minimum coordinates of the bounding box
+  // @brief minimum coordinates of the bounding box
   Eigen::Vector3d mMin;
-  // \brief maximum coordinates of the bounding box
+  // @brief maximum coordinates of the bounding box
   Eigen::Vector3d mMax;
 };
 

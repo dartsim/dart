@@ -5,6 +5,7 @@ This example demonstrates a closed-loop chain simulation using DART with OSG for
 ## Description
 
 This example shows:
+
 - Loading a chain skeleton from a SKEL file
 - Creating ball joint constraints to form a closed loop
 - Applying damping forces during simulation

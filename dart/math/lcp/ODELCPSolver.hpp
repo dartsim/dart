@@ -39,17 +39,17 @@
 
 namespace dart::math::lcp {
 
-/// \brief
+/// @brief
 class DART_API ODELCPSolver
 {
 public:
-  /// \brief
+  /// @brief
   ODELCPSolver();
 
-  /// \brief
+  /// @brief
   virtual ~ODELCPSolver();
 
-  /// \brief
+  /// @brief
   bool Solve(
       const Eigen::MatrixXd& _A,
       const Eigen::VectorXd& _b,
@@ -60,7 +60,7 @@ public:
       bool bUseODESolver = false);
 
 private:
-  /// \brief
+  /// @brief
   void transferToODEFormulation(
       const Eigen::MatrixXd& _A,
       const Eigen::VectorXd& _b,
@@ -69,14 +69,14 @@ private:
       int _numDir,
       int _numContacts);
 
-  /// \brief
+  /// @brief
   void transferSolFromODEFormulation(
       const Eigen::VectorXd& _x,
       Eigen::VectorXd* _xOut,
       int _numDir,
       int _numContacts);
 
-  /// \brief
+  /// @brief
   bool checkIfSolution(
       const Eigen::MatrixXd& _A,
       const Eigen::VectorXd& _b,

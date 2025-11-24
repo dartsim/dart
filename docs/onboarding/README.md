@@ -3,6 +3,7 @@
 ## Documentation Principles
 
 **Onboarding docs should**:
+
 - ✅ Explain **design decisions** and **why** (not just what)
 - ✅ Point to **code as source of truth** (CMakeLists.txt, pixi.toml, source files)
 - ✅ Focus on **current state**, not history
@@ -19,6 +20,7 @@
 ### Documentation Principles
 
 **This documentation prioritizes the codebase as the source of truth:**
+
 - Minimal code snippets (prefer links to actual source)
 - Avoid details that can become outdated or out-of-sync
 - Focus on concepts, patterns, and architecture
@@ -27,6 +29,7 @@
 ### Design Principles
 
 **Prefer simplicity over premature generalization:**
+
 - Start with the simplest solution that solves the current problem
 - Only add abstraction, hierarchy, or scalability when actually needed
 - Resist the urge to design for hypothetical future requirements
@@ -54,6 +57,7 @@ This onboarding guide is organized into several focused documents:
 ### Purpose and Problem Solved
 
 DART addresses the need for:
+
 - **High-fidelity physics simulation** for articulated rigid and soft body systems
 - **Efficient algorithms** - O(n) complexity for forward/inverse dynamics using Featherstone algorithms
 - **Interactive 3D visualization** for robotics research and development
@@ -76,18 +80,18 @@ DART addresses the need for:
 
 ### Technologies Used
 
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| **Core Language** | C++17 | Main implementation |
-| **Build System** | CMake 3.22.1+ | Cross-platform builds |
-| **Python Bindings** | pybind11 2.13.6 | Python API |
-| **Linear Algebra** | Eigen 3.4.0+ | Math operations |
-| **Collision Detection** | FCL 0.7.0+ | Primary collision backend |
-| **3D Rendering** | OpenSceneGraph 3.0.0+ | Visualization |
-| **GUI Framework** | Dear ImGui 1.91.9 | Immediate-mode UI |
-| **Model Loading** | assimp 5.4.3+ | 3D asset import |
-| **Environment** | pixi/conda-forge | Dependency management |
-| **Graphics API** | OpenGL 2+ | Rendering backend |
+| Category                | Technology            | Purpose                   |
+| ----------------------- | --------------------- | ------------------------- |
+| **Core Language**       | C++17                 | Main implementation       |
+| **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
+| **Python Bindings**     | pybind11 2.13.6       | Python API                |
+| **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
+| **Collision Detection** | FCL 0.7.0+            | Primary collision backend |
+| **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
+| **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI         |
+| **Model Loading**       | assimp 5.4.3+         | 3D asset import           |
+| **Environment**         | pixi/conda-forge      | Dependency management     |
+| **Graphics API**        | OpenGL 2+             | Rendering backend         |
 
 ---
 
@@ -190,10 +194,12 @@ graph TB
 ### Component Explanations
 
 **Application Layer:**
+
 - Entry point for user code (examples, tutorials, custom applications)
 - Can be written in C++ or Python (via dartpy bindings)
 
 **GUI Layer:**
+
 - **Viewer**: Main window manager for 3D visualization with camera control and event handling
 - **ImGuiViewer**: Extended viewer with Dear ImGui widget support for interactive UI
 - **WorldNode/RealTimeWorldNode**: Bridge between DART World and OSG scene graph, handles real-time simulation
@@ -201,12 +207,14 @@ graph TB
 - **InteractiveFrame**: Visual 3D manipulator with translation/rotation handles
 
 **Rendering Layer:**
+
 - **OpenSceneGraph (OSG)**: Scene graph management and OpenGL rendering
 - **ShapeFrameNode**: Converts DART frames to OSG nodes
 - **Shape Render Nodes**: Specialized renderers for 16+ shape types (box, sphere, mesh, etc.)
 - **Shadow Rendering**: Configurable shadow techniques
 
 **Simulation Core:**
+
 - **World**: Top-level simulation container with time-stepping
 - **Skeleton**: Articulated body system (robot/character)
 - **Collision Detection**: Multi-backend support (FCL, Bullet, ODE)
@@ -214,12 +222,14 @@ graph TB
 - **Integration**: Time-stepping schemes (Euler, Semi-Implicit Euler, RK4)
 
 **Dynamics Layer:**
+
 - **BodyNode**: Individual rigid body with mass, inertia, shapes
 - **Joint System**: 10+ joint types (revolute, prismatic, free, ball, etc.)
 - **Shape System**: Collision/visual geometry (box, sphere, mesh, etc.)
 - **Inverse Kinematics**: IK solvers for end-effector control
 
 **Foundation:**
+
 - **Math Utilities**: Eigen-based linear algebra, transformations, geometry
 - **Common/Aspect**: Design patterns (Factory, Observer, Aspect-oriented)
 - **LCP Solver**: Lemke's algorithm for constraint solving
@@ -235,6 +245,7 @@ graph TB
 **Purpose**: Main 3D visualization window that integrates OpenSceneGraph rendering with DART simulation. Manages camera, lighting, shadows, event handling, and world node registration.
 
 **Key Elements**:
+
 - [`Viewer::Viewer()`](dart/gui/osg/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
 - [`Viewer::addWorldNode()`](dart/gui/osg/Viewer.cpp#L122) - Registers a WorldNode for rendering
 - [`Viewer::enableDragAndDrop()`](dart/gui/osg/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
@@ -243,6 +254,7 @@ graph TB
 - [`Viewer::captureScreen()`](dart/gui/osg/Viewer.cpp#L373) - Screenshot functionality
 
 **Depends On**:
+
 - **Internal**: OpenSceneGraph scene graph, camera manipulators, event handlers
 - **External**: OSG (OpenSceneGraph library), OpenGL
 
@@ -255,12 +267,14 @@ graph TB
 **Purpose**: Extended viewer with Dear ImGui integration for modern UI widgets and controls. Provides immediate-mode GUI capabilities for debugging, controls, and custom interfaces.
 
 **Key Elements**:
+
 - [`ImGuiViewer::ImGuiViewer()`](dart/gui/osg/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
 - [`ImGuiHandler`](dart/gui/osg/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
 - [`ImGuiWidget`](dart/gui/osg/ImGuiWidget.hpp) - Base class for custom widgets
 - [`AboutWidget`](dart/gui/osg/ImGuiViewer.cpp#L49) - Default about dialog
 
 **Depends On**:
+
 - **Internal**: Viewer base class, ImGuiHandler, ImGuiWidget system
 - **External**: Dear ImGui library, OpenGL2 backend
 
@@ -273,6 +287,7 @@ graph TB
 **Purpose**: Encapsulates a DART World for OSG rendering. Manages skeleton visualization, shape nodes, shadow groups, and synchronization between simulation and rendering state.
 
 **Key Elements**:
+
 - [`WorldNode::WorldNode()`](dart/gui/osg/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
 - [`WorldNode::refresh()`](dart/gui/osg/WorldNode.cpp#L138) - Updates visual state from simulation
 - [`WorldNode::customPreRefresh()`](dart/gui/osg/WorldNode.hpp#L81) - Hook for custom update logic
@@ -280,6 +295,7 @@ graph TB
 - Dual scene graph: Normal group and shadow group for optimized shadow rendering
 
 **Depends On**:
+
 - **Internal**: DART World, Skeleton, ShapeFrameNode, shadow utilities
 - **External**: OSG scene graph nodes
 
@@ -292,12 +308,14 @@ graph TB
 **Purpose**: Real-time simulation with adaptive time stepping. Maintains target real-time factor (RTF) and provides hooks for custom logic before/after each simulation step.
 
 **Key Elements**:
+
 - [`RealTimeWorldNode::refresh()`](dart/gui/osg/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
 - [`RealTimeWorldNode::customPreStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
 - [`RealTimeWorldNode::customPostStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
 - Adaptive stepping: Multiple sub-steps per frame to maintain RTF
 
 **Depends On**:
+
 - **Internal**: WorldNode base class, DART World time-stepping
 - **External**: System clock for timing
 
@@ -310,12 +328,14 @@ graph TB
 **Purpose**: Bridges DART frames to OSG scene graph. Manages transformation updates, shape rendering, visual properties (color, transparency), and lifecycle.
 
 **Key Elements**:
+
 - [`ShapeFrameNode::ShapeFrameNode()`](dart/gui/osg/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
 - [`ShapeFrameNode::refresh()`](dart/gui/osg/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
 - [`ShapeFrameNode::createShapeNode()`](dart/gui/osg/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
 - Utilization tracking for automatic garbage collection
 
 **Depends On**:
+
 - **Internal**: DART Frame, Shape, VisualAspect, shape render nodes
 - **External**: OSG transformation nodes
 
@@ -328,6 +348,7 @@ graph TB
 **Purpose**: Specialized renderers for 16+ DART shape types. Each renderer converts DART shape geometry to OSG drawable geometry with proper materials and textures.
 
 **Key Shape Nodes**:
+
 - [`BoxShapeNode`](dart/gui/osg/render/BoxShapeNode.hpp) - Box primitives
 - [`SphereShapeNode`](dart/gui/osg/render/SphereShapeNode.hpp) - Sphere primitives
 - [`CylinderShapeNode`](dart/gui/osg/render/CylinderShapeNode.hpp) - Cylinder primitives
@@ -337,6 +358,7 @@ graph TB
 - [`PointCloudShapeNode`](dart/gui/osg/render/PointCloudShapeNode.hpp) - Point cloud visualization
 
 **Depends On**:
+
 - **Internal**: DART Shape classes, VisualAspect properties
 - **External**: OSG geometry, materials, textures
 
@@ -349,6 +371,7 @@ graph TB
 **Purpose**: Comprehensive drag-and-drop framework for interactive manipulation with constraint support, rotation modes, and specialized handlers for different entity types.
 
 **Key Elements**:
+
 - [`DragAndDrop`](dart/gui/osg/DragAndDrop.hpp#L61) - Abstract base class
 - [`SimpleFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
 - [`InteractiveFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L236) - Drag interactive frame tools
@@ -357,6 +380,7 @@ graph TB
 - Rotation modes: `HOLD_MODKEY`, `ALWAYS_ON`, `ALWAYS_OFF`
 
 **Depends On**:
+
 - **Internal**: DART frames, BodyNode, IK module, picking system
 - **External**: OSG event adapters for mouse input
 
@@ -369,6 +393,7 @@ graph TB
 **Purpose**: 3D manipulator widget with visual handles for translation and rotation. Creates arrows, rings, and planes for intuitive 3D object manipulation.
 
 **Key Elements**:
+
 - [`InteractiveFrame`](dart/gui/osg/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
 - [`InteractiveTool`](dart/gui/osg/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
 - Tool types: `LINEAR` (translation arrows), `ANGULAR` (rotation rings), `PLANAR` (2D planes)
@@ -376,6 +401,7 @@ graph TB
 - [`resizeStandardVisuals()`](dart/gui/osg/InteractiveFrame.cpp#L570) - Customize tool size/thickness
 
 **Depends On**:
+
 - **Internal**: DART SimpleFrame, Shape system
 - **External**: None (pure DART component)
 
@@ -388,6 +414,7 @@ graph TB
 **Purpose**: Top-level simulation container that manages skeletons, simple frames, time-stepping, and coordinates collision detection and constraint solving.
 
 **Key Elements**:
+
 - [`World::step()`](dart/simulation/World.cpp#L356) - Main simulation loop
 - [`World::addSkeleton()`](dart/simulation/World.cpp#L196) - Register articulated bodies
 - [`World::addSimpleFrame()`](dart/simulation/World.cpp#L241) - Register non-simulated frames
@@ -396,6 +423,7 @@ graph TB
 - Recording support for playback and analysis
 
 **Depends On**:
+
 - **Internal**: Skeleton, SimpleFrame, CollisionDetector, ConstraintSolver (handles time integration internally)
 - **External**: Eigen for math operations
 
@@ -408,6 +436,7 @@ graph TB
 **Purpose**: Represents articulated rigid body systems (robots, characters) as a tree of BodyNodes connected by Joints. Manages kinematics, dynamics, and state.
 
 **Key Elements**:
+
 - [`Skeleton::create()`](dart/dynamics/Skeleton.cpp#L148) - Factory for creating skeletons
 - [`Skeleton::createJointAndBodyNodePair<>()`](dart/dynamics/Skeleton.cpp#L521) - Add body to tree
 - [`Skeleton::getMassMatrix()`](dart/dynamics/Skeleton.cpp#L1567) - Compute mass matrix (O(n²))
@@ -416,6 +445,7 @@ graph TB
 - Support for kinematic trees and closed-loop structures
 
 **Depends On**:
+
 - **Internal**: BodyNode, Joint, IK module, algorithms (ABA, RNEA, CRBA)
 - **External**: Eigen for linear algebra
 
@@ -428,6 +458,7 @@ graph TB
 **Purpose**: Individual rigid body in an articulated system. Manages mass properties, inertia, shapes (collision/visual), and local transformations.
 
 **Key Elements**:
+
 - [`BodyNode::createShapeNodeWith<>()`](dart/dynamics/BodyNode.cpp#L357) - Add shape with aspects
 - [`BodyNode::setMass()`](dart/dynamics/BodyNode.cpp#L545) - Configure mass
 - [`BodyNode::setInertia()`](dart/dynamics/BodyNode.cpp#L580) - Configure inertia tensor
@@ -435,6 +466,7 @@ graph TB
 - [`BodyNode::getJacobian()`](dart/dynamics/BodyNode.cpp#L1143) - Compute Jacobian
 
 **Depends On**:
+
 - **Internal**: Joint (parent), Shape, Inertia, Aspect system
 - **External**: Eigen for transformations
 
@@ -447,6 +479,7 @@ graph TB
 **Purpose**: Connects BodyNodes and defines their relative motion constraints. Provides 10+ joint types for various kinematic configurations.
 
 **Key Joint Types**:
+
 - [`RevoluteJoint`](dart/dynamics/RevoluteJoint.hpp) - 1-DOF rotation (1D)
 - [`PrismaticJoint`](dart/dynamics/PrismaticJoint.hpp) - 1-DOF translation (1D)
 - [`FreeJoint`](dart/dynamics/FreeJoint.hpp) - 6-DOF unconstrained (6D)
@@ -456,12 +489,14 @@ graph TB
 - [`EulerJoint`](dart/dynamics/EulerJoint.hpp) - 3-DOF Euler angles (3D)
 
 **Key Features**:
+
 - Position/velocity limits
 - Damping and spring forces
 - Coulomb friction
 - Servo control
 
 **Depends On**:
+
 - **Internal**: BodyNode, math utilities
 - **External**: Eigen for transformations
 
@@ -474,17 +509,20 @@ graph TB
 **Purpose**: Pluggable collision detection system supporting multiple backends. Detects collisions between shapes and generates contact points.
 
 **Key Backends**:
+
 - [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
 - [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
 - [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Native implementation
 - [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
 
 **Key Elements**:
+
 - [`CollisionDetector::detectCollision()`](dart/collision/CollisionDetector.cpp#L84) - Run collision detection
 - [`CollisionGroup`](dart/collision/CollisionGroup.hpp) - Groups shapes for broad-phase optimization
 - [`Contact`](dart/collision/Contact.hpp) - Contact point data structure
 
 **Depends On**:
+
 - **Internal**: Shape, CollisionObject
 - **External**: FCL, Bullet, or ODE depending on backend
 
@@ -497,6 +535,7 @@ graph TB
 **Purpose**: Resolves constraints (contacts, joint limits, motors) using LCP-based formulation. Computes constraint impulses to satisfy constraint equations.
 
 **Key Elements**:
+
 - [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
 - [`ConstraintSolver::addConstraint()`](dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
 - Constraint types: Contact, JointLimit, Motor, Servo, Mimic (MimicMotor or
@@ -505,6 +544,7 @@ graph TB
 - Skeleton grouping for independent constraint solving
 
 **Depends On**:
+
 - **Internal**: Constraint classes, BoxedLcpSolver, Skeleton
 - **External**: Eigen for matrix operations
 
@@ -517,6 +557,7 @@ graph TB
 **Purpose**: Complete Python API for DART using pybind11. Enables rapid prototyping, machine learning integration, and scripting.
 
 **Key Modules**:
+
 - `dartpy.math` - Mathematical utilities and Eigen↔NumPy conversion
 - `dartpy.dynamics` - Skeletons, BodyNodes, Joints, IK
 - `dartpy.collision` - Collision detection backends
@@ -526,12 +567,14 @@ graph TB
 - `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
 
 **Key Files**:
+
 - [`pyproject.toml`](pyproject.toml) - Python package configuration
 - [`setup.py`](setup.py) - Build script using pybind11
 - [`python/dartpy/`](python/dartpy/) - Python bindings source
 - Type stubs (`.pyi` files) for IDE support
 
 **Depends On**:
+
 - **Internal**: All DART C++ modules
 - **External**: pybind11, NumPy
 
@@ -545,7 +588,7 @@ graph TB
 
 **Sequence Diagram**:
 
-```mermaid
+````mermaid
 sequenceDiagram
     participant User as User Code
     participant Skeleton as Skeleton
@@ -757,6 +800,7 @@ sequenceDiagram
 - [`DartLoader`](dart/utils/urdf/DartLoader.hpp)
 - [`DartLoader::parseSkeleton()`](dart/utils/urdf/DartLoader.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
+- Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
 ---
 
@@ -1058,7 +1102,7 @@ pixi run atlas-puppet
 # Build Python bindings
 pixi run build-py-dev
 pixi run test-py
-```
+````
 
 ### Manual CMake Build
 
@@ -1086,6 +1130,7 @@ For the complete list of CMake configuration options and their defaults, refer t
 ### Running Examples
 
 **C++ Examples** ([`examples/`](examples/)):
+
 ```bash
 # Using pixi
 pixi run hello-world
@@ -1099,6 +1144,7 @@ pixi run atlas-puppet
 ```
 
 **Python Examples**:
+
 ```bash
 # Using pixi
 pixi run hello-world-py
@@ -1147,6 +1193,7 @@ dart_gui/
 ### Key Entry Points
 
 **C++ API**:
+
 ```cpp
 #include <dart/All.hpp>              // Core DART
 #include <dart/gui/osg/osg.hpp>       // OSG GUI
@@ -1154,6 +1201,7 @@ dart_gui/
 ```
 
 **Python API**:
+
 ```python
 import dartpy as dart
 from dartpy.gui.osg import Viewer, RealTimeWorldNode
@@ -1294,17 +1342,21 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 ## 8. Additional Resources
 
 ### Documentation
+
 - **Main Website**: https://docs.dartsim.org/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
 - **Tutorials**: [`tutorials/`](tutorials/)
 - **Examples**: [`examples/`](examples/)
 
 ### Community
+
 - **GitHub**: https://github.com/dartsim/dart
 - **Maintained by**: Jeongseok Lee (Meta employee) and robotics community
 
 ### Related Analysis Documents
+
 This repository contains additional detailed analysis documents:
+
 - [`architecture.md`](docs/onboarding/architecture.md) - Core DART architecture deep dive
 - [`gui-rendering.md`](docs/onboarding/gui-rendering.md) - OpenSceneGraph integration details
 - [`python-bindings.md`](docs/onboarding/python-bindings.md) - Python bindings (dartpy) reference
@@ -1313,6 +1365,7 @@ This repository contains additional detailed analysis documents:
 - [`constraints.md`](docs/onboarding/constraints.md) - Constraint solver analysis
 
 ### Key Design Patterns Used in DART
+
 - **Factory Pattern**: Skeleton::create(), Joint factories
 - **Strategy Pattern**: Pluggable collision backends, integrators, solvers
 - **Observer Pattern**: Event handlers, callbacks

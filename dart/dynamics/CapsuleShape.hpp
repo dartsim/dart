@@ -44,8 +44,8 @@ class DART_API CapsuleShape : public Shape
 {
 public:
   /// Constructor.
-  /// \param[in] radius Radius of the capsule.
-  /// \param[in] height Height of the cylindrical part.
+  /// @param[in] radius Radius of the capsule.
+  /// @param[in] height Height of the cylindrical part.
   CapsuleShape(double radius, double height);
 
   // Documentation inherited.
@@ -67,14 +67,14 @@ public:
   void setHeight(double height);
 
   /// Compute volume from given properties.
-  /// \param[in] radius Radius of the capsule.
-  /// \param[in] height Height of the cylindrical part.
+  /// @param[in] radius Radius of the capsule.
+  /// @param[in] height Height of the cylindrical part.
   static double computeVolume(double radius, double height);
 
   /// Compute moments of inertia of a capsule
-  /// \param[in] radius Radius of the capsule.
-  /// \param[in] height Height of the cylindrical part.
-  /// \param[in] mass Mass of the capsule.
+  /// @param[in] radius Radius of the capsule.
+  /// @param[in] height Height of the cylindrical part.
+  /// @param[in] mass Mass of the capsule.
   static Eigen::Matrix3d computeInertia(
       double radius, double height, double mass);
 

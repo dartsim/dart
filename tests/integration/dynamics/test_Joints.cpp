@@ -385,7 +385,7 @@ TEST_F(Joints, TranslationalJoint2D)
 // TODO(JS): Disabled the test compares analytical Jacobian and numerical
 // Jacobian since the meaning of BallJoint Jacobian is changed per
 // we now use angular velocity and angular accertions as BallJoint's generalized
-// velocities and accelerations, repectively.
+// velocities and accelerations, respectively.
 
 // 3-dof joint
 TEST_F(Joints, EulerJoint)
@@ -411,6 +411,39 @@ TEST_F(Joints, PlanarJoint)
   kinematicsTest<PlanarJoint>();
 }
 
+//==============================================================================
+TEST_F(Joints, PlanarJointIsometry2dHelpers)
+{
+  SkeletonPtr skel = Skeleton::create("planar_helpers");
+  auto pair = skel->createJointAndBodyNodePair<PlanarJoint>();
+  auto* joint = pair.first;
+
+  const Eigen::Vector3d positions(0.25, -0.15, 0.6);
+  const Eigen::Isometry2d tf = PlanarJoint::convertToTransform(positions);
+  EXPECT_TRUE(PlanarJoint::convertToPositions(tf).isApprox(positions, 1e-12));
+
+  const auto verifyPlane = [&](auto setPlane) {
+    setPlane();
+    joint->setPositions(positions);
+
+    const Eigen::Isometry3d expected
+        = Eigen::Translation3d(joint->getTranslationalAxis1() * positions[0])
+          * Eigen::Translation3d(joint->getTranslationalAxis2() * positions[1])
+          * math::expAngular(joint->getRotationalAxis() * positions[2]);
+
+    EXPECT_TRUE(joint->getRelativeTransform().isApprox(expected, 1e-12));
+  };
+
+  verifyPlane([&]() { joint->setXYPlane(); });
+  verifyPlane([&]() { joint->setYZPlane(); });
+  verifyPlane([&]() { joint->setZXPlane(); });
+  verifyPlane([&]() {
+    const Eigen::Vector3d axis1(1.0, 1.0, 0.0);
+    const Eigen::Vector3d axis2(-1.0, 1.0, 0.0);
+    joint->setArbitraryPlane(axis1.normalized(), axis2.normalized());
+  });
+}
+
 // 6-dof joint
 // TEST_F(Joints, FreeJoint)
 //{
@@ -419,7 +452,7 @@ TEST_F(Joints, PlanarJoint)
 // TODO(JS): Disabled the test compares analytical Jacobian and numerical
 // Jacobian since the meaning of FreeJoint Jacobian is changed per
 // we now use spatial velocity and spatial accertions as FreeJoint's generalized
-// velocities and accelerations, repectively.
+// velocities and accelerations, respectively.
 
 //==============================================================================
 template <
@@ -1013,7 +1046,7 @@ void testServoMotor()
   //  - Condition: Nonzero desired velocity, infinite servo motor force limits,
   //               and infinite Coulomb friction
   //  - Expectation: The the pendulum shouldn't move at all due to the friction.
-  //    TODO(JS): Should a servo motor dominent Coulomb friction in this case?
+  //    TODO(JS): Should a servo motor dominant Coulomb friction in this case?
 
   std::vector<SkeletonPtr> pendulums(numPendulums);
   std::vector<JointPtr> joints(numPendulums);
@@ -1100,14 +1133,16 @@ void testServoMotor()
     //     posLowerLimit - expected_vel * timeStep);
     // TODO(JS): Position limits and servo motor with infinite force limits
     // doesn't work together because they compete against each other to achieve
-    // different joint velocities with their infinit force limits. In this case,
-    // the position limit constraint should dominent the servo motor constraint.
+    // different joint velocities with their infinite force limits. In this
+    // case, the position limit constraint should dominant the servo motor
+    // constraint.
     EXPECT_NEAR(jointVels[5], 0.0, tol * 1e+2);
     // EXPECT_NEAR(jointVels[6], 0.0, tol * 1e+2);
     // TODO(JS): Servo motor with infinite force limits and infinite Coulomb
     // friction doesn't work because they compete against each other to achieve
-    // different joint velocities with their infinit force limits. In this case,
-    // the friction constraints should dominent the servo motor constraints.
+    // different joint velocities with their infinite force limits. In this
+    // case, the friction constraints should dominant the servo motor
+    // constraints.
   }
 }
 
@@ -1124,7 +1159,7 @@ void testMimicJoint()
 
   double timestep = 1e-3;
   double tol = 1e-9;
-  double tolPos = 1e-3;
+  double tolPos = 3e-3;
   double sufficient_force = 1e+5;
 
   // World

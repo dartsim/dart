@@ -28,160 +28,359 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-# Determine Python site-packages directory
-# For wheel builds with scikit-build-core, SKBUILD_PLATLIB_DIR is used directly
-# For traditional CMake installs, we need to calculate the relative path
-# and prefix it with CMAKE_INSTALL_PREFIX
-execute_process(COMMAND ${Python3_EXECUTABLE} -c
-  "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
-  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}")
-set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
+# Ensure a Python interpreter/development environment is available. nanobind
+# requires `find_package(Python ...)` rather than `Python3`, so call it here
+# even though the rest of the project uses `Python3`.*
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
-file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
-file(GLOB_RECURSE dartpy_sources "*.cpp")
-
-# Exclude GUI OSG bindings if GUI is not built
-if(NOT DART_BUILD_GUI)
-  list(FILTER dartpy_headers EXCLUDE REGEX ".*/gui/osg/.*")
-  list(FILTER dartpy_sources EXCLUDE REGEX ".*/gui/osg/.*")
+# Determine Python site-packages directory if it is not already computed.
+if(NOT DEFINED PYTHON_SITE_PACKAGES)
+  execute_process(COMMAND ${Python_EXECUTABLE} -c
+    "import sysconfig; print(sysconfig.get_path('platlib', scheme='posix_prefix', vars={'base': '', 'platbase': ''}).lstrip('/'))"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_REL
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES_REL}")
+  set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
-# Python binding module name
-set(pybind_module dartpy)
-
-# Build a Python extension module:
-# pybind11_add_module(<name> [MODULE | SHARED] [EXCLUDE_FROM_ALL]
-#                     [NO_EXTRAS] [SYSTEM] [THIN_LTO] source1 [source2 ...])
-#
-# When building wheels, don't use EXCLUDE_FROM_ALL so the module is built automatically
-if(DART_BUILD_WHEELS)
-  pybind11_add_module(${pybind_module}
-    MODULE
-    ${dartpy_headers}
-    ${dartpy_sources}
-  )
+# Locate nanobind (prefer the copy shipped with the active Python interpreter).
+set(_dartpy_nanobind_found FALSE)
+if(DART_USE_SYSTEM_NANOBIND)
+  find_package(nanobind CONFIG REQUIRED)
+  set(_dartpy_nanobind_found TRUE)
 else()
-  pybind11_add_module(${pybind_module}
-    MODULE
-    EXCLUDE_FROM_ALL
-    ${dartpy_headers}
-    ${dartpy_sources}
-  )
+  if(NOT DEFINED nanobind_DIR)
+    execute_process(
+      COMMAND ${Python_EXECUTABLE} -m nanobind --cmake_dir
+      OUTPUT_VARIABLE nanobind_ROOT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE nanobind_NOTFOUND
+    )
+    if(nanobind_NOTFOUND)
+      message(WARNING "nanobind was not found via 'python -m nanobind --cmake_dir'. "
+        "Install it with 'pip install nanobind' or set nanobind_DIR explicitly.")
+      return()
+    endif()
+    list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
+    set(nanobind_DIR "${nanobind_ROOT}" CACHE PATH "nanobind CMake package path" FORCE)
+  endif()
+  find_package(nanobind CONFIG REQUIRED)
+  set(_dartpy_nanobind_found TRUE)
 endif()
 
-target_include_directories(${pybind_module}
-  SYSTEM PUBLIC
-    ${PYTHON_INCLUDE_DIRS}
-    ${pybind11_INCLUDE_DIRS}
+if(NOT _dartpy_nanobind_found)
+  message(WARNING "nanobind is required to build dartpy; skipping target.")
+  return()
+endif()
+
+set(dartpy_headers
+  common/composite.hpp
+  common/module.hpp
+  common/logging.hpp
+  common/observer.hpp
+  common/resource.hpp
+  common/resource_retriever.hpp
+  common/stopwatch.hpp
+  common/string.hpp
+  common/subject.hpp
+  common/uri.hpp
+  utils/module.hpp
+  utils/dart_loader.hpp
+  utils/resource_retriever.hpp
+  utils/skel_parser.hpp
+  utils/sdf_parser.hpp
+  utils/mjcf_parser.hpp
+  optimizer/module.hpp
+  optimizer/function.hpp
+  optimizer/problem.hpp
+  optimizer/solver.hpp
+  optimizer/gradient_descent.hpp
+  math/module.hpp
+  math/constants.hpp
+  math/geometry.hpp
+  math/random.hpp
+  math/eigen_geometry.hpp
+  dynamics/module.hpp
+  dynamics/entity.hpp
+  dynamics/degree_of_freedom.hpp
+  dynamics/frame.hpp
+  dynamics/jacobian_node.hpp
+  dynamics/shape.hpp
+  dynamics/shape_frame.hpp
+  dynamics/simple_frame.hpp
+  dynamics/inertia.hpp
+  dynamics/shape_node.hpp
+  dynamics/body_node.hpp
+  dynamics/joint.hpp
+  dynamics/free_joint.hpp
+  dynamics/revolute_joint.hpp
+  dynamics/euler_joint.hpp
+  dynamics/planar_joint.hpp
+  dynamics/translational_joint2d.hpp
+  dynamics/translational_joint.hpp
+  dynamics/prismatic_joint.hpp
+  dynamics/end_effector.hpp
+  dynamics/linkage.hpp
+  dynamics/screw_joint.hpp
+  dynamics/universal_joint.hpp
+  dynamics/ball_joint.hpp
+  dynamics/weld_joint.hpp
+  dynamics/zero_dof_joint.hpp
+  dynamics/chain.hpp
+  dynamics/meta_skeleton.hpp
+  dynamics/hierarchical_ik.hpp
+  dynamics/inverse_kinematics.hpp
+  dynamics/skeleton.hpp
+  collision/module.hpp
+  collision/collision_option.hpp
+  collision/collision_result.hpp
+  collision/raycast.hpp
+  collision/collision_detector.hpp
+  collision/collision_group.hpp
+  simulation/module.hpp
+  simulation/world.hpp
+  simulation/constraint_solver.hpp
+  constraint/module.hpp
+  constraint/constraint_base.hpp
+  constraint/dynamic_joint_constraint.hpp
+  constraint/joint_constraint.hpp
+  constraint/joint_coulomb_friction_constraint.hpp
+)
+
+set(dartpy_sources
+  dartpy.cpp
+  common/composite.cpp
+  common/module.cpp
+  common/logging.cpp
+  common/observer.cpp
+  common/resource.cpp
+  common/resource_retriever.cpp
+  common/stopwatch.cpp
+  common/string.cpp
+  common/subject.cpp
+  common/uri.cpp
+  utils/module.cpp
+  utils/dart_loader.cpp
+  utils/resource_retriever.cpp
+  utils/skel_parser.cpp
+  utils/sdf_parser.cpp
+  utils/mjcf_parser.cpp
+  optimizer/module.cpp
+  optimizer/function.cpp
+  optimizer/problem.cpp
+  optimizer/solver.cpp
+  optimizer/gradient_descent.cpp
+  math/module.cpp
+  math/constants.cpp
+  math/geometry.cpp
+  math/random.cpp
+  math/eigen_geometry.cpp
+  dynamics/module.cpp
+  dynamics/entity.cpp
+  dynamics/degree_of_freedom.cpp
+  dynamics/frame.cpp
+  dynamics/jacobian_node.cpp
+  dynamics/shape.cpp
+  dynamics/shape_frame.cpp
+  dynamics/simple_frame.cpp
+  dynamics/inertia.cpp
+  dynamics/shape_node.cpp
+  dynamics/body_node.cpp
+  dynamics/joint.cpp
+  dynamics/free_joint.cpp
+  dynamics/revolute_joint.cpp
+  dynamics/euler_joint.cpp
+  dynamics/planar_joint.cpp
+  dynamics/translational_joint2d.cpp
+  dynamics/translational_joint.cpp
+  dynamics/prismatic_joint.cpp
+  dynamics/end_effector.cpp
+  dynamics/linkage.cpp
+  dynamics/screw_joint.cpp
+  dynamics/universal_joint.cpp
+  dynamics/ball_joint.cpp
+  dynamics/weld_joint.cpp
+  dynamics/zero_dof_joint.cpp
+  dynamics/chain.cpp
+  dynamics/meta_skeleton.cpp
+  dynamics/hierarchical_ik.cpp
+  dynamics/inverse_kinematics.cpp
+  dynamics/skeleton.cpp
+  collision/module.cpp
+  collision/collision_option.cpp
+  collision/collision_result.cpp
+  collision/raycast.cpp
+  collision/collision_detector.cpp
+  collision/collision_group.cpp
+  simulation/module.cpp
+  simulation/world.cpp
+  simulation/constraint_solver.cpp
+  constraint/module.cpp
+  constraint/constraint_base.cpp
+  constraint/dynamic_joint_constraint.cpp
+  constraint/joint_constraint.cpp
+  constraint/joint_coulomb_friction_constraint.cpp
+)
+
+set(dartpy_gui_headers
+  gui/module.hpp
+  gui/osg/osg.hpp
+  gui/osg/utils.hpp
+  gui/osg/support_polygon_visual.hpp
+)
+
+set(dartpy_gui_sources
+  gui/module.cpp
+  gui/osg/gui_event_handler.cpp
+  gui/osg/world_node.cpp
+  gui/osg/interactive_frame.cpp
+  gui/osg/viewer_attachment.cpp
+  gui/osg/support_polygon_visual.cpp
+  gui/osg/drag_and_drop.cpp
+  gui/osg/shadow_technique.cpp
+  gui/osg/viewer.cpp
+  gui/osg/imgui.cpp
+)
+
+if(DART_BUILD_GUI)
+  list(APPEND dartpy_headers ${dartpy_gui_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_sources})
+endif()
+
+nanobind_add_module(dartpy
+  NB_STATIC
+  ${dartpy_sources}
+)
+
+foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
+  if(TARGET ${_nb_target})
+    target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+  endif()
+endforeach()
+
+target_include_directories(dartpy
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}
 )
+target_compile_options(dartpy PRIVATE -g)
+
+if(BULLET_INCLUDE_DIR)
+  target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
+endif()
 
 set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
 )
-foreach(dartpy_library ${dartpy_libraries})
-  if(NOT TARGET ${dartpy_library})
-    message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")
+foreach(lib ${dartpy_libraries})
+  if(TARGET ${lib})
+    target_link_libraries(dartpy PRIVATE ${lib})
+    foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(_lib_includes ${lib} ${prop})
+      if(_lib_includes)
+        target_include_directories(dartpy PRIVATE ${_lib_includes})
+      endif()
+    endforeach()
+  else()
+    message(FATAL_ERROR "Required DART library not found: ${lib}")
   endif()
 endforeach()
 
-target_link_libraries(${pybind_module}
-  PUBLIC ${dartpy_libraries}
-)
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(${pybind_module} PUBLIC dart-optimizer-nlopt)
-endif()
 if(TARGET dart-collision-bullet)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
-endif()
-if(TARGET dart-collision-ode)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
-endif()
-if(TARGET dart-gui)
-  target_link_libraries(${pybind_module} PUBLIC dart-gui)
+  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_bullet_includes dart-collision-bullet ${prop})
+    if(_bullet_includes)
+      target_include_directories(dartpy PRIVATE ${_bullet_includes})
+    endif()
+  endforeach()
 endif()
 
-target_compile_definitions(${pybind_module}
-  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
+if(TARGET dart-gui)
+  target_link_libraries(dartpy PRIVATE dart-gui)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_gui_includes dart-gui ${prop})
+    if(_gui_includes)
+      target_include_directories(dartpy PRIVATE ${_gui_includes})
+    endif()
+  endforeach()
+endif()
+
+if(TARGET dart-collision-ode)
+  target_link_libraries(dartpy PRIVATE dart-collision-ode)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_ode_includes dart-collision-ode ${prop})
+    if(_ode_includes)
+      target_include_directories(dartpy PRIVATE ${_ode_includes})
+    endif()
+  endforeach()
+endif()
+
+# Surface a version string to Python.
+target_compile_definitions(dartpy
+  PRIVATE
+    DARTPY_VERSION_INFO="${DART_VERSION}"
+)
+target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
+
+set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
+
+# Copy the Python package shim into the build tree so tests can import it
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+  ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  COPYONLY
+)
+add_custom_command(
+  TARGET dartpy POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+          ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  COMMENT "Updating dartpy __init__.py"
 )
 
-if(DART_PYBIND11_EXTRA_DEFINITIONS)
-  target_compile_definitions(${pybind_module}
-    PRIVATE ${DART_PYBIND11_EXTRA_DEFINITIONS}
-  )
-endif()
-
-# Pass DART_BUILD_GUI to Python bindings so they can conditionally compile OSG support
-if(DART_BUILD_GUI)
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
+if(DEFINED DART_DARTPY_RUNTIME_DIR)
+  set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
 else()
-  target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=0)
+  set(_dartpy_output_dir "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 endif()
 
-# Remove debug postfix for dartpy
-set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
-
-# Emit the dartpy extension directly into the configured runtime directory so
-# multi-config generators (MSVC/Xcode) don't append config subfolders.
-set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
 foreach(_type LIBRARY RUNTIME ARCHIVE)
-  set_target_properties(${pybind_module} PROPERTIES
-    ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
-  )
+  if(_dartpy_output_dir)
+    set_target_properties(dartpy PROPERTIES
+      ${_type}_OUTPUT_DIRECTORY "${_dartpy_output_dir}"
+    )
+  endif()
 endforeach()
-if(CMAKE_CONFIGURATION_TYPES)
+if(CMAKE_CONFIGURATION_TYPES AND _dartpy_output_dir)
   foreach(_config ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${_config} _config_upper)
     foreach(_type LIBRARY RUNTIME ARCHIVE)
-      set_target_properties(${pybind_module} PROPERTIES
+      set_target_properties(dartpy PROPERTIES
         ${_type}_OUTPUT_DIRECTORY_${_config_upper} "${_dartpy_output_dir}"
       )
     endforeach()
   endforeach()
 endif()
 
-# Get the path to the bind module
-set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
-
-# Custom target to install (copy) the bind module. This target may require
-# `sudo` if the destination is a system directory.
-set(install_comment "Installing ${pybind_module}...")
-if(BUILD_SHARED_LIBS)
-  string(CONCAT install_comment
-    "${install_comment}\n"
-    "NOTE: ${pybind_module} is built against the DART's shared libraries. "
-    "Install the shared libraries to be able to import ${pybind_module}."
+if(DEFINED SKBUILD_PLATLIB_DIR)
+  install(TARGETS dartpy
+    LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
+  )
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
+  )
+elseif(DEFINED PYTHON_SITE_PACKAGES)
+  install(TARGETS dartpy
+    LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
+  )
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
 endif()
 
-# Install the pybind module and package stub. For scikit-build-core installs we
-# honor SKBUILD_PLATLIB_DIR; otherwise install into the traditional site-packages
-# directory.
-if(DEFINED SKBUILD_PLATLIB_DIR)
-  set(DARTPY_INSTALL_DIR "${SKBUILD_PLATLIB_DIR}/dartpy")
-else()
-  set(DARTPY_INSTALL_DIR "${PYTHON_SITE_PACKAGES}/dartpy")
-endif()
-
-install(TARGETS ${pybind_module}
-  LIBRARY DESTINATION "${DARTPY_INSTALL_DIR}"
-)
-
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-  DESTINATION "${DARTPY_INSTALL_DIR}"
-)
-
-list(REMOVE_ITEM dartpy_headers
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_pybind.h
-)
-list(REMOVE_ITEM dartpy_sources
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.cpp
-)
 dart_format_add(${dartpy_headers} ${dartpy_sources})

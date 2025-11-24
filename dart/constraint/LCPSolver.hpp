@@ -42,7 +42,7 @@ class ConstrainedGroup;
 class LCPSolver
 {
 public:
-  /// Solve constriant impulses for a constrained group
+  /// Solve constraint impulses for a constrained group
   virtual void solve(ConstrainedGroup* _group) = 0;
 
   /// Set time step

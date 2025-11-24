@@ -149,7 +149,7 @@ private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
 
   /// Get change in relative velocity at contact point due to external impulse
-  /// \param[out] relVel Change in relative velocity at contact point of the
+  /// @param[out] relVel Change in relative velocity at contact point of the
   /// two colliding bodies.
   void getRelVelocity(double* relVel);
 
@@ -176,7 +176,7 @@ private:
   /// Set secondary slip compliance
   void setSecondarySlipCompliance(double slip);
 
-  /// Get contact object associated witht this constraint
+  /// Get contact object associated with this constraint
   const collision::Contact& getContact() const;
 
 private:
@@ -249,7 +249,7 @@ private:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 // TODO(JS): Create SelfContactConstraint.

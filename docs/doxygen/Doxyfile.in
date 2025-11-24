@@ -182,7 +182,7 @@ JAVADOC_AUTOBRIEF      = YES
 # If the QT_AUTOBRIEF tag is set to YES then doxygen will interpret the first
 # line (until the first dot) of a Qt-style comment as the brief description. If
 # set to NO, the Qt-style will behave just like regular Qt-style comments (thus
-# requiring an explicit \brief command for a brief description.)
+# requiring an explicit @brief command for a brief description.)
 # The default value is: NO.
 
 QT_AUTOBRIEF           = NO
@@ -223,7 +223,7 @@ TAB_SIZE               = 4
 # name=value
 # For example adding
 # "sideeffect=@par Side Effects:\n"
-# will allow you to put the command \sideeffect (or @sideeffect) in the
+# will allow you to put the command @sideeffect (or @sideeffect) in the
 # documentation, which will result in a user-defined paragraph with heading
 # "Side Effects:". You can put \n's in the value part of an alias to insert
 # newlines.
@@ -345,7 +345,7 @@ DISTRIBUTE_GROUP_DOC   = NO
 
 # If one adds a struct or class to a group and this option is enabled, then also
 # any nested class or struct is added to the same group. By default this option
-# is disabled and one has to add nested compounds explicitly via \ingroup.
+# is disabled and one has to add nested compounds explicitly via @ingroup.
 # The default value is: NO.
 
 GROUP_NESTED_COMPOUNDS = NO
@@ -354,13 +354,13 @@ GROUP_NESTED_COMPOUNDS = NO
 # (for instance a group of public functions) to be put as a subgroup of that
 # type (e.g. under the Public Functions section). Set it to NO to prevent
 # subgrouping. Alternatively, this can be done per class using the
-# \nosubgrouping command.
+# @nosubgrouping command.
 # The default value is: YES.
 
 SUBGROUPING            = YES
 
 # When the INLINE_GROUPED_CLASSES tag is set to YES, classes, structs and unions
-# are shown inside the group in which they are included (e.g. using \ingroup)
+# are shown inside the group in which they are included (e.g. using @ingroup)
 # instead of on a separate page (for HTML and Man pages) or section (for LaTeX
 # and RTF).
 #
@@ -492,7 +492,7 @@ HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = NO
 
 # The INTERNAL_DOCS tag determines if documentation that is typed after a
-# \internal command is included. If the tag is set to NO then the documentation
+# @internal command is included. If the tag is set to NO then the documentation
 # will be excluded. Set it to YES to include the internal documentation.
 # The default value is: NO.
 
@@ -601,33 +601,33 @@ SORT_BY_SCOPE_NAME     = NO
 STRICT_PROTO_MATCHING  = NO
 
 # The GENERATE_TODOLIST tag can be used to enable (YES) or disable (NO) the todo
-# list. This list is created by putting \todo commands in the documentation.
+# list. This list is created by putting @todo commands in the documentation.
 # The default value is: YES.
 
 GENERATE_TODOLIST      = NO
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or disable (NO) the test
-# list. This list is created by putting \test commands in the documentation.
+# list. This list is created by putting @test commands in the documentation.
 # The default value is: YES.
 
 GENERATE_TESTLIST      = YES
 
 # The GENERATE_BUGLIST tag can be used to enable (YES) or disable (NO) the bug
-# list. This list is created by putting \bug commands in the documentation.
+# list. This list is created by putting @bug commands in the documentation.
 # The default value is: YES.
 
 GENERATE_BUGLIST       = YES
 
 # The GENERATE_DEPRECATEDLIST tag can be used to enable (YES) or disable (NO)
-# the deprecated list. This list is created by putting \deprecated commands in
+# the deprecated list. This list is created by putting @deprecated commands in
 # the documentation.
 # The default value is: YES.
 
 GENERATE_DEPRECATEDLIST= YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional documentation
-# sections, marked by \if <section_label> ... \endif and \cond <section_label>
-# ... \endcond blocks.
+# sections, marked by @if <section_label> ... @endif and @cond <section_label>
+# ... @endcond blocks.
 
 ENABLED_SECTIONS       =
 
@@ -636,7 +636,7 @@ ENABLED_SECTIONS       =
 # documentation. If the initializer consists of more lines than specified here
 # it will be hidden. Use a value of 0 to hide initializers completely. The
 # appearance of the value of individual variables and macros / defines can be
-# controlled using \showinitializer or \hideinitializer command in the
+# controlled using @showinitializer or @hideinitializer command in the
 # documentation regardless of this setting.
 # Minimum value: 0, maximum value: 10000, default value: 30.
 
@@ -692,7 +692,7 @@ LAYOUT_FILE            =
 # to be installed. See also http://en.wikipedia.org/wiki/BibTeX for more info.
 # For LaTeX the style of the bibliography can be controlled using
 # LATEX_BIB_STYLE. To use this feature you need bibtex and perl available in the
-# search path. See also \cite for info how to create references.
+# search path. See also @cite for info how to create references.
 
 CITE_BIB_FILES         =
 
@@ -842,7 +842,7 @@ EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
-# that contain example code fragments that are included (see the \include
+# that contain example code fragments that are included (see the @include
 # command).
 
 EXAMPLE_PATH           =
@@ -855,7 +855,7 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 
 # If the EXAMPLE_RECURSIVE tag is set to YES then subdirectories will be
-# searched for input files to be used with the \include or \dontinclude commands
+# searched for input files to be used with the @include or @dontinclude commands
 # irrespective of the value of the RECURSIVE tag.
 # The default value is: NO.
 
@@ -863,7 +863,7 @@ EXAMPLE_RECURSIVE      = NO
 
 # The IMAGE_PATH tag can be used to specify one or more files or directories
 # that contain images that are to be included in the documentation (see the
-# \image command).
+# @image command).
 
 IMAGE_PATH             = ./
 
@@ -1004,7 +1004,7 @@ USE_HTAGS              = NO
 # If the VERBATIM_HEADERS tag is set the YES then doxygen will generate a
 # verbatim copy of the header file for each class for which an include is
 # specified. Set to NO to disable this.
-# See also: Section \class.
+# See also: Section @class.
 # The default value is: YES.
 
 VERBATIM_HEADERS       = YES
@@ -1753,7 +1753,7 @@ LATEX_SOURCE_CODE      = NO
 
 # The LATEX_BIB_STYLE tag can be used to specify the style to use for the
 # bibliography, e.g. plainnat, or ieeetr. See
-# http://en.wikipedia.org/wiki/BibTeX and \cite for more info.
+# http://en.wikipedia.org/wiki/BibTeX and @cite for more info.
 # The default value is: plain.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
@@ -2124,7 +2124,7 @@ PERL_PATH              = /usr/bin/perl
 
 CLASS_DIAGRAMS         = YES
 
-# You can define message sequence charts within doxygen comments using the \msc
+# You can define message sequence charts within doxygen comments using the @msc
 # command. Doxygen will then run the mscgen tool (see:
 # http://www.mcternan.me.uk/mscgen/)) to produce the chart and insert it in the
 # documentation. The MSCGEN_PATH tag allows you to specify the directory where
@@ -2265,8 +2265,8 @@ INCLUDED_BY_GRAPH      = YES
 #
 # Note that enabling this option will significantly increase the time of a run.
 # So in most cases it will be better to enable call graphs for selected
-# functions only using the \callgraph command. Disabling a call graph can be
-# accomplished by means of the command \hidecallgraph.
+# functions only using the @callgraph command. Disabling a call graph can be
+# accomplished by means of the command @hidecallgraph.
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
@@ -2277,8 +2277,8 @@ CALL_GRAPH             = NO
 #
 # Note that enabling this option will significantly increase the time of a run.
 # So in most cases it will be better to enable caller graphs for selected
-# functions only using the \callergraph command. Disabling a caller graph can be
-# accomplished by means of the command \hidecallergraph.
+# functions only using the @callergraph command. Disabling a caller graph can be
+# accomplished by means of the command @hidecallergraph.
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
@@ -2336,20 +2336,20 @@ INTERACTIVE_SVG        = NO
 DOT_PATH               =
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
-# contain dot files that are included in the documentation (see the \dotfile
+# contain dot files that are included in the documentation (see the @dotfile
 # command).
 # This tag requires that the tag HAVE_DOT is set to YES.
 
 DOTFILE_DIRS           =
 
 # The MSCFILE_DIRS tag can be used to specify one or more directories that
-# contain msc files that are included in the documentation (see the \mscfile
+# contain msc files that are included in the documentation (see the @mscfile
 # command).
 
 MSCFILE_DIRS           =
 
 # The DIAFILE_DIRS tag can be used to specify one or more directories that
-# contain dia files that are included in the documentation (see the \diafile
+# contain dia files that are included in the documentation (see the @diafile
 # command).
 
 DIAFILE_DIRS           =
@@ -2357,7 +2357,7 @@ DIAFILE_DIRS           =
 # When using plantuml, the PLANTUML_JAR_PATH tag should be used to specify the
 # path where java can find the plantuml.jar file. If left blank, it is assumed
 # PlantUML is not used or called during a preprocessing step. Doxygen will
-# generate a warning when it encounters a \startuml command in this case and
+# generate a warning when it encounters a @startuml command in this case and
 # will not generate output for the diagram.
 
 PLANTUML_JAR_PATH      =

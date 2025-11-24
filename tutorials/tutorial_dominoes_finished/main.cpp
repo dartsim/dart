@@ -183,7 +183,7 @@ public:
     // Compute the Jacobian time derivative
     // snippet:cpp-dominoes-lesson3b-jacobian-deriv-start
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
-    // Comptue the pseudo-inverse of the Jacobian time derivative
+    // Compute the pseudo-inverse of the Jacobian time derivative
     Eigen::MatrixXd pinv_dJ
         = dJ.transpose()
           * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity())

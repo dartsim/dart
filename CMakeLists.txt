@@ -212,7 +212,19 @@ dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
+dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
+dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
 dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
+
+# Backward compatibility: accept legacy DART_PROFILE_TEXT if provided.
+if(NOT DEFINED DART_PROFILE_BUILTIN AND DEFINED DART_PROFILE_TEXT)
+  set(DART_PROFILE_BUILTIN "${DART_PROFILE_TEXT}")
+endif()
+
+# Keep legacy variable names in scope for consumers (macros expect ENABLE_*).
+set(DART_PROFILE_TEXT "${DART_PROFILE_BUILTIN}")
+set(DART_PROFILE_ENABLE_TEXT "${DART_PROFILE_BUILTIN}")
+set(DART_PROFILE_ENABLE_TRACY "${DART_PROFILE_TRACY}")
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile
 # option `-march=native` is added to the target `dart` that enables all
@@ -235,7 +247,7 @@ dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
-dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF CATEGORY system)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(DART_BUILD_DART8 "Build experimental DART8 library" OFF CATEGORY build)
@@ -570,10 +582,8 @@ if(DART_BUILD_DART8)
 
   if(MSVC)
     add_subdirectory(tests_dart8)
-    add_subdirectory(examples_dart8)
   else()
     add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
-    add_subdirectory(examples_dart8 EXCLUDE_FROM_ALL)
   endif()
 endif()
 
@@ -664,7 +674,10 @@ endif()
 add_subdirectory(python)
 
 # Add 'ALL' target that builds everything
-set(all_target_candidates dartpy)
+set(all_target_candidates)
+if(DART_BUILD_DARTPY)
+  list(APPEND all_target_candidates dartpy)
+endif()
 if(DART_BUILD_TESTS AND BUILD_TESTING)
   list(APPEND all_target_candidates tests_and_run pytest)
 endif()
@@ -993,13 +1006,12 @@ message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target tutorials' to build all th
 message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target view_docs' to see the API documentation")
 message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install all the C++ components")
 if(TARGET dartpy)
-  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target dartpy' to build dartpy")
-  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install dartpy")
+  message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target dartpy' to build the python bindings")
 endif()
 if(TARGET coverage)
-  message(STATUS "- 'coverage'     : generage coverage report")
-  message(STATUS "- 'coverage_html': generage coverage report in html")
-  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
+  message(STATUS "- 'coverage'     : generate coverage report")
+  message(STATUS "- 'coverage_html': generate coverage report in html")
+  message(STATUS "- 'coverage_view': view generated coverage report in a browser")
 endif()
 
 #===============================================================================
