@@ -437,6 +437,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mName = _jt->name;
   basicProperties.mT_ParentBodyToJoint
       = toEigen(_jt->parent_to_joint_origin_transform);
+  const Eigen::Vector3d jointAxis = toEigen(_jt->axis);
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   if (_jt->limits) {
@@ -522,18 +523,100 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::FLOATING: {
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
+      if (_jt->limits) {
+        DART_WARN(
+            "URDF joint '{}' provides 1D limits for a floating joint. Applying "
+            "the same limits uniformly to all six degrees of freedom.",
+            _jt->name);
+        properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
+        properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
+        properties.mVelocityLowerLimits.setConstant(-_jt->limits->velocity);
+        properties.mVelocityUpperLimits.setConstant(_jt->limits->velocity);
+        properties.mForceLowerLimits.setConstant(-_jt->limits->effort);
+        properties.mForceUpperLimits.setConstant(_jt->limits->effort);
+
+        if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
+          if (std::isfinite(_jt->limits->lower)
+              && std::isfinite(_jt->limits->upper)) {
+            properties.mInitialPositions.setConstant(
+                (_jt->limits->lower + _jt->limits->upper) / 2.0);
+          } else if (std::isfinite(_jt->limits->lower)) {
+            properties.mInitialPositions.setConstant(_jt->limits->lower);
+          } else if (std::isfinite(_jt->limits->upper)) {
+            properties.mInitialPositions.setConstant(_jt->limits->upper);
+          }
+
+          properties.mRestPositions = properties.mInitialPositions;
+        }
+      }
+
+      if (_jt->dynamics) {
+        properties.mDampingCoefficients.setConstant(_jt->dynamics->damping);
+        properties.mFrictions.setConstant(_jt->dynamics->friction);
+      }
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           _parent, properties, _body);
       break;
     }
     case urdf::Joint::PLANAR: {
+      dynamics::PlanarJoint::Properties properties{
+          dynamics::GenericJoint<math::R3Space>::Properties(basicProperties)};
+      if (jointAxis.norm() > 1e-9) {
+        const Eigen::Vector3d axis = jointAxis.normalized();
+        if (axis.isApprox(Eigen::Vector3d::UnitZ())
+            || axis.isApprox(-Eigen::Vector3d::UnitZ())) {
+          properties.setXYPlane();
+        } else if (
+            axis.isApprox(Eigen::Vector3d::UnitX())
+            || axis.isApprox(-Eigen::Vector3d::UnitX())) {
+          properties.setYZPlane();
+        } else if (
+            axis.isApprox(Eigen::Vector3d::UnitY())
+            || axis.isApprox(-Eigen::Vector3d::UnitY())) {
+          properties.setZXPlane();
+        } else {
+          const Eigen::Vector3d transAxis1 = axis.unitOrthogonal();
+          const Eigen::Vector3d transAxis2
+              = axis.cross(transAxis1).normalized();
+          properties.setArbitraryPlane(transAxis1, transAxis2);
+        }
+      }
+
+      if (_jt->limits) {
+        DART_WARN(
+            "URDF joint '{}' provides 1D limits for a planar joint. Applying "
+            "the same limits uniformly to all three degrees of freedom.",
+            _jt->name);
+        properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
+        properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
+        properties.mVelocityLowerLimits.setConstant(-_jt->limits->velocity);
+        properties.mVelocityUpperLimits.setConstant(_jt->limits->velocity);
+        properties.mForceLowerLimits.setConstant(-_jt->limits->effort);
+        properties.mForceUpperLimits.setConstant(_jt->limits->effort);
+
+        if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
+          if (std::isfinite(_jt->limits->lower)
+              && std::isfinite(_jt->limits->upper)) {
+            properties.mInitialPositions.setConstant(
+                (_jt->limits->lower + _jt->limits->upper) / 2.0);
+          } else if (std::isfinite(_jt->limits->lower)) {
+            properties.mInitialPositions.setConstant(_jt->limits->lower);
+          } else if (std::isfinite(_jt->limits->upper)) {
+            properties.mInitialPositions.setConstant(_jt->limits->upper);
+          }
+
+          properties.mRestPositions = properties.mInitialPositions;
+        }
+      }
+
+      if (_jt->dynamics) {
+        properties.mDampingCoefficients.setConstant(_jt->dynamics->damping);
+        properties.mFrictions.setConstant(_jt->dynamics->friction);
+      }
+
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
-          _parent, dynamics::PlanarJoint::Properties(basicProperties), _body);
-      // TODO(MXG): Should we read in position limits? The URDF limits
-      // specification only offers one dimension of limits, but a PlanarJoint is
-      // three-dimensional. Should we assume that position limits apply to both
-      // coordinates equally? Or just don't accept the position limits at all?
+          _parent, properties, _body);
       break;
     }
     default: {
