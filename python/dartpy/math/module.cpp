@@ -30,23 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#include "math/module.hpp"
 
-namespace py = pybind11;
+#include "math/constants.hpp"
+#include "math/eigen_geometry.hpp"
+#include "math/geometry.hpp"
+#include "math/random.hpp"
 
-namespace dart {
-namespace python {
+namespace dart::python_nb {
 
-void Random(py::module& sm);
-void Geometry(py::module& sm);
-
-void dart_math(py::module& m)
+void defMathModule(nanobind::module_& m)
 {
-  auto sm = m.def_submodule("math");
-
-  Random(sm);
-  Geometry(sm);
+  defMathConstants(m);
+  defRandom(m);
+  defGeometry(m);
+  defEigenGeometry(m);
 }
 
-} // namespace python
-} // namespace dart
+} // namespace dart::python_nb

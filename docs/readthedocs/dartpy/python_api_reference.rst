@@ -1,19 +1,16 @@
 Python API Reference
-=====================
+====================
 
-The full dartpy API reference now builds directly on Read the Docs, so you no
-longer need to leave the site or rely on a separate GitHub Pages deployment.
-This page renders the documentation straight from the published ``dartpy``
-wheel, which means the members, signatures, and type hints always match the
-latest PyPI release.
+The full ``dartpy`` API reference is built directly on Read the Docs using the
+wheel pinned in ``docs/readthedocs/requirements.txt``. Sphinx imports the
+modules under ``docs/python_api/`` and auto-documents them using the installed
+package. Local builds use the compiled extension in ``build/.../python`` so the
+API pages always reflect the current nanobind bindings.
 
-.. admonition:: How these docs are generated
-
-   * RTD installs the ``dartpy`` wheel listed in :file:`docs/readthedocs/requirements.txt`.
-   * Sphinx loads the modules under :file:`docs/python_api/` and auto-documents
-     them using the installed package.
-   * Local builds can use ``pixi run docs-build`` or ``pixi run api-docs-py``
-     for the same result.
+.. note::
+   If a compatible wheel is unavailable, ``conf.py`` falls back to the stub
+   package in ``python/stubs/dartpy`` so RTD still renders the module layout.
+   Local builds can always use ``pixi run docs-build`` or ``pixi run api-docs-py``.
 
 Getting Started
 ---------------
@@ -29,28 +26,17 @@ To explore the bindings locally:
    print(world.getGravity())
    PY
 
-The sections below mirror the module layout from :file:`docs/python_api/`.
-
 Module Reference
 ----------------
 
-.. toctree::
-   :maxdepth: 2
-   :titlesonly:
+The sections below mirror the module layout from ``docs/python_api/``.
 
-   /dartpy/api/modules/common
-   /dartpy/api/modules/math
-   /dartpy/api/modules/dynamics
-   /dartpy/api/modules/simulation
-   /dartpy/api/modules/collision
-   /dartpy/api/modules/constraint
-   /dartpy/api/modules/optimizer
-   /dartpy/api/modules/utils
-   /dartpy/api/modules/gui
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+* :doc:`dartpy.common <modules/common>`
+* :doc:`dartpy.math <modules/math>`
+* :doc:`dartpy.dynamics <modules/dynamics>`
+* :doc:`dartpy.simulation <modules/simulation>`
+* :doc:`dartpy.collision <modules/collision>`
+* :doc:`dartpy.constraint <modules/constraint>`
+* :doc:`dartpy.optimizer <modules/optimizer>`
+* :doc:`dartpy.utils <modules/utils>`
+* :doc:`dartpy.gui <modules/gui>`
