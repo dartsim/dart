@@ -2,8 +2,9 @@
 
 ## Demo Browser
 
-The consolidated ImGui-based browser lives in `examples/demo_app` (see its
-README) if you want to browse multiple scenes from one window.
+The consolidated browser is moving to the Python-based hub under
+`python/demo_hub` (headless for now); the legacy C++ WIP demo_app was removed
+to avoid duplication.
 
 ## Build Each Example
 

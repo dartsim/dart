@@ -911,6 +911,29 @@ exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" 
   { arg = "build_type", default = "Release" },
 ] }
 
+# Run the Python demo hub (headless skeleton for now)
+demo-hub = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
+APP_ARGS=${APP_ARGS:-{{ app_args }}}
+export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
+python python/demo_hub/app.py ${APP_ARGS} "$@"
+""",
+  "demo-hub",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "app_args", default = "" },
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Debug" },
+], env = { PYTHONUNBUFFERED = "1" } }
+
 # Launch a Python entrypoint under debugpy for IDE attach
 debug-py = { cmd = [
   "bash",
@@ -935,7 +958,7 @@ exec python -m debugpy --listen ${PORT} --wait-for-client "$SCRIPT" ${SCRIPT_ARG
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "script", default = "python/examples/hello_world/main.py" },
+  { arg = "script", default = "python/demo_hub/app.py" },
   { arg = "script_args", default = "" },
   { arg = "port", default = "5678" },
   { arg = "dartpy", default = "ON" },
@@ -973,7 +996,7 @@ exec "${DEBUGGER[@]}" python "$SCRIPT" ${SCRIPT_ARGS}
     "{{ build_type }}",
   ] },
 ], args = [
-  { arg = "script", default = "python/examples/hello_world/main.py" },
+  { arg = "script", default = "python/demo_hub/app.py" },
   { arg = "script_args", default = "" },
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Debug" },

@@ -142,14 +142,19 @@ Pixi automatically detects whether optional Ninja targets (for example `pytest` 
 Use the pixi helpers so you do not have to hand-wire `PYTHONPATH` or debugger flags:
 
 ```bash
-# Wait for an IDE to attach via debugpy (default script: python/examples/hello_world/main.py)
-PORT=5678 SCRIPT=python/examples/hello_world/main.py pixi run debug-py
+# Wait for an IDE to attach via debugpy (default script: python/demo_hub/app.py)
+PORT=5678 SCRIPT=python/demo_hub/app.py pixi run debug-py
 
 # Launch the same entrypoint under gdb (or lldb fallback) to step into C++
-SCRIPT=python/examples/hello_world/main.py BUILD_TYPE=Debug pixi run debug-py-native
+SCRIPT=python/demo_hub/app.py BUILD_TYPE=Debug pixi run debug-py-native
+
+# Run the demo hub headless without a debugger
+BUILD_TYPE=Debug pixi run demo-hub -- --list
 ```
 
-Both tasks default to a Debug build of dartpy. Pass extra arguments to the Python entrypoint with `SCRIPT_ARGS="--your --flags"` or point `SCRIPT` at a different app (for example the consolidated demo hub when it lands).
+All tasks default to a Debug build of dartpy. Pass extra arguments to the Python
+entrypoint with `SCRIPT_ARGS="--your --flags"` or point `SCRIPT` at a different
+app when needed.
 
 ## Clone the Repository
 

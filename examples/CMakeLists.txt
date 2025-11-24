@@ -6,11 +6,6 @@ project(dart-examples)
 add_subdirectory(hello_world)
 add_subdirectory(speed_test)
 
-# Consolidated GUI demo application
-if(DART_BUILD_DEMO_APP)
-  add_subdirectory(demo_app)
-endif()
-
 # OSG renderer examples
 add_subdirectory(add_delete_skels)
 add_subdirectory(atlas_puppet)
