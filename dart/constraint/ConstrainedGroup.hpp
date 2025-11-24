@@ -37,6 +37,8 @@
 
 #include <dart/constraint/Fwd.hpp>
 
+#include <dart/Export.hpp>
+
 #include <Eigen/Dense>
 
 #include <memory>
@@ -57,7 +59,7 @@ class ConstraintSolver;
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
 /// @sa class ConstraintSolver
-class ConstrainedGroup
+class DART_API ConstrainedGroup
 {
 public:
   //----------------------------------------------------------------------------
