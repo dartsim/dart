@@ -91,14 +91,14 @@ GroupPtr Group::cloneGroup(const std::string& cloneName) const
       "Attempting to clone a ReferentialSkeleton that doesn't include any "
       "BodyNodes but including some Joints or DegreeOfFreedoms. This will lead "
       "to dangling Joints or DegreeOfFreedoms in the cloned "
-      "ReferentialSkeleton because it only holds the stong reference to the "
+      "ReferentialSkeleton because it only holds the strong reference to the "
       "BodyNodes but not others.");
 
-  // Array for Skeleton clones that will be collected durig cloning BodyNodes,
+  // Array for Skeleton clones that will be collected during cloning BodyNodes,
   // Joints, DegreeOfFreedoms.
   //
   // The clones will not be destroyed even after the map is destroyed because
-  // the new Linkage will hold the skeleton by holding the strong referecnes of
+  // the new Linkage will hold the skeleton by holding the strong references of
   // the body nodes.
   std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
   mapToSkeletonClones.reserve(mSkeletons.size());

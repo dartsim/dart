@@ -583,7 +583,7 @@ TEST(DartLoader, parseVisualCollisionName)
   auto body1 = robot->getBodyNode(1);
   ASSERT_TRUE(nullptr != body1);
   ASSERT_EQ(body1->getNumShapeNodes(), 2);
-  // The ShapeNode naming pattern is infered from
+  // The ShapeNode naming pattern is inferred from
   // BodyNode::createShapeNodeWith(const ShapePtr& shape) sot this test could
   // fail if the naming pattern in the function is changed.
   EXPECT_EQ(

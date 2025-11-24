@@ -230,7 +230,7 @@ public:
     return *this;
   }
 
-  /// Assignemnt operator for WeakDegreeOfFreedomPtrs
+  /// Assignment operator for WeakDegreeOfFreedomPtrs
   template <class OtherDofT, class OtherBodyNodeT>
   TemplateWeakDegreeOfFreedomPtr& operator=(
       const TemplateWeakDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _weakPtr)

@@ -88,7 +88,7 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
   mNormals.clear();
   mIndices.clear();
 
-  // Cound the total numbers of vertices and indices.
+  // Count the total numbers of vertices and indices.
   auto mNumVertices = 0u;
   auto mNumIndices = 0u;
   for (auto i = 0u; i < scene->mNumMeshes; ++i) {

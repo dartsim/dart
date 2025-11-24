@@ -254,7 +254,7 @@ public:
       const Frame* _relativeTo, const Frame* _inCoordinatesOf) const;
 
   /// Return the linear acceleration of the center of mass, expressed in terms
-  /// of arbitary Frames
+  /// of arbitrary Frames
   Eigen::Vector3d getCOMLinearAcceleration(
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
@@ -727,7 +727,7 @@ public:
   /// last two parameters specify frames of the first two parameters.
   /// Coordinate transformations are applied when needed. The point of
   /// application and the force in local coordinates are stored in mContacts.
-  /// When conversion is needed, make sure the transformations are avaialble.
+  /// When conversion is needed, make sure the transformations are available.
   void addExtForce(
       const Eigen::Vector3d& _force,
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
@@ -934,13 +934,13 @@ protected:
   virtual void updatePartialAcceleration() const;
 
   /// Update articulated body inertia for forward dynamics.
-  /// @param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateArtInertia(double _timeStep) const;
 
   /// Update bias force associated with the articulated body inertia for forward
   /// dynamics.
   /// @param[in] _gravity Vector of gravitational acceleration
-  /// @param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   virtual void updateBiasForce(
       const Eigen::Vector3d& _gravity, double _timeStep);
 
@@ -993,7 +993,7 @@ protected:
   /// Update the joint impulse for forward dynamics.
   virtual void updateJointImpulseFD();
 
-  /// Update constrained terms due to the constraint impulses for foward
+  /// Update constrained terms due to the constraint impulses for forward
   /// dynamics.
   virtual void updateConstrainedTerms(double _timeStep);
 
@@ -1205,7 +1205,7 @@ protected:
   /// Cache data for arbitrary spatial value
   Eigen::Vector6d mArbitrarySpatial;
 
-  //------------------------- Impulse-based Dyanmics ---------------------------
+  //------------------------- Impulse-based Dynamics ---------------------------
   /// Velocity change due to to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mDelV;
