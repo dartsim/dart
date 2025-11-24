@@ -116,7 +116,9 @@ void defEigenGeometry(nb::module_& m)
             self.translation() = toVector3(translation);
           },
           nb::arg("translation"))
-      .def("rotation", [](const Isometry& self) { return self.linear(); })
+      .def(
+          "rotation",
+          [](const Isometry& self) { return Eigen::Matrix3d(self.linear()); })
       .def(
           "set_rotation",
           [](Isometry& self, const Eigen::Matrix3d& rotation) {

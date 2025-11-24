@@ -261,6 +261,20 @@ where each x[i], w[i] satisfies:
 - Uses impulse bounds to enforce constraints
 - Tracks lifetime for stability
 
+#### RevoluteJointConstraint
+
+**File:** `dart/constraint/RevoluteJointConstraint.hpp`
+
+**Role:** Hinge-style closed-loop constraint between two BodyNodes (or a
+BodyNode and the world) that preserves one rotational DOF about a specified
+axis.
+
+**Key Features:**
+
+- 3 positional rows keep the anchor coincident
+- 2 angular rows align hinge axes while allowing rotation about the axis
+- Shares ERP/CFM tuning knobs with other dynamic joint constraints
+
 #### ServoMotorConstraint
 
 **File:** `dart/constraint/ServoMotorConstraint.hpp`
@@ -596,6 +610,7 @@ auto solver = std::make_shared<BoxedLcpConstraintSolver>(primary, secondary);
 - `dart/constraint/BoxedLcpConstraintSolver.hpp`
 - `dart/constraint/ContactConstraint.hpp`
 - `dart/constraint/JointConstraint.hpp`
+- `dart/constraint/RevoluteJointConstraint.hpp`
 - `dart/constraint/JointLimitConstraint.hpp`
 - `dart/constraint/ServoMotorConstraint.hpp`
 - `dart/constraint/BoxedLcpSolver.hpp`

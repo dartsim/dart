@@ -59,13 +59,6 @@ install(
   COMPONENT headers
 )
 
-# Compatibility install for legacy Dantzig include path
-install(
-  FILES ${math_lcp_dantzig_hdrs}
-  DESTINATION include/dart/math/lcp/Dantzig
-  COMPONENT headers
-)
-
 if(math_lcp_pivoting_hdrs)
   install(
     FILES ${math_lcp_pivoting_hdrs}

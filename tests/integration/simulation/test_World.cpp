@@ -56,6 +56,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
@@ -566,6 +567,39 @@ simulation::WorldPtr createWorld()
 }
 
 //==============================================================================
+simulation::WorldPtr createWorldWithRevoluteConstraint()
+{
+  simulation::WorldPtr world
+      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+  DART_ASSERT(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1.0 / 2000);
+
+  const auto dof = world->getSkeleton(0)->getNumDofs();
+  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
+  initPose[20] = 3.14159 * 0.4;
+  initPose[23] = 3.14159 * 0.4;
+  initPose[26] = 3.14159 * 0.4;
+  initPose[29] = 3.14159 * 0.4;
+  world->getSkeleton(0)->setPositions(initPose);
+
+  BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
+  BodyNode* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
+  EXPECT_TRUE(bd1 != nullptr);
+  EXPECT_TRUE(bd2 != nullptr);
+
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+
+  auto hinge = std::make_shared<constraint::RevoluteJointConstraint>(
+      bd1, bd2, jointPos, Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitY());
+  world->getConstraintSolver()->addConstraint(hinge);
+
+  return world;
+}
+
+//==============================================================================
 TEST(World, SetNewConstraintSolver)
 {
   auto world = createWorld();
@@ -589,4 +623,29 @@ TEST(World, SetNewConstraintSolver)
   world->setConstraintSolver(std::move(solver2));
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
+}
+
+//==============================================================================
+TEST(World, RevoluteJointConstraintBasics)
+{
+  auto world = createWorldWithRevoluteConstraint();
+  ASSERT_TRUE(world);
+  ASSERT_EQ(world->getConstraintSolver()->getNumConstraints(), 1);
+
+  auto* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
+  auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+
+  for (int i = 0; i < 200; ++i)
+    world->step();
+
+  const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
+  const Eigen::Vector3d pos2 = bd2->getTransform() * offset;
+  EXPECT_LT((pos1 - pos2).norm(), 5e-2);
+
+  const Eigen::Vector3d axis1
+      = bd1->getTransform().linear() * Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d axis2
+      = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
+  EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
 }
