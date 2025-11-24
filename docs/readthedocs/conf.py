@@ -9,28 +9,18 @@ import re
 import shutil
 import subprocess
 import sys
-import warnings
 from datetime import datetime
 from pathlib import Path
 
-from sphinx.deprecation import RemovedInSphinx90Warning
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
 
-warnings.filterwarnings(
-    "ignore",
-    message="pkg_resources is deprecated as an API.*",
-    category=UserWarning,
-)
-warnings.filterwarnings(
-    "ignore",
-    category=RemovedInSphinx90Warning,
-    module=r"sphinx_tabs\.tabs",
-)
-
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
+EXTENSIONS_DIR = DOCS_ROOT / "_ext"
+if str(EXTENSIONS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXTENSIONS_DIR))
 
 
 def _find_repo_root(docs_root: Path) -> Path:
