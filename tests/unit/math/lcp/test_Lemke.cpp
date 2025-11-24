@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../helpers/GTestUtils.hpp"
+#include "helpers/GTestUtils.hpp"
 #include "dart/math/lcp/Lemke.hpp"
 
 #include <gtest/gtest.h>
