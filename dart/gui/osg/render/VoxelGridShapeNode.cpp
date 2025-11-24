@@ -184,9 +184,9 @@ void VoxelGridShapeNode::extractData(bool /*firstTime*/)
   std::size_t boxIndex = 0u;
   for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
        ++it) {
-    auto threashold = tree->getOccupancyThres();
+    auto threshold = tree->getOccupancyThres();
 
-    if (it->getOccupancy() < threashold)
+    if (it->getOccupancy() < threshold)
       continue;
 
     if (boxIndex < mVoxelNodes.size()) {

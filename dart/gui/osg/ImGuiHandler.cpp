@@ -57,7 +57,7 @@ namespace osg {
 // Special keys that are usually greater than 512 in osgGA
 //
 // Important Note: Dear ImGui expects the control Keys indices not to be greater
-// thant 511. It actually uses an array of 512 elements. However, OSG has
+// than 511. It actually uses an array of 512 elements. However, OSG has
 // indices greater than that. So here I do a conversion for special keys between
 // ImGui and OSG.
 enum ConvertedKey : int

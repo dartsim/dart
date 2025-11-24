@@ -64,10 +64,10 @@ public:
   /// @brief Get dimension
   std::size_t getDimension() const;
 
-  /// @brief Set initial guess for opimization parameters
+  /// @brief Set initial guess for optimization parameters
   void setInitialGuess(const Eigen::VectorXd& _initGuess);
 
-  /// @brief Set initial guess for opimization parameters
+  /// @brief Set initial guess for optimization parameters
   const Eigen::VectorXd& getInitialGuess() const;
 
   /// @brief Add a seed for the Solver to use as a hint for the neighborhood of
