@@ -34,7 +34,7 @@
 #include "InputHandler.hpp"
 #include "WamWorld.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/All.hpp>
 
@@ -56,7 +56,7 @@ int main()
 
   ::osg::ref_ptr<WamWorld> node = new WamWorld(world, wam);
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 

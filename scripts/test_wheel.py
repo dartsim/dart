@@ -130,11 +130,10 @@ for module_name in optional_modules:
     try:
         module = getattr(dartpy, module_name)
         print(f'  ✓ dartpy.{module_name}')
-        # If gui exists, check for osg
-        if module_name == 'gui' and hasattr(module, 'osg'):
-            print(f'    ✓ dartpy.gui.osg')
-        elif module_name == 'gui':
-            print(f'    ⚠ dartpy.gui.osg not available (expected on macOS)')
+        if module_name == 'gui':
+            marker = '✓' if hasattr(module, 'Viewer') else '⚠'
+            detail = 'Viewer available' if marker == '✓' else 'Viewer missing'
+            print(f'    {marker} dartpy.gui ({detail})')
     except AttributeError as e:
         print(f'  ⚠ dartpy.{module_name} not available (optional)')
 

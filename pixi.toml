@@ -29,7 +29,7 @@ libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
 libsdformat = ">=16.0.0,<17"
 myst-parser = "*"
-nanobind = ">=2.4.0"
+nanobind = ">=2.9.2"
 ninja = ">=1.12.1,<2"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
@@ -40,6 +40,7 @@ pkg-config = ">=0.29.2,<0.30"
 prettier = ">=3.4.2,<4"
 pytest = ">=8.3.5,<9"
 scikit-build-core = ">=0.10"
+sccache = ">=0.8.1,<0.9"
 setuptools = ">=80.1.0,<81"
 spdlog = ">=1.15.3,<2"
 sphinx = "*"
@@ -1121,6 +1122,7 @@ libgl-devel = ">=1.7"
 libglu = ">=9.0"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
+vulkan-headers = ">=1.2,<2"
 
 ################################################################################
 # osx-64
@@ -1685,9 +1687,9 @@ PY
 # IMPORTANT NOTES:
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
-# - DART_BUILD_GUI controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
+# - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
 # - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI=ON enables dartpy.gui.osg Python bindings on all platforms
+# - DART_BUILD_GUI=ON enables dartpy.gui Python bindings on all platforms
 
 [feature.py312-wheel]
 channels = ["conda-forge"]

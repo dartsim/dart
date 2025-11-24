@@ -33,12 +33,12 @@
 #include "dart/math/lcp/ODELCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/Dantzig/Lcp.hpp"
 #include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <cstdio>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 ODELCPSolver::ODELCPSolver()
@@ -223,4 +223,4 @@ bool ODELCPSolver::checkIfSolution(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace dart::math
