@@ -62,7 +62,8 @@ enum TypeOfDOF
 
 //==============================================================================
 /// Add an end-effector to the last link of the given robot
-void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
+inline void addEndEffector(
+    SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 {
   // Create the end-effector node with a random dimension
   BodyNode::Properties node(BodyNode::AspectProperties("ee"));
@@ -80,7 +81,7 @@ void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 }
 
 //==============================================================================
-std::pair<Joint*, BodyNode*> add1DofJoint(
+inline std::pair<Joint*, BodyNode*> add1DofJoint(
     SkeletonPtr skel,
     BodyNode* parent,
     const BodyNode::Properties& node,
@@ -131,7 +132,7 @@ std::pair<Joint*, BodyNode*> add1DofJoint(
 
 //==============================================================================
 /// Creates an arbitrary three-link robot consisting of Single-DOF joints
-SkeletonPtr createThreeLinkRobot(
+inline SkeletonPtr createThreeLinkRobot(
     Vector3d dim1,
     TypeOfDOF type1,
     Vector3d dim2,
@@ -219,7 +220,7 @@ SkeletonPtr createThreeLinkRobot(
 
 //==============================================================================
 /// Creates an arbitrary two-link robot consisting of Single-DOF joints
-SkeletonPtr createTwoLinkRobot(
+inline SkeletonPtr createTwoLinkRobot(
     Vector3d dim1,
     TypeOfDOF type1,
     Vector3d dim2,
@@ -241,7 +242,7 @@ SkeletonPtr createTwoLinkRobot(
 //==============================================================================
 /// Creates a N link manipulator with the given dimensions where each joint is
 /// the specified type
-SkeletonPtr createNLinkRobot(
+inline SkeletonPtr createNLinkRobot(
     int _n, Vector3d dim, TypeOfDOF type, bool finished = false)
 {
   DART_ASSERT(_n > 0);
@@ -306,7 +307,7 @@ SkeletonPtr createNLinkRobot(
 /// Creates a N link pendulum with the given dimensions where each joint is
 /// the specified type. The each offset from the joint position to the child
 /// body is specified.
-SkeletonPtr createNLinkPendulum(
+inline SkeletonPtr createNLinkPendulum(
     size_t numBodyNodes,
     const Vector3d& dim,
     TypeOfDOF type,
@@ -375,7 +376,7 @@ SkeletonPtr createNLinkPendulum(
 }
 
 //==============================================================================
-SkeletonPtr createGround(
+inline SkeletonPtr createGround(
     const Eigen::Vector3d& _size,
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
@@ -403,7 +404,7 @@ SkeletonPtr createGround(
 }
 
 //==============================================================================
-SkeletonPtr createObject(
+inline SkeletonPtr createObject(
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
 {
@@ -426,7 +427,7 @@ SkeletonPtr createObject(
 }
 
 //==============================================================================
-SkeletonPtr createSphere(
+inline SkeletonPtr createSphere(
     const double _radius,
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
 {
@@ -442,7 +443,7 @@ SkeletonPtr createSphere(
 }
 
 //==============================================================================
-SkeletonPtr createBox(
+inline SkeletonPtr createBox(
     const Eigen::Vector3d& _size,
     const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())

@@ -69,8 +69,37 @@ dart_build_tests(
 )
 
 if(TARGET dart-utils)
-  dart_add_test("integration" INTEGRATION_dynamics_Dynamics dynamics/test_Dynamics.cpp)
-  target_link_libraries(INTEGRATION_dynamics_Dynamics dart-utils)
+  set(DYNAMICS_TEST_FIXTURE dynamics/DynamicsTestFixture.cpp)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsJacobians
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsJacobians.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsJacobians dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsFiniteDifference
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsFiniteDifference.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsFiniteDifference dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsEquations
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsEquations.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsEquations dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsCenterOfMass
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsCenterOfMass.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsCenterOfMass dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsImpulse
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsImpulse.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsImpulse dart-utils)
+
+  dart_add_test("integration" INTEGRATION_dynamics_DynamicsHybrid
+    ${DYNAMICS_TEST_FIXTURE}
+    dynamics/test_DynamicsHybrid.cpp)
+  target_link_libraries(INTEGRATION_dynamics_DynamicsHybrid dart-utils)
 
   dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_Joints.cpp)
   target_link_libraries(INTEGRATION_dynamics_Joints dart-utils)

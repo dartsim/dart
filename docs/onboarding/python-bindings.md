@@ -55,7 +55,7 @@ dartpy/
 ├── constraint    # Constraint solving
 ├── simulation    # World simulation
 ├── utils         # File parsers (URDF, SDF, SKEL, MJCF)
-└── gui.osg       # 3D visualization (OpenSceneGraph + ImGui)
+└── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
 
 **Source**: See `python/dartpy/` directory for module implementations
@@ -88,9 +88,9 @@ positions = skel.getPositions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI=ON`
+**Issue**: `dartpy.gui` was not available in wheels despite `DART_BUILD_GUI=ON`
 
-**Root Cause**: Python bindings previously checked for an undefined `HAVE_DART_GUI_OSG` preprocessor macro
+**Root Cause**: Python bindings previously checked for an undefined GUI feature macro
 
 **Solution**:
 
@@ -206,7 +206,7 @@ for _ in range(100):
 ### Pattern 2: Visualization with Custom Logic
 
 ```python
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def customPreStep(self):
         # Apply controls before physics step
         pass
@@ -218,7 +218,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 world = dart.simulation.World()
 node = MyWorldNode(world)
 
-viewer = dart.gui.osg.Viewer()
+viewer = dart.gui.Viewer()
 viewer.addWorldNode(node)
 viewer.run()
 ```

@@ -212,7 +212,7 @@ class Controller:
         # snippet:py-dominoes-lesson3b-control-law-end
 
 
-class DominoEventHandler(dart.gui.osg.GUIEventHandler):
+class DominoEventHandler(dart.gui.GUIEventHandler):
     def __init__(
         self,
         world: dart.simulation.World,
@@ -231,10 +231,10 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
         self.push_countdown = 0
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
 
-        gea = dart.gui.osg.GUIEventAdapter
+        gea = dart.gui.GUIEventAdapter
         key = ea.getKey()
 
         if not self.has_ever_run:
@@ -342,7 +342,7 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
         # snippet:py-dominoes-lesson1c-delete-end
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(
         self,
         world: dart.simulation.World,
@@ -439,7 +439,7 @@ def main():
     handler = DominoEventHandler(world, controller)
     node = CustomWorldNode(world, handler)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
 

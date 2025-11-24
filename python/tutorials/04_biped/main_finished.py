@@ -165,7 +165,7 @@ class Controller:
         print(f"wheel speed = {self.speed:.2f}")
 
 
-class BipedEventHandler(dart.gui.osg.GUIEventHandler):
+class BipedEventHandler(dart.gui.GUIEventHandler):
     def __init__(self, world: dart.simulation.World, controller: Controller):
         super().__init__()
         self.world = world
@@ -174,10 +174,10 @@ class BipedEventHandler(dart.gui.osg.GUIEventHandler):
         self.push_positive = True
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
 
-        gea = dart.gui.osg.GUIEventAdapter
+        gea = dart.gui.GUIEventAdapter
         key = ea.getKey()
         if key == gea.KEY_Comma:
             self.force_countdown = DEFAULT_COUNTDOWN
@@ -211,7 +211,7 @@ class BipedEventHandler(dart.gui.osg.GUIEventHandler):
             self.force_countdown -= 1
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, handler):
         super().__init__(world)
         self.handler = handler
@@ -436,7 +436,7 @@ def main():
     handler = BipedEventHandler(world, controller)
     node = CustomWorldNode(world, handler)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
     viewer.addInstructionText("space bar: simulation on/off")

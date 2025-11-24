@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <Eigen/Core>
 
@@ -51,15 +51,15 @@ int main()
          Eigen::Vector3d(0.4, 0.35, 0.75),
          Eigen::Vector3d(-0.35, 0.4, 0.7)};
 
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
 
   // Add a grid for reference.
-  auto grid = new dart::gui::osg::GridVisual();
+  auto grid = new dart::gui::GridVisual();
   grid->setOffset(Eigen::Vector3d::Zero());
   viewer.addAttachment(grid);
 
   // Attach the polyhedron visual and customize its colors.
-  auto polyhedron = new dart::gui::osg::PolyhedronVisual();
+  auto polyhedron = new dart::gui::PolyhedronVisual();
   polyhedron->setVertices(vertices);
   polyhedron->setSurfaceColor(Eigen::Vector4d(0.1, 0.8, 0.6, 0.5));
   polyhedron->setWireframeColor(Eigen::Vector4d(0.05, 0.05, 0.05, 1.0));
