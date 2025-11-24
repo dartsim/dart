@@ -193,12 +193,14 @@ void RevoluteJointConstraint::update()
 
   mJacobian1.row(3).setZero();
   mJacobian1.row(4).setZero();
-  mJacobian1.block<2, 3>(3, 0) = mPerpBasis;
+  mJacobian1.block<2, 3>(3, 0)
+      = mPerpBasis * mBodyNode1->getTransform().linear();
 
   if (mBodyNode2) {
     mJacobian2.row(3).setZero();
     mJacobian2.row(4).setZero();
-    mJacobian2.block<2, 3>(3, 0) = mPerpBasis;
+    mJacobian2.block<2, 3>(3, 0)
+        = mPerpBasis * mBodyNode2->getTransform().linear();
   }
 
   if (mBodyNode2) {
