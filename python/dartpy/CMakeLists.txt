@@ -44,10 +44,12 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
+set(_dartpy_nanobind_min_version 2.4.1)
+
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
 set(_dartpy_nanobind_found FALSE)
 if(DART_USE_SYSTEM_NANOBIND)
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 else()
   if(NOT DEFINED nanobind_DIR)
@@ -65,7 +67,7 @@ else()
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
     set(nanobind_DIR "${nanobind_ROOT}" CACHE PATH "nanobind CMake package path" FORCE)
   endif()
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 endif()
 
@@ -259,7 +261,15 @@ foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       # Silence format warnings from nanobind sources that become errors under
       # our global -Werror. These are third-party sources.
-      target_compile_options(${_nb_target} PRIVATE -Wno-format -Wno-format-security)
+      target_compile_options(
+        ${_nb_target}
+        PRIVATE
+          -Wno-format
+          -Wno-format-security
+          -Wno-error
+          -Wno-error=format
+          -Wno-error=format-security
+      )
     endif()
   endif()
 endforeach()
