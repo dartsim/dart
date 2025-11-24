@@ -93,6 +93,15 @@ public:
   /// Set the transparency of the Shape
   void setAlpha(const double alpha);
 
+  /// Reset the color back to the default and mark it as unspecified.
+  void resetColor();
+
+  /// True if no explicit color has been assigned to this VisualAspect.
+  bool usesDefaultColor() const;
+
+  /// Default RGBA color used when no explicit color is set.
+  static Eigen::Vector4d getDefaultRGBA();
+
   /// Get color
   Eigen::Vector3d getColor() const;
 
@@ -124,12 +133,15 @@ public:
   CollisionAspect(const CollisionAspect&) = delete;
   CollisionAspect(const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Collidable)
-  // void setCollidable(const bool& value);
-  // const bool& getCollidable() const;
+  void setCollidable(const bool& value);
+  const bool& getCollidable() const;
 
   /// Return true if this body can collide with others bodies
   bool isCollidable() const;
+
+protected:
+  void setComposite(common::Composite* newComposite) override;
+  void loseComposite(common::Composite* oldComposite) override;
 };
 
 //==============================================================================

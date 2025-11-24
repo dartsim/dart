@@ -55,9 +55,9 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
     mEndTime(0.0),
     mFrame(0),
     mElapsedTime(0.0),
-    mDesiredGlobalSwingLegAngleOnSagital(0.0),
+    mDesiredGlobalSwingLegAngleOnSagittal(0.0),
     mDesiredGlobalSwingLegAngleOnCoronal(0.0),
-    mDesiredGlobalPelvisAngleOnSagital(0.0),
+    mDesiredGlobalPelvisAngleOnSagittal(0.0),
     mDesiredGlobalPelvisAngleOnCoronal(0.0)
 {
   int dof = mSkeleton->getNumDofs();
@@ -66,8 +66,8 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   mDesiredJointPositionsBalance = Eigen::VectorXd::Zero(dof);
   mKp = Eigen::VectorXd::Zero(dof);
   mKd = Eigen::VectorXd::Zero(dof);
-  mSagitalCd = Eigen::VectorXd::Zero(dof);
-  mSagitalCv = Eigen::VectorXd::Zero(dof);
+  mSagittalCd = Eigen::VectorXd::Zero(dof);
+  mSagittalCv = Eigen::VectorXd::Zero(dof);
   mCoronalCd = Eigen::VectorXd::Zero(dof);
   mCoronalCv = Eigen::VectorXd::Zero(dof);
   mTorque = Eigen::VectorXd::Zero(dof);
@@ -93,8 +93,9 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
 
   mCoronalLeftHip = mSkeleton->getDof("l_leg_hpx")->getIndexInSkeleton();  // 10
   mCoronalRightHip = mSkeleton->getDof("r_leg_hpx")->getIndexInSkeleton(); // 11
-  mSagitalLeftHip = mSkeleton->getDof("l_leg_hpy")->getIndexInSkeleton();  // 13
-  mSagitalRightHip = mSkeleton->getDof("r_leg_hpy")->getIndexInSkeleton(); // 14
+  mSagittalLeftHip = mSkeleton->getDof("l_leg_hpy")->getIndexInSkeleton(); // 13
+  mSagittalRightHip
+      = mSkeleton->getDof("r_leg_hpy")->getIndexInSkeleton(); // 14
 }
 
 //==============================================================================
@@ -149,26 +150,27 @@ void State::computeControlForce(double _timestep)
   // Update desired joint angles with balance feedback. Equation (1) in the
   // paper
   mDesiredJointPositionsBalance = mDesiredJointPositions
-                                  + getSagitalCOMDistance() * mSagitalCd
-                                  + getSagitalCOMVelocity() * mSagitalCv
+                                  + getSagittalCOMDistance() * mSagittalCd
+                                  + getSagittalCOMVelocity() * mSagittalCv
                                   + getCoronalCOMDistance() * mCoronalCd
                                   + getCoronalCOMVelocity() * mCoronalCv;
 
-  //  cout << "Sagital D: " << getSagitalCOMDistance() << endl;
-  //  cout << "Sagital V: " << getSagitalCOMVelocity() << endl;
+  //  cout << "Sagittal D: " << getSagittalCOMDistance() << endl;
+  //  cout << "Sagittal V: " << getSagittalCOMVelocity() << endl;
   //  cout << endl;
   //  cout << "Coronal D: " << getCoronalCOMDistance() << endl;
   //  cout << "Coronal V: " << getCoronalCOMVelocity() << endl;
   //  cout << endl;
 
-  //  cout << "Sagital left thigh : " << DART_DEGREE * getSagitalLeftLegAngle()
-  //  << endl; cout << "Sagital right thigh: " << DART_DEGREE *
-  //  getSagitalRightLegAngle() << endl; cout << endl; cout << "Coronal left
+  //  cout << "Sagittal left thigh : " << DART_DEGREE *
+  //  getSagittalLeftLegAngle()
+  //  << endl; cout << "Sagittal right thigh: " << DART_DEGREE *
+  //  getSagittalRightLegAngle() << endl; cout << endl; cout << "Coronal left
   //  thigh : " << DART_DEGREE * getCoronalLeftLegAngle() << endl; cout <<
   //  "Coronal right thigh: " << DART_DEGREE * getCoronalRightLegAngle() <<
   //  endl; cout << endl;
 
-  //  cout << "Sagital pelvis: " << DART_DEGREE * getSagitalPelvisAngle() <<
+  //  cout << "Sagittal pelvis: " << DART_DEGREE * getSagittalPelvisAngle() <<
   //  endl; cout << "Coronal pelvis: " << DART_DEGREE * getCoronalPelvisAngle()
   //  << endl; cout << endl;
 
@@ -249,7 +251,7 @@ Eigen::Isometry3d State::getCOMFrame() const
 }
 
 //==============================================================================
-double State::getSagitalCOMDistance()
+double State::getSagittalCOMDistance()
 {
   Eigen::Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
   Eigen::Vector3d d = getCOM() - getStanceAnklePosition();
@@ -258,7 +260,7 @@ double State::getSagitalCOMDistance()
 }
 
 //==============================================================================
-double State::getSagitalCOMVelocity()
+double State::getSagittalCOMVelocity()
 {
   Eigen::Vector3d xAxis = getCOMFrame().linear().col(0); // x-axis
   Eigen::Vector3d v = getCOMVelocity();
@@ -306,7 +308,7 @@ Eigen::Vector3d State::getRightAnklePosition() const
 }
 
 //==============================================================================
-double State::getSagitalPelvisAngle() const
+double State::getSagittalPelvisAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
@@ -345,7 +347,7 @@ double State::getCoronalPelvisAngle() const
 }
 
 //==============================================================================
-double State::getSagitalLeftLegAngle() const
+double State::getSagittalLeftLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
@@ -364,7 +366,7 @@ double State::getSagitalLeftLegAngle() const
 }
 
 //==============================================================================
-double State::getSagitalRightLegAngle() const
+double State::getSagittalRightLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
@@ -441,20 +443,20 @@ void State::_updateTorqueForStanceLeg()
 {
   // Stance leg is left leg
   if (mStanceFoot == mLeftFoot) {
-    //    std::cout << "Sagital Pelvis Angle: " << DART_DEGREE *
-    //    getSagitalPelvisAngle() << std::endl;
+    //    std::cout << "Sagittal Pelvis Angle: " << DART_DEGREE *
+    //    getSagittalPelvisAngle() << std::endl;
 
-    // Torso control on sagital plane
-    double pelvisSagitalAngle = getSagitalPelvisAngle();
-    double tauTorsoSagital
-        = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
+    // Torso control on sagittal plane
+    double pelvisSagittalAngle = getSagittalPelvisAngle();
+    double tauTorsoSagittal
+        = -5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
           - 1.0 * (0);
-    mTorque[mSagitalLeftHip] = tauTorsoSagital - mTorque[mSagitalRightHip];
+    mTorque[mSagittalLeftHip] = tauTorsoSagittal - mTorque[mSagittalRightHip];
 
-    //    cout << "Torque[mSagitalLeftHip]     : " << mTorque[mSagitalLeftHip]
-    //    << endl; cout << "Torque[mSagitalRightHip]     : " <<
-    //    mTorque[mSagitalRightHip] << endl; cout << "tauTorsoSagital: " <<
-    //    tauTorsoSagital << endl; cout << endl;
+    //    cout << "Torque[mSagittalLeftHip]     : " << mTorque[mSagittalLeftHip]
+    //    << endl; cout << "Torque[mSagittalRightHip]     : " <<
+    //    mTorque[mSagittalRightHip] << endl; cout << "tauTorsoSagittal: " <<
+    //    tauTorsoSagittal << endl; cout << endl;
 
     // Torso control on coronal plane
     double pelvisCoronalAngle = getCoronalPelvisAngle();
@@ -474,17 +476,17 @@ void State::_updateTorqueForStanceLeg()
   else if (mStanceFoot == mRightFoot) {
     //    cout << "Stance foot: Right foot" << endl;
 
-    // Torso control on sagital plane
-    double pelvisSagitalAngle = getSagitalPelvisAngle();
-    double tauTorsoSagital
-        = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
+    // Torso control on sagittal plane
+    double pelvisSagittalAngle = getSagittalPelvisAngle();
+    double tauTorsoSagittal
+        = -5000.0 * (pelvisSagittalAngle + mDesiredGlobalPelvisAngleOnSagittal)
           - 1.0 * (0);
-    mTorque[mSagitalRightHip] = tauTorsoSagital - mTorque[mSagitalLeftHip];
+    mTorque[mSagittalRightHip] = tauTorsoSagittal - mTorque[mSagittalLeftHip];
 
-    //    cout << "Torque[mSagitalLeftHip]     : " << mTorque[mSagitalLeftHip]
-    //    << endl; cout << "Torque[mSagitalRightHip]    : " <<
-    //    mTorque[mSagitalRightHip] << endl; cout << "tauTorsoSagital: " <<
-    //    tauTorsoSagital << endl; cout << endl;
+    //    cout << "Torque[mSagittalLeftHip]     : " << mTorque[mSagittalLeftHip]
+    //    << endl; cout << "Torque[mSagittalRightHip]    : " <<
+    //    mTorque[mSagittalRightHip] << endl; cout << "tauTorsoSagittal: " <<
+    //    tauTorsoSagittal << endl; cout << endl;
 
     // Torso control on coronal plane
     double pelvisCoronalAngle = getCoronalPelvisAngle();
@@ -543,9 +545,9 @@ double State::getDesiredJointPosition(const string& _jointName) const
 }
 
 //==============================================================================
-void State::setDesiredSwingLegGlobalAngleOnSagital(double _val)
+void State::setDesiredSwingLegGlobalAngleOnSagittal(double _val)
 {
-  mDesiredGlobalSwingLegAngleOnSagital = _val;
+  mDesiredGlobalSwingLegAngleOnSagittal = _val;
 }
 
 //==============================================================================
@@ -555,9 +557,9 @@ void State::setDesiredSwingLegGlobalAngleOnCoronal(double _val)
 }
 
 //==============================================================================
-void State::setDesiredPelvisGlobalAngleOnSagital(double _val)
+void State::setDesiredPelvisGlobalAngleOnSagittal(double _val)
 {
-  mDesiredGlobalPelvisAngleOnSagital = _val;
+  mDesiredGlobalPelvisAngleOnSagittal = _val;
 }
 
 //==============================================================================
@@ -631,21 +633,21 @@ double State::getDerivativeGain(int _idx) const
 //}
 
 //==============================================================================
-void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
+void State::setFeedbackSagittalCOMDistance(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
+      static_cast<int>(_index) <= mSagittalCd.size() && "Invalid index.");
 
-  mSagitalCd[_index] = _val;
+  mSagittalCd[_index] = _val;
 }
 
 //==============================================================================
-void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
+void State::setFeedbackSagittalCOMVelocity(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
+      static_cast<int>(_index) <= mSagittalCv.size() && "Invalid index.");
 
-  mSagitalCv[_index] = _val;
+  mSagittalCv[_index] = _val;
 }
 
 //==============================================================================

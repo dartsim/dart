@@ -667,7 +667,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (_withCfm) {
     _vel[mAppliedImpulseIndex]
         += _vel[mAppliedImpulseIndex] * mConstraintForceMixing;

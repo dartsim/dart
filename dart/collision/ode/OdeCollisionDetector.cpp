@@ -572,7 +572,7 @@ bool shouldUseContactHistory(
 {
   // Persist contacts for any shape pair so resting contacts stay stable across
   // detector runs. The sliding/tangential-speed checks later will filter cases
-  // where the cache should not be re-used.
+  // where the cache should not be reused.
   return object1 != nullptr && object2 != nullptr;
 }
 

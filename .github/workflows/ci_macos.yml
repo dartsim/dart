@@ -54,6 +54,9 @@ jobs:
         with:
           cache: true
 
+      - name: Add pixi to PATH (prepend to override system pixi)
+        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
@@ -76,6 +79,7 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
 
       - name: Install
@@ -100,6 +104,9 @@ jobs:
         with:
           cache: true
 
+      - name: Add pixi to PATH (prepend to override system pixi)
+        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
@@ -119,4 +126,5 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all

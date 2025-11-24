@@ -2898,7 +2898,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
 
   cache.mAugM.setZero();
 
-  // Backup the origianl internal force
+  // Backup the original internal force
   Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
   // Clear out the accelerations of the DOFs in this tree so that we can set
@@ -2938,7 +2938,7 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
   }
   cache.mAugM.triangularView<Eigen::StrictlyUpper>() = cache.mAugM.transpose();
 
-  // Restore the origianl internal force
+  // Restore the original internal force
   const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
 
   cache.mDirty.mAugMassMatrix = false;
@@ -2991,7 +2991,7 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // cache.mInvM.setZero();
 
-  // Backup the origianl internal force
+  // Backup the original internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
   // Clear out the forces of the dofs in this tree so that we can set them to
@@ -3083,7 +3083,7 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
 
-  // Backup the origianl internal force
+  // Backup the original internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
   // Clear out the forces of the dofs in this tree so that we can set them to

@@ -461,7 +461,7 @@ aiScene* MeshShape::cloneMesh() const
     mesh->mPrimitiveTypes = other->mPrimitiveTypes;
 
     if (mesh->mNumVertices > 0) {
-      // Copy verticies
+      // Copy vertices
       mesh->mVertices = new aiVector3D[mesh->mNumVertices];
       memcpy(
           mesh->mVertices,

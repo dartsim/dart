@@ -141,7 +141,7 @@ public:
   };
 
   //----------------------------------------------------------------------------
-  /// \{ \name Constructor and Destructor
+  /// \{ @name Constructor and Destructor
   //----------------------------------------------------------------------------
 
   /// Create a new Skeleton inside of a shared_ptr
@@ -192,7 +192,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Configuration
+  /// \{ @name Configuration
   //----------------------------------------------------------------------------
 
   /// Set the configuration of this Skeleton
@@ -208,7 +208,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name State
+  /// \{ @name State
   //----------------------------------------------------------------------------
 
   /// Set the State of this Skeleton [alias for setCompositeState(~)]
@@ -220,7 +220,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Properties
+  /// \{ @name Properties
   //----------------------------------------------------------------------------
 
   /// Set all properties of this Skeleton
@@ -275,11 +275,11 @@ public:
   bool isEnabledAdjacentBodyCheck() const noexcept;
 
   /// Set whether this skeleton will be updated by forward dynamics.
-  /// \param[in] _isMobile True if this skeleton is mobile.
+  /// @param[in] _isMobile True if this skeleton is mobile.
   void setMobile(bool _isMobile);
 
   /// Get whether this skeleton will be updated by forward dynamics.
-  /// \return True if this skeleton is mobile.
+  /// @return True if this skeleton is mobile.
   bool isMobile() const noexcept;
 
   /// Set time step. This timestep is used for implicit joint damping
@@ -299,7 +299,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Structural Properties
+  /// \{ @name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Create a Joint and child BodyNode pair of the given types. When creating
@@ -372,16 +372,16 @@ public:
   /// Get const soft body node whose name is _name
   const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
-  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
-  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single BodyNode of the given name if it
   /// exists.
   std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  /// @copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
-  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single BodyNode of the given name if it
   /// exists.
   std::vector<const BodyNode*> getBodyNodes(
@@ -425,15 +425,15 @@ public:
   DART_DEPRECATED(6.13)
   std::vector<const Joint*> getJoints() const override;
 
-  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(const std::string&).
   ///
-  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
   std::vector<Joint*> getJoints(const std::string& name) override;
 
-  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  /// @copydoc MetaSkeleton::getJoints(const std::string&).
   ///
-  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// @note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
 
@@ -541,7 +541,7 @@ public:
       const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Support Polygon
+  /// \{ @name Support Polygon
   //----------------------------------------------------------------------------
 
   /// Get the support polygon of this Skeleton, which is computed based on the
@@ -643,26 +643,26 @@ public:
   /// The inverse dynamics is computed according to the following equations of
   /// motion:
   ///
-  /// \f$ M(q) \ddot{q} + C(q, \dot{q}) + N(q) - \tau_{\text{ext}} - \tau_d -
-  /// \tau_s = \tau \f$
+  /// @f$ M(q) \ddot{q} + C(q, \dot{q}) + N(q) - \tau_{\text{ext}} - \tau_d -
+  /// \tau_s = \tau @f$
   ///
-  /// where \f$ \tau_{\text{ext}} \f$, \f$ \tau_d \f$, and \f$ \tau_s \f$ are
+  /// where @f$ \tau_{\text{ext}} @f$, @f$ \tau_d @f$, and @f$ \tau_s @f$ are
   /// external forces, joint damping forces, and joint spring forces projected
   /// on to the joint space, respectively. This function provides three flags
   /// whether to take into account each forces in computing the joint forces,
-  /// \f$ \tau_d \f$. Not accounting each forces implies that the forces is
-  /// added to \f$ \tau \f$ in order to keep the equation equivalent. If there
+  /// @f$ \tau_d @f$. Not accounting each forces implies that the forces is
+  /// added to @f$ \tau @f$ in order to keep the equation equivalent. If there
   /// forces are zero (by setting external forces, damping coeff, spring
   /// stiffness zeros), these flags have no effect.
   ///
-  /// Once this function is called, the joint forces, \f$ \tau \f$, can be
+  /// Once this function is called, the joint forces, @f$ \tau @f$, can be
   /// obtained by calling getForces().
   ///
-  /// \param[in] _withExternalForces Set \c true to take external forces into
+  /// @param[in] _withExternalForces Set @c true to take external forces into
   /// account.
-  /// \param[in] _withDampingForces  Set \c true to take damping forces into
+  /// @param[in] _withDampingForces  Set @c true to take damping forces into
   /// account.
-  /// \param[in] _withSpringForces   Set \c true to take spring forces into
+  /// @param[in] _withSpringForces   Set @c true to take spring forces into
   /// account.
   void computeInverseDynamics(
       bool _withExternalForces = false,
@@ -681,29 +681,29 @@ public:
   /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
 
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode
+  /// @brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
+  /// @param _bodyNode Body node constraint impulse, _imp, is applied
+  /// @param _imp Constraint impulse expressed in body frame of _bodyNode
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode1 Body node contraint impulse, _imp1, is applied
-  /// \param _imp1 Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode2 Body node contraint impulse, _imp2, is applied
-  /// \param _imp2 Constraint impulse expressed in body frame of _bodyNode2
+  /// @brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
+  /// @param _bodyNode1 Body node constraint impulse, _imp1, is applied
+  /// @param _imp1 Constraint impulse expressed in body frame of _bodyNode1
+  /// @param _bodyNode2 Body node constraint impulse, _imp2, is applied
+  /// @param _imp2 Constraint impulse expressed in body frame of _bodyNode2
   void updateBiasImpulse(
       BodyNode* _bodyNode1,
       const Eigen::Vector6d& _imp1,
       BodyNode* _bodyNode2,
       const Eigen::Vector6d& _imp2);
 
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// @brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(
       SoftBodyNode* _softBodyNode,
       PointMass* _pointMass,
       const Eigen::Vector3d& _imp);
 
-  /// \brief Update velocity changes in body nodes and joints due to applied
+  /// @brief Update velocity changes in body nodes and joints due to applied
   /// impulse
   void updateVelocityChange();
 
@@ -719,7 +719,7 @@ public:
   void computeImpulseForwardDynamics();
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobians
+  /// \{ @name Jacobians
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -816,7 +816,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of Motion
+  /// \{ @name Equations of Motion
   //----------------------------------------------------------------------------
 
   /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
@@ -904,7 +904,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Center of Mass Jacobian
+  /// \{ @name Center of Mass Jacobian
   //----------------------------------------------------------------------------
 
   /// Get the Skeleton's COM with respect to any Frame (default is World Frame)

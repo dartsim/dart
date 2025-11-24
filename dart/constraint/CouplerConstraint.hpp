@@ -35,6 +35,7 @@
 
 #include <dart/constraint/ConstraintBase.hpp>
 
+#include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/MimicDofProperties.hpp>
 
 #include <dart/Export.hpp>
@@ -55,8 +56,8 @@ class DART_API CouplerConstraint : public ConstraintBase
 public:
   /// Constructor that creates a CouplerConstraint using the given
   /// MimicDofProperties for each dependent joint's DoF.
-  /// \param[in] joint The dependent joint.
-  /// \param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
+  /// @param[in] joint The dependent joint.
+  /// @param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
   /// of the dependent joint.
   explicit CouplerConstraint(
       dynamics::Joint* joint,
@@ -144,8 +145,8 @@ private:
   double mLowerBound[6];
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
-  /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// default is 1e-6
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 

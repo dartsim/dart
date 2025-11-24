@@ -42,6 +42,11 @@ jobs:
   test_gazebo:
     name: GZ Physics Tests
     runs-on: ubuntu-latest
+    env:
+      # Keep parallelism modest to avoid process limits on shared runners.
+      DART_PARALLEL_JOBS: 8
+      # Avoid spawning too many ninja processes on shared runners (posix_spawn failures)
+      CMAKE_BUILD_PARALLEL_LEVEL: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v5

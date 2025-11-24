@@ -744,7 +744,7 @@ int dBoxBox(
   anr[1] = fabs(nr[1]);
   anr[2] = fabs(nr[2]);
 
-  // find the largest compontent of anr: this corresponds to the normal
+  // find the largest component of anr: this corresponds to the normal
   // for the indident face. the other axis numbers of the indicent face
   // are stored in a1,a2.
   int lanr, a1, a2;
