@@ -44,7 +44,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Ensure pixi home exists
         run: mkdir -p "${HOME}/.pixi/bin"
@@ -99,7 +99,7 @@ jobs:
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Ensure pixi home exists
         run: mkdir -p "${HOME}/.pixi/bin"
