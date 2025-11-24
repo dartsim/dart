@@ -582,10 +582,8 @@ if(DART_BUILD_DART8)
 
   if(MSVC)
     add_subdirectory(tests_dart8)
-    add_subdirectory(examples_dart8)
   else()
     add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
-    add_subdirectory(examples_dart8 EXCLUDE_FROM_ALL)
   endif()
 endif()
 

@@ -463,17 +463,35 @@ public:
   // Documentation inherited
   double getRestPosition(std::size_t index) const override;
 
+  /// Set rest positions for all degrees of freedom.
+  void setRestPositions(const Eigen::VectorXd& restPositions);
+
+  /// Get rest positions for all degrees of freedom.
+  Eigen::VectorXd getRestPositions() const;
+
   // Documentation inherited
   void setDampingCoefficient(std::size_t index, double coeff) override;
 
   // Documentation inherited
   double getDampingCoefficient(std::size_t index) const override;
 
+  /// Set damping coefficients for all degrees of freedom.
+  void setDampingCoefficients(const Eigen::VectorXd& dampingCoefficients);
+
+  /// Get damping coefficients for all degrees of freedom.
+  Eigen::VectorXd getDampingCoefficients() const;
+
   // Documentation inherited
   void setCoulombFriction(std::size_t index, double friction) override;
 
   // Documentation inherited
   double getCoulombFriction(std::size_t index) const override;
+
+  /// Set Coulomb friction for all degrees of freedom.
+  void setFrictions(const Eigen::VectorXd& frictions);
+
+  /// Get Coulomb friction for all degrees of freedom.
+  Eigen::VectorXd getFrictions() const;
 
   /// \}
 

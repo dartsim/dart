@@ -137,7 +137,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
@@ -177,7 +177,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -940,7 +940,7 @@ wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag
 wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
   { arg = "python_tag" },
   { arg = "arch" },
-], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib" } }
+], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", DELOCATE_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", CONDA_PREFIX = "$CONDA_PREFIX:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME" } }
 
 wheel-repair-windows-core = { cmd = """
     rm -rf dist/repaired &&
