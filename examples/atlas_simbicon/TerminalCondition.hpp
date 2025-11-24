@@ -43,65 +43,65 @@
 class State;
 
 //==============================================================================
-/// \brief class TerminalCondition
+/// @brief class TerminalCondition
 class TerminalCondition
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   TerminalCondition(State* _state);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~TerminalCondition();
 
-  /// \brief Check if this condition is satisfied or not.
+  /// @brief Check if this condition is satisfied or not.
   virtual bool isSatisfied() = 0;
 
 protected:
-  /// \brief State
+  /// @brief State
   State* mState;
 };
 
 //==============================================================================
-/// \brief class TimerCondition
+/// @brief class TimerCondition
 class TimerCondition : public TerminalCondition
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   TimerCondition(State* _state, double _duration);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~TimerCondition();
 
   // Documentation inherited.
   bool isSatisfied() override;
 
 protected:
-  /// \brief Duration
+  /// @brief Duration
   double mDuration;
 };
 
 //==============================================================================
-/// \brief class BodyContactCondition
+/// @brief class BodyContactCondition
 class BodyContactCondition : public TerminalCondition
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   BodyContactCondition(
       State* _state,
       dart::dynamics::BodyNode* _body,
       dart::constraint::ConstraintSolver* constraintSolver);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~BodyContactCondition();
 
   // Documentation inherited.
   bool isSatisfied() override;
 
 protected:
-  /// \brief Body node to be tested
+  /// @brief Body node to be tested
   dart::dynamics::BodyNode* mBodyNode;
 
-  /// \brief Constraint solver that carries the last collision result
+  /// @brief Constraint solver that carries the last collision result
   dart::constraint::ConstraintSolver* mConstraintSolver;
 };
 

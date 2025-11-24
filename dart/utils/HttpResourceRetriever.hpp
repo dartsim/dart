@@ -55,7 +55,7 @@ namespace utils {
 /// on-disk cache and delegating to a LocalResourceRetriever.
 ///
 /// The retriever always uses disk caching (to avoid keeping large files in
-/// memory and to allow subsequent calls to re-use already downloaded assets).
+/// memory and to allow subsequent calls to reuse already downloaded assets).
 /// Cached files are keyed by URL and stored inside the configured cache
 /// directory (defaults to $TMP/dart_http_cache).
 class DART_UTILS_API HttpResourceRetriever

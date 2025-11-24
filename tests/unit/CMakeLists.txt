@@ -16,24 +16,32 @@ dart_add_test("unit" UNIT_collision_CollisionResult collision/test_CollisionResu
 # ==============================================================================
 # Common Tests
 # ==============================================================================
+set(common_unit_sources
+  common/test_CAllocator.cpp
+  common/test_Composite.cpp
+  common/test_Factory.cpp
+  common/test_FreeListAllocator.cpp
+  common/test_Logging.cpp
+  common/test_MemoryManager.cpp
+  common/test_PoolAllocator.cpp
+  common/test_Resource.cpp
+  common/test_StlAllocator.cpp
+  common/test_Stopwatch.cpp
+  common/test_SubjectObserver.cpp
+  common/test_String.cpp
+  common/test_Uri.cpp
+)
+
+if(DART_BUILD_PROFILE AND DART_PROFILE_ENABLE_TEXT)
+  list(APPEND common_unit_sources common/test_Profile.cpp)
+endif()
+
 dart_build_tests(
   TYPE unit
   TARGET_PREFIX UNIT
   LINK_LIBRARIES dart
   SOURCES
-    common/test_CAllocator.cpp
-    common/test_Composite.cpp
-    common/test_Factory.cpp
-    common/test_FreeListAllocator.cpp
-    common/test_Logging.cpp
-    common/test_MemoryManager.cpp
-    common/test_PoolAllocator.cpp
-    common/test_Resource.cpp
-    common/test_StlAllocator.cpp
-    common/test_Stopwatch.cpp
-    common/test_SubjectObserver.cpp
-    common/test_String.cpp
-    common/test_Uri.cpp
+    ${common_unit_sources}
 )
 
 # ==============================================================================
@@ -58,6 +66,7 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
+dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_VisualAspect.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)

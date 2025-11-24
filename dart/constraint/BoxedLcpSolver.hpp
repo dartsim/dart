@@ -53,29 +53,29 @@ public:
   /// Returns the type
   virtual const std::string& getType() const = 0;
 
-  /// Solves constriant impulses for a constrained group. The LCP formulation
+  /// Solves constraint impulses for a constrained group. The LCP formulation
   /// setting that this function solve is A*x = b + w where each x[i], w[i]
   /// satisfies one of
   ///   (1) x = lo, w >= 0
   ///   (2) x = hi, w <= 0
   ///   (3) lo < x < hi, w = 0
   ///
-  /// \param[in] n Dimension of constraints.
-  /// \param[in] A A term of the LCP formulation.
-  /// \param[in] x x term of the LCP formulation.
-  /// \param[in] b b term of the LCP formulation.
-  /// \param[in] nub Number of the first unbounded constraints.
-  /// \param[in] lo Lower bound of x where it's restricted to be lo <= 0.
-  /// \param[in] hi Upper bound of x where it's enforced to be hi >= 0.
-  /// \param[in] findex Indices to corresponding normal contact constraint. Set
+  /// @param[in] n Dimension of constraints.
+  /// @param[in] A A term of the LCP formulation.
+  /// @param[in] x x term of the LCP formulation.
+  /// @param[in] b b term of the LCP formulation.
+  /// @param[in] nub Number of the first unbounded constraints.
+  /// @param[in] lo Lower bound of x where it's restricted to be lo <= 0.
+  /// @param[in] hi Upper bound of x where it's enforced to be hi >= 0.
+  /// @param[in] findex Indices to corresponding normal contact constraint. Set
   /// the index to itself (e.g., findex[k] = k) for normal contacts or
-  /// non-contact constraints. For friction constraint, set the cooresponding
+  /// non-contact constraints. For friction constraint, set the corresponding
   /// normal contact constraint.
-  /// \param[in] earlyTermination Set true to return false as soon as the solver
+  /// @param[in] earlyTermination Set true to return false as soon as the solver
   /// find the solution doesn't exist. Otherwise, the solver will continue to
   /// push hard to solve the problem using some hacks.
   ///
-  /// \return Success.
+  /// @return Success.
   // Note: The function signature is ODE specific for now. Consider changing
   // this to Eigen friendly version once own Dantzig LCP solver is available.
   virtual bool solve(

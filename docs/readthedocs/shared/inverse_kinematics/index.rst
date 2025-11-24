@@ -20,7 +20,7 @@ Workflow overview
 1. Create or locate a :class:`dart::dynamics::EndEffector`
    (``BodyNode::createEndEffector`` in C++ / ``body_node.createEndEffector`` in
    dartpy).
-2. Create or fetch the IK instance with :func:`EndEffector::createIK()` (C++) or
+2. Create or fetch the IK instance with :func:`EndEffector::createIK` (C++) or
    ``end_effector.getIK(True)`` (dartpy) to build the solver if it does not
    already exist.
 3. Configure the target, hierarchy level, error bounds, and solver tolerances.
@@ -28,7 +28,7 @@ Workflow overview
    languages.
 4. Choose a gradient method (default GD, damped least squares, etc.) *or* plug
    in an analytical solver such as IkFast.
-5. Call :func:`InverseKinematics::solve()`
+5. Call :func:`InverseKinematics::solve`
    (``ik.solveAndApply(True)`` in dartpy when you want to apply the result) to
    update the skeleton.
 

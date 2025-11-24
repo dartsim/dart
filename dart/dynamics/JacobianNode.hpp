@@ -85,7 +85,7 @@ public:
   void clearIK();
 
   //----------------------------------------------------------------------------
-  /// \{ \name Structural Properties
+  /// \{ @name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Return true if _genCoordIndex-th generalized coordinate
@@ -126,7 +126,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Jacobian Functions
+  /// \{ @name Jacobian Functions
   //----------------------------------------------------------------------------
 
   /// Return the generalized Jacobian targeting the origin of this JacobianNode.
@@ -201,7 +201,7 @@ public:
   /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
   /// getAngularJacobianDeriv() instead.
   ///
-  /// \sa getJacobianSpatialDeriv()
+  /// @sa getJacobianSpatialDeriv()
   virtual math::Jacobian getJacobianSpatialDeriv(
       const Eigen::Vector3d& _offset) const = 0;
 

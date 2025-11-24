@@ -685,7 +685,7 @@ void LCP<Scalar>::transfer_i_from_N_to_C(int i)
     // @@@ TO DO LATER
     // if we just finish here then we'll go back and re-solve for
     // delta_x. but actually we can be more efficient and incrementally
-    // update delta_x here. but if we do this, we wont have ell and Dell
+    // update delta_x here. but if we do this, we won't have ell and Dell
     // to use in updating the factorization later.
 
   #ifdef DEBUG_LCP

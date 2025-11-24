@@ -367,7 +367,7 @@ bool SolveLCP(
         // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
         lcp.solve1(delta_x.get(), i, dir);
 
-        // note that delta_x[i] = dirf, but we wont bother to set it
+        // note that delta_x[i] = dirf, but we won't bother to set it
 
         // compute: delta_w = A*delta_x ... note we only care about
         // delta_w(N) and delta_w(i), the rest is ignored

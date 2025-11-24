@@ -56,23 +56,23 @@ using namespace dart::math;
 using namespace dart::dynamics;
 
 //==============================================================================
-/// \brief class SampleObjFunc
+/// @brief class SampleObjFunc
 class SampleObjFunc : public Function
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   SampleObjFunc() : Function() {}
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~SampleObjFunc() {}
 
-  /// \copydoc Function::eval
+  /// @copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override
   {
     return std::sqrt(_x[1]);
   }
 
-  /// \copydoc Function::evalGradient
+  /// @copydoc Function::evalGradient
   void evalGradient(
       const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
   {
@@ -85,19 +85,19 @@ public:
 class SampleConstFunc : public Function
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b) {}
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~SampleConstFunc() {}
 
-  /// \copydoc Function::eval
+  /// @copydoc Function::eval
   double eval(const Eigen::VectorXd& _x) override
   {
     return ((mA * _x[0] + mB) * (mA * _x[0] + mB) * (mA * _x[0] + mB) - _x[1]);
   }
 
-  /// \copydoc Function::evalGradient
+  /// @copydoc Function::evalGradient
   void evalGradient(
       const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
   {
@@ -106,10 +106,10 @@ public:
   }
 
 private:
-  /// \brief Data
+  /// @brief Data
   double mA;
 
-  /// \brief Data
+  /// @brief Data
   double mB;
 };
 
@@ -173,7 +173,7 @@ TEST(Optimizer, OutStream)
   GradientDescentSolver solver(prob);
   solver.setIterationsPerPrint(50);
 
-  // Print the progess to a std::string
+  // Print the progress to a std::string
   std::stringstream ss;
   solver.setOutStream(&ss);
   EXPECT_TRUE(solver.solve());

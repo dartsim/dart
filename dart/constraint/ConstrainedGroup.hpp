@@ -36,6 +36,7 @@
 #include <dart/config.hpp>
 
 #include <dart/constraint/Fwd.hpp>
+#include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
@@ -56,15 +57,15 @@ class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
-/// \sa class ConstraintSolver
+/// @sa class ConstraintSolver
 class DART_API ConstrainedGroup
 {
 public:
   //----------------------------------------------------------------------------
-  // Constructor / Desctructor
+  // Constructor / Destructor
   //----------------------------------------------------------------------------
 
-  /// Default contructor
+  /// Default constructor
   ConstrainedGroup();
 
   /// Destructor
@@ -92,7 +93,7 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
-  /// Get total dimension of contraints in this group
+  /// Get total dimension of constraints in this group
   std::size_t getTotalDimension() const;
 
   //----------------------------------------------------------------------------

@@ -7,7 +7,7 @@ notes, and the C++ API reference—through a single Sphinx project under
 `docs/readthedocs`. The Read the Docs (RTD) build runs `sphinx-build` against
 that tree, renders the prose content, and executes Doxygen during the
 `builder-inited` hook to generate the HTML C++ API bundle. The generated
-artifacts are staged inside ``docs/readthedocs/_generated/cpp-api`` and copied
+artifacts are staged inside `docs/readthedocs/_generated/cpp-api` and copied
 into the built site so each RTD version automatically receives the matching API
 reference with no dependency on GitHub Pages.
 
@@ -94,12 +94,12 @@ pixi run api-docs-build    # Convenience task that runs both builders
 
 ## Configuration Files
 
-| File | Purpose |
-| ---- | ------- |
-| `.readthedocs.yml` | RTD build definition |
+| File                       | Purpose                                                             |
+| -------------------------- | ------------------------------------------------------------------- |
+| `.readthedocs.yml`         | RTD build definition                                                |
 | `docs/readthedocs/conf.py` | Sphinx configuration for the main documentation site (runs Doxygen) |
-| `docs/python_api/conf.py` | Standalone Python API Sphinx configuration |
-| `pixi.toml` | Local task definitions (`docs-build`, `api-docs-*`, etc.) |
+| `docs/python_api/conf.py`  | Standalone Python API Sphinx configuration                          |
+| `pixi.toml`                | Local task definitions (`docs-build`, `api-docs-*`, etc.)           |
 
 ## Deployment Pipeline
 

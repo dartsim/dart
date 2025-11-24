@@ -122,9 +122,9 @@ public:
   /// Same as copy(const Joint&)
   Joint& operator=(const Joint& _otherJoint);
 
-  /// \brief Set joint name and return the name.
-  /// \param[in] _name The specified joint name to be set.
-  /// \param[in] _renameDofs If true, the names of the joint's degrees of
+  /// @brief Set joint name and return the name.
+  /// @param[in] _name The specified joint name to be set.
+  /// @param[in] _renameDofs If true, the names of the joint's degrees of
   /// freedom will be updated by calling updateDegreeOfFreedomNames().
   ///
   /// If the name is already taken, this will return an altered version which
@@ -236,14 +236,14 @@ public:
   /// The joint position limit is valid when the actuator type is one of
   /// PASSIVE/FORCE.
   ///
-  /// \sa ActuatorType
+  /// @sa ActuatorType
   ///
   /// Sets whether enforcing joint position and velocity limits.
   ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
   /// FORCE.
   ///
-  /// \sa ActuatorType
+  /// @sa ActuatorType
   void setLimitEnforcement(bool enforced);
 
   /// Returns whether enforcing joint position limit
@@ -251,14 +251,14 @@ public:
   /// This enforcement is only enabled when the actuator type is PASSIVE or
   /// FORCE.
   ///
-  /// \sa ActuatorType
+  /// @sa ActuatorType
   ///
   /// Returns whether enforcing joint position and velocity limits
   ///
   /// This enforcement is only enabled when the actuator type is PASSIVE or
   /// FORCE.
   ///
-  /// \sa ActuatorType
+  /// @sa ActuatorType
   bool areLimitsEnforced() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
@@ -303,7 +303,7 @@ public:
   virtual std::size_t getNumDofs() const = 0;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Command
+  /// \{ @name Command
   //----------------------------------------------------------------------------
 
   /// Set a single command
@@ -324,7 +324,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Position
+  /// \{ @name Position
   //----------------------------------------------------------------------------
 
   /// Set the position of a single generalized coordinate
@@ -397,7 +397,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity
+  /// \{ @name Velocity
   //----------------------------------------------------------------------------
 
   /// Set the velocity of a single generalized coordinate
@@ -461,7 +461,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Acceleration
+  /// \{ @name Acceleration
   //----------------------------------------------------------------------------
 
   /// Set the acceleration of a single generalized coordinate
@@ -512,7 +512,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Force
+  /// \{ @name Force
   //----------------------------------------------------------------------------
 
   /// Set the force of a single generalized coordinate
@@ -557,7 +557,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Sanity Check
+  /// \{ @name Sanity Check
   //----------------------------------------------------------------------------
 
   /// Returns false if the initial position or initial velocity are outside of
@@ -566,7 +566,7 @@ public:
   bool checkSanity(bool _printWarnings = true) const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ @name Velocity change
   //----------------------------------------------------------------------------
 
   /// Set a single velocity change
@@ -582,7 +582,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
+  /// \{ @name Constraint impulse
   //----------------------------------------------------------------------------
 
   /// Set a single constraint impulse
@@ -597,7 +597,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Integration and finite difference
+  /// \{ @name Integration and finite difference
   //----------------------------------------------------------------------------
 
   /// Integrate positions using Euler method
@@ -614,44 +614,44 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
+  /// \{ @name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   /// Set stiffness of joint spring force.
-  /// \param[in] _index Index of joint axis.
-  /// \param[in] _k Spring stiffness.
+  /// @param[in] _index Index of joint axis.
+  /// @param[in] _k Spring stiffness.
   virtual void setSpringStiffness(std::size_t _index, double _k) = 0;
 
   /// Get stiffness of joint spring force.
-  /// \param[in] _index Index of joint axis.
+  /// @param[in] _index Index of joint axis.
   virtual double getSpringStiffness(std::size_t _index) const = 0;
 
   /// Set rest position of spring force.
-  /// \param[in] _index Index of joint axis.
-  /// \param[in] _q0 Rest position.
+  /// @param[in] _index Index of joint axis.
+  /// @param[in] _q0 Rest position.
   virtual void setRestPosition(std::size_t _index, double _q0) = 0;
 
   /// Get rest position of spring force.
-  /// \param[in] _index Index of joint axis.
-  /// \return Rest position.
+  /// @param[in] _index Index of joint axis.
+  /// @return Rest position.
   virtual double getRestPosition(std::size_t _index) const = 0;
 
   /// Set coefficient of joint damping (viscous friction) force.
-  /// \param[in] _index Index of joint axis.
-  /// \param[in] _coeff Damping coefficient.
+  /// @param[in] _index Index of joint axis.
+  /// @param[in] _coeff Damping coefficient.
   virtual void setDampingCoefficient(std::size_t _index, double _coeff) = 0;
 
   /// Get coefficient of joint damping (viscous friction) force.
-  /// \param[in] _index Index of joint axis.
+  /// @param[in] _index Index of joint axis.
   virtual double getDampingCoefficient(std::size_t _index) const = 0;
 
-  /// Set joint Coulomb friction froce.
-  /// \param[in] _index Index of joint axis.
-  /// \param[in] _friction Joint Coulomb friction froce given index.
+  /// Set joint Coulomb friction force.
+  /// @param[in] _index Index of joint axis.
+  /// @param[in] _friction Joint Coulomb friction force given index.
   virtual void setCoulombFriction(std::size_t _index, double _friction) = 0;
 
-  /// Get joint Coulomb friction froce.
-  /// \param[in] _index Index of joint axis.
+  /// Get joint Coulomb friction force.
+  /// @param[in] _index Index of joint axis.
   virtual double getCoulombFriction(std::size_t _index) const = 0;
 
   /// \}
@@ -675,7 +675,7 @@ public:
   /// BodyNode expressed in the child BodyNode frame
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
-  /// Get J * \f$ \ddot{q} \f$ of this joint
+  /// Get J * @f$ \ddot{q} @f$ of this joint
   const Eigen::Vector6d& getRelativePrimaryAcceleration() const;
 
   /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
@@ -705,9 +705,9 @@ public:
   /// F = -springStiffness * (q(k) + h * dq(k)) and
   /// -springStiffness * h^2 * ddq(k) term is rearranged at the recursive
   /// forward dynamics algorithm, and it affects on the articulated inertia.
-  /// \sa BodyNode::updateArticulatedInertia(double).
+  /// @sa BodyNode::updateArticulatedInertia(double).
   ///
-  /// \param[in] _timeStep Time step used for approximating q(k+1).
+  /// @param[in] _timeStep Time step used for approximating q(k+1).
   //  Eigen::VectorXd getSpringForces(double _timeStep) const;
 
   /// Get damping force
@@ -719,16 +719,16 @@ public:
   /// damping force here is just F = -(dampingCoefficient * dq(k)) and
   /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
   /// forward dynamics algorithm, and it affects on the articulated inertia.
-  /// \sa BodyNode::updateArticulatedInertia(double).
+  /// @sa BodyNode::updateArticulatedInertia(double).
   //  Eigen::VectorXd getDampingForces() const;
 
   /// Returns wrench exerted to the child body node to satisfy the joint
   /// constraint.
   ///
-  /// \param[in] withRespectTo: The reference frame where the wrench is
+  /// @param[in] withRespectTo: The reference frame where the wrench is
   /// measured. The default (i.e., nullptr) is to get the wrench measured in the
   /// joint frame.
-  /// \return Wrench where the first three elements represent torque and the
+  /// @return Wrench where the first three elements represent torque and the
   /// last three elements represent force. Zero vector if this joint has no
   /// child body node defined.
   Eigen::Vector6d getWrenchToChildBodyNode(
@@ -737,17 +737,17 @@ public:
   /// Returns wrench exerted to the parent body node to satisfy the joint
   /// constraint.
   ///
-  /// \param[in] withRespectTo: The reference frame where the wrench is
+  /// @param[in] withRespectTo: The reference frame where the wrench is
   /// measured. The default (i.e., nullptr) is to get the wrench measured in the
   /// joint frame.
-  /// \return Wrench where the first three elements represent torque and the
+  /// @return Wrench where the first three elements represent torque and the
   /// last three elements represent force. Zero vector if this joint has no
   /// child body node defined.
   Eigen::Vector6d getWrenchToParentBodyNode(
       const Frame* withRespectTo = nullptr) const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Update Notifiers
+  /// \{ @name Update Notifiers
   //----------------------------------------------------------------------------
 
   /// Notify that a position has updated
@@ -780,8 +780,8 @@ protected:
   /// Called by the Skeleton class
   virtual void registerDofs() = 0;
 
-  /// \brief Create a DegreeOfFreedom pointer.
-  /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
+  /// @brief Create a DegreeOfFreedom pointer.
+  /// @param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
   /// that the index should be unique within the joint.
   ///
   /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
@@ -794,7 +794,7 @@ protected:
   virtual void updateDegreeOfFreedomNames() = 0;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   /// Update transform of the child BodyNode relative to the parent BodyNode
@@ -809,13 +809,13 @@ protected:
   /// BodyNode expressed in the child BodyNode frame
   virtual void updateRelativeSpatialAcceleration() const = 0;
 
-  /// Update J * \f$ \ddot{q} \f$ of this joint
+  /// Update J * @f$ \ddot{q} @f$ of this joint
   virtual void updateRelativePrimaryAcceleration() const = 0;
 
   /// Update spatial Jacobian of the child BodyNode relative to the parent
   /// BodyNode expressed in the child BodyNode frame
   ///
-  /// \param[in] mandatory This argument can be set to false if the Jacobian
+  /// @param[in] mandatory This argument can be set to false if the Jacobian
   /// update request is due to a change in Joint positions, because not all
   /// Joint types have a relative Jacobian that depends on their Joint
   /// positions, so a relative Jacobian update would not actually be required.
@@ -903,20 +903,20 @@ protected:
       = 0;
 
   /// Update joint velocity change
-  /// \param _artInertia
-  /// \param _velocityChange
+  /// @param _artInertia
+  /// @param _velocityChange
   virtual void updateVelocityChange(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange)
       = 0;
 
   /// Update joint force for inverse dynamics.
-  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// @param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  /// \param[in] _timeStep
-  /// \param[in] _withDampingForces
-  /// \param[in] _withSpringForces
+  /// @param[in] _timeStep
+  /// @param[in] _withDampingForces
+  /// @param[in] _withSpringForces
   virtual void updateForceID(
       const Eigen::Vector6d& _bodyForce,
       double _timeStep,
@@ -925,12 +925,12 @@ protected:
       = 0;
 
   /// Update joint force for forward dynamics.
-  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// @param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  /// \param[in] _timeStep
-  /// \param[in] _withDampingForces
-  /// \param[in] _withSpringForces
+  /// @param[in] _timeStep
+  /// @param[in] _withDampingForces
+  /// @param[in] _withSpringForces
   virtual void updateForceFD(
       const Eigen::Vector6d& _bodyForce,
       double _timeStep,
@@ -950,7 +950,7 @@ protected:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive algorithm routines for equations of motion
+  /// \{ @name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   /// Add child's bias force to parent's one
