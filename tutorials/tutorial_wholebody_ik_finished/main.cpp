@@ -127,7 +127,7 @@ protected:
 // snippet:cpp-load-atlas-start
 SkeletonPtr loadAtlasRobot()
 {
-  DartLoader loader;
+  UrdfParser loader;
   SkeletonPtr atlas
       = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 

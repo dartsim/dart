@@ -58,7 +58,7 @@ def main():
     world = dart.simulation.World()
 
     # load KR5 robot and ground plane, set transparent:
-    urdfParser = dart.utils.DartLoader()
+    urdfParser = dart.utils.UrdfParser()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     # set transparency, so that "inner" contact points will be visible
     setAlpha(kr5, 0.3)

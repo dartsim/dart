@@ -67,7 +67,7 @@ dart::dynamics::SkeletonPtr createGround()
 //==============================================================================
 dart::dynamics::SkeletonPtr createWam()
 {
-  dart::utils::DartLoader urdfParser;
+  dart::utils::UrdfParser urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", dart::config::dataPath("urdf/wam"));
   dart::dynamics::SkeletonPtr wam

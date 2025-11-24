@@ -6,7 +6,7 @@ import pytest
 
 
 def test_basic():
-    urdfParser = dart.utils.DartLoader()
+    urdfParser = dart.utils.UrdfParser()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
@@ -31,7 +31,7 @@ def test_basic():
 
 
 def test_get_child_methods():
-    urdfParser = dart.utils.DartLoader()
+    urdfParser = dart.utils.UrdfParser()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
@@ -51,7 +51,7 @@ def test_get_child_methods():
 
 
 def test_get_inertia():
-    urdfParser = dart.utils.DartLoader()
+    urdfParser = dart.utils.UrdfParser()
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 

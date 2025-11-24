@@ -195,7 +195,7 @@ pixi run -e py313-wheel wheel-upload
 import dartpy as dart
 
 world = dart.simulation.World()
-loader = dart.utils.DartLoader()
+loader = dart.utils.UrdfParser()
 robot = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
 world.addSkeleton(robot)
 

@@ -32,7 +32,7 @@ import pytest
 
 def create_simple_atlas():
     """Create a simplified Atlas robot for testing."""
-    urdf = dart.utils.DartLoader()
+    urdf = dart.utils.UrdfParser()
     atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
     return atlas
 

@@ -774,14 +774,14 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User as User Code
-    participant URDFLoader as DartLoader
+    participant UrdfParser as UrdfParser
     participant Skeleton as Skeleton
     participant Parser as URDF Parser
     participant World as World
 
-    User->>URDFLoader: DartLoader()
-    User->>URDFLoader: parseSkeleton("robot.urdf")
-    URDFLoader->>Parser: parseURDF()
+    User->>UrdfParser: UrdfParser()
+    User->>UrdfParser: parseSkeleton("robot.urdf")
+    UrdfParser->>Parser: parseURDF()
     Parser->>Parser: parse XML
     Parser->>Skeleton: create()
 
@@ -791,14 +791,14 @@ sequenceDiagram
         Parser->>Skeleton: setMass/Inertia()
     end
 
-    URDFLoader-->>User: skeleton
+    UrdfParser-->>User: skeleton
     User->>World: addSkeleton(skeleton)
     User->>World: step()
 </mermaid>
 
 **Key Files**:
-- [`DartLoader`](dart/utils/urdf/DartLoader.hpp)
-- [`DartLoader::parseSkeleton()`](dart/utils/urdf/DartLoader.cpp)
+- [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
+- [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
@@ -1207,7 +1207,7 @@ dart_gui/
 ```python
 import dartpy as dart
 from dartpy.gui import Viewer, RealTimeWorldNode
-from dartpy.utils import DartLoader
+from dartpy.utils import UrdfParser
 ```
 
 ---
@@ -1301,7 +1301,7 @@ robot->eachBodyNode([&](BodyNode* bodyNode) {
 
 ```cpp
 // URDF
-dart::utils::DartLoader loader;
+dart::utils::UrdfParser loader;
 auto robot = loader.parseSkeleton("path/to/robot.urdf");
 world->addSkeleton(robot);
 
