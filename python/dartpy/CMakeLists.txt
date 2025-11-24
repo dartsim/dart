@@ -96,10 +96,6 @@ set(dartpy_headers
   optimizer/problem.hpp
   optimizer/solver.hpp
   optimizer/gradient_descent.hpp
-  gui/module.hpp
-  gui/osg/osg.hpp
-  gui/osg/utils.hpp
-  gui/osg/support_polygon_visual.hpp
   math/module.hpp
   math/constants.hpp
   math/geometry.hpp
@@ -175,16 +171,6 @@ set(dartpy_sources
   optimizer/problem.cpp
   optimizer/solver.cpp
   optimizer/gradient_descent.cpp
-  gui/module.cpp
-  gui/osg/gui_event_handler.cpp
-  gui/osg/world_node.cpp
-  gui/osg/interactive_frame.cpp
-  gui/osg/viewer_attachment.cpp
-  gui/osg/support_polygon_visual.cpp
-  gui/osg/drag_and_drop.cpp
-  gui/osg/shadow_technique.cpp
-  gui/osg/viewer.cpp
-  gui/osg/imgui.cpp
   math/module.cpp
   math/constants.cpp
   math/geometry.cpp
@@ -236,6 +222,31 @@ set(dartpy_sources
   constraint/joint_constraint.cpp
   constraint/joint_coulomb_friction_constraint.cpp
 )
+
+set(dartpy_gui_headers
+  gui/module.hpp
+  gui/osg/osg.hpp
+  gui/osg/utils.hpp
+  gui/osg/support_polygon_visual.hpp
+)
+
+set(dartpy_gui_sources
+  gui/module.cpp
+  gui/osg/gui_event_handler.cpp
+  gui/osg/world_node.cpp
+  gui/osg/interactive_frame.cpp
+  gui/osg/viewer_attachment.cpp
+  gui/osg/support_polygon_visual.cpp
+  gui/osg/drag_and_drop.cpp
+  gui/osg/shadow_technique.cpp
+  gui/osg/viewer.cpp
+  gui/osg/imgui.cpp
+)
+
+if(DART_BUILD_GUI)
+  list(APPEND dartpy_headers ${dartpy_gui_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_sources})
+endif()
 
 nanobind_add_module(dartpy
   NB_STATIC
