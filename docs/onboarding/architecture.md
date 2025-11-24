@@ -142,8 +142,6 @@ DART follows a **modular layered architecture** with clear separation of concern
   - `int Lemke(M, q, z)` - Main solver
   - `bool validate(M, z, q)` - Solution validation
 
-- **ODELCPSolver.hpp** - ODE-based LCP solver integration
-
 **Mathematical Foundation:**
 LCP formulation: Find `z ≥ 0` such that `w = Mz + q ≥ 0` and `z^T w = 0`
 

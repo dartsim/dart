@@ -19,8 +19,7 @@ START
   ├─ Ill-conditioned? ──YES──> Pivoting (Dantzig/Lemke)
   |                             or Interior Point
   |
-  ├─ Contact problem? ──YES──> BGS or ODELCPSolver
-  |                             (ODELCPSolver available now)
+  ├─ Contact problem? ──YES──> BGS or Dantzig
   |
   └─ Default ──> Start with Dantzig or Lemke
                   (currently implemented)
@@ -31,7 +30,7 @@ START
 ### 1. Real-Time Physics Simulation
 
 **Recommended (when implemented)**: PGS > PSOR > BGS
-**Currently Available**: Dantzig, Lemke, ODELCPSolver
+**Currently Available**: Dantzig, Lemke
 
 **Rationale**:
 
@@ -52,11 +51,7 @@ Warm start: Previous time-step solution
 **Current Workaround**:
 
 ```cpp
-// Use ODELCPSolver for contact problems
-ODELCPSolver solver;
-solver.Solve(A, b, &x, numContacts, mu, numDir, true);
-
-// Or Dantzig for bounded problems
+// Use Dantzig for bounded problems
 SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
 ```
 
@@ -94,30 +89,19 @@ Lemke(M, q, &z);
 
 ### For Contact Mechanics with Friction
 
-**Recommended**: ODELCPSolver (uses Dantzig) > Dantzig directly
-**Currently Available**: ODELCPSolver ✅, Dantzig ✅
+**Recommended**: Dantzig
+**Currently Available**: Dantzig ✅
 
 **Rationale**:
 
 - Natural block structure (per-contact)
 - Friction cone constraints
 - Normal/tangential coupling
-- ODELCPSolver handles formulation automatically
 
 **Configuration**:
 
 ```cpp
-// Current: Use ODELCPSolver (wrapper around Dantzig)
-dart::math::ODELCPSolver solver;
-bool success = solver.Solve(
-    A, b, &x,
-    numContacts,  // Number of contact points
-    mu,           // Friction coefficient
-    numDir,       // Friction directions (0, 2, or 4)
-    true          // Use internal Dantzig solver
-);
-
-// Or use Dantzig directly with friction indices
+// Use Dantzig directly with friction indices
 int findex[n];
 // Set up findex for friction cone
 dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
@@ -217,15 +201,15 @@ Block size: 32-256 threads per block
 
 ### Computational Cost
 
-| Use Case      | Best Method  | Per-Iter Time | Iterations | Total Time | Available Now |
-| ------------- | ------------ | ------------- | ---------- | ---------- | ------------- |
-| Real-time     | PGS          | O(n)          | 50-100     | O(50n)     | ❌            |
-| Real-time     | Dantzig      | O(n³)         | 1          | O(n³)      | ✅            |
-| High accuracy | Newton       | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
-| High accuracy | Dantzig      | O(n³)         | 1          | O(n³)      | ✅            |
-| Contact       | BGS          | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
-| Contact       | ODELCPSolver | -             | -          | -          | ✅            |
-| Large-scale   | NNCG         | O(n)          | 20-200     | O(200n)    | ❌            |
+| Use Case      | Best Method | Per-Iter Time | Iterations | Total Time | Available Now |
+| ------------- | ----------- | ------------- | ---------- | ---------- | ------------- |
+| Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ❌            |
+| Real-time     | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
+| High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ❌            |
+| High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
+| Contact       | BGS         | O(nb³)        | 50-100     | O(50nb³)   | ❌            |
+| Contact       | Dantzig     | -             | -          | -          | ✅            |
+| Large-scale   | NNCG        | O(n)          | 20-200     | O(200n)    | ❌            |
 
 \* With iterative subsolver
 
@@ -281,7 +265,6 @@ Available solvers:
 
 - ✅ **Dantzig**: BLCP with bounds, friction support
 - ✅ **Lemke**: Standard LCP
-- ✅ **ODELCPSolver**: Contact problems wrapper
 
 **Best Practices Now**:
 
@@ -291,10 +274,6 @@ SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
 
 // For standard LCP
 Lemke(M, q, &z);
-
-// For contact problems
-ODELCPSolver solver;
-solver.Solve(A, b, &x, numContacts, mu, numDir, true);
 ```
 
 ### Phase 1: Core Iterative (Priority)
@@ -338,7 +317,7 @@ When Newton methods are implemented:
 **Solution**:
 
 ```
-Current: Use ODELCPSolver or limit problem size
+Current: Use Dantzig or limit problem size
 Future: Use PGS or PSOR when implemented
 ```
 
@@ -373,7 +352,7 @@ x_init = x_previous_timestep;
 **Solution**:
 
 ```
-Current: Use ODELCPSolver ✅
+Current: Use Dantzig ✅
 Future: Use BGS (better per-contact structure)
 ```
 
@@ -484,7 +463,7 @@ findex[i] = j;   // Depends on x[j] for friction cone
 ```
 Current (with Dantzig/Lemke):
 1. Limit problem size (n < 100)
-2. Use ODELCPSolver for contacts
+2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
 
@@ -501,7 +480,7 @@ Future (with PGS/Newton):
 
 | Scenario               | Use                           | Notes                        |
 | ---------------------- | ----------------------------- | ---------------------------- |
-| Contact with friction  | ODELCPSolver                  | Best option now              |
+| Contact with friction  | Dantzig                       | Best option now              |
 | Bounded variables      | Dantzig                       | Supports bounds and friction |
 | Standard LCP           | Lemke                         | Simple and robust            |
 | Large problems (n>100) | Limit size or external solver | Current methods O(n³)        |

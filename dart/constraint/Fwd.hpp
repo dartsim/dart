@@ -53,7 +53,6 @@ class ContactSurfaceHandler;
 class DefaultContactSurfaceHandler;
 
 class DantzigBoxedLcpSolver;
-class DantzigLCPSolver;
 class DynamicJointConstraint;
 
 class JointConstraint;
@@ -65,7 +64,6 @@ class LCPSolver;
 class MimicMotorConstraint;
 
 class PgsBoxedLcpSolver;
-class PGSLCPSolver;
 
 class ServoMotorConstraint;
 class SoftContactConstraint;

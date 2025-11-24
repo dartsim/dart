@@ -18,7 +18,7 @@ Documentation for development tasks in DART.
 
 **When task is completed**:
 
-1. **Add brief section** to existing `docs/onboarding/` file (e.g., add to constraints.md, not new file)
+1. **Add brief section** to existing `docs/onboarding/` file (avoid adding new standalone files when a section fits in an existing doc)
 2. **Remove the entire task folder** from `docs/dev_tasks/`
 3. **Keep onboarding docs concise** - too many docs make them hard to use effectively
 
