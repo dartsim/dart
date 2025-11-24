@@ -12,6 +12,7 @@
 #include <nanobind/stl/string.h>
 
 #include <array>
+#include <memory>
 
 namespace nb = nanobind;
 
@@ -66,19 +67,24 @@ void defDynamicJointConstraint(nb::module_& m)
   nb::class_<BallJointConstraint, DynamicJointConstraint>(
       m, "BallJointConstraint")
       .def(
-          nb::init([](dart::dynamics::BodyNode* bodyNode,
-                      const std::array<double, 3>& jointPosition) {
-            return new BallJointConstraint(bodyNode, toEigen(jointPosition));
-          }),
+          nb::init(
+              [](dart::dynamics::BodyNode* bodyNode,
+                 const std::array<double, 3>& jointPosition)
+                  -> std::unique_ptr<BallJointConstraint> {
+                return std::make_unique<BallJointConstraint>(
+                    bodyNode, toEigen(jointPosition));
+              }),
           nb::arg("bodyNode"),
           nb::arg("jointPosition"))
       .def(
-          nb::init([](dart::dynamics::BodyNode* bodyNode1,
-                      dart::dynamics::BodyNode* bodyNode2,
-                      const std::array<double, 3>& jointPosition) {
-            return new BallJointConstraint(
-                bodyNode1, bodyNode2, toEigen(jointPosition));
-          }),
+          nb::init(
+              [](dart::dynamics::BodyNode* bodyNode1,
+                 dart::dynamics::BodyNode* bodyNode2,
+                 const std::array<double, 3>& jointPosition)
+                  -> std::unique_ptr<BallJointConstraint> {
+                return std::make_unique<BallJointConstraint>(
+                    bodyNode1, bodyNode2, toEigen(jointPosition));
+              }),
           nb::arg("bodyNode1"),
           nb::arg("bodyNode2"),
           nb::arg("jointPosition"))
@@ -98,28 +104,32 @@ void defDynamicJointConstraint(nb::module_& m)
   nb::class_<RevoluteJointConstraint, DynamicJointConstraint>(
       m, "RevoluteJointConstraint")
       .def(
-          nb::init([](dart::dynamics::BodyNode* bodyNode,
-                      const std::array<double, 3>& jointPosition,
-                      const std::array<double, 3>& axis) {
-            return new RevoluteJointConstraint(
-                bodyNode, toEigen(jointPosition), toEigen(axis));
-          }),
+          nb::init(
+              [](dart::dynamics::BodyNode* bodyNode,
+                 const std::array<double, 3>& jointPosition,
+                 const std::array<double, 3>& axis)
+                  -> std::unique_ptr<RevoluteJointConstraint> {
+                return std::make_unique<RevoluteJointConstraint>(
+                    bodyNode, toEigen(jointPosition), toEigen(axis));
+              }),
           nb::arg("bodyNode"),
           nb::arg("jointPosition"),
           nb::arg("axis"))
       .def(
-          nb::init([](dart::dynamics::BodyNode* bodyNode1,
-                      dart::dynamics::BodyNode* bodyNode2,
-                      const std::array<double, 3>& jointPosition,
-                      const std::array<double, 3>& axis1,
-                      const std::array<double, 3>& axis2) {
-            return new RevoluteJointConstraint(
-                bodyNode1,
-                bodyNode2,
-                toEigen(jointPosition),
-                toEigen(axis1),
-                toEigen(axis2));
-          }),
+          nb::init(
+              [](dart::dynamics::BodyNode* bodyNode1,
+                 dart::dynamics::BodyNode* bodyNode2,
+                 const std::array<double, 3>& jointPosition,
+                 const std::array<double, 3>& axis1,
+                 const std::array<double, 3>& axis2)
+                  -> std::unique_ptr<RevoluteJointConstraint> {
+                return std::make_unique<RevoluteJointConstraint>(
+                    bodyNode1,
+                    bodyNode2,
+                    toEigen(jointPosition),
+                    toEigen(axis1),
+                    toEigen(axis2));
+              }),
           nb::arg("bodyNode1"),
           nb::arg("bodyNode2"),
           nb::arg("jointPosition"),
