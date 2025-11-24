@@ -588,12 +588,9 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Isometry3d Qdiff
-      = convertToTransform(getVelocitiesStatic() * _dt);
+      = math::expMap(getRelativeSpatialVelocity() * _dt);
   const Eigen::Isometry3d Qnext = getQ() * Qdiff;
-  const Eigen::Isometry3d QdiffInv = Qdiff.inverse();
 
-  setVelocitiesStatic(math::AdR(QdiffInv, getVelocitiesStatic()));
-  setAccelerationsStatic(math::AdR(QdiffInv, getAccelerationsStatic()));
   setPositionsStatic(convertToPositions(Qnext));
 }
 

@@ -1928,9 +1928,93 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
 
   skel->integratePositions(dt);
   translated = joint->getRelativeTransform().translation();
-  const Eigen::Matrix3d initialRotation
-      = joint->getRelativeTransform().linear();
   const Eigen::Vector3d expectedTranslation
-      = initialTranslation + initialRotation * velocities.tail<3>() * dt;
+      = initialTranslation + velocities.tail<3>() * dt;
   EXPECT_TRUE(equals(translated, expectedTranslation));
+}
+
+//==============================================================================
+TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  const Eigen::Isometry3d pose = random_transform();
+  joint->setPositions(FreeJoint::convertToPositions(pose));
+
+  const Eigen::Vector6d velocities = random_vec<6>(1.0);
+  joint->setVelocities(velocities);
+
+  const Eigen::Vector6d bodyTwist = joint->getRelativeSpatialVelocity();
+  const double dt = 1e-6;
+
+  const Eigen::Isometry3d start = joint->getRelativeTransform();
+  skel->integratePositions(dt);
+  const Eigen::Isometry3d end = joint->getRelativeTransform();
+
+  const Eigen::Vector6d twistFromStep
+      = math::logMap(start.inverse() * end) / dt;
+
+  EXPECT_TRUE(equals(twistFromStep, bodyTwist, 1e-8));
+}
+
+//==============================================================================
+TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+  joint->setVelocities(random_vec<6>(0.5));
+
+  const Eigen::Matrix6d jacobian0 = joint->getRelativeJacobian();
+  const Eigen::Matrix6d jacobianDot = joint->getRelativeJacobianTimeDeriv();
+
+  const Eigen::Vector6d savedPositions = joint->getPositions();
+  const double dt = 1e-6;
+
+  skel->integratePositions(dt);
+  const Eigen::Matrix6d jacobian1 = joint->getRelativeJacobian();
+  joint->setPositions(savedPositions);
+
+  const Eigen::Matrix6d jacobianFd = (jacobian1 - jacobian0) / dt;
+
+  EXPECT_TRUE(equals(jacobianDot, jacobianFd, 1e-6));
+}
+
+//==============================================================================
+TEST_F(Joints, FREE_JOINT_KINETIC_ENERGY_CONSERVATION)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  dynamics::Inertia inertia;
+  inertia.setMass(3.0);
+  inertia.setMoment(0.7 * Eigen::Matrix3d::Identity());
+  body->setInertia(inertia);
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+  joint->setVelocities(random_vec<6>(0.5));
+
+  const double initialEnergy = body->computeKineticEnergy();
+  const double dt = 1e-3;
+
+  const std::size_t numStepsShort = 5;
+  for (std::size_t i = 0; i < numStepsShort; ++i) {
+    skel->integratePositions(dt);
+    EXPECT_NEAR(body->computeKineticEnergy(), initialEnergy, 1e-12);
+  }
+
+  const std::size_t numStepsLong = 1000;
+  for (std::size_t i = 0; i < numStepsLong; ++i)
+    skel->integratePositions(dt);
+
+  EXPECT_NEAR(body->computeKineticEnergy(), initialEnergy, 1e-10);
 }
