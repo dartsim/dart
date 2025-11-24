@@ -191,7 +191,7 @@ public:
   /// Set the velocity limits of this DegreeOfFreedom
   void setVelocityLimits(double _lowerLimit, double _upperLimit);
 
-  /// Set the velocity limtis of this DegreeOfFreedom
+  /// Set the velocity limits of this DegreeOfFreedom
   void setVelocityLimits(const std::pair<double, double>& _limits);
 
   /// Get the velocity limits of this DegreeOfFreedom
@@ -236,7 +236,7 @@ public:
   /// Set the acceleration limits of this DegreeOfFreedom
   void setAccelerationLimits(double _lowerLimit, double _upperLimit);
 
-  /// Set the acceleartion limits of this DegreeOfFreedom
+  /// Set the acceleration limits of this DegreeOfFreedom
   void setAccelerationLimits(const std::pair<double, double>& _limits);
 
   /// Get the acceleration limits of this DegreeOfFreedom

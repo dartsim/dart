@@ -292,7 +292,7 @@ protected:
   /// Pointer to the Skeleton that this IK is tied to
   WeakSkeletonPtr mSkeleton;
 
-  /// Cache for the IK hierarcy
+  /// Cache for the IK hierarchy
   IKHierarchy mHierarchy;
 
   /// The Problem that this IK module is maintaining

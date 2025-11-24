@@ -45,7 +45,7 @@ namespace dart {
 namespace utils {
 
 /// CompositeResourceRetriever allows multiple @ref ResourceRetriever to be
-/// used interchangably by: (1) associating each @ref ResourceRetriever with a
+/// used interchangeably by: (1) associating each @ref ResourceRetriever with a
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN

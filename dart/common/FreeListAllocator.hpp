@@ -55,7 +55,7 @@ namespace dart::common {
 /// preallocated memory is actually used using the free list data structure.
 ///
 /// If the preallocated memory is all used up, then this class allocates
-/// additional memory chunck using the base allocator.
+/// additional memory chunk using the base allocator.
 class DART_API FreeListAllocator : public MemoryAllocator
 {
 public:

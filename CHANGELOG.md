@@ -46,7 +46,7 @@
   - Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
   - Removed all APIs deprecated in DART 6.11 (`DartLoader::Flags` and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
   - Removed all APIs deprecated in DART 6.12 (the `SdfParser::readWorld`/`readSkeleton` overloads that accepted direct `ResourceRetriever` parameters).
-  - Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
+  - Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statistics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
   - Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
   - Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
   - Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
@@ -344,7 +344,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 
 - Dynamics
   - Fixed friction and restitution of individual shapes in a body: [#1369](https://github.com/dartsim/dart/pull/1369)
-  - Fixed soft body simulation when command input is not resetted: [#1372](https://github.com/dartsim/dart/pull/1372)
+  - Fixed soft body simulation when command input is not reset: [#1372](https://github.com/dartsim/dart/pull/1372)
   - Added joint velocity limit constraint support: [#1407](https://github.com/dartsim/dart/pull/1407)
   - Added type property to constrain classes: [#1415](https://github.com/dartsim/dart/pull/1415)
   - Allowed to set joint rest position out of joint limits: [#1418](https://github.com/dartsim/dart/pull/1418)
@@ -1002,7 +1002,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Added gcc warning flag `-Wextra`: [#600](https://github.com/dartsim/dart/pull/600)
   - Improved memory management of `constraint` namespace: [#584](https://github.com/dartsim/dart/pull/584), [#583](https://github.com/dartsim/dart/issues/583)
   - Changed the extension of headers from `.h` to `.hpp`: [#709](https://github.com/dartsim/dart/pull/709), [#693](https://github.com/dartsim/dart/pull/693), [#568](https://github.com/dartsim/dart/issues/568)
-  - Changed Doxyfile to gnerate tag file: [#690](https://github.com/dartsim/dart/pull/690)
+  - Changed Doxyfile to generate tag file: [#690](https://github.com/dartsim/dart/pull/690)
   - Changed the convention to use `std::size_t` over `size_t`: [#681](https://github.com/dartsim/dart/pull/681), [#656](https://github.com/dartsim/dart/issues/656)
   - Changed CMake to configure preprocessors using `#cmakedefine`: [#648](https://github.com/dartsim/dart/pull/648), [#641](https://github.com/dartsim/dart/pull/641)
   - Updated copyright years: [#679](https://github.com/dartsim/dart/pull/679), [#160](https://github.com/dartsim/dart/issues/160)
@@ -1030,7 +1030,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Changed Travis-CI to test DART with bullet collision detector: [#650](https://github.com/dartsim/dart/pull/650), [#376](https://github.com/dartsim/dart/issues/376)
   - Changed the minimum requirement of Visual Studio version to 2015: [#592](https://github.com/dartsim/dart/issues/592)
   - Changed CMake to build gui::osg examples when `DART_BUILD_EXAMPLES` is on: [#536](https://github.com/dartsim/dart/pull/536)
-  - Simplfied Travis-CI tests for general pushes: [#700](https://github.com/dartsim/dart/pull/700)
+  - Simplified Travis-CI tests for general pushes: [#700](https://github.com/dartsim/dart/pull/700)
   - Fixed Eigen memory alignment issue in testCollision.cpp: [#719](https://github.com/dartsim/dart/pull/719)
   - Fixed `BULLET_INCLUDE_DIRS` in `DARTConfig.cmake`: [#697](https://github.com/dartsim/dart/pull/697)
   - Fixed linking with Bullet on OS X El Capitan by supporting for Bullet built with double precision: [#660](https://github.com/dartsim/dart/pull/660), [#657](https://github.com/dartsim/dart/issues/657)
@@ -1283,7 +1283,7 @@ This release is mostly a maintenance update, including various CI updates and bu
    - [Pull request #384](https://github.com/dartsim/dart/pull/384)
    - [Issue #379](https://github.com/dartsim/dart/issues/379)
 
-1. Eradicated memory leaks and maked classes copy-safe and clonable
+1. Eradicated memory leaks and made classes copy-safe and clonable
    - [Pull request #369](https://github.com/dartsim/dart/pull/369)
    - [Pull request #390](https://github.com/dartsim/dart/pull/390)
    - [Pull request #391](https://github.com/dartsim/dart/pull/391)
@@ -1553,7 +1553,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 ### Version 3.0 (2013-11-04)
 
 1. Removed Transformation classes. Their functionality is now included in joint classes.
-1. Added Featherstone algorithm. Can currently only be used without collision handling. The old algortihm is still present and used for that case.
+1. Added Featherstone algorithm. Can currently only be used without collision handling. The old algorithm is still present and used for that case.
 1. Removed kinematics namespace. Functionality is moved to dynamics classes.
 1. Added dart root namespace
 1. A lot of function and variable renames

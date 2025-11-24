@@ -66,7 +66,7 @@ public:
 
   /// @copydoc Shape::computeInertia()
   ///
-  /// This base class computes the intertia based on the bounding box.
+  /// This base class computes the inertia based on the bounding box.
   /// Subclasses may choose to provide a more accurate computation of the
   /// inertia.
   Eigen::Matrix3d computeInertia(double mass) const override;
@@ -164,8 +164,8 @@ protected:
   void updateVolume() const override;
 
   /// Computes the bounding box of the height field.
-  /// @param[out] min Mininum of box
-  /// @param[out] max Maxinum of box
+  /// @param[out] min Minimum of box
+  /// @param[out] max Maximum of box
   void computeBoundingBox(Eigen::Vector3d& min, Eigen::Vector3d& max) const;
 
 private:

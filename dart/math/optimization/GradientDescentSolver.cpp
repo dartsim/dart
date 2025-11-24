@@ -158,7 +158,7 @@ bool GradientDescentSolver::solve()
         x += scale * (dx - x);
       }
 
-      // Check if the equality constraints are satsified
+      // Check if the equality constraints are satisfied
       satisfied = true;
       for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
         mEqConstraintCostCache[i] = problem->getEqConstraint(i)->eval(x);

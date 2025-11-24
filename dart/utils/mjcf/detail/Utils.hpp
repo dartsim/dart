@@ -67,7 +67,7 @@ Eigen::Matrix3d compileRotation(
 /// @param[in] baseUri The URI of the main MJCF model file
 /// @param[in] retriever The resource retriever used for the main MJCF model
 /// file
-/// @return Errors occured in hadling <include> elements
+/// @return Errors occurred in handling <include> elements
 Errors handleInclude(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,

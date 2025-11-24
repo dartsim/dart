@@ -58,6 +58,12 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     """
     Invoke `cmake --build` for the provided target.
     """
+    parallel_env = (
+        os.environ.get("DART_PARALLEL_JOBS")
+        or os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL")
+    )
+    parallel = (parallel_env or "1").strip()
+
     cmd = [
         "cmake",
         "--build",
@@ -66,12 +72,8 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         build_type,
         "--target",
         target,
-        "--parallel",
     ]
-
-    parallel = os.environ.get("DART_PARALLEL_JOBS")
-    if parallel and parallel.strip():
-        cmd.append(parallel)
+    cmd.extend(["--parallel", parallel])
 
     def _run_build(args):
         subprocess.check_call(args)
@@ -81,12 +83,12 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         return
     except (subprocess.CalledProcessError, OSError):
         # If parallelism was explicitly configured, honor that failure.
-        if parallel and parallel.strip():
+        if parallel_env and parallel_env.strip():
             raise
 
         # Retry with minimal parallelism to avoid transient resource limits
         # observed in CI (e.g., ninja posix_spawn failures).
-        fallback_cmd = cmd + ["1"]
+        fallback_cmd = cmd[:-1] + ["1"]
         backoff_seconds = (0, 10, 30, 60)
         last_error: Optional[BaseException] = None
         for delay in backoff_seconds:

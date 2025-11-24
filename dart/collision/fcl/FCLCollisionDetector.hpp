@@ -60,7 +60,7 @@ public:
   /// result.
   ///
   /// Warning: FCL's primitive shape support is not complete. FCL 0.4.0 improved
-  /// the support alot, but it still returns single contact point for a shape
+  /// the support a lot, but it still returns single contact point for a shape
   /// pair except for box-box collision. For this reason, we recommend using
   /// MESH until FCL fully supports primitive shapes.
   enum PrimitiveShape

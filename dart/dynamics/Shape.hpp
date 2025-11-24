@@ -198,7 +198,7 @@ protected:
   /// @brief
   static std::atomic_int mCounter;
 
-  /// Type of primitive shpae.
+  /// Type of primitive shape.
   ShapeType mType;
 
 private:
