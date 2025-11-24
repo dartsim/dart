@@ -74,8 +74,8 @@ jobs:
 
       - name: Test gz-physics
         env:
-          CMAKE_BUILD_PARALLEL_LEVEL: 4
-          NINJAFLAGS: "-j4"
-          MAKEFLAGS: "-j4"
+          CMAKE_BUILD_PARALLEL_LEVEL: 2
+          NINJAFLAGS: "-j2"
+          MAKEFLAGS: "-j2"
         run: |
           pixi r -e gazebo test-gz
