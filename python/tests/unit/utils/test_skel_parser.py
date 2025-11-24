@@ -11,9 +11,9 @@ import pytest
 
 
 def test_read_world():
-    assert dart.utils.SkelParser.read_world("dart://sample/skel/cubes.skel") is not None
+    assert dart.io.SkelParser.read_world("dart://sample/skel/cubes.skel") is not None
     assert (
-        dart.utils.SkelParser.read_world("dart://sample/skel/cubes.skel", None)
+        dart.io.SkelParser.read_world("dart://sample/skel/cubes.skel", None)
         is not None
     )
 

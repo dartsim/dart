@@ -8,8 +8,8 @@ import pytest
 def kinematics_tester(joint):
     num_tests = 2
 
-    joint.set_transform_from_child_body_node(dart.math.exp_map(np.random.rand(6)))
-    joint.set_transform_from_parent_body_node(dart.math.exp_map(np.random.rand(6)))
+    joint.set_transform_from_child_body_node(dart.exp_map(np.random.rand(6)))
+    joint.set_transform_from_parent_body_node(dart.exp_map(np.random.rand(6)))
 
     dof = joint.get_num_dofs()
 
@@ -20,8 +20,8 @@ def kinematics_tester(joint):
         q_delta = 1e-5
 
         for i in range(dof):
-            q[i] = dart.math.Random.uniform(-math.pi, math.pi)
-            dq[i] = dart.math.Random.uniform(-math.pi, math.pi)
+            q[i] = dart.Random.uniform(-math.pi, math.pi)
+            dq[i] = dart.Random.uniform(-math.pi, math.pi)
 
         joint.set_positions(q)
         joint.set_velocities(dq)
@@ -34,7 +34,7 @@ def kinematics_tester(joint):
         dJ = joint.get_relative_jacobian_time_deriv()
 
         # Verify transform
-        assert dart.math.verify_transform(T)
+        assert dart.verify_transform(T)
 
         # Test analytic Jacobian and numerical Jacobian
         numericJ = np.zeros((6, dof))
@@ -66,50 +66,50 @@ def kinematics_tester(joint):
 
 
 def test_kinematics():
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_weld_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_revolute_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_prismatic_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_screw_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_universal_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_translational_joint2_d_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_euler_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_translational_joint_and_body_node_pair()
     kinematics_tester(joint)
 
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_planar_joint_and_body_node_pair()
     kinematics_tester(joint)
 
 
 def test_access_to_parent_child_transforms():
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
     joint, _ = skel.create_revolute_joint_and_body_node_pair()
 
-    parentToJointTf = dart.math.Isometry3.Identity()
+    parentToJointTf = dart.Isometry3.Identity()
     parentToJointTf.set_translation(np.random.rand(3, 1))
-    childToJointTf = dart.math.Isometry3.Identity()
+    childToJointTf = dart.Isometry3.Identity()
     childToJointTf.set_translation(np.random.rand(3, 1))
 
     joint.set_transform_from_parent_body_node(parentToJointTf)
@@ -124,10 +124,10 @@ def test_access_to_parent_child_transforms():
 
 def test_ball_joint_positions_conversion():
     assert np.allclose(
-        dart.dynamics.BallJoint.convert_to_positions(np.eye(3)), np.zeros((1, 3))
+        dart.BallJoint.convert_to_positions(np.eye(3)), np.zeros((1, 3))
     )
     assert np.allclose(
-        dart.dynamics.BallJoint.convert_to_positions(
+        dart.BallJoint.convert_to_positions(
             np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
         ),
         np.array([0, 0, -np.pi / 2]),
@@ -136,12 +136,12 @@ def test_ball_joint_positions_conversion():
     for i in range(30):
         ballJointPos = np.random.uniform(-np.pi / 2, np.pi / 2, 3)
         assert np.allclose(
-            dart.dynamics.BallJoint.convert_to_rotation(
-                dart.dynamics.BallJoint.convert_to_positions(
-                    dart.dynamics.BallJoint.convert_to_rotation(ballJointPos)
+            dart.BallJoint.convert_to_rotation(
+                dart.BallJoint.convert_to_positions(
+                    dart.BallJoint.convert_to_rotation(ballJointPos)
                 )
             ),
-            dart.dynamics.BallJoint.convert_to_rotation(ballJointPos),
+            dart.BallJoint.convert_to_rotation(ballJointPos),
         )
 
 

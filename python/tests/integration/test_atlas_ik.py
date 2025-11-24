@@ -30,28 +30,36 @@ import numpy as np
 import pytest
 
 
+def _dof(skeleton: dart.Skeleton, name: str):
+  """Return DOF by name."""
+  for dof in skeleton.get_dofs():
+    if dof.get_name() == name:
+      return dof
+  raise KeyError(name)
+
+
 def create_simple_atlas():
-    """Create a simplified Atlas robot for testing."""
-    urdf = dart.utils.DartLoader()
-    atlas = urdf.parse_skeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
-    return atlas
+  """Create a simplified Atlas robot for testing."""
+  urdf = dart.io.DartLoader()
+  atlas = urdf.parse_skeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+  return atlas
 
 
 def setup_atlas_standing_pose(atlas):
-    """Configure Atlas into a default standing pose."""
-    # Right leg
-    atlas.get_dof("r_leg_hpy").set_position(-45.0 * np.pi / 180.0)
-    atlas.get_dof("r_leg_kny").set_position(90.0 * np.pi / 180.0)
-    atlas.get_dof("r_leg_aky").set_position(-45.0 * np.pi / 180.0)
+  """Configure Atlas into a default standing pose."""
+  # Right leg
+  _dof(atlas, "r_leg_hpy").set_position(-45.0 * np.pi / 180.0)
+  _dof(atlas, "r_leg_kny").set_position(90.0 * np.pi / 180.0)
+  _dof(atlas, "r_leg_aky").set_position(-45.0 * np.pi / 180.0)
 
-    # Left leg
-    atlas.get_dof("l_leg_hpy").set_position(-45.0 * np.pi / 180.0)
-    atlas.get_dof("l_leg_kny").set_position(90.0 * np.pi / 180.0)
-    atlas.get_dof("l_leg_aky").set_position(-45.0 * np.pi / 180.0)
+  # Left leg
+  _dof(atlas, "l_leg_hpy").set_position(-45.0 * np.pi / 180.0)
+  _dof(atlas, "l_leg_kny").set_position(90.0 * np.pi / 180.0)
+  _dof(atlas, "l_leg_aky").set_position(-45.0 * np.pi / 180.0)
 
-    # Prevent knees from bending backwards
-    atlas.get_dof("r_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
-    atlas.get_dof("l_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
+  # Prevent knees from bending backwards
+  _dof(atlas, "r_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
+  _dof(atlas, "l_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
 
 
 def ensure_end_effector(atlas, body_name, ee_name=None):
@@ -82,7 +90,7 @@ def test_end_effector_creation_and_support():
     assert effector is not None
     assert effector.get_name() == ee_name
 
-    tf = dart.math.Isometry3()
+    tf = dart.Isometry3()
     tf.set_translation([0.01, -0.02, 0.03])
     effector.set_default_relative_transform(tf, True)
 
@@ -118,12 +126,12 @@ def test_atlas_hand_ik_simple():
     l_hand = ensure_end_effector(atlas, "l_hand")
 
     # Set offset for palm center
-    tf_hand = dart.math.Isometry3()
+    tf_hand = dart.Isometry3()
     tf_hand.set_translation([0.0, 0.12, 0.0])
     l_hand.set_default_relative_transform(tf_hand)
 
     # Create a simple frame target
-    target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target")
+    target = dart.SimpleFrame(dart.Frame.world(), "target")
 
     # Store initial hand position
     initial_pos = l_hand.get_world_transform().translation()
@@ -195,12 +203,12 @@ def test_atlas_foot_ik_constrained():
     l_foot = ensure_end_effector(atlas, "l_foot")
 
     # Set offset
-    tf_foot = dart.math.Isometry3()
+    tf_foot = dart.Isometry3()
     tf_foot.set_translation([0.186, 0.0, -0.08])
     l_foot.set_default_relative_transform(tf_foot)
 
     # Create target
-    target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target")
+    target = dart.SimpleFrame(dart.Frame.world(), "target")
 
     # Get current foot position
     initial_tf = l_foot.get_world_transform()
@@ -248,17 +256,17 @@ def test_atlas_hierarchical_ik():
     r_hand = ensure_end_effector(atlas, "r_hand")
 
     # Set offsets
-    tf_hand_l = dart.math.Isometry3()
+    tf_hand_l = dart.Isometry3()
     tf_hand_l.set_translation([0.0, 0.12, 0.0])
     l_hand.set_default_relative_transform(tf_hand_l)
 
-    tf_hand_r = dart.math.Isometry3()
+    tf_hand_r = dart.Isometry3()
     tf_hand_r.set_translation([0.0, -0.12, 0.0])
     r_hand.set_default_relative_transform(tf_hand_r)
 
     # Create targets
-    l_target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "l_target")
-    r_target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "r_target")
+    l_target = dart.SimpleFrame(dart.Frame.world(), "l_target")
+    r_target = dart.SimpleFrame(dart.Frame.world(), "r_target")
 
     # Set targets 10cm forward
     l_initial_pos = l_hand.get_world_transform().translation()

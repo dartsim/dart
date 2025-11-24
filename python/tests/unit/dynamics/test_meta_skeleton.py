@@ -7,7 +7,7 @@ import pytest
 
 
 def test_basic():
-    urdfParser = dart.utils.DartLoader()
+    urdfParser = dart.io.DartLoader()
     kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
@@ -17,11 +17,11 @@ def test_basic():
     elbow = kr5.get_body_node("elbow")
     assert elbow is not None
 
-    chain1 = dart.dynamics.Chain(shoulder, elbow, False, "midchain")
+    chain1 = dart.Chain(shoulder, elbow, False, "midchain")
     assert chain1 is not None
     assert chain1.get_num_body_nodes() == 2
 
-    chain2 = dart.dynamics.Chain(shoulder, elbow, True, "midchain")
+    chain2 = dart.Chain(shoulder, elbow, True, "midchain")
     assert chain2 is not None
     assert chain2.get_num_body_nodes() == 3
 

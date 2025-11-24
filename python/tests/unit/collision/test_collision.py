@@ -10,11 +10,11 @@ def collision_groups_tester(cd):
     pos1 = [0, 0, 0]
     pos2 = [0.5, 0, 0]
 
-    simple_frame1 = dart.dynamics.SimpleFrame()
-    simple_frame2 = dart.dynamics.SimpleFrame()
+    simple_frame1 = dart.SimpleFrame()
+    simple_frame2 = dart.SimpleFrame()
 
-    sphere1 = dart.dynamics.SphereShape(1)
-    sphere2 = dart.dynamics.SphereShape(1)
+    sphere1 = dart.SphereShape(1)
+    sphere2 = dart.SphereShape(1)
 
     simple_frame1.set_shape(sphere1)
     simple_frame2.set_shape(sphere2)
@@ -58,8 +58,8 @@ def collision_groups_tester(cd):
     group.remove_all_shape_frames()
     assert group.get_num_shape_frames() == 0
 
-    skel1 = dart.dynamics.Skeleton()
-    skel2 = dart.dynamics.Skeleton()
+    skel1 = dart.Skeleton()
+    skel2 = dart.Skeleton()
 
     [joint1, body1] = skel1.create_free_joint_and_body_node_pair(None)
     [joint2, body2] = skel2.create_free_joint_and_body_node_pair(None)
@@ -123,9 +123,9 @@ def test_collision_groups():
 def test_filter(cd):
     # Create two bodies skeleton. The two bodies are placed at the same position
     # with the same size shape so that they collide by default.
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
 
-    shape = dart.dynamics.BoxShape(np.ones(3))
+    shape = dart.BoxShape(np.ones(3))
 
     _, body0 = skel.create_revolute_joint_and_body_node_pair()
     shape_node0 = body0.create_shape_node(shape)
@@ -198,8 +198,8 @@ def test_filter(cd):
 def test_raycast():
     cd = dart.BulletCollisionDetector()
 
-    simple_frame = dart.dynamics.SimpleFrame()
-    sphere = dart.dynamics.SphereShape(1)
+    simple_frame = dart.SimpleFrame()
+    sphere = dart.SphereShape(1)
     simple_frame.set_shape(sphere)
 
     group = cd.create_collision_group()

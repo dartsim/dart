@@ -6,9 +6,9 @@ import pytest
 
 
 def test_basic():
-    skel = dart.dynamics.Skeleton()
+    skel = dart.Skeleton()
 
-    joint_prop = dart.dynamics.FreeJointProperties()
+    joint_prop = dart.FreeJointProperties()
     joint_prop.m_name = "joint0"
     assert joint_prop.m_name == "joint0"
 

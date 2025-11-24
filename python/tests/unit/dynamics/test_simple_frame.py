@@ -6,10 +6,10 @@ import pytest
 
 
 def test_basic():
-    world_frame = dart.dynamics.Frame.World()
+    world_frame = dart.Frame.world()
     assert world_frame.is_world()
 
-    frame1 = dart.dynamics.SimpleFrame()
+    frame1 = dart.SimpleFrame()
     assert not frame1.is_world()
     assert not frame1.is_shape_node()
     assert frame1.is_shape_frame()

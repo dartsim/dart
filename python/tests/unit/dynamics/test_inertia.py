@@ -11,11 +11,11 @@ def test_inertia_init():
     Test basic functionality for the `dartpy.dynamics.Inertia` class.
     """
     # test default values
-    i1 = dart.dynamics.Inertia()
+    i1 = dart.Inertia()
     assert i1 is not None
 
     # initialize with parameters
-    i2 = dart.dynamics.Inertia(0.1, [0, 0, 0], 1.3 * np.eye(3))
+    i2 = dart.Inertia(0.1, [0, 0, 0], 1.3 * np.eye(3))
     assert i1 is not None
 
     newMass = 1.5
@@ -40,7 +40,7 @@ def test_inertia_init():
         I = np.random.rand(3, 3) - 0.5 + np.diag(np.random.uniform(0.6, 1, 3), 0)
         I = (I + I.T) / 2
 
-        inertia = dart.dynamics.Inertia(mass, com, I)
+        inertia = dart.Inertia(mass, com, I)
         assert inertia.verify()
 
 
@@ -48,13 +48,13 @@ def test_inertia_static_methods():
     """
     Test the class methods `verifyMoment`and `verifySpatialTensor`.
     """
-    assert dart.dynamics.Inertia.verify_moment(np.eye(3), printWarnings=False)
+    assert dart.Inertia.verify_moment(np.eye(3), printWarnings=False)
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 + np.diag(np.random.uniform(1, 10, 3), 0)
         I = (I + I.T) / 2
-        assert dart.dynamics.Inertia.verify_moment(I)
+        assert dart.Inertia.verify_moment(I)
 
-    assert dart.dynamics.Inertia.verify_spatial_tensor(np.eye(6), printWarnings=False)
+    assert dart.Inertia.verify_spatial_tensor(np.eye(6), printWarnings=False)
 
 
 def test_failing_moment_and_spatial():
@@ -64,10 +64,10 @@ def test_failing_moment_and_spatial():
 
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 - np.diag(np.random.uniform(1, 10, 3), 0)
-        assert not dart.dynamics.Inertia.verify_moment(I, printWarnings=False)
+        assert not dart.Inertia.verify_moment(I, printWarnings=False)
 
     # fails e.g. due to off diagonal values in translational part.
-    assert not dart.dynamics.Inertia.verify_spatial_tensor(
+    assert not dart.Inertia.verify_spatial_tensor(
         np.random.rand(6, 6), printWarnings=False
     )
 

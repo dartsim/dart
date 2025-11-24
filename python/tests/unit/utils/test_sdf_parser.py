@@ -12,13 +12,13 @@ import pytest
 
 def test_read_world():
     assert (
-        dart.utils.SdfParser.read_world("dart://sample/sdf/double_pendulum.world")
+        dart.io.SdfParser.read_world("dart://sample/sdf/double_pendulum.world")
         is not None
     )
 
 
 def test_read_high_version_world():
-    world = dart.utils.SdfParser.read_world(
+    world = dart.io.SdfParser.read_world(
         "dart://sample/sdf/test/high_version.world"
     )
     assert world is not None

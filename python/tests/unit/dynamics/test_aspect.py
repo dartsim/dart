@@ -3,7 +3,7 @@ import pytest
 
 
 def test_simple_frame():
-    shape_frame = dart.dynamics.SimpleFrame()
+    shape_frame = dart.SimpleFrame()
     assert not shape_frame.has_visual_aspect()
     assert shape_frame.get_visual_aspect() is None
     assert shape_frame.get_visual_aspect(False) is None

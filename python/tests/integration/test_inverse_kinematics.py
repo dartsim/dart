@@ -87,10 +87,10 @@ def test_do_not_apply_solution_on_failure():
     dofs = skel.get_num_dofs()
     skel.reset_positions()
 
-    assert not ik.solve_and_apply(allow_incomplete_result=False)
+    assert not ik.solve_and_apply(False)
     assert np.isclose(skel.get_positions(), np.zeros(dofs)).all()
 
-    assert not ik.solve_and_apply(allow_incomplete_result=True)
+    assert not ik.solve_and_apply(True)
     assert not np.isclose(skel.get_positions(), np.zeros(dofs)).all()
 
 
