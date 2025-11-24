@@ -2,13 +2,17 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
-
+#include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/Viewer.hpp>
+#include <dart/gui/WorldNode.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+
+#include <osgGA/GUIEventHandler>
+#include <osgViewer/View>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
