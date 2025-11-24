@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -56,7 +57,7 @@
 
 #include <assimp/scene.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 namespace {
@@ -1609,4 +1610,4 @@ Contact convertContact(
 } // anonymous namespace
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

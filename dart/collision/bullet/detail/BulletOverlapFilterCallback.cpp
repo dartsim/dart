@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -37,7 +38,7 @@
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/common/Macros.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -105,4 +106,4 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

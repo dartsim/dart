@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
 #include "dart/collision/fcl/FCLTypes.hpp"
@@ -37,7 +38,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -108,4 +109,4 @@ void FCLCollisionObject::updateEngineData()
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

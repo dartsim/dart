@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <ode/ode.h>
@@ -43,7 +44,7 @@
 
 #define MAX_COLLIDE_RETURNS 250
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 /// OdeCollisionDetector wraps the ODE collision detector.
@@ -148,6 +149,4 @@ private:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_

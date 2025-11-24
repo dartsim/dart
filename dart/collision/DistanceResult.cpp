@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/DistanceResult.hpp"
 
 #define DART_DEFAULT_MIN_DISTANCE (0.0)
 #define DART_DEFAULT_UNCLAMPED_MIN_DISTANCE (0.0)
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -79,4 +80,4 @@ bool DistanceResult::isMinDistanceClamped() const
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

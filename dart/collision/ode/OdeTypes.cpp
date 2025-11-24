@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/OdeTypes.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -42,4 +43,4 @@ Eigen::Vector3d OdeTypes::convertVector3(const dVector3& vec)
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

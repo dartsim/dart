@@ -33,11 +33,12 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/bullet/BulletCollisionShape.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class CollisionObject;
@@ -82,6 +83,4 @@ protected:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_

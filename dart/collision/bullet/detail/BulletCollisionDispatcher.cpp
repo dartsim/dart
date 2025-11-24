@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -86,4 +87,4 @@ bool BulletCollisionDispatcher::needsCollision(
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

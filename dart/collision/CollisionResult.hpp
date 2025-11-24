@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONRESULT_HPP_
 #define DART_COLLISION_COLLISIONRESULT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/Contact.hpp>
 
 #include <dart/Export.hpp>
@@ -40,7 +41,8 @@
 #include <unordered_set>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
+
 
 namespace dynamics {
 
@@ -106,6 +108,4 @@ protected:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_COLLISIONRESULT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_COLLISIONRESULT_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/Contact.hpp>
@@ -53,7 +54,7 @@
 #include <map>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class CollisionObject;
@@ -301,8 +302,6 @@ private:
 };
 
 } // namespace collision
-} // namespace dart
-
-#include <dart/collision/detail/CollisionDetector.hpp>
+DART_INLINE_NAMESPACE_END#include <dart/collision/detail/CollisionDetector.hpp>
 
 #endif // DART_COLLISION_COLLISIONDETECTOR_HPP_

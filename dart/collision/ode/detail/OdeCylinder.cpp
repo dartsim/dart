@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/detail/OdeCylinder.hpp"
 
 #include "dart/dynamics/CylinderShape.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -54,4 +55,4 @@ OdeCylinder::~OdeCylinder()
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

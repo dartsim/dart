@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/CollisionFilter.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -165,4 +166,4 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

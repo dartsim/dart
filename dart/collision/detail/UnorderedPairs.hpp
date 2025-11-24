@@ -33,10 +33,11 @@
 #ifndef DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_
 #define DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <unordered_map>
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -148,6 +149,4 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/bullet/BulletCollisionGroup.hpp>
 #include <dart/collision/bullet/BulletCollisionShape.hpp>
@@ -43,7 +44,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class DART_API BulletCollisionDetector : public CollisionDetector
@@ -162,6 +163,4 @@ private:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_

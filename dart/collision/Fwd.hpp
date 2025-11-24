@@ -33,9 +33,10 @@
 #ifndef DART_COLLISION_FWD_HPP_
 #define DART_COLLISION_FWD_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/SmartPointer.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class CollisionDetector;
@@ -62,6 +63,4 @@ DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FWD_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_FWD_HPP_

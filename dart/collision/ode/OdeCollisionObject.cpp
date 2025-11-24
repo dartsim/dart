@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 
 #include "dart/collision/ode/OdeTypes.hpp"
@@ -55,7 +56,7 @@
 
 #include <ode/ode.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -236,4 +237,4 @@ detail::OdeGeom* createOdeGeom(
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

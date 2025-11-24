@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_CONTACT_HPP_
 #define DART_COLLISION_CONTACT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/Fwd.hpp>
 
 #include <dart/dynamics/Fwd.hpp>
@@ -41,7 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 /// Contact information
@@ -98,8 +99,6 @@ struct DART_API Contact
 };
 
 } // namespace collision
-} // namespace dart
-
-#include <dart/collision/detail/Contact-impl.hpp>
+DART_INLINE_NAMESPACE_END#include <dart/collision/detail/Contact-impl.hpp>
 
 #endif // DART_COLLISION_CONTACT_HPP_

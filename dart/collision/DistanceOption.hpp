@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
 #define DART_COLLISION_DISTANCE_OPTION_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <memory>
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 struct DistanceFilter;
@@ -77,6 +78,4 @@ struct DART_API DistanceOption
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DISTANCE_OPTION_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DISTANCE_OPTION_HPP_

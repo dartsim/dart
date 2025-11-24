@@ -30,12 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -114,4 +115,4 @@ FCLCollisionGroup::getFCLCollisionManager() const
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

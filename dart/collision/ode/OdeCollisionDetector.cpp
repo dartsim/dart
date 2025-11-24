@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -59,7 +60,7 @@
 #include <functional>
 #include <utility>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 namespace {
@@ -614,4 +615,4 @@ void OdeCollisionDetector::clearContactHistory()
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

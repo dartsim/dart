@@ -33,11 +33,12 @@
 #ifndef DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 #define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -67,6 +68,4 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_

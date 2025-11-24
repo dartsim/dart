@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 
 #include "dart/dynamics/MeshShape.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -135,4 +136,4 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

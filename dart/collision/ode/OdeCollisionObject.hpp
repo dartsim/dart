@@ -33,12 +33,13 @@
 #ifndef DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
 #define DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <ode/ode.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 namespace detail {
@@ -84,6 +85,4 @@ protected:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_

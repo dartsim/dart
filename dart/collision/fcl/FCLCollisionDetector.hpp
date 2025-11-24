@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/fcl/FCLTypes.hpp>
 
@@ -40,7 +41,7 @@
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class FCLCollisionObject;
@@ -201,6 +202,4 @@ private:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_

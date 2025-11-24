@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/collision/ode/detail/OdeHeightmap.hpp>
@@ -38,7 +39,7 @@
 
 #include <type_traits>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -180,4 +181,4 @@ OdeHeightmap<S>::~OdeHeightmap()
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

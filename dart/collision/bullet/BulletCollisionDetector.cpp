@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include "dart/collision/CollisionFilter.hpp"
@@ -58,7 +59,7 @@
 
 #include <algorithm>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 namespace {
@@ -1092,4 +1093,4 @@ bool isConvex(const aiMesh* mesh, float threshold)
 } // anonymous namespace
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <cmath>
 
 /* some macros */
@@ -110,7 +111,7 @@
     return COPLANAR_CONTACT;                                                   \
   }
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 /* if USE_EPSILON_TEST is true then we do a check:
@@ -327,6 +328,4 @@ inline int tri_tri_intersect(
 }
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_

@@ -30,13 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -95,4 +96,4 @@ void BulletCollisionObject::updateEngineData()
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -33,11 +33,13 @@
 #ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
 #define DART_COLLISION_DISTANCE_RESULT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
+
 
 namespace dynamics {
 class ShapeFrame;
@@ -120,6 +122,4 @@ struct DART_API DistanceResult
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DISTANCE_RESULT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DISTANCE_RESULT_HPP_

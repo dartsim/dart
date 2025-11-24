@@ -33,11 +33,12 @@
 #ifndef DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_
 #define DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/bullet/BulletInclude.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -65,6 +66,4 @@ protected:
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_BULLET_DETAIL_BULLETCOLLISIONDISPATCHER_HPP_

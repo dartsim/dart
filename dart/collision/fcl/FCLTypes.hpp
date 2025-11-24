@@ -33,11 +33,12 @@
 #ifndef DART_COLLISION_FCL_FCLTTYPES_HPP_
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class FCLTypes
@@ -57,6 +58,4 @@ public:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FCL_FCLTTYPES_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_FCL_FCLTTYPES_HPP_

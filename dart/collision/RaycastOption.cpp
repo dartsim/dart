@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/RaycastOption.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -43,4 +44,4 @@ RaycastOption::RaycastOption(bool enableAllHits, bool sortByClosest)
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

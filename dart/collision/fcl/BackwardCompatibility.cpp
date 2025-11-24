@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace fcl {
 
@@ -111,4 +112,4 @@ dart::collision::fcl::Vector3 transform(
 
 } // namespace fcl
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

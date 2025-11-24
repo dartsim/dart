@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 #define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/common/Diagnostics.hpp>
@@ -69,7 +70,7 @@ DART_SUPPRESS_CPP_WARNING_BEGIN
 #endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 DART_SUPPRESS_CPP_WARNING_END
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace fcl {
 
@@ -142,6 +143,4 @@ dart::collision::fcl::Vector3 DART_API transform(
 
 } // namespace fcl
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_

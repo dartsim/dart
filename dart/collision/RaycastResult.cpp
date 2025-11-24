@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/RaycastResult.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -64,4 +65,4 @@ bool RaycastResult::hasHit() const
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

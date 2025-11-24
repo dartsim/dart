@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/CollisionDetector.hpp"
 
 #include "dart/collision/CollisionGroup.hpp"
@@ -41,7 +42,7 @@
 
 #include <algorithm>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -201,4 +202,4 @@ void CollisionDetector::ManagerForSharableCollisionObjects ::
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

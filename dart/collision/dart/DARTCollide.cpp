@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/dart/DARTCollide.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
@@ -42,7 +43,7 @@
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 // point : world coordinate vector
@@ -1513,4 +1514,4 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/Contact.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -67,4 +68,4 @@ bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

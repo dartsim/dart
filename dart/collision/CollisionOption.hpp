@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_COLLISIONOPTION_HPP_
 #define DART_COLLISION_COLLISIONOPTION_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <memory>
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class CollisionFilter;
@@ -69,6 +70,4 @@ struct DART_API CollisionOption
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOPTION_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_COLLISIONOPTION_HPP_

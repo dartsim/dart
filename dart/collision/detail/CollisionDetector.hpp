@@ -33,10 +33,11 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -61,6 +62,4 @@ CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args)
 }
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_

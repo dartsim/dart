@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_RAYCASTRESULT_HPP_
 #define DART_COLLISION_RAYCASTRESULT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class CollisionObject;
@@ -77,6 +78,4 @@ struct DART_API RaycastResult
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_RAYCASTRESULT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_RAYCASTRESULT_HPP_

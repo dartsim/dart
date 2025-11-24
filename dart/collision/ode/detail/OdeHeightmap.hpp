@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/ode/detail/OdeGeom.hpp>
 
 #include <dart/dynamics/HeightmapShape.hpp>
 
 #include <ode/ode.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -63,8 +64,6 @@ using OdeHeightmapd = OdeHeightmap<double>;
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
-
-#include <dart/collision/ode/detail/OdeHeightmap-impl.hpp>
+DART_INLINE_NAMESPACE_END#include <dart/collision/ode/detail/OdeHeightmap-impl.hpp>
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_

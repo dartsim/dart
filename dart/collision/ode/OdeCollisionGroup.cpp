@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
@@ -38,7 +39,7 @@
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -139,4 +140,4 @@ dSpaceID OdeCollisionGroup::getOdeSpaceId() const
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

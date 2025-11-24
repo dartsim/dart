@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
@@ -48,7 +49,7 @@
   #include <cstdlib>
 #endif
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 #if !defined(_WIN32)
@@ -272,4 +273,4 @@ const btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

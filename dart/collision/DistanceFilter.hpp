@@ -33,9 +33,11 @@
 #ifndef DART_COLLISION_DISTANCEFILTER_HPP_
 #define DART_COLLISION_DISTANCEFILTER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
+
 
 namespace dynamics {
 class BodyNode;
@@ -63,6 +65,4 @@ struct DART_API BodyNodeDistanceFilter : DistanceFilter
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DISTANCEFILTER_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DISTANCEFILTER_HPP_

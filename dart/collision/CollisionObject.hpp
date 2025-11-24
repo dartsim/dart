@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
 #define DART_COLLISION_COLLISIONOBJECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/Fwd.hpp>
 
 #include <dart/dynamics/Fwd.hpp>
@@ -41,7 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class DART_API CollisionObject
@@ -87,6 +88,4 @@ protected:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOBJECT_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_COLLISIONOBJECT_HPP_

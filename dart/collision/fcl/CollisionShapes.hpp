@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
@@ -43,7 +44,7 @@
 
 #include <cmath>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 template <class BV>
@@ -374,6 +375,4 @@ template <class BV>
 }
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_

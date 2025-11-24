@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/bullet/BulletTypes.hpp"
 
 #include "dart/collision/bullet/BulletInclude.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -69,4 +70,4 @@ btTransform convertTransform(const Eigen::Isometry3d& _T)
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

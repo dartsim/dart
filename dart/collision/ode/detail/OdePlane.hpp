@@ -33,11 +33,12 @@
 #ifndef DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_
 #define DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/ode/detail/OdeGeom.hpp>
 
 #include <ode/ode.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 namespace detail {
 
@@ -62,6 +63,4 @@ public:
 
 } // namespace detail
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_ODE_DETAIL_ODEPLANE_HPP_

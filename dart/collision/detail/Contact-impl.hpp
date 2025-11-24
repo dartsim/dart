@@ -33,9 +33,10 @@
 #ifndef DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
 #define DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/Contact.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -51,6 +52,4 @@ constexpr double Contact::getNormalEpsilonSquared()
 }
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_

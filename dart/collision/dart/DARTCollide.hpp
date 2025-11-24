@@ -33,13 +33,14 @@
 #ifndef DART_COLLISION_DART_DARTCOLLIDE_HPP_
 #define DART_COLLISION_DART_DARTCOLLIDE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <Eigen/Dense>
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
@@ -101,6 +102,4 @@ int collideCylinderPlane(
     CollisionResult& result);
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DART_DARTCOLLIDE_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_DART_DARTCOLLIDE_HPP_

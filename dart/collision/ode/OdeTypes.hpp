@@ -33,10 +33,11 @@
 #ifndef DART_COLLISION_ODE_ODETYPES_HPP_
 #define DART_COLLISION_ODE_ODETYPES_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <Eigen/Eigen>
 #include <ode/ode.h>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 class OdeTypes
@@ -46,6 +47,4 @@ public:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_ODE_ODETYPES_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_ODE_ODETYPES_HPP_

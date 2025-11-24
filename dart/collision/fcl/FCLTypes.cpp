@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/fcl/FCLTypes.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -57,4 +58,4 @@ dart::collision::fcl::Transform3 FCLTypes::convertTransform(
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

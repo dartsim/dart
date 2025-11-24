@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -51,4 +52,4 @@ void DARTCollisionObject::updateEngineData()
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END

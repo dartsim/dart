@@ -33,12 +33,14 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/collision/detail/UnorderedPairs.hpp>
 
 #include <dart/common/Deprecated.hpp>
 
 #include <dart/Export.hpp>
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
+
 
 namespace dynamics {
 class BodyNode;
@@ -113,6 +115,4 @@ private:
 };
 
 } // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_COLLISIONFILTER_HPP_
+DART_INLINE_NAMESPACE_END#endif // DART_COLLISION_COLLISIONFILTER_HPP_

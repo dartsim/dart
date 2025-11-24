@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/collision/DistanceOption.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace collision {
 
 //==============================================================================
@@ -48,4 +49,4 @@ DistanceOption::DistanceOption(
 }
 
 } // namespace collision
-} // namespace dart
+DART_INLINE_NAMESPACE_END
