@@ -16,6 +16,7 @@ cli11 = ">=2.4.2,<3"
 cmake = ">=4.0.2,<5"
 codespell = ">=2.4.1,<3"
 console_bridge = ">=1.0.2,<2"
+debugpy = ">=1.8.12,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
 entt = ">=3.14.0,<4"
@@ -909,6 +910,74 @@ exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" 
 ], args = [
   { arg = "build_type", default = "Release" },
 ] }
+
+# Launch a Python entrypoint under debugpy for IDE attach
+debug-py = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
+SCRIPT=${SCRIPT:-"{{ script }}"}
+PORT=${PORT:-{{ port }}}
+SCRIPT_ARGS=${SCRIPT_ARGS:-{{ script_args }}}
+if [ ! -f "$SCRIPT" ]; then
+  echo "Python entrypoint not found: $SCRIPT" >&2
+  exit 1
+fi
+export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
+echo "Listening for debugpy on port ${PORT}. Attach your IDE and press continue."
+exec python -m debugpy --listen ${PORT} --wait-for-client "$SCRIPT" ${SCRIPT_ARGS}
+""",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "script", default = "python/examples/hello_world/main.py" },
+  { arg = "script_args", default = "" },
+  { arg = "port", default = "5678" },
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Debug" },
+], env = { PYTHONUNBUFFERED = "1" } }
+
+# Launch Python under gdb/lldb to step into native code
+debug-py-native = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
+SCRIPT=${SCRIPT:-"{{ script }}"}
+SCRIPT_ARGS=${SCRIPT_ARGS:-{{ script_args }}}
+if [ ! -f "$SCRIPT" ]; then
+  echo "Python entrypoint not found: $SCRIPT" >&2
+  exit 1
+fi
+export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
+if command -v gdb >/dev/null 2>&1; then
+  DEBUGGER=(gdb --args)
+elif command -v lldb >/dev/null 2>&1; then
+  DEBUGGER=(lldb --)
+else
+  echo "Neither gdb nor lldb is available in PATH." >&2
+  exit 1
+fi
+echo "Launching ${DEBUGGER[*]} for $SCRIPT (build type: ${BUILD_TYPE})"
+exec "${DEBUGGER[@]}" python "$SCRIPT" ${SCRIPT_ARGS}
+""",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "{{ dartpy }}",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "script", default = "python/examples/hello_world/main.py" },
+  { arg = "script_args", default = "" },
+  { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Debug" },
+], env = { PYTHONUNBUFFERED = "1" } }
 
 # Build wheel package (without installing)
 build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }

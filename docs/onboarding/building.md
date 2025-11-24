@@ -137,6 +137,20 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
 Pixi automatically detects whether optional Ninja targets (for example `pytest` or GUI tutorials) were generated. If a target is missing (because its corresponding `DART_BUILD_*` option is `OFF`), the helper scripts skip it instead of hard failing, which mirrors the CI workflow. You can still use the “manual” CMake flow described below, but pixi is the fastest path to a working development environment on every platform.
 
+### Debugging dartpy and native code
+
+Use the pixi helpers so you do not have to hand-wire `PYTHONPATH` or debugger flags:
+
+```bash
+# Wait for an IDE to attach via debugpy (default script: python/examples/hello_world/main.py)
+PORT=5678 SCRIPT=python/examples/hello_world/main.py pixi run debug-py
+
+# Launch the same entrypoint under gdb (or lldb fallback) to step into C++
+SCRIPT=python/examples/hello_world/main.py BUILD_TYPE=Debug pixi run debug-py-native
+```
+
+Both tasks default to a Debug build of dartpy. Pass extra arguments to the Python entrypoint with `SCRIPT_ARGS="--your --flags"` or point `SCRIPT` at a different app (for example the consolidated demo hub when it lands).
+
 ## Clone the Repository
 
 1. Clone the DART repository:
