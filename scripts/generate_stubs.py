@@ -35,7 +35,9 @@ def main():
         print(f"✓ Found dartpy at: {dartpy.__file__}")
     except ImportError as e:
         print(f"ERROR: Cannot import dartpy: {e}")
-        print("Please build dartpy first: pixi run build-py-dev (or ensure dartpy is installed in the current interpreter)")
+        print(
+            "Please build dartpy first: pixi run build-py-dev (or ensure dartpy is installed in the current interpreter)"
+        )
         sys.exit(1)
 
     # Output directory for stubs
