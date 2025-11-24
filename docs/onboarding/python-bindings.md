@@ -2,17 +2,16 @@
 
 ## Design Decisions
 
-### Why pybind11?
+### Why nanobind?
 
-**Choice**: pybind11 for C++/Python bindings
+**Choice**: nanobind for C++/Python bindings
 
 **Rationale**:
 
-- Header-only library, no external dependencies
-- Seamless Eigen ↔ NumPy integration with custom type casters
-- Automatic reference counting and lifetime management
-- Modern C++17 features support
-- Excellent performance (zero-copy when possible)
+- Lean binding layer with smaller extension binaries and faster import times
+- Built-in signature metadata (`__nb_signature__`) for high-quality stub generation
+- Solid NumPy/ndarray support with zero-copy paths for contiguous buffers
+- Familiar API to the previous bindings while reducing template bloat/compile time
 
 ### Why scikit-build-core?
 
@@ -62,9 +61,9 @@ dartpy/
 
 ### Eigen ↔ NumPy Integration
 
-**Key Design**: Custom pybind11 type casters enable seamless conversion
+**Key Design**: nanobind ndarray helpers + custom Eigen converters keep the C++ API ergonomic from Python.
 
-**Implementation**: `python/dartpy/eigen_geometry_pybind.h`
+**Implementation**: `python/dartpy/common/eigen_utils.hpp`, `python/dartpy/math/eigen_geometry.{hpp,cpp}`, and shared casters in `python/dartpy/common/type_casters.hpp`
 
 **Features**:
 
@@ -88,28 +87,7 @@ positions = skel.getPositions()  # Returns ndarray
 
 ### OSG Bindings Design
 
-**Issue**: `dartpy.gui.osg` was not available in wheels despite `DART_BUILD_GUI=ON`
-
-**Root Cause**: Python bindings previously checked for an undefined `HAVE_DART_GUI_OSG` preprocessor macro
-
-**Solution**:
-
-1. Use `DART_BUILD_GUI` directly in `python/dartpy/gui/module.cpp`:
-
-   ```cpp
-   #if DART_BUILD_GUI
-     // Bind OSG module
-   #endif
-   ```
-
-2. Pass as compile definition in `python/dartpy/CMakeLists.txt`:
-   ```cmake
-   if(DART_BUILD_GUI)
-     target_compile_definitions(${pybind_module} PRIVATE DART_BUILD_GUI=1)
-   endif()
-   ```
-
-**Result**: OSG now works on all platforms where OpenSceneGraph is available (Linux, macOS, Windows via conda-forge)
+**Build Flow**: `python/dartpy/CMakeLists.txt` appends the `gui/osg` sources only when `DART_BUILD_GUI=ON`, and the pixi wheel environments enable that flag. The resulting nanobind module exposes `dartpy.gui.osg` on every platform where OpenSceneGraph is available.
 
 ## Installation Methods
 

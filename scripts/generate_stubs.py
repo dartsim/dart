@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate Python stub files (.pyi) for dartpy module using pybind11-stubgen.
+Generate Python stub files (.pyi) for dartpy module using nanobind.stubgen.
 
 This script generates type stubs that can be used for:
 1. IDE autocompletion and type checking
@@ -23,13 +23,10 @@ def main():
     # Determine the dartpy module path
     # Check if PYTHONPATH is set (for local builds with compiled module)
     pythonpath = os.environ.get("PYTHONPATH", "")
-    if not pythonpath:
-        print("ERROR: PYTHONPATH is not set. Please build dartpy first.")
-        print("Run: pixi run build-py-dev")
-        sys.exit(1)
-
-    # Add dartpy to Python path
-    sys.path.insert(0, pythonpath)
+    if pythonpath:
+        for path in reversed(pythonpath.split(os.pathsep)):
+            if path:
+                sys.path.insert(0, path)
 
     # Verify dartpy can be imported
     try:
@@ -38,22 +35,26 @@ def main():
         print(f"✓ Found dartpy at: {dartpy.__file__}")
     except ImportError as e:
         print(f"ERROR: Cannot import dartpy: {e}")
-        print("Please build dartpy first: pixi run build-py-dev")
+        print("Please build dartpy first: pixi run build-py-dev (or ensure dartpy is installed in the current interpreter)")
         sys.exit(1)
 
     # Output directory for stubs
     stubs_dir = repo_root / "python" / "stubs"
     stubs_dir.mkdir(parents=True, exist_ok=True)
 
+    dartpy_stub = stubs_dir / "dartpy" / "__init__.pyi"
+
     print(f"Generating stubs in: {stubs_dir}")
 
-    # Run pybind11-stubgen
+    # Run nanobind.stubgen
     cmd = [
-        "pybind11-stubgen",
+        sys.executable,
+        "-m",
+        "nanobind.stubgen",
         "dartpy",
         "-o",
-        str(stubs_dir),
-        "--numpy-array-use-type-var",
+        str(dartpy_stub),
+        "-r",
     ]
 
     try:
@@ -69,7 +70,6 @@ def main():
         sys.exit(1)
 
     # Check that stubs were created
-    dartpy_stub = stubs_dir / "dartpy" / "__init__.pyi"
     if dartpy_stub.exists():
         print(f"✓ Verified stub file exists: {dartpy_stub}")
     else:

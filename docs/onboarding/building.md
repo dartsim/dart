@@ -76,7 +76,7 @@ Install optional dependencies:
 ```bash
 vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
-  opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
+  opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
 ### Arch Linux (experimental)
@@ -93,7 +93,7 @@ Install optional dependencies:
 yay -S \
   bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
   opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
-  urdfdom pybind11
+  urdfdom nanobind
 ```
 
 ### FreeBSD (experimental)
