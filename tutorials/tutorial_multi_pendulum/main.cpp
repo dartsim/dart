@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/All.hpp>
 
@@ -55,7 +55,7 @@ const double delta_damping = 1.0;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 
 class Controller
 {

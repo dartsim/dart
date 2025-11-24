@@ -137,10 +137,10 @@ msgstr ""
 #: ../../contribution.rst:47 5fcec811970546e1a8276d233a03a2c9
 msgid ""
 "`Michael X. Grey <https://github.com/mxgrey>`_: project director, "
-"extensive API improvements, inverse kinematics, gui::osg, tutorials"
+"extensive API improvements, inverse kinematics, gui, tutorials"
 msgstr ""
 "`Michael X. Grey <https://github.com/mxgrey>`_: 프로젝트 디렉터, 다양한 API 개선, 역기구학, "
-"gui::osg, 튜토리얼"
+"gui, 튜토리얼"
 
 #: ../../contribution.rst:48 d4215b1eee42433fb5c5e02a4041caca
 msgid ""

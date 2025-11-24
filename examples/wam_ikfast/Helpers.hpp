@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/All.hpp>
 
@@ -43,4 +43,4 @@ void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam);
 void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam);
 
 void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam);
+    dart::gui::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam);

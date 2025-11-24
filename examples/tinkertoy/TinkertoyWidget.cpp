@@ -42,7 +42,7 @@
 
 //==============================================================================
 TinkertoyWidget::TinkertoyWidget(
-    dart::gui::osg::ImGuiViewer* viewer, TinkertoyWorldNode* node)
+    dart::gui::ImGuiViewer* viewer, TinkertoyWorldNode* node)
   : mViewer(viewer),
     mNode(node),
     mGuiGravity(true),
