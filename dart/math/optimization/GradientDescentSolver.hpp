@@ -33,13 +33,14 @@
 #ifndef DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_
 #define DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/optimization/Solver.hpp>
 
 #include <dart/Export.hpp>
 
 #include <random>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// DefaultSolver is a Solver extension which is native to DART (rather than
@@ -237,6 +238,6 @@ protected:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_

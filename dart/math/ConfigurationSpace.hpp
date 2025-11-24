@@ -33,12 +33,13 @@
 #ifndef DART_MATH_CONFIGURATIONSPACE_HPP_
 #define DART_MATH_CONFIGURATIONSPACE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Geometry.hpp>
 #include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -137,7 +138,7 @@ typename SpaceT::Vector integrateVelocity(
     double dt);
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/ConfigurationSpace.hpp>
 

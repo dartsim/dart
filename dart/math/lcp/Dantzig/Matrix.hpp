@@ -55,6 +55,7 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
@@ -62,7 +63,8 @@
 
 #include <algorithm>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 /// Get the dot product of two n×1 vectors (templated version)
 /// @param a First vector
@@ -600,11 +602,12 @@ inline int IsPositiveDefinite(const Scalar* A, int n, void* tmpbuf = nullptr)
   return dIsPositiveDefinite(A, n, tmpbuf);
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
 
 // Include template implementations
 #include "dart/math/lcp/Dantzig/Matrix-impl.hpp"
+DART_INLINE_NAMESPACE_END

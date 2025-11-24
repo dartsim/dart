@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/lcp/ODELCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -38,7 +39,8 @@
 
 #include <cstdio>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 //==============================================================================
 ODELCPSolver::ODELCPSolver()
@@ -223,4 +225,5 @@ bool ODELCPSolver::checkIfSolution(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
+DART_INLINE_NAMESPACE_END

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/Geometry.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -47,7 +48,7 @@
 
 #define DART_EPSILON 1e-6
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 Eigen::Quaterniond expToQuat(const Eigen::Vector3d& _v)
@@ -2026,4 +2027,4 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

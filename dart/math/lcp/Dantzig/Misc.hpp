@@ -57,9 +57,11 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 //==============================================================================
 // Random Number Generation (Used by tests and benchmarks)
@@ -87,8 +89,9 @@ inline Scalar RandReal()
   return static_cast<Scalar>(dRandReal());
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
+DART_INLINE_NAMESPACE_END

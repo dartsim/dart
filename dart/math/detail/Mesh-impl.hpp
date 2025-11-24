@@ -33,9 +33,10 @@
 #ifndef DART_MATH_DETAIL_MESH_IMPL_HPP_
 #define DART_MATH_DETAIL_MESH_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Mesh.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -146,6 +147,6 @@ void Mesh<S>::normalizeVertexNormals()
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_DETAIL_MESH_IMPL_HPP_

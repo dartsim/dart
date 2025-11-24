@@ -33,11 +33,13 @@
 #ifndef DART_MATH_LCP_LEMKE_HPP_
 #define DART_MATH_LCP_LEMKE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/Export.hpp"
 
 #include <Eigen/Dense>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 /// \brief
 int DART_API Lemke(
@@ -49,10 +51,12 @@ bool DART_API validate(
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
+
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_LCP_LEMKE_HPP_

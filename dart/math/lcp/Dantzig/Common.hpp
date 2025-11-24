@@ -55,6 +55,7 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <Eigen/Core>
@@ -93,13 +94,14 @@
 /* constants */
 
 /* Modern C++ constant for 1/sqrt(2) */
-namespace dart::math::lcp::constants {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp::constants {
 template <typename T>
 inline constexpr T sqrt1_2 = static_cast<T>(
     0.707106781186547524400844362104849039284835937688474036588339868999782L);
-} // namespace dart::math::lcp::constants
+} // namespace math::lcp::constants
 
-namespace dart::math::lcp {
+namespace math::lcp {
 
 //==============================================================================
 // Template Type Traits for Scalar Types
@@ -290,8 +292,9 @@ inline void Multiply2(
   }
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
+DART_INLINE_NAMESPACE_END

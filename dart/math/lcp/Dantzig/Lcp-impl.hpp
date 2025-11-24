@@ -56,6 +56,7 @@
 #ifndef DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_
 #define DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 #include "dart/math/lcp/Dantzig/Matrix.hpp"
 #include "dart/math/lcp/Dantzig/Misc.hpp"
@@ -66,7 +67,8 @@
 
 #define NUB_OPTIMIZATIONS
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 //***************************************************************************
 // Template implementations
@@ -893,6 +895,8 @@ void LCP<Scalar>::unpermute()
 
 #endif // dLCP_FAST
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
+
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_LCP_DANTZIG_LCP_IMPL_HPP_

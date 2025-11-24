@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/optimization/Solver.hpp"
 
 #include "dart/math/optimization/Problem.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -187,4 +188,4 @@ const std::string& Solver::getResultFileName() const
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

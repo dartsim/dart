@@ -53,9 +53,11 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/lcp/Dantzig/Misc.hpp"
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 //==============================================================================
 // Random number generation
@@ -89,4 +91,5 @@ double dRandReal()
   return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
+DART_INLINE_NAMESPACE_END

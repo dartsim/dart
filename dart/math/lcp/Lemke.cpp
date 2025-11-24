@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/lcp/Lemke.hpp"
 
 #include "dart/math/Helpers.hpp"
@@ -39,7 +40,8 @@
 
 #include <cmath>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 // double RandDouble(double _low, double _high) {
 //  double temp;
@@ -320,4 +322,5 @@ bool validate(
   return true;
 }
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
+DART_INLINE_NAMESPACE_END

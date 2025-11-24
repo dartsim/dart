@@ -59,11 +59,13 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include <Eigen/Core>
 
 #include <vector>
 
-namespace dart::math::detail {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::detail {
 
 /// Computes the 3D convex hull using an optimized quickhull algorithm
 ///
@@ -113,6 +115,7 @@ void convexHull3dBuild(
     std::vector<int>& outFaces,
     int& numOutFaces);
 
-} // namespace dart::math::detail
+} // namespace math::detail
 
 #include <dart/math/detail/Convhull-impl.hpp>
+DART_INLINE_NAMESPACE_END

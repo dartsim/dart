@@ -33,6 +33,7 @@
 #ifndef DART_MATH_OPTIMIZATION_PROBLEM_HPP_
 #define DART_MATH_OPTIMIZATION_PROBLEM_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/optimization/Function.hpp>
 
 #include <dart/Export.hpp>
@@ -43,7 +44,7 @@
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// \brief class Problem
@@ -188,6 +189,6 @@ protected:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // #ifndef DART_MATH_OPTIMIZATION_PROBLEM_HPP_

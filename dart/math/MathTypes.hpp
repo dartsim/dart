@@ -33,6 +33,7 @@
 #ifndef DART_MATH_MATHTYPES_HPP_
 #define DART_MATH_MATHTYPES_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Memory.hpp>
 
 #include <Eigen/Dense>
@@ -55,7 +56,7 @@ inline Vector6d compose(
 
 } // namespace Eigen
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 using Inertia = Eigen::Matrix6d;
@@ -64,6 +65,6 @@ using AngularJacobian = Eigen::Matrix<double, 3, Eigen::Dynamic>;
 using Jacobian = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_MATHTYPES_HPP_

@@ -33,12 +33,13 @@
 #ifndef DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 #define DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Geometry.hpp>
 #include <dart/math/detail/Convhull.hpp>
 
 #include <unordered_map>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -108,6 +109,6 @@ computeConvexHull3D(
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_

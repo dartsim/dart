@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/ConfigurationSpace.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -56,4 +57,4 @@ constexpr std::size_t SE3Space::NumDofs;
 constexpr int SE3Space::NumDofsEigen;
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

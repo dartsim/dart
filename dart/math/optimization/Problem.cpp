@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/optimization/Problem.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -40,7 +41,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -311,4 +312,4 @@ const Eigen::VectorXd& Problem::getOptimalSolution()
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -55,6 +55,7 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/Export.hpp"
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
@@ -63,7 +64,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 /// Solve the Linear Complementarity Problem using Dantzig's algorithm
 ///
@@ -116,11 +118,12 @@ bool SolveLCP(
     int* findex,
     bool earlyTermination = false);
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
 
 // Template implementations for header-only usage
 #include "dart/math/lcp/Dantzig/Lcp-impl.hpp"
+DART_INLINE_NAMESPACE_END

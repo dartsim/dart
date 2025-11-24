@@ -33,13 +33,14 @@
 #ifndef DART_MATH_RANDOM_HPP_
 #define DART_MATH_RANDOM_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Core>
 
 #include <random>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 class DART_API Random final
@@ -220,7 +221,7 @@ private:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/Random-impl.hpp>
 

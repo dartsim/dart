@@ -33,6 +33,7 @@
 #ifndef DART_MATH_ICOSPHERE_HPP_
 #define DART_MATH_ICOSPHERE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/TriMesh.hpp>
 
 #include <Eigen/Core>
@@ -40,7 +41,7 @@
 #include <map>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// The class Icosphere represents an icosphere where the subdivision and radius
@@ -99,7 +100,7 @@ using Icospheref = Icosphere<float>;
 using Icosphered = Icosphere<double>;
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/Icosphere-impl.hpp>
 

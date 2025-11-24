@@ -33,6 +33,7 @@
 #ifndef DART_MATH_OPTIMIZATION_SOLVER_HPP_
 #define DART_MATH_OPTIMIZATION_SOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
@@ -40,7 +41,7 @@
 #include <iostream>
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 class Problem;
@@ -179,6 +180,6 @@ protected:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_OPTIMIZATION_SOLVER_HPP_

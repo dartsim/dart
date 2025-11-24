@@ -33,6 +33,7 @@
 #ifndef DART_MATH_CONSTANTS_HPP_
 #define DART_MATH_CONSTANTS_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <limits>
 
 #if defined(__has_include)
@@ -51,7 +52,7 @@
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Diagnostics.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 namespace detail {
@@ -171,7 +172,7 @@ DART_SUPPRESS_DEPRECATED_END
 #endif
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #undef DART_MATH_HAS_STD_NUMBERS
 

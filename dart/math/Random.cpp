@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/Random.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -73,4 +74,4 @@ unsigned int& Random::getSeedMutable()
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

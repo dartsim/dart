@@ -33,13 +33,14 @@
 #ifndef DART_MATH_TRIMESH_HPP_
 #define DART_MATH_TRIMESH_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Mesh.hpp>
 
 #include <dart/Export.hpp>
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// This class represents triangle meshes.
@@ -118,7 +119,7 @@ using TriMeshf = TriMesh<float>;
 using TriMeshd = TriMesh<double>;
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/TriMesh-impl.hpp>
 

@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/optimization/Function.hpp"
 
 #include "dart/common/Logging.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -221,4 +222,4 @@ MultiFunction::~MultiFunction()
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

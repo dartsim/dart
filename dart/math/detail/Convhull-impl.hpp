@@ -66,6 +66,7 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/math/Constants.hpp>
@@ -80,7 +81,8 @@
 #include <cmath>
 #include <cstring>
 
-namespace dart::math::detail {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::detail {
 
 /// Internal vertex structure for convex hull computation (implementation
 /// detail) This struct is only used internally by the implementation and is not
@@ -742,4 +744,5 @@ inline void convexHull3dBuild(
   convexHull3dBuild(legacyVertices, outFaces, numOutputTriangles);
 }
 
-} // namespace dart::math::detail
+} // namespace math::detail
+DART_INLINE_NAMESPACE_END

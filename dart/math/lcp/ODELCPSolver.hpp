@@ -33,11 +33,13 @@
 #ifndef DART_MATH_LCP_ODELCPSOLVER_HPP_
 #define DART_MATH_LCP_ODELCPSOLVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/Export.hpp"
 
 #include <Eigen/Dense>
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 /// \brief
 class DART_API ODELCPSolver
@@ -83,10 +85,12 @@ private:
       const Eigen::VectorXd& _x);
 };
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
+
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_LCP_ODELCPSOLVER_HPP_

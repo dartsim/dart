@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Random.hpp>
 
 #include <concepts>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 namespace detail {
@@ -323,4 +324,4 @@ S Random::normal(S min, S max)
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

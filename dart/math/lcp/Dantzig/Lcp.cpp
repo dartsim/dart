@@ -152,6 +152,7 @@ rows/columns and manipulate C.
 
 #define NUB_OPTIMIZATIONS
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/lcp/Dantzig/Lcp.hpp"
 
 #include "dart/common/Macros.hpp"
@@ -164,7 +165,8 @@ rows/columns and manipulate C.
 //***************************************************************************
 // code generation parameters
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
@@ -553,6 +555,7 @@ template DART_API bool SolveLCP<double>(
     int* findex,
     bool earlyTermination);
 
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
 // Note: Template implementations are in lcp-impl.hpp (included via lcp.h)
+DART_INLINE_NAMESPACE_END

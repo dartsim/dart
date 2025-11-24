@@ -33,6 +33,7 @@
 #ifndef DART_MATH_GEOMETRY_HPP_
 #define DART_MATH_GEOMETRY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Constants.hpp>
 #include <dart/math/MathTypes.hpp>
 
@@ -42,7 +43,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// \brief
@@ -658,7 +659,7 @@ protected:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/Geometry-impl.hpp>
 

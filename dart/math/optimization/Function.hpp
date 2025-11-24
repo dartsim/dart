@@ -33,6 +33,7 @@
 #ifndef DART_MATH_OPTIMIZATION_FUNCTION_HPP_
 #define DART_MATH_OPTIMIZATION_FUNCTION_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
@@ -41,7 +42,7 @@
 #include <memory>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 class DART_API Function
@@ -200,6 +201,6 @@ public:
 };
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_OPTIMIZATION_FUNCTION_HPP_

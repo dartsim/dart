@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/TriMesh.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 #if DART_OS_WINDOWS
@@ -40,4 +41,4 @@ template class DART_API TriMesh<double>;
 #endif
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END

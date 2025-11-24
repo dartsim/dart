@@ -33,12 +33,13 @@
 #ifndef DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
 #define DART_MATH_DETAIL_TRIMESH_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/math/Geometry.hpp>
 #include <dart/math/TriMesh.hpp>
 
 #include <Eigen/Geometry>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -197,6 +198,6 @@ void TriMesh<S>::normalizeTriangleNormals()
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_DETAIL_TRIMESH_IMPL_HPP_

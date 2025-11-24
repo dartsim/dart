@@ -55,10 +55,12 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 #include "dart/math/lcp/Dantzig/Common.hpp"
 
-namespace dart::math::lcp {
+DART_INLINE_NAMESPACE_BEGIN
+namespace math::lcp {
 
 template <typename Scalar>
 void dMultiply0(
@@ -1203,8 +1205,9 @@ void dSolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
 }
 
 //==============================================================================
-} // namespace dart::math::lcp
+} // namespace math::lcp
 
-namespace dart::math {
+namespace math {
 using namespace lcp;
-} // namespace dart::math
+} // namespace math
+DART_INLINE_NAMESPACE_END

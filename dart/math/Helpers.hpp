@@ -34,6 +34,7 @@
 #define DART_MATH_HELPERS_HPP_
 
 // Standard Libraries
+#include <dart/common/Namespace.hpp>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -51,7 +52,7 @@
 #include <dart/math/MathTypes.hpp>
 #include <dart/math/Random.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -292,8 +293,6 @@ constexpr double operator"" _deg(unsigned long long int angle)
 
 } // namespace suffixes
 
-} // namespace math
-
 namespace Color {
 
 inline Eigen::Vector4d Red(double alpha)
@@ -405,6 +404,7 @@ inline Eigen::Vector3d Random()
 
 } // namespace Color
 
-} // namespace dart
+} // namespace math
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_MATH_HELPERS_HPP_

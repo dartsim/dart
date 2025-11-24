@@ -33,11 +33,12 @@
 #ifndef DART_MATH_MESH_HPP_
 #define DART_MATH_MESH_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <Eigen/Core>
 
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 /// Base class for meshes.
@@ -101,7 +102,7 @@ using Meshf = Mesh<float>;
 using Meshd = Mesh<double>;
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/math/detail/Mesh-impl.hpp>
 

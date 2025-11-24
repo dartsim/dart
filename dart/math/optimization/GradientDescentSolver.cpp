@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/math/optimization/GradientDescentSolver.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -39,7 +40,7 @@
 
 #include <iostream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace math {
 
 //==============================================================================
@@ -474,4 +475,4 @@ std::size_t GradientDescentSolver::getLastNumIterations() const
 }
 
 } // namespace math
-} // namespace dart
+DART_INLINE_NAMESPACE_END
