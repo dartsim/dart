@@ -800,6 +800,7 @@ sequenceDiagram
 - [`DartLoader`](dart/utils/urdf/DartLoader.hpp)
 - [`DartLoader::parseSkeleton()`](dart/utils/urdf/DartLoader.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
+- Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
 ---
 

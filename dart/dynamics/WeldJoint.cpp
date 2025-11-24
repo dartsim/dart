@@ -89,7 +89,8 @@ BodyNode* WeldJoint::merge()
   // Before:
   //   parent --[WeldJoint]--> child --[any joints]--> grandchildren...
   // After:
-  //   parent absorbs child (inertia, forces, nodes) and grandchildren attach to parent.
+  //   parent absorbs child (inertia, forces, nodes) and grandchildren attach to
+  //   parent.
   BodyNode* parent = getParentBodyNode();
   BodyNode* child = getChildBodyNode();
 

@@ -495,6 +495,48 @@ void BodyNode::setCollidable(bool _isCollidable)
 }
 
 //==============================================================================
+void BodyNode::handleCollisionShapeStateChange(
+    const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  ConstShapePtr shape = shapeNode->getShape();
+  if (!shape)
+    return;
+
+  if (isCollidable && !wasCollidable) {
+    mColShapeAddedSignal.raise(this, shape);
+  } else if (wasCollidable && !isCollidable) {
+    mColShapeRemovedSignal.raise(this, shape);
+  }
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeUpdated(
+    const ShapeNode* shapeNode, ConstShapePtr oldShape, ConstShapePtr newShape)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (oldShape)
+    mColShapeRemovedSignal.raise(this, oldShape);
+
+  if (newShape)
+    mColShapeAddedSignal.raise(this, newShape);
+}
+
+//==============================================================================
 void checkMass(const BodyNode& bodyNode, const double mass)
 {
   DART_WARN_IF(
