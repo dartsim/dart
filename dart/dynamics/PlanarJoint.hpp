@@ -37,8 +37,6 @@
 
 #include <dart/Export.hpp>
 
-#include <Eigen/Geometry>
-
 namespace dart {
 namespace dynamics {
 
@@ -137,12 +135,6 @@ public:
 
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
-
-  /// Convert a 2D transform to PlanarJoint positions.
-  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
-
-  /// Convert PlanarJoint positions to a 2D transform.
-  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
 
   // Documentation inherited
   Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
