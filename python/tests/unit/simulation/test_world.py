@@ -6,38 +6,38 @@ import pytest
 
 def test_empty_world():
     world = dart.simulation.World("my world")
-    assert world.getNumSkeletons() == 0
-    assert world.getNumSimpleFrames() == 0
+    assert world.get_num_skeletons() == 0
+    assert world.get_num_simple_frames() == 0
 
 
 def test_collision_detector_change():
     world = dart.simulation.World("world")
-    solver = world.getConstraintSolver()
+    solver = world.get_constraint_solver()
     assert solver is not None
 
     assert (
-        solver.getCollisionDetector().getType()
-        == dart.collision.FCLCollisionDetector().getStaticType()
+        solver.get_collision_detector().get_type()
+        == dart.collision.FCLCollisionDetector().get_static_type()
     )
 
-    solver.setCollisionDetector(dart.collision.DARTCollisionDetector())
+    solver.set_collision_detector(dart.collision.DARTCollisionDetector())
     assert (
-        solver.getCollisionDetector().getType()
-        == dart.collision.DARTCollisionDetector().getStaticType()
+        solver.get_collision_detector().get_type()
+        == dart.collision.DARTCollisionDetector().get_static_type()
     )
 
     if hasattr(dart.collision, "BulletCollisionDetector"):
-        solver.setCollisionDetector(dart.collision.BulletCollisionDetector())
+        solver.set_collision_detector(dart.collision.BulletCollisionDetector())
         assert (
-            solver.getCollisionDetector().getType()
-            == dart.collision.BulletCollisionDetector().getStaticType()
+            solver.get_collision_detector().get_type()
+            == dart.collision.BulletCollisionDetector().get_static_type()
         )
 
     if hasattr(dart.collision, "OdeCollisionDetector"):
-        solver.setCollisionDetector(dart.collision.OdeCollisionDetector())
+        solver.set_collision_detector(dart.collision.OdeCollisionDetector())
         assert (
-            solver.getCollisionDetector().getType()
-            == dart.collision.OdeCollisionDetector().getStaticType()
+            solver.get_collision_detector().get_type()
+            == dart.collision.OdeCollisionDetector().get_static_type()
         )
 
 

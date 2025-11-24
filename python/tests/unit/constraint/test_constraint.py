@@ -6,35 +6,35 @@ import pytest
 
 
 def test_ball_joint_constraint():
-    world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
-    world.setGravity([0, -9.81, 0])
-    world.setTimeStep(1.0 / 2000)
+    world = dart.utils.SkelParser.read_world("dart://sample/skel/chain.skel")
+    world.set_gravity([0, -9.81, 0])
+    world.set_time_step(1.0 / 2000)
 
     # Set joint damping
-    chain = world.getSkeleton(0)
-    for i in range(chain.getNumJoints()):
-        joint = chain.getJoint(i)
-        for j in range(joint.getNumDofs()):
-            joint.setDampingCoefficient(j, 0.01)
+    chain = world.get_skeleton(0)
+    for i in range(chain.get_num_joints()):
+        joint = chain.get_joint(i)
+        for j in range(joint.get_num_dofs()):
+            joint.set_damping_coefficient(j, 0.01)
 
     # Create a ball joint constraint
-    bd1 = chain.getBodyNode("link 6")
-    bd2 = chain.getBodyNode("link 10")
+    bd1 = chain.get_body_node("link 6")
+    bd2 = chain.get_body_node("link 10")
     offset1 = [0, 0.025, 0]
-    joint_pos = bd1.getTransform().multiply(offset1)
-    offset2 = bd2.getTransform().inverse().multiply(joint_pos)
+    joint_pos = bd1.get_transform().multiply(offset1)
+    offset2 = bd2.get_transform().inverse().multiply(joint_pos)
     constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
-    assert constraint.getType() == dart.constraint.BallJointConstraint.getStaticType()
+    assert constraint.get_type() == dart.constraint.BallJointConstraint.get_static_type()
 
     # Add ball joint constraint to the constraint solver
-    constraint_solver = world.getConstraintSolver()
-    constraint_solver.addConstraint(constraint)
+    constraint_solver = world.get_constraint_solver()
+    constraint_solver.add_constraint(constraint)
 
     # Check if the ball joint constraint is being satisfied
     for _ in range(100):
         world.step()
-        pos1 = bd1.getTransform().multiply(offset1)
-        pos2 = bd2.getTransform().multiply(offset2)
+        pos1 = bd1.get_transform().multiply(offset1)
+        pos2 = bd2.get_transform().multiply(offset2)
         assert np.isclose(pos1, pos2).all()
 
 

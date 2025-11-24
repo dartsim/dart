@@ -9,14 +9,14 @@ def test_basic():
     skel = dart.dynamics.Skeleton()
 
     joint_prop = dart.dynamics.FreeJointProperties()
-    joint_prop.mName = "joint0"
-    assert joint_prop.mName == "joint0"
+    joint_prop.m_name = "joint0"
+    assert joint_prop.m_name == "joint0"
 
-    [joint1, body1] = skel.createFreeJointAndBodyNodePair(None, joint_prop)
-    assert joint1.getType() == "FreeJoint"
-    assert joint1.getName() == "joint0"
+    [joint1, body1] = skel.create_free_joint_and_body_node_pair(None, joint_prop)
+    assert joint1.get_type() == "FreeJoint"
+    assert joint1.get_name() == "joint0"
 
-    assert skel.getBodyNode(0).getName() == body1.getName()
+    assert skel.get_body_node(0).get_name() == body1.get_name()
 
 
 if __name__ == "__main__":

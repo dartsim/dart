@@ -19,18 +19,18 @@ def test_inertia_init():
     assert i1 is not None
 
     newMass = 1.5
-    i2.setMass(newMass)
-    assert i2.getMass() == newMass
+    i2.set_mass(newMass)
+    assert i2.get_mass() == newMass
 
     newCOM = np.array((0.1, 0, 0))
-    i2.setLocalCOM(newCOM)
-    assert np.allclose(i2.getLocalCOM(), newCOM)
+    i2.set_local_com(newCOM)
+    assert np.allclose(i2.get_local_com(), newCOM)
 
     newMoment = 0.4 * newMass * 0.1**2 * np.eye(3)
-    i2.setMoment(newMoment)
-    assert np.allclose(i2.getMoment(), newMoment)
+    i2.set_moment(newMoment)
+    assert np.allclose(i2.get_moment(), newMoment)
 
-    i2.setSpatialTensor(0.3 * i2.getSpatialTensor())
+    i2.set_spatial_tensor(0.3 * i2.get_spatial_tensor())
 
     assert i2.verify()
 
@@ -48,13 +48,13 @@ def test_inertia_static_methods():
     """
     Test the class methods `verifyMoment`and `verifySpatialTensor`.
     """
-    assert dart.dynamics.Inertia.verifyMoment(np.eye(3), printWarnings=False)
+    assert dart.dynamics.Inertia.verify_moment(np.eye(3), printWarnings=False)
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 + np.diag(np.random.uniform(1, 10, 3), 0)
         I = (I + I.T) / 2
-        assert dart.dynamics.Inertia.verifyMoment(I)
+        assert dart.dynamics.Inertia.verify_moment(I)
 
-    assert dart.dynamics.Inertia.verifySpatialTensor(np.eye(6), printWarnings=False)
+    assert dart.dynamics.Inertia.verify_spatial_tensor(np.eye(6), printWarnings=False)
 
 
 def test_failing_moment_and_spatial():
@@ -64,10 +64,10 @@ def test_failing_moment_and_spatial():
 
     for i in range(10):
         I = np.random.rand(3, 3) - 0.5 - np.diag(np.random.uniform(1, 10, 3), 0)
-        assert not dart.dynamics.Inertia.verifyMoment(I, printWarnings=False)
+        assert not dart.dynamics.Inertia.verify_moment(I, printWarnings=False)
 
     # fails e.g. due to off diagonal values in translational part.
-    assert not dart.dynamics.Inertia.verifySpatialTensor(
+    assert not dart.dynamics.Inertia.verify_spatial_tensor(
         np.random.rand(6, 6), printWarnings=False
     )
 
