@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -112,13 +112,13 @@ private:
   int mImpulseDuration;
 };
 
-class MixedChainWorldNode : public dart::gui::osg::RealTimeWorldNode
+class MixedChainWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   MixedChainWorldNode(
       dart::simulation::WorldPtr world,
       ::osg::ref_ptr<MixedChainEventHandler> eventHandler)
-    : dart::gui::osg::RealTimeWorldNode(world), mEventHandler(eventHandler)
+    : dart::gui::RealTimeWorldNode(world), mEventHandler(eventHandler)
   {
   }
 
@@ -157,7 +157,7 @@ int main()
       = new MixedChainWorldNode(myWorld, eventHandler);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::Viewer viewer;
+  dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Add the event handler to the viewer

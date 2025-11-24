@@ -37,7 +37,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
