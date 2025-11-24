@@ -30,26 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_LEMKE_HPP_
-#define DART_MATH_LCP_LEMKE_HPP_
-
-#include "dart/Export.hpp"
-#include "dart/math/lcp/detail/LemkeImpl.hpp"
+#pragma once
 
 #include <Eigen/Dense>
 
-namespace dart::math {
+namespace dart::math::detail {
 
-/// @brief
-int DART_API Lemke(
-    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
+// Shared implementation for the legacy free functions and the class-based
+// solver. Returns 0 on success, non-zero on failure.
+int LemkeImpl(
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z);
 
-/// @brief
-bool DART_API validate(
-    const Eigen::MatrixXd& _M,
-    const Eigen::VectorXd& _z,
-    const Eigen::VectorXd& _q);
+// Validation helper shared by both APIs.
+bool ValidateImpl(
+    const Eigen::MatrixXd& M,
+    const Eigen::VectorXd& z,
+    const Eigen::VectorXd& q);
 
-} // namespace dart::math
+} // namespace dart::math::detail
 
-#endif // DART_MATH_LCP_LEMKE_HPP_

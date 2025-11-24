@@ -34,6 +34,14 @@ lcp/
     └── ...
 ```
 
+Adding a new solver family:
+
+1. Add headers/sources under `pivoting/`, `projection/`, `newton/`, or `other/`.
+2. Include the solver in `All.hpp` if you want it in the umbrella header.
+3. Export a factory class deriving from `LCPSolver` (see `pivoting/LemkeSolver` for a template).
+4. Update unit tests under `tests/unit/math/lcp` to cover the new solver.
+5. Keep `CMakeLists.txt` glob-friendly—new headers/sources are auto-registered.
+
 ## Architecture
 
 ### Version 1 (Legacy API - Backward Compatibility)

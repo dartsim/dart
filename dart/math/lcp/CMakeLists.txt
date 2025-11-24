@@ -1,8 +1,10 @@
 # Gather public headers and sources
 file(GLOB math_lcp_hdrs "*.hpp")
 file(GLOB math_lcp_srcs "*.cpp")
+file(GLOB math_lcp_detail_hdrs "detail/*.hpp")
 dart_add_core_headers(${math_lcp_hdrs})
 dart_add_core_sources(${math_lcp_srcs})
+dart_add_core_headers(${math_lcp_detail_hdrs})
 
 # Dantzig implementation headers and sources (remain public API)
 file(GLOB math_lcp_dantzig_hdrs "dantzig/*.hpp")
@@ -36,13 +38,23 @@ dart_add_core_sources(${math_lcp_other_srcs})
 
 # Compute relative header names (e.g., lcp/Lemke.hpp, lcp/dantzig/Common.hpp)
 set(math_lcp_header_names "")
-foreach(header ${math_lcp_hdrs})
+set(math_lcp_public_hdrs
+  ${math_lcp_hdrs}
+  ${math_lcp_dantzig_hdrs}
+  ${math_lcp_pivoting_hdrs}
+  ${math_lcp_detail_hdrs}
+  ${math_lcp_projection_hdrs}
+  ${math_lcp_newton_hdrs}
+  ${math_lcp_other_hdrs}
+)
+
+foreach(header ${math_lcp_public_hdrs})
   file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" ${header})
   list(APPEND math_lcp_header_names "lcp/${rel_path}")
 endforeach()
 
 # Expose header lists to parent math/CMakeLists for component generation
-set(DART_MATH_LCP_PUBLIC_HEADERS ${math_lcp_hdrs} PARENT_SCOPE)
+set(DART_MATH_LCP_PUBLIC_HEADERS ${math_lcp_public_hdrs} PARENT_SCOPE)
 set(DART_MATH_LCP_PUBLIC_HEADER_NAMES ${math_lcp_header_names} PARENT_SCOPE)
 set(DART_MATH_LCP_DETAIL_HEADERS ${math_lcp_dantzig_hdrs} PARENT_SCOPE)
 
@@ -50,6 +62,12 @@ set(DART_MATH_LCP_DETAIL_HEADERS ${math_lcp_dantzig_hdrs} PARENT_SCOPE)
 install(
   FILES ${math_lcp_hdrs}
   DESTINATION include/dart/math/lcp
+  COMPONENT headers
+)
+
+install(
+  FILES ${math_lcp_detail_hdrs}
+  DESTINATION include/dart/math/lcp/detail
   COMPONENT headers
 )
 

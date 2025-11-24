@@ -33,6 +33,7 @@
 #include "dart/math/lcp/Lemke.hpp"
 
 #include "dart/math/Helpers.hpp"
+#include "dart/math/lcp/detail/LemkeImpl.hpp"
 
 #include <iostream>
 #include <vector>
@@ -59,6 +60,26 @@ namespace dart::math {
 
 //==============================================================================
 int Lemke(
+    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z)
+{
+  return detail::LemkeImpl(_M, _q, _z);
+}
+
+//==============================================================================
+bool validate(
+    const Eigen::MatrixXd& _M,
+    const Eigen::VectorXd& _z,
+    const Eigen::VectorXd& _q)
+{
+  return detail::ValidateImpl(_M, _z, _q);
+}
+
+} // namespace dart::math
+
+namespace dart::math::detail {
+
+//==============================================================================
+int LemkeImpl(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z)
 {
   int n = _q.size();
@@ -280,7 +301,7 @@ int Lemke(
     Eigen::VectorXd __z = _z->head(n);
     *_z = __z;
 
-    if (!validate(_M, *_z, _q)) {
+    if (!ValidateImpl(_M, *_z, _q)) {
       // _z = VectorXd::Zero(n);
       err = 3;
     }
@@ -302,7 +323,7 @@ int Lemke(
 }
 
 //==============================================================================
-bool validate(
+bool ValidateImpl(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q)
@@ -320,4 +341,4 @@ bool validate(
   return true;
 }
 
-} // namespace dart::math
+} // namespace dart::math::detail

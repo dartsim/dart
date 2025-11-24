@@ -32,7 +32,7 @@
 
 #include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
-#include "dart/math/lcp/Lemke.hpp"
+#include "dart/math/lcp/detail/LemkeImpl.hpp"
 
 namespace dart {
 namespace math {
@@ -62,7 +62,7 @@ LcpResult LemkeSolver::solve(
   }
 
   // Call the legacy Lemke solver
-  const int exitCode = Lemke(A, b, &x);
+  const int exitCode = detail::LemkeImpl(A, b, &x);
 
   // Interpret exit code
   result.iterations = 1; // Pivoting methods don't have iterations in same sense
@@ -71,7 +71,7 @@ LcpResult LemkeSolver::solve(
 
     // Validate solution if requested
     if (options.validateSolution) {
-      const bool isValid = validate(A, x, b);
+      const bool isValid = detail::ValidateImpl(A, x, b);
       result.validated = true;
       if (!isValid) {
         result.status = LcpSolverStatus::NumericalError;
