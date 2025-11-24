@@ -49,6 +49,9 @@ using namespace dart::dynamics;
 //==============================================================================
 TEST(WeldJointMerge, FlattensChildIntoParent)
 {
+  // Diagram (topology before merge):
+  //   root/free -> parent --[weld]--> child --[rev]--> grandchild
+  //   (shape lives on child; grandchild keeps its pose)
   auto skel = Skeleton::create("merge");
 
   auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>();
