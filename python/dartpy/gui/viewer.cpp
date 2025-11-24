@@ -5,20 +5,20 @@
 #include <dart/gui/DragAndDrop.hpp>
 #include <dart/gui/Viewer.hpp>
 #include <dart/gui/WorldNode.hpp>
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
-#include <osgGA/GUIEventHandler>
-#include <osgViewer/View>
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
+#include <osgGA/GUIEventHandler>
+#include <osgViewer/View>
 
 namespace nb = nanobind;
 
