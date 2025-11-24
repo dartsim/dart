@@ -83,7 +83,7 @@ public:
   /// Allocates @c size bytes of uninitialized storage.
   ///
   /// @param[in] type: The memory allocator type.
-  /// @param[in] bytes: The byte size to allocate sotrage for.
+  /// @param[in] bytes: The byte size to allocate storage for.
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer
@@ -91,7 +91,7 @@ public:
 
   /// Allocates @c size bytes of uninitialized storage using FreeListAllocator.
   ///
-  /// @param[in] bytes: The byte size to allocate sotrage for.
+  /// @param[in] bytes: The byte size to allocate storage for.
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer
@@ -99,7 +99,7 @@ public:
 
   /// Allocates @c size bytes of uninitialized storage using PoolAllocator.
   ///
-  /// @param[in] bytes: The byte size to allocate sotrage for.
+  /// @param[in] bytes: The byte size to allocate storage for.
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.
   /// @return On failure, a null pointer

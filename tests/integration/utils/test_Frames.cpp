@@ -217,7 +217,7 @@ TEST(Frames, ForwardKinematicsChain)
     }
   }
 
-  // Testing conversion beteween spatial and classical velocities
+  // Testing conversion between spatial and classical velocities
   {
     std::vector<Eigen::Vector3d> v_rels(frames.size());
     std::vector<Eigen::Vector3d> w_rels(frames.size());
@@ -631,7 +631,7 @@ void check_offset_computations(
 
     Eigen::Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
 
-    // Compute velocity of the offfset in the relative frame
+    // Compute velocity of the offset in the relative frame
     compute_velocity(
         T->getLinearVelocity(relativeTo, relativeTo),
         T->getAngularVelocity(relativeTo, relativeTo),

@@ -55,7 +55,7 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 {
   if (!_resourceRetriever) {
     DART_ERROR(
-        "{}", "Receieved nullptr ResourceRetriever; skipping this entry.\n");
+        "{}", "Received nullptr ResourceRetriever; skipping this entry.\n");
     return false;
   }
 

@@ -79,7 +79,7 @@ public:
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
 
-  /// Add mutiple skeletons
+  /// Add multiple skeletons
   void addSkeletons(std::span<const dynamics::SkeletonPtr> skeletons);
 
   /// Returns all the skeletons added to this ConstraintSolver.
