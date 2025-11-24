@@ -33,8 +33,9 @@
 #ifndef DART_UTILS_URDF_DARTLOADER_HPP_
 #define DART_UTILS_URDF_DARTLOADER_HPP_
 
-#include <dart/common/Deprecated.hpp>
 #include <dart/utils/urdf/UrdfParser.hpp>
+
+#include <dart/common/Deprecated.hpp>
 
 namespace dart::utils {
 

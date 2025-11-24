@@ -31,12 +31,16 @@ Module Reference
 
 The sections below mirror the module layout from ``docs/python_api/``.
 
-* :doc:`dartpy.common <modules/common>`
-* :doc:`dartpy.math <modules/math>`
-* :doc:`dartpy.dynamics <modules/dynamics>`
-* :doc:`dartpy.simulation <modules/simulation>`
-* :doc:`dartpy.collision <modules/collision>`
-* :doc:`dartpy.constraint <modules/constraint>`
-* :doc:`dartpy.optimizer <modules/optimizer>`
-* :doc:`dartpy.utils <modules/utils>`
-* :doc:`dartpy.gui <modules/gui>`
+.. toctree::
+   :maxdepth: 1
+   :titlesonly:
+
+   api/modules/common
+   api/modules/math
+   api/modules/dynamics
+   api/modules/simulation
+   api/modules/collision
+   api/modules/constraint
+   api/modules/optimizer
+   api/modules/utils
+   api/modules/gui

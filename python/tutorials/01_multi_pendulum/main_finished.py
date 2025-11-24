@@ -144,8 +144,11 @@ class Controller:
     def add_constraint(self):
         # snippet:py-lesson3-add-constraint-start
         tip = self.pendulum.getBodyNode(self.pendulum.getNumBodyNodes() - 1)
+        # snippet:py-lesson3-location
         location = tip.getTransform().multiply([0.0, 0.0, default_height])
+        # snippet:py-lesson3-constraint
         self.ball_constraint = dart.constraint.BallJointConstraint(tip, location)
+        # snippet:py-lesson3-add-to-world
         self.world.getConstraintSolver().addConstraint(self.ball_constraint)
         # snippet:py-lesson3-add-constraint-end
 

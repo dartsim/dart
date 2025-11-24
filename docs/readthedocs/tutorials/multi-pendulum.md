@@ -624,7 +624,7 @@ let's grab the last BodyNode in the pendulum:
       .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
          :language: python
          :start-after: # snippet:py-lesson3-add-constraint-start
-         :end-before: location = tip.getTransform()
+         :end-before: # snippet:py-lesson3-location
 ```
 
 Now we'll want to compute the location that the constraint should have. We want
@@ -644,8 +644,8 @@ to connect the very end of the tip to the world, so the location would be:
 
       .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
          :language: python
-         :start-after: location = tip.getTransform().multiply
-         :end-before: self.ball_constraint = dart.constraint.BallJointConstraint
+         :start-after: # snippet:py-lesson3-location
+         :end-before: # snippet:py-lesson3-constraint
 ```
 
 Now we can create the BallJointConstraint:
@@ -664,8 +664,8 @@ Now we can create the BallJointConstraint:
 
       .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
          :language: python
-         :start-after: self.ball_constraint = dart.constraint.BallJointConstraint
-         :end-before: self.world.getConstraintSolver().addConstraint
+         :start-after: # snippet:py-lesson3-constraint
+         :end-before: # snippet:py-lesson3-add-to-world
 ```
 
 And then add it to the world:
@@ -684,8 +684,8 @@ And then add it to the world:
 
       .. literalinclude:: ../../../python/tutorials/01_multi_pendulum/main_finished.py
          :language: python
-         :start-after: self.world.getConstraintSolver().addConstraint
-         :end-before: def remove_constraint
+         :start-after: # snippet:py-lesson3-add-to-world
+         :end-before: # snippet:py-lesson3-add-constraint-end
 ```
 
 Now we also want to be able to remove this constraint. In the function
