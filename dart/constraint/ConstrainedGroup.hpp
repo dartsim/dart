@@ -36,6 +36,7 @@
 #include <dart/config.hpp>
 
 #include <dart/constraint/Fwd.hpp>
+
 #include <dart/Export.hpp>
 
 #include <Eigen/Dense>
