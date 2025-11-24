@@ -107,6 +107,42 @@ TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 }
 
 //==============================================================================
+TEST(CollisionResultTests, ContactProvidesBodyNodeAccessors)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto skeletonA = makeSkeleton("bodynode_a");
+  auto skeletonB = makeSkeleton("bodynode_b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
+
+  CollisionOption option;
+  option.maxNumContacts = 2u;
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_LT(0u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+
+  ASSERT_NE(nullptr, contact.getShapeFrame1());
+  ASSERT_NE(nullptr, contact.getShapeFrame2());
+  ASSERT_NE(nullptr, contact.getShapeNode1());
+  ASSERT_NE(nullptr, contact.getShapeNode2());
+
+  const auto bodyNode1 = contact.getBodyNodePtr1();
+  const auto bodyNode2 = contact.getBodyNodePtr2();
+  ASSERT_TRUE(bodyNode1);
+  ASSERT_TRUE(bodyNode2);
+  EXPECT_NE(bodyNode1.get(), bodyNode2.get());
+
+  EXPECT_TRUE(
+      bodyNode1.get() == skeletonA->getBodyNode(0)
+      || bodyNode1.get() == skeletonB->getBodyNode(0));
+  EXPECT_TRUE(
+      bodyNode2.get() == skeletonA->getBodyNode(0)
+      || bodyNode2.get() == skeletonB->getBodyNode(0));
+}
+
+//==============================================================================
 TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
 {
   auto detector = DARTCollisionDetector::create();
