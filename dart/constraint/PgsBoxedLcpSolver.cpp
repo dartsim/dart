@@ -33,8 +33,8 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
 #include "dart/math/Constants.hpp"
-#include "dart/math/lcp/Dantzig/Matrix.hpp"
-#include "dart/math/lcp/Dantzig/Misc.hpp"
+#include "dart/math/lcp/dantzig/Matrix.hpp"
+#include "dart/math/lcp/dantzig/Misc.hpp"
 
 #include <Eigen/Dense>
 
