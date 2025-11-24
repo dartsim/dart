@@ -40,6 +40,8 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 namespace dart::dynamics {
 namespace {
 
@@ -170,6 +172,75 @@ TEST(BodyNodeCollisionSignals, FiresOnAspectLifecycle)
   shapeNode->removeAspect<CollisionAspect>();
   EXPECT_EQ(added, 1);
   EXPECT_EQ(removed, 1);
+}
+
+TEST(BodyNodeCollisionSignals, FiresOnShapeReplacement)
+{
+  auto [skel, bn] = makeBodyNode();
+
+  int added = 0;
+  int removed = 0;
+  std::vector<ConstShapePtr> addedShapes;
+  std::vector<ConstShapePtr> removedShapes;
+
+  auto addConnection = bn->onColShapeAdded.connect(
+      [&](const BodyNode* body, ConstShapePtr shape) {
+        ++added;
+        EXPECT_EQ(body, bn);
+        addedShapes.push_back(shape);
+      });
+
+  auto removeConnection = bn->onColShapeRemoved.connect(
+      [&](const BodyNode* body, ConstShapePtr shape) {
+        ++removed;
+        EXPECT_EQ(body, bn);
+        removedShapes.push_back(shape);
+      });
+  (void)addConnection;
+  (void)removeConnection;
+
+  auto firstShape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.4));
+  auto secondShape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5));
+
+  auto* shapeNode = bn->createShapeNodeWith<CollisionAspect>(firstShape);
+
+  EXPECT_EQ(added, 1);
+  EXPECT_EQ(removed, 0);
+  ASSERT_FALSE(addedShapes.empty());
+  EXPECT_EQ(addedShapes.back(), firstShape);
+
+  shapeNode->setShape(secondShape);
+  EXPECT_EQ(added, 2);
+  EXPECT_EQ(removed, 1);
+  ASSERT_FALSE(removedShapes.empty());
+  EXPECT_EQ(removedShapes.back(), firstShape);
+  EXPECT_EQ(addedShapes.back(), secondShape);
+
+  // No-op for redundant set.
+  shapeNode->setShape(secondShape);
+  EXPECT_EQ(added, 2);
+  EXPECT_EQ(removed, 1);
+
+  // Removing the shape should fire only a removal.
+  shapeNode->setShape(nullptr);
+  EXPECT_EQ(added, 2);
+  EXPECT_EQ(removed, 2);
+  ASSERT_FALSE(removedShapes.empty());
+  EXPECT_EQ(removedShapes.back(), secondShape);
+
+  ASSERT_NE(shapeNode->get<CollisionAspect>(), nullptr);
+  shapeNode->get<CollisionAspect>()->setCollidable(false);
+
+  // Reassign while non-collidable should not fire.
+  shapeNode->setShape(firstShape);
+  EXPECT_EQ(added, 2);
+  EXPECT_EQ(removed, 2);
+
+  // Re-enabling collision on an already-assigned shape should add once.
+  shapeNode->get<CollisionAspect>()->setCollidable(true);
+  EXPECT_EQ(added, 3);
+  EXPECT_EQ(removed, 2);
+  EXPECT_EQ(addedShapes.back(), firstShape);
 }
 
 } // namespace

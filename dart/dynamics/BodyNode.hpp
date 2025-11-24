@@ -1261,8 +1261,15 @@ private:
   void handleCollisionShapeStateChange(
       const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
 
+  /// Notify listeners when a collidable ShapeNode swaps its Shape.
+  void handleCollisionShapeUpdated(
+      const ShapeNode* shapeNode,
+      ConstShapePtr oldShape,
+      ConstShapePtr newShape);
+
   friend class CollisionAspect;
   friend class ShapeNode;
+  friend class ShapeFrame;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

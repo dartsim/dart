@@ -341,6 +341,13 @@ void ShapeFrame::setShape(const ShapePtr& shape)
     return;
 
   ShapePtr oldShape = mAspectProperties.mShape;
+  ShapeNode* shapeNode = asShapeNode();
+  BodyNode* bodyNode
+      = (shapeNode == nullptr) ? nullptr : shapeNode->getBodyNodePtr().get();
+  const auto* collision
+      = (shapeNode == nullptr) ? nullptr : shapeNode->get<CollisionAspect>();
+  const bool notifyCollisionChange = bodyNode != nullptr && collision != nullptr
+                                     && collision->getCollidable();
 
   mAspectProperties.mShape = shape;
   incrementVersion();
@@ -354,6 +361,11 @@ void ShapeFrame::setShape(const ShapePtr& shape)
             DART_UNUSED(shape);
             this->incrementVersion();
           });
+  }
+
+  if (notifyCollisionChange) {
+    bodyNode->handleCollisionShapeUpdated(
+        shapeNode, oldShape, mAspectProperties.mShape);
   }
 
   mShapeUpdatedSignal.raise(this, oldShape, mAspectProperties.mShape);
