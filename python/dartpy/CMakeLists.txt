@@ -44,7 +44,7 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
-set(_dartpy_nanobind_min_version 2.4.1)
+set(_dartpy_nanobind_min_version 2.9.2)
 
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
 set(_dartpy_nanobind_found FALSE)
