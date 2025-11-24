@@ -387,7 +387,7 @@ void JointLimitConstraint::getVelocityChange(double* delVel, bool withCfm)
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (withCfm) {
     delVel[mAppliedImpulseIndex]
         += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;

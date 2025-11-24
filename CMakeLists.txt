@@ -1009,9 +1009,9 @@ if(TARGET dartpy)
   message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install dartpy")
 endif()
 if(TARGET coverage)
-  message(STATUS "- 'coverage'     : generage coverage report")
-  message(STATUS "- 'coverage_html': generage coverage report in html")
-  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
+  message(STATUS "- 'coverage'     : generate coverage report")
+  message(STATUS "- 'coverage_html': generate coverage report in html")
+  message(STATUS "- 'coverage_view': view generated coverage report in a browser")
 endif()
 
 #===============================================================================

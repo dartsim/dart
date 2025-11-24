@@ -55,7 +55,7 @@ TEST(IkFast, WrapCyclicSolution)
   // Invalid bounds (lb > ub)
   EXPECT_FALSE(dynamics::wrapCyclicSolution(0, 10, -10, sol));
 
-  // Current value is in the lmits, but solution is lesser than lower limit.
+  // Current value is in the limits, but solution is lesser than lower limit.
   // Expect valid solution that is the cloest to the current value.
   sol = -3 * pi;
   EXPECT_TRUE(dynamics::wrapCyclicSolution(-pi / 2, -pi, +pi, sol));
@@ -68,7 +68,7 @@ TEST(IkFast, WrapCyclicSolution)
   EXPECT_FALSE(
       dynamics::wrapCyclicSolution(-pi / 2, -0.9 * pi, +0.9 * pi, sol));
 
-  // Current value is in the lmits, but solution is greater than upper limit.
+  // Current value is in the limits, but solution is greater than upper limit.
   // Expect valid solution that is the cloest to the current value.
   sol = -3 * pi;
   EXPECT_TRUE(dynamics::wrapCyclicSolution(+pi / 2, -pi, +pi, sol));

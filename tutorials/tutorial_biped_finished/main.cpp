@@ -409,7 +409,7 @@ void setVelocityActuators(SkeletonPtr biped)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
   // snippet:cpp-biped-lesson7-ik-start
-  // Modify the intial pose to one-foot stance before IK
+  // Modify the initial pose to one-foot stance before IK
   biped->setPosition(biped->getDof("j_shin_right")->getIndexInSkeleton(), -1.4);
   biped->setPosition(
       biped->getDof("j_bicep_left_x")->getIndexInSkeleton(), 0.8);

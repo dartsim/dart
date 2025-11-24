@@ -74,7 +74,7 @@ public:
   /// @brief Get number of skeletons
   int getNumSkeletons() const;
 
-  /// @brief Get number of generalized coordinates of skeleton whoes index is
+  /// @brief Get number of generalized coordinates of skeleton whose index is
   /// _skelIdx
   int getNumDofs(int _skelIdx) const;
 
@@ -85,7 +85,7 @@ public:
   /// _frameIdx
   Eigen::VectorXd getConfig(int _frameIdx, int _skelIdx) const;
 
-  /// @brief Get _dofIdx-th single configruation of a skeleton whose index is
+  /// @brief Get _dofIdx-th single configuration of a skeleton whose index is
   /// _skelIdx at frame number _frameIdx
   double getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const;
 

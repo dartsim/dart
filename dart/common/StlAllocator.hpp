@@ -73,7 +73,7 @@ public:
 
   /// Allocates n * sizeof(T) bytes of uninitialized storage.
   ///
-  /// @param[in] n: The number of objects to allocate sotrage for.
+  /// @param[in] n: The number of objects to allocate storage for.
   /// @param[in] hint: Point to a nearby memory location.
   /// @return On success, the pointer to the beginning of newly allocated
   /// memory.

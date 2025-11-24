@@ -124,7 +124,7 @@ public:
 
     mTorques = p + d - mKd * qddot * mTimestep;
 
-    // ankle strategy for sagital plane
+    // ankle strategy for sagittal plane
     const Eigen::Vector3d com = mBiped->getCOM();
     const Eigen::Vector3d cop
         = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
