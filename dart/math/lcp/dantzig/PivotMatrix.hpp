@@ -33,13 +33,13 @@
 #pragma once
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/Dantzig/Common.hpp"
+#include "dart/math/lcp/dantzig/Common.hpp"
 
 #include <Eigen/Core>
 
 #include <vector>
 
-namespace dart::math::lcp {
+namespace dart::math {
 
 /// @brief Hybrid pivot matrix: Eigen storage + O(1) row pointer swapping
 ///
@@ -328,8 +328,4 @@ private:
 using PivotMatrixd = PivotMatrix<double>;
 using PivotMatrixf = PivotMatrix<float>;
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math

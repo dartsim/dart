@@ -53,40 +53,70 @@
  * LICENSE.TXT and LICENSE-BSD.TXT for more details.
  */
 
-#include "dart/math/lcp/Dantzig/Misc.hpp"
+#pragma once
 
-namespace dart::math::lcp {
+#include "dart/Export.hpp"
+#include "dart/math/lcp/dantzig/Common.hpp"
 
-//==============================================================================
-// Random number generation
-//==============================================================================
+#include <Eigen/Core>
 
-static unsigned long rng_seed = 0;
+#include <cstdio>
+#include <cstdlib>
 
-unsigned long dRand()
-{
-  rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
-  return rng_seed;
-}
+namespace dart::math {
 
-unsigned long dRandGetSeed()
-{
-  return rng_seed;
-}
+/// Solve the Linear Complementarity Problem using Dantzig's algorithm
+///
+/// Given (A,b,lo,hi), solve the LCP problem: A*x = b+w, where each x(i),w(i)
+/// satisfies one of:
+///   (1) x = lo, w >= 0
+///   (2) x = hi, w <= 0
+///   (3) lo < x < hi, w = 0
+///
+/// @tparam Scalar Floating-point type (float or double)
+/// @param n Dimension of the problem (A is n×n matrix)
+/// @param A Coefficient matrix of dimension n×n (may be modified)
+/// @param x Solution vector (output)
+/// @param b Right-hand side vector (may be modified)
+/// @param w Complementarity vector (output, can be nullptr to skip)
+/// @param nub Number of unbounded variables (first nub variables have infinite
+/// bounds)
+/// @param lo Lower bounds (must satisfy lo(i) <= 0)
+/// @param hi Upper bounds (must satisfy hi(i) >= 0)
+/// @param findex Friction index array (nullptr if not used). When findex[i] >=
+/// 0,
+///               the constraint is "special" and bounds are updated:
+///               hi[i] = abs(hi[i] * x[findex[i]]), lo[i] = -hi[i]
+/// @param earlyTermination If true, solver may terminate early (default: false)
+/// @return True if solution found, false otherwise
+///
+/// @note lo and hi can be +/- infinity (ScalarTraits<Scalar>::inf()) as needed
+/// @note The first nub variables are unbounded (hi and lo assumed to be +/-
+///       infinity)
+/// @note For friction approximation, the first nub variables must have findex <
+///       0
+///
+/// @code
+/// // Example usage:
+/// constexpr int n = 6;
+/// double A[n*n], x[n], b[n], w[n], lo[n], hi[n];
+/// // ... initialize A, b, lo, hi ...
+/// bool success = SolveLCP<double>(n, A, x, b, w, 0, lo, hi, nullptr);
+/// @endcode
+template <typename Scalar>
+bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination = false);
 
-void dRandSetSeed(unsigned long s)
-{
-  rng_seed = s;
-}
+} // namespace dart::math
 
-int dRandInt(int n)
-{
-  return static_cast<int>(dRandReal() * n);
-}
-
-double dRandReal()
-{
-  return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
-}
-
-} // namespace dart::math::lcp
+// Template implementations for header-only usage
+#include "dart/math/lcp/dantzig/Lcp-impl.hpp"
