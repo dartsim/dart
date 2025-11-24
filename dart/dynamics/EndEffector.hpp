@@ -98,7 +98,7 @@ public:
   virtual ~EndEffector() = default;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Structural Properties
+  /// \{ @name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
@@ -139,7 +139,7 @@ public:
   DART_BAKE_SPECIALIZED_ASPECT(Support)
 
   //----------------------------------------------------------------------------
-  /// \{ \name Notifications
+  /// \{ @name Notifications
   //----------------------------------------------------------------------------
 
   // Documentation inherited

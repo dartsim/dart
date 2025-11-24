@@ -42,9 +42,18 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
+Eigen::Vector4d VisualAspectProperties::getDefaultRGBA()
+{
+  return Eigen::Vector4d(0.5, 0.5, 1.0, 1.0);
+}
+
+//==============================================================================
 VisualAspectProperties::VisualAspectProperties(
     const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
-  : mRGBA(color), mHidden(hidden), mShadowed(shadowed)
+  : mRGBA(color),
+    mUseDefaultColor(color.isApprox(getDefaultRGBA())),
+    mHidden(hidden),
+    mShadowed(shadowed)
 {
   // Do nothing
 }
@@ -110,6 +119,7 @@ VisualAspect::VisualAspect(const PropertiesData& properties)
 void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
+  mProperties.mUseDefaultColor = false;
 
   notifyPropertiesUpdated();
 
@@ -145,6 +155,29 @@ void VisualAspect::setAlpha(const double alpha)
   notifyPropertiesUpdated();
 
   mComposite->getShape()->notifyAlphaUpdated(alpha);
+}
+
+//==============================================================================
+void VisualAspect::resetColor()
+{
+  mProperties.mRGBA = getDefaultRGBA();
+  mProperties.mUseDefaultColor = true;
+
+  notifyPropertiesUpdated();
+
+  mComposite->getShape()->notifyColorUpdated(mProperties.mRGBA);
+}
+
+//==============================================================================
+bool VisualAspect::usesDefaultColor() const
+{
+  return mProperties.mUseDefaultColor;
+}
+
+//==============================================================================
+Eigen::Vector4d VisualAspect::getDefaultRGBA()
+{
+  return detail::VisualAspectProperties::getDefaultRGBA();
 }
 
 //==============================================================================

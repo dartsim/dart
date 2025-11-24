@@ -44,6 +44,7 @@ scikit-build-core = ">=0.10"
 setuptools = ">=80.1.0,<81"
 spdlog = ">=1.15.3,<2"
 sphinx = "*"
+sphinx-lint = "*"
 sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx-tabs = "*"
@@ -155,6 +156,8 @@ lint-md = { cmd = """
     prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 lint = { depends-on = [
   "lint-cpp",
   "lint-dart8",
@@ -162,6 +165,7 @@ lint = { depends-on = [
   "lint-yaml",
   "lint-toml",
   "lint-md",
+  "lint-rst",
 ] }
 
 # Check formatting without modifying files (used in CI)
@@ -183,11 +187,14 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
 ] }
 
 build = { cmd = [
@@ -234,6 +241,7 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
+DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
@@ -261,7 +269,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_DART8=ON \
+  -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -1025,6 +1033,8 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
+DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
+DART_BUILD_DART8_VALUE=${DART_BUILD_DART8_OVERRIDE:-ON}
 if command -v sccache >/dev/null 2>&1 && [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   CMAKE_C_COMPILER_LAUNCHER=sccache
   CMAKE_CXX_COMPILER_LAUNCHER=sccache
@@ -1043,8 +1053,8 @@ cmake \
   -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-  -DDART_BUILD_DARTPY=ON \
-  -DDART_BUILD_DART8=ON \
+  -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
+  -DDART_BUILD_DART8=${DART_BUILD_DART8_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=ON \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1241,16 +1251,21 @@ lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
 
-lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml"] }
+lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
+lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml", "lint-rst"] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
 """ }
 
+check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-rst",
 ] }
 
 build = { cmd = """

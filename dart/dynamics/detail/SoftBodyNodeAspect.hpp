@@ -82,7 +82,7 @@ struct DART_API SoftBodyNodeUniqueProperties
   std::vector<PointMass::Properties> mPointProps;
 
   // TODO(JS): Let's remove this because this is rendering part
-  /// \brief Tri-mesh indexes for rendering.
+  /// @brief Tri-mesh indexes for rendering.
   std::vector<Eigen::Vector3i> mFaces;
 
   SoftBodyNodeUniqueProperties(

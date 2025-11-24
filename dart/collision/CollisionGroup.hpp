@@ -296,11 +296,11 @@ public:
 
   /// Performs raycast to this collision group.
   ///
-  /// \param[in] from The start point of the ray in world coordinates.
-  /// \param[in] to The end point of the ray in world coordinates.
-  /// \param[in] option The raycast option.
-  /// \param[in] result The raycast result.
-  /// \return True if the ray hit an collision object.
+  /// @param[in] from The start point of the ray in world coordinates.
+  /// @param[in] to The end point of the ray in world coordinates.
+  /// @param[in] option The raycast option.
+  /// @param[in] result The raycast result.
+  /// @return True if the ray hit an collision object.
   bool raycast(
       const Eigen::Vector3d& from,
       const Eigen::Vector3d& to,
@@ -475,7 +475,7 @@ private:
   /// automatically. Default is true.
   bool mUpdateAutomatically;
 
-  /// \private This struct is used to store sources of ShapeFrames that the
+  /// @private This struct is used to store sources of ShapeFrames that the
   /// CollisionGroup is subscribed to, alongside the last version number of that
   /// source, as known by this CollisionGroup.
   template <typename Source, typename Child = void>
@@ -532,15 +532,15 @@ private:
       = std::unordered_map<const dynamics::BodyNode*, BodyNodeSource>;
 
   /// Internal function called to update a Skeleton source
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateSkeletonSource(SkeletonSources::value_type& entry);
 
   /// Internal function called to update a BodyNode source
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateBodyNodeSource(BodyNodeSources::value_type& entry);
 
   /// Internal function called to update a ShapeFrame
-  /// \returns true if an update was performed
+  /// @returns true if an update was performed
   bool updateShapeFrame(ObjectInfo* object);
 
   /// Skeleton sources that this group is subscribed to

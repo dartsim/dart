@@ -49,10 +49,10 @@ class DART_API SoftMeshShape : public Shape
 public:
   friend class SoftBodyNode;
 
-  /// \brief Constructor.
+  /// @brief Constructor.
   explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
 
-  /// \brief Destructor.
+  /// @brief Destructor.
   virtual ~SoftMeshShape();
 
   // Documentation inherited.
@@ -61,13 +61,13 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief
+  /// @brief
   const aiMesh* getAssimpMesh() const;
 
   /// Get the SoftBodyNode that is associated with this SoftMeshShape
   const SoftBodyNode* getSoftBodyNode() const;
 
-  /// \brief Update positions of the vertices using the parent soft body node.
+  /// @brief Update positions of the vertices using the parent soft body node.
   void update();
 
   // Documentation inherited.
@@ -84,13 +84,13 @@ protected:
   void updateVolume() const override;
 
 private:
-  /// \brief Build mesh using SoftBodyNode data
+  /// @brief Build mesh using SoftBodyNode data
   void _buildMesh();
 
-  /// \brief
+  /// @brief
   SoftBodyNode* mSoftBodyNode;
 
-  /// \brief
+  /// @brief
   std::unique_ptr<aiMesh> mAssimpMesh;
 };
 

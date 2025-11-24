@@ -93,6 +93,15 @@ public:
   /// Set the transparency of the Shape
   void setAlpha(const double alpha);
 
+  /// Reset the color back to the default and mark it as unspecified.
+  void resetColor();
+
+  /// True if no explicit color has been assigned to this VisualAspect.
+  bool usesDefaultColor() const;
+
+  /// Default RGBA color used when no explicit color is set.
+  static Eigen::Vector4d getDefaultRGBA();
+
   /// Get color
   Eigen::Vector3d getColor() const;
 

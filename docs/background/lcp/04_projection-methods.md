@@ -1,0 +1,559 @@
+# Projection/Sweeping Methods for LCP
+
+**Navigation**: [← Pivoting Methods](03_pivoting-methods.md) | [Newton Methods →](05_newton-methods.md)
+
+## Overview
+
+Projection methods (also called sweeping or splitting methods) are iterative solvers based on matrix splitting A = M - N. They are the most popular methods for real-time physics simulation due to their low O(n) per-iteration cost.
+
+## Core Concept: Matrix Splitting
+
+All projection methods use:
+
+```
+A = M - N  (matrix splitting)
+Mx^{k+1} = Nx^k + b  (fixed-point iteration)
+x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
+```
+
+## 1. Jacobi Method ❌ (Not Implemented)
+
+### Splitting
+
+- M = D (diagonal of A)
+- N = D - A
+
+### Update Rule
+
+```
+x_i^{k+1} = max(0, -r_i / A_{ii})  for all i in parallel
+where r = b + Ax^k
+```
+
+### Properties
+
+- **Time**: O(n) per iteration
+- **Storage**: O(n)
+- **Convergence**: Linear (if converges)
+- **Parallelization**: Fully parallel
+
+### Advantages/Disadvantages
+
+✅ Embarrassingly parallel - all updates independent
+✅ Simple to implement
+❌ Slower convergence than Gauss-Seidel
+❌ May not converge for some problems
+
+## 2. Projected Gauss-Seidel (PGS) ❌ (Not Implemented, High Priority)
+
+### Splitting
+
+- M = D + L (diagonal + lower triangular)
+- N = -U (negative upper triangular)
+
+### Update Rule
+
+```
+for i = 1 to n:
+  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
+  x_i = max(0, -r_i / A_{ii})
+```
+
+### Pseudocode
+
+```
+function PGS(A, b, x, max_iter, epsilon):
+  for iter = 1 to max_iter:
+    x_old = x
+    for i = 1 to n:
+      r_i = b_i + dot(A[i,:], x)
+      x[i] = max(0, -r_i / A[i,i])
+
+    if ||x - x_old|| < epsilon:
+      break
+  return x
+```
+
+### Properties
+
+- **Time**: O(nk) per iteration (k = max non-zeros per row)
+- **Storage**: O(n)
+- **Convergence**: Linear for symmetric PSD
+- **Parallelization**: Sequential
+
+### Advantages/Disadvantages
+
+✅ Fast O(n) iterations
+✅ Low memory footprint
+✅ Works well for contact problems
+✅ In-place updates
+❌ Sequential (not parallel)
+❌ Convergence depends on sweep order
+❌ May be slow for ill-conditioned problems
+
+### Use Cases
+
+- Real-time rigid body simulation
+- Contact force computation
+- Interactive applications
+- First-choice for most physics engines
+
+## 3. Projected SOR (PSOR) ❌ (Not Implemented, High Priority)
+
+### Splitting
+
+- M = (D + λL)/λ
+- N = ((1-λ)D - λU)/λ
+
+### Update Rule
+
+```
+for i = 1 to n:
+  r_i = b_i + sum(A_{ij} * x_j, j=1..n)
+  x_i = max(0, x_i - lambda * r_i / A_{ii})
+```
+
+### Relaxation Parameter λ
+
+- **λ = 1**: Reduces to PGS
+- **0 < λ < 1**: Under-relaxation (more stable)
+- **1 < λ < 2**: Over-relaxation (faster convergence)
+- **Typical**: λ = 1.2 to 1.5
+
+### Properties
+
+- **Time**: O(nk) per iteration
+- **Storage**: O(n)
+- **Convergence**: Can be faster than PGS with good λ
+- **Parallelization**: Sequential
+
+### Advantages/Disadvantages
+
+✅ Faster convergence than PGS with good λ
+✅ Same computational cost as PGS
+❌ Requires tuning λ parameter
+❌ Bad λ can make convergence worse
+
+## 4. Symmetric PSOR ❌ (Not Implemented)
+
+### Algorithm
+
+Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
+
+### Properties
+
+- Reduces sweep-order dependency
+- 2× cost per iteration
+- Better convergence behavior
+
+## 5. Blocked Gauss-Seidel (BGS) ❌ (Not Implemented, Medium Priority)
+
+### Description
+
+Applies Gauss-Seidel to blocks of variables rather than individual variables. Also known as Nonsmooth Contact Dynamics (NSCD).
+
+### Block Structure for Contact Problems
+
+```
+Block i contains variables for contact point i:
+  - Normal impulse x_n,i
+  - Tangential impulses x_t1,i, x_t2,i (or 4 for pyramid)
+  - Slack variable β_i (for friction cone)
+```
+
+### Algorithm
+
+```
+for iter = 1 to max_iter:
+  for each block i:
+    # Compute residual for block
+    r_i = b_i + sum(A_{ij} * x_j, j=1..num_blocks)
+
+    # Solve sub-LCP for block i
+    x_i = SolveSubLCP(A_{ii}, r_i, bounds_i)
+```
+
+### Sub-LCP Solvers
+
+- **1D normal**: Direct solve
+- **2D/3D friction**: Direct geometric method
+- **4D pyramid**: Direct or small iterative
+- **General**: Any LCP solver
+
+### Properties
+
+- **Time**: O(n·b³) per iteration (b = block size)
+- **Storage**: O(n)
+- **Convergence**: Linear
+- **Block size**: Typically 1-6 variables
+
+### Advantages/Disadvantages
+
+✅ Natural for contact problems
+✅ Can use exact sub-solvers
+✅ Better convergence than scalar PGS
+✅ Flexible block definitions
+❌ More complex than PGS
+❌ Higher cost per iteration
+
+### Use Cases
+
+- Contact force problems
+- One block per contact point
+- When sub-problems are small and cheap
+
+## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ❌ (Not Implemented)
+
+### Description
+
+Conjugate gradient acceleration of PGS using Fletcher-Reeves formula.
+
+### Algorithm
+
+```
+function NNCG(A, b, x, max_iter):
+  r = PGS_iteration(x) - x  # residual
+  p = r                      # search direction
+
+  for iter = 1 to max_iter:
+    x = x + p  # full step
+    r_new = PGS_iteration(x) - x
+
+    beta = ||r_new||² / ||r||²
+
+    if beta > 1:
+      p = r_new  # restart
+    else:
+      p = r_new + beta * p
+
+    r = r_new
+```
+
+### Properties
+
+- **Time**: O(n) per iteration (same as PGS)
+- **Storage**: O(n) (need to store p vector)
+- **Convergence**: Linear to superlinear (empirically)
+- **Restart**: Every 10-20 iterations
+
+### Advantages/Disadvantages
+
+✅ Better convergence than PGS
+✅ Same per-iteration cost as PGS
+✅ Handles large mass ratios better
+❌ Slightly more complex
+❌ Needs restart strategy
+
+### Use Cases
+
+- Large-scale problems
+- Better accuracy than PGS
+- When PGS converges too slowly
+
+## 7. Subspace Minimization (PGS-SM) ❌ (Not Implemented)
+
+### Description
+
+Two-phase hybrid: PGS for active set estimation + direct solve for refinement.
+
+### Algorithm
+
+```
+while not converged:
+  # Phase 1: PGS for active set estimation
+  for k_pgs iterations:
+    PGS_iteration(x)
+
+  # Phase 2: Subspace minimization
+  for k_sm iterations:
+    # Partition into L (lower), U (upper), A (active)
+    L = {i | x_i = l_i}
+    U = {i | x_i = u_i}
+    A = {i | l_i < x_i < u_i}
+
+    # Solve reduced system
+    A_{AA} * x_A = -(b_A + A_{AL}*l + A_{AU}*u)
+
+    # Project back
+    x_A = min(u_A, max(l_A, x_A))
+```
+
+### Properties
+
+- **Time**: O(n) for PGS + O(|A|³) for subspace
+- **Storage**: O(n)
+- **Convergence**: Better than pure PGS
+
+### Use Cases
+
+- Small to medium problems with joints
+- When PGS alone is not accurate enough
+- Problems with clear active/inactive distinction
+
+## 8. Red-Black Gauss-Seidel ❌ (Not Implemented)
+
+### Description
+
+Two-color blocking for parallelization.
+
+### Algorithm
+
+```
+# Color variables: red or black (checkerboard pattern)
+for iter = 1 to max_iter:
+  # Phase 1: Update all red variables in parallel
+  parallel for i in red_indices:
+    update x_i
+
+  # Phase 2: Update all black variables in parallel
+  parallel for i in black_indices:
+    update x_i
+```
+
+### Properties
+
+- **Parallelization**: 2-phase parallel
+- **Convergence**: Between Jacobi and Gauss-Seidel
+
+### Use Cases
+
+- GPU implementations
+- Parallel computing
+- Domain decomposition
+
+## Termination Criteria
+
+### Absolute Convergence
+
+```
+||Ax + b|| < epsilon_abs
+```
+
+Typical: epsilon_abs = 1e-6
+
+### Relative Convergence
+
+```
+||x^{k+1} - x^k|| / ||x^k|| < epsilon_rel
+```
+
+Typical: epsilon_rel = 1e-4
+
+### Complementarity
+
+```
+||x ⊙ (Ax + b)|| < epsilon_comp
+```
+
+where ⊙ is element-wise product
+
+### Maximum Iterations
+
+```
+iter >= max_iter
+```
+
+Typical: 50-100 for real-time, 1000+ for accuracy
+
+## Merit Functions
+
+### QP Formulation
+
+```
+phi(x) = 0.5 * x^T * A * x + x^T * b
+```
+
+### Modified for x=0 Safety
+
+```
+phi(x) = ||x ⊙ (Ax + b)||
+```
+
+### Infinity Norm (Cheap to Compute)
+
+```
+phi(x) = max_i |x_i|
+```
+
+## Comparison Table
+
+| Method    | Status        | Parallel | Convergence | Best For              |
+| --------- | ------------- | -------- | ----------- | --------------------- |
+| Jacobi    | ❌            | Yes      | Slow        | Parallel hardware     |
+| PGS       | ❌ (Priority) | No       | Linear      | Real-time             |
+| PSOR      | ❌ (Priority) | No       | Linear      | Real-time with tuning |
+| BGS       | ❌            | No       | Linear      | Contact problems      |
+| NNCG      | ❌            | No       | Superlinear | Large-scale           |
+| PGS-SM    | ❌            | No       | Better      | Medium problems       |
+| Red-Black | ❌            | 2-phase  | Medium      | GPU                   |
+
+## Implementation Priority
+
+### Phase 1 (Essential for Real-Time)
+
+1. **PGS** - Core method, highest priority
+2. **PSOR** - Extension of PGS with relaxation
+3. **Termination criteria** - Multiple stopping conditions
+4. **Merit functions** - For convergence monitoring
+
+### Phase 2 (For Contact Problems)
+
+5. **BGS** - Natural for multi-contact scenarios
+6. **Direct 2D/3D sub-solvers** - For BGS blocks
+
+### Phase 3 (Advanced)
+
+7. **NNCG** - Better convergence for large systems
+8. **PGS-SM** - Hybrid approach
+
+## When to Use Projection Methods
+
+### Advantages
+
+✅ O(n) per-iteration cost
+✅ Low memory O(n)
+✅ Simple to implement
+✅ Matrix-free possible
+✅ Predictable performance
+
+### Disadvantages
+
+❌ Linear convergence (slow)
+❌ Many iterations needed (50-500)
+❌ Convergence depends on conditioning
+❌ May not converge for all matrices
+
+### Recommended For
+
+- Real-time interactive simulation
+- Contact force problems
+- Large-scale systems
+- When approximate solutions suffice
+- First choice for physics engines
+
+### Not Recommended For
+
+- High accuracy requirements (use Newton instead)
+- Very ill-conditioned systems (use pivoting instead)
+- When exact solutions needed (use pivoting instead)
+
+## References
+
+### Classical Iterative Methods
+
+1. **Young, D. M.** (1971). _Iterative solution of large linear systems_. Academic press.
+   - Classical Gauss-Seidel and SOR methods
+   - Chapters 3-4: Convergence theory for splitting methods
+
+2. **Saad, Y.** (2003). _Iterative methods for sparse linear systems_ (2nd ed.). SIAM.
+   - Modern treatment of iterative methods
+   - Chapter 4: Relaxation methods (Jacobi, GS, SOR)
+
+### Projected Gauss-Seidel for LCP
+
+3. **Murty, K. G.** (1988). _Linear complementarity, linear and nonlinear programming_. Heldermann Verlag.
+   - Chapter 10: Iterative methods for LCP
+   - Convergence analysis for symmetric PSD matrices
+
+4. **Mangasarian, O. L.** (1977). "Solution of symmetric linear complementarity problems by iterative methods". _Journal of Optimization Theory and Applications_, 22(4), 465-485.
+   - Convergence theory for PGS on symmetric matrices
+   - Sufficient conditions for convergence
+
+5. **Cryer, C. W.** (1971). "The solution of a quadratic programming problem using systematic overrelaxation". _SIAM Journal on Control_, 9(3), 385-392.
+   - PSOR method for QP (equivalent to LCP when A symmetric)
+   - Optimal relaxation parameter analysis
+
+### Blocked Gauss-Seidel (NSCD)
+
+6. **Moreau, J. J.** (1988). "Unilateral contact and dry friction in finite freedom dynamics". _Nonsmooth mechanics and applications_, 1-82. Springer.
+   - Nonsmooth contact dynamics formulation
+   - Theoretical foundation for BGS in contact mechanics
+
+7. **Jean, M.** (1999). "The non-smooth contact dynamics method". _Computer methods in applied mechanics and engineering_, 177(3-4), 235-257.
+   - NSCD method = Blocked Gauss-Seidel for contacts
+   - Per-contact block structure
+   - Applications to granular materials
+
+8. **Acary, V., & Brogliato, B.** (2008). _Numerical methods for nonsmooth dynamical systems: applications in mechanics and electronics_. Springer Science & Business Media.
+   - Comprehensive treatment of NSCD/BGS
+   - Chapter 7: Time-stepping schemes
+   - Chapter 8: Numerical methods for LCP/MLCP
+
+9. **Anitescu, M., & Tasora, A.** (2010). "An iterative approach for cone complementarity problems for nonsmooth dynamics". _Computational Optimization and Applications_, 47(2), 207-235.
+   - Convergence analysis of Gauss-Seidel for friction cones
+   - Practical implementation considerations
+
+### Nonsmooth Nonlinear Conjugate Gradient (NNCG)
+
+10. **Silcowitz, M., Niebe, S., & Erleben, K.** (2009). "Nonsmooth nonlinear conjugate gradient method for interactive contact force problems". _The Visual Computer_, 25(5), 893-905.
+    - NNCG method for contact problems
+    - Fletcher-Reeves formula adaptation
+    - Better convergence than PGS for large mass ratios
+
+11. **Silcowitz, M., Niebe, S., & Erleben, K.** (2010). "A nonsmooth nonlinear conjugate gradient method for interactive contact force problems". _The Visual Computer_, 26(6-8), 893-901.
+    - Extended version with more implementation details
+    - Performance comparison with PGS and other methods
+
+12. **Fletcher, R., & Reeves, C. M.** (1964). "Function minimization by conjugate gradients". _The Computer Journal_, 7(2), 149-154.
+    - Original Fletcher-Reeves conjugate gradient
+    - Foundation for NNCG adaptation
+
+### Subspace Minimization
+
+13. **Silcowitz-Hansen, M., Erleben, K., & Niebe, S.** (2010). "A nonsmooth Newton method with applications to computer animation". In _MATHMOD 2009-6th Vienna International Conference on Mathematical Modelling_.
+    - Subspace minimization approach
+    - Combines PGS with direct solvers
+    - Active set prediction
+
+14. **Kaufman, D. M., Sueda, S., James, D. L., & Pai, D. K.** (2008). "Staggered projections for frictional contact in multibody systems". _ACM Transactions on Graphics (TOG)_, 27(5), 1-11.
+    - Related subspace approach
+    - Staggering for normal/tangential forces
+
+### Red-Black and Parallel Methods
+
+15. **Adams, L. M.** (1982). "Iterative algorithms for large sparse linear systems on parallel computers". _NASA Technical Memorandum_, 83267.
+    - Red-black ordering for parallelization
+    - Applications to domain decomposition
+
+16. **Hasenbusch, M., Lana, A., & Marcu, M.** (1999). "Accelerated Monte Carlo for fermions". _Nuclear Physics B-Proceedings Supplements_, 73(1-3), 864-866.
+    - Red-black ordering applications
+    - Checkerboard pattern for parallel updates
+
+### Convergence Theory
+
+17. **Luo, Z. Q., & Tseng, P.** (1992). "On the convergence of the coordinate descent method for convex differentiable minimization". _Journal of Optimization Theory and Applications_, 72(1), 7-35.
+    - General convergence theory
+    - Applicable to PGS as coordinate descent
+
+18. **Bertsekas, D. P.** (1999). _Nonlinear programming_ (2nd ed.). Athena scientific.
+    - Chapter 2.7: Coordinate descent methods
+    - Convergence for convex problems
+
+### Physics Simulation Applications
+
+19. **Catto, E.** (2005). "Iterative dynamics with temporal coherence". In _Game Developer Conference_.
+    - PGS in Box2D physics engine
+    - Practical implementation and warm-starting
+
+20. **Coumans, E.** (2015). "Bullet physics simulation". In _ACM SIGGRAPH 2015 Courses_, 1-87.
+    - PGS and NNCG in Bullet Physics
+    - Performance comparisons and best practices
+
+21. **Tonge, R., Benevolenski, F., & Voroshilov, A.** (2012). "Mass splitting for jitter-free parallel rigid body simulation". _ACM Transactions on Graphics (TOG)_, 31(4), 1-8.
+    - Jacobi-style parallel contact resolution
+    - Domain decomposition strategies
+
+### Implementation and Performance
+
+22. **Erleben, K.** (2013). "Numerical methods for linear complementarity problems in physics-based animation". In _ACM SIGGRAPH 2013 Courses_, 8.
+    - Comprehensive survey of PGS, PSOR, NNCG, etc.
+    - Implementation details and performance analysis
+
+23. **Erleben, K., Silcowitz-Hansen, M., & Niebe, S.** (2017). "Numerical methods for linear complementarity problems in physics-based animation". _Synthesis Lectures on Computer Graphics and Animation_, 11(2), 1-159.
+    - Extended book version of the survey
+    - Definitive reference for projection methods
+    - Detailed pseudocode and analysis
+
+---
+
+**Navigation**: [← Pivoting Methods](03_pivoting-methods.md) | [Newton Methods →](05_newton-methods.md)

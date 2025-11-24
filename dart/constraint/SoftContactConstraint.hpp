@@ -153,7 +153,7 @@ protected:
 
 private:
   /// Get change in relative velocity at contact point due to external impulse
-  /// \param[out] _vel Change in relative velocity at contact point of the two
+  /// @param[out] _vel Change in relative velocity at contact point of the two
   ///                  colliding bodies
   void getRelVelocity(double* _vel);
 
@@ -252,7 +252,7 @@ private:
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
-  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  /// @sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
 };
 

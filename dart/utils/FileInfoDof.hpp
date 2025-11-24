@@ -47,62 +47,62 @@ class Skeleton;
 
 namespace utils {
 
-/// \brief class FileInfoDof
+/// @brief class FileInfoDof
 class DART_UTILS_API FileInfoDof
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   FileInfoDof(dynamics::Skeleton* _skel, double _fps = 120.0);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~FileInfoDof();
 
-  /// \brief Load file
+  /// @brief Load file
   bool loadFile(const char* _fileName);
 
-  /// \brief Save file
-  /// \note Down sampling not implemented yet
+  /// @brief Save file
+  /// @note Down sampling not implemented yet
   bool saveFile(
       const char* _fileName,
       std::size_t _start,
       std::size_t _end,
       double _sampleRate = 1.0);
 
-  /// \brief Add Dof
+  /// @brief Add Dof
   void addDof(const Eigen::VectorXd& _dofs);
 
-  /// \brief Get Dof
+  /// @brief Get Dof
   double getDofAt(std::size_t _frame, std::size_t _id) const;
 
-  /// \brief Get pose at frame
+  /// @brief Get pose at frame
   Eigen::VectorXd getPoseAtFrame(int _frame) const;
 
-  /// \brief Set frames per second
+  /// @brief Set frames per second
   void setFPS(double _fps);
 
-  /// \brief Get frames per second
+  /// @brief Get frames per second
   double getFPS() const;
 
-  /// \brief Get number of frames
+  /// @brief Get number of frames
   int getNumFrames() const;
 
-  /// \brief Get skeleton associated with
+  /// @brief Get skeleton associated with
   dynamics::Skeleton* getSkel() const;
 
 protected:
-  /// \brief Model associated with
+  /// @brief Model associated with
   dynamics::Skeleton* mSkel;
 
-  /// \brief Frame rate
+  /// @brief Frame rate
   double mFPS;
 
-  /// \brief Number of frames
+  /// @brief Number of frames
   std::size_t mNumFrames;
 
-  /// \brief File name
+  /// @brief File name
   char mFileName[256];
 
-  /// \brief Dof data [frame][dofIndex]
+  /// @brief Dof data [frame][dofIndex]
   std::vector<Eigen::VectorXd> mDofs;
 };
 
