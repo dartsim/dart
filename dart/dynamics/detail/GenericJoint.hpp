@@ -1443,6 +1443,26 @@ double GenericJoint<ConfigSpaceT>::getRestPosition(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setRestPositions(
+    const Eigen::VectorXd& restPositions)
+{
+  if (static_cast<size_t>(restPositions.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(setRestPositions, restPositions);
+    return;
+  }
+
+  GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getRestPositions() const
+{
+  return Base::mAspectProperties.mRestPositions;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
 {
   if (index >= getNumDofs()) {
@@ -1465,6 +1485,29 @@ double GenericJoint<ConfigSpaceT>::getDampingCoefficient(size_t index) const
   }
 
   return Base::mAspectProperties.mDampingCoefficients[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
+    const Eigen::VectorXd& dampingCoefficients)
+{
+  if (static_cast<size_t>(dampingCoefficients.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(
+        setDampingCoefficients, dampingCoefficients);
+    return;
+  }
+
+  DART_ASSERT((dampingCoefficients.array() >= 0.0).all());
+
+  GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients, dampingCoefficients);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getDampingCoefficients() const
+{
+  return Base::mAspectProperties.mDampingCoefficients;
 }
 
 //==============================================================================
@@ -1492,6 +1535,27 @@ double GenericJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
   }
 
   return Base::mAspectProperties.mFrictions[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setFrictions(const Eigen::VectorXd& frictions)
+{
+  if (static_cast<size_t>(frictions.size()) != getNumDofs()) {
+    GenericJoint_REPORT_DIM_MISMATCH(setFrictions, frictions);
+    return;
+  }
+
+  DART_ASSERT((frictions.array() >= 0.0).all());
+
+  GenericJoint_SET_IF_DIFFERENT(mFrictions, frictions);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getFrictions() const
+{
+  return Base::mAspectProperties.mFrictions;
 }
 
 //==============================================================================

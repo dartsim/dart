@@ -38,8 +38,6 @@ pip = ">=25.1.1,<26"
 pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
 prettier = ">=3.4.2,<4"
-pybind11 = ">=3.0"
-pybind11-stubgen = ">=2.5.1,<3"
 pytest = ">=8.3.5,<9"
 scikit-build-core = ">=0.10"
 setuptools = ">=80.1.0,<81"
@@ -118,7 +116,6 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
-  -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
@@ -140,7 +137,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
@@ -180,7 +177,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-dart8 = { cmd = """
-    find dart8 tests_dart8 examples_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart8 tests_dart8 -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -214,10 +211,11 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
 """,
 ], depends-on = [
   { task = "config", args = [
-    "ON",
+    "{{ dartpy }}",
     "{{ build_type }}",
   ] },
 ], args = [
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -287,7 +285,6 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
-  -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
@@ -360,7 +357,7 @@ BUILD_TYPE={{ build_type }}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dartpy
 """,
 ], depends-on = [
-  { task = "config-py", args = [
+  { task = "config", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -369,23 +366,6 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   { arg = "build_type", default = "Release" },
 ] }
 
-build-dartpy8 = { cmd = [
-  "bash",
-  "-lc",
-  """
-set -euo pipefail
-BUILD_TYPE={{ build_type }}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dartpy8
-""",
-], depends-on = [
-  { task = "config-py", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Release" },
-] }
 config-py = { cmd = [
   "bash",
   "-lc",
@@ -582,10 +562,11 @@ python scripts/pixi_test_py.py
 """,
 ], depends-on = [
   { task = "config", args = [
-    "ON",
+    "{{ dartpy }}",
     "{{ build_type }}",
   ] },
 ], args = [
+  { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -879,12 +860,14 @@ cmake \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_DARTPY={{ dartpy }} \
     -DDART_BUILD_DART8={{ dartpy }} \
+    -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
     -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
     -DDART_BUILD_PROFILE=OFF \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
+    -DDART_USE_SYSTEM_NANOBIND=OFF \
     -DDART_USE_SYSTEM_TRACY=ON \
     -DDART_VERBOSE=$DART_VERBOSE
 """,
@@ -896,6 +879,43 @@ tracy = { cmd = "tracy-profiler" }
 
 # Python package build
 build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
+
+# Drop into a Python shell using an existing build tree dartpy (assumes dartpy has been built)
+shell-dartpy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+SO_GLOB="build/default/cpp/{{ build_type }}/python/dartpy/_dartpy*.so"
+if ! compgen -G "$SO_GLOB" > /dev/null; then
+  echo "dartpy extension not found in build/default/cpp/{{ build_type }}/python; run 'pixi run build-py-dev' or 'pixi run shell-dartpy-forced' first." >&2
+  exit 1
+fi
+echo "Env: default  Build: {{ build_type }}"
+echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+""",
+], args = [
+  { arg = "build_type", default = "Release" },
+] }
+
+# Rebuild dartpy in-tree, then open a Python shell with it available
+shell-dartpy-forced = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+echo "Using dartpy from build/default/cpp/{{ build_type }}/python"
+exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" python
+""",
+], depends-on = [
+  { task = "build-py-dev", args = [
+    "ON",
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "build_type", default = "Release" },
+] }
 
 # Build wheel package (without installing)
 build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
@@ -920,7 +940,7 @@ wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag
 wheel-repair-macos-core = { cmd = "delocate-wheel --require-archs {{ arch }} -w dist/ -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl", args = [
   { arg = "python_tag" },
   { arg = "arch" },
-], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib" } }
+], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", DELOCATE_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", CONDA_PREFIX = "$CONDA_PREFIX:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME" } }
 
 wheel-repair-windows-core = { cmd = """
     rm -rf dist/repaired &&
@@ -1018,19 +1038,6 @@ test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
 
-# Docker build tasks - Test Docker images locally
-# Requires Docker to be installed on the system
-# Usage:
-#   pixi run docker-build                              # Build all Ubuntu versions
-#   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
-#   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
-#   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
-docker-build = { cmd = "python scripts/build_docker.py all" }
-
-docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [
-  { arg = "distro", default = "jammy" },
-] }
-
 config-asan = { cmd = [
   "bash",
   "-lc",
@@ -1067,7 +1074,6 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
-  -DDART_USE_SYSTEM_PYBIND11=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
@@ -1081,7 +1087,8 @@ build-asan = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests --parallel ${PARALLEL_JOBS}
 """,
 ], depends-on = [
   "config-asan",
@@ -1229,7 +1236,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
+        -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" }, args = [
@@ -1690,7 +1697,6 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.12.*"
 pip = ">=25"
 scikit-build-core = ">=0.10"
-pybind11 = ">=3.0"
 nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
@@ -1819,7 +1825,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.13.*"
 pip = ">=25"
 scikit-build-core = ">=0.10"
-pybind11 = ">=3.0"
+nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
@@ -1947,7 +1953,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.14.*"
 pip = ">=25"
 scikit-build-core = ">=0.10"
-pybind11 = ">=3.0"
+nanobind = ">=2.4.0"
 cmake = ">=4.0"
 ninja = ">=1.12"
 assimp = ">=5.4.3,<6"
