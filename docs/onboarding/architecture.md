@@ -138,7 +138,7 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 **Key Components:**
 
-- **Lemke.hpp** - Lemke's algorithm for solving LCPs
+- **pivoting/LemkeSolver.hpp** - Lemke's algorithm for solving LCPs
   - `int Lemke(M, q, z)` - Main solver
   - `bool validate(M, z, q)` - Solution validation
 

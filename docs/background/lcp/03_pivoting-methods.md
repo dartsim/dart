@@ -192,7 +192,7 @@ Find z such that:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/Lemke.hpp>
+#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
 
 using namespace dart::math;
 

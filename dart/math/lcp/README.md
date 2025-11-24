@@ -10,7 +10,6 @@ lcp/
 ├── Solver.hpp/cpp              # Base LCPSolver interface class
 ├── All.hpp                     # Convenience header including all solvers
 │
-├── Lemke.hpp/cpp               # Legacy Lemke solver (backward compatibility)
 ├── ODELCPSolver.hpp/cpp        # Legacy ODE-based solver (backward compatibility)
 │
 ├── dantzig/                    # Dantzig principal pivoting method (from ODE)
@@ -46,14 +45,9 @@ Adding a new solver family:
 
 ### Version 1 (Legacy API - Backward Compatibility)
 
-The legacy API is preserved for backward compatibility:
+The legacy API is preserved for backward compatibility with Dantzig and ODE-based solvers:
 
 ```cpp
-// Legacy Lemke solver
-#include <dart/math/lcp/Lemke.hpp>
-int exitCode = dart::math::Lemke(M, q, &z);
-bool valid = dart::math::validate(M, z, q);
-
 // Legacy Dantzig solver
 #include <dart/math/lcp/dantzig/Lcp.hpp>
 bool success = dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
@@ -272,17 +266,10 @@ bool success = solver.Solve(A, b, &x, numContacts, mu, numDir, true);
 
 ### From Legacy Lemke to Modern API
 
-**Before (v1)**:
+**Before (v1)** (deprecated):
 
 ```cpp
-#include <dart/math/lcp/Lemke.hpp>
-
-Eigen::VectorXd z(n);
-int exitCode = dart::math::Lemke(M, q, &z);
-if (exitCode == 0) {
-    bool valid = dart::math::validate(M, z, q);
-    // Use solution...
-}
+// Legacy free-function API removed; use the class-based solver instead.
 ```
 
 **After (v2)**:

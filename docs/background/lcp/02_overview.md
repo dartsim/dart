@@ -6,21 +6,21 @@
 
 This section tracks which LCP solvers are currently implemented in DART (`dart/math/lcp/`).
 
-| Category           | Method                     | Status             | Location          | Notes                       |
-| ------------------ | -------------------------- | ------------------ | ----------------- | --------------------------- |
-| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `dantzig/Lcp.hpp` | BLCP solver with friction   |
-| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `Lemke.hpp`       | Standard LCP solver         |
-| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                 | Planned                     |
-| **Projection**     | PGS (Gauss-Seidel)         | ❌ Not implemented | -                 | High priority for real-time |
-| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                 | Extension of PGS            |
-| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                 | For contact problems        |
-| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                 | Better convergence than PGS |
-| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                 | Hybrid PGS approach         |
-| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                 | High accuracy               |
-| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                 | Well-studied method         |
-| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                 | Extension of FB             |
-| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                 | Very robust                 |
-| **Staggering**     | Staggering Method          | ❌ Not implemented | -                 | For coupled problems        |
+| Category           | Method                     | Status             | Location                   | Notes                       |
+| ------------------ | -------------------------- | ------------------ | -------------------------- | --------------------------- |
+| **Pivoting**       | Dantzig Principal Pivoting | ✅ Implemented     | `dantzig/Lcp.hpp`          | BLCP solver with friction   |
+| **Pivoting**       | Lemke Complementary Pivot  | ✅ Implemented     | `pivoting/LemkeSolver.hpp` | Standard LCP solver         |
+| **Pivoting**       | Baraff Incremental         | ❌ Not implemented | -                          | Planned                     |
+| **Projection**     | PGS (Gauss-Seidel)         | ❌ Not implemented | -                          | High priority for real-time |
+| **Projection**     | PSOR (Over-Relaxation)     | ❌ Not implemented | -                          | Extension of PGS            |
+| **Projection**     | Blocked Gauss-Seidel       | ❌ Not implemented | -                          | For contact problems        |
+| **Projection**     | NNCG (Conjugate Gradient)  | ❌ Not implemented | -                          | Better convergence than PGS |
+| **Projection**     | Subspace Minimization      | ❌ Not implemented | -                          | Hybrid PGS approach         |
+| **Newton**         | Minimum Map Newton         | ❌ Not implemented | -                          | High accuracy               |
+| **Newton**         | Fischer-Burmeister Newton  | ❌ Not implemented | -                          | Well-studied method         |
+| **Newton**         | Penalized FB Newton        | ❌ Not implemented | -                          | Extension of FB             |
+| **Interior Point** | Interior Point Method      | ❌ Not implemented | -                          | Very robust                 |
+| **Staggering**     | Staggering Method          | ❌ Not implemented | -                          | For coupled problems        |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
@@ -39,7 +39,7 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   - Early termination option
 - **Use Case**: General BLCP problems with bounds, friction constraints
 
-#### 2. Lemke Complementary Pivot Method (`Lemke.hpp`)
+#### 2. Lemke Complementary Pivot Method (`pivoting/LemkeSolver.hpp`)
 
 - **Type**: Complementary pivoting method for standard LCP
 - **Algorithm**: Lemke's algorithm with artificial variable

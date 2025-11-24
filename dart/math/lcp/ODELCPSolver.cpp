@@ -33,8 +33,8 @@
 #include "dart/math/lcp/ODELCPSolver.hpp"
 
 #include "dart/common/Macros.hpp"
-#include "dart/math/lcp/Lemke.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
 #include <cstdio>
 
@@ -63,8 +63,17 @@ bool ODELCPSolver::Solve(
     bool _bUseODESolver)
 {
   if (!_bUseODESolver) {
-    int err = Lemke(_A, _b, _x);
-    return (err == 0);
+    LemkeSolver solver;
+    Eigen::VectorXd xLocal = Eigen::VectorXd::Zero(_b.size());
+    if (_x != nullptr) {
+      xLocal = *_x;
+      xLocal.conservativeResize(_b.size());
+    }
+    const auto result = solver.solve(_A, _b, xLocal);
+    if (_x != nullptr) {
+      *_x = xLocal;
+    }
+    return result.status == LcpSolverStatus::Success;
   } else {
     DART_ASSERT(_numDir >= 4);
     DART_UNUSED(_numDir);

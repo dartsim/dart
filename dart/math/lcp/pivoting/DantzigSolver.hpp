@@ -30,26 +30,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_LEMKE_HPP_
-#define DART_MATH_LCP_LEMKE_HPP_
+#pragma once
 
-#include "dart/Export.hpp"
-#include "dart/math/lcp/detail/LemkeImpl.hpp"
+#include <dart/math/lcp/LcpSolver.hpp>
 
-#include <Eigen/Dense>
+#include <dart/Export.hpp>
 
 namespace dart::math {
 
-/// @brief
-int DART_API Lemke(
-    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
+/// Wrapper around the legacy Dantzig BLCP solver exposing the modern
+/// `LcpSolver` interface.
+class DART_API DantzigSolver : public LcpSolver
+{
+public:
+  DantzigSolver() = default;
+  ~DantzigSolver() override = default;
 
-/// @brief
-bool DART_API validate(
-    const Eigen::MatrixXd& _M,
-    const Eigen::VectorXd& _z,
-    const Eigen::VectorXd& _q);
+  using LcpSolver::solve;
+
+  LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      Eigen::VectorXd& x,
+      const LcpOptions& options) override;
+
+  std::string getName() const override;
+  std::string getCategory() const override;
+};
 
 } // namespace dart::math
-
-#endif // DART_MATH_LCP_LEMKE_HPP_

@@ -1,10 +1,8 @@
 # Gather public headers and sources
 file(GLOB math_lcp_hdrs "*.hpp")
 file(GLOB math_lcp_srcs "*.cpp")
-file(GLOB math_lcp_detail_hdrs "detail/*.hpp")
 dart_add_core_headers(${math_lcp_hdrs})
 dart_add_core_sources(${math_lcp_srcs})
-dart_add_core_headers(${math_lcp_detail_hdrs})
 
 # Dantzig implementation headers and sources (remain public API)
 file(GLOB math_lcp_dantzig_hdrs "dantzig/*.hpp")
@@ -36,13 +34,12 @@ file(GLOB math_lcp_other_srcs "other/*.cpp")
 dart_add_core_headers(${math_lcp_other_hdrs})
 dart_add_core_sources(${math_lcp_other_srcs})
 
-# Compute relative header names (e.g., lcp/Lemke.hpp, lcp/dantzig/Common.hpp)
+# Compute relative header names (e.g., lcp/pivoting/LemkeSolver.hpp, lcp/dantzig/Common.hpp)
 set(math_lcp_header_names "")
 set(math_lcp_public_hdrs
   ${math_lcp_hdrs}
   ${math_lcp_dantzig_hdrs}
   ${math_lcp_pivoting_hdrs}
-  ${math_lcp_detail_hdrs}
   ${math_lcp_projection_hdrs}
   ${math_lcp_newton_hdrs}
   ${math_lcp_other_hdrs}

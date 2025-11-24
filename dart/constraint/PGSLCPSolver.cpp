@@ -43,7 +43,6 @@
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/math/lcp/Lemke.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
 
 namespace dart {

@@ -70,6 +70,8 @@ public:
   /// Destructor
   ~LemkeSolver() override = default;
 
+  using LcpSolver::solve;
+
   // Documentation inherited
   LcpResult solve(
       const Eigen::MatrixXd& A,
