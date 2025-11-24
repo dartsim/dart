@@ -23,6 +23,6 @@ pixi run debug-py-native     # gdb/lldb for stepping into native code
 
 1. Create `python/demo_hub/scenes/<your_scene>/scene.py` defining a `Scene`
    subclass with `metadata`, `setup()`, and `update()`.
-2. Register it in `core/registry.py` (temporarily static; can be made
-   dynamic/plug-in later).
-3. Keep assets in that scene folder when possible.
+2. Keep assets in that scene folder when possible.
+3. The registry auto-discovers `*.scene` modules under `demo_hub.scenes` and
+   registers any `Scene` subclasses that expose `metadata`.

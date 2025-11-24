@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, Iterable, List
+import importlib
+import inspect
+import pkgutil
+from typing import Callable, Dict, Iterable, List, Sequence, Type
 
 from .scene_base import Scene, SceneMetadata
 
@@ -35,12 +38,29 @@ class SceneRegistry:
 
 
 def build_default_registry() -> SceneRegistry:
-    """Register built-in scenes shipped with the repository."""
-    registry = SceneRegistry()
+  """Register built-in scenes shipped with the repository."""
+  registry = SceneRegistry()
 
-    # Import locally to avoid import cycles during module import.
-    from demo_hub.scenes.hello_world.scene import HelloWorldScene
+  for scene_cls in _discover_scene_classes():
+    registry.register(scene_cls.metadata, scene_cls)
 
-    registry.register(HelloWorldScene.metadata, HelloWorldScene)
-    return registry
+  return registry
 
+
+def _discover_scene_classes() -> Sequence[Type[Scene]]:
+  """Import scene modules under demo_hub.scenes and return Scene subclasses."""
+  import demo_hub.scenes as scenes_pkg
+
+  scene_classes: list[Type[Scene]] = []
+  for module_info in pkgutil.walk_packages(scenes_pkg.__path__, scenes_pkg.__name__ + "."):
+    if module_info.ispkg:
+      continue
+    if not module_info.name.endswith(".scene"):
+      continue
+    module = importlib.import_module(module_info.name)
+    for _, obj in inspect.getmembers(module, inspect.isclass):
+      if issubclass(obj, Scene) and obj is not Scene and hasattr(obj, "metadata"):
+        scene_classes.append(obj)
+  if not scene_classes:
+    raise RuntimeError("No scenes discovered under demo_hub.scenes")
+  return scene_classes
