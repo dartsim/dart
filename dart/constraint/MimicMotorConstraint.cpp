@@ -162,6 +162,12 @@ void MimicMotorConstraint::update()
   for (std::size_t i = 0; i < dof; ++i) {
     const auto& mimicProp = mMimicProps[i];
 
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr) {
+      mActive[i] = false;
+      continue;
+    }
+
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double velLower = mJoint->getVelocityLowerLimit(i);
     double velUpper = mJoint->getVelocityUpperLimit(i);
@@ -327,11 +333,14 @@ dynamics::SkeletonPtr MimicMotorConstraint::getRootSkeleton() const
 //==============================================================================
 bool MimicMotorConstraint::isActive() const
 {
-  // Since we are not allowed to set the joint actuator type per each
-  // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
-  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
-    return true;
-
+  const std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (mJoint->getActuatorType(i) == dynamics::Joint::MIMIC
+        && i < mMimicProps.size()
+        && mMimicProps[i].mReferenceJoint != nullptr) {
+      return true;
+    }
+  }
   return false;
 }
 
