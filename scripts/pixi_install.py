@@ -20,7 +20,6 @@ from build_helpers import cmake_target_exists, get_build_dir, run_cmake_build
 def main(argv: List[str]) -> int:
     dartpy_flag = argv[1] if len(argv) > 1 else "ON"
     build_type = os.environ.get("BUILD_TYPE", "Release")
-    pixi_env = os.environ.get("PIXI_ENVIRONMENT_NAME") or "default"
 
     build_dir = get_build_dir(build_type)
 
@@ -29,8 +28,8 @@ def main(argv: List[str]) -> int:
             run_cmake_build(build_dir, build_type, "dartpy")
         else:
             print(
-                "Skipping dartpy build during install because the 'dartpy' target "
-                "was not generated in this configuration."
+                "Skipping dartpy build during install because the "
+                "'dartpy' target was not generated in this configuration."
             )
 
     run_cmake_build(build_dir, build_type, "install")
