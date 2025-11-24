@@ -8,11 +8,11 @@ import os
 def compute_parallel_jobs() -> int:
     cpus = os.cpu_count() or 1
 
-    # CI runners advertise very high CPU counts, but spawning that many build
-    # jobs frequently exhausts process slots (posix_spawn failures). Cap
-    # aggressively when running under GitHub Actions to keep builds stable.
+    # CI runners advertise many CPUs but have tight process limits. Use a single
+    # job on GitHub-hosted runners to avoid posix_spawn failures, but keep local
+    # parallelism intact.
     if os.getenv("GITHUB_ACTIONS"):
-        return min(16, cpus)
+        return 1
 
     if cpus <= 8:
         jobs = cpus
