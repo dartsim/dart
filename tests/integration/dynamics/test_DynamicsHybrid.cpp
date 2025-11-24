@@ -1,6 +1,6 @@
-#include "DynamicsTestFixture.hpp"
 #include "helpers/dynamics_helpers.hpp"
 
+#include "DynamicsTestFixture.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
