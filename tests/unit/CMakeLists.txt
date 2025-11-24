@@ -61,6 +61,7 @@ dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_Inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_ScrewJoint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_ShapeNodePtr.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_MeshShape.cpp)
+dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_HeightmapShape.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeDerivatives dynamics/test_BodyNodeDerivatives.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodePotentialEnergy dynamics/test_BodyNodePotentialEnergy.cpp)
