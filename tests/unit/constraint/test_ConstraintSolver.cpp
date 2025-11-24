@@ -43,6 +43,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 using namespace dart;
 using namespace dart::simulation;
@@ -97,6 +98,59 @@ public:
   }
 
   double lastAppliedImpulse{std::numeric_limits<double>::quiet_NaN()};
+};
+
+// Minimal multi-dimensional constraint to verify partial NaN handling.
+class MultiDummyConstraint : public constraint::ConstraintBase
+{
+public:
+  explicit MultiDummyConstraint(std::size_t dim)
+    : lastAppliedImpulse(dim, std::numeric_limits<double>::quiet_NaN())
+  {
+    mDim = dim;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    for (std::size_t i = 0; i < mDim; ++i) {
+      info->lo[i] = 0.0;
+      info->hi[i] = 1.0;
+      info->b[i] = 0.0;
+      info->w[i] = 0.0;
+      info->findex[i] = -1;
+    }
+  }
+
+  void applyUnitImpulse(std::size_t /*index*/) override {}
+
+  void getVelocityChange(double* vel, bool /*withCfm*/) override
+  {
+    for (std::size_t i = 0; i < mDim; ++i)
+      vel[i] = 1.0;
+  }
+
+  void excite() override {}
+  void unexcite() override {}
+
+  void applyImpulse(double* lambda) override
+  {
+    for (std::size_t i = 0; i < mDim; ++i)
+      lastAppliedImpulse[i] = lambda[i];
+  }
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  std::vector<double> lastAppliedImpulse;
 };
 
 // Primary solver that reports success but writes NaN into x.
@@ -157,6 +211,86 @@ public:
       bool /*earlyTermination*/ = false) override
   {
     for (int i = 0; i < n; ++i)
+      x[i] = mValue;
+    return true;
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+
+private:
+  double mValue;
+};
+
+// Secondary solver that writes impulses but reports failure.
+class ConstantFailingBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  explicit ConstantFailingBoxedLcpSolver(double value) : mValue(value) {}
+
+  const std::string& getType() const override
+  {
+    static const std::string type{"ConstantFailingBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    for (int i = 0; i < n; ++i)
+      x[i] = mValue;
+    return false; // intentionally report failure
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+
+private:
+  double mValue;
+};
+
+// Secondary solver that mixes NaN and finite outputs.
+class PartialNanBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  explicit PartialNanBoxedLcpSolver(double value) : mValue(value) {}
+
+  const std::string& getType() const override
+  {
+    static const std::string type{"PartialNanBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    if (n > 0)
+      x[0] = std::numeric_limits<double>::quiet_NaN();
+    for (int i = 1; i < n; ++i)
       x[i] = mValue;
     return true;
   }
@@ -471,4 +605,44 @@ TEST(ConstraintSolver, LcpFailureZeroesImpulses)
   solver.publicSolve(group);
 
   EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, LcpFiniteFallbackUsedEvenWhenReportingFailure)
+{
+  auto constraintPtr = std::make_shared<DummyConstraint>();
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraintPtr);
+
+  PublicBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::static_pointer_cast<constraint::BoxedLcpSolver>(
+      std::make_shared<FailingBoxedLcpSolver>()));
+  solver.setSecondaryBoxedLcpSolver(
+      std::static_pointer_cast<constraint::BoxedLcpSolver>(
+          std::make_shared<ConstantFailingBoxedLcpSolver>(0.7)));
+
+  solver.publicSolve(group);
+
+  EXPECT_DOUBLE_EQ(0.7, constraintPtr->lastAppliedImpulse);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, LcpPartialNanFallbackZeroesOnlyNaNEntries)
+{
+  auto constraintPtr = std::make_shared<MultiDummyConstraint>(2);
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraintPtr);
+
+  PublicBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(std::static_pointer_cast<constraint::BoxedLcpSolver>(
+      std::make_shared<FailingBoxedLcpSolver>()));
+  solver.setSecondaryBoxedLcpSolver(
+      std::static_pointer_cast<constraint::BoxedLcpSolver>(
+          std::make_shared<PartialNanBoxedLcpSolver>(0.8)));
+
+  solver.publicSolve(group);
+
+  ASSERT_EQ(2u, constraintPtr->lastAppliedImpulse.size());
+  EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse[0]);
+  EXPECT_DOUBLE_EQ(0.8, constraintPtr->lastAppliedImpulse[1]);
 }
