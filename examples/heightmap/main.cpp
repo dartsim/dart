@@ -32,7 +32,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/urdf.hpp>
@@ -97,11 +97,11 @@ dynamics::SimpleFramePtr createHeightmapFrame(
   return terrainFrame;
 }
 
-class HeightmapWorld : public gui::osg::WorldNode
+class HeightmapWorld : public gui::WorldNode
 {
 public:
   explicit HeightmapWorld(simulation::WorldPtr world)
-    : gui::osg::WorldNode(std::move(world))
+    : gui::WorldNode(std::move(world))
   {
     // Do nothing
   }
@@ -116,14 +116,14 @@ protected:
 };
 
 template <typename S>
-class HeightmapWidget : public dart::gui::osg::ImGuiWidget
+class HeightmapWidget : public dart::gui::ImGuiWidget
 {
 public:
   HeightmapWidget(
-      dart::gui::osg::ImGuiViewer* viewer,
+      dart::gui::ImGuiViewer* viewer,
       HeightmapWorld* node,
       dynamics::SimpleFramePtr terrain,
-      gui::osg::GridVisual* grid,
+      gui::GridVisual* grid,
       std::size_t xResolution = 20u,
       std::size_t yResolution = 20u,
       S xSize = S(2),
@@ -300,13 +300,13 @@ public:
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
             if (ImGui::RadioButton("XY-Plane", &e, 0))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::XY);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::XY);
             ImGui::SameLine();
             if (ImGui::RadioButton("YZ-Plane", &e, 1))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::YZ);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::YZ);
             ImGui::SameLine();
             if (ImGui::RadioButton("ZX-Plane", &e, 2))
-              mGrid->setPlaneType(gui::osg::GridVisual::PlaneType::ZX);
+              mGrid->setPlaneType(gui::GridVisual::PlaneType::ZX);
           }
 
           static Eigen::Vector3f offset;
@@ -403,10 +403,10 @@ public:
   }
 
 protected:
-  dart::gui::osg::ImGuiViewer* mViewer;
+  dart::gui::ImGuiViewer* mViewer;
   HeightmapWorld* mNode;
   dynamics::SimpleFramePtr mTerrain;
-  ::osg::ref_ptr<gui::osg::GridVisual> mGrid;
+  ::osg::ref_ptr<gui::GridVisual> mGrid;
   std::size_t mXResolution;
   std::size_t mYResolution;
   float mXSize;
@@ -430,12 +430,12 @@ int main()
   node->setNumStepsPerCycle(16);
 
   // Create the Viewer instance
-  dart::gui::osg::ImGuiViewer viewer;
+  dart::gui::ImGuiViewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
   // Create grid
-  ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
+  ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
