@@ -69,6 +69,12 @@ def _rename_placeholder(text: str, name: str) -> str:
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
+    def _strip_class_bases(src: str) -> str:
+        """Drop class inheritance to avoid NameError on forward references."""
+
+        pattern = re.compile(r"(?m)^(?P<indent>\s*)class\s+(?P<name>\w+)\([^:\n]*\):")
+        return pattern.sub(r"\g<indent>class \g<name>:", src)
+
     def _replace_keyword(match: re.Match[str]) -> str:
         return f"{match.group('prefix')}{match.group('name')}_"
 
@@ -83,7 +89,7 @@ def _sanitize_stub_source(text: str) -> str:
     for placeholder in ("std", "dart"):
         text = _rename_placeholder(text, placeholder)
 
-    return text
+    return _strip_class_bases(text)
 
 
 def _prepare_stub_modules(package: str) -> bool:
@@ -288,7 +294,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
-    "dartpy/api/*",
 ]
 
 

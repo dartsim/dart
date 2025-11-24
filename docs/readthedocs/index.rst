@@ -94,6 +94,7 @@ If you use DART in an academic publication, please consider citing this
    :hidden:
    :caption: Key Topics
 
+   Topics <topics/index>
    Tutorials <tutorials/index>
    Inverse Kinematics <shared/inverse_kinematics/index>
 
