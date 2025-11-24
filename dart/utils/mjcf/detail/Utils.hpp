@@ -49,7 +49,7 @@ namespace MjcfParser {
 namespace detail {
 
 /// Checks if orientation elements (i.e., <quat>, <axisangle>, <euler>,
-/// <xyaxes>, <zaxis>) are properly set in \c element
+/// <xyaxes>, <zaxis>) are properly set in @c element
 Errors checkOrientationValidity(const tinyxml2::XMLElement* element);
 
 /// Extracts rotation matrix from "pre-parsed" orientation elements and the
@@ -62,12 +62,12 @@ Eigen::Matrix3d compileRotation(
     const std::optional<Eigen::Vector3d>& zAxis,
     const Compiler& compiler);
 
-/// Includes other MJCF model file into \c element
+/// Includes other MJCF model file into @c element
 ///
-/// \param[in] baseUri The URI of the main MJCF model file
-/// \param[in] retriever The resource retriever used for the main MJCF model
+/// @param[in] baseUri The URI of the main MJCF model file
+/// @param[in] retriever The resource retriever used for the main MJCF model
 /// file
-/// \return Errors occured in hadling <include> elements
+/// @return Errors occurred in handling <include> elements
 Errors handleInclude(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,

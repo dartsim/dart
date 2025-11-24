@@ -672,7 +672,7 @@ msgstr "PD 컨트롤러와 마찬가지로 중력과 코리올리 힘을 보상�
 #: ../../tutorials/dominoes.md:991 fc85360ecb314246af3838a71400e2e0
 msgid ""
 "The gains for the operational space controller need to be in matrix form,"
-" but we're storing the gains as scalars, so we'll need to conver them:"
+" but we're storing the gains as scalars, so we'll need to convert them:"
 msgstr "작동 공간 컨트롤러의 이득은 행렬 형식이어야 하지만 이득을 스칼라로 저장하므로 이를 변환해야 합니다."
 
 #: ../../tutorials/dominoes.md:1030 dd1845c5b40a4693b9408f4d88cc63ea

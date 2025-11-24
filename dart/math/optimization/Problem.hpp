@@ -46,144 +46,144 @@
 namespace dart {
 namespace math {
 
-/// \brief class Problem
+/// @brief class Problem
 class DART_API Problem
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   explicit Problem(std::size_t _dim = 0);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~Problem() = default;
 
   //--------------------------- Problem Setting --------------------------------
-  /// \brief Set dimension. Note: Changing the dimension will clear out the
+  /// @brief Set dimension. Note: Changing the dimension will clear out the
   /// initial guess and any seeds that have been added.
   void setDimension(std::size_t _dim);
 
-  /// \brief Get dimension
+  /// @brief Get dimension
   std::size_t getDimension() const;
 
-  /// \brief Set initial guess for opimization parameters
+  /// @brief Set initial guess for optimization parameters
   void setInitialGuess(const Eigen::VectorXd& _initGuess);
 
-  /// \brief Set initial guess for opimization parameters
+  /// @brief Set initial guess for optimization parameters
   const Eigen::VectorXd& getInitialGuess() const;
 
-  /// \brief Add a seed for the Solver to use as a hint for the neighborhood of
+  /// @brief Add a seed for the Solver to use as a hint for the neighborhood of
   /// the solution.
   void addSeed(const Eigen::VectorXd& _seed);
 
-  /// \brief Get a mutable reference of the seed for the specified index. If an
+  /// @brief Get a mutable reference of the seed for the specified index. If an
   /// out-of-bounds index is provided a warning will print, and a reference to
   /// the initial guess will be returned instead.
   Eigen::VectorXd& getSeed(std::size_t _index);
 
-  /// \brief An immutable version of getSeed(std::size_t)
+  /// @brief An immutable version of getSeed(std::size_t)
   const Eigen::VectorXd& getSeed(std::size_t _index) const;
 
-  /// \brief Get a mutable reference to the full vector of seeds that this
+  /// @brief Get a mutable reference to the full vector of seeds that this
   /// Problem currently contains
   std::vector<Eigen::VectorXd>& getSeeds();
 
-  /// \brief An immutable version of getSeeds()
+  /// @brief An immutable version of getSeeds()
   const std::vector<Eigen::VectorXd>& getSeeds() const;
 
-  /// \brief Clear the seeds that this Problem currently contains
+  /// @brief Clear the seeds that this Problem currently contains
   void clearAllSeeds();
 
-  /// \brief Set lower bounds for optimization parameters
+  /// @brief Set lower bounds for optimization parameters
   void setLowerBounds(const Eigen::VectorXd& _lb);
 
-  /// \brief Get lower bounds for optimization parameters
+  /// @brief Get lower bounds for optimization parameters
   const Eigen::VectorXd& getLowerBounds() const;
 
-  /// \brief Set upper bounds for optimization parameters
+  /// @brief Set upper bounds for optimization parameters
   void setUpperBounds(const Eigen::VectorXd& _ub);
 
-  /// \brief Get upper bounds for optimization parameters
+  /// @brief Get upper bounds for optimization parameters
   const Eigen::VectorXd& getUpperBounds() const;
 
-  /// \brief Set minimum objective function
+  /// @brief Set minimum objective function
   void setObjective(FunctionPtr _obj);
 
-  /// \brief Get objective function
+  /// @brief Get objective function
   FunctionPtr getObjective() const;
 
-  /// \brief Add equality constraint
+  /// @brief Add equality constraint
   void addEqConstraint(FunctionPtr _eqConst);
 
-  /// \brief Add inequality constraint. Inequality constraints must evaluate
+  /// @brief Add inequality constraint. Inequality constraints must evaluate
   /// to LESS THAN or equal to zero (within some tolerance) to be satisfied.
   void addIneqConstraint(FunctionPtr _ineqConst);
 
-  /// \brief Get number of equality constraints
+  /// @brief Get number of equality constraints
   std::size_t getNumEqConstraints() const;
 
-  /// \brief Get number of inequality constraints
+  /// @brief Get number of inequality constraints
   std::size_t getNumIneqConstraints() const;
 
-  /// \brief Get equality constraint
+  /// @brief Get equality constraint
   FunctionPtr getEqConstraint(std::size_t _idx) const;
 
-  /// \brief Get inequality constraint
+  /// @brief Get inequality constraint
   FunctionPtr getIneqConstraint(std::size_t _idx) const;
 
-  /// \brief Remove equality constraint
+  /// @brief Remove equality constraint
   void removeEqConstraint(FunctionPtr _eqConst);
 
-  /// \brief Remove inequality constraint
+  /// @brief Remove inequality constraint
   void removeIneqConstraint(FunctionPtr _ineqConst);
 
-  /// \brief Remove all equality constraints
+  /// @brief Remove all equality constraints
   void removeAllEqConstraints();
 
-  /// \brief Remove all inequality constraints
+  /// @brief Remove all inequality constraints
   void removeAllIneqConstraints();
 
   //------------------------------ Result --------------------------------------
-  /// \brief Set optimum value of the objective function. This function called
+  /// @brief Set optimum value of the objective function. This function called
   ///        by Solver.
   void setOptimumValue(double _val);
 
-  /// \brief Get optimum value of the objective function
+  /// @brief Get optimum value of the objective function
   double getOptimumValue() const;
 
-  /// \brief Set optimal solution. This function called by Solver.
+  /// @brief Set optimal solution. This function called by Solver.
   void setOptimalSolution(const Eigen::VectorXd& _optParam);
 
-  /// \brief Get optimal solution
+  /// @brief Get optimal solution
   const Eigen::VectorXd& getOptimalSolution();
 
 protected:
-  /// \brief Dimension of this problem
+  /// @brief Dimension of this problem
   std::size_t mDimension;
 
-  /// \brief Initial guess for optimization parameters
+  /// @brief Initial guess for optimization parameters
   Eigen::VectorXd mInitialGuess;
 
-  /// \brief Additional guess hints for the Solver.
+  /// @brief Additional guess hints for the Solver.
   std::vector<Eigen::VectorXd> mSeeds;
 
-  /// \brief Lower bounds for optimization parameters
+  /// @brief Lower bounds for optimization parameters
   Eigen::VectorXd mLowerBounds;
 
-  /// \brief Upper bounds for optimization parameters
+  /// @brief Upper bounds for optimization parameters
   Eigen::VectorXd mUpperBounds;
 
-  /// \brief Objective function
+  /// @brief Objective function
   FunctionPtr mObjective;
 
-  /// \brief Equality constraint functions
+  /// @brief Equality constraint functions
   std::vector<FunctionPtr> mEqConstraints;
 
-  /// \brief Inequality constraint functions
+  /// @brief Inequality constraint functions
   std::vector<FunctionPtr> mIneqConstraints;
 
-  /// \brief Optimal objective value
+  /// @brief Optimal objective value
   double mOptimumValue;
 
-  /// \brief Optimal solution
+  /// @brief Optimal solution
   Eigen::VectorXd mOptimalSolution;
 };
 

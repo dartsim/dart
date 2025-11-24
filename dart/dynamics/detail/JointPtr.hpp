@@ -133,7 +133,7 @@ public:
   }
 
   //----------------------------------------------------------------------------
-  /// \{ \name Comparison operators
+  /// \{ @name Comparison operators
   //----------------------------------------------------------------------------
 
   /// Equality comparison
@@ -253,7 +253,7 @@ public:
   }
 
 private:
-  /// Weak poiner to the child BodyNode of this Joint
+  /// Weak pointer to the child BodyNode of this Joint
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
 };
 

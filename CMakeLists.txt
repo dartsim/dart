@@ -582,10 +582,8 @@ if(DART_BUILD_DART8)
 
   if(MSVC)
     add_subdirectory(tests_dart8)
-    add_subdirectory(examples_dart8)
   else()
     add_subdirectory(tests_dart8 EXCLUDE_FROM_ALL)
-    add_subdirectory(examples_dart8 EXCLUDE_FROM_ALL)
   endif()
 endif()
 
@@ -1009,9 +1007,9 @@ if(TARGET dartpy)
   message(STATUS "Run '${DART_CMAKE_BUILD_CMD} --target install' to install dartpy")
 endif()
 if(TARGET coverage)
-  message(STATUS "- 'coverage'     : generage coverage report")
-  message(STATUS "- 'coverage_html': generage coverage report in html")
-  message(STATUS "- 'coverage_view': view generaged coverage report in a browser")
+  message(STATUS "- 'coverage'     : generate coverage report")
+  message(STATUS "- 'coverage_html': generate coverage report in html")
+  message(STATUS "- 'coverage_view': view generated coverage report in a browser")
 endif()
 
 #===============================================================================

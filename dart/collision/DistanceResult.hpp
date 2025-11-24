@@ -47,7 +47,7 @@ namespace collision {
 
 struct DART_API DistanceResult
 {
-  /// Minimum \b singed distance between the checked Shape pairs.
+  /// Minimum @b signed distance between the checked Shape pairs.
   ///
   /// If no shape pair was checked (the collision group was empty or all pairs
   /// were excluded by the filter) then this value will be remained the default
@@ -67,10 +67,10 @@ struct DART_API DistanceResult
   /// Unclamped minimum distance that is the first distance equal to or less
   /// than DistanceOption::distanceLowerBound.
   ///
-  /// \warning This value is implementation defined, which means the value could
+  /// @warning This value is implementation defined, which means the value could
   /// be different depending on various factors (e.g., the collision detector
   /// and even the version of the collision detector), and we don't intend this
-  /// value to be (reasonably) indentical over thoes factors. This valude is for
+  /// value to be (reasonably) identical over thoes factors. This valude is for
   /// debugging purpose or advanced use.
   double unclampedMinDistance;
 

@@ -76,7 +76,7 @@ namespace {
 std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
     const aiMaterial& material)
 {
-  // For now, only sinlge texture is supported. So we only checks whether the
+  // For now, only single texture is supported. So we only checks whether the
   // texture counter is non-zero.
 
   GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NONE)

@@ -1,8 +1,8 @@
-/*! \mainpage DART - Dynamic Animation and Robotics Toolkits
+/*! @mainpage DART - Dynamic Animation and Robotics Toolkits
 
-\image html "DART logo.png"
+@image html "DART logo.png"
 
-\section intro Introduction
+@section intro Introduction
 
 DART is an open source library for developing kinematic and dynamic
 applications in robotics and computer animation. DART features two

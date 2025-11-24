@@ -72,16 +72,34 @@ struct DART_API Contact
   double penetrationDepth;
 
   // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
-  /// \brief
+  /// @brief
   int triID1;
 
   // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
-  /// \brief
+  /// @brief
   int triID2;
 
   // TODO(JS): userData is an experimental variable.
-  /// \brief User data.
+  /// @brief User data.
   void* userData;
+
+  /// Return the ShapeFrame of collisionObject1 if available.
+  const dynamics::ShapeFrame* getShapeFrame1() const;
+
+  /// Return the ShapeFrame of collisionObject2 if available.
+  const dynamics::ShapeFrame* getShapeFrame2() const;
+
+  /// Return the ShapeNode of collisionObject1 if available.
+  const dynamics::ShapeNode* getShapeNode1() const;
+
+  /// Return the ShapeNode of collisionObject2 if available.
+  const dynamics::ShapeNode* getShapeNode2() const;
+
+  /// Return the BodyNode of collisionObject1 if available.
+  dynamics::ConstBodyNodePtr getBodyNodePtr1() const;
+
+  /// Return the BodyNode of collisionObject2 if available.
+  dynamics::ConstBodyNodePtr getBodyNodePtr2() const;
 
   /// Returns the epsilon to be used for determination of zero-length normal.
   constexpr static double getNormalEpsilon();

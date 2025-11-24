@@ -205,7 +205,7 @@ void WorldNode::clearUnusedNodes()
   std::vector<dart::dynamics::Frame*> unused;
   unused.reserve(mFrameToNode.size());
 
-  // Find unusued ShapeFrameNodes
+  // Find unused ShapeFrameNodes
   for (auto& node_pair : mFrameToNode) {
     ShapeFrameNode* node = node_pair.second;
     if (node && !node->wasUtilized())

@@ -143,11 +143,11 @@ public:
     /// The start and target can be interchangeably set if both are included in
     /// the sequence.
     ///
-    /// \param[in] start The first BodyNode in the sequence. If \c nullptr is
-    /// passed the sequence will expand from \c target to the root.
-    /// \param[in] target The second BodyNode in the sequence. If \c nullptr is
-    /// passed the sequence will expand from \c start to the root.
-    /// \param[in] includeUpstreamParentJoint Set this to true if the parent
+    /// @param[in] start The first BodyNode in the sequence. If @c nullptr is
+    /// passed the sequence will expand from @c target to the root.
+    /// @param[in] target The second BodyNode in the sequence. If @c nullptr is
+    /// passed the sequence will expand from @c start to the root.
+    /// @param[in] includeUpstreamParentJoint Set this to true if the parent
     /// joint of whichever is upstream of the other should be included.
     Criteria(
         BodyNode* start,

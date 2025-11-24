@@ -121,7 +121,7 @@ public:
         "The whole body motion of the Fetch robot is determined by the "
         "location of the end-effector. The end-effector simply follows the "
         "invisible dummy object where the position is indicated at the cross "
-        "of the two tranparent green bars.");
+        "of the two transparent green bars.");
 
     if (ImGui::CollapsingHeader("Help")) {
       ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);

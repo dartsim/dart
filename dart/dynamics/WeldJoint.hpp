@@ -44,6 +44,8 @@
 namespace dart {
 namespace dynamics {
 
+class BodyNode;
+
 /// class WeldJoint
 class DART_API WeldJoint : public ZeroDofJoint
 {
@@ -66,6 +68,10 @@ public:
 
   /// Get the Properties of this WeldJoint
   Properties getWeldJointProperties() const;
+
+  /// Merge the child BodyNode into its parent and remove this joint. Returns
+  /// the surviving parent BodyNode on success or nullptr on failure.
+  BodyNode* merge();
 
   // Documentation inherited
   const std::string& getType() const override;

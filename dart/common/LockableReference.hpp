@@ -74,7 +74,7 @@ protected:
 
 /// This class references a single lockable.
 ///
-/// \tparam LockableT The standard C++ Lockable concept object type.
+/// @tparam LockableT The standard C++ Lockable concept object type.
 template <typename LockableT>
 class SingleLockableReference final : public LockableReference
 {
@@ -83,10 +83,10 @@ public:
 
   /// Constructor from a single lockable.
   ///
-  /// \param[in] lockableHolder Weak pointer to an object that holds the
+  /// @param[in] lockableHolder Weak pointer to an object that holds the
   /// lockable. This is used to check whether the lockable holder is not
   /// destructed before lock/unlock.
-  /// \param[in] lockable
+  /// @param[in] lockable
   SingleLockableReference(
       std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept;
 
@@ -113,7 +113,7 @@ private:
 /// means it is the user's responsibility to sort the collection to avoid
 /// deadlock.
 ///
-/// \tparam LockableT The standard C++ Lockable concept object type.
+/// @tparam LockableT The standard C++ Lockable concept object type.
 template <typename LockableT>
 class MultiLockableReference final : public LockableReference
 {
@@ -122,11 +122,11 @@ public:
 
   /// Constructs from multiple lockables.
   ///
-  /// \param[in] lockableHolder Weak pointer to an object that holds the
+  /// @param[in] lockableHolder Weak pointer to an object that holds the
   /// lockables. This is used to lock/unlock this lockable only when the
   /// lockable holder is not destructed.
-  /// \param[in] first First iterator of lockable to be added to this class.
-  /// \param[in] last Last iterator of lockable to be added to this class.
+  /// @param[in] first First iterator of lockable to be added to this class.
+  /// @param[in] last Last iterator of lockable to be added to this class.
   template <typename InputIterator>
   MultiLockableReference(
       std::weak_ptr<const void> lockableHolder,
