@@ -265,7 +265,6 @@ void MeshShape::setMesh(
 
   releaseMesh();
 
-  mMeshCleanup = MeshCleanupMode::AssimpImporter;
   mMesh = mesh;
 
   if (!mMesh) {
