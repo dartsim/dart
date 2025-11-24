@@ -1697,9 +1697,9 @@ PY
 # IMPORTANT NOTES:
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
-# - DART_BUILD_GUI controls whether dartpy.gui.osg submodule is included (see python/dartpy/CMakeLists.txt:46-50)
+# - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
 # - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI=ON enables dartpy.gui.osg Python bindings on all platforms
+# - DART_BUILD_GUI=ON enables dartpy.gui Python bindings on all platforms
 
 [feature.py312-wheel]
 channels = ["conda-forge"]

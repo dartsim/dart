@@ -36,7 +36,7 @@
 
 //==============================================================================
 InputHandler::InputHandler(
-    dart::gui::osg::Viewer* viewer,
+    dart::gui::Viewer* viewer,
     WamWorld* teleop,
     const SkeletonPtr& wam,
     const WorldPtr& world)

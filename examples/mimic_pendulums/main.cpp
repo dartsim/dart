@@ -32,10 +32,10 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/osg/GridVisual.hpp>
-#include <dart/gui/osg/ImGuiViewer.hpp>
-#include <dart/gui/osg/ImGuiWidget.hpp>
-#include <dart/gui/osg/RealTimeWorldNode.hpp>
+#include <dart/gui/GridVisual.hpp>
+#include <dart/gui/ImGuiViewer.hpp>
+#include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/RealTimeWorldNode.hpp>
 
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/sdf/SdfParser.hpp>
@@ -82,8 +82,8 @@ using dart::dynamics::BodyNode;
 using dart::dynamics::Joint;
 using dart::dynamics::MimicConstraintType;
 using dart::dynamics::SkeletonPtr;
-using dart::gui::osg::ImGuiViewer;
-using dart::gui::osg::RealTimeWorldNode;
+using dart::gui::ImGuiViewer;
+using dart::gui::RealTimeWorldNode;
 using dart::simulation::WorldPtr;
 using dart::utils::SdfParser::detail::ElementEnumerator;
 using dart::utils::SdfParser::detail::getAttributeString;
@@ -391,7 +391,7 @@ void tintBases(const WorldPtr& world)
   }
 }
 
-class MimicOverlay : public dart::gui::osg::ImGuiWidget
+class MimicOverlay : public dart::gui::ImGuiWidget
 {
 public:
   MimicOverlay(
@@ -641,9 +641,9 @@ int main(int /*argc*/, char*[] /*argv*/)
   viewer->addWorldNode(worldNode);
   viewer->addInstructionText("space: toggle simulation\n");
 
-  auto grid = ::osg::ref_ptr<dart::gui::osg::GridVisual>(
-      new dart::gui::osg::GridVisual());
-  grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+  auto grid = ::osg::ref_ptr<dart::gui::GridVisual>(
+      new dart::gui::GridVisual());
+  grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(20);
   viewer->addAttachment(grid);
 

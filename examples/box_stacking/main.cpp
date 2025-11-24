@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -113,11 +113,11 @@ dynamics::SkeletonPtr createFloor()
 }
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
+class CustomWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   explicit CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::RealTimeWorldNode(world)
+    : dart::gui::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }
@@ -202,12 +202,12 @@ public:
 };
 
 //==============================================================================
-class TestWidget : public dart::gui::osg::ImGuiWidget
+class TestWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
   TestWidget(
-      dart::gui::osg::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
+      dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
     : mViewer(viewer),
       mWorld(std::move(world)),
       mGuiGravity(true),
@@ -364,7 +364,7 @@ protected:
       mWorld->setGravity(Eigen::Vector3d::Zero());
   }
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  ::osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   bool mGuiGravity;
   bool mGravity;
@@ -386,8 +386,8 @@ int main()
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer
+      = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

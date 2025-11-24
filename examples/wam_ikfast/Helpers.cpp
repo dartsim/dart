@@ -104,7 +104,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
       = wam->getBodyNode("/wam7")->createEndEffector("ee");
   ee->setDefaultRelativeTransform(tf_hand, true);
 
-  auto wam7_target = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  auto wam7_target = std::make_shared<dart::gui::InteractiveFrame>(
       dart::dynamics::Frame::World(), "lh_target");
 
   ee->getIK(true)->setTarget(wam7_target);
@@ -128,7 +128,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
 //==============================================================================
 void enableDragAndDrops(
-    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
+    dart::gui::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i)
@@ -141,7 +141,7 @@ void enableDragAndDrops(
 
     // Check whether the target is an interactive frame, and add it if it is
     const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
+        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
             ee->getIK()->getTarget());
 
     if (frame)

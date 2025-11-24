@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/collision/bullet/All.hpp>
 
@@ -115,16 +115,16 @@ int main()
   world->addSkeleton(ground);
 
   // Wrap a WorldNode around it
-  ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node
-      = new gui::osg::RealTimeWorldNode(world);
+  ::osg::ref_ptr<gui::RealTimeWorldNode> node
+      = new gui::RealTimeWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::osg::Viewer();
+  auto viewer = gui::Viewer();
   viewer.addWorldNode(node);
 
   // Enable shadow
   auto shadow
-      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
+      = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
   if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
     auto mapResolution = static_cast<short>(std::pow(2, 12));
     sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));

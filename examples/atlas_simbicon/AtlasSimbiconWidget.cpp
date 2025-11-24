@@ -42,7 +42,7 @@
 
 //==============================================================================
 AtlasSimbiconWidget::AtlasSimbiconWidget(
-    dart::gui::osg::ImGuiViewer* viewer, AtlasSimbiconWorldNode* node)
+    dart::gui::ImGuiViewer* viewer, AtlasSimbiconWorldNode* node)
   : mViewer(viewer),
     mNode(node),
     mGuiGravityAcc(9.81f),
@@ -137,9 +137,9 @@ void AtlasSimbiconWidget::render()
     // Depth
     if (ImGui::Checkbox("Depth mode", &mDepthMode)) {
       if (mDepthMode)
-        mViewer->setCameraMode(dart::gui::osg::CameraMode::DEPTH);
+        mViewer->setCameraMode(dart::gui::CameraMode::DEPTH);
       else
-        mViewer->setCameraMode(dart::gui::osg::CameraMode::RGBA);
+        mViewer->setCameraMode(dart::gui::CameraMode::RGBA);
     }
   }
 

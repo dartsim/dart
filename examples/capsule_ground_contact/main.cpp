@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
@@ -39,7 +39,7 @@
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 
 namespace {
 

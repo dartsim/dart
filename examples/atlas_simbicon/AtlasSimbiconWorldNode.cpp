@@ -40,7 +40,7 @@
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
     const dart::dynamics::SkeletonPtr& atlas)
-  : dart::gui::osg::RealTimeWorldNode(world),
+  : dart::gui::RealTimeWorldNode(world),
     mExternalForce(Eigen::Vector3d::Zero()),
     mForceDuration(0.0)
 {
@@ -120,7 +120,7 @@ void AtlasSimbiconWorldNode::switchToNoControl()
 void AtlasSimbiconWorldNode::showShadow()
 {
   auto shadow
-      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer);
+      = dart::gui::WorldNode::createDefaultShadowTechnique(mViewer);
   if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
     auto mapResolution = static_cast<short>(std::pow(2, 12));
     sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
