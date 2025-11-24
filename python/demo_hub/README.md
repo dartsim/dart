@@ -11,6 +11,7 @@ pixi run demo-hub                    # run default scene (hello_world)
 pixi run demo-hub -- --list          # list scenes
 pixi run demo-hub -- --scene hello_world --steps 300 --dt 0.002
 pixi run demo-hub -- --scene pendulum --steps 400
+pixi run demo-hub -- --scene pendulum --record /tmp/pendulum.jsonl
 ```
 
 For debugging, use the pixi helpers:
@@ -43,3 +44,6 @@ Optional dependencies (install into the pixi env): `imgui[glfw]`, `glfw`, and
 ```bash
 pixi run pip install "imgui[glfw]" glfw PyOpenGL
 ```
+
+The GUI shell lets you switch scenes, play/pause/step/reset, and toggle
+recording to a JSONL file (per-step `export_state` payload).

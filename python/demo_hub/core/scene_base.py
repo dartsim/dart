@@ -43,6 +43,9 @@ class Scene(ABC):
     def import_state(self, state: dict) -> None:
         """Restore state from export_state (optional)."""
 
+    def debug_draw_2d(self) -> list[tuple[tuple[float, float], tuple[float, float], tuple[float, float, float]]]:
+        """Return line segments ((x1, z1), (x2, z2), (r, g, b)) for 2D top-down debug view."""
+        return []
+
     def _set_last_dt(self, dt: float) -> None:
         self._last_dt = dt
-

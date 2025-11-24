@@ -55,3 +55,41 @@ class HelloWorldScene(Scene):
             return {}
         return {"time": float(self._world.getTime()), "frames": int(self._world.getSimFrames())}
 
+    def debug_draw_2d(self):
+        if self._world is None:
+            return []
+        box = self._world.getSkeleton(0)
+        if box is None or box.getNumBodyNodes() == 0:
+            return []
+        pos = box.getBodyNode(0).getTransform().translation()
+        x, _, z = pos
+        size = 0.1
+        return [
+            ((x - size, z), (x + size, z), (0.2, 0.8, 1.0)),
+            ((x, z - size), (x, z + size), (0.2, 0.8, 1.0)),
+        ]
+
+    def debug_draw_2d(self):
+        if self._world is None:
+            return []
+        # Visualize the box as a square footprint on the XZ plane.
+        skel = self._world.getSkeleton(0)
+        if skel is None:
+            return []
+        body = skel.getBodyNode(0)
+        tf = body.getWorldTransform()
+        # tf is a 4x4; extract translation
+        pos = tf.translation()
+        x, _, z = pos
+        r = 0.1
+        points = [
+            (x - r, z - r),
+            (x + r, z - r),
+            (x + r, z + r),
+            (x - r, z + r),
+        ]
+        color = (0.2, 0.8, 0.2)
+        segments = []
+        for i in range(len(points)):
+            segments.append((points[i], points[(i + 1) % len(points)], color))
+        return segments
