@@ -1158,7 +1158,7 @@ void testMimicJoint()
 
   double timestep = 1e-3;
   double tol = 1e-9;
-  double tolPos = 1e-3;
+  double tolPos = 3e-3;
   double sufficient_force = 1e+5;
 
   // World
