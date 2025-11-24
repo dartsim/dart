@@ -78,11 +78,11 @@ void DragAndDrop::update()
   if (nullptr == mEntity)
     return;
 
-  osg::MouseButtonEvent event
+  MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event) {
+    if (BUTTON_RELEASE == event) {
       mAmMoving = false;
       release();
     }
@@ -90,12 +90,12 @@ void DragAndDrop::update()
     move();
   } else // not moving
   {
-    if (osg::BUTTON_PUSH == event) {
-      const std::vector<osg::PickInfo>& picks
+    if (BUTTON_PUSH == event) {
+      const std::vector<PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              LEFT_MOUSE, BUTTON_PUSH);
 
-      for (const osg::PickInfo& pick : picks) {
+      for (const PickInfo& pick : picks) {
         if (pick.frame == mEntity) {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -314,21 +314,21 @@ void SimpleFrameShapeDnD::update()
   if (nullptr == mFrame || nullptr == mShape)
     return;
 
-  osg::MouseButtonEvent event
+  MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event)
+    if (BUTTON_RELEASE == event)
       mAmMoving = false;
 
     move();
   } else {
-    if (osg::BUTTON_PUSH == event) {
-      const std::vector<osg::PickInfo>& picks
+    if (BUTTON_PUSH == event) {
+      const std::vector<PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              LEFT_MOUSE, BUTTON_PUSH);
 
-      for (const osg::PickInfo& pick : picks) {
+      for (const PickInfo& pick : picks) {
         if (pick.frame == mFrame && pick.shape.get() == mShape) {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -467,11 +467,11 @@ public:
     if (nullptr == mEntity)
       return;
 
-    osg::MouseButtonEvent event
+    MouseButtonEvent event
         = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
     if (mAmMoving) {
-      if (osg::BUTTON_RELEASE == event) {
+      if (BUTTON_RELEASE == event) {
         mAmMoving = false;
         release();
       }
@@ -479,12 +479,12 @@ public:
       move();
     } else // not moving
     {
-      if (osg::BUTTON_PUSH == event) {
-        const std::vector<osg::PickInfo>& picks
+      if (BUTTON_PUSH == event) {
+        const std::vector<PickInfo>& picks
             = mViewer->getDefaultEventHandler()->getButtonPicks(
-                osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+                LEFT_MOUSE, BUTTON_PUSH);
 
-        for (const osg::PickInfo& pick : picks) {
+        for (const PickInfo& pick : picks) {
           if (pick.frame->getParentFrame() == mEntity) {
             mAmMoving = true;
             mPickedPosition = pick.position;
@@ -631,11 +631,11 @@ void BodyNodeDnD::update()
   if (nullptr == mEntity)
     return;
 
-  osg::MouseButtonEvent event
+  MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if (mAmMoving) {
-    if (osg::BUTTON_RELEASE == event) {
+    if (BUTTON_RELEASE == event) {
       mAmMoving = false;
       release();
     }
@@ -643,12 +643,12 @@ void BodyNodeDnD::update()
     move();
   } else // not moving
   {
-    if (osg::BUTTON_PUSH == event) {
-      const std::vector<osg::PickInfo>& picks
+    if (BUTTON_PUSH == event) {
+      const std::vector<PickInfo>& picks
           = mViewer->getDefaultEventHandler()->getButtonPicks(
-              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
+              LEFT_MOUSE, BUTTON_PUSH);
 
-      for (const osg::PickInfo& pick : picks) {
+      for (const PickInfo& pick : picks) {
         if (pick.frame->getParentFrame() == mEntity) {
           mAmMoving = true;
           mPickedPosition = pick.position;

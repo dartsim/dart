@@ -199,7 +199,7 @@ Viewer::Viewer(const ::osg::Vec4& clearColor)
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  setCameraManipulator(new osg::TrackballManipulator);
+  setCameraManipulator(new TrackballManipulator);
   addInstructionText("Left-click:   Interaction\n");
   addInstructionText("Right-click:  Rotate view\n");
   addInstructionText("Middle-click: Translate view\n");
