@@ -686,8 +686,12 @@ void FreeJoint::updateRelativeJacobianTimeDeriv() const
       = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 
   const Eigen::Vector3d omega = getRelativeSpatialVelocity().head<3>();
-  const Eigen::Matrix3d omegaSkew = math::makeSkewSymmetric(omega);
-  const Eigen::Matrix3d rotationDeriv = -omegaSkew * rotationTranspose;
+  const Eigen::Matrix3d childRotation
+      = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
+  const Eigen::Matrix3d omegaInJoint
+      = childRotation * math::makeSkewSymmetric(omega)
+        * childRotation.transpose();
+  const Eigen::Matrix3d rotationDeriv = -omegaInJoint * rotationTranspose;
 
   mJacobianDeriv.setZero();
   mJacobianDeriv.topRows<3>() = rotationDeriv * baseJac.topRows<3>();
