@@ -30,13 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/MemoryManager.hpp"
 
 #if DART_BUILD_MODE_DEBUG
   #include "dart/common/Logging.hpp"
 #endif
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 MemoryManager& MemoryManager::GetDefault()
@@ -180,4 +182,4 @@ std::ostream& operator<<(std::ostream& os, const MemoryManager& memoryManager)
   return os;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

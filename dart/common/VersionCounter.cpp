@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/VersionCounter.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -39,7 +40,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -90,4 +91,4 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <memory>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 namespace signal {
@@ -154,6 +155,6 @@ struct DefaultCombiner
 } // namespace signal
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_CONNECTIONBODY_HPP_

@@ -33,12 +33,13 @@
 #ifndef DART_COMMON_CLONEABLE_HPP_
 #define DART_COMMON_CLONEABLE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Memory.hpp>
 
 #include <memory>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -320,7 +321,7 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Cloneable.hpp>
 

@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 #define DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/CompositeJoiner.hpp>
 #include <dart/common/detail/TemplateJoinerDispatchMacro.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -123,6 +124,6 @@ CompositeJoiner<Base1, Base2, OtherBases...>::CompositeJoiner(Args&&... args)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_

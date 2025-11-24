@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/FreeListAllocator.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 FreeListAllocator::FreeListAllocator(
@@ -372,4 +374,4 @@ bool FreeListAllocator::MemoryBlockHeader::isValid() const
 }
 #endif
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

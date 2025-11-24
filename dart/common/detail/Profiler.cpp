@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/detail/Profiler.hpp"
 
 #include <algorithm>
@@ -42,7 +43,8 @@
 #include <thread>
 #include <unordered_map>
 
-namespace dart::common::profile {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common::profile {
 
 struct Profiler::ProfileNode
 {
@@ -582,4 +584,5 @@ ProfileScope::~ProfileScope()
   }
 }
 
-} // namespace dart::common::profile
+} // namespace common::profile
+DART_INLINE_NAMESPACE_END

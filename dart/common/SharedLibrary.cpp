@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/SharedLibrary.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -52,7 +53,7 @@
 
 #endif
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -148,4 +149,4 @@ std::string SharedLibrary::getLastError() const
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

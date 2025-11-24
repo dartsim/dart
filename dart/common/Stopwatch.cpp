@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Stopwatch.hpp"
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 namespace {
 StopwatchNS sw = StopwatchNS(true);
@@ -106,4 +108,4 @@ double tocNS(bool print)
   return elapsed;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

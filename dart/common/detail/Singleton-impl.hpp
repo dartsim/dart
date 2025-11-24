@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
 #define DART_COMMON_DETAIL_SINGLETON_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Singleton.hpp>
 
 #include <utility>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -69,6 +70,6 @@ T* Singleton<T>::getSingletonPtr(Args... _args)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_SINGLETON_HPP_

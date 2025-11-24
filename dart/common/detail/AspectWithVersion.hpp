@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 #define DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Aspect.hpp>
 #include <dart/common/StlHelpers.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 namespace detail {
 
@@ -428,6 +429,6 @@ void AspectWithVersionedProperties<
 
 } // namespace detail
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_

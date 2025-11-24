@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -40,7 +41,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 namespace detail {
 
@@ -90,4 +91,4 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
 
 } // namespace detail
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

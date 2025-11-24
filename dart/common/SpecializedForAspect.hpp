@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_SPECIALIZEDFORASPECT_HPP_
 #define DART_COMMON_SPECIALIZEDFORASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Composite.hpp>
 #include <dart/common/CompositeJoiner.hpp>
 #include <dart/common/Virtual.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// Declaration of the variadic template
@@ -206,7 +207,7 @@ public:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/SpecializedForAspect.hpp>
 

@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_POOLALLOCATOR_HPP_
 #define DART_COMMON_POOLALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
@@ -41,7 +42,8 @@
 #include <array>
 #include <mutex>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Memory allocator optimized for allocating many objects of the same or
 /// similar sizes
@@ -138,6 +140,6 @@ private:
   std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_POOLALLOCATOR_HPP_

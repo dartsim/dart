@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Subject.hpp"
 
 #include "dart/common/Observer.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -81,4 +82,4 @@ void Subject::removeObserver(Observer* _observer) const
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

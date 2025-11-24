@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_CASTABLE_HPP_
 #define DART_COMMON_CASTABLE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <string>
 
 #define DART_STRING_TYPE(type_name)                                            \
@@ -49,7 +50,8 @@
   }                                                                            \
   void _ANONYMOUS_FUNCTION_1()
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// A CRTP base class that provides an interface for easily casting to the
 /// derived types.
@@ -95,7 +97,7 @@ private:
   [[nodiscard]] Base& base();
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Castable-impl.hpp>
 

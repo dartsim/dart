@@ -33,13 +33,15 @@
 #ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 #define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 template <typename T>
 class MemoryAllocatorDebugger : public MemoryAllocator
@@ -91,7 +93,7 @@ private:
   mutable std::mutex mMutex;
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/MemoryAllocatorDebugger-impl.hpp>
 

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Aspect.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -39,7 +40,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -79,4 +80,4 @@ void Aspect::loseComposite(Composite* /*oldComposite*/)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

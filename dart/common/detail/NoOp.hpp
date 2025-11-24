@@ -1,3 +1,4 @@
+#include <dart/common/Namespace.hpp>
 /*
  * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
@@ -33,7 +34,7 @@
 #ifndef DART_COMMON_DETAIL_NOOP_HPP_
 #define DART_COMMON_DETAIL_NOOP_HPP_
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 namespace detail {
 
@@ -48,7 +49,7 @@ void NoOp(Args... /*args*/)
 
 } // namespace detail
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 // The DART_BLANK macro can be passed into macro arguments where you want the
 // argument to expand into blank space.

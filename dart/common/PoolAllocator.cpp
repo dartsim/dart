@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/PoolAllocator.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -37,7 +38,8 @@
 
 #include <cstring>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
@@ -218,4 +220,4 @@ void PoolAllocator::print(std::ostream& os, int indent) const
   mBaseAllocator.print(os, indent + 2);
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

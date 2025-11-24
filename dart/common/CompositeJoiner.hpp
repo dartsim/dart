@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_COMPOSITEJOINER_HPP_
 #define DART_COMMON_COMPOSITEJOINER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Composite.hpp>
 #include <dart/common/Empty.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// Terminator for the variadic template
@@ -153,7 +154,7 @@ public:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/CompositeJoiner.hpp>
 

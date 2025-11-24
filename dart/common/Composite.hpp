@@ -33,12 +33,13 @@
 #ifndef DART_COMMON_COMPOSITE_HPP_
 #define DART_COMMON_COMPOSITE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/detail/CompositeData.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// Composite is a base class that should be virtually inherited by any class
@@ -200,7 +201,7 @@ template <class T, class NextAspect, class... Aspects>
 void createAspects(T* comp);
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Composite.hpp>
 

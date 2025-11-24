@@ -30,9 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Stopwatch.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 namespace {
 //==============================================================================
@@ -239,4 +241,4 @@ std::ostream& operator<<(
   return os;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

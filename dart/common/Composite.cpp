@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Composite.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -39,7 +40,7 @@
 
 #include <cassert>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -281,4 +282,4 @@ void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

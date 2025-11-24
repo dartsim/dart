@@ -1,3 +1,4 @@
+#include <dart/common/Namespace.hpp>
 /*
  * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
@@ -33,7 +34,7 @@
 #ifndef DART_COMMON_VIRTUAL_HPP_
 #define DART_COMMON_VIRTUAL_HPP_
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// This class is used to have CRTP functions inherit their template parameters
@@ -46,6 +47,6 @@ public:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_VIRTUAL_HPP_

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Uri.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -45,7 +46,7 @@ static bool startsWith(const std::string& _target, const std::string& _prefix)
   return _target.substr(0, _prefix.size()) == _prefix;
 }
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /*
@@ -642,4 +643,4 @@ std::string Uri::removeDotSegments(const std::string& _path)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

@@ -36,6 +36,7 @@
 #if DART_BUILD_MODE_DEBUG
   #include <mutex>
 #endif
+#include <dart/common/Namespace.hpp>
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
@@ -43,7 +44,8 @@
 
 #include <iostream>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// A composite memory allocator that contains various memory allocators that
 /// are optimized for different use cases.
@@ -184,7 +186,7 @@ private:
 #endif
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/MemoryManager-impl.hpp>
 

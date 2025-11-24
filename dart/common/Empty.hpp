@@ -1,3 +1,4 @@
+#include <dart/common/Namespace.hpp>
 /*
  * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
@@ -33,7 +34,7 @@
 #ifndef DART_COMMON_EMPTY_HPP_
 #define DART_COMMON_EMPTY_HPP_
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// This is an empty structure which can be used as a template argument when a
@@ -50,6 +51,6 @@ enum NoArgTag
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_EMPTY_HPP_

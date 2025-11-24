@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_DETAIL_SUB_PTR_HPP_
 #define DART_COMMON_DETAIL_SUB_PTR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/sub_ptr.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -134,6 +135,6 @@ void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_SUB_PTR_HPP_

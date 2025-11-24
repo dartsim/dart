@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_FACTORY_HPP_
 #define DART_COMMON_FACTORY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Singleton.hpp>
 #include <dart/common/StlHelpers.hpp>
 
@@ -41,7 +42,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// Implementation of the Abstract Factory Pattern.
@@ -139,7 +140,7 @@ public:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Factory-impl.hpp>
 

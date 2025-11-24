@@ -30,11 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/String.hpp"
 
 #include <algorithm>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 std::string toUpper(std::string str)
@@ -101,4 +103,4 @@ std::vector<std::string> split(
   return tokens;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

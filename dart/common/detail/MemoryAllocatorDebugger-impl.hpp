@@ -33,10 +33,12 @@
 #ifndef DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 template <typename T>
@@ -196,6 +198,6 @@ void MemoryAllocatorDebugger<T>::print(std::ostream& os, int indent) const
   mInternalAllocator.print(os, indent + 2);
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_MEMORYALLOCATORDEBUGGER_IMPL_HPP_

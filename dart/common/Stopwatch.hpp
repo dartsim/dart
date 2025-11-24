@@ -33,12 +33,14 @@
 #ifndef DART_COMMON_STOPWATCH_HPP_
 #define DART_COMMON_STOPWATCH_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <chrono>
 #include <iostream>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Simple stopwatch implementation
 template <
@@ -138,7 +140,7 @@ using StopwatchMS = Stopwatch<std::chrono::milliseconds>;
 using StopwatchUS = Stopwatch<std::chrono::microseconds>;
 using StopwatchNS = Stopwatch<std::chrono::nanoseconds>;
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Stopwatch-impl.hpp>
 

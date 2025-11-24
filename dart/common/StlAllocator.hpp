@@ -33,11 +33,13 @@
 #ifndef DART_COMMON_STLALLOCATOR_HPP_
 #define DART_COMMON_STLALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 
 #include <memory>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Wrapper class for MemoryAllocator to be compatible with std::allocator
 template <typename T>
@@ -104,7 +106,7 @@ private:
   MemoryAllocator& mBaseAllocator;
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/StlAllocator-impl.hpp>
 

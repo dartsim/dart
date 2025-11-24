@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_PROXYASPECT_HPP_
 #define DART_COMMON_PROXYASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/detail/ProxyAspect.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -88,6 +89,6 @@ public:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_PROXYASPECT_HPP_

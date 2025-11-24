@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_MEMORYALLOCATOR_HPP_
 #define DART_COMMON_MEMORYALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <dart/common/Castable.hpp>
@@ -44,7 +45,8 @@
 
 #include <cstddef>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Base class for std::allocator compatible allocators.
 class DART_API MemoryAllocator : public Castable<MemoryAllocator>
@@ -115,7 +117,7 @@ public:
       std::ostream& os, const MemoryAllocator& allocator);
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/MemoryAllocator-impl.hpp>
 

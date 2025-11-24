@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/detail/ConnectionBody.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 namespace signal {
@@ -48,4 +49,4 @@ ConnectionBodyBase::~ConnectionBodyBase()
 } // namespace signal
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

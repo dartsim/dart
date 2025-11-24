@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_SUBJECT_HPP_
 #define DART_COMMON_SUBJECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 class Observer;
@@ -81,6 +82,6 @@ protected:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_SUBJECT_HPP_

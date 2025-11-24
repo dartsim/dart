@@ -30,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Signal.hpp"
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -124,4 +125,4 @@ ScopedConnection::~ScopedConnection()
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

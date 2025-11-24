@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <atomic>
@@ -49,7 +50,8 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace dart::common::profile {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common::profile {
 
 /// Hierarchical text profiler: captures scoped timings and prints an
 /// easy-to-skim, hotspot-focused summary for text-based inspection.
@@ -149,4 +151,5 @@ private:
   std::shared_ptr<Profiler::ThreadRecord> m_record;
 };
 
-} // namespace dart::common::profile
+} // namespace common::profile
+DART_INLINE_NAMESPACE_END

@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_SIGNAL_HPP_
 #define DART_COMMON_SIGNAL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/detail/ConnectionBody.hpp>
 
 #include <dart/Export.hpp>
@@ -42,7 +43,7 @@
 #include <mutex>
 #include <set>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// class Connection
@@ -239,7 +240,7 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Signal.hpp>
 

@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_SUB_PTR_HPP_
 #define DART_COMMON_SUB_PTR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Observer.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// sub_ptr is a pointer to a Subject. It can be used as a pointer to any class
@@ -96,7 +97,7 @@ protected:
 template <class T>
 using sub_ptr = common::sub_ptr<T>;
 
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/sub_ptr.hpp>
 

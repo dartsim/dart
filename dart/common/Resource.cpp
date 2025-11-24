@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Resource.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -37,7 +38,7 @@
 #include <exception>
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -55,4 +56,4 @@ std::string Resource::readAll()
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

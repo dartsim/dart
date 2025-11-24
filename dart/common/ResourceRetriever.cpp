@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/ResourceRetriever.hpp"
 
 #include "dart/common/Diagnostics.hpp"
@@ -37,7 +38,7 @@
 
 #include <sstream>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -63,4 +64,4 @@ std::string ResourceRetriever::getFilePath(const Uri& /*uri*/)
 DART_SUPPRESS_DEPRECATED_END
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

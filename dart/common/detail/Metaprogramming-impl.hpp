@@ -33,11 +33,13 @@
 #ifndef DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 #define DART_COMMON_DETAIL_METAPROGRAMMING_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Metaprogramming.hpp>
 
 #include <type_traits>
 
-namespace dart::common::detail {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common::detail {
 
 // Inspired by https://stackoverflow.com/a/6324863/3122234
 
@@ -84,6 +86,7 @@ struct has_member
   static bool const value = sizeof(f<Alias>(0)) == 2;
 };
 
-} // namespace dart::common::detail
+} // namespace common::detail
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_METAPROGRAMMING_HPP_

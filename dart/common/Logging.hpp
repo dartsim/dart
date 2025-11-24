@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <cstdint>
 
 // clang-format off
@@ -109,7 +110,7 @@ void log(
     const S& format_str,
     Args&&... args);
 
-} // namespace dart::common::detail
+} // namespace common::detail
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...)                                                      \
@@ -255,7 +256,8 @@ void log(
   #define DART_FATAL_ONCE_IF(condition, ...) ((void)(condition))
 #endif
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// \brief Logs for a trace message
 ///
@@ -310,7 +312,7 @@ void error(const S& format_str, Args&&... args);
 template <typename S, typename... Args>
 void fatal(const S& format_str, Args&&... args);
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/Logging-impl.hpp>
 

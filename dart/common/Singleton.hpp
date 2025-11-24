@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_SINGLETON_HPP_
 #define DART_COMMON_SINGLETON_HPP_
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// Singleton template class
@@ -78,8 +78,9 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/detail/Singleton-impl.hpp>
 
 #endif // DART_COMMON_SINGLETON_HPP_

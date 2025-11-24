@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_VERSIONCOUNTER_HPP_
 #define DART_COMMON_VERSIONCOUNTER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// VersionCounter is an interface for objects that count their versions
@@ -65,6 +66,6 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_VERSIONCOUNTER_HPP_

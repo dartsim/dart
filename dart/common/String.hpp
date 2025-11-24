@@ -33,12 +33,14 @@
 #ifndef DART_COMMON_STRING_HPP_
 #define DART_COMMON_STRING_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <string>
 #include <vector>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Converts string to upper cases
 DART_API std::string toUpper(std::string str);
@@ -68,6 +70,6 @@ DART_API std::string trimRight(
 DART_API std::vector<std::string> split(
     const std::string& str, const std::string& delimiters = " \n\r\t");
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_STRING_HPP_

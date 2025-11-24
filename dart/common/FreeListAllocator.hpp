@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_FREELISTALLOCATOR_HPP_
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/MemoryAllocatorDebugger.hpp>
 
@@ -41,7 +42,8 @@
 #include <mutex>
 #include <vector>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// Most general heap memory allocator for allocating memory of various sizes.
 ///
@@ -169,6 +171,6 @@ private:
   size_t mTotalAllocatedSize{0};
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_FREELISTALLOCATOR_HPP_

@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_DETAIL_SIGNAL_HPP_
 #define DART_COMMON_DETAIL_SIGNAL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -254,6 +255,6 @@ Connection SlotRegister<T>::connect(const SlotType& slot)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_SIGNAL_HPP_

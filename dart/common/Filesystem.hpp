@@ -28,6 +28,7 @@
 #ifndef DART_COMMON_FILESYSTEM_HPP_
 #define DART_COMMON_FILESYSTEM_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Platform.hpp>
 
 #if !defined(DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL)
@@ -87,25 +88,23 @@
   #if DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
     // Include it
     #include <experimental/filesystem>
-
-namespace dart::common {
-
-namespace filesystem = ::std::experimental::filesystem;
-using error_code = ::std::error_code;
-
-} // namespace dart::common
-
-  // We have a decent compiler and can use the normal version
   #else
     // Include it
     #include <filesystem>
-
-namespace dart::common {
-namespace filesystem = ::std::filesystem;
-using error_code = ::std::error_code;
-} // namespace dart::common
-
   #endif
+
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
+
+  #if DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
+    namespace filesystem = ::std::experimental::filesystem;
+  #else
+    namespace filesystem = ::std::filesystem;
+  #endif
+  using error_code = ::std::error_code;
+
+} // namespace common
+DART_INLINE_NAMESPACE_END
 
 #endif // #ifndef DART_INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
 

@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_
 #define DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/SpecializedForAspect.hpp>
 
 // This preprocessor token should only be used by the unittest that is
@@ -42,7 +43,7 @@
 bool usedSpecializedAspectAccess;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -310,6 +311,6 @@ std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_

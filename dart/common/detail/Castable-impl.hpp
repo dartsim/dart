@@ -33,12 +33,14 @@
 #ifndef DART_COMMON_DETAIL_CASTABLE_HPP_
 #define DART_COMMON_DETAIL_CASTABLE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/common/Castable.hpp>
 #include <dart/common/Metaprogramming.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 DART_CREATE_MEMBER_CHECK(getType);
@@ -106,6 +108,6 @@ Base& Castable<Base>::base()
   return *static_cast<Base*>(this);
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_CASTABLE_HPP_

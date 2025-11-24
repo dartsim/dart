@@ -33,11 +33,13 @@
 #ifndef DART_COMMON_CALLOCATOR_HPP_
 #define DART_COMMON_CALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 /// A stateless memory allocator (in release mode) that uses std::malloc and
 /// std::free for memory allocation and deallocation.
@@ -62,6 +64,6 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 };
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_CALLOCATOR_HPP_

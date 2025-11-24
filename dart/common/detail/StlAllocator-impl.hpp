@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/StlAllocator.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 template <typename T>
@@ -105,4 +107,4 @@ std::ostream& operator<<(std::ostream& os, const StlAllocator<T>& allocator)
   return os;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

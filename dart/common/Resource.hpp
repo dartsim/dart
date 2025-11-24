@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_RESOURCE_HPP_
 #define DART_COMMON_RESOURCE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/Export.hpp>
 
 #include <memory>
@@ -40,7 +41,7 @@
 
 #include <cstddef>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// \brief Resource provides file-like access to a resource loaded from URI.
@@ -93,6 +94,6 @@ public:
 using ResourcePtr = std::shared_ptr<Resource>;
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // ifndef DART_COMMON_RESOURCE_HPP_

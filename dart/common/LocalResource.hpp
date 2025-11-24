@@ -33,12 +33,13 @@
 #ifndef DART_COMMON_LOCALRESOURCE_HPP_
 #define DART_COMMON_LOCALRESOURCE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/ClassWithVirtualBase.hpp>
 #include <dart/common/Resource.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -73,6 +74,6 @@ private:
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_

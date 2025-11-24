@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITE_HPP_
 #define DART_COMMON_DETAIL_COMPOSITE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/Macros.hpp"
 
 #include <dart/common/Composite.hpp>
@@ -47,7 +48,7 @@
     return ReturnType;                                                         \
   }
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -158,7 +159,7 @@ void createAspects(T* comp)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 //==============================================================================
 // Create non-template alternatives to Composite functions

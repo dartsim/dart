@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_LOCKABLEREFERENCE_HPP_
 #define DART_COMMON_LOCKABLEREFERENCE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <memory>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// LockableReference is a wrapper class of single or multiple Lockable
@@ -159,7 +160,7 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/LockableReference-impl.hpp>
 

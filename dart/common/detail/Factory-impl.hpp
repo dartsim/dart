@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_FACTORY_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Factory.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/Memory.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 namespace detail {
@@ -197,6 +198,6 @@ FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::FactoryRegistrar(
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_FACTORY_IMPL_HPP_

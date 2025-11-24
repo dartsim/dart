@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/MemoryAllocator.hpp"
 
 #include "dart/common/CAllocator.hpp"
 #include "dart/common/Logging.hpp"
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 MemoryAllocator& MemoryAllocator::GetDefault()
@@ -61,4 +63,4 @@ std::ostream& operator<<(std::ostream& os, const MemoryAllocator& allocator)
   return os;
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

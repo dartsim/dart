@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_DETAIL_CLONEABLE_HPP_
 #define DART_COMMON_DETAIL_CLONEABLE_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Cloneable.hpp>
 #include <dart/common/StlHelpers.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -634,6 +635,6 @@ const std::vector<T>& CloneableVector<T>::getVector() const
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_CLONEABLE_HPP_

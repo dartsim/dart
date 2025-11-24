@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/Resource.hpp>
 #include <dart/common/Uri.hpp>
@@ -42,7 +43,7 @@
 #include <memory>
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// ResourceRetriever provides methods for testing for the existence of and
@@ -82,6 +83,6 @@ public:
 using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // ifndef DART_COMMON_RESOURCERETRIEVER_HPP_

@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_MEMORY_HPP_
 #define DART_COMMON_MEMORY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/config.hpp>
 
 #include <Eigen/Core>
@@ -41,7 +42,7 @@
 #include <memory>
 #include <vector>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 template <typename _Tp, typename... _Args>
@@ -58,7 +59,7 @@ using aligned_map = std::map<
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #define DART_RAW_PTR_CREATOR_NAME create
 #define DART_SHARED_PTR_CREATOR_NAME createShared

@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "dart/common/CAllocator.hpp"
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 CAllocator::CAllocator() noexcept
@@ -80,4 +82,4 @@ void CAllocator::print(std::ostream& os, int indent) const
   }
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END

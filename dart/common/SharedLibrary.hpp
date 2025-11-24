@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Filesystem.hpp>
 #include <dart/common/Platform.hpp>
 
@@ -75,7 +76,7 @@ static constexpr const char* DART_SHARED_LIB_PREFIX = "";
   #error Unhandled platform
 #endif
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 namespace detail {
@@ -156,6 +157,6 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_SHAREDLIBRARY_HPP_

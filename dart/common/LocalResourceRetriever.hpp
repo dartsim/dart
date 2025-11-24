@@ -33,11 +33,12 @@
 #ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
 #define DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
 #include <dart/Export.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// LocalResourceRetriever provides access to local resources specified by
@@ -61,6 +62,6 @@ public:
 using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_

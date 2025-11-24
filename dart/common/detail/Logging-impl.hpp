@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 #define DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/Logging.hpp>
 
 #include <fmt/format.h>
@@ -135,7 +136,8 @@ auto normalize(T&& arg)
 #include <filesystem>
 #include <string>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 #if !DART_HAVE_spdlog
 namespace detail {
@@ -383,6 +385,6 @@ void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
       std::forward<Args>(args)...);
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_LOGGING_IMPL_HPP_

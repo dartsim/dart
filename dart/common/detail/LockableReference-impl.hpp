@@ -33,9 +33,10 @@
 #ifndef DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
 #define DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/LockableReference.hpp>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -151,6 +152,6 @@ T* MultiLockableReference<Lockable>::ptr(T* obj)
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_

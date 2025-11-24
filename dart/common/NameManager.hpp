@@ -33,10 +33,11 @@
 #ifndef DART_COMMON_NAMEMANAGER_HPP_
 #define DART_COMMON_NAMEMANAGER_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <map>
 #include <string>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 /// \brief class NameManager
@@ -177,7 +178,7 @@ protected:
 };
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END
 
 #include <dart/common/detail/NameManager.hpp>
 

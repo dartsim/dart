@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Namespace.hpp>
 #include "LocalResource.hpp"
 
 #include "dart/common/Logging.hpp"
@@ -39,7 +40,7 @@
 
 #include <cstring>
 
-namespace dart {
+DART_INLINE_NAMESPACE_BEGIN
 namespace common {
 
 //==============================================================================
@@ -202,4 +203,4 @@ std::size_t LocalResource::read(
 }
 
 } // namespace common
-} // namespace dart
+DART_INLINE_NAMESPACE_END

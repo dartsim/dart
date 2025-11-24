@@ -33,9 +33,11 @@
 #ifndef DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 #define DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
 
+#include <dart/common/Namespace.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 
-namespace dart::common {
+DART_INLINE_NAMESPACE_BEGIN
+namespace common {
 
 //==============================================================================
 template <typename T>
@@ -92,6 +94,6 @@ void MemoryAllocator::destroy(T* object) noexcept
   deallocate(object, sizeof(T));
 }
 
-} // namespace dart::common
+DART_INLINE_NAMESPACE_END
 
 #endif // DART_COMMON_DETAIL_MEMORYALLOCATOR_HPP_
