@@ -19,84 +19,84 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../../python_api/modules/math.rst:2 d9eb14ddbc8841248ccfe804847953be
-msgid "dartpy.math"
+msgid "dartpy"
 msgstr ""
 
-#: ../../docstring 2f82a41c1b184ea484ee316b11d104e1 dartpy.math:1 of
+#: ../../docstring 2f82a41c1b184ea484ee316b11d104e1 dartpy:1 of
 msgid "Bindings for Eigen geometric types."
 msgstr ""
 
 #: ../../docstring 3ab61da729e74b958d6f6067391a562a
 #: 3b491bb5283545a7a221704368f7782e 6d523d13c3e448b194721ca27fa65187
-#: 7605f3c4928448cb8426388ee25f1102 dartpy.math.AngleAxis:1
-#: dartpy.math.Isometry3:1 dartpy.math.Quaternion:1 dartpy.math.Random:1 of
+#: 7605f3c4928448cb8426388ee25f1102 dartpy.AngleAxis:1
+#: dartpy.Isometry3:1 dartpy.Quaternion:1 dartpy.Random:1 of
 msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
 msgstr ""
 
-#: ../../docstring d07cbef0b86e4f44b8d604fee7204c2f dartpy.math.AngleAxis:1 of
+#: ../../docstring d07cbef0b86e4f44b8d604fee7204c2f dartpy.AngleAxis:1 of
 msgid "Bindings for Eigen::AngleAxis<>."
 msgstr ""
 
 #: ../../docstring 714a5089b7f84bd9bdf645835312845e
 #: 9806b969b5f94839b3c83d05977d5d7f a77120106d6c4c4ab7687e118a28ed52
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:1
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
 #: edd62360d7a94abaa7b3a55f16ecf13f of
 msgid ""
-"multiply(self: dartpy.math.Isometry3, other: dartpy.math.Isometry3) -> "
-"dartpy.math.Isometry3"
+"multiply(self: dartpy.Isometry3, other: dartpy.Isometry3) -> "
+"dartpy.Isometry3"
 msgstr ""
 
 #: ../../docstring 11338ca58b8d417193acebd096fcd64a
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
 #: of
 msgid ""
-"multiply(self: dartpy.math.Isometry3, position: "
+"multiply(self: dartpy.Isometry3, position: "
 "typing.Annotated[numpy.typing.ArrayLike, numpy.float64, \"[3, 1]\"]) -> "
 "typing.Annotated[numpy.typing.NDArray[numpy.float64], \"[3, 1]\"]"
 msgstr ""
 
-#: ../../docstring 4e7a97850cd54bc6893a5df2c754fcd7 dartpy.math.Quaternion:1 of
+#: ../../docstring 4e7a97850cd54bc6893a5df2c754fcd7 dartpy.Quaternion:1 of
 msgid "Provides a unit quaternion binding of Eigen::Quaternion<>."
 msgstr ""
 
 #: ../../docstring 389d32d015a5484ca8138c23a9492271
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
 #: of
 msgid ""
-"multiply(self: dartpy.math.Quaternion, arg0: dartpy.math.Quaternion) -> "
-"dartpy.math.Quaternion"
+"multiply(self: dartpy.Quaternion, arg0: dartpy.Quaternion) -> "
+"dartpy.Quaternion"
 msgstr ""
 
 #: ../../docstring c8d32f042340499ca89aa2884a3c35d3
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
 #: of
 msgid ""
-"multiply(self: dartpy.math.Quaternion, position: "
+"multiply(self: dartpy.Quaternion, position: "
 "typing.Annotated[numpy.typing.ArrayLike, numpy.float64, \"[3, 1]\"]) -> "
 "typing.Annotated[numpy.typing.NDArray[numpy.float64], \"[3, 1]\"]"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:3
 #: f525ec533b624b108e12e99e34020f85 of
 msgid ""
-"set_wxyz(self: dartpy.math.Quaternion, wxyz: "
+"set_wxyz(self: dartpy.Quaternion, wxyz: "
 "typing.Annotated[numpy.typing.ArrayLike, numpy.float64, \"[4, 1]\"]) -> "
 "None"
 msgstr ""
 
 #: ../../docstring a89b522342174e2d98aa3603c8569115
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:5
 #: of
 msgid ""
-"set_wxyz(self: dartpy.math.Quaternion, w: typing.SupportsFloat, x: "
+"set_wxyz(self: dartpy.Quaternion, w: typing.SupportsFloat, x: "
 "typing.SupportsFloat, y: typing.SupportsFloat, z: typing.SupportsFloat) "
 "-> None"
 msgstr ""

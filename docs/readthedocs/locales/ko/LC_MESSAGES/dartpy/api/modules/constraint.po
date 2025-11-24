@@ -20,25 +20,25 @@ msgstr ""
 
 #: ../../../python_api/modules/constraint.rst:2
 #: 1dbc84fd3d274448beacd4c8e4fe1602
-msgid "dartpy.constraint"
+msgid "dartpy"
 msgstr ""
 
 #: ../../docstring 05125171b3b041d29719723ee918bebd
-#: a0884517cbdb4568a06fd29277340833 dartpy.constraint.BallJointConstraint:1
-#: dartpy.constraint.WeldJointConstraint:1 of
-msgid "Bases: :py:class:`~dartpy.constraint.DynamicJointConstraint`"
+#: a0884517cbdb4568a06fd29277340833 dartpy.BallJointConstraint:1
+#: dartpy.WeldJointConstraint:1 of
+msgid "Bases: :py:class:`~dartpy.DynamicJointConstraint`"
 msgstr ""
 
 #: ../../docstring 93961467848040ff955f3534a1c3d0b6
-#: dartpy.constraint.BoxedLcpConstraintSolver:1 of
-msgid "Bases: :py:class:`~dartpy.constraint.ConstraintSolver`"
+#: dartpy.BoxedLcpConstraintSolver:1 of
+msgid "Bases: :py:class:`~dartpy.ConstraintSolver`"
 msgstr ""
 
 #: ../../docstring 4e21550347484daaad31d4085d68b1d2
 #: 9f9f457b4d9149e79a9f8e41e991a1fe b8497f1862c44eb0b99f06864e5f5668
-#: dartpy.constraint.BoxedLcpSolver:1 dartpy.constraint.ConstraintBase:1
-#: dartpy.constraint.ConstraintSolver:1
-#: dartpy.constraint.PgsBoxedLcpSolverOption:1 f2ac604a4af7427ab3a0407221ab3a36
+#: dartpy.BoxedLcpSolver:1 dartpy.ConstraintBase:1
+#: dartpy.ConstraintSolver:1
+#: dartpy.PgsBoxedLcpSolverOption:1 f2ac604a4af7427ab3a0407221ab3a36
 #: of
 msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
 msgstr ""
@@ -46,47 +46,47 @@ msgstr ""
 #: ../../docstring 0a87fcbbeca84ed98399d21078f7dfe8
 #: 14bc1b725a2843e78bacb8edd48a85bb 2b55c0e15822445789be9a699398c54d
 #: 99be2929ff1744eda27b07b833c4c402 cb29fc19b0c647cca8179b697567b8f8
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:1
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:1
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:1
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:1
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:1
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring b44f8e7c18074bf6bac6c52798028166
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
 #: dde0138d8c1849d8bb4c7cb998719dda of
 msgid ""
-"getCollisionDetector(self: dartpy.constraint.ConstraintSolver) -> "
-"dartpy.collision.CollisionDetector"
+"getCollisionDetector(self: dartpy.ConstraintSolver) -> "
+"dartpy.CollisionDetector"
 msgstr ""
 
 #: ../../docstring ac9e4d263e0948b29a37cc20291e757b
 #: b530c5f60366480abc4da33c8b1cef5b
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:3
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionGroup:5
 #: of
 msgid ""
-"getCollisionGroup(self: dartpy.constraint.ConstraintSolver) -> "
-"dartpy.collision.CollisionGroup"
+"getCollisionGroup(self: dartpy.ConstraintSolver) -> "
+"dartpy.CollisionGroup"
 msgstr ""
 
 #: ../../docstring a15c3ea8cb42422199b4276fb3e7d489
 #: b3bd6b1cf3904128b8885e6003a15c2a
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:3
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:7
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:7
 #: of
 msgid ""
-"getCollisionOption(self: dartpy.constraint.ConstraintSolver) -> "
-"dartpy.collision.CollisionOption"
+"getCollisionOption(self: dartpy.ConstraintSolver) -> "
+"dartpy.CollisionOption"
 msgstr ""
 
 #: ../../docstring 9b58c7ca7d5c4e88bc0a15cfabae98e1
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:5
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:9
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionOption:9
 #: f8e7c3f1423445fa89fa71ef69e328ba of
 msgid ""
 "Returns collision option that is used for collision checkings in this "
@@ -95,32 +95,32 @@ msgstr ""
 
 #: ../../docstring 80e3cb4cbfc74ff7a858b8e14b80f256
 #: a40b4f903892403082ed85952e22d734
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:3
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getConstraint:5
 #: of
 msgid ""
-"getConstraint(self: dartpy.constraint.ConstraintSolver, index: "
-"typing.SupportsInt) -> dartpy.constraint.ConstraintBase"
+"getConstraint(self: dartpy.ConstraintSolver, index: "
+"typing.SupportsInt) -> dartpy.ConstraintBase"
 msgstr ""
 
 #: ../../docstring 121e7cd8befd41df831b776594b67353
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:3
-#: dartpy.constraint.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:5
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:3
+#: dartpy.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumConstraints:5
 #: e172ee1009344acba16fcb3e3a8823ec of
-msgid "getNumConstraints(self: dartpy.constraint.ConstraintSolver) -> bool"
+msgid "getNumConstraints(self: dartpy.ConstraintSolver) -> bool"
 msgstr ""
 
 #: ../../docstring 7aca771d9edb4db49a945c6114163e2c
-#: a6dfe2aba0e140bd968928a8c2923ff1 dartpy.constraint.DantzigBoxedLcpSolver:1
-#: dartpy.constraint.PgsBoxedLcpSolver:1 of
-msgid "Bases: :py:class:`~dartpy.constraint.BoxedLcpSolver`"
+#: a6dfe2aba0e140bd968928a8c2923ff1 dartpy.DantzigBoxedLcpSolver:1
+#: dartpy.PgsBoxedLcpSolver:1 of
+msgid "Bases: :py:class:`~dartpy.BoxedLcpSolver`"
 msgstr ""
 
 #: ../../docstring 2f51aac4e2a843ca94c86ae33d5a8a19
 #: c6836bac34444895a918764a15f4f7b5 ca4c2465751748209cb7096726b6925b
-#: dartpy.constraint.DynamicJointConstraint:1
-#: dartpy.constraint.JointConstraint:1
-#: dartpy.constraint.JointCoulombFrictionConstraint:1 of
-msgid "Bases: :py:class:`~dartpy.constraint.ConstraintBase`"
+#: dartpy.DynamicJointConstraint:1
+#: dartpy.JointConstraint:1
+#: dartpy.JointCoulombFrictionConstraint:1 of
+msgid "Bases: :py:class:`~dartpy.ConstraintBase`"
 msgstr ""
 
