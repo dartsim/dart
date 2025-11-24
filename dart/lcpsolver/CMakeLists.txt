@@ -7,18 +7,18 @@ dart_add_core_headers(${compat_hdrs} ${compat_dantzig_hdrs} ${compat_detail_hdrs
 
 install(
   FILES ${compat_hdrs}
-  DESTINATION include/dart/lcpsolver
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/lcpsolver
   COMPONENT headers
 )
 
 install(
   FILES ${compat_dantzig_hdrs}
-  DESTINATION include/dart/lcpsolver/dantzig
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/lcpsolver/dantzig
   COMPONENT headers
 )
 
 install(
   FILES ${compat_detail_hdrs}
-  DESTINATION include/dart/lcpsolver/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/lcpsolver/detail
   COMPONENT headers
 )

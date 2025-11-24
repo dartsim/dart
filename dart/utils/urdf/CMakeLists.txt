@@ -39,7 +39,7 @@ configure_file(
   @ONLY
 )
 install(FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
-  DESTINATION include/dart/utils/urdf
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/utils/urdf
 )
 
 # Add target
@@ -65,7 +65,7 @@ dart_generate_component_headers(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
-  DESTINATION include/dart/utils/urdf
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/utils/urdf
   COMPONENT headers
 )
 

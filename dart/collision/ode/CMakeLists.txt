@@ -59,13 +59,13 @@ dart_generate_component_headers(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
-  DESTINATION include/dart/collision/ode
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/collision/ode
   COMPONENT headers
 )
 
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/ode/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/collision/ode/detail
   COMPONENT headers
 )
 

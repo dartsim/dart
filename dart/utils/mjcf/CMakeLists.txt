@@ -20,6 +20,6 @@ dart_generate_component_headers(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/mjcf.hpp
-  DESTINATION include/dart/utils/mjcf
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/utils/mjcf
   COMPONENT headers
 )

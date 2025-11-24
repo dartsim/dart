@@ -42,19 +42,19 @@ endif()
 # and generated PascalCase headers for case compatibility)
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
-  DESTINATION include/dart/math
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/math
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/math/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/math/detail
   COMPONENT headers
 )
 if(opt_hdrs)
   install(
     FILES ${opt_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimization/All.hpp
           ${CMAKE_CURRENT_BINARY_DIR}/optimization/optimization.hpp
-    DESTINATION include/dart/math/optimization
+    DESTINATION ${DART_INCLUDE_INSTALL_DIR}/math/optimization
     COMPONENT headers
   )
 endif()

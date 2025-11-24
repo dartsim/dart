@@ -42,6 +42,6 @@ One concrete ABI break was introduced in `68aef6b6d66d3f032971752b3f30c77aa13b3c
 ## Next steps (proposed implementation order)
 
 1. Add a central header and macros for the inline namespace name and start migrating public headers/sources to use them (`dart/common/Namespace.hpp` now carries the macros; wire them into components).
-2. Switch SONAME to major-only and introduce versioned include/install prefixes with compatibility forwarding headers where feasible. (SONAME now uses major-only.)
+2. Switch SONAME to major-only and introduce versioned include/install prefixes with compatibility forwarding headers where feasible. (SONAME now uses major-only; headers now install under `include/dart<major>`.)
 3. Land CI ABI checking against the last released minor build.
 4. Update docs/migration notes and close the GitHub issue once the above lands.

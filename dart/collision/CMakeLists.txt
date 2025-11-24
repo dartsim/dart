@@ -32,12 +32,12 @@ dart_generate_component_headers(
 # Install headers and generated component headers
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
-  DESTINATION include/dart/collision
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/collision
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/collision/detail
   COMPONENT headers
 )
 

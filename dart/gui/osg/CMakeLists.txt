@@ -85,12 +85,12 @@ dart_generate_component_headers(
 # and generated PascalCase headers for case compatibility)
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
-  DESTINATION include/dart/gui/osg
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/gui/osg
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/gui/osg/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/gui/osg/detail
   COMPONENT headers
 )
 # Install generated compat headers while preserving subdirectory structure

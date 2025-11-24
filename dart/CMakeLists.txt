@@ -75,7 +75,7 @@ if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION ${DART_INCLUDE_INSTALL_DIR})
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -108,7 +108,7 @@ target_include_directories(
   PUBLIC
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${DART_INCLUDE_INSTALL_DIR}>
 )
 get_property(_dart_extra_includes GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS)
 if(_dart_extra_includes)
@@ -255,7 +255,7 @@ endif()
 
 install(
   FILES ${dart_hpp} ${dart_all_hpp} ${dart_export_hpp}
-  DESTINATION include/dart/
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/
   COMPONENT headers
 )
 

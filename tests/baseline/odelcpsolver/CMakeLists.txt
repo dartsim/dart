@@ -21,6 +21,6 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 # Install
 install(
   FILES ${hdrs}
-  DESTINATION include/dart/external/odelcpsolver
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/external/odelcpsolver
   COMPONENT headers
 )

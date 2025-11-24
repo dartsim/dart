@@ -25,12 +25,12 @@ set(DART_MATH_LCP_DETAIL_HEADERS ${math_lcp_dantzig_hdrs} PARENT_SCOPE)
 # Install new headers under dart/math/lcp
 install(
   FILES ${math_lcp_hdrs}
-  DESTINATION include/dart/math/lcp
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/math/lcp
   COMPONENT headers
 )
 
 install(
   FILES ${math_lcp_dantzig_hdrs}
-  DESTINATION include/dart/math/lcp/Dantzig
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/math/lcp/Dantzig
   COMPONENT headers
 )

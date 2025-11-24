@@ -21,12 +21,12 @@ dart_generate_component_headers(
 # and generated PascalCase headers for case compatibility)
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp ikfast.h
-  DESTINATION include/dart/dynamics
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/dynamics
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/dynamics/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/dynamics/detail
   COMPONENT headers
 )
 

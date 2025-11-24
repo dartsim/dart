@@ -240,8 +240,8 @@ if(DART_BUILD_GUI)
       PUBLIC
         $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
         $<BUILD_INTERFACE:${imgui_SOURCE_DIR}/backends>
-        $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:include/backends>
+        $<INSTALL_INTERFACE:${DART_INCLUDE_INSTALL_DIR}>
+        $<INSTALL_INTERFACE:${DART_INCLUDE_INSTALL_DIR}/backends>
     )
 
     # Link against OpenGL

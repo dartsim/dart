@@ -25,7 +25,7 @@ install(
   FILES ${hdrs}
         ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
         ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
-  DESTINATION include/dart/optimizer
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/optimizer
   COMPONENT headers
 )
 

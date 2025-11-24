@@ -25,7 +25,7 @@ set_property(TARGET dart-baseline-ode PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 target_include_directories(dart-baseline-ode
   PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${DART_INCLUDE_INSTALL_DIR}>
 )
 
 # This is a baseline library for testing only, not for installation

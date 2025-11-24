@@ -17,6 +17,6 @@ dart_generate_component_headers(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/dart.hpp ${DART_GENERATED_COMPAT_HEADERS}
-  DESTINATION include/dart/collision/dart
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/collision/dart
   COMPONENT headers
 )

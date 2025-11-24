@@ -28,6 +28,7 @@ endif()
 
 set(DART_BUILD_COLLISION_BULLET "@DART_BUILD_COLLISION_BULLET@")
 set(DART_BUILD_COLLISION_ODE "@DART_BUILD_COLLISION_ODE@")
+set(DART_INCLUDE_INSTALL_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
 
 #===============================================================================
 function(@PROJECT_NAME@_traverse_components output_variable)

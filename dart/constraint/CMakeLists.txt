@@ -21,7 +21,7 @@ dart_generate_component_headers(
 # and generated PascalCase headers for case compatibility)
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
-  DESTINATION include/dart/constraint
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/constraint
   COMPONENT headers
 )
 # Install generated compat headers while preserving subdirectory structure
@@ -31,6 +31,6 @@ dart_install_compat_headers(
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/constraint/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/constraint/detail
   COMPONENT headers
 )

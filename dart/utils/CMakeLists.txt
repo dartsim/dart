@@ -89,12 +89,12 @@ dart_generate_component_headers(
 # and generated PascalCase headers for case compatibility)
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
-  DESTINATION include/dart/utils
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/utils
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/utils/detail
+  DESTINATION ${DART_INCLUDE_INSTALL_DIR}/utils/detail
   COMPONENT headers
 )
 # Install generated compatibility headers preserving subdirectory structure

@@ -60,7 +60,7 @@ target_include_directories(dart8
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${DART_INCLUDE_INSTALL_DIR}>
 )
 
 target_compile_features(dart8 PUBLIC cxx_std_20)
