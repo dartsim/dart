@@ -8,10 +8,10 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
-#ifdef HAVE_BULLET
+#if HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif
-#ifdef HAVE_ODE
+#if HAVE_ODE
   #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #endif
 
@@ -60,7 +60,7 @@ void defCollisionDetector(nb::module_& m)
           },
           nb::rv_policy::reference_internal);
 
-#ifdef HAVE_BULLET
+#if HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(
       m, "BulletCollisionDetector")
       .def(nb::new_(
@@ -75,7 +75,7 @@ void defCollisionDetector(nb::module_& m)
           nb::rv_policy::reference_internal);
 #endif
 
-#ifdef HAVE_ODE
+#if HAVE_ODE
   nb::class_<dart::collision::OdeCollisionDetector, CollisionDetector>(
       m, "OdeCollisionDetector")
       .def(nb::new_(
