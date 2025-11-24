@@ -67,6 +67,7 @@ dart_add_test(
 dart_add_test("unit" UNIT_dynamics_ShapeNodeInertia dynamics/test_ShapeNodeInertia.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_Noexcept.cpp)
 dart_add_test("unit" UNIT_dynamics_VisualAspect dynamics/test_VisualAspect.cpp)
+dart_add_test("unit" UNIT_dynamics_WeldJointMerge dynamics/test_WeldJointMerge.cpp)
 
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
