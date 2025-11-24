@@ -56,11 +56,16 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     """
     Invoke `cmake --build` for the provided target.
     """
-    parallel = (
+    raw_parallel = (
         os.environ.get("DART_PARALLEL_JOBS")
         or os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL")
         or "1"
     ).strip()
+    try:
+        jobs = int(raw_parallel)
+    except ValueError:
+        jobs = 1
+    jobs = max(jobs, 1)
 
     cmd = [
         "cmake",
@@ -71,7 +76,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
         "--target",
         target,
     ]
-    cmd.extend(["--parallel", parallel])
+    cmd.extend(["--parallel", str(jobs)])
 
     subprocess.check_call(cmd)
 
