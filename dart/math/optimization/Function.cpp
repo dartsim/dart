@@ -84,7 +84,7 @@ void Function::evalHessian(
     Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
 {
   DART_ERROR(
-      "Hessian is not provided by funciton named [{}]. Use Hessian-free "
+      "Hessian is not provided by function named [{}]. Use Hessian-free "
       "algorithm.",
       mName);
 }

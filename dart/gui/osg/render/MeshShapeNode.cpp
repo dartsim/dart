@@ -76,7 +76,7 @@ namespace {
 std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
     const aiMaterial& material)
 {
-  // For now, only sinlge texture is supported. So we only checks whether the
+  // For now, only single texture is supported. So we only checks whether the
   // texture counter is non-zero.
 
   GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NONE)
@@ -879,6 +879,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       || firstTime) {
     bool isColored = false;
     ::osg::StateSet* ss = getOrCreateStateSet();
+    const bool usesDefaultColor = mVisualAspect->usesDefaultColor();
 
     if (mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX) {
       int index = mMeshShape->getColorIndex();
@@ -1024,7 +1025,13 @@ void MeshShapeGeometry::extractData(bool firstTime)
         || mMeshShape->getColorMode()
                == dart::dynamics::MeshShape::SHAPE_COLOR) {
       // Set color
-      const Eigen::Vector4f& c = mVisualAspect->getRGBA().cast<float>();
+      Eigen::Vector4f c = mVisualAspect->getRGBA().cast<float>();
+      if (isColored && usesDefaultColor
+          && mMeshShape->getColorMode()
+                 == dart::dynamics::MeshShape::SHAPE_COLOR) {
+        // Leave textures untouched unless the color was explicitly set.
+        c[0] = c[1] = c[2] = 1.0f;
+      }
       mColors->resize(1);
       (*mColors)[0] = ::osg::Vec4(c[0], c[1], c[2], c[3]);
       setColorArray(mColors);

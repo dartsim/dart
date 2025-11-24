@@ -15,8 +15,11 @@ def compute_parallel_jobs() -> int:
         return min(16, cpus)
 
     if cpus <= 8:
-        return cpus
-    return max(1, (cpus * 3) // 4)
+        jobs = cpus
+    else:
+        jobs = max(1, (cpus * 3) // 4)
+    # Avoid exhausting process limits on beefy self-hosted runners.
+    return min(jobs, 32)
 
 
 def main() -> int:

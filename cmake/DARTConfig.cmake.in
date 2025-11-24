@@ -34,7 +34,7 @@ function(@PROJECT_NAME@_traverse_components output_variable)
   set(output_components)
 
   foreach(component ${ARGN})
-    # We should be able to elminate the <C>_VISITED property by detecting
+    # We should be able to eliminate the <C>_VISITED property by detecting
     # whether the <C>_FOUND property is DEFINED. Unfortunately, DEFINED checks
     # whether or not define_property() was called, not whether the variable was
     # set. The exact behavior seems to vary between CMake versions, so we use

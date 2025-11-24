@@ -102,7 +102,11 @@ requires comps::HasComponentCategory<T>
 void registerCategoryComponent()
 {
   if constexpr (T::serializable) {
-    SerializerRegistry::instance().registerSerializer(
+    auto& registry = SerializerRegistry::instance();
+    if (registry.getSerializer(T::getTypeName()) != nullptr) {
+      return;
+    }
+    registry.registerSerializer(
         std::make_unique<CategoryComponentSerializer<T>>());
   }
 }

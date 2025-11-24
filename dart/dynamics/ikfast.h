@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/** \brief  Header file for all ikfast c++ files/shared objects.
+/** @brief  Header file for all ikfast c++ files/shared objects.
 
     The ikfast inverse kinematics compiler is part of OpenRAVE.
 
@@ -49,7 +49,7 @@
 
 namespace ikfast {
 
-/// \brief holds the solution for a single dof
+/// @brief holds the solution for a single dof
 template <typename T>
 class IkSingleDOFSolutionBase
 {
@@ -64,7 +64,7 @@ public:
     unsigned char indices[5]; ///< unique index of the solution used to keep track on what part it came from. sometimes a solution can be repeated for different indices. store at least another repeated root
 };
 
-/// \brief The discrete solutions are returned in this structure.
+/// @brief The discrete solutions are returned in this structure.
 ///
 /// Sometimes the joint axes of the robot can align allowing an infinite number of solutions.
 /// Stores all these solutions in the form of free variables that the user has to set when querying the solution. Its prototype is:
@@ -74,29 +74,29 @@ class IkSolutionBase
 public:
     virtual ~IkSolutionBase() {
     }
-    /// \brief gets a concrete solution
+    /// @brief gets a concrete solution
     ///
-    /// \param[out] solution the result
-    /// \param[in] freevalues values for the free parameters \se GetFree
+    /// @param[out] solution the result
+    /// @param[in] freevalues values for the free parameters @see GetFree
     virtual void GetSolution(T* solution, const T* freevalues) const = 0;
 
-    /// \brief std::vector version of \ref GetSolution
+    /// @brief std::vector version of @ref GetSolution
     virtual void GetSolution(std::vector<T>& solution, const std::vector<T>& freevalues) const {
         solution.resize(GetDOF());
         GetSolution(&solution.at(0), freevalues.size() > 0 ? &freevalues.at(0) : NULL);
     }
 
-    /// \brief Gets the indices of the configuration space that have to be preset before a full solution can be returned
+    /// @brief Gets the indices of the configuration space that have to be preset before a full solution can be returned
     ///
     /// 0 always points to the first value accepted by the ik function.
-    /// \return vector of indices indicating the free parameters
+    /// @return vector of indices indicating the free parameters
     virtual const std::vector<int>& GetFree() const = 0;
 
-    /// \brief the dof of the solution
+    /// @brief the dof of the solution
     virtual int GetDOF() const = 0;
 };
 
-/// \brief manages all the solutions
+/// @brief manages all the solutions
 template <typename T>
 class IkSolutionListBase
 {
@@ -104,23 +104,23 @@ public:
     virtual ~IkSolutionListBase() {
     }
 
-    /// \brief add one solution and return its index for later retrieval
+    /// @brief add one solution and return its index for later retrieval
     ///
-    /// \param vinfos Solution data for each degree of freedom of the manipulator
-    /// \param vfree If the solution represents an infinite space, holds free parameters of the solution that users can freely set. The indices are of the configuration that the IK solver accepts rather than the entire robot, ie 0 points to the first value accepted.
+    /// @param vinfos Solution data for each degree of freedom of the manipulator
+    /// @param vfree If the solution represents an infinite space, holds free parameters of the solution that users can freely set. The indices are of the configuration that the IK solver accepts rather than the entire robot, ie 0 points to the first value accepted.
     virtual size_t AddSolution(const std::vector<IkSingleDOFSolutionBase<T> >& vinfos, const std::vector<int>& vfree) = 0;
 
-    /// \brief returns the solution pointer
+    /// @brief returns the solution pointer
     virtual const IkSolutionBase<T>& GetSolution(size_t index) const = 0;
 
-    /// \brief returns the number of solutions stored
+    /// @brief returns the number of solutions stored
     virtual size_t GetNumSolutions() const = 0;
 
-    /// \brief clears all current solutions, note that any memory addresses returned from \ref GetSolution will be invalidated.
+    /// @brief clears all current solutions, note that any memory addresses returned from @ref GetSolution will be invalidated.
     virtual void Clear() = 0;
 };
 
-/// \brief holds function pointers for all the exported functions of ikfast
+/// @brief holds function pointers for all the exported functions of ikfast
 template <typename T>
 class IkFastFunctions
 {
@@ -153,7 +153,7 @@ public:
 
 // Implementations of the abstract classes, user doesn't need to use them
 
-/// \brief Default implementation of \ref IkSolutionBase
+/// @brief Default implementation of @ref IkSolutionBase
 template <typename T>
 class IkSolution : public IkSolutionBase<T>
 {
@@ -233,11 +233,11 @@ public:
         }
     }
 
-    std::vector< IkSingleDOFSolutionBase<T> > _vbasesol;       ///< solution and their offsets if joints are mimiced
+    std::vector< IkSingleDOFSolutionBase<T> > _vbasesol;       ///< solution and their offsets if joints are mimicked
     std::vector<int> _vfree;
 };
 
-/// \brief Default implementation of \ref IkSolutionListBase
+/// @brief Default implementation of @ref IkSolutionListBase
 template <typename T>
 class IkSolutionList : public IkSolutionListBase<T>
 {
@@ -299,7 +299,7 @@ typedef IKFAST_REAL IkReal;
 typedef double IkReal;
 #endif
 
-/** \brief Computes all IK solutions given a end effector coordinates and the free joints.
+/** @brief Computes all IK solutions given a end effector coordinates and the free joints.
 
    - ``eetrans`` - 3 translation values. For iktype **TranslationXYOrientation3D**, the z-axis is the orientation.
    - ``eerot``
@@ -310,32 +310,32 @@ typedef double IkReal;
  */
 IKFAST_API bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* pfree, ikfast::IkSolutionListBase<IkReal>& solutions);
 
-/** \brief Similar to ComputeIk except takes OpenRAVE boost::shared_ptr<RobotBase::Manipulator>*
+/** @brief Similar to ComputeIk except takes OpenRAVE boost::shared_ptr<RobotBase::Manipulator>*
  */
 IKFAST_API bool ComputeIk2(const IkReal* eetrans, const IkReal* eerot, const IkReal* pfree, ikfast::IkSolutionListBase<IkReal>& solutions, void* pOpenRAVEManip);
 
-/// \brief Computes the end effector coordinates given the joint values. This function is used to double check ik.
+/// @brief Computes the end effector coordinates given the joint values. This function is used to double check ik.
 IKFAST_API void ComputeFk(const IkReal* joints, IkReal* eetrans, IkReal* eerot);
 
-/// \brief returns the number of free parameters users has to set apriori
+/// @brief returns the number of free parameters users has to set apriori
 IKFAST_API int GetNumFreeParameters();
 
-/// \brief the indices of the free parameters indexed by the chain joints
+/// @brief the indices of the free parameters indexed by the chain joints
 IKFAST_API int* GetFreeParameters();
 
-/// \brief the total number of indices of the chain
+/// @brief the total number of indices of the chain
 IKFAST_API int GetNumJoints();
 
-/// \brief the size in bytes of the configured number type
+/// @brief the size in bytes of the configured number type
 IKFAST_API int GetIkRealSize();
 
-/// \brief the ikfast version used to generate this file
+/// @brief the ikfast version used to generate this file
 IKFAST_API const char* GetIkFastVersion();
 
-/// \brief the ik type ID
+/// @brief the ik type ID
 IKFAST_API int GetIkType();
 
-/// \brief a hash of all the chain values used for double checking that the correct IK is used.
+/// @brief a hash of all the chain values used for double checking that the correct IK is used.
 IKFAST_API const char* GetKinematicsHash();
 
 #ifdef IKFAST_NAMESPACE

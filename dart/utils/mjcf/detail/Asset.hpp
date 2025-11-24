@@ -55,12 +55,12 @@ public:
   /// Default constructor
   Asset() = default;
 
-  /// \{ \name Elements
+  /// \{ @name Elements
 
   /// Returns the number of <mesh> elements in <asset>.
   std::size_t getNumMeshes() const;
 
-  /// Returns <mesh> element at \c index in <asset>.
+  /// Returns <mesh> element at @c index in <asset>.
   const Mesh& getMesh(std::size_t index) const;
 
   /// Finds <mesh> element by name

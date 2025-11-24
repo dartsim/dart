@@ -112,7 +112,7 @@ class DART_API ContactSurfaceHandler
 {
 public:
   /// Constructor
-  /// \param[in] parent Optional parent handler. In ConstraintSolver, the parent
+  /// @param[in] parent Optional parent handler. In ConstraintSolver, the parent
   ///                   handler is automatically set to the previous handler
   ///                   when adding a new one. It is suggested to keep this
   ///                   paradigm if used elsewhere.
@@ -151,7 +151,7 @@ protected:
 
 /// Default contact surface handler. It chooses friction direction of the body
 /// with lower friction coefficient. It also adjusts slip compliance by
-/// mutliplying it with the number of contact points.
+/// multiplying it with the number of contact points.
 class DART_API DefaultContactSurfaceHandler : public ContactSurfaceHandler
 {
 public:

@@ -61,275 +61,275 @@ class Skeleton;
 class TerminalCondition;
 
 //==============================================================================
-/// \brief class State
+/// @brief class State
 class State
 {
 public:
-  /// \brief Constructor
+  /// @brief Constructor
   explicit State(
       dart::dynamics::SkeletonPtr _skeleton, const std::string& _name);
 
-  /// \brief Destructor
+  /// @brief Destructor
   virtual ~State();
 
   //------------------------------- Setting ------------------------------------
-  /// \brief Set name
+  /// @brief Set name
   void setName(std::string& _name);
 
-  /// \brief Get name
+  /// @brief Get name
   const std::string& getName() const;
 
-  /// \brief Set next state
+  /// @brief Set next state
   void setNextState(State* _nextState);
 
-  /// \brief Add terminal condition
+  /// @brief Add terminal condition
   void setTerminalCondition(TerminalCondition* _condition);
 
-  /// \brief Get next state
+  /// @brief Get next state
   State* getNextState() const;
 
-  /// \brief Get elapsed time
+  /// @brief Get elapsed time
   double getElapsedTime() const;
 
   //----------------------- Setting Desired Position ---------------------------
-  /// \brief Set desired joint position whose name is _jointName
+  /// @brief Set desired joint position whose name is _jointName
   void setDesiredJointPosition(const std::string& _jointName, double _val);
 
-  /// \brief Get desired joint position whose index is _idx
+  /// @brief Get desired joint position whose index is _idx
   double getDesiredJointPosition(int _idx) const;
 
-  /// \brief Get desired joint position whose name is _jointName
+  /// @brief Get desired joint position whose name is _jointName
   double getDesiredJointPosition(const std::string& _jointName) const;
 
-  /// \brief Set desired global angle swing leg on sagital plane
-  void setDesiredSwingLegGlobalAngleOnSagital(double _val);
+  /// @brief Set desired global angle swing leg on sagittal plane
+  void setDesiredSwingLegGlobalAngleOnSagittal(double _val);
 
-  /// \brief Set desired global angle swing leg on coronal plane
+  /// @brief Set desired global angle swing leg on coronal plane
   void setDesiredSwingLegGlobalAngleOnCoronal(double _val);
 
-  /// \brief Set desired global angle pelvis on sagital plane
-  void setDesiredPelvisGlobalAngleOnSagital(double _val);
+  /// @brief Set desired global angle pelvis on sagittal plane
+  void setDesiredPelvisGlobalAngleOnSagittal(double _val);
 
-  /// \brief Set desired global angle of pelvis on coronal plane
+  /// @brief Set desired global angle of pelvis on coronal plane
   void setDesiredPelvisGlobalAngleOnCoronal(double _val);
 
-  /// \brief Set proportional gain for PD controller
+  /// @brief Set proportional gain for PD controller
   void setProportionalGain(int _idx, double _val);
 
-  /// \brief Set proportional gain for PD controller
+  /// @brief Set proportional gain for PD controller
   void setProportionalGain(const std::string& _jointName, double _val);
 
-  /// \brief Get proportional gain for PD controller
+  /// @brief Get proportional gain for PD controller
   double getProportionalGain(int _idx) const;
 
-  /// \brief Get proportional gain for PD controller
+  /// @brief Get proportional gain for PD controller
   double getProportionalGain(const std::string& _jointName) const;
 
-  /// \brief Set derivative gain for PD controller
+  /// @brief Set derivative gain for PD controller
   void setDerivativeGain(int _idx, double _val);
 
-  /// \brief Set derivative gain for PD controller
+  /// @brief Set derivative gain for PD controller
   void setDerivativeGain(const std::string& _jointName, double _val);
 
-  /// \brief Get derivative gain for PD controller
+  /// @brief Get derivative gain for PD controller
   double getDerivativeGain(int _idx) const;
 
-  // /// \brief Get derivative gain for PD controller
+  // /// @brief Get derivative gain for PD controller
   // double getDerivativeGain(const std::string& _jointName) const;
 
-  /// \brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackSagitalCOMDistance(std::size_t _index, double _val);
+  /// @brief Set balance feedback gain parameter for sagittal com distance
+  void setFeedbackSagittalCOMDistance(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackSagitalCOMVelocity(std::size_t _index, double _val);
+  /// @brief Set balance feedback gain parameter for sagittal com velocity
+  void setFeedbackSagittalCOMVelocity(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com distance
+  /// @brief Set balance feedback gain parameter for sagittal com distance
   void setFeedbackCoronalCOMDistance(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com velocity
+  /// @brief Set balance feedback gain parameter for sagittal com velocity
   void setFeedbackCoronalCOMVelocity(std::size_t _index, double _val);
 
-  /// \brief Set stance foot to left foot
+  /// @brief Set stance foot to left foot
   void setStanceFootToLeftFoot();
 
-  /// \brief Set stance foot to right foot
+  /// @brief Set stance foot to right foot
   void setStanceFootToRightFoot();
 
   //------------------------------- Control ------------------------------------
-  /// \brief Initiate state. This is called when the state machine transite
+  /// @brief Initiate state. This is called when the state machine transite
   ///        from the previous state to this state.
   virtual void begin(double _currentTime);
 
-  /// \brief Compute control force and apply it to Atlas robot
+  /// @brief Compute control force and apply it to Atlas robot
   virtual void computeControlForce(double _timestep);
 
-  /// \brief Check if terminal condision is satisfied
+  /// @brief Check if terminal condision is satisfied
   virtual bool isTerminalConditionSatisfied() const;
 
-  /// \brief Finalize state. This is called when the state machine stransite
+  /// @brief Finalize state. This is called when the state machine stransite
   ///        from this state to the next state.
   virtual void end(double _currentTime);
 
 protected:
-  /// \brief Get center of mass
+  /// @brief Get center of mass
   Eigen::Vector3d getCOM() const;
 
-  /// \brief Get velocity of center of mass
+  /// @brief Get velocity of center of mass
   Eigen::Vector3d getCOMVelocity() const;
 
-  /// \brief Get a frame such that:
+  /// @brief Get a frame such that:
   ///        1) The origin is at the COM
   ///        2) The z-axis is perpendicular to the ground (y-axis by default)
   ///        3) The x-axis is a projected x-axis of pelvis on to perpendicular
   ///           plane against to the z-axis
   Eigen::Isometry3d getCOMFrame() const;
 
-  /// \brief Get sagital com distance
-  double getSagitalCOMDistance();
+  /// @brief Get sagittal com distance
+  double getSagittalCOMDistance();
 
-  /// \brief Get sagital com velocity
-  double getSagitalCOMVelocity();
+  /// @brief Get sagittal com velocity
+  double getSagittalCOMVelocity();
 
-  /// \brief Get coronal com distance
+  /// @brief Get coronal com distance
   double getCoronalCOMDistance();
 
-  /// \brief Get coronal com velocity
+  /// @brief Get coronal com velocity
   double getCoronalCOMVelocity();
 
-  /// \brief Get stance ankle position
+  /// @brief Get stance ankle position
   Eigen::Vector3d getStanceAnklePosition() const;
 
-  /// \brief Get left ankle position
+  /// @brief Get left ankle position
   Eigen::Vector3d getLeftAnklePosition() const;
 
-  /// \brief Get right ankle position
+  /// @brief Get right ankle position
   Eigen::Vector3d getRightAnklePosition() const;
 
   // TODO(JS): Not implemented yet
-  /// \brief Get global pelvis upvector angle on sagital plane
-  double getSagitalPelvisAngle() const;
+  /// @brief Get global pelvis upvector angle on sagittal plane
+  double getSagittalPelvisAngle() const;
 
   // TODO(JS): Not implemented yet
-  /// \brief Get global pelvis upvector angle on coronal plane
+  /// @brief Get global pelvis upvector angle on coronal plane
   double getCoronalPelvisAngle() const;
 
-  /// \brief Get global left leg angle on sagital plane
-  double getSagitalLeftLegAngle() const;
+  /// @brief Get global left leg angle on sagittal plane
+  double getSagittalLeftLegAngle() const;
 
-  /// \brief Get global right leg angle on sagital plane
-  double getSagitalRightLegAngle() const;
+  /// @brief Get global right leg angle on sagittal plane
+  double getSagittalRightLegAngle() const;
 
-  /// \brief Get global left leg angle on coronal plane
+  /// @brief Get global left leg angle on coronal plane
   double getCoronalLeftLegAngle() const;
 
-  /// \brief Get global right leg angle on coronal plane
+  /// @brief Get global right leg angle on coronal plane
   double getCoronalRightLegAngle() const;
 
-  /// \brief Name
+  /// @brief Name
   std::string mName;
 
-  /// \brief Target skeleton for control
+  /// @brief Target skeleton for control
   dart::dynamics::SkeletonPtr mSkeleton;
 
-  /// \brief Next state. Default is myself.
+  /// @brief Next state. Default is myself.
   State* mNextState;
 
-  /// \brief Terminal condition
+  /// @brief Terminal condition
   TerminalCondition* mTerminalCondition;
 
-  /// \brief Started time
+  /// @brief Started time
   double mBeginTime;
 
-  /// \brief Stopped time
+  /// @brief Stopped time
   double mEndTime;
 
-  /// \brief Frame number
+  /// @brief Frame number
   int mFrame;
 
-  /// \brief Elapsed time which is stopped time minus started time
+  /// @brief Elapsed time which is stopped time minus started time
   double mElapsedTime;
 
-  /// \brief Desired joint positions
+  /// @brief Desired joint positions
   Eigen::VectorXd mDesiredJointPositions;
 
-  /// \brief Desired global angle of swing leg on sagital plane
-  double mDesiredGlobalSwingLegAngleOnSagital;
+  /// @brief Desired global angle of swing leg on sagittal plane
+  double mDesiredGlobalSwingLegAngleOnSagittal;
 
-  /// \brief Desired global angle of swing leg on coronal plane
+  /// @brief Desired global angle of swing leg on coronal plane
   double mDesiredGlobalSwingLegAngleOnCoronal;
 
-  /// \brief Desired global angle of pelvis on sagital plane
-  double mDesiredGlobalPelvisAngleOnSagital;
+  /// @brief Desired global angle of pelvis on sagittal plane
+  double mDesiredGlobalPelvisAngleOnSagittal;
 
-  /// \brief Desired global angle of pelvis on coronal plane
+  /// @brief Desired global angle of pelvis on coronal plane
   double mDesiredGlobalPelvisAngleOnCoronal;
 
-  /// \brief Proportional gain for PD controller
+  /// @brief Proportional gain for PD controller
   Eigen::VectorXd mKp;
 
-  /// \brief Derivative gain PD controller
+  /// @brief Derivative gain PD controller
   Eigen::VectorXd mKd;
 
-  /// \brief Feedback gain for com
-  Eigen::VectorXd mSagitalCd;
+  /// @brief Feedback gain for com
+  Eigen::VectorXd mSagittalCd;
 
-  /// \brief Feedback gain for velocity of com
-  Eigen::VectorXd mSagitalCv;
+  /// @brief Feedback gain for velocity of com
+  Eigen::VectorXd mSagittalCv;
 
-  /// \brief Feedback gain for com
+  /// @brief Feedback gain for com
   Eigen::VectorXd mCoronalCd;
 
-  /// \brief Feedback gain for velocity of com
+  /// @brief Feedback gain for velocity of com
   Eigen::VectorXd mCoronalCv;
 
-  /// \brief Computeed control force
+  /// @brief Computeed control force
   Eigen::VectorXd mTorque;
 
-  /// \brief Joint map
+  /// @brief Joint map
   std::map<const std::string, int> mJointMap;
 
 private:
-  /// \brief Get the parent joint's position of _bodyNode
+  /// @brief Get the parent joint's position of _bodyNode
   Eigen::Vector3d _getJointPosition(dart::dynamics::BodyNode* _bodyNode) const;
 
-  /// \brief Compute the angle between two vectors
+  /// @brief Compute the angle between two vectors
   double _getAngleBetweenTwoVectors(
       const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2) const;
 
-  /// \brief Update torque for torso and swing hip
+  /// @brief Update torque for torso and swing hip
   void _updateTorqueForStanceLeg();
 
-  /// \brief Pelvis body node
+  /// @brief Pelvis body node
   dart::dynamics::BodyNode* mPelvis;
 
-  /// \brief Left foot body node
+  /// @brief Left foot body node
   dart::dynamics::BodyNode* mLeftThigh;
 
-  /// \brief Right foot body node
+  /// @brief Right foot body node
   dart::dynamics::BodyNode* mRightThigh;
 
-  /// \brief Left foot body node
+  /// @brief Left foot body node
   dart::dynamics::BodyNode* mStanceFoot;
 
-  /// \brief Left foot body node
+  /// @brief Left foot body node
   dart::dynamics::BodyNode* mLeftFoot;
 
-  /// \brief Right foot body node
+  /// @brief Right foot body node
   dart::dynamics::BodyNode* mRightFoot;
 
-  /// \brief Index for coronal left hip
+  /// @brief Index for coronal left hip
   std::size_t mCoronalLeftHip;
 
-  /// \brief Index for coronal right hip
+  /// @brief Index for coronal right hip
   std::size_t mCoronalRightHip;
 
-  /// \brief Index for sagital left hip
-  std::size_t mSagitalLeftHip;
+  /// @brief Index for sagittal left hip
+  std::size_t mSagittalLeftHip;
 
-  /// \brief Index for sagital right hip
-  std::size_t mSagitalRightHip;
+  /// @brief Index for sagittal right hip
+  std::size_t mSagittalRightHip;
 
-  /// \brief Desired joint positions with balance feedback
+  /// @brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;
 };
 

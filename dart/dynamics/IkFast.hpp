@@ -133,16 +133,16 @@ public:
 
   /// Constructor
   ///
-  /// \param[in] ik The parent InverseKinematics solver that is associated with
+  /// @param[in] ik The parent InverseKinematics solver that is associated with
   /// this gradient method.
-  /// \param[in] dofMap The indices to the degrees-of-freedom that will be
+  /// @param[in] dofMap The indices to the degrees-of-freedom that will be
   /// solved by IkFast. The number of DOFs can be varied depending on the IkFast
   /// solvers.
-  /// \param[in] freeDofMap The indices to the DOFs that are not solved by the
+  /// @param[in] freeDofMap The indices to the DOFs that are not solved by the
   /// IkFast solver. The values of these DOFs should be set properly.
-  /// \param[in] methodName The name of this analytical inverse kinematics
+  /// @param[in] methodName The name of this analytical inverse kinematics
   /// method.
-  /// \param[in] properties Properties of InverseKinematics::Analytical.
+  /// @param[in] properties Properties of InverseKinematics::Analytical.
   IkFast(
       InverseKinematics* ik,
       const std::vector<std::size_t>& dofMap,
@@ -173,7 +173,7 @@ public:
   std::size_t getNumFreeParameters2() const;
   // TODO(JS): Rename to getNumFreeParameters() in DART 7
 
-  /// Returns the total number of indices of the chane.
+  /// Returns the total number of indices of the chain.
   std::size_t getNumJoints2() const;
   // TODO(JS): Rename to getNumJoints in DART 7
 
@@ -195,11 +195,11 @@ protected:
   virtual int getNumFreeParameters() const = 0;
   // TODO(JS): Remove in DART 7
 
-  /// Returns the indicies of the free parameters indexed by the chain joints.
+  /// Returns the indices of the free parameters indexed by the chain joints.
   virtual int* getFreeParameters() const = 0;
   // TODO(JS): Remove in DART 7
 
-  /// Returns the total number of indices of the chane.
+  /// Returns the total number of indices of the chain.
   virtual int getNumJoints() const = 0;
   // TODO(JS): Remove in DART 7
 
@@ -264,13 +264,13 @@ private:
 /// If multiple solution are available (when the range is wider than 2*pi),
 /// returns the closest solution to the current joint position.
 ///
-/// \param[in] curr The current joint positions before solving IK.
-/// \param[in] lb The lower joint position limit.
-/// \param[in] ub The upper joint position limit.
-/// \param[in,out] sol The IK solution to be wrapped. No assumption that the
+/// @param[in] curr The current joint positions before solving IK.
+/// @param[in] lb The lower joint position limit.
+/// @param[in] ub The upper joint position limit.
+/// @param[in,out] sol The IK solution to be wrapped. No assumption that the
 /// value initially in the bounds. This value is only updated if an available
 /// solution is found.
-/// \return True if a solution is found. False, otherwise.
+/// @return True if a solution is found. False, otherwise.
 DART_API bool wrapCyclicSolution(
     double curr, double lb, double ub, double& sol);
 

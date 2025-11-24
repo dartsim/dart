@@ -56,15 +56,15 @@ class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
-/// \sa class ConstraintSolver
+/// @sa class ConstraintSolver
 class ConstrainedGroup
 {
 public:
   //----------------------------------------------------------------------------
-  // Constructor / Desctructor
+  // Constructor / Destructor
   //----------------------------------------------------------------------------
 
-  /// Default contructor
+  /// Default constructor
   ConstrainedGroup();
 
   /// Destructor
@@ -92,7 +92,7 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
-  /// Get total dimension of contraints in this group
+  /// Get total dimension of constraints in this group
   std::size_t getTotalDimension() const;
 
   //----------------------------------------------------------------------------

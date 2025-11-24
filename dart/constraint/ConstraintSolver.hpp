@@ -79,7 +79,7 @@ public:
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
 
-  /// Add mutiple skeletons
+  /// Add multiple skeletons
   void addSkeletons(std::span<const dynamics::SkeletonPtr> skeletons);
 
   /// Returns all the skeletons added to this ConstraintSolver.
@@ -115,24 +115,24 @@ public:
 
   /// Iterates all the constraints and invokes the callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(const ConstraintBase*) or \c bool(const
-  /// ConstraintBase*). If you want to conditionally iterate, use \c bool(const
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(const ConstraintBase*) or @c bool(const
+  /// ConstraintBase*). If you want to conditionally iterate, use @c bool(const
   /// ConstraintBase*) and return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each
+  /// @param[in] func: The callback function to be called for each
   /// ConstraintBase.
   template <typename Func>
   void eachConstraint(Func func) const;
 
   /// Iterates all the constraints and invokes the callback function.
   ///
-  /// \tparam Func: The callback function type. The function signature should be
-  /// equivalent to \c void(ConstraintBase*) or \c bool(ConstraintBase*). If
-  /// you want to conditionally iterate, use \c bool(ConstraintBase*) and
+  /// @tparam Func: The callback function type. The function signature should be
+  /// equivalent to @c void(ConstraintBase*) or @c bool(ConstraintBase*). If
+  /// you want to conditionally iterate, use @c bool(ConstraintBase*) and
   /// return false when to stop iterating.
   ///
-  /// \param[in] func: The callback function to be called for each
+  /// @param[in] func: The callback function to be called for each
   /// ConstraintBase.
   template <typename Func>
   void eachConstraint(Func func);

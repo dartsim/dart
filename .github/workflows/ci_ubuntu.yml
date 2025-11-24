@@ -51,6 +51,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Remove preinstalled pixi (if any)
+        run: rm -f "$HOME/.pixi/bin/pixi"
+
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -107,6 +110,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Remove preinstalled pixi (if any)
+        run: rm -f "$HOME/.pixi/bin/pixi"
+
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -143,6 +149,7 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all
 
       - name: Test with AddressSanitizer
@@ -165,6 +172,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Remove preinstalled pixi (if any)
+        run: rm -f "$HOME/.pixi/bin/pixi"
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
@@ -196,4 +206,5 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_BUILD_DART8_OVERRIDE=OFF \
           pixi run test-all

@@ -59,13 +59,13 @@ class EigenSE3
 public:
   explicit EigenSE3(const Eigen::Matrix4d& T) : mT(T) {}
 
-  /// \brief multiplication operator
+  /// @brief multiplication operator
   inline EigenSE3 operator*(const EigenSE3& T) const
   {
     return EigenSE3(mT * T.mT);
   }
 
-  /// \brief multiplication operator
+  /// @brief multiplication operator
   inline const EigenSE3& operator*=(const EigenSE3& T)
   {
     mT *= T.mT;
@@ -1155,7 +1155,7 @@ TEST(Math, Inversion)
 ////    EXPECT_EQ(Ad(T, Ad(Inv(T), V)), V);
 //}
 
-///// \brief
+///// @brief
 // Eigen::Matrix<double,6,6> Ad(const SE3& T)
 //{
 //    Eigen::Matrix<double,6,6> AdT = Eigen::Matrix<double,6,6>::Zero();
@@ -1181,7 +1181,7 @@ TEST(Math, Inversion)
 //    return AdT;
 //}
 
-///// \brief
+///// @brief
 // Eigen::Matrix<double,6,6> dAd(const SE3& T)
 //{
 //    return Ad(T).transpose();

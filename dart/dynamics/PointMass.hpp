@@ -152,7 +152,7 @@ public:
   };
 
   //--------------------------------------------------------------------------
-  // Constructor and Desctructor
+  // Constructor and Destructor
   //--------------------------------------------------------------------------
 
   /// Default destructor
@@ -200,11 +200,11 @@ public:
   /// Set whether this point mass is colliding with other objects. Note that
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
-  /// \param[in] _isColliding True if this point mass is colliding.
+  /// @param[in] _isColliding True if this point mass is colliding.
   void setColliding(bool _isColliding);
 
   /// Return whether this point mass is set to be colliding with other objects.
-  /// \return True if this point mass is colliding.
+  /// @return True if this point mass is colliding.
   bool isColliding();
 
   //----------------------------------------------------------------------------
@@ -336,8 +336,8 @@ public:
   //----------------------------------------------------------------------------
 
   /// Add linear Cartesian force to this node.
-  /// \param[in] _force External force.
-  /// \param[in] _isForceLocal True if _force's reference frame is of the parent
+  /// @param[in] _force External force.
+  /// @param[in] _isForceLocal True if _force's reference frame is of the parent
   ///                          soft body node. False if _force's reference frame
   ///                          is of the world.
   void addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal = false);
@@ -376,7 +376,7 @@ public:
   ///
   const Eigen::Vector3d& getWorldPosition() const;
 
-  /// \todo Temporary function.
+  /// @todo Temporary function.
   Eigen::Matrix<double, 3, Eigen::Dynamic> getBodyJacobian();
   Eigen::Matrix<double, 3, Eigen::Dynamic> getWorldJacobian();
 
@@ -422,64 +422,64 @@ protected:
   void init();
 
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ @name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// \brief Update transformation.
+  /// @brief Update transformation.
   void updateTransform() const;
 
-  /// \brief Update body velocity.
+  /// @brief Update body velocity.
   void updateVelocity() const;
 
-  /// \brief Update partial body acceleration due to parent joint's velocity.
+  /// @brief Update partial body acceleration due to parent joint's velocity.
   void updatePartialAcceleration() const;
 
-  /// \brief Update articulated body inertia. Forward dynamics routine.
-  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  /// @brief Update articulated body inertia. Forward dynamics routine.
+  /// @param[in] _timeStep Required for implicit joint stiffness and damping.
   void updateArtInertiaFD(double _timeStep) const;
 
-  /// \brief Update bias force associated with the articulated body inertia.
+  /// @brief Update bias force associated with the articulated body inertia.
   /// Forward dynamics routine.
-  /// \param[in] _dt Required for implicit joint stiffness and damping.
-  /// \param[in] _gravity Vector of gravitational acceleration
+  /// @param[in] _dt Required for implicit joint stiffness and damping.
+  /// @param[in] _gravity Vector of gravitational acceleration
   void updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity);
 
-  /// \brief Update bias impulse associated with the articulated body inertia.
+  /// @brief Update bias impulse associated with the articulated body inertia.
   /// Impulse-based forward dynamics routine.
   void updateBiasImpulseFD();
 
-  /// \brief Update body acceleration with the partial body acceleration.
+  /// @brief Update body acceleration with the partial body acceleration.
   void updateAccelerationID() const;
 
-  /// \brief Update body acceleration. Forward dynamics routine.
+  /// @brief Update body acceleration. Forward dynamics routine.
   void updateAccelerationFD();
 
-  /// \brief Update body velocity change. Impluse-based forward dynamics
+  /// @brief Update body velocity change. Impluse-based forward dynamics
   /// routine.
   void updateVelocityChangeFD();
 
-  /// \brief Update body force. Inverse dynamics routine.
+  /// @brief Update body force. Inverse dynamics routine.
   void updateTransmittedForceID(
       const Eigen::Vector3d& _gravity, bool _withExternalForces = false);
 
-  /// \brief Update body force. Forward dynamics routine.
+  /// @brief Update body force. Forward dynamics routine.
   void updateTransmittedForce();
 
-  /// \brief Update body force. Impulse-based forward dynamics routine.
+  /// @brief Update body force. Impulse-based forward dynamics routine.
   void updateTransmittedImpulse();
 
-  /// \brief Update the joint force. Inverse dynamics routine.
+  /// @brief Update the joint force. Inverse dynamics routine.
   void updateJointForceID(
       double _timeStep, double _withDampingForces, double _withSpringForces);
 
-  /// \brief Update constrained terms due to the constraint impulses. Foward
+  /// @brief Update constrained terms due to the constraint impulses. Forward
   /// dynamics routine.
   void updateConstrainedTermsFD(double _timeStep);
 
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Equations of motion related routines
+  /// \{ @name Equations of motion related routines
   //----------------------------------------------------------------------------
 
   ///
@@ -646,7 +646,7 @@ protected:
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
 
-  //------------------------- Impulse-based Dyanmics ---------------------------
+  //------------------------- Impulse-based Dynamics ---------------------------
   /// Velocity change due to constraint impulse
   Eigen::Vector3d mDelV;
 

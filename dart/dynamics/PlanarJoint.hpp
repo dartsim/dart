@@ -43,7 +43,7 @@ namespace dynamics {
 /// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
 /// axes and one rotational axis.
 ///
-/// First and second coordiantes represent translation along first and second
+/// First and second coordinates represent translation along first and second
 /// translational axes, respectively. Third coordinate represents rotation
 /// along rotational axis.
 class DART_API PlanarJoint : public detail::PlanarJointBase
@@ -83,6 +83,12 @@ public:
   /// Same as copy(const PlanarJoint&)
   PlanarJoint& operator=(const PlanarJoint& _otherJoint);
 
+  /// Convert a 2D transform into planar joint positions (x, y, yaw).
+  static Eigen::Vector3d convertToPositions(const Eigen::Isometry2d& tf);
+
+  /// Convert planar joint positions into a 2D transform.
+  static Eigen::Isometry2d convertToTransform(const Eigen::Vector3d& positions);
+
   // Documentation inherited
   const std::string& getType() const override;
 
@@ -92,26 +98,26 @@ public:
   // Documentation inherited
   bool isCyclic(std::size_t _index) const override;
 
-  /// \brief Set plane type as XY-plane
-  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// @brief Set plane type as XY-plane
+  /// @param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setXYPlane(bool _renameDofs = true);
 
-  /// \brief Set plane type as YZ-plane
-  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// @brief Set plane type as YZ-plane
+  /// @param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setYZPlane(bool _renameDofs = true);
 
-  /// \brief Set plane type as ZX-plane
-  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// @brief Set plane type as ZX-plane
+  /// @param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setZXPlane(bool _renameDofs = true);
 
-  /// \brief Set plane type as arbitrary plane with two orthogonal translational
+  /// @brief Set plane type as arbitrary plane with two orthogonal translational
   /// axes
-  /// \param[in] _transAxis1 An orthogonal translational axis
-  /// \param[in] _transAxis2 Another orthogonal translation axis
-  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// @param[in] _transAxis1 An orthogonal translational axis
+  /// @param[in] _transAxis2 Another orthogonal translation axis
+  /// @param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setArbitraryPlane(
       const Eigen::Vector3d& _transAxis1,

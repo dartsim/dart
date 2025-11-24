@@ -109,7 +109,7 @@ void StateMachine::begin(double _currentTime)
 //==============================================================================
 void StateMachine::computeControlForce(double _dt)
 {
-  DART_ASSERT(mCurrentState != nullptr && "Invaild current state.");
+  DART_ASSERT(mCurrentState != nullptr && "Invalid current state.");
 
   // Check transition is needed from current state
   if (mCurrentState->isTerminalConditionSatisfied())
@@ -167,7 +167,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
   // _state should be in mStates
   State* state = _findState(_stateName);
 
-  DART_ASSERT(state != nullptr && "Invaild state.");
+  DART_ASSERT(state != nullptr && "Invalid state.");
 
   transiteTo(state, _currentTime);
 }

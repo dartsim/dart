@@ -237,7 +237,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
     // file URI needs it to represent an empty authority,
     const std::string testUri = "file:///" + testPath;
 #else
-    // wherease on Unix systems the additional forward slash is not required
+    // whereas on Unix systems the additional forward slash is not required
     // since an absolute path already has it.
     const std::string testUri = "file://" + testPath;
 #endif
@@ -305,7 +305,7 @@ TEST(UriHelpers, getRelativeUri)
     ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
     EXPECT_EQ(expectedUri, mergedUri.toString());
 
-    // Backwards compatability mode
+    // Backwards compatibility mode
     ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, false));
     EXPECT_EQ(expectedUri, mergedUri.toString());
   }
@@ -318,7 +318,7 @@ TEST(UriHelpers, getRelativeUri)
   // TODO: I'm not sure what we have to do to implement this. The approach
   // described in the RFC doesn't seem to produce the expected result.
 #if 0
-  // Backwards compatability mode behavior.
+  // Backwards compatibility mode behavior.
   ASSERT_TRUE(relativeUri.fromString("http:g"));
   ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", false));
   EXPECT_EQ("http://a/b/c/g", mergedUri.toString());

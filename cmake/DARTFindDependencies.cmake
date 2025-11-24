@@ -118,7 +118,7 @@ endif()
 # Optional dependencies
 #=======================
 
-if(DART_BUILD_PROFILE)
+if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
     find_package(Tracy CONFIG REQUIRED)
   else()
