@@ -32,10 +32,15 @@
 
 #include "dart/dynamics/WeldJoint.hpp"
 
+#include "dart/common/Logging.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FixedFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
@@ -76,6 +81,93 @@ bool WeldJoint::isCyclic(std::size_t /*_index*/) const
 WeldJoint::Properties WeldJoint::getWeldJointProperties() const
 {
   return getZeroDofJointProperties();
+}
+
+//==============================================================================
+BodyNode* WeldJoint::merge()
+{
+  // Before:
+  //   parent --[WeldJoint]--> child --[any joints]--> grandchildren...
+  // After:
+  //   parent absorbs child (inertia, forces, nodes) and grandchildren attach to parent.
+  BodyNode* parent = getParentBodyNode();
+  BodyNode* child = getChildBodyNode();
+
+  if (nullptr == parent || nullptr == child) {
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the joint does not have a "
+        "valid parent or child BodyNode.");
+    return nullptr;
+  }
+
+  const SkeletonPtr& parentSkeleton = parent->getSkeleton();
+  const SkeletonPtr& childSkeleton = child->getSkeleton();
+
+  if (!parentSkeleton || parentSkeleton != childSkeleton) {
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the parent and child "
+        "BodyNodes are not in the same Skeleton.");
+    return nullptr;
+  }
+
+  if (parent == child) {
+    DART_ERROR(
+        "[WeldJoint::merge] Merge failed because the parent and child "
+        "BodyNodes are identical.");
+    return nullptr;
+  }
+
+  const Eigen::Isometry3d parentToChild = getRelativeTransform();
+
+  // Combine inertial properties in the parent frame.
+  const Eigen::Matrix6d parentSpatial = parent->getSpatialInertia();
+  const Eigen::Matrix6d childSpatial = child->getSpatialInertia();
+  const Eigen::Matrix6d childInParent
+      = math::transformInertia(parentToChild, childSpatial);
+  parent->setInertia(Inertia(parentSpatial + childInParent));
+
+  // Preserve accumulated external forces.
+  const Eigen::Vector6d childExternal
+      = math::dAdInvT(parentToChild, child->getExternalForceLocal());
+  parent->addExtForce(
+      childExternal.tail<3>(), Eigen::Vector3d::Zero(), true, true);
+  parent->addExtTorque(childExternal.head<3>(), true);
+
+  // Clone Nodes that belong to the child onto the parent while preserving
+  // world-space pose for FixedFrame-derived Nodes.
+  const Eigen::Isometry3d worldToParent = parent->getWorldTransform().inverse();
+  const auto nodes = child->getNodes();
+  for (const Node* node : nodes) {
+    const Frame* frame = dynamic_cast<const Frame*>(node);
+    Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+    if (frame)
+      worldTf = frame->getTransform();
+
+    Node* clone = node->cloneNode(parent);
+    clone->attach();
+
+    if (auto* fixed = dynamic_cast<FixedFrame*>(clone)) {
+      fixed->setRelativeTransform(worldToParent * worldTf);
+    }
+  }
+
+  // Reparent grandchildren while keeping their world transforms intact.
+  std::vector<BodyNode*> grandchildren;
+  grandchildren.reserve(child->getNumChildBodyNodes());
+  for (std::size_t i = 0; i < child->getNumChildBodyNodes(); ++i)
+    grandchildren.push_back(child->getChildBodyNode(i));
+
+  for (BodyNode* grandchild : grandchildren) {
+    Joint* joint = grandchild->getParentJoint();
+    const Eigen::Isometry3d updated
+        = parentToChild * joint->getTransformFromParentBodyNode();
+    joint->setTransformFromParentBodyNode(updated);
+    grandchild->moveTo(parent);
+  }
+
+  // Remove the child BodyNode (and this WeldJoint) from the Skeleton.
+  child->remove();
+  return parent;
 }
 
 //==============================================================================
