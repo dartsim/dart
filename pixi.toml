@@ -1038,19 +1038,6 @@ test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
 
-# Docker build tasks - Test Docker images locally
-# Requires Docker to be installed on the system
-# Usage:
-#   pixi run docker-build                              # Build all Ubuntu versions
-#   pixi run docker-build-ubuntu jammy                 # Build Ubuntu 22.04 (by codename)
-#   pixi run docker-build-ubuntu 22.04                 # Build Ubuntu 22.04 (by version)
-#   pixi run docker-build-ubuntu 24.04                 # Build Ubuntu 24.04 (by version)
-docker-build = { cmd = "python scripts/build_docker.py all" }
-
-docker-build-ubuntu = { cmd = "python scripts/build_docker.py ubuntu {{ distro }}", args = [
-  { arg = "distro", default = "jammy" },
-] }
-
 config-asan = { cmd = [
   "bash",
   "-lc",
@@ -1100,7 +1087,8 @@ build-asan = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests
+PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests --parallel ${PARALLEL_JOBS}
 """,
 ], depends-on = [
   "config-asan",

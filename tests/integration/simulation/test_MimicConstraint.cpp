@@ -239,6 +239,8 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 #if HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
+#else
+  (void)world;
 #endif
 }
 

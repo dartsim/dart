@@ -31,6 +31,7 @@ __path__ = _candidate_package_dirs()  # type: ignore[var-annotated]
 
 
 from . import _dartpy as _ext  # type: ignore[attr-defined]
+__version__ = getattr(_ext, "__version__", None)
 
 
 def _alias_extension_submodules() -> None:
