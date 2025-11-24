@@ -43,7 +43,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 ImGuiWidget::ImGuiWidget() : mIsVisible(true)
 {

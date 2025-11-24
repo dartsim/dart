@@ -38,7 +38,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
   : Viewer(clearColor),

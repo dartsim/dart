@@ -160,8 +160,7 @@ int main()
   dart::gui::Viewer viewer;
 
   // Create shadow technique
-  auto shadow
-      = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
+  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 
   // Create custom world node
   ::osg::ref_ptr<RigidCubesWorldNode> worldNode

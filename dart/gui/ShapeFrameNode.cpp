@@ -81,7 +81,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 ShapeFrameNode::ShapeFrameNode(
     dart::dynamics::ShapeFrame* _frame, WorldNode* _worldNode)

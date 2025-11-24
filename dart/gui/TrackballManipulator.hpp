@@ -40,7 +40,6 @@
 namespace dart {
 namespace gui {
 
-
 #define DART_META_Object(library, name)                                        \
   ::osg::Object* cloneType() const override                                    \
   {                                                                            \

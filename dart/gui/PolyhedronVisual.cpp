@@ -45,7 +45,6 @@
 namespace dart {
 namespace gui {
 
-
 namespace {
 
 Eigen::Vector3d computeSafeNormal(const Eigen::Vector3d& normal)

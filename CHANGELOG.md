@@ -356,7 +356,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Added force dependent slip: [#1505](https://github.com/dartsim/dart/pull/1505)
 
 - GUI
-  - Fixed memory leaks from dart::gui::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
+  - Fixed memory leaks from dart::gui::osg::Viewer: [#1349](https://github.com/dartsim/dart/pull/1349)
   - Added point rendering mode to PointCloudShape: [#1351](https://github.com/dartsim/dart/pull/1351), [#1355](https://github.com/dartsim/dart/pull/1355)
   - Updated ImGui to 1.71: [#1362](https://github.com/dartsim/dart/pull/1362)
   - Updated ImGui to 1.79: [#1498](https://github.com/dartsim/dart/pull/1498)
@@ -476,7 +476,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Improved voxel rendering by using multiple nodes instead of CompositeShape: [#1334](https://github.com/dartsim/dart/pull/1334)
 
 - Examples and Tutorials
-  - Updated examples directory to make dart::gui more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
+  - Updated examples directory to make dart::gui::osg more accessible: [#1305](https://github.com/dartsim/dart/pull/1305)
 
 - dartpy
   - Switched to pybind11: [#1307](https://github.com/dartsim/dart/pull/1307)

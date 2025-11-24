@@ -45,7 +45,6 @@
 namespace dart {
 namespace gui {
 
-
 /// Attach this to a Viewer in order to visualize grid.
 class DART_GUI_API GridVisual : public ViewerAttachment
 {

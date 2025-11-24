@@ -52,7 +52,6 @@
 namespace dart {
 namespace gui {
 
-
 std::string toString(CameraMode mode)
 {
   switch (mode) {

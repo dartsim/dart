@@ -708,8 +708,7 @@ int main()
   ::osg::ref_ptr<PointCloudWorld> node = new PointCloudWorld(world, robot);
 
   // Create the Viewer instance
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer
-      = new dart::gui::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
   viewer->simulate(true);
 

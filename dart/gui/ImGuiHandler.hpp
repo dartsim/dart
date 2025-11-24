@@ -53,7 +53,6 @@
 namespace dart {
 namespace gui {
 
-
 class ImGuiWidget;
 
 class DART_GUI_API ImGuiHandler : public osgGA::GUIEventHandler

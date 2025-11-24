@@ -57,7 +57,6 @@ class ShapeFrame;
 
 namespace gui {
 
-
 class FrameNode;
 class ShapeFrameNode;
 class EntityNode;

@@ -837,8 +837,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
-void enableDragAndDrops(
-    dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
+void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i)

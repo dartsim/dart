@@ -50,7 +50,6 @@ class VisualAspect;
 
 namespace gui {
 
-
 class Node;
 class Group;
 class EntityNode;

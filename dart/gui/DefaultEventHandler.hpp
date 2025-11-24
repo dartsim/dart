@@ -56,7 +56,6 @@ class Entity;
 
 namespace gui {
 
-
 struct PickInfo
 {
   dart::dynamics::ShapeFrame* frame;

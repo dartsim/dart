@@ -41,7 +41,6 @@
 namespace dart {
 namespace gui {
 
-
 class DART_GUI_API RealTimeWorldNode : public WorldNode
 {
 public:

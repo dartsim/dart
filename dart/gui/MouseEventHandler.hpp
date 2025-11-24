@@ -43,7 +43,6 @@
 namespace dart {
 namespace gui {
 
-
 class DefaultEventHandler;
 
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN

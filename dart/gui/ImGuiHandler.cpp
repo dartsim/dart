@@ -51,7 +51,6 @@
 namespace dart {
 namespace gui {
 
-
 #if IMGUI_VERSION_NUM < 19150
 
 // Special keys that are usually greater than 512 in osgGA

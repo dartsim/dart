@@ -78,9 +78,8 @@ void defDragAndDrop(nb::module_& m)
       .def("move", &dart::gui::SimpleFrameDnD::move)
       .def("saveState", &dart::gui::SimpleFrameDnD::saveState);
 
-  nb::class_<
-      dart::gui::SimpleFrameShapeDnD,
-      dart::gui::SimpleFrameDnD>(m, "SimpleFrameShapeDnD")
+  nb::class_<dart::gui::SimpleFrameShapeDnD, dart::gui::SimpleFrameDnD>(
+      m, "SimpleFrameShapeDnD")
       .def(
           nb::init<
               dart::gui::Viewer*,
@@ -102,11 +101,7 @@ void defDragAndDrop(nb::module_& m)
           nb::arg("bn"),
           nb::arg("useExternalIK"))
       .def(
-          nb::init<
-              dart::gui::Viewer*,
-              dart::dynamics::BodyNode*,
-              bool,
-              bool>(),
+          nb::init<dart::gui::Viewer*, dart::dynamics::BodyNode*, bool, bool>(),
           nb::arg("viewer"),
           nb::arg("bn"),
           nb::arg("useExternalIK"),
@@ -153,9 +148,7 @@ void defDragAndDrop(nb::module_& m)
   nb::class_<dart::gui::InteractiveFrameDnD, DragAndDrop>(
       m, "InteractiveFrameDnD")
       .def(
-          nb::init<
-              dart::gui::Viewer*,
-              dart::gui::InteractiveFrame*>(),
+          nb::init<dart::gui::Viewer*, dart::gui::InteractiveFrame*>(),
           nb::arg("viewer"),
           nb::arg("frame"))
       .def("update", &dart::gui::InteractiveFrameDnD::update)

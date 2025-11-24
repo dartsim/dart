@@ -46,7 +46,6 @@
 namespace dart {
 namespace gui {
 
-
 DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
   : mViewer(viewer),
     mEntity(entity),

@@ -47,7 +47,6 @@
 namespace dart {
 namespace gui {
 
-
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
     mLastCursorPosition(Eigen::Vector2d::Zero()),

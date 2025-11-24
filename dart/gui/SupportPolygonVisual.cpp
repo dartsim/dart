@@ -42,7 +42,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(
     const dart::dynamics::SkeletonPtr& skeleton, double elevation)

@@ -54,7 +54,6 @@ class SimpleFrame;
 
 namespace gui {
 
-
 class Viewer;
 class InteractiveFrame;
 

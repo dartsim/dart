@@ -40,7 +40,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 InteractiveTool::InteractiveTool(
     InteractiveFrame* frame, double defaultAlpha, const std::string& name)

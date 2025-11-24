@@ -65,7 +65,6 @@ class BodyNode;
 
 namespace gui {
 
-
 namespace detail {
 class CameraModeCallback;
 } // namespace detail

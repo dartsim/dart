@@ -48,8 +48,7 @@ class TinkertoyWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
-  TinkertoyWidget(
-      dart::gui::ImGuiViewer* viewer, TinkertoyWorldNode* node);
+  TinkertoyWidget(dart::gui::ImGuiViewer* viewer, TinkertoyWorldNode* node);
 
   // Documentation inherited
   void render() override;

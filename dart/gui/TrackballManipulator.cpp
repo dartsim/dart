@@ -37,7 +37,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
   : ::osgGA::OrbitManipulator(flags)

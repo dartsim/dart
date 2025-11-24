@@ -40,7 +40,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 RealTimeWorldNode::RealTimeWorldNode(
     const std::shared_ptr<dart::simulation::World>& world,

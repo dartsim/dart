@@ -45,7 +45,6 @@
 namespace dart {
 namespace gui {
 
-
 //==============================================================================
 GridVisual::GridVisual()
 {

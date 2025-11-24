@@ -48,7 +48,6 @@
 namespace dart {
 namespace gui {
 
-
 class WorldNodeCallback : public ::osg::NodeCallback
 {
 public:

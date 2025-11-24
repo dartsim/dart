@@ -53,8 +53,7 @@ public:
   /// @param world The physics world to control
   /// @param viewer The OSG viewer for visualization
   explicit SimulationEventHandler(
-      dart::simulation::WorldPtr world,
-      dart::gui::Viewer* viewer = nullptr);
+      dart::simulation::WorldPtr world, dart::gui::Viewer* viewer = nullptr);
 
   /// @brief Destructor
   virtual ~SimulationEventHandler() = default;

@@ -43,8 +43,7 @@
 class TinkertoyInputHandler : public osgGA::GUIEventHandler
 {
 public:
-  TinkertoyInputHandler(
-      dart::gui::Viewer* viewer, TinkertoyWorldNode* node)
+  TinkertoyInputHandler(dart::gui::Viewer* viewer, TinkertoyWorldNode* node)
     : mViewer(viewer), mNode(node)
   {
     // Do nothing
@@ -156,8 +155,7 @@ int main()
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
 
   // Create the viewer
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer
-      = new dart::gui::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

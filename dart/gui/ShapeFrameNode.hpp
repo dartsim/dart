@@ -53,7 +53,6 @@ class Shape;
 
 namespace gui {
 
-
 namespace render {
 class ShapeNode;
 } // namespace render

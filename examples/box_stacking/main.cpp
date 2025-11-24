@@ -206,8 +206,7 @@ class TestWidget : public dart::gui::ImGuiWidget
 {
 public:
   /// Constructor
-  TestWidget(
-      dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
+  TestWidget(dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
     : mViewer(viewer),
       mWorld(std::move(world)),
       mGuiGravity(true),
@@ -386,8 +385,7 @@ int main()
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
 
   // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer
-      = new dart::gui::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

@@ -46,7 +46,6 @@
 namespace dart {
 namespace gui {
 
-
 /// Visualizes a convex polyhedron built from an arbitrary set of input
 /// vertices. The vertices are converted into a convex hull before being sent to
 /// OpenSceneGraph, which allows callers to provide a V-representation of the

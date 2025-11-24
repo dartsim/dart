@@ -45,7 +45,6 @@
 namespace dart {
 namespace gui {
 
-
 class DART_GUI_API ImGuiWidget
 {
 public:

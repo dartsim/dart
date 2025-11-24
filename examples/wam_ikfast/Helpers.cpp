@@ -140,9 +140,8 @@ void enableDragAndDrops(
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
-            ee->getIK()->getTarget());
+    const auto& frame = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
+        ee->getIK()->getTarget());
 
     if (frame)
       viewer.enableDragAndDrop(frame.get());

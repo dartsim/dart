@@ -125,8 +125,7 @@ void defWorldNode(nb::module_& m)
           "createDefaultShadowTechnique",
           [](const dart::gui::Viewer* viewer) {
             return osgRefToShared(
-                dart::gui::WorldNode::createDefaultShadowTechnique(
-                    viewer));
+                dart::gui::WorldNode::createDefaultShadowTechnique(viewer));
           },
           nb::arg("viewer"));
 }

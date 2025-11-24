@@ -418,8 +418,8 @@ int main(int argc, char* argv[])
   viewer.addWorldNode(worldNode);
   viewer.allowSimulation(false);
 
-  auto grid = ::osg::ref_ptr<dart::gui::GridVisual>(
-      new dart::gui::GridVisual());
+  auto grid
+      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
   grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(40);
   grid->setMinorLineStepSize(0.1);

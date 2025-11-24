@@ -517,8 +517,7 @@ private:
 class CouplerOverlay : public dart::gui::ImGuiWidget
 {
 public:
-  CouplerOverlay(
-      dart::gui::ImGuiViewer* viewer, CouplerController* controller)
+  CouplerOverlay(dart::gui::ImGuiViewer* viewer, CouplerController* controller)
     : mViewer(viewer), mController(controller)
   {
   }
@@ -699,8 +698,7 @@ int main(int /*argc*/, char* /*argv*/[])
   ::osg::ref_ptr<CouplerEventHandler> handler
       = new CouplerEventHandler(controller.get());
 
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer
-      = new dart::gui::ImGuiViewer();
+  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
@@ -713,8 +711,8 @@ int main(int /*argc*/, char* /*argv*/[])
   viewer->addInstructionText("'r': reset both rigs\n");
   std::cout << viewer->getInstructions() << std::endl;
 
-  auto grid = ::osg::ref_ptr<dart::gui::GridVisual>(
-      new dart::gui::GridVisual());
+  auto grid
+      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
   grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
   grid->setNumCells(25);
   grid->setMinorLineStepSize(0.05);

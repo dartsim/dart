@@ -45,7 +45,6 @@ class MeshShape;
 
 namespace gui {
 
-
 class InteractiveFrame;
 
 class DART_GUI_API InteractiveTool : public dart::dynamics::SimpleFrame

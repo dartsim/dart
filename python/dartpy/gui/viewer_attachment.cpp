@@ -43,8 +43,7 @@ void defGridVisual(nb::module_& m)
   using dart::gui::GridVisual;
 
   auto grid
-      = nb::class_<GridVisual, dart::gui::ViewerAttachment>(
-            m, "GridVisual")
+      = nb::class_<GridVisual, dart::gui::ViewerAttachment>(m, "GridVisual")
             .def(nb::new_([]() { return makeOsgShared<GridVisual>(); }))
             .def("setNumCells", &GridVisual::setNumCells)
             .def("setMinorLineStepSize", &GridVisual::setMinorLineStepSize)
