@@ -62,7 +62,7 @@ RUN apt-get install -y --no-install-recommends \
     python3-pytest \
     python3-setuptools
 
-RUN PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install --no-cache-dir nanobind pytest -U
+RUN PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install --no-cache-dir --ignore-installed nanobind pytest -U
 
 # ==============================================================================
 # Clean up
