@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/All.hpp>
 
 using namespace dart::dynamics;
 using namespace dart::gui;
-using namespace dart::gui::osg;
+using namespace dart::gui;
 
 int main()
 {
@@ -97,8 +97,8 @@ int main()
   // TODO(MXG): Fix this issue ^
 
   // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<dart::gui::osg::RealTimeWorldNode> node
-      = new dart::gui::osg::RealTimeWorldNode(myWorld);
+  ::osg::ref_ptr<dart::gui::RealTimeWorldNode> node
+      = new dart::gui::RealTimeWorldNode(myWorld);
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();

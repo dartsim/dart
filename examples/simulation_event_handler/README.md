@@ -89,7 +89,7 @@ world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 // ... (create and add skeletons)
 
 // Create viewer
-dart::gui::osg::Viewer viewer;
+dart::gui::Viewer viewer;
 
 // Create event handler
 SimulationEventHandler* handler = new SimulationEventHandler(world, &viewer);
