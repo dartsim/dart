@@ -2016,8 +2016,11 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST_LARGE_DT)
   const double dt = 0.05;
 
   const Eigen::Isometry3d start = joint->getRelativeTransform();
-  const Eigen::Isometry3d expected
-      = start * math::expMap(twist * dt);
+  const Eigen::Vector3d vWorld = start.linear() * twist.tail<3>();
+  Eigen::Isometry3d expected = start;
+  expected.linear()
+      = expected.linear() * math::expMapRot(twist.head<3>() * dt);
+  expected.translation() += vWorld * dt;
 
   skel->integratePositions(dt);
 

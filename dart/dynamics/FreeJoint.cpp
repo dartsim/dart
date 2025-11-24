@@ -540,10 +540,17 @@ Eigen::Matrix6d FreeJoint::getRelativeJacobianStatic(
 Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
     const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const
 {
-  const Eigen::Isometry3d T1 = convertToTransform(_q1);
-  const Eigen::Isometry3d T2 = convertToTransform(_q2);
+  const Eigen::Isometry3d Q1 = convertToTransform(_q1);
+  const Eigen::Isometry3d Q2 = convertToTransform(_q2);
 
-  return convertToPositions(T1.inverse() * T2);
+  Eigen::Vector6d diff = Eigen::Vector6d::Zero();
+  const Eigen::Matrix3d rotation1 = Q1.linear();
+  const Eigen::Matrix3d rotationChange = rotation1.transpose() * Q2.linear();
+
+  diff.head<3>() = rotation1 * math::logMap(rotationChange);
+  diff.tail<3>() = Q2.translation() - Q1.translation();
+
+  return diff;
 }
 
 //==============================================================================
@@ -587,36 +594,29 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Isometry3d Qdiff
-      = math::expMap(getRelativeSpatialVelocity() * _dt);
-  const Eigen::Isometry3d Qnext = getQ() * Qdiff;
+  const Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
+  const Eigen::Isometry3d relativeTransform = getRelativeTransform();
 
-  setPositionsStatic(convertToPositions(Qnext));
+  Eigen::Isometry3d nextQ = getQ();
+  nextQ.linear()
+      = nextQ.linear() * math::expMapRot(spatialVelocity.head<3>() * _dt);
+
+  const Eigen::Vector3d vWorld
+      = relativeTransform.linear() * spatialVelocity.tail<3>();
+  const Eigen::Matrix3d parentJointRotation
+      = Joint::mAspectProperties.mT_ParentBodyToJoint.linear();
+  nextQ.translation()
+      += parentJointRotation.transpose() * vWorld * _dt;
+
+  setPositionsStatic(convertToPositions(nextQ));
 }
 
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  // Integrating the acceleration gives us the new velocity of child body frame.
-  // But if there is any linear acceleration, the frame will be displaced. If we
-  // apply euler integration directly on the spatial acceleration, it will
-  // produce the velocity of a point that is instantaneously coincident with the
-  // previous location of the child body frame. However, we want to compute the
-  // spatial velocity at the current location of the child body frame. To
-  // accomplish this, we first convert the linear portion of the spatial
-  // acceleration into classical linear acceleration and apply the integration.
-  Eigen::Vector6d accel = getAccelerationsStatic();
-  const Eigen::Vector6d& velBefore = getVelocitiesStatic();
-  accel.tail<3>() += velBefore.head<3>().cross(velBefore.tail<3>());
-  setVelocitiesStatic(math::integrateVelocity<math::SE3Space>(
-      getVelocitiesStatic(), accel, _dt));
-
-  // Since the velocity has been updated, we use the new velocity to recompute
-  // the spatial acceleration. This is needed to ensure that functions like
-  // BodyNode::getLinearAcceleration work properly.
-  const Eigen::Vector6d& velAfter = getVelocitiesStatic();
-  accel.tail<3>() -= velAfter.head<3>().cross(velAfter.tail<3>());
-  setAccelerationsStatic(accel);
+  setVelocitiesStatic(
+      math::integrateVelocity<math::RealVectorSpace<6>>(
+          getVelocitiesStatic(), getAccelerationsStatic(), _dt));
 }
 
 //==============================================================================
