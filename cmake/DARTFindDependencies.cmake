@@ -145,6 +145,30 @@ mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
 
 #--------------------
+# Component/library dependencies (all optional here; components decide required)
+#--------------------
+
+# Core extensions
+dart_find_package(tinyxml2)
+dart_find_package(sdformat)
+dart_find_package(urdfdom)
+find_package(CURL QUIET)
+
+# Collision backends
+if(DART_BUILD_COLLISION_BULLET)
+  dart_find_package(Bullet)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  dart_find_package(ODE)
+endif()
+
+# GUI
+if(DART_BUILD_GUI)
+  dart_find_package(OpenSceneGraph)
+endif()
+
+#--------------------
 # GUI dependencies
 #--------------------
 

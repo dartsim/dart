@@ -7,11 +7,6 @@ if(NOT DART_BUILD_COLLISION_BULLET)
 endif()
 
 message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
-
-# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
-# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
-# with Bullet, which uses relative paths and may break transitive dependencies.
-dart_find_package(Bullet)
 if(NOT BULLET_FOUND)
   message(
     FATAL_ERROR

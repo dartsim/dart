@@ -1,5 +1,4 @@
 # Dependency checks
-dart_find_package(urdfdom)
 if(urdfdom_FOUND)
   if(DART_VERBOSE)
     message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")

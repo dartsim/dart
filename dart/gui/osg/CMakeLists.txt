@@ -14,7 +14,6 @@ set(link_libraries )
 dart_check_dependent_target(${target_name} dart-utils)
 
 # OpenSceneGraph
-dart_find_package(OpenSceneGraph)
 dart_check_required_package(OpenSceneGraph "dart-gui" "OpenSceneGraph")
 list(APPEND component_dependency_packages OpenSceneGraph)
 

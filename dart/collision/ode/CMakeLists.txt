@@ -5,8 +5,6 @@ if(NOT DART_BUILD_COLLISION_ODE)
 endif()
 
 message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
-
-dart_find_package(ODE)
 if(NOT ODE_FOUND)
   message(
     FATAL_ERROR

@@ -1,8 +1,5 @@
-# Dependency checks
-dart_find_package(tinyxml2)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
-dart_find_package(sdformat)
 dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
 if(NOT HAVE_SDFORMAT)
   message(
@@ -20,7 +17,6 @@ else()
     "target.")
 endif()
 
-find_package(CURL)
 dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
 
 # Search all header and source files
