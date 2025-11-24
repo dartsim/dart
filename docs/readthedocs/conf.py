@@ -3,18 +3,31 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-from pathlib import Path
-from datetime import datetime
 import importlib
 import keyword
 import re
 import shutil
 import subprocess
 import sys
+import warnings
+from datetime import datetime
+from pathlib import Path
 
+from sphinx.deprecation import RemovedInSphinx90Warning
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
+
+warnings.filterwarnings(
+    "ignore",
+    message="pkg_resources is deprecated as an API.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    category=RemovedInSphinx90Warning,
+    module=r"sphinx_tabs\.tabs",
+)
 
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
