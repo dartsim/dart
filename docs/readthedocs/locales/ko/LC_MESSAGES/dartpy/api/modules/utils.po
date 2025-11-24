@@ -34,22 +34,22 @@ msgstr ""
 #: dartpy.utils.DartLoader:1 dartpy.utils.DartLoaderFlags:1
 #: dartpy.utils.DartLoaderOptions:1 dartpy.utils.DartLoaderRootJointType:1
 #: f3a246bdcca642499ddcce78e747bec7 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring 0e036c5352d747de9247a065a409b687
 #: 2d418506575c4827b90cc05fa47dd859 449b0934f3ce40eb96282134739cdb2f
 #: c9a2b4b9cd484e8cb496406ae46bacf6
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:1
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:1
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:1
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring d575611fea1e464ba48e3d552873e1d3
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:3
 #: of
 msgid ""
 "parseSkeleton(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri, "
@@ -59,7 +59,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:5
 #: f325c2e5d3d0436a870b3ce4b438ac0c of
 msgid ""
 "parseSkeleton(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri) -> "
@@ -67,7 +67,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 0a45335f8e894121a5da98727da38288
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:3
 #: of
 msgid ""
 "parseSkeletonString(self: dartpy.utils.DartLoader, urdfString: str, "
@@ -77,7 +77,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 2c356de51d474dd1840f86b2eaa02761
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:5
 #: of
 msgid ""
 "parseSkeletonString(self: dartpy.utils.DartLoader, urdfString: str, "
@@ -85,7 +85,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring af9c63844397425382c16cb4dac3446c
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:3
 #: of
 msgid ""
 "parseWorld(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri, "
@@ -95,7 +95,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 39e694a1eebc492f8f78d6b2ad43f377
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:5
 #: of
 msgid ""
 "parseWorld(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri) -> "
@@ -103,7 +103,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 6cdc4d6ca8a448488c68e2a69cf66bb0
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:3
 #: of
 msgid ""
 "parseWorldString(self: dartpy.utils.DartLoader, urdfString: str, baseUri:"
@@ -113,7 +113,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.utils.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:5
 #: f466ac9e4f1e49e4a3d07b4b4092f9ce of
 msgid ""
 "parseWorldString(self: dartpy.utils.DartLoader, urdfString: str, baseUri:"
