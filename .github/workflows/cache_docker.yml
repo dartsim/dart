@@ -43,11 +43,22 @@ jobs:
       # https://github.com/marketplace/actions/checkout
       - name: Checkout
         uses: actions/checkout@v5
-      # Ensure Docker CLI/daemon are available (some runners no longer ship with docker preinstalled)
-      - name: Install Docker engine
+      # Ensure Docker CLI/daemon are available (some runners lack preinstalled docker)
+      - name: Ensure Docker
+        shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y docker.io
+          set -euo pipefail
+          if command -v docker >/dev/null 2>&1; then
+            docker --version
+            exit 0
+          fi
+          if sudo -n true 2>/dev/null; then
+            sudo -n apt-get update -qq
+            sudo -n apt-get install -y docker.io
+          else
+            echo "docker is missing and sudo is not available; please install docker on this runner" >&2
+            exit 1
+          fi
       # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
