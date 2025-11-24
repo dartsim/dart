@@ -44,10 +44,12 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
+set(_dartpy_nanobind_min_version 2.9.2)
+
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
 set(_dartpy_nanobind_found FALSE)
 if(DART_USE_SYSTEM_NANOBIND)
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 else()
   if(NOT DEFINED nanobind_DIR)
@@ -65,7 +67,7 @@ else()
     list(APPEND CMAKE_PREFIX_PATH "${nanobind_ROOT}")
     set(nanobind_DIR "${nanobind_ROOT}" CACHE PATH "nanobind CMake package path" FORCE)
   endif()
-  find_package(nanobind CONFIG REQUIRED)
+  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
   set(_dartpy_nanobind_found TRUE)
 endif()
 
@@ -225,22 +227,22 @@ set(dartpy_sources
 
 set(dartpy_gui_headers
   gui/module.hpp
-  gui/osg/osg.hpp
-  gui/osg/utils.hpp
-  gui/osg/support_polygon_visual.hpp
+  gui/gui.hpp
+  gui/utils.hpp
+  gui/support_polygon_visual.hpp
 )
 
 set(dartpy_gui_sources
   gui/module.cpp
-  gui/osg/gui_event_handler.cpp
-  gui/osg/world_node.cpp
-  gui/osg/interactive_frame.cpp
-  gui/osg/viewer_attachment.cpp
-  gui/osg/support_polygon_visual.cpp
-  gui/osg/drag_and_drop.cpp
-  gui/osg/shadow_technique.cpp
-  gui/osg/viewer.cpp
-  gui/osg/imgui.cpp
+  gui/gui_event_handler.cpp
+  gui/world_node.cpp
+  gui/interactive_frame.cpp
+  gui/viewer_attachment.cpp
+  gui/support_polygon_visual.cpp
+  gui/drag_and_drop.cpp
+  gui/shadow_technique.cpp
+  gui/viewer.cpp
+  gui/imgui.cpp
 )
 
 if(DART_BUILD_GUI)
@@ -256,6 +258,19 @@ nanobind_add_module(dartpy
 foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
   if(TARGET ${_nb_target})
     target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+      # Silence format warnings from nanobind sources that become errors under
+      # our global -Werror. These are third-party sources.
+      target_compile_options(
+        ${_nb_target}
+        PRIVATE
+          -Wno-format
+          -Wno-format-security
+          -Wno-error
+          -Wno-error=format
+          -Wno-error=format-security
+      )
+    endif()
   endif()
 endforeach()
 

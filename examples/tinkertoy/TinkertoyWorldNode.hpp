@@ -33,7 +33,7 @@
 #ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWORLDNODE_HPP_
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -64,15 +64,15 @@ const double MinForceCoeff = 10.0;
 const double ForceIncrement = 10.0;
 
 //==============================================================================
-class TinkertoyWorldNode : public dart::gui::osg::RealTimeWorldNode
+class TinkertoyWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   TinkertoyWorldNode(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::RealTimeWorldNode(world),
+    : dart::gui::RealTimeWorldNode(world),
       mForceCoeff(DefaultForceCoeff),
       mWasSimulating(false)
   {
-    mTarget = dart::gui::osg::InteractiveFrame::createShared(
+    mTarget = dart::gui::InteractiveFrame::createShared(
         dart::dynamics::Frame::World());
     getWorld()->addSimpleFrame(mTarget);
 
@@ -135,7 +135,7 @@ public:
     }
   }
 
-  void handlePick(const dart::gui::osg::PickInfo& pick)
+  void handlePick(const dart::gui::PickInfo& pick)
   {
     dart::dynamics::BodyNode* bn
         = dynamic_cast<dart::dynamics::BodyNode*>(pick.frame->getParentFrame());
@@ -460,7 +460,7 @@ protected:
 
   dart::dynamics::BodyNode* mPickedNode;
   Eigen::Vector3d mPickedPoint;
-  dart::gui::osg::InteractiveFramePtr mTarget;
+  dart::gui::InteractiveFramePtr mTarget;
 
   dart::dynamics::LineSegmentShapePtr mForceLine;
 

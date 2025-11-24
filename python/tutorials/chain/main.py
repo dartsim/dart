@@ -110,7 +110,7 @@ def add_body(chain, parent, name):
     return body
 
 
-class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
+class MyWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world):
         super(MyWorldNode, self).__init__(world)
         pass
@@ -140,12 +140,12 @@ def main():
     node = MyWorldNode(world)
 
     # Create world node and add it to viewer
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
 
     # Grid settings
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XY)
     grid.setOffset([0, 0, -5])
     viewer.addAttachment(grid)
 
