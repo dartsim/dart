@@ -1493,7 +1493,8 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
     const Eigen::VectorXd& dampingCoefficients)
 {
   if (static_cast<size_t>(dampingCoefficients.size()) != getNumDofs()) {
-    GenericJoint_REPORT_DIM_MISMATCH(setDampingCoefficients, dampingCoefficients);
+    GenericJoint_REPORT_DIM_MISMATCH(
+        setDampingCoefficients, dampingCoefficients);
     return;
   }
 
