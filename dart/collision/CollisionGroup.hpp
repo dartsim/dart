@@ -410,7 +410,7 @@ protected:
   //
   // fcl's collision result is dependent on the order of objects in the broad
   // phase classes. If we use std::map, the orders of element between the
-  // original and copy are not guranteed to be the same as we copy std::map
+  // original and copy are not guaranteed to be the same as we copy std::map
   // (e.g., by world cloning).
 
 private:

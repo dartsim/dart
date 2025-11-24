@@ -62,7 +62,7 @@ public:
   /// Sets the seed value.
   ///
   /// The same seed gives the same sequence of random values so that you can
-  /// regenerate the same sequencial random values as long as you knot the seed
+  /// regenerate the same sequential random values as long as you knot the seed
   /// value.
   static void setSeed(unsigned int seed);
 

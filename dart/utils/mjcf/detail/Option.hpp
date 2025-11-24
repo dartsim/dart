@@ -71,7 +71,7 @@ public:
   double getMprTolerance() const;
 
 private:
-  // Private memebers used by MujocoModel class
+  // Private members used by MujocoModel class
   friend class MujocoModel;
   Errors read(tinyxml2::XMLElement* element);
 

@@ -191,7 +191,7 @@ bool saveC3DFile(
   FILE* file;
   Eigen::Vector3d v;
   c3d_head hdr;
-  c3d_param parm;
+  c3d_param param;
   c3d_frame frame;
 
   if ((file = fopen(_fileName, "wb")) == nullptr)
@@ -215,9 +215,9 @@ bool saveC3DFile(
   hdr.freq = (float)_freq;
   fwrite(&hdr, C3D_REC_SIZE, 1, file);
 
-  memset(&parm, 0, sizeof(parm));
-  parm.ftype = 84;
-  fwrite(&parm, C3D_REC_SIZE, 1, file);
+  memset(&param, 0, sizeof(param));
+  param.ftype = 84;
+  fwrite(&param, C3D_REC_SIZE, 1, file);
 
   // write the data
   frame.residual = 0;

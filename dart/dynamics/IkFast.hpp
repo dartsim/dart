@@ -173,7 +173,7 @@ public:
   std::size_t getNumFreeParameters2() const;
   // TODO(JS): Rename to getNumFreeParameters() in DART 7
 
-  /// Returns the total number of indices of the chane.
+  /// Returns the total number of indices of the chain.
   std::size_t getNumJoints2() const;
   // TODO(JS): Rename to getNumJoints in DART 7
 
@@ -195,11 +195,11 @@ protected:
   virtual int getNumFreeParameters() const = 0;
   // TODO(JS): Remove in DART 7
 
-  /// Returns the indicies of the free parameters indexed by the chain joints.
+  /// Returns the indices of the free parameters indexed by the chain joints.
   virtual int* getFreeParameters() const = 0;
   // TODO(JS): Remove in DART 7
 
-  /// Returns the total number of indices of the chane.
+  /// Returns the total number of indices of the chain.
   virtual int getNumJoints() const = 0;
   // TODO(JS): Remove in DART 7
 

@@ -170,12 +170,12 @@ void Icosphere<S>::build()
     // Iterate each face of the previous icosphere and divide the face into
     // four new faces.
     for (std::size_t j = 0; j < (*currFaces).size(); ++j) {
-      const auto& outter = (*currFaces)[j];
+      const auto& outer = (*currFaces)[j];
 
       // Create vertices on the middle of edges if not already created.
       for (std::size_t k = 0; k < 3; ++k) {
-        auto indexA = outter[k];
-        auto indexB = outter[(k + 1) % 3];
+        auto indexA = outer[k];
+        auto indexB = outer[(k + 1) % 3];
 
         // Sort indices to guarantee that the key is unique for the same pairs
         // of indices.
@@ -198,10 +198,10 @@ void Icosphere<S>::build()
       }
 
       // Add four new faces.
-      (*newFaces).emplace_back(Triangle(outter[0], mid[0], mid[2]));
-      (*newFaces).emplace_back(Triangle(mid[0], outter[1], mid[1]));
+      (*newFaces).emplace_back(Triangle(outer[0], mid[0], mid[2]));
+      (*newFaces).emplace_back(Triangle(mid[0], outer[1], mid[1]));
       (*newFaces).emplace_back(Triangle(mid[0], mid[1], mid[2]));
-      (*newFaces).emplace_back(Triangle(mid[2], mid[1], outter[2]));
+      (*newFaces).emplace_back(Triangle(mid[2], mid[1], outer[2]));
     }
 
     // Swap the arrays of faces.

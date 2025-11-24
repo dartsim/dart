@@ -14,6 +14,7 @@ bullet-cpp = ">=3.25,<4"
 clang-format = ">=14.0.0,<15"
 cli11 = ">=2.4.2,<3"
 cmake = ">=4.0.2,<5"
+codespell = ">=2.4.1,<3"
 console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
@@ -155,7 +156,10 @@ lint-md = { cmd = """
 
 lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
 lint = { depends-on = [
+  "lint-spell",
   "lint-cpp",
   "lint-dart8",
   "lint-py",
@@ -186,12 +190,15 @@ check-lint-yaml = { cmd = """
 
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-dart8",
   "check-lint-py",
   "check-lint-yaml",
   "check-lint-rst",
+  "check-lint-spell",
 ] }
 
 build = { cmd = [
@@ -1272,7 +1279,15 @@ lint-py = { cmd = """
 
 lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
-lint = { depends-on = ["lint-cpp", "lint-py", "lint-yaml", "lint-rst"] }
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = [
+  "lint-spell",
+  "lint-cpp",
+  "lint-py",
+  "lint-yaml",
+  "lint-rst",
+] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
@@ -1280,11 +1295,14 @@ check-lint-py = { cmd = """
 
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
   "check-lint-rst",
+  "check-lint-spell",
 ] }
 
 build = { cmd = """
