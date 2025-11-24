@@ -82,5 +82,3 @@ dart_add_component(
   COMPONENT_TARGET_DIR "dart/gui/osg/"
   COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
-dart_format_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})

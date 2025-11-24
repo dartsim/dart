@@ -61,5 +61,3 @@ dart_add_component(
   COMPONENT_TARGET_DIR "dart/utils/urdf/"
   COMPONENT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
-dart_format_add(${hdrs} ${srcs})
