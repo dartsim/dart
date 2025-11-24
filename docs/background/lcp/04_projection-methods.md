@@ -16,6 +16,33 @@ Mx^{k+1} = Nx^k + b  (fixed-point iteration)
 x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
 ```
 
+The split is chosen so that `M` is cheap to invert. If `M` is a Q-matrix (every LCP with `M` has a solution), then fixed-point convergence implies an LCP solution for `A`.
+
+### Derivation sketch
+
+Start from the LCP:
+
+```
+Ax + b ≥ 0,   x ≥ 0,   xᵀ(Ax + b) = 0
+```
+
+Split `A = M - N` and treat the iteration as a fixed point:
+
+```
+Mx^{k+1} - Nx^k + b ≥ 0
+x^{k+1} ≥ 0
+(x^{k+1})ᵀ(Mx^{k+1} - Nx^k + b) = 0
+```
+
+For splittings where `M` is easy to invert, the complementarity subproblem has the closed form
+
+```
+z^k = M^{-1}(Nx^k + b)
+x^{k+1} = max(0, z^k)
+```
+
+All specific methods below are specializations of this formula.
+
 ## 1. Jacobi Method ❌ (Not Implemented)
 
 ### Splitting
@@ -29,6 +56,8 @@ x^{k+1} = max(0, M^{-1}(Nx^k + b))  (projection onto positive orthant)
 x_i^{k+1} = max(0, -r_i / A_{ii})  for all i in parallel
 where r = b + Ax^k
 ```
+
+Equivalently: `z = x^k - r ./ diag(A); x^{k+1} = max(0, z)`.
 
 ### Properties
 
@@ -113,6 +142,8 @@ for i = 1 to n:
   x_i = max(0, x_i - lambda * r_i / A_{ii})
 ```
 
+Derived by using `A = L + D + U` with the splitting `M = (D + λL)/λ` and `N = ((1-λ)D - λU)/λ`, so the residual is scaled before projecting. `λ` can be seen as a relaxation of `Ax + b`.
+
 ### Relaxation Parameter λ
 
 - **λ = 1**: Reduces to PGS
@@ -146,6 +177,18 @@ Forward sweep (i = 1 to n) followed by backward sweep (i = n to 1).
 - 2× cost per iteration
 - Better convergence behavior
 
+### Generic projected iteration
+
+A simple implementation shared by Jacobi/PGS/PSOR:
+
+```
+for k = 1..N:
+  z = M^{-1}(N x + b)
+  x = max(0, z)          # or box projection for BLCP
+```
+
+Sweep order matters for Gauss-Seidel/PSOR. A symmetric variant performs one forward and one backward sweep to mitigate order bias (useful for PSOR/PGS; not for Jacobi which is already order-free).
+
 ## 5. Blocked Gauss-Seidel (BGS) ❌ (Not Implemented, Medium Priority)
 
 ### Description
@@ -173,12 +216,19 @@ for iter = 1 to max_iter:
     x_i = SolveSubLCP(A_{ii}, r_i, bounds_i)
 ```
 
+In code, form the local right-hand side as `b'_i = b_i - (A_ij x_j)_j∈blocks, j≠i`, then solve `A_ii x_i = b'_i` under the per-block bounds.
+
 ### Sub-LCP Solvers
 
 - **1D normal**: Direct solve
 - **2D/3D friction**: Direct geometric method
 - **4D pyramid**: Direct or small iterative
 - **General**: Any LCP solver
+
+For common contact splittings:
+
+- Normal sub-block: 1D projection (`x_n = max(0, x_n - r_n / A_nn)`).
+- Friction sub-block: 2D/4D problem; if the reduced matrix is symmetric PSD, solve with a tiny PCG or a direct enumerator.
 
 ### Properties
 
@@ -201,6 +251,18 @@ for iter = 1 to max_iter:
 - Contact force problems
 - One block per contact point
 - When sub-problems are small and cheap
+- Hierarchical blocking: partition a configuration into sub-blocks (e.g., joints vs contacts) and apply specialized solvers per block, repeating sweeps until convergence.
+
+### Extension to Boxed LCP (BLCP)
+
+Use the same splitting but project onto bounds:
+
+```
+z^k = M^{-1}(N x^k + b)
+x^{k+1} = min(u, max(l, z^k))
+```
+
+For contact problems, `l` and `u` are often functions of the normal impulse (`±μN`), so the projection step should recompute bounds whenever `N` changes.
 
 ## 6. Nonsmooth Nonlinear Conjugate Gradient (NNCG) ❌ (Not Implemented)
 
@@ -212,20 +274,21 @@ Conjugate gradient acceleration of PGS using Fletcher-Reeves formula.
 
 ```
 function NNCG(A, b, x, max_iter):
-  r = PGS_iteration(x) - x  # residual
-  p = r                      # search direction
+  x = PGS(x)              # warm start
+  r = PGS(x) - x          # residual (acts as gradient)
+  p = -r                  # search direction
 
-  for iter = 1 to max_iter:
-    x = x + p  # full step
-    r_new = PGS_iteration(x) - x
+  for k = 1..max_iter:
+    x = PGS(x + p)        # projected step along p
+    r_new = PGS(x) - x
 
     beta = ||r_new||² / ||r||²
-
-    if beta > 1:
-      p = r_new  # restart
+    if beta > 1:          # restart if direction is bad
+      p = -r_new
     else:
-      p = r_new + beta * p
+      p = -r_new + beta * p
 
+    if ||r_new|| < tol: return x
     r = r_new
 ```
 
@@ -290,6 +353,31 @@ while not converged:
 - When PGS alone is not accurate enough
 - Problems with clear active/inactive distinction
 
+### Full algorithm (from Silcowitz et al.)
+
+```
+input: k_pgs (PGS warm-start iterations), k_sm (subspace iterations), l, u
+while not converged:
+  x = run PGS for at least k_pgs iterations
+  if termination reached: return x
+
+  for k = 1..k_sm:
+    L = { i | x_i = l_i }, U = { i | x_i = u_i }, A = others
+
+    # Solve reduced system on active set
+    solve A_AA x_A = -(b_A + A_AL l + A_AU u)
+
+    # Reconstruct residuals for bound sets
+    v_L = A_LA x_A + A_LL l + A_LU u + b_L
+    v_U = A_UA x_A + A_UL l + A_UU u + b_U
+
+    # Project active solution back to the box
+    x_A = min(u_A, max(l_A, x_A))
+    x   = assemble [x_L = l; x_U = u; x_A]
+
+    if termination reached (e.g., active set unchanged): return x
+```
+
 ## 8. Red-Black Gauss-Seidel ❌ (Not Implemented)
 
 ### Description
@@ -347,6 +435,21 @@ Typical: epsilon_rel = 1e-4
 
 where ⊙ is element-wise product
 
+### Infinity Norm (Cheap) and Divergence Check
+
+```
+delta_k = max_i |x_i^k|
+rho_k   = max(delta_k, delta_{k-1})
+
+# divergence detection
+if delta_k > gamma: stop (diverging), where gamma is a user cap
+
+# contraction
+if |delta_k - delta_{k-1}| / max(1, delta_{k-1}) < epsilon_rel: converged
+```
+
+The infinity norm can be accumulated during the sweep with no extra passes.
+
 ### Maximum Iterations
 
 ```
@@ -374,6 +477,14 @@ phi(x) = ||x ⊙ (Ax + b)||
 ```
 phi(x) = max_i |x_i|
 ```
+
+### Complementarity Merit
+
+```
+theta_compl(x) = x^T (Ax + b)
+```
+
+Use only when `x >= 0`; also ensure `Ax + b >= 0` when `x = 0`.
 
 ## Comparison Table
 

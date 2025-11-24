@@ -6,6 +6,22 @@
 
 Pivoting methods solve LCPs by exploiting their combinatorial nature through enumerating solution candidates. They can find exact solutions when they exist.
 
+## Active / Free index sets
+
+Let `y = Ax + b`. Partition the indices into:
+
+- Active set `A = { i | x_i > 0 }`
+- Free set `F = { i | y_i > 0 }`
+
+Strict complementarity implies `A ∩ F = ∅` and `A ∪ F = I`, where `I = {1, …, n}`. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
+
+```
+[ I_F  -A_FA ] [ y_F ] = b
+         A_AF   x_A
+```
+
+The matrix `[I_F; -A_AF]` is a **complementarity matrix**. Each choice of columns from `I` or `-A` yields one such matrix; there are up to `2^n` of them, giving the exponential worst-case for direct enumeration.
+
 ## 1. Direct Methods for Small-Sized Problems
 
 ### Description
@@ -40,6 +56,21 @@ For cone C = [c₁, c₂, c₃]:
      (c₃ × c₁)·b >= 0:
     return x = C⁻¹b
 ```
+
+#### Bitmask implementation (2D)
+
+```
+for k = 1..4:
+  mask = 2^(k-1)
+  c1 = (mask & 0b01) ? e1 : -a1
+  c2 = (mask & 0b10) ? e2 : -a2
+  if det(c1, b) * det(c2, b) <= 0:
+    x = [c1 c2]^{-1} b
+    return x
+return "no solution"
+```
+
+This tests whether `b` lies in the cone spanned by `c1, c2` by checking that the signed areas (determinants) with `b` have opposite signs.
 
 ### Properties
 
@@ -201,34 +232,34 @@ Incrementally builds active/free index sets while maintaining complementarity co
   - **Active set A**: indices where `xᵢ > 0`
   - **Free set F**: indices where `yᵢ = (Ax + b)ᵢ > 0`
   - **Unprocessed U**: indices not yet assigned
+- **Blocking constraints**: bounds on how far a candidate variable may move before violating complementarity in the current basis
 
 ### Algorithm Pseudocode
 
 ```
-Initialize: A = ∅, F = ∅, U = {1,...,n}
+Given: A, b (symmetric PSD for Baraff), start with A = ∅, F = ∅, U = I
 
-while U ≠ ∅:
-  Select j ∈ U
-
-  # Try to make x_j positive
-  Find maximum x_j such that:
-    - All complementarity constraints satisfied
-    - x_j is limited by blocking constraints
-
-  if blocking from A:
-    # Pivot: swap index from A to F
-    Continue inner pivoting loop
-  else if blocking from F:
-    # Pivot: swap index from F to A
-    Continue inner pivoting loop
+while U not empty:
+  pick j in U with most negative y_j (violates complementarity the most)
+  # grow x_j until blocked
+  Δx_j = min( B_A , B_F )
+  if B_A blocks (index q in A):
+    move q from A to F    # pivot
+  else if B_F blocks (index q in F):
+    move q from F to A    # pivot
   else:
-    # No blocking, assign j to A or F
-    if x_j > 0:
-      A ← A ∪ {j}
-    else:
-      F ← F ∪ {j}
-    U ← U \ {j}
+    if x_j + Δx_j > 0: add j to A else add j to F
+    remove j from U
 ```
+
+where the blocking sets are
+
+```
+B_A = { -x_i / Δx_i | i in A, Δx_i < 0 }
+B_F = { -y_i / Δy_i | i in F, Δy_i < 0 }
+```
+
+Pivoting only swaps one index at a time, so an incremental factorization of `A_AA` can be maintained; inner pivots cost O(n²) with the outer loop running O(n) times, giving practical O(n³) behavior (worst-case O(n⁴)).
 
 ### Properties
 

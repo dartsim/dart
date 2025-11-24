@@ -266,6 +266,12 @@ When implementing new LCP solvers:
 6. Benchmark against existing solvers
 7. Update the selection guide with practical recommendations
 
+## Implementation References
+
+- **Pivoting**: Active/free set formulation, 2D/3D direct solvers, and incremental Baraff pivoting (see `03_pivoting-methods.md`).
+- **Projection**: Splitting derivations, PSOR update, BLCP projection, BGS block structure, PGS-SM, and NNCG pseudocode (see `04_projection-methods.md`).
+- **Other**: Staggering details and friction QP notes (see `06_other-methods.md`).
+
 ---
 
 **Last Updated**: 2025-11-22
