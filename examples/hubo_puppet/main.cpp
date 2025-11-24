@@ -251,9 +251,9 @@ public:
     double z = p.z();
 
     for (std::size_t i = 0; i < 8; ++i) {
-      const int flipEP = alterantives(i, 0);
-      const int incWY = alterantives(i, 1);
-      const int flipShoulder = alterantives(i, 2);
+      const int flipEP = alternatives(i, 0);
+      const int incWY = alternatives(i, 1);
+      const int flipShoulder = alternatives(i, 2);
 
       Eigen::Vector6d testQ;
       bool isValid = startValid;
@@ -269,7 +269,7 @@ public:
       double c3 = cos(theta3);
       double s3 = sin(theta3);
 
-      double numer = -y;
+      double number = -y;
       double denom = (-L4 * c3 - L3 * s3 + L4);
 
       double s2, theta2;
@@ -280,7 +280,7 @@ public:
         theta2 = incWY ? prevWY : pi - prevWY;
         s2 = sin(theta2);
       } else {
-        s2 = numer / denom;
+        s2 = number / denom;
         clamp_sincos(s2, isValid);
         theta2 = incWY ? pi - asin(s2) : asin(s2);
       }
@@ -414,7 +414,7 @@ protected:
 
     mWristEnd = dofs[5]->getChildBodyNode();
 
-    alterantives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
+    alternatives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
         0, 1, -1, 0, 0;
 
     for (std::size_t i = 0; i < 6; ++i) {
@@ -432,7 +432,7 @@ protected:
   mutable Eigen::Isometry3d mNodeOffsetTfInv;
   mutable double L3, L4, L5;
 
-  mutable Eigen::Matrix<int, 8, 3> alterantives;
+  mutable Eigen::Matrix<int, 8, 3> alternatives;
 
   mutable std::vector<std::size_t> mDofs;
 

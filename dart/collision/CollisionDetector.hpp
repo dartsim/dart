@@ -99,8 +99,8 @@ public:
   /// Helper function that creates and returns CollisionGroup as a shared_ptr.
   ///
   /// Internally, this function creates a shared_ptr from unique_ptr returned
-  /// from createCollisionGroup() so the performance would be slighly worse than
-  /// using std::make_unique.
+  /// from createCollisionGroup() so the performance would be slightly worse
+  /// than using std::make_unique.
   std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr();
 
   /// Create a collision group from any objects that are supported by

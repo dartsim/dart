@@ -101,14 +101,14 @@ public:
   /// @brief Get desired joint position whose name is _jointName
   double getDesiredJointPosition(const std::string& _jointName) const;
 
-  /// @brief Set desired global angle swing leg on sagital plane
-  void setDesiredSwingLegGlobalAngleOnSagital(double _val);
+  /// @brief Set desired global angle swing leg on sagittal plane
+  void setDesiredSwingLegGlobalAngleOnSagittal(double _val);
 
   /// @brief Set desired global angle swing leg on coronal plane
   void setDesiredSwingLegGlobalAngleOnCoronal(double _val);
 
-  /// @brief Set desired global angle pelvis on sagital plane
-  void setDesiredPelvisGlobalAngleOnSagital(double _val);
+  /// @brief Set desired global angle pelvis on sagittal plane
+  void setDesiredPelvisGlobalAngleOnSagittal(double _val);
 
   /// @brief Set desired global angle of pelvis on coronal plane
   void setDesiredPelvisGlobalAngleOnCoronal(double _val);
@@ -137,16 +137,16 @@ public:
   // /// @brief Get derivative gain for PD controller
   // double getDerivativeGain(const std::string& _jointName) const;
 
-  /// @brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackSagitalCOMDistance(std::size_t _index, double _val);
+  /// @brief Set balance feedback gain parameter for sagittal com distance
+  void setFeedbackSagittalCOMDistance(std::size_t _index, double _val);
 
-  /// @brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackSagitalCOMVelocity(std::size_t _index, double _val);
+  /// @brief Set balance feedback gain parameter for sagittal com velocity
+  void setFeedbackSagittalCOMVelocity(std::size_t _index, double _val);
 
-  /// @brief Set balance feedback gain parameter for sagital com distance
+  /// @brief Set balance feedback gain parameter for sagittal com distance
   void setFeedbackCoronalCOMDistance(std::size_t _index, double _val);
 
-  /// @brief Set balance feedback gain parameter for sagital com velocity
+  /// @brief Set balance feedback gain parameter for sagittal com velocity
   void setFeedbackCoronalCOMVelocity(std::size_t _index, double _val);
 
   /// @brief Set stance foot to left foot
@@ -184,11 +184,11 @@ protected:
   ///           plane against to the z-axis
   Eigen::Isometry3d getCOMFrame() const;
 
-  /// @brief Get sagital com distance
-  double getSagitalCOMDistance();
+  /// @brief Get sagittal com distance
+  double getSagittalCOMDistance();
 
-  /// @brief Get sagital com velocity
-  double getSagitalCOMVelocity();
+  /// @brief Get sagittal com velocity
+  double getSagittalCOMVelocity();
 
   /// @brief Get coronal com distance
   double getCoronalCOMDistance();
@@ -206,18 +206,18 @@ protected:
   Eigen::Vector3d getRightAnklePosition() const;
 
   // TODO(JS): Not implemented yet
-  /// @brief Get global pelvis upvector angle on sagital plane
-  double getSagitalPelvisAngle() const;
+  /// @brief Get global pelvis upvector angle on sagittal plane
+  double getSagittalPelvisAngle() const;
 
   // TODO(JS): Not implemented yet
   /// @brief Get global pelvis upvector angle on coronal plane
   double getCoronalPelvisAngle() const;
 
-  /// @brief Get global left leg angle on sagital plane
-  double getSagitalLeftLegAngle() const;
+  /// @brief Get global left leg angle on sagittal plane
+  double getSagittalLeftLegAngle() const;
 
-  /// @brief Get global right leg angle on sagital plane
-  double getSagitalRightLegAngle() const;
+  /// @brief Get global right leg angle on sagittal plane
+  double getSagittalRightLegAngle() const;
 
   /// @brief Get global left leg angle on coronal plane
   double getCoronalLeftLegAngle() const;
@@ -252,14 +252,14 @@ protected:
   /// @brief Desired joint positions
   Eigen::VectorXd mDesiredJointPositions;
 
-  /// @brief Desired global angle of swing leg on sagital plane
-  double mDesiredGlobalSwingLegAngleOnSagital;
+  /// @brief Desired global angle of swing leg on sagittal plane
+  double mDesiredGlobalSwingLegAngleOnSagittal;
 
   /// @brief Desired global angle of swing leg on coronal plane
   double mDesiredGlobalSwingLegAngleOnCoronal;
 
-  /// @brief Desired global angle of pelvis on sagital plane
-  double mDesiredGlobalPelvisAngleOnSagital;
+  /// @brief Desired global angle of pelvis on sagittal plane
+  double mDesiredGlobalPelvisAngleOnSagittal;
 
   /// @brief Desired global angle of pelvis on coronal plane
   double mDesiredGlobalPelvisAngleOnCoronal;
@@ -271,10 +271,10 @@ protected:
   Eigen::VectorXd mKd;
 
   /// @brief Feedback gain for com
-  Eigen::VectorXd mSagitalCd;
+  Eigen::VectorXd mSagittalCd;
 
   /// @brief Feedback gain for velocity of com
-  Eigen::VectorXd mSagitalCv;
+  Eigen::VectorXd mSagittalCv;
 
   /// @brief Feedback gain for com
   Eigen::VectorXd mCoronalCd;
@@ -323,11 +323,11 @@ private:
   /// @brief Index for coronal right hip
   std::size_t mCoronalRightHip;
 
-  /// @brief Index for sagital left hip
-  std::size_t mSagitalLeftHip;
+  /// @brief Index for sagittal left hip
+  std::size_t mSagittalLeftHip;
 
-  /// @brief Index for sagital right hip
-  std::size_t mSagitalRightHip;
+  /// @brief Index for sagittal right hip
+  std::size_t mSagittalRightHip;
 
   /// @brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;

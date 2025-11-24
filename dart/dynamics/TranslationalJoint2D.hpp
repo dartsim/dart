@@ -44,7 +44,7 @@ namespace dynamics {
 /// TranslationalJoint2D represents a 2-dof joint, which has two orthogonal
 /// translational axes.
 ///
-/// First and second coordiantes represent the translations along first and
+/// First and second coordinates represent the translations along first and
 /// second translational axes, respectively.
 class DART_API TranslationalJoint2D : public detail::TranslationalJoint2DBase
 {
