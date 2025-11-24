@@ -39,6 +39,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
+
 #include <cmath>
 
 namespace {
