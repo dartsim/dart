@@ -256,6 +256,11 @@ nanobind_add_module(dartpy
 foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
   if(TARGET ${_nb_target})
     target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+      # Silence format warnings from nanobind sources that become errors under
+      # our global -Werror. These are third-party sources.
+      target_compile_options(${_nb_target} PRIVATE -Wno-format -Wno-format-security)
+    endif()
   endif()
 endforeach()
 
