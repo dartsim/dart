@@ -1,7 +1,10 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
+#include <dart/gui/ImGuiViewer.hpp>
+#include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
