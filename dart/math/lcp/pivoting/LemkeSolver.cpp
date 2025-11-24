@@ -30,60 +30,78 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/math/lcp/pivoting/LemkeSolver.hpp"
 
-#include "dart/common/Profile.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/Lemke.hpp"
 
 namespace dart {
-namespace constraint {
+namespace math {
 
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getType() const
+LemkeSolver::LemkeSolver()
 {
-  return getStaticType();
+  // Lemke is an exact solver, no need for iterations or tolerances
+  mDefaultOptions.maxIterations = 0;       // Not applicable
+  mDefaultOptions.validateSolution = true; // Always validate
 }
 
 //==============================================================================
-const std::string& DantzigBoxedLcpSolver::getStaticType()
+LcpResult LemkeSolver::solve(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    Eigen::VectorXd& x,
+    const LcpOptions& options)
 {
-  static const std::string type = "DantzigBoxedLcpSolver";
-  return type;
-}
+  LcpResult result;
 
-//==============================================================================
-bool DantzigBoxedLcpSolver::solve(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
+  // Check problem dimensions
+  if (A.rows() != A.cols() || A.rows() != b.size()) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Matrix dimensions inconsistent";
+    return result;
+  }
 
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
+  // Call the legacy Lemke solver
+  const int exitCode = Lemke(A, b, &x);
 
-  bool result = math::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+  // Interpret exit code
+  result.iterations = 1; // Pivoting methods don't have iterations in same sense
+  if (exitCode == 0) {
+    result.status = LcpSolverStatus::Success;
 
-  delete[] w;
+    // Validate solution if requested
+    if (options.validateSolution) {
+      const bool isValid = validate(A, x, b);
+      result.validated = true;
+      if (!isValid) {
+        result.status = LcpSolverStatus::NumericalError;
+        result.message = "Solution validation failed";
+      }
+    }
+
+    // Compute complementarity error
+    Eigen::VectorXd w = A * x + b;
+    result.complementarity = (x.array() * w.array()).abs().sum();
+    result.residual = (A * x - (-b)).norm();
+  } else {
+    result.status = LcpSolverStatus::Failed;
+    result.message = "Lemke algorithm failed (no solution found)";
+  }
+
   return result;
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
+std::string LemkeSolver::getName() const
 {
-  // TODO(JS): Not implemented.
-  return true;
+  return "Lemke";
 }
-#endif
 
-} // namespace constraint
+//==============================================================================
+std::string LemkeSolver::getCategory() const
+{
+  return "Pivoting";
+}
+
+} // namespace math
 } // namespace dart

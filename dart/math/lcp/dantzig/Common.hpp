@@ -90,16 +90,7 @@
 // misc defines
 #define ALLOCA dALLOCA16
 
-/* constants */
-
-/* Modern C++ constant for 1/sqrt(2) */
-namespace dart::math::lcp::constants {
-template <typename T>
-inline constexpr T sqrt1_2 = static_cast<T>(
-    0.707106781186547524400844362104849039284835937688474036588339868999782L);
-} // namespace dart::math::lcp::constants
-
-namespace dart::math::lcp {
+namespace dart::math {
 
 //==============================================================================
 // Template Type Traits for Scalar Types
@@ -126,7 +117,7 @@ struct ScalarTraits
   static Scalar reciprocal(Scalar x);
 
   /// Reciprocal square root (1/sqrt(x))
-  static Scalar recip_sqrt(Scalar x);
+  static Scalar reciprocalSqrt(Scalar x);
 
   /// Sine
   static Scalar sin(Scalar x);
@@ -149,9 +140,34 @@ struct ScalarTraits<float>
     return std::numeric_limits<float>::infinity();
   }
 
+  static float sqrt(float x)
+  {
+    return std::sqrt(x);
+  }
+
   static float abs(float x)
   {
     return std::fabs(x);
+  }
+
+  static float reciprocal(float x)
+  {
+    return 1.0f / x;
+  }
+
+  static float reciprocalSqrt(float x)
+  {
+    return 1.0f / std::sqrt(x);
+  }
+
+  static float sin(float x)
+  {
+    return std::sin(x);
+  }
+
+  static float cos(float x)
+  {
+    return std::cos(x);
   }
 };
 
@@ -169,9 +185,34 @@ struct ScalarTraits<double>
     return std::numeric_limits<double>::infinity();
   }
 
+  static double sqrt(double x)
+  {
+    return std::sqrt(x);
+  }
+
   static double abs(double x)
   {
     return std::fabs(x);
+  }
+
+  static double reciprocal(double x)
+  {
+    return 1.0 / x;
+  }
+
+  static double reciprocalSqrt(double x)
+  {
+    return 1.0 / std::sqrt(x);
+  }
+
+  static double sin(double x)
+  {
+    return std::sin(x);
+  }
+
+  static double cos(double x)
+  {
+    return std::cos(x);
   }
 };
 
@@ -290,8 +331,4 @@ inline void Multiply2(
   }
 }
 
-} // namespace dart::math::lcp
-
-namespace dart::math {
-using namespace lcp;
 } // namespace dart::math
