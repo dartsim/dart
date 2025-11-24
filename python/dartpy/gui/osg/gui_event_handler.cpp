@@ -19,6 +19,7 @@ class GUIEventHandlerNoRef : public osgGA::GUIEventHandler
 {
 public:
   using osgGA::GUIEventHandler::GUIEventHandler;
+  using osgGA::GUIEventHandler::handle;
 
   virtual bool handle(
       const osgGA::GUIEventAdapter* /*ea*/, osgGA::GUIActionAdapter* /*aa*/)
