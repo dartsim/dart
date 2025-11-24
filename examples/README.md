@@ -1,5 +1,10 @@
 # DART Examples README
 
+## Demo Browser
+
+The consolidated ImGui-based browser lives in `examples/demo_app` (see its
+README) if you want to browse multiple scenes from one window.
+
 ## Build Each Example
 
 Copy the subdirectory to your workspace and follow the instruction of README.md
