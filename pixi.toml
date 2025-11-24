@@ -40,6 +40,7 @@ pkg-config = ">=0.29.2,<0.30"
 prettier = ">=3.4.2,<4"
 pytest = ">=8.3.5,<9"
 scikit-build-core = ">=0.10"
+sccache = ">=0.8.1,<0.9"
 setuptools = ">=80.1.0,<81"
 spdlog = ">=1.15.3,<2"
 sphinx = "*"
@@ -1121,6 +1122,7 @@ libgl-devel = ">=1.7"
 libglu = ">=9.0"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
+vulkan-headers = ">=1.2,<2"
 
 ################################################################################
 # osx-64
