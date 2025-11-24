@@ -46,16 +46,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Ensure pixi home exists
-        run: mkdir -p "${HOME}/.pixi/bin"
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
-
-      - name: Add pixi to PATH (prepend to override system pixi)
-        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -96,16 +90,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Ensure pixi home exists
-        run: mkdir -p "${HOME}/.pixi/bin"
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
-
-      - name: Add pixi to PATH (prepend to override system pixi)
-        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
