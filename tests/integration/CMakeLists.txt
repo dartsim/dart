@@ -140,6 +140,7 @@ if(TARGET dart-utils-urdf)
     NAME SharedLibraryWamIkFast
     HEADERS io/SharedLibraryWamIkFast.hpp
     SOURCES io/SharedLibraryWamIkFast.cpp
+    NO_INSTALL
     PUBLIC_LINK_LIBRARIES dart
     PUBLIC_COMPILE_DEFINITIONS IKFAST_NO_MAIN IKFAST_CLIBRARY
     PRIVATE_COMPILE_OPTIONS -w
@@ -148,6 +149,7 @@ if(TARGET dart-utils-urdf)
   dart_add_library(
     NAME GeneratedWamIkFast
     SOURCES io/GeneratedWamIkFast.cpp
+    NO_INSTALL
     PUBLIC_LINK_LIBRARIES dart
     PUBLIC_COMPILE_DEFINITIONS IKFAST_NO_MAIN IKFAST_CLIBRARY
     PRIVATE_COMPILE_OPTIONS -w

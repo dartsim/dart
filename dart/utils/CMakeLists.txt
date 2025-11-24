@@ -23,9 +23,7 @@ if(NOT HAVE_TINYXML2)
   message(WARNING "Skipping dart-utils: required dependency tinyxml2 missing.")
   return()
 endif()
-if(TARGET sdformat::sdformat)
-  set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
-else()
+if(NOT TARGET sdformat::sdformat)
   message(
     FATAL_ERROR
     "libsdformat was found but the sdformat::sdformat imported target is "
@@ -83,6 +81,7 @@ dart_add_library(
   NAME ${target_name}
   HEADERS ${hdrs} ${detail_hdrs} ${dart_utils_headers}
   SOURCES ${srcs} ${detail_srcs} ${dart_utils_sources}
+  NO_EXPORT
   PUBLIC_LINK_LIBRARIES dart tinyxml2::tinyxml2 sdformat::sdformat
   PRIVATE_LINK_LIBRARIES ${_dart_utils_private_links}
   PRIVATE_INCLUDE_DIRS ${_dart_utils_private_includes}

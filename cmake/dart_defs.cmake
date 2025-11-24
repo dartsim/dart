@@ -1429,91 +1429,86 @@ endmacro()
 #   - Compatible with DART_VERBOSE for summary reporting
 #
 #-------------------------------------------------------------------------------
-function(dart_find_package)
+macro(dart_find_package)
   # Check if called with legacy syntax (single argument, no keywords)
   list(LENGTH ARGN arg_count)
   if(arg_count EQUAL 0)
-    # Legacy syntax: dart_find_package(PackageName)
-    # ARGV0 contains the package name
     include(DARTFind${ARGV0})
-    return()
-  endif()
+  else()
+    # Check if first argument is a keyword
+    list(GET ARGN 0 first_arg)
+    if(NOT first_arg MATCHES "^(NAME|PACKAGE|REQUIRED|QUIET|VERSION|COMPONENTS|SET_VAR)$")
+      include(DARTFind${ARGV0})
+    else()
+      # New enhanced syntax - parse named arguments
+      cmake_parse_arguments(
+        ARG
+        "REQUIRED;QUIET"
+        "NAME;PACKAGE;VERSION;SET_VAR"
+        "COMPONENTS"
+        ${ARGN}
+      )
 
-  # Check if first argument is a keyword
-  list(GET ARGN 0 first_arg)
-  if(NOT first_arg MATCHES "^(NAME|PACKAGE|REQUIRED|QUIET|VERSION|COMPONENTS|SET_VAR)$")
-    # Legacy syntax with single argument
-    include(DARTFind${ARGV0})
-    return()
-  endif()
+      # Validate required arguments for new syntax
+      if(NOT ARG_PACKAGE)
+        message(FATAL_ERROR "dart_find_package: PACKAGE is required when using named arguments")
+      endif()
 
-  # New enhanced syntax - parse named arguments
-  cmake_parse_arguments(
-    ARG
-    "REQUIRED;QUIET"
-    "NAME;PACKAGE;VERSION;SET_VAR"
-    "COMPONENTS"
-    ${ARGN}
-  )
+      if(NOT ARG_NAME)
+        set(ARG_NAME ${ARG_PACKAGE})
+      endif()
 
-  # Validate required arguments for new syntax
-  if(NOT ARG_PACKAGE)
-    message(FATAL_ERROR "dart_find_package: PACKAGE is required when using named arguments")
-  endif()
+      # Build find_package arguments
+      set(find_args ${ARG_PACKAGE})
+      if(ARG_VERSION)
+        list(APPEND find_args ${ARG_VERSION})
+      endif()
+      if(ARG_COMPONENTS)
+        list(APPEND find_args COMPONENTS ${ARG_COMPONENTS})
+      endif()
+      if(ARG_REQUIRED)
+        list(APPEND find_args REQUIRED)
+      elseif(ARG_QUIET)
+        list(APPEND find_args QUIET)
+      endif()
 
-  if(NOT ARG_NAME)
-    set(ARG_NAME ${ARG_PACKAGE})
-  endif()
+      # Find the package
+      find_package(${find_args})
 
-  # Build find_package arguments
-  set(find_args ${ARG_PACKAGE})
-  if(ARG_VERSION)
-    list(APPEND find_args ${ARG_VERSION})
-  endif()
-  if(ARG_COMPONENTS)
-    list(APPEND find_args COMPONENTS ${ARG_COMPONENTS})
-  endif()
-  if(ARG_REQUIRED)
-    list(APPEND find_args REQUIRED)
-  elseif(ARG_QUIET)
-    list(APPEND find_args QUIET)
-  endif()
+      # Check if found (using standard CMake convention)
+      set(found_var "${ARG_PACKAGE}_FOUND")
 
-  # Find the package
-  find_package(${find_args})
+      # Track dependency status
+      if(${found_var})
+        set(DART_DEPS_FOUND ${DART_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
+        if(DART_VERBOSE)
+          # Get version if available
+          set(version_var "${ARG_PACKAGE}_VERSION")
+          if(DEFINED ${version_var})
+            message(STATUS "  Found ${ARG_NAME} ${${version_var}}")
+          else()
+            message(STATUS "  Found ${ARG_NAME}")
+          endif()
+        endif()
 
-  # Check if found (using standard CMake convention)
-  set(found_var "${ARG_PACKAGE}_FOUND")
-
-  # Track dependency status
-  if(${found_var})
-    set(DART_DEPS_FOUND ${DART_DEPS_FOUND} ${ARG_NAME} CACHE INTERNAL "List of found dependencies")
-    if(DART_VERBOSE)
-      # Get version if available
-      set(version_var "${ARG_PACKAGE}_VERSION")
-      if(DEFINED ${version_var})
-        message(STATUS "  Found ${ARG_NAME} ${${version_var}}")
+        # Set optional variable to TRUE if requested
+        if(ARG_SET_VAR)
+          set(${ARG_SET_VAR} TRUE CACHE BOOL "${ARG_NAME} available" FORCE)
+        endif()
       else()
-        message(STATUS "  Found ${ARG_NAME}")
+        set(DART_DEPS_MISSING ${DART_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
+        if(DART_VERBOSE)
+          message(STATUS "  ${ARG_NAME} not found")
+        endif()
+
+        # Set optional variable to FALSE if requested
+        if(ARG_SET_VAR)
+          set(${ARG_SET_VAR} FALSE CACHE BOOL "${ARG_NAME} available" FORCE)
+        endif()
       endif()
     endif()
-
-    # Set optional variable to TRUE if requested
-    if(ARG_SET_VAR)
-      set(${ARG_SET_VAR} TRUE CACHE BOOL "${ARG_NAME} available" FORCE)
-    endif()
-  else()
-    set(DART_DEPS_MISSING ${DART_DEPS_MISSING} ${ARG_NAME} CACHE INTERNAL "List of missing dependencies")
-    if(DART_VERBOSE)
-      message(STATUS "  ${ARG_NAME} not found")
-    endif()
-
-    # Set optional variable to FALSE if requested
-    if(ARG_SET_VAR)
-      set(${ARG_SET_VAR} FALSE CACHE BOOL "${ARG_NAME} available" FORCE)
-    endif()
   endif()
-endfunction()
+endmacro()
 
 #===============================================================================
 # Library and Target Building
@@ -1559,6 +1554,7 @@ function(dart_add_library)
     NO_INSTALL
     NO_EXPORT_MACRO
     NO_FORMAT
+    NO_EXPORT
   )
   set(oneValueArgs
     NAME
@@ -1809,38 +1805,57 @@ function(dart_add_library)
   # Installation rules (unless NO_INSTALL is set)
   if(NOT _ARG_NO_INSTALL)
     include(GNUInstallDirs)
+    set(_dart_export_set "${_ARG_NAME}Targets")
+    if(_ARG_NO_EXPORT)
+      set(_dart_export_set "")
+    endif()
 
     # Install the target
-    install(
-      TARGETS ${_ARG_NAME}
-      EXPORT ${_ARG_NAME}Targets
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+    if(_dart_export_set)
+      install(
+        TARGETS ${_ARG_NAME}
+        EXPORT ${_dart_export_set}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+    else()
+      install(
+        TARGETS ${_ARG_NAME}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+    endif()
 
     # Install headers with directory structure preserved
     if(_ARG_HEADERS)
       foreach(header IN LISTS _ARG_HEADERS)
         # Compute the relative path of each header from the source dir
-        file(RELATIVE_PATH rel_path "${CMAKE_SOURCE_DIR}" "${header}")
+        get_filename_component(abs_header "${header}" ABSOLUTE
+          BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+        file(RELATIVE_PATH rel_path "${CMAKE_SOURCE_DIR}" "${abs_header}")
         get_filename_component(rel_dir "${rel_path}" DIRECTORY)
 
         # Install the file to the destination, preserving the directory structure
         install(
-          FILES "${header}"
+          FILES "${abs_header}"
           DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
         )
       endforeach()
     endif()
 
     # Install export targets
-    install(
-      EXPORT ${_ARG_NAME}Targets
-      NAMESPACE DART::
-      DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
-    )
+    if(_dart_export_set)
+      install(
+        EXPORT ${_dart_export_set}
+        NAMESPACE DART::
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
+      )
+    endif()
   endif()
 
   # Add to formatting list

@@ -45,6 +45,7 @@ dart_add_library(
   NAME ${target_name}
   HEADERS ${dart_gui_osg_hdrs}
   SOURCES ${dart_gui_osg_srcs}
+  NO_EXPORT
   PUBLIC_LINK_LIBRARIES dart-utils osg::osg ${link_libraries}
 )
 

@@ -45,6 +45,7 @@ dart_add_library(
   NAME ${target_name}
   HEADERS ${hdrs}
   SOURCES ${srcs}
+  NO_EXPORT
   PUBLIC_LINK_LIBRARIES dart-utils urdfdom
 )
 

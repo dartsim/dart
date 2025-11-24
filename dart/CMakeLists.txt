@@ -173,6 +173,7 @@ dart_add_library(
   NAME dart
   HEADERS ${dart_core_headers}
   SOURCES ${dart_core_sources}
+  NO_EXPORT
   PUBLIC_INCLUDE_DIRS ${_dart_public_includes}
   PUBLIC_SYSTEM_INCLUDE_DIRS ${_dart_public_system_includes}
   PRIVATE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
