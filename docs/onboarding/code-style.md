@@ -74,7 +74,7 @@ if (!result.isCollision()) [[likely]]
 DART now maintains two naming schemes in parallel:
 
 - **Legacy modules (`dart/`, `python/dartpy/`, `tests/`, etc.)**: Keep the established **PascalCase** names for headers and sources to avoid churn in the long-lived API surface (e.g., `MyClass.hpp`, `MyClass.cpp`).
-- **Next-gen modules (`dart8/`, `examples_dart8/`, `tests_dart8/`, and other dart8 dependents)**: Use all **snake_case** file names (e.g., `rigid_body.hpp`, `free_joint.cpp`, `test_multi_body.py`). Build-system files such as `CMakeLists.txt` keep their canonical capitalization.
+- **Next-gen modules (`dart8/`, `tests_dart8/`, and other dart8 dependents)**: Use all **snake_case** file names (e.g., `rigid_body.hpp`, `free_joint.cpp`, `test_multi_body.py`). Build-system files such as `CMakeLists.txt` keep their canonical capitalization.
 - **Implementation details**: Continue to use the `-impl` suffix for template implementations, matching the surrounding style (e.g., `MyClass-impl.hpp` in legacy code, `rigid_body-impl.hpp` in dart8).
 - **Legacy tests (`tests/`)**: Use the `test_` prefix followed by **PascalCase** (e.g., `test_SkeletonState.cpp`) to align with historic targets while still grouping test binaries by prefix.
 
