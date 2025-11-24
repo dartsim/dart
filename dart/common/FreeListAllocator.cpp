@@ -201,7 +201,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
-  // Allocate memory chunck for header and the actual requested size
+  // Allocate memory chunk for header and the actual requested size
   void* memory
       = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
 

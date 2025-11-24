@@ -41,11 +41,12 @@ namespace common {
 /// @note This singleton is not thread safe. For use of thread safe singleton,
 /// use static initialization as:
 ///
-/// // Singletone class Engine
+/// // Singleton class Engine
 /// class Engine : public Singleton<Engine> {};
 ///
-/// // Call before main() and use theT only instead of calling getSingleton()
-/// static T& theT = T::getSingleton();
+/// // Call before main() and use the variable `singleton_instance` instead of
+/// // calling getSingleton()
+/// static T& singleton_instance = T::getSingleton();
 template <typename T>
 class Singleton
 {

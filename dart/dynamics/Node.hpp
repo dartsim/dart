@@ -152,7 +152,7 @@ public:
 
   /// Copy the State of this Node into a unique_ptr. By default, this simply
   /// calls getNodeState() and passes the result into the outputState, but this
-  /// function can be overriden to be more performant by avoiding allocations.
+  /// function can be overridden to be more performant by avoiding allocations.
   virtual void copyNodeStateTo(std::unique_ptr<State>& outputState) const;
 
   /// Set the Properties of this Node. By default, this does nothing.
@@ -164,7 +164,7 @@ public:
 
   /// Copy the Properties of this Node into a unique_ptr. By default, this
   /// simply calls getNodeProperties() and passes the result into the
-  /// outputProperties, but this function can be overriden to be more
+  /// outputProperties, but this function can be overridden to be more
   /// performant.
   virtual void copyNodePropertiesTo(
       std::unique_ptr<Properties>& outputProperties) const;

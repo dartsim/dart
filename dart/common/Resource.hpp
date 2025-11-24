@@ -56,7 +56,7 @@ public:
   {
     SEEKTYPE_CUR, ///< Current position.
     SEEKTYPE_END, ///< End of file.
-    SEEKTYPE_SET  ///< Begining of file.
+    SEEKTYPE_SET  ///< Beginning of file.
   };
 
   virtual ~Resource() = default;

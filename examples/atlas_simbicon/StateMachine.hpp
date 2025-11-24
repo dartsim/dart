@@ -66,7 +66,7 @@ public:
   void setInitialState(State* _state);
 
   //------------------------------- Control ------------------------------------
-  /// @brief Initiate state. This is called when the contoller change the
+  /// @brief Initiate state. This is called when the controller change the
   ///        current state machine to this.
   void begin(double _currentTime);
 
