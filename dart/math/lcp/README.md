@@ -10,7 +10,6 @@ lcp/
 ├── Solver.hpp/cpp              # Base LCPSolver interface class
 ├── All.hpp                     # Convenience header including all solvers
 │
-├── ODELCPSolver.hpp/cpp        # Legacy ODE-based solver (backward compatibility)
 │
 ├── dantzig/                    # Dantzig principal pivoting method (from ODE)
 │   ├── Lcp.hpp/cpp
@@ -52,10 +51,6 @@ The legacy API is preserved for backward compatibility with Dantzig and ODE-base
 #include <dart/math/lcp/dantzig/Lcp.hpp>
 bool success = dart::math::SolveLCP<double>(n, A, x, b, w, nub, lo, hi, findex);
 
-// Legacy ODE solver
-#include <dart/math/lcp/ODELCPSolver.hpp>
-dart::math::ODELCPSolver solver;
-solver.Solve(A, b, &x, numContacts, mu, numDir, true);
 ```
 
 ### Version 2 (Modern API - Recommended for New Code)
@@ -228,21 +223,6 @@ bool success = dart::math::SolveLCP<double>(
     n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 ```
 
-### Utility Classes
-
-#### ODELCPSolver (dart::math::ODELCPSolver)
-
-Convenience wrapper for contact mechanics problems. Uses Dantzig principal pivoting internally.
-
-**Usage**:
-
-```cpp
-#include <dart/math/lcp/ODELCPSolver.hpp>
-
-dart::math::ODELCPSolver solver;
-bool success = solver.Solve(A, b, &x, numContacts, mu, numDir, true);
-```
-
 ## Planned Solvers
 
 ### Projection Methods (projection/)
@@ -386,6 +366,5 @@ All legacy APIs remain fully functional:
 
 - `Lemke(M, q, z)` and `validate(M, z, q)` functions
 - `SolveLCP<Scalar>()` template function
-- `ODELCPSolver` class
 
 New code should prefer the modern API (v2) for consistency and future extensibility.

@@ -49,22 +49,6 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   - Includes solution validation function
 - **Use Case**: Standard LCP problems without bounds
 
-### Utility Classes
-
-#### ODELCPSolver (`ODELCPSolver.hpp`)
-
-- **Type**: Wrapper/utility for contact mechanics problems
-- **Implementation**: Uses Dantzig principal pivoting internally
-- **Features**:
-  - Handles contact problems with friction
-  - Formulation transfer to/from ODE format
-  - Solution validation
-- **Parameters**:
-  - `numContacts`: Number of contact points
-  - `mu`: Friction coefficient
-  - `numDir`: Number of friction directions
-- **Use Case**: Convenience wrapper for contact mechanics with automatic problem formulation
-
 ## Introduction
 
 Linear Complementarity Problems (LCPs) are fundamental to physics-based simulation, particularly in:
@@ -151,7 +135,7 @@ LCP solvers can be categorized into several main families:
 | High accuracy        | Newton, Pivoting         | Superlinear convergence |
 | Large-scale          | NNCG, PGS                | Scalable, matrix-free   |
 | Poorly conditioned   | Pivoting, Interior Point | Numerically robust      |
-| Contact mechanics    | BGS, ODELCPSolver        | Natural block structure |
+| Contact mechanics    | BGS, Dantzig             | Natural block structure |
 | Parallel computing   | Jacobi, Red-Black GS     | Embarrassingly parallel |
 
 See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
