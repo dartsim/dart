@@ -493,7 +493,7 @@ dart/
 - **`dartpy`** - Python bindings
   - Condition: `DART_BUILD_DARTPY=ON`
   - Build Type: Python extension module
-  - Dependencies: `pybind11`, core DART libraries
+  - Dependencies: `nanobind`, core DART libraries
 
 ### Custom Targets
 

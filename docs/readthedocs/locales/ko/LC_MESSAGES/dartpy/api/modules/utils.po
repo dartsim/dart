@@ -19,134 +19,134 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../../python_api/modules/utils.rst:2 a4ffaacba30a48a5a11d41dfded701d2
-msgid "dartpy.io"
+msgid "dartpy.utils"
 msgstr ""
 
 #: ../../docstring a4acc117942246fe8738d014e181ebe0
-#: c443df3315714e8182e5187079dd407a dartpy.io.CompositeResourceRetriever:1
-#: dartpy.io.DartResourceRetriever:1 dartpy.io.PackageResourceRetriever:1
+#: c443df3315714e8182e5187079dd407a dartpy.utils.CompositeResourceRetriever:1
+#: dartpy.utils.DartResourceRetriever:1 dartpy.utils.PackageResourceRetriever:1
 #: f0caf9a8b0bf462ca30249651e2ef514 of
-msgid "Bases: :py:class:`~dartpy.ResourceRetriever`"
+msgid "Bases: :py:class:`~dartpy.common.ResourceRetriever`"
 msgstr ""
 
 #: ../../docstring 5260f651e7ea42608b339a3fab56e2a7
 #: a768e3dbf39d4b69b162da3ceeaaf7e4 b5aed35f99ce4be3b6a16202bff691b0
-#: dartpy.io.DartLoader:1 dartpy.io.DartLoaderFlags:1
-#: dartpy.io.DartLoaderOptions:1 dartpy.io.DartLoaderRootJointType:1
+#: dartpy.utils.DartLoader:1 dartpy.utils.DartLoaderFlags:1
+#: dartpy.utils.DartLoaderOptions:1 dartpy.utils.DartLoaderRootJointType:1
 #: f3a246bdcca642499ddcce78e747bec7 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring 0e036c5352d747de9247a065a409b687
 #: 2d418506575c4827b90cc05fa47dd859 449b0934f3ce40eb96282134739cdb2f
 #: c9a2b4b9cd484e8cb496406ae46bacf6
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:1
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:1
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:1
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:1
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring d575611fea1e464ba48e3d552873e1d3
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:3
 #: of
 msgid ""
-"parseSkeleton(self: dartpy.io.DartLoader, uri: dartpy.Uri, "
-"resourceRetriever: dartpy.ResourceRetriever, flags: "
+"parseSkeleton(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri, "
+"resourceRetriever: dartpy.common.ResourceRetriever, flags: "
 "typing.SupportsInt = <DartLoaderFlags.NONE: 0>) -> "
-"dartpy.Skeleton"
+"dartpy.dynamics.Skeleton"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeleton:5
 #: f325c2e5d3d0436a870b3ce4b438ac0c of
 msgid ""
-"parseSkeleton(self: dartpy.io.DartLoader, uri: dartpy.Uri) -> "
-"dartpy.Skeleton"
+"parseSkeleton(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri) -> "
+"dartpy.dynamics.Skeleton"
 msgstr ""
 
 #: ../../docstring 0a45335f8e894121a5da98727da38288
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:3
 #: of
 msgid ""
-"parseSkeletonString(self: dartpy.io.DartLoader, urdfString: str, "
-"baseUri: dartpy.Uri, resourceRetriever: "
-"dartpy.ResourceRetriever, flags: typing.SupportsInt = "
-"<DartLoaderFlags.NONE: 0>) -> dartpy.Skeleton"
+"parseSkeletonString(self: dartpy.utils.DartLoader, urdfString: str, "
+"baseUri: dartpy.common.Uri, resourceRetriever: "
+"dartpy.common.ResourceRetriever, flags: typing.SupportsInt = "
+"<DartLoaderFlags.NONE: 0>) -> dartpy.dynamics.Skeleton"
 msgstr ""
 
 #: ../../docstring 2c356de51d474dd1840f86b2eaa02761
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseSkeletonString:5
 #: of
 msgid ""
-"parseSkeletonString(self: dartpy.io.DartLoader, urdfString: str, "
-"baseUri: dartpy.Uri) -> dartpy.Skeleton"
+"parseSkeletonString(self: dartpy.utils.DartLoader, urdfString: str, "
+"baseUri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton"
 msgstr ""
 
 #: ../../docstring af9c63844397425382c16cb4dac3446c
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:3
 #: of
 msgid ""
-"parseWorld(self: dartpy.io.DartLoader, uri: dartpy.Uri, "
-"resourceRetriever: dartpy.ResourceRetriever, flags: "
+"parseWorld(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri, "
+"resourceRetriever: dartpy.common.ResourceRetriever, flags: "
 "typing.SupportsInt = <DartLoaderFlags.NONE: 0>) -> "
-"dartpy.World"
+"dartpy.simulation.World"
 msgstr ""
 
 #: ../../docstring 39e694a1eebc492f8f78d6b2ad43f377
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorld:5
 #: of
 msgid ""
-"parseWorld(self: dartpy.io.DartLoader, uri: dartpy.Uri) -> "
-"dartpy.World"
+"parseWorld(self: dartpy.utils.DartLoader, uri: dartpy.common.Uri) -> "
+"dartpy.simulation.World"
 msgstr ""
 
 #: ../../docstring 6cdc4d6ca8a448488c68e2a69cf66bb0
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:3
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:3
 #: of
 msgid ""
-"parseWorldString(self: dartpy.io.DartLoader, urdfString: str, baseUri:"
-" dartpy.Uri, resourceRetriever: dartpy.ResourceRetriever, "
+"parseWorldString(self: dartpy.utils.DartLoader, urdfString: str, baseUri:"
+" dartpy.common.Uri, resourceRetriever: dartpy.common.ResourceRetriever, "
 "flags: typing.SupportsInt = <DartLoaderFlags.NONE: 0>) -> "
-"dartpy.World"
+"dartpy.simulation.World"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.io.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:5
+#: dartpy.utils.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.parseWorldString:5
 #: f466ac9e4f1e49e4a3d07b4b4092f9ce of
 msgid ""
-"parseWorldString(self: dartpy.io.DartLoader, urdfString: str, baseUri:"
-" dartpy.Uri) -> dartpy.World"
+"parseWorldString(self: dartpy.utils.DartLoader, urdfString: str, baseUri:"
+" dartpy.common.Uri) -> dartpy.simulation.World"
 msgstr ""
 
 #: ../../docstring ba939d18ede14efea42d8a417e0476e9
-#: dartpy.io.DartLoaderFlags:1 dartpy.io.DartLoaderRootJointType:1
+#: dartpy.utils.DartLoaderFlags:1 dartpy.utils.DartLoaderRootJointType:1
 #: e9bbf2000e0f4f238fc2d32e418077e1 of
 msgid "Members:"
 msgstr ""
 
 #: ../../docstring c31da596bf3947c2aa243eb7adca5b78
-#: dartpy.io.DartLoaderFlags:3 of
+#: dartpy.utils.DartLoaderFlags:3 of
 msgid "NONE"
 msgstr ""
 
 #: ../../docstring 2bd1a00046994cc3bd3473567b724dc1
-#: dartpy.io.DartLoaderFlags:5 of
+#: dartpy.utils.DartLoaderFlags:5 of
 msgid "FIXED_BASE_LINK"
 msgstr ""
 
 #: ../../docstring 7d5a0e17442e4d6db0e8b8f70456c6a8
-#: dartpy.io.DartLoaderFlags:7 of
+#: dartpy.utils.DartLoaderFlags:7 of
 msgid "DEFAULT"
 msgstr ""
 
 #: ../../docstring a1b88bd9ad434273be1225b341f9c776
-#: dartpy.io.DartLoaderRootJointType:3 of
+#: dartpy.utils.DartLoaderRootJointType:3 of
 msgid "FLOATING"
 msgstr ""
 
-#: ../../docstring dartpy.io.DartLoaderRootJointType:5
+#: ../../docstring dartpy.utils.DartLoaderRootJointType:5
 #: e2f051a728f94cafbc201a50e7ba4fb1 of
 msgid "FIXED"
 msgstr ""
