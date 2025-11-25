@@ -4,8 +4,8 @@
 #include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/Viewer.hpp>
 #include <dart/gui/Utils.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
