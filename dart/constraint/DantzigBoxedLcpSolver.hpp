@@ -51,8 +51,8 @@ public:
       const Eigen::VectorXd& lo,
       const Eigen::VectorXd& hi,
       const Eigen::VectorXi& findex,
-      Eigen::VectorXd& x,
-      const math::LcpOptions& options) override;
+  Eigen::VectorXd& x,
+  const math::LcpOptions& options) override;
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -60,8 +60,13 @@ public:
   /// Returns type for this class
   static const std::string& getStaticType();
 
+#if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
-  bool solve(
+  bool canSolve(const Eigen::MatrixXd& A) override;
+#endif
+
+private:
+  bool solveLegacy(
       int n,
       double* A,
       double* x,
@@ -70,12 +75,7 @@ public:
       double* lo,
       double* hi,
       int* findex,
-      bool earlyTermination) override;
-
-#if DART_BUILD_MODE_DEBUG
-  // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
-#endif
+      bool earlyTermination);
 };
 
 } // namespace constraint

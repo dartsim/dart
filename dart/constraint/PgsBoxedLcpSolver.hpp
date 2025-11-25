@@ -79,21 +79,9 @@ public:
   /// Returns type for this class
   static const std::string& getStaticType();
 
-  // Documentation inherited.
-  bool solve(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination) override;
-
 #if DART_BUILD_MODE_DEBUG
   // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
+  bool canSolve(const Eigen::MatrixXd& A) override;
 #endif
 
   /// Sets options
@@ -111,6 +99,18 @@ protected:
   mutable Eigen::MatrixXd mCachedNormalizedB;
   mutable Eigen::VectorXd mCacheZ;
   mutable Eigen::VectorXd mCacheOldX;
+
+private:
+  bool solveLegacy(
+      int n,
+      double* A,
+      double* x,
+      double* b,
+      int nub,
+      double* lo,
+      double* hi,
+      int* findex,
+      bool earlyTermination);
 };
 
 } // namespace constraint

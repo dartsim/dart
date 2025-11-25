@@ -131,7 +131,7 @@ math::LcpResult PgsBoxedLcpSolver::solve(
     }
   }
 
-  const bool success = solve(
+  const bool success = solveLegacy(
       n,
       Adata.data(),
       xdata.data(),
@@ -180,7 +180,7 @@ math::LcpResult PgsBoxedLcpSolver::solve(
 }
 
 //==============================================================================
-bool PgsBoxedLcpSolver::solve(
+bool PgsBoxedLcpSolver::solveLegacy(
     int n,
     double* A,
     double* x,
@@ -334,17 +334,17 @@ bool PgsBoxedLcpSolver::solve(
 
 #if DART_BUILD_MODE_DEBUG
 //==============================================================================
-bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
+bool PgsBoxedLcpSolver::canSolve(const Eigen::MatrixXd& A)
 {
-  const int nskip = math::padding(n);
+  const int n = static_cast<int>(A.rows());
 
   // Return false if A has zero-diagonal or A is nonsymmetric matrix
   for (auto i = 0; i < n; ++i) {
-    if (A[nskip * i + i] < PGS_EPSILON)
+    if (A(i, i) < PGS_EPSILON)
       return false;
 
     for (auto j = 0; j < n; ++j) {
-      if (std::abs(A[nskip * i + j] - A[nskip * j + i]) > PGS_EPSILON)
+      if (std::abs(A(i, j) - A(j, i)) > PGS_EPSILON)
         return false;
     }
   }

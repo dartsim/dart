@@ -166,24 +166,23 @@ public:
     return type;
   }
 
-  bool solve(
-      int n,
-      double* /*A*/,
-      double* x,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& x,
+      const dart::math::LcpOptions& /*options*/) override
   {
-    for (int i = 0; i < n; ++i)
-      x[i] = std::numeric_limits<double>::quiet_NaN();
-    return true; // claims success despite NaN output
+    x = Eigen::VectorXd::Constant(A.rows(), std::numeric_limits<double>::quiet_NaN());
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Success; // claims success despite NaN output
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
@@ -200,23 +199,24 @@ public:
     return type;
   }
 
-  bool solve(
-      int /*n*/,
-      double* /*A*/,
-      double* x,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& x,
+      const dart::math::LcpOptions& /*options*/) override
   {
     // Leave x untouched to reflect the initial seed provided by the caller.
-    return true;
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Success;
+    res.iterations = 1;
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
@@ -235,24 +235,24 @@ public:
     return type;
   }
 
-  bool solve(
-      int n,
-      double* /*A*/,
-      double* x,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& x,
+      const dart::math::LcpOptions& /*options*/) override
   {
-    for (int i = 0; i < n; ++i)
-      x[i] = mValue;
-    return true;
+    x = Eigen::VectorXd::Constant(A.rows(), mValue);
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Success;
+    res.iterations = 1;
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
@@ -274,24 +274,24 @@ public:
     return type;
   }
 
-  bool solve(
-      int n,
-      double* /*A*/,
-      double* x,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& x,
+      const dart::math::LcpOptions& /*options*/) override
   {
-    for (int i = 0; i < n; ++i)
-      x[i] = mValue;
-    return false; // intentionally report failure
+    x = Eigen::VectorXd::Constant(A.rows(), mValue);
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Failed; // intentionally report failure
+    res.iterations = 1;
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
@@ -313,26 +313,26 @@ public:
     return type;
   }
 
-  bool solve(
-      int n,
-      double* /*A*/,
-      double* x,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& x,
+      const dart::math::LcpOptions& /*options*/) override
   {
-    if (n > 0)
+    x = Eigen::VectorXd::Constant(A.rows(), mValue);
+    if (x.size() > 0)
       x[0] = std::numeric_limits<double>::quiet_NaN();
-    for (int i = 1; i < n; ++i)
-      x[i] = mValue;
-    return true;
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Success;
+    res.iterations = 1;
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }
@@ -352,22 +352,22 @@ public:
     return type;
   }
 
-  bool solve(
-      int /*n*/,
-      double* /*A*/,
-      double* /*x*/,
-      double* /*b*/,
-      int /*nub*/,
-      double* /*lo*/,
-      double* /*hi*/,
-      int* /*findex*/,
-      bool /*earlyTermination*/ = false) override
+  dart::math::LcpResult solve(
+      const Eigen::MatrixXd& /*A*/,
+      const Eigen::VectorXd& /*b*/,
+      const Eigen::VectorXd& /*lo*/,
+      const Eigen::VectorXd& /*hi*/,
+      const Eigen::VectorXi& /*findex*/,
+      Eigen::VectorXd& /*x*/,
+      const dart::math::LcpOptions& /*options*/) override
   {
-    return false;
+    dart::math::LcpResult res;
+    res.status = dart::math::LcpSolverStatus::Failed;
+    return res;
   }
 
 #if DART_BUILD_MODE_DEBUG
-  bool canSolve(int /*n*/, const double* /*A*/) override
+  bool canSolve(const Eigen::MatrixXd& /*A*/) override
   {
     return true;
   }

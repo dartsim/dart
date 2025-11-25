@@ -36,6 +36,7 @@
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
 
+#include <cstring>
 #include <vector>
 
 namespace dart {
@@ -84,7 +85,7 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
     }
   }
 
-  const bool success = solve(
+  const bool success = solveLegacy(
       n,
       Adata.data(),
       xdata.data(),
@@ -143,7 +144,7 @@ const std::string& DantzigBoxedLcpSolver::getStaticType()
 }
 
 //==============================================================================
-bool DantzigBoxedLcpSolver::solve(
+bool DantzigBoxedLcpSolver::solveLegacy(
     int n,
     double* A,
     double* x,
@@ -169,7 +170,7 @@ bool DantzigBoxedLcpSolver::solve(
 
 #if DART_BUILD_MODE_DEBUG
 //==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
+bool DantzigBoxedLcpSolver::canSolve(const Eigen::MatrixXd& /*A*/)
 {
   // TODO(JS): Not implemented.
   return true;
