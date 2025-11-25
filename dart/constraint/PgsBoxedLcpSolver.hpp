@@ -99,18 +99,6 @@ protected:
   mutable Eigen::MatrixXd mCachedNormalizedB;
   mutable Eigen::VectorXd mCacheZ;
   mutable Eigen::VectorXd mCacheOldX;
-
-private:
-  bool solveLegacy(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination);
 };
 
 } // namespace constraint
