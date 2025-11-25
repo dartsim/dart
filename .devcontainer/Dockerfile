@@ -17,6 +17,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 ENV PIXI_HOME="/opt/pixi" PATH="/opt/pixi/bin:${PATH}"
 RUN curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=${PIXI_VERSION} PIXI_HOME=${PIXI_HOME} bash
 
+COPY .devcontainer/pixi-auto-shell.sh /etc/profile.d/pixi-auto-shell.sh
+
 WORKDIR /workspaces/dart
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
