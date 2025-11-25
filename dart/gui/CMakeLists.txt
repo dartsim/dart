@@ -72,7 +72,6 @@ add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
-list(APPEND header_names "render/All.hpp")
 dart_generate_component_headers(
   COMPONENT_NAME gui
   TARGET_DIR "dart/gui/"
@@ -81,10 +80,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${render_hdrs}
 )
 
-# Install (includes All.hpp, gui.hpp for component compatibility,
+# Install (includes gui.hpp for component compatibility,
 # and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
   DESTINATION include/dart/gui
   COMPONENT headers
 )

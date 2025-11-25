@@ -1,8 +1,6 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
-
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <osgShadow/ShadowMap>

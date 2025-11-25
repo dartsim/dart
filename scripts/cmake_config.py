@@ -95,10 +95,6 @@ def configure_cmake(
         f"-DDART_VERBOSE={verbose}",
     ]
 
-    # Add pybind11 system flag (except for Windows)
-    if sys.platform != "win32":
-        cmake_cmd.append("-DDART_USE_SYSTEM_PYBIND11=ON")
-
     # Add codecov flag if enabled
     if codecov == "ON":
         cmake_cmd.append("-DDART_CODECOV=ON")

@@ -1,13 +1,14 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
+#include <osgGA/GUIActionAdapter>
+#include <osgGA/GUIEventAdapter>
+#include <osgGA/GUIEventHandler>
 
 namespace nb = nanobind;
 

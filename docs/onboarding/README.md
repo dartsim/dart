@@ -50,7 +50,7 @@ This onboarding guide is organized into several focused documents:
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
 - **[gui-rendering.md](gui-rendering.md)** - OpenSceneGraph integration details
-- **[python-bindings.md](python-bindings.md)** - pybind11 bindings architecture
+- **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
 
@@ -71,7 +71,7 @@ DART addresses the need for:
 - **3D Visualization**: OpenSceneGraph-based rendering with shadows, materials, and real-time updates
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
-- **Python Bindings**: Complete API coverage via pybind11 with NumPy integration
+- **Python Bindings**: Complete API coverage via nanobind with NumPy integration
 - **Optimization Helpers**: Core repo ships gradient-descent + IK primitives; the heavy-duty solver suite (IPOPT, NLopt, pagmo, SNOPT) now lives in [dart-optimization](https://github.com/dartsim/dart-optimization)
 - **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading (SKEL is legacy XML-only; prefer URDF/SDF/MJCF for new work)
 - **Cross-Platform**: Linux, macOS (Intel/ARM), Windows
@@ -84,7 +84,7 @@ DART addresses the need for:
 | ----------------------- | --------------------- | ------------------------- |
 | **Core Language**       | C++17                 | Main implementation       |
 | **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
-| **Python Bindings**     | pybind11 2.13.6       | Python API                |
+| **Python Bindings**     | nanobind 2.9.x        | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
 | **Collision Detection** | FCL 0.7.0+            | Primary collision backend |
 | **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
@@ -554,29 +554,26 @@ graph TB
 
 **Directory**: [`python/`](python/)
 
-**Purpose**: Complete Python API for DART using pybind11. Enables rapid prototyping, machine learning integration, and scripting.
+**Purpose**: Complete Python API for DART using nanobind. Enables rapid prototyping, machine learning integration, and scripting.
 
 **Key Modules**:
 
-- `dartpy.math` - Mathematical utilities and Eigen↔NumPy conversion
-- `dartpy.dynamics` - Skeletons, BodyNodes, Joints, IK
-- `dartpy.collision` - Collision detection backends
-- `dartpy.constraint` - Constraint solving
-- `dartpy.simulation` - World simulation
+- `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
+- `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
 - `dartpy.gui` - 3D visualization with OSG and ImGui
-- `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
+- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
 
 **Key Files**:
 
 - [`pyproject.toml`](pyproject.toml) - Python package configuration
-- [`setup.py`](setup.py) - Build script using pybind11
+- [`python/dartpy/CMakeLists.txt`](python/dartpy/CMakeLists.txt) - nanobind build definitions
 - [`python/dartpy/`](python/dartpy/) - Python bindings source
 - Type stubs (`.pyi` files) for IDE support
 
 **Depends On**:
 
 - **Internal**: All DART C++ modules
-- **External**: pybind11, NumPy
+- **External**: nanobind, NumPy
 
 ---
 
@@ -818,20 +815,20 @@ sequenceDiagram
     participant NumPy as NumPy
 
     Python->>dartpy: import dartpy
-    Python->>dartpy: world = dartpy.simulation.World()
+    Python->>dartpy: world = dartpy.World()
     dartpy->>DART: World::create()
 
-    Python->>dartpy: skel = dartpy.dynamics.Skeleton.create()
+    Python->>dartpy: skel = dartpy.Skeleton.create()
     dartpy->>DART: Skeleton::create()
 
-    Python->>dartpy: world.addSkeleton(skel)
+    Python->>dartpy: world.add_skeleton(skel)
     dartpy->>DART: World::addSkeleton()
 
     loop Simulation
         Python->>dartpy: world.step()
         dartpy->>DART: World::step()
-        Python->>dartpy: q = skel.getPositions()
-        dartpy->>DART: Skeleton::getPositions()
+        Python->>dartpy: q = skel.get_positions()
+        dartpy->>DART: Skeleton::get_positions()
         DART->>NumPy: convert Eigen to ndarray
         NumPy-->>Python: positions array
     end
@@ -1207,7 +1204,7 @@ dart_gui/
 ```python
 import dartpy as dart
 from dartpy.gui import Viewer, RealTimeWorldNode
-from dartpy.utils import DartLoader
+from dartpy.io import DartLoader
 ```
 
 ---
