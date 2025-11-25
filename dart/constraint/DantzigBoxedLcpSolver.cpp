@@ -35,7 +35,9 @@
 #include "dart/common/Profile.hpp"
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
+#include "dart/math/lcp/pivoting/DantzigSolver.hpp"
 
+#include <limits>
 #include <vector>
 
 namespace dart {
@@ -53,10 +55,10 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
 {
   math::LcpResult result;
 
-  const bool dimensionMismatch = (A.rows() != A.cols()) || (A.rows() != b.size())
-                                 || (lo.size() != b.size())
-                                 || (hi.size() != b.size())
-                                 || (findex.size() != b.size());
+  const bool dimensionMismatch
+      = (A.rows() != A.cols()) || (A.rows() != b.size())
+        || (lo.size() != b.size()) || (hi.size() != b.size())
+        || (findex.size() != b.size());
   if (dimensionMismatch) {
     result.status = math::LcpSolverStatus::InvalidProblem;
     result.message = "Matrix/vector dimensions inconsistent";
@@ -65,6 +67,21 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
 
   const int n = static_cast<int>(b.size());
   const int nSkip = math::padding(n);
+
+  // Fast path: if the problem has no bounds and no friction coupling, use the
+  // modern pivoting Dantzig solver directly.
+  bool unbounded = true;
+  const double infThreshold = 1e16;
+  for (int i = 0; i < n; ++i) {
+    if (findex[i] != -1 || lo[i] > 0 || hi[i] < infThreshold) {
+      unbounded = false;
+      break;
+    }
+  }
+  if (unbounded) {
+    math::DantzigSolver solver;
+    return solver.solve(A, b, x, options);
+  }
 
   std::vector<double> Adata(static_cast<std::size_t>(n * nSkip), 0.0);
   std::vector<double> xdata(static_cast<std::size_t>(n), 0.0);
@@ -85,7 +102,6 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
   }
 
   const int nub = 0;
-  const int nSkip = math::padding(n);
 
   // Allocate w vector for LCP solver
   std::vector<double> w(static_cast<std::size_t>(n), 0.0);
@@ -107,14 +123,15 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
   Eigen::VectorXd w = A * x + b;
   result.iterations = 1;
   result.complementarity = (x.array() * w.array()).abs().maxCoeff();
-  result.residual
-      = (w.array().min(Eigen::ArrayXd::Zero(n))).matrix().lpNorm<Eigen::Infinity>();
+  result.residual = (w.array().min(Eigen::ArrayXd::Zero(n)))
+                        .matrix()
+                        .lpNorm<Eigen::Infinity>();
   result.status = (success && !x.hasNaN()) ? math::LcpSolverStatus::Success
                                            : math::LcpSolverStatus::Failed;
 
   if (options.validateSolution) {
-    const double tol = std::max(
-        options.complementarityTolerance, options.absoluteTolerance);
+    const double tol
+        = std::max(options.complementarityTolerance, options.absoluteTolerance);
     bool valid = true;
 
     if (w.minCoeff() < -options.absoluteTolerance)
