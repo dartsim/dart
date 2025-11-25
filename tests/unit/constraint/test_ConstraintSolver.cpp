@@ -37,6 +37,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -710,5 +711,35 @@ TEST(ConstraintSolver, BoxedSolverEigenInterfaceRespectsWarmStart)
   opts.warmStart = false;
   auto coldResult = solver.solve(A, b, lo, hi, findex, x, opts);
   EXPECT_EQ(dart::math::LcpSolverStatus::Success, coldResult.status);
+  EXPECT_DOUBLE_EQ(0.0, x[0]);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PgsSolverHonorsLcpOptions)
+{
+  constraint::PgsBoxedLcpSolver solver;
+
+  Eigen::MatrixXd A(1, 1);
+  A << 1.0;
+  Eigen::VectorXd b(1);
+  b << 0.0;
+  Eigen::VectorXd lo(1);
+  lo << 0.0;
+  Eigen::VectorXd hi(1);
+  hi << 1.0;
+  Eigen::VectorXi findex(1);
+  findex << -1;
+  Eigen::VectorXd x(1);
+  x << 0.25;
+
+  dart::math::LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5;
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.warmStart = true;
+
+  auto result = solver.solve(A, b, lo, hi, findex, x, options);
+  EXPECT_EQ(dart::math::LcpSolverStatus::Success, result.status);
+  EXPECT_EQ(5, result.iterations);
   EXPECT_DOUBLE_EQ(0.0, x[0]);
 }

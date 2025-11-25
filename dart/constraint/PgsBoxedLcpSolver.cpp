@@ -109,6 +109,17 @@ math::LcpResult PgsBoxedLcpSolver::solve(
   std::vector<double> hiData(static_cast<std::size_t>(n), 0.0);
   std::vector<int> findexData(static_cast<std::size_t>(n), -1);
 
+  Option previousOption = mOption;
+  Option appliedOption = mOption;
+  if (options.maxIterations > 0)
+    appliedOption.mMaxIteration = options.maxIterations;
+  if (options.absoluteTolerance > 0)
+    appliedOption.mDeltaXThreshold = options.absoluteTolerance;
+  if (options.relativeTolerance > 0)
+    appliedOption.mRelativeDeltaXTolerance = options.relativeTolerance;
+
+  setOption(appliedOption);
+
   for (int r = 0; r < n; ++r) {
     bdata[static_cast<std::size_t>(r)] = b[r];
     xdata[static_cast<std::size_t>(r)] = options.warmStart ? x[r] : 0.0;
@@ -133,8 +144,11 @@ math::LcpResult PgsBoxedLcpSolver::solve(
 
   x = Eigen::Map<Eigen::VectorXd>(xdata.data(), n);
 
+  // Restore the original PGS option so per-call overrides don't leak.
+  setOption(previousOption);
+
   Eigen::VectorXd w = A * x + b;
-  result.iterations = options.maxIterations > 0 ? options.maxIterations : 1;
+  result.iterations = appliedOption.mMaxIteration;
   result.complementarity = (x.array() * w.array()).abs().maxCoeff();
   result.residual
       = (w.array().min(Eigen::ArrayXd::Zero(n))).matrix().lpNorm<Eigen::Infinity>();
