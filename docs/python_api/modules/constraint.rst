@@ -1,7 +1,7 @@
-dartpy.constraint
-=================
+dartpy
+======
 
-.. automodule:: dartpy.constraint
+.. note:: Legacy submodules will be removed in DART 8.0; use top-level `dartpy`.
+
+.. automodule:: dartpy
    :members:
-   :undoc-members:
-   :show-inheritance:

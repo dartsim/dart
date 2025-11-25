@@ -3,6 +3,8 @@
 #include "gui/utils.hpp"
 
 #include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/Utils.hpp>
 #include <dart/gui/Viewer.hpp>
 #include <dart/gui/WorldNode.hpp>
 

@@ -34,7 +34,6 @@ import random
 from typing import List, Optional, Tuple
 
 import dartpy as dart
-import dartpy.collision as dart_collision
 import numpy as np
 
 default_shape_density = 1000.0  # kg/m^3
@@ -175,8 +174,8 @@ class CollisionsEventHandler(dart.gui.GUIEventHandler):
         world_group = constraint_solver.getCollisionGroup()
         new_group = collision_detector.createCollisionGroup(obj)
 
-        option = dart_collision.CollisionOption()
-        result = dart_collision.CollisionResult()
+        option = dart.CollisionOption()
+        result = dart.CollisionResult()
         collision = world_group.collide(new_group, option, result)
 
         if collision:

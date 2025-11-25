@@ -45,18 +45,20 @@
 
 ### Module Structure
 
-dartpy organizes DART's C++ API into Python modules:
+dartpy now flattens most symbols onto the top-level package to avoid deep
+namespaces:
 
 ```
 dartpy/
-├── math          # Eigen integration, geometry utilities
-├── dynamics      # Skeletons, BodyNodes, Joints
-├── collision     # Collision detection backends
-├── constraint    # Constraint solving
-├── simulation    # World simulation
-├── utils         # File parsers (URDF, SDF, SKEL, MJCF)
+├── io            # File parsers (URDF, SDF, SKEL, MJCF)
 └── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
+
+- Core classes/functions (dynamics, collision, math, simulation, constraint,
+  optimizer) are promoted onto `dartpy` directly.
+- Legacy submodules remain importable in DART 7.x but will be removed in DART
+  8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
+  `DARTPY_ENABLE_LEGACY_MODULES`.
 
 **Source**: See `python/dartpy/` directory for module implementations
 
@@ -80,10 +82,10 @@ import dartpy as dart
 import numpy as np
 
 # NumPy arrays automatically convert to Eigen types
-skel.setPositions(np.array([0.1, 0.2, 0.3]))
+skel.set_positions(np.array([0.1, 0.2, 0.3]))
 
 # Eigen types automatically convert to NumPy arrays
-positions = skel.getPositions()  # Returns ndarray
+positions = skel.get_positions()  # Returns ndarray
 ```
 
 ### OSG Bindings Design
@@ -110,6 +112,13 @@ positions = skel.getPositions()  # Returns ndarray
    ```
 
 **Result**: OSG now works on all platforms where OpenSceneGraph is available (Linux, macOS, Windows via conda-forge)
+
+## Pythonic Naming Transition
+
+- All camelCase bindings now receive snake_case aliases at import time (runtime shim lives in `python/dartpy/_naming.py`)
+- camelCase still works but emits a one-time `DeprecationWarning` per symbol by default; set `DARTPY_WARN_ON_CAMELCASE=0` to silence
+- Turn the shim off entirely with `DARTPY_ENABLE_SNAKE_CASE=0` (useful for bisecting)
+- Prefer snake_case in new code; ship a codemod/release note alongside the next major to help users update usages
 
 ## Installation Methods
 

@@ -558,13 +558,10 @@ graph TB
 
 **Key Modules**:
 
-- `dartpy.math` - Mathematical utilities and Eigen↔NumPy conversion
-- `dartpy.dynamics` - Skeletons, BodyNodes, Joints, IK
-- `dartpy.collision` - Collision detection backends
-- `dartpy.constraint` - Constraint solving
-- `dartpy.simulation` - World simulation
+- `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
+- `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
 - `dartpy.gui` - 3D visualization with OSG and ImGui
-- `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
+- Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
 
 **Key Files**:
 
@@ -818,20 +815,20 @@ sequenceDiagram
     participant NumPy as NumPy
 
     Python->>dartpy: import dartpy
-    Python->>dartpy: world = dartpy.simulation.World()
+    Python->>dartpy: world = dartpy.World()
     dartpy->>DART: World::create()
 
-    Python->>dartpy: skel = dartpy.dynamics.Skeleton.create()
+    Python->>dartpy: skel = dartpy.Skeleton.create()
     dartpy->>DART: Skeleton::create()
 
-    Python->>dartpy: world.addSkeleton(skel)
+    Python->>dartpy: world.add_skeleton(skel)
     dartpy->>DART: World::addSkeleton()
 
     loop Simulation
         Python->>dartpy: world.step()
         dartpy->>DART: World::step()
-        Python->>dartpy: q = skel.getPositions()
-        dartpy->>DART: Skeleton::getPositions()
+        Python->>dartpy: q = skel.get_positions()
+        dartpy->>DART: Skeleton::get_positions()
         DART->>NumPy: convert Eigen to ndarray
         NumPy-->>Python: positions array
     end
@@ -1207,7 +1204,7 @@ dart_gui/
 ```python
 import dartpy as dart
 from dartpy.gui import Viewer, RealTimeWorldNode
-from dartpy.utils import DartLoader
+from dartpy.io import DartLoader
 ```
 
 ---
