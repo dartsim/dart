@@ -1646,8 +1646,7 @@ test-gz = { cmd = """
         export LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
         ROOT_DIR=$PWD
         cd .deps/gz-physics/build
-        python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all \
-          || { find . -maxdepth 5 -type f -name "FAKE_INSTALL*log" -print -exec sed -n 1,200p {} \\; || true; exit 1; }
+        python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         python <<\"PY\"
 import os
 import subprocess
