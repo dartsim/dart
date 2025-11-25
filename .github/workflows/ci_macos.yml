@@ -63,7 +63,11 @@ jobs:
 
       - name: Configure environment for compiler cache
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
+            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          else
+            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
+          fi
           echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
@@ -114,7 +118,11 @@ jobs:
 
       - name: Configure environment for compiler cache
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
+            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          else
+            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
+          fi
           echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
