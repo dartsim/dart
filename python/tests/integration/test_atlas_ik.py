@@ -30,82 +30,90 @@ import numpy as np
 import pytest
 
 
+def _dof(skeleton: dart.Skeleton, name: str):
+  """Return DOF by name."""
+  for dof in skeleton.get_dofs():
+    if dof.get_name() == name:
+      return dof
+  raise KeyError(name)
+
+
 def create_simple_atlas():
-    """Create a simplified Atlas robot for testing."""
-    urdf = dart.utils.DartLoader()
-    atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
-    return atlas
+  """Create a simplified Atlas robot for testing."""
+  urdf = dart.io.DartLoader()
+  atlas = urdf.parse_skeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+  return atlas
 
 
 def setup_atlas_standing_pose(atlas):
-    """Configure Atlas into a default standing pose."""
-    # Right leg
-    atlas.getDof("r_leg_hpy").setPosition(-45.0 * np.pi / 180.0)
-    atlas.getDof("r_leg_kny").setPosition(90.0 * np.pi / 180.0)
-    atlas.getDof("r_leg_aky").setPosition(-45.0 * np.pi / 180.0)
+  """Configure Atlas into a default standing pose."""
+  # Right leg
+  _dof(atlas, "r_leg_hpy").set_position(-45.0 * np.pi / 180.0)
+  _dof(atlas, "r_leg_kny").set_position(90.0 * np.pi / 180.0)
+  _dof(atlas, "r_leg_aky").set_position(-45.0 * np.pi / 180.0)
 
-    # Left leg
-    atlas.getDof("l_leg_hpy").setPosition(-45.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_kny").setPosition(90.0 * np.pi / 180.0)
-    atlas.getDof("l_leg_aky").setPosition(-45.0 * np.pi / 180.0)
+  # Left leg
+  _dof(atlas, "l_leg_hpy").set_position(-45.0 * np.pi / 180.0)
+  _dof(atlas, "l_leg_kny").set_position(90.0 * np.pi / 180.0)
+  _dof(atlas, "l_leg_aky").set_position(-45.0 * np.pi / 180.0)
 
-    # Prevent knees from bending backwards
-    atlas.getDof("r_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
-    atlas.getDof("l_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
+  # Prevent knees from bending backwards
+  _dof(atlas, "r_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
+  _dof(atlas, "l_leg_kny").set_position_lower_limit(10 * np.pi / 180.0)
 
 
 def ensure_end_effector(atlas, body_name, ee_name=None):
     """Return an EndEffector for the given body, creating one if needed."""
-    bn = atlas.getBodyNode(body_name)
+    bn = atlas.get_body_node(body_name)
     assert bn is not None
     name = ee_name or body_name
 
-    existing = atlas.getEndEffector(name)
+    existing = atlas.get_end_effector(name)
     if existing is not None:
         return existing
 
-    if bn.getNumEndEffectors() > 0:
-        ee = bn.getEndEffector(0)
+    if bn.get_num_end_effectors() > 0:
+        ee = bn.get_end_effector(0)
         if ee is not None:
             return ee
 
-    return bn.createEndEffector(name)
+    return bn.create_end_effector(name)
 
 
 def test_end_effector_creation_and_support():
     """End effectors can be created, configured, and retrieved from skeletons."""
     atlas = create_simple_atlas()
-    bn = atlas.getBodyNode("l_hand")
+    bn = atlas.get_body_node("l_hand")
     ee_name = "custom_l_hand"
 
-    effector = bn.createEndEffector(ee_name)
+    effector = bn.create_end_effector(ee_name)
     assert effector is not None
-    assert effector.getName() == ee_name
+    assert effector.get_name() == ee_name
 
-    tf = dart.math.Isometry3()
+    tf = dart.Isometry3()
     tf.set_translation([0.01, -0.02, 0.03])
-    effector.setDefaultRelativeTransform(tf, True)
+    effector.set_default_relative_transform(tf, True)
 
-    support = effector.createSupport()
+    support = effector.create_support()
     support_points = [
         np.array([0.0, 0.0, 0.0]),
         np.array([0.05, 0.0, 0.0]),
         np.array([0.0, 0.05, 0.0]),
     ]
-    support.setGeometry(support_points)
+    support.set_geometry(support_points)
 
-    stored = support.getGeometry()
+    stored = support.get_geometry()
     assert len(stored) == len(support_points)
     for expected, actual in zip(support_points, stored):
         assert np.allclose(np.asarray(actual).ravel(), expected.ravel())
 
-    assert effector.hasSupport()
-    retrieved = atlas.getEndEffector(ee_name)
+    assert effector.has_support()
+    retrieved = atlas.get_end_effector(ee_name)
     assert retrieved is effector
 
-    effector.removeSupport()
-    assert not effector.hasSupport()
-    recreated = effector.getSupport(True)
+    effector.remove_support()
+    assert not effector.has_support()
+    recreated = effector.get_support(True)
     assert recreated is not None
 
 
@@ -118,57 +126,57 @@ def test_atlas_hand_ik_simple():
     l_hand = ensure_end_effector(atlas, "l_hand")
 
     # Set offset for palm center
-    tf_hand = dart.math.Isometry3()
+    tf_hand = dart.Isometry3()
     tf_hand.set_translation([0.0, 0.12, 0.0])
-    l_hand.setDefaultRelativeTransform(tf_hand)
+    l_hand.set_default_relative_transform(tf_hand)
 
     # Create a simple frame target
-    target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target")
+    target = dart.SimpleFrame(dart.Frame.world(), "target")
 
     # Store initial hand position
-    initial_pos = l_hand.getWorldTransform().translation()
+    initial_pos = l_hand.get_world_transform().translation()
 
     # Set target 10cm forward from initial position
-    target_tf = l_hand.getWorldTransform()
+    target_tf = l_hand.get_world_transform()
     target_pos = initial_pos + np.array([0.1, 0.0, 0.0])
     target_tf.set_translation(target_pos)
-    target.setTransform(target_tf)
+    target.set_transform(target_tf)
 
     # Set up IK
-    ik = l_hand.getIK(True)
-    ik.setTarget(target)
-    ik.setActive(True)
+    ik = l_hand.get_ik(True)
+    ik.set_target(target)
+    ik.set_active(True)
 
     # Use whole body IK
-    ik.useWholeBody()
+    ik.use_whole_body()
 
     # ✅ FIX: Set tight bounds so displacement produces error
     # With infinite bounds, the error is always zero (the bug)
-    ik.getErrorMethod().setLinearBounds(
+    ik.get_error_method().set_linear_bounds(
         np.array([-1e-8, -1e-8, -1e-8]), np.array([1e-8, 1e-8, 1e-8])
     )
-    ik.getErrorMethod().setAngularBounds(
+    ik.get_error_method().set_angular_bounds(
         np.array([-1e-8, -1e-8, -1e-8]), np.array([1e-8, 1e-8, 1e-8])
     )
 
     # Configure solver
-    solver = ik.getSolver()
-    solver.setNumMaxIterations(100)
+    solver = ik.get_solver()
+    solver.set_num_max_iterations(100)
 
     # Verify initial distance
     initial_distance = np.linalg.norm(
-        l_hand.getWorldTransform().translation() - target_pos
+        l_hand.get_world_transform().translation() - target_pos
     )
     print(f"Initial distance to target: {initial_distance:.4f}m")
     assert initial_distance > 0.05, "Target should be at least 5cm away"
 
     # Solve IK - Use the SKELETON's hierarchical IK, not the individual IK module
     print("Solving IK using skeleton's hierarchical IK...")
-    skel_ik = atlas.getIK(True)  # Get skeleton's hierarchical IK
-    success = skel_ik.solveAndApply(True)
+    skel_ik = atlas.get_ik(True)  # Get skeleton's hierarchical IK
+    success = skel_ik.solve_and_apply(True)
 
     # Check final distance
-    final_pos = l_hand.getWorldTransform().translation()
+    final_pos = l_hand.get_world_transform().translation()
     final_distance = np.linalg.norm(final_pos - target_pos)
     print(f"Final distance to target: {final_distance:.4f}m")
     print(f"IK solve returned: {success}")
@@ -190,48 +198,48 @@ def test_atlas_foot_ik_constrained():
     setup_atlas_standing_pose(atlas)
 
     # Get foot body node and its end effector
-    l_foot_bn = atlas.getBodyNode("l_foot")
+    l_foot_bn = atlas.get_body_node("l_foot")
     assert l_foot_bn is not None
     l_foot = ensure_end_effector(atlas, "l_foot")
 
     # Set offset
-    tf_foot = dart.math.Isometry3()
+    tf_foot = dart.Isometry3()
     tf_foot.set_translation([0.186, 0.0, -0.08])
-    l_foot.setDefaultRelativeTransform(tf_foot)
+    l_foot.set_default_relative_transform(tf_foot)
 
     # Create target
-    target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "target")
+    target = dart.SimpleFrame(dart.Frame.world(), "target")
 
     # Get current foot position
-    initial_tf = l_foot.getWorldTransform()
+    initial_tf = l_foot.get_world_transform()
 
     # Set target 5cm to the side (Y direction)
     target_tf = initial_tf
     target_pos = initial_tf.translation() + np.array([0.0, 0.05, 0.0])
     target_tf.set_translation(target_pos)
-    target.setTransform(target_tf)
+    target.set_transform(target_tf)
 
     # Set up IK with ground constraints
-    ik = l_foot.getIK(True)
-    ik.setTarget(target)
-    ik.setActive(True)
-    ik.useWholeBody()
+    ik = l_foot.get_ik(True)
+    ik.set_target(target)
+    ik.set_active(True)
+    ik.use_whole_body()
 
     # Constrain Z (vertical) and roll/pitch
-    ik.getErrorMethod().setLinearBounds(
+    ik.get_error_method().set_linear_bounds(
         np.array([-np.inf, -np.inf, -1e-8]), np.array([np.inf, np.inf, 1e-8])
     )
-    ik.getErrorMethod().setAngularBounds(
+    ik.get_error_method().set_angular_bounds(
         np.array([-1e-8, -1e-8, -np.inf]), np.array([1e-8, 1e-8, np.inf])
     )
 
     # Solve
-    solver = ik.getSolver()
-    solver.setNumMaxIterations(100)
+    solver = ik.get_solver()
+    solver.set_num_max_iterations(100)
 
-    initial_z = l_foot.getWorldTransform().translation()[2]
-    success = ik.solveAndApply(True)
-    final_z = l_foot.getWorldTransform().translation()[2]
+    initial_z = l_foot.get_world_transform().translation()[2]
+    success = ik.solve_and_apply(True)
+    final_z = l_foot.get_world_transform().translation()[2]
 
     # Z coordinate should not change (ground constraint)
     assert (
@@ -248,50 +256,50 @@ def test_atlas_hierarchical_ik():
     r_hand = ensure_end_effector(atlas, "r_hand")
 
     # Set offsets
-    tf_hand_l = dart.math.Isometry3()
+    tf_hand_l = dart.Isometry3()
     tf_hand_l.set_translation([0.0, 0.12, 0.0])
-    l_hand.setDefaultRelativeTransform(tf_hand_l)
+    l_hand.set_default_relative_transform(tf_hand_l)
 
-    tf_hand_r = dart.math.Isometry3()
+    tf_hand_r = dart.Isometry3()
     tf_hand_r.set_translation([0.0, -0.12, 0.0])
-    r_hand.setDefaultRelativeTransform(tf_hand_r)
+    r_hand.set_default_relative_transform(tf_hand_r)
 
     # Create targets
-    l_target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "l_target")
-    r_target = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "r_target")
+    l_target = dart.SimpleFrame(dart.Frame.world(), "l_target")
+    r_target = dart.SimpleFrame(dart.Frame.world(), "r_target")
 
     # Set targets 10cm forward
-    l_initial_pos = l_hand.getWorldTransform().translation()
-    r_initial_pos = r_hand.getWorldTransform().translation()
+    l_initial_pos = l_hand.get_world_transform().translation()
+    r_initial_pos = r_hand.get_world_transform().translation()
 
-    l_target_tf = l_hand.getWorldTransform()
+    l_target_tf = l_hand.get_world_transform()
     l_target_tf.set_translation(l_initial_pos + np.array([0.1, 0.0, 0.0]))
-    l_target.setTransform(l_target_tf)
+    l_target.set_transform(l_target_tf)
 
-    r_target_tf = r_hand.getWorldTransform()
+    r_target_tf = r_hand.get_world_transform()
     r_target_tf.set_translation(r_initial_pos + np.array([0.1, 0.0, 0.0]))
-    r_target.setTransform(r_target_tf)
+    r_target.set_transform(r_target_tf)
 
     # Set up IK for both hands
-    l_ik = l_hand.getIK(True)
-    l_ik.setTarget(l_target)
-    l_ik.setActive(True)
-    l_ik.useWholeBody()
+    l_ik = l_hand.get_ik(True)
+    l_ik.set_target(l_target)
+    l_ik.set_active(True)
+    l_ik.use_whole_body()
 
-    r_ik = r_hand.getIK(True)
-    r_ik.setTarget(r_target)
-    r_ik.setActive(True)
-    r_ik.useWholeBody()
+    r_ik = r_hand.get_ik(True)
+    r_ik.set_target(r_target)
+    r_ik.set_active(True)
+    r_ik.use_whole_body()
 
     # Use skeleton IK to solve both simultaneously
-    skel_ik = atlas.getIK(True)
+    skel_ik = atlas.get_ik(True)
 
     # Solve
-    success = skel_ik.solveAndApply(True)
+    success = skel_ik.solve_and_apply(True)
 
     # Check both hands reached targets
-    l_final_pos = l_hand.getWorldTransform().translation()
-    r_final_pos = r_hand.getWorldTransform().translation()
+    l_final_pos = l_hand.get_world_transform().translation()
+    r_final_pos = r_hand.get_world_transform().translation()
 
     l_distance = np.linalg.norm(l_final_pos - l_target_tf.translation())
     r_distance = np.linalg.norm(r_final_pos - r_target_tf.translation())
@@ -313,17 +321,17 @@ def test_ik_solver_properties():
     atlas = create_simple_atlas()
     l_hand = ensure_end_effector(atlas, "l_hand")
 
-    ik = l_hand.getIK(True)
-    solver = ik.getSolver()
+    ik = l_hand.get_ik(True)
+    solver = ik.get_solver()
 
     # Test max iterations
-    solver.setNumMaxIterations(200)
-    assert solver.getNumMaxIterations() == 200
+    solver.set_num_max_iterations(200)
+    assert solver.get_num_max_iterations() == 200
 
     # Test tolerance
-    problem = ik.getProblem()
+    problem = ik.get_problem()
     assert problem is not None
-    assert problem.getDimension() > 0
+    assert problem.get_dimension() > 0
 
 
 if __name__ == "__main__":
