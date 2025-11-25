@@ -42,6 +42,9 @@ jobs:
   build_wheels:
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     env:
       # Keep parallelism modest to avoid posix_spawn failures on hosted runners
       DART_PARALLEL_JOBS: 8
@@ -71,16 +74,18 @@ jobs:
           - os: macos-latest
             python-version: "314"
             skip-on-commit: true
-          # Windows builds temporarily disabled
+          # Windows builds
+          - os: windows-latest
+            python-version: "312"
+          - os: windows-latest
+            python-version: "313"
+            skip-on-commit: true
+          - os: windows-latest
+            python-version: "314"
+            skip-on-commit: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-
-      - name: Prepare pixi home
-        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: |
-          rm -f "$HOME/.pixi/bin/pixi"
-          mkdir -p "${HOME}/.pixi/bin"
 
       - uses: prefix-dev/setup-pixi@v0.9.3
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
@@ -88,26 +93,30 @@ jobs:
           pixi-version: latest
           cache: true
 
-      - name: Add pixi to PATH
-        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        run: echo "${HOME}/.pixi/bin" >> $GITHUB_PATH
-
       - name: Setup sccache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+          # Enable only when GitHub cache backend is available; otherwise skip.
+          use-gha-cache: ${{ env.ACTIONS_CACHE_URL != '' }}
 
       - name: Configure environment for compiler cache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
-          mkdir -p "${RUNNER_TEMP}/ccache"
+          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
+            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+            echo "DART_COMPILER_CACHE=sccache" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+            echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+            echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> $GITHUB_ENV
+            echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+            echo "CCACHE_MAXSIZE=5G" >> $GITHUB_ENV
+            mkdir -p "${RUNNER_TEMP}/ccache"
+          else
+            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
+          fi
 
       - name: Build wheel
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')

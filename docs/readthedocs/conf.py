@@ -3,14 +3,14 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-from pathlib import Path
-from datetime import datetime
 import importlib
 import keyword
 import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
+from pathlib import Path
 
 from sphinx.util import logging
 
@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Paths used during the documentation build
 DOCS_ROOT = Path(__file__).resolve().parent
+EXTENSIONS_DIR = DOCS_ROOT / "_ext"
+if str(EXTENSIONS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXTENSIONS_DIR))
 
 
 def _find_repo_root(docs_root: Path) -> Path:
@@ -69,6 +72,12 @@ def _rename_placeholder(text: str, name: str) -> str:
 def _sanitize_stub_source(text: str) -> str:
     """Rename invalid identifiers originating from the stub generator."""
 
+    def _strip_class_bases(src: str) -> str:
+        """Drop class inheritance to avoid NameError on forward references."""
+
+        pattern = re.compile(r"(?m)^(?P<indent>\s*)class\s+(?P<name>\w+)\([^:\n]*\):")
+        return pattern.sub(r"\g<indent>class \g<name>:", src)
+
     def _replace_keyword(match: re.Match[str]) -> str:
         return f"{match.group('prefix')}{match.group('name')}_"
 
@@ -83,7 +92,7 @@ def _sanitize_stub_source(text: str) -> str:
     for placeholder in ("std", "dart"):
         text = _rename_placeholder(text, placeholder)
 
-    return text
+    return _strip_class_bases(text)
 
 
 def _prepare_stub_modules(package: str) -> bool:
@@ -161,6 +170,7 @@ def _render_doxyfile(output_path: Path):
         "DOXYGEN_INPUT_ROOT": _posix_path(REPO_ROOT / "dart"),
         "DOXYGEN_OUTPUT_ROOT": _posix_path(CPP_API_OUTPUT_DIR),
         "DOXYGEN_STRIP_FROM_PATH": _posix_path(REPO_ROOT),
+        "DOXYGEN_WARN_LOGFILE": _posix_path(CPP_API_OUTPUT_DIR / "doxygen_warnings.log"),
     }
 
     doxyfile_contents = DOXYFILE_TEMPLATE.read_text()
@@ -288,7 +298,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
-    "dartpy/api/*",
 ]
 
 

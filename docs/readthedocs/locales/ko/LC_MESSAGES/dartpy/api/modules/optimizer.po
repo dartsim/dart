@@ -30,7 +30,7 @@ msgstr ""
 #: dartpy.optimizer.MultiFunction:1 dartpy.optimizer.NloptSolver.Algorithm:1
 #: dartpy.optimizer.Problem:1 dartpy.optimizer.Solver:1
 #: dartpy.optimizer.SolverProperties:1 dcbb65198ec0456aae295d851f11edc5 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring 9edd2b8bb3ad4fba857c2215beeecde2
@@ -41,14 +41,14 @@ msgstr ""
 
 #: ../../docstring 7737982fec4648e1bc58f3ed49418267
 #: 9ab40a38400d489a92a812a052cede18
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:1
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:1
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:1
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:3
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:3
 #: e31629d0372340b48617d70db7df5527 of
 msgid ""
 "setProperties(self: dartpy.optimizer.GradientDescentSolver, properties: "
@@ -56,7 +56,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 3fa798ef71b04e8e91a32168f43762cb
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:5
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setProperties:5
 #: of
 msgid ""
 "setProperties(self: dartpy.optimizer.GradientDescentSolver, properties: "
@@ -77,13 +77,13 @@ msgid "Bases: :py:class:`~dartpy.optimizer.Function`"
 msgstr ""
 
 #: ../../docstring 300fe81d82ac416cadd1d4bfb9c83060
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:3
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:3
 #: of
 msgid "clearCostFunction(self: dartpy.optimizer.ModularFunction) -> None"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.optimizer.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:5
+#: dartpy.optimizer.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clearCostFunction:5
 #: df5ff29d8e1f47ab803fd0dc6f176b0e of
 msgid ""
 "clearCostFunction(self: dartpy.optimizer.ModularFunction, printWarning: "

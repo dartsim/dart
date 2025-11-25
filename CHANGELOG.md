@@ -9,6 +9,7 @@
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
   - Removed all optional optimizer plugins (`dart-optimizer-ipopt`, `dart-optimizer-nlopt`, `dart-optimizer-pagmo`, and `dart-optimizer-snopt`) along with the pagmo-based multi-objective optimization APIs since they were only exercised by tests.
+  - Flattened the dartpy namespace to `dartpy`, `dartpy.io` (alias for `utils`), and `dartpy.gui`, promoting core symbols to the package root and deprecating deep module paths (`dartpy.dynamics`, `dartpy.collision`, etc.) plus camelCase names. Legacy modules and camelCase remain available with `DeprecationWarning` for DART 7.x and are slated for removal in DART 8.0 (see `DARTPY_ENABLE_LEGACY_MODULES`, `DARTPY_WARN_ON_LEGACY_MODULES`, `DARTPY_ENABLE_SNAKE_CASE`, `DARTPY_WARN_ON_CAMELCASE`).
   - Moved the generic optimization primitives (`Function`, `Problem`, `Solver`, `GradientDescentSolver`) under `dart/math/optimization`; the legacy `<dart/optimizer/...>` headers and `dart::optimizer::*` namespace now forward (with deprecation notices) to the new `dart::math::*` definitions.
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
   - Renamed the OpenSceneGraph GUI component/target to `gui`/`dart-gui` (previously `gui-osg`/`dart-gui-osg`) and replaced the `DART_BUILD_GUI_OSG` toggle with `DART_BUILD_GUI`.
@@ -50,6 +51,7 @@
   - Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statistics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
   - Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
   - Updated `dart::utils::SdfParser` to canonicalize input through libsdformat so it can parse SDF 1.7+ models without the legacy version gate: [#264](https://github.com/dartsim/dart/issues/264)
+  - `dart::utils::SdfParser` now imports SDF mimic metadata (reference joint/DoF, multiplier/offset, and constraint type), and the mimic pendulum example/tests rely on those parsed joints when reproducing gz-physics #432 instead of bespoke SDF readers.
   - Fixed Collada mesh imports ignoring `<unit>` metadata by preserving the Assimp-provided scale transform ([#287](https://github.com/dartsim/dart/issues/287)).
 
 - dartpy
