@@ -36,6 +36,7 @@
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Matrix.hpp"
 #include "dart/math/lcp/dantzig/Misc.hpp"
+#include "dart/math/lcp/dantzig/Lcp.hpp"
 
 #include <Eigen/Dense>
 
@@ -135,14 +136,14 @@ math::LcpResult PgsBoxedLcpSolver::solve(
   const int nub = 0;
 
   // Allocate w vector for LCP solver
-  std::vector<double> w(static_cast<std::size_t>(n), 0.0);
+  std::vector<double> wData(static_cast<std::size_t>(n), 0.0);
 
   const bool success = math::SolveLCP<double>(
       n,
       Adata.data(),
       xdata.data(),
       bdata.data(),
-      w.data(),
+      wData.data(),
       nub,
       loData.data(),
       hiData.data(),
@@ -154,10 +155,10 @@ math::LcpResult PgsBoxedLcpSolver::solve(
   // Restore the original PGS option so per-call overrides don't leak.
   setOption(previousOption);
 
-  Eigen::VectorXd w = A * x + b;
+  Eigen::VectorXd wVec = A * x + b;
   result.iterations = appliedOption.mMaxIteration;
-  result.complementarity = (x.array() * w.array()).abs().maxCoeff();
-  result.residual = (w.array().min(Eigen::ArrayXd::Zero(n)))
+  result.complementarity = (x.array() * wVec.array()).abs().maxCoeff();
+  result.residual = (wVec.array().min(Eigen::ArrayXd::Zero(n)))
                         .matrix()
                         .lpNorm<Eigen::Infinity>();
   result.status = (success && !x.hasNaN()) ? math::LcpSolverStatus::Success
@@ -168,13 +169,13 @@ math::LcpResult PgsBoxedLcpSolver::solve(
         = std::max(options.complementarityTolerance, options.absoluteTolerance);
     bool valid = true;
 
-    if (w.minCoeff() < -options.absoluteTolerance)
+    if (wVec.minCoeff() < -options.absoluteTolerance)
       valid = false;
     if ((x.array() - lo.array()).minCoeff() < -options.absoluteTolerance)
       valid = false;
     if ((hi.array() - x.array()).minCoeff() < -options.absoluteTolerance)
       valid = false;
-    if ((x.array() * w.array()).abs().maxCoeff() > tol)
+    if ((x.array() * wVec.array()).abs().maxCoeff() > tol)
       valid = false;
 
     result.validated = true;

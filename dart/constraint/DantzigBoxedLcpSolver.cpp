@@ -104,14 +104,14 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
   const int nub = 0;
 
   // Allocate w vector for LCP solver
-  std::vector<double> w(static_cast<std::size_t>(n), 0.0);
+  std::vector<double> wData(static_cast<std::size_t>(n), 0.0);
 
   const bool success = math::SolveLCP<double>(
       n,
       Adata.data(),
       xdata.data(),
       bdata.data(),
-      w.data(),
+      wData.data(),
       nub,
       loData.data(),
       hiData.data(),

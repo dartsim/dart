@@ -40,9 +40,8 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 
 #include <limits>
 #include <memory>
@@ -175,9 +174,11 @@ public:
       Eigen::VectorXd& x,
       const dart::math::LcpOptions& /*options*/) override
   {
-    x = Eigen::VectorXd::Constant(A.rows(), std::numeric_limits<double>::quiet_NaN());
+    x = Eigen::VectorXd::Constant(
+        A.rows(), std::numeric_limits<double>::quiet_NaN());
     dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Success; // claims success despite NaN output
+    res.status = dart::math::LcpSolverStatus::Success; // claims success despite
+                                                       // NaN output
     return res;
   }
 
@@ -285,7 +286,8 @@ public:
   {
     x = Eigen::VectorXd::Constant(A.rows(), mValue);
     dart::math::LcpResult res;
-    res.status = dart::math::LcpSolverStatus::Failed; // intentionally report failure
+    res.status
+        = dart::math::LcpSolverStatus::Failed; // intentionally report failure
     res.iterations = 1;
     return res;
   }

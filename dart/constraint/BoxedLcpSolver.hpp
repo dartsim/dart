@@ -35,8 +35,9 @@
 
 #include <dart/config.hpp>
 
-#include <dart/common/Castable.hpp>
 #include <dart/math/lcp/LcpTypes.hpp>
+
+#include <dart/common/Castable.hpp>
 
 #include <Eigen/Core>
 
