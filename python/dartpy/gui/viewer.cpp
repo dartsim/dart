@@ -14,8 +14,6 @@
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
-#include <cstddef>
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -23,6 +21,8 @@
 #include <nanobind/trampoline.h>
 #include <osgGA/GUIEventHandler>
 #include <osgViewer/View>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 

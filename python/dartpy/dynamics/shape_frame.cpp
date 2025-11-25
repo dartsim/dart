@@ -5,11 +5,11 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
-#include <cstddef>
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 

@@ -31,10 +31,10 @@
 
 #include "dart/math/Geometry.hpp"
 
-#include <cstddef>
-
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 
