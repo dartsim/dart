@@ -39,8 +39,12 @@
 
 namespace dart::utils {
 
-// Deprecated compatibility alias for the URDF parser.
-using DartLoader DART_DEPRECATED(7.0) = UrdfParser;
+// Deprecated compatibility shim for the URDF parser.
+class DART_DEPRECATED(7.0) DartLoader : public UrdfParser
+{
+public:
+  using UrdfParser::UrdfParser;
+};
 
 } // namespace dart::utils
 
