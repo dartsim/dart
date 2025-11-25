@@ -36,7 +36,6 @@
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Lcp.hpp"
 
-#include <cstring>
 #include <vector>
 
 namespace dart {
@@ -85,12 +84,19 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
     }
   }
 
-  const bool success = solveLegacy(
+  const int nub = 0;
+  const int nSkip = math::padding(n);
+
+  // Allocate w vector for LCP solver
+  std::vector<double> w(static_cast<std::size_t>(n), 0.0);
+
+  const bool success = math::SolveLCP<double>(
       n,
       Adata.data(),
       xdata.data(),
       bdata.data(),
-      0,
+      w.data(),
+      nub,
       loData.data(),
       hiData.data(),
       findexData.data(),
@@ -141,31 +147,6 @@ const std::string& DantzigBoxedLcpSolver::getStaticType()
 {
   static const std::string type = "DantzigBoxedLcpSolver";
   return type;
-}
-
-//==============================================================================
-bool DantzigBoxedLcpSolver::solveLegacy(
-    int n,
-    double* A,
-    double* x,
-    double* b,
-    int nub,
-    double* lo,
-    double* hi,
-    int* findex,
-    bool earlyTermination)
-{
-  DART_PROFILE_SCOPED;
-
-  // Allocate w vector for LCP solver
-  double* w = new double[n];
-  std::memset(w, 0, n * sizeof(double));
-
-  bool result = math::SolveLCP<double>(
-      n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
-
-  delete[] w;
-  return result;
 }
 
 #if DART_BUILD_MODE_DEBUG

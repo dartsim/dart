@@ -64,18 +64,6 @@ public:
   // Documentation inherited.
   bool canSolve(const Eigen::MatrixXd& A) override;
 #endif
-
-private:
-  bool solveLegacy(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination);
 };
 
 } // namespace constraint
