@@ -36,13 +36,12 @@
 
 namespace dart::math {
 
-/// Wrapper around the legacy Dantzig BLCP solver exposing the modern
-/// `LcpSolver` interface.
-class DART_API DantzigSolver : public LcpSolver
+/// Projected Gauss-Seidel solver for standard LCP (x >= 0).
+class DART_API PGSSolver : public LcpSolver
 {
 public:
-  DantzigSolver() = default;
-  ~DantzigSolver() override = default;
+  PGSSolver();
+  ~PGSSolver() override = default;
 
   using LcpSolver::solve;
 
@@ -51,16 +50,6 @@ public:
       const Eigen::VectorXd& b,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
-
-  /// Solve a boxed LCP with bounds and friction index mapping.
-  LcpResult solve(
-      const Eigen::MatrixXd& A,
-      const Eigen::VectorXd& b,
-      const Eigen::VectorXd& lo,
-      const Eigen::VectorXd& hi,
-      const Eigen::VectorXi& findex,
-      Eigen::VectorXd& x,
-      const LcpOptions& options);
 
   std::string getName() const override;
   std::string getCategory() const override;
