@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import dartpy as dart
 
 from demo_hub.core.scene_base import Scene, SceneMetadata
@@ -33,7 +34,7 @@ class HelloWorldScene(Scene):
         shape_node.createCollisionAspect()
         shape_node.createDynamicsAspect()
 
-        box.getRootJoint().setPositions([0, 0, 0.5, 0, 0, 0])
+        box.getRootJoint().setPositions(np.array([0, 0, 0.5, 0, 0, 0], dtype=float))
         self._world.addSkeleton(box)
 
         self._set_last_dt(dt)
@@ -54,20 +55,6 @@ class HelloWorldScene(Scene):
         if self._world is None:
             return {}
         return {"time": float(self._world.getTime()), "frames": int(self._world.getSimFrames())}
-
-    def debug_draw_2d(self):
-        if self._world is None:
-            return []
-        box = self._world.getSkeleton(0)
-        if box is None or box.getNumBodyNodes() == 0:
-            return []
-        pos = box.getBodyNode(0).getTransform().translation()
-        x, _, z = pos
-        size = 0.1
-        return [
-            ((x - size, z), (x + size, z), (0.2, 0.8, 1.0)),
-            ((x, z - size), (x, z + size), (0.2, 0.8, 1.0)),
-        ]
 
     def debug_draw_2d(self):
         if self._world is None:
