@@ -3,12 +3,12 @@ import pytest
 
 
 def test_basics():
-    sw = dart.common.Stopwatch()
+    sw = dart.Stopwatch()
 
     # Stopwatch is started by default
     assert sw.is_started()
-    assert dart.common.Stopwatch(True).is_started()
-    assert not dart.common.Stopwatch(False).is_started()
+    assert dart.Stopwatch(True).is_started()
+    assert not dart.Stopwatch(False).is_started()
 
     # Stop the stopwatch
     sw.stop()
