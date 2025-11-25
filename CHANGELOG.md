@@ -7,8 +7,7 @@
 - Breaking Changes
   - Increased required C++ standard from C++17 to C++20
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
-  - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
-  - Renamed the URDF parser to `dart::utils::UrdfParser` (with `dart::utils::DartLoader` left as a deprecated alias) and expose the matching `dartpy.utils.UrdfParser` class.
+  - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::DartLoader`, and their dartpy bindings to align with the code-style guidelines.
   - Removed all optional optimizer plugins (`dart-optimizer-ipopt`, `dart-optimizer-nlopt`, `dart-optimizer-pagmo`, and `dart-optimizer-snopt`) along with the pagmo-based multi-objective optimization APIs since they were only exercised by tests.
   - Flattened the dartpy namespace to `dartpy`, `dartpy.io` (alias for `utils`), and `dartpy.gui`, promoting core symbols to the package root and deprecating deep module paths (`dartpy.dynamics`, `dartpy.collision`, etc.) plus camelCase names. Legacy modules and camelCase remain available with `DeprecationWarning` for DART 7.x and are slated for removal in DART 8.0 (see `DARTPY_ENABLE_LEGACY_MODULES`, `DARTPY_WARN_ON_LEGACY_MODULES`, `DARTPY_ENABLE_SNAKE_CASE`, `DARTPY_WARN_ON_CAMELCASE`).
   - Moved the generic optimization primitives (`Function`, `Problem`, `Solver`, `GradientDescentSolver`) under `dart/math/optimization`; the legacy `<dart/optimizer/...>` headers and `dart::optimizer::*` namespace now forward (with deprecation notices) to the new `dart::math::*` definitions.
@@ -47,7 +46,7 @@
   - Removed `DART_COMMON_MAKE_SHARED_WEAK` macro (deprecated in DART 6.4).
   - Removed all APIs deprecated in DART 6.9 (`dart::common::make_unique`, `FreeJoint::setTransform` static helpers, and `NloptSolver` overloads taking raw `nlopt::algorithm` values).
   - Removed all APIs deprecated in DART 6.10 (`common::Signal::cleanupConnections`, `SharedLibrary`/`SharedLibraryManager` filesystem-path overloads, BodyNode friction/restitution helpers and aspect properties, and `Joint::{set,is}PositionLimitEnforced()` aliases).
-  - Removed all APIs deprecated in DART 6.11 (`UrdfParser::Flags` (formerly `DartLoader::Flags`) and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
+  - Removed all APIs deprecated in DART 6.11 (`DartLoader::Flags` and the `parseSkeleton`/`parseWorld` overloads that accepted explicit resource retrievers and flag arguments).
   - Removed all APIs deprecated in DART 6.12 (the `SdfParser::readWorld`/`readSkeleton` overloads that accepted direct `ResourceRetriever` parameters).
   - Removed all APIs deprecated in DART 6.13 (the legacy `dart::common::Timer` utility, `ConstraintSolver::getConstraints()`/`containSkeleton()`, `ContactConstraint`'s raw constructor and material helper statistics, and the `MetaSkeleton` vector-returning `getBodyNodes()`/`getJoints()` accessors).
   - Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
@@ -281,7 +280,7 @@ This release is mostly a maintenance update, including various CI updates and bu
   - Added joint force/torque getter: [#1616](https://github.com/dartsim/dart/pull/1616)
 
 - Parsers
-  - Added default options to DartLoader (now `UrdfParser`) for missing properties in URDF files: [#1605](https://github.com/dartsim/dart/pull/1605)
+  - Added default options to DartLoader for missing properties in URDF files: [#1605](https://github.com/dartsim/dart/pull/1605)
   - Allowed SdfParser to set default root joint type: [#1617](https://github.com/dartsim/dart/pull/1617)
 
 - GUI
@@ -1208,7 +1207,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 1. Added Joint::isCyclic to mark SO(2) topology
    - [Pull request #441](https://github.com/dartsim/dart/pull/441)
 
-1. Fixed SEGFAULTs in DartLoader (now UrdfParser)
+1. Fixed SEGFAULTs in DartLoader
    - [Pull request #439](https://github.com/dartsim/dart/pull/439)
 
 1. Added the SYSTEM flag to include_directories
@@ -1256,7 +1255,7 @@ This release is mostly a maintenance update, including various CI updates and bu
 1. Limited maximum required version of Assimp less than 3.0~dfsg-4
    - [Pull request #459](https://github.com/dartsim/dart/pull/459)
 
-1. Fixed SEGFAULTs in DartLoader (now UrdfParser)
+1. Fixed SEGFAULTs in DartLoader
    - [Pull request #472](https://github.com/dartsim/dart/pull/472)
 
 ### Version 5.0.0 (2015-06-15)
