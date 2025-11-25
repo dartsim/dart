@@ -2,7 +2,9 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/Viewer.hpp>
+#include <dart/gui/WorldNode.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -15,6 +17,8 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
+#include <osgGA/GUIEventHandler>
+#include <osgViewer/View>
 
 namespace nb = nanobind;
 
