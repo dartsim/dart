@@ -5,6 +5,8 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
+#include <cstddef>
+
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -28,15 +30,15 @@ void defShapeFrame(nb::module_& m)
           "setColor",
           [](VisualAspect& self, const nb::handle& color) {
             nb::sequence seq = nb::cast<nb::sequence>(color);
-            ssize_t n = nb::len(seq);
+            const auto n = nb::len(seq);
             if (n == 3) {
               Eigen::Vector3d vec;
-              for (ssize_t i = 0; i < n; ++i)
+              for (std::size_t i = 0; i < n; ++i)
                 vec[i] = nb::cast<double>(seq[i]);
               self.setColor(vec);
             } else if (n == 4) {
               Eigen::Vector4d vec;
-              for (ssize_t i = 0; i < n; ++i)
+              for (std::size_t i = 0; i < n; ++i)
                 vec[i] = nb::cast<double>(seq[i]);
               self.setColor(vec);
             } else {
