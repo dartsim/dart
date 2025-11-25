@@ -16,14 +16,12 @@
 namespace dart {
 namespace math {
 namespace lcp {
+using namespace ::dart::math;
 } // namespace lcp
 } // namespace math
-} // namespace dart
-
-namespace dart {
 namespace
-    [[deprecated("dart::lcpsolver is deprecated; include dart/math/lcp headers "
-                 "and use dart::math instead")]] lcpsolver {
+    [[deprecated("dart::lcpsolver is deprecated; include dart/math/lcp "
+                 "headers and use dart::math instead")]] lcpsolver {
 using namespace math::lcp;
 } // namespace lcpsolver
 } // namespace dart

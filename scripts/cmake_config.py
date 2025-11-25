@@ -42,7 +42,7 @@ def configure_cmake(
     dartpy="ON",
     dart7="ON",
     dartpy7=None,
-    gui_osg="ON",
+    gui="ON",
     build_profile="ON",
     enable_asan="OFF",
     codecov="OFF",
@@ -84,7 +84,7 @@ def configure_cmake(
         f"-DDART_BUILD_DARTPY={dartpy}",
         f"-DDART_BUILD_DART7={dart7}",
         f"-DDART_BUILD_DARTPY7={dartpy7}",
-        f"-DDART_BUILD_GUI_OSG={gui_osg}",
+        f"-DDART_BUILD_GUI={gui}",
         f"-DDART_BUILD_PROFILE={build_profile}",
         f"-DDART_ENABLE_ASAN={enable_asan}",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
@@ -94,10 +94,6 @@ def configure_cmake(
         "-DDART_USE_SYSTEM_TRACY=ON",
         f"-DDART_VERBOSE={verbose}",
     ]
-
-    # Add pybind11 system flag (except for Windows)
-    if sys.platform != "win32":
-        cmake_cmd.append("-DDART_USE_SYSTEM_PYBIND11=ON")
 
     # Add codecov flag if enabled
     if codecov == "ON":
@@ -135,10 +131,10 @@ def main():
         help="Build dartpy7 (default: same as --dartpy)",
     )
     parser.add_argument(
-        "--gui-osg",
+        "--gui",
         default="ON",
         choices=["ON", "OFF"],
-        help="Build GUI OSG support (default: ON)",
+        help="Build GUI support (default: ON)",
     )
     parser.add_argument(
         "--build-profile",
@@ -172,7 +168,7 @@ def main():
         dartpy=args.dartpy,
         dart7=args.dart7,
         dartpy7=args.dartpy7,
-        gui_osg=args.gui_osg,
+        gui=args.gui,
         build_profile=args.build_profile,
         enable_asan=args.enable_asan,
         codecov=args.codecov,

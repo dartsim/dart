@@ -141,10 +141,10 @@ When adding new Python API documentation:
 Example module file:
 
 ```rst
-dartpy.simulation Module
+dartpy Module
 ========================
 
-.. automodule:: dartpy.simulation
+.. automodule:: dartpy
    :members:
    :undoc-members:
    :show-inheritance:

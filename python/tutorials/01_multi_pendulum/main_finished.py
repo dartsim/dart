@@ -144,8 +144,11 @@ class Controller:
     def add_constraint(self):
         # snippet:py-lesson3-add-constraint-start
         tip = self.pendulum.getBodyNode(self.pendulum.getNumBodyNodes() - 1)
+        # snippet:py-lesson3-location
         location = tip.getTransform().multiply([0.0, 0.0, default_height])
+        # snippet:py-lesson3-constraint
         self.ball_constraint = dart.constraint.BallJointConstraint(tip, location)
+        # snippet:py-lesson3-add-to-world
         self.world.getConstraintSolver().addConstraint(self.ball_constraint)
         # snippet:py-lesson3-add-constraint-end
 
@@ -238,7 +241,7 @@ class Controller:
         # snippet:py-lesson1c-body-force-end
 
 
-class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
+class PendulumEventHandler(dart.gui.GUIEventHandler):
     """Map keyboard input to controller actions."""
 
     def __init__(self, controller: Controller):
@@ -246,11 +249,11 @@ class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
         self.controller = controller
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
 
         key = ea.getKey()
-        gea = dart.gui.osg.GUIEventAdapter
+        gea = dart.gui.GUIEventAdapter
 
         digit_keys = {
             gea.KEY_1: 0,
@@ -301,7 +304,7 @@ class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
         return False
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     """Call the controller before each physics step."""
 
     def __init__(
@@ -409,12 +412,12 @@ def main():
 
     node = CustomWorldNode(world, controller)
 
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(handler)
 
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XY)
     grid.setOffset([0.0, 0.0, -5.0])
     viewer.addAttachment(grid)
 

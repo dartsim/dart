@@ -59,6 +59,8 @@ jobs all share the same configuration**. You can disable auto-detection with
 ```yaml
 - name: Setup sccache
   uses: mozilla-actions/sccache-action@v0.0.9
+  with:
+    disable_annotations: true
 
 - name: Configure environment for compiler cache
   run: |
@@ -78,6 +80,8 @@ jobs all share the same configuration**. You can disable auto-detection with
 ```yaml
 - name: Setup sccache
   uses: mozilla-actions/sccache-action@v0.0.9
+  with:
+    disable_annotations: true
 
 - name: Configure environment for compiler cache
   shell: powershell
@@ -93,6 +97,8 @@ jobs all share the same configuration**. You can disable auto-detection with
     echo "CCACHE_COMPRESS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "CCACHE_MAXSIZE=5G" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 ```
+
+Note: `disable_annotations` disables the post-run `sccache --show-stats` call, which avoids occasional client/server version mismatches on GitHub-hosted runners.
 
 **Local builds:** Because the detection logic is inside CMake, you do not need
 to wire anything up manually. If either `sccache` or `ccache` is on your PATH,

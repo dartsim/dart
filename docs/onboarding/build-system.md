@@ -105,13 +105,14 @@ dart/
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
-└── gui/            # GUI components
-    └── osg/        # OpenSceneGraph GUI
+└── gui/            # GUI components (OpenSceneGraph backend)
+    ├── render/     # Shape renderers
+    └── detail/     # Implementation details
 ```
 
-#### 3. dart/gui/osg/CMakeLists.txt
+#### 3. dart/gui/CMakeLists.txt
 
-**File:** `dart/gui/osg/CMakeLists.txt`
+**File:** `dart/gui/CMakeLists.txt`
 
 **Responsibilities:**
 
@@ -119,7 +120,7 @@ dart/
 - Integrates OpenSceneGraph
 - Integrates ImGui (system or fetched)
 - Manages render subdirectory
-- Generates component headers (`All.hpp`, `osg.hpp`)
+- Generates component headers (`All.hpp`, `gui.hpp`)
 
 **Dependencies:**
 
@@ -455,10 +456,9 @@ dart/
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
-└── gui/             # GUI components
-    └── osg/         # OpenSceneGraph GUI
-        ├── render/  # Rendering utilities
-        └── detail/  # Implementation details
+└── gui/             # GUI components (OpenSceneGraph backend)
+    ├── render/      # Rendering utilities
+    └── detail/      # Implementation details
 ```
 
 ---
@@ -493,7 +493,7 @@ dart/
 - **`dartpy`** - Python bindings
   - Condition: `DART_BUILD_DARTPY=ON`
   - Build Type: Python extension module
-  - Dependencies: `pybind11`, core DART libraries
+  - Dependencies: `nanobind`, core DART libraries
 
 ### Custom Targets
 

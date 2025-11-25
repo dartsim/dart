@@ -1,7 +1,7 @@
 import dartpy as dart
 
 
-class HelloWorldNode(dart.gui.osg.RealTimeWorldNode):
+class HelloWorldNode(dart.gui.RealTimeWorldNode):
     # Use this function to execute custom code before each time that the
     # window is rendered. This function can be deleted if it does not need
     # to be used.
@@ -41,12 +41,12 @@ def main():
     node = HelloWorldNode(world)
 
     # create a viewer with background color (red, green, blue, alpha), here: white
-    viewer = dart.gui.osg.Viewer([1.0, 1.0, 1.0, 1.0])
+    viewer = dart.gui.Viewer([1.0, 1.0, 1.0, 1.0])
     viewer.addWorldNode(node)
 
     # Grid settings
-    grid = dart.gui.osg.GridVisual()
-    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+    grid = dart.gui.GridVisual()
+    grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
     grid.setOffset([0, -0.55, 0])
     viewer.addAttachment(grid)
 

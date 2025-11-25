@@ -81,13 +81,36 @@ def resolve_build_dir(value: str | None) -> Path:
 def run_build(
     build_dir: Path, config: str | None, parallel: int, target: str | None
 ) -> None:
+    def _pipe_external_logs() -> None:
+        """Print useful external project logs when available for debugging."""
+        stamp_dir = (
+            build_dir / "test" / "FAKE_INSTALL-prefix" / "src" / "FAKE_INSTALL-stamp"
+        )
+        # Only print the logs we know are small enough to surface in CI.
+        if not stamp_dir.exists():
+            return
+
+        for log_path in sorted(stamp_dir.glob("FAKE_INSTALL-*-*.log")):
+            try:
+                lines = log_path.read_text(errors="replace").splitlines()
+            except OSError as exc:  # pragma: no cover - best-effort logging
+                print(f"Note: failed to read {log_path}: {exc}", file=sys.stderr)
+                continue
+
+            tail = "\n".join(lines[-400:])
+            print(f"\n----- Begin log: {log_path} -----\n{tail}\n----- End log -----\n")
+
     cmd = ["cmake", "--build", str(build_dir)]
     if config:
         cmd += ["--config", config]
     cmd += ["--parallel", str(parallel)]
     if target:
         cmd += ["--target", target]
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        _pipe_external_logs()
+        raise
 
 
 def main() -> int:
