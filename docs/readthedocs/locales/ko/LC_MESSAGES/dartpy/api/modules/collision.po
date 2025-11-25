@@ -30,13 +30,13 @@ msgid "Bases: :py:class:`~dartpy.collision.CollisionFilter`"
 msgstr ""
 
 #: ../../docstring 339b5a5addf94967b38c07998f51e101
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addBodyNodePairToBlackList:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addBodyNodePairToBlackList:1
 #: of
 msgid "Add a BodyNode pair to the blacklist."
 msgstr ""
 
 #: ../../docstring 4635fb8cecc84b57beabf0d401166c83
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.ignoresCollision:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.ignoresCollision:1
 #: of
 msgid ""
 "Returns true if the given two CollisionObjects should be checked by the "
@@ -44,13 +44,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeAllBodyNodePairsFromBlackList:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeAllBodyNodePairsFromBlackList:1
 #: f054f368427144ca9f7ed6f8a88fea6d of
 msgid "Remove all the BodyNode pairs from the blacklist."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeBodyNodePairFromBlackList:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeBodyNodePairFromBlackList:1
 #: faa3699ee62d431388ff07ec166a05a3 of
 msgid "Remove a BodyNode pair from the blacklist."
 msgstr ""
@@ -88,7 +88,7 @@ msgstr ""
 #: dartpy.collision.FCLCollisionDetector.PrimitiveShape:1
 #: dartpy.collision.RayHit:1 dartpy.collision.RaycastOption:1
 #: dartpy.collision.RaycastResult:1 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring 2421f359fe6a4917b5371125d65c8e64
@@ -96,20 +96,20 @@ msgstr ""
 #: 496735279efe4597a36f075fcf5f8748 56617891c6d741529f37689d25e6a799
 #: 59540be8efde4539afddacd1ff858251 82f447ab2cb64bcd92b205f0b6f04320
 #: a5bc7028f68d4dd3829977ef054d6ef5
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:1
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:1
 #: e272cae58b0d48819e1ca53d1d0b360d of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring 709ecc6db12a49fcbbe3dcff75491cc6
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:3
 #: of
 msgid ""
 "addShapeFramesOf(self: dartpy.collision.CollisionGroup, shapeFrame: "
@@ -117,13 +117,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring aa1c6c5139274c609934d566d0c2eacb
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:5
 #: of
 msgid "Adds a ShapeFrame"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:7
 #: dc3a2e035a734126b3e3d84bfc808092 of
 msgid ""
 "addShapeFramesOf(self: dartpy.collision.CollisionGroup, shapeFrames: "
@@ -132,13 +132,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 6a92f4ab3fa54a019666b14aeec3aaeb
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:9
 #: of
 msgid "Adds ShapeFrames"
 msgstr ""
 
 #: ../../docstring 367f2392bd064e19b19f032e13090b96
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:11
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:11
 #: of
 msgid ""
 "addShapeFramesOf(self: dartpy.collision.CollisionGroup, otherGroup: "
@@ -146,13 +146,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 83eca30ca60a49ffa9253d8cd1f733e6
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:13
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:13
 #: of
 msgid "Adds ShapeFrames of other CollisionGroup"
 msgstr ""
 
 #: ../../docstring a4773f6c62d842e6a087d37688e24d56
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:15
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:15
 #: of
 msgid ""
 "addShapeFramesOf(self: dartpy.collision.CollisionGroup, body: "
@@ -160,13 +160,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:17
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:17
 #: fa480f10faaa47468d9f916c596828e9 of
 msgid "Adds ShapeFrames of BodyNode"
 msgstr ""
 
 #: ../../docstring 971a800a2a864e2cb6654fe7cac1c7db
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:19
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:19
 #: of
 msgid ""
 "addShapeFramesOf(self: dartpy.collision.CollisionGroup, skeleton: "
@@ -174,13 +174,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 32d738c79cfc4dda852ff11301f74f56
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:21
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addShapeFramesOf:21
 #: of
 msgid "Adds ShapeFrames of MetaSkeleton"
 msgstr ""
 
 #: ../../docstring 13c2eb57a5194a4eb5ec505fffc116c6
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:3
 #: of
 msgid ""
 "collide(self: dartpy.collision.CollisionGroup, option: "
@@ -190,13 +190,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring b5663503b7e64d0d899895e2c9bccfe9
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:5
 #: of
 msgid "Performs collision check within this CollisionGroup"
 msgstr ""
 
 #: ../../docstring 10be5767859c4e5cb901183be22893be
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:7
 #: of
 msgid ""
 "collide(self: dartpy.collision.CollisionGroup, otherGroup: "
@@ -206,15 +206,15 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.collide:9
 #: eb8a478a87e34b289e0c8a253347c43a of
 msgid "Perform collision check against other CollisionGroup"
 msgstr ""
 
 #: ../../docstring 77452090b48546e89c13f5163b10753e
 #: b7be2ec7aa884621af0f5bf67a82bf48
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
 #: of
 msgid ""
 "getCollisionDetector(self: dartpy.collision.CollisionGroup) -> "
@@ -222,7 +222,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring d6ab785986d145f7a752c491c5c9499e
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:3
 #: of
 msgid ""
 "raycast(self: dartpy.collision.CollisionGroup, from: "
@@ -232,7 +232,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 66f4e3a5ae6f469eb6645e83f3fe0e9d
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:5
 #: of
 msgid ""
 "raycast(self: dartpy.collision.CollisionGroup, from: "
@@ -242,7 +242,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 5912b9b706d5450cbbe94137d99a1d7e
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.raycast:7
 #: of
 msgid ""
 "raycast(self: dartpy.collision.CollisionGroup, from: "
@@ -253,7 +253,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring a32a0412eb1c4a14a42f0f8342241af0
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:3
 #: of
 msgid ""
 "removeShapeFramesOf(self: dartpy.collision.CollisionGroup, shapeFrame: "
@@ -261,13 +261,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 206bc9c9d9cf47c596d9a11ea74549f3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:5
 #: of
 msgid "Removes a ShapeFrame"
 msgstr ""
 
 #: ../../docstring 7d238ed7c0e44a93b2063d9fe1cbb4d3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:7
 #: of
 msgid ""
 "removeShapeFramesOf(self: dartpy.collision.CollisionGroup, shapeFrames: "
@@ -276,13 +276,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring bb16039f85b94a1e9dac6aa0a9f2233d
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:9
 #: of
 msgid "Removes ShapeFrames"
 msgstr ""
 
 #: ../../docstring 040dcdaa9c8f4c5cb9580a06454a4d0f
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:11
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:11
 #: of
 msgid ""
 "removeShapeFramesOf(self: dartpy.collision.CollisionGroup, otherGroup: "
@@ -290,13 +290,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 573679aa33c1461985ed6e8b220de82c
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:13
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:13
 #: of
 msgid "Removes ShapeFrames of other CollisionGroup"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:15
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:15
 #: f31aa2eea7154713b91b047d3a9ca510 of
 msgid ""
 "removeShapeFramesOf(self: dartpy.collision.CollisionGroup, body: "
@@ -304,13 +304,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 1db47b98a79e47c88276387061313db4
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:17
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:17
 #: of
 msgid "Removes ShapeFrames of BodyNode"
 msgstr ""
 
 #: ../../docstring d38571056a934bd38e7adb3bca8b9ed3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:19
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:19
 #: of
 msgid ""
 "removeShapeFramesOf(self: dartpy.collision.CollisionGroup, skeleton: "
@@ -318,19 +318,19 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 7b28e0e4a29243f6974392549ccaf5a5
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:21
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeShapeFramesOf:21
 #: of
 msgid "Removes ShapeFrames of MetaSkeleton"
 msgstr ""
 
 #: ../../docstring 66fba702bb6446a4b22d6887f127e757
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:3
 #: of
 msgid "setAutomaticUpdate(self: dartpy.collision.CollisionGroup) -> None"
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.setAutomaticUpdate:5
 #: f3ce245fca89481e933f2f98739e85d9 of
 msgid ""
 "setAutomaticUpdate(self: dartpy.collision.CollisionGroup, automatic: "
@@ -339,8 +339,8 @@ msgstr ""
 
 #: ../../docstring 0a28f3f548d04543b077b947a25ab2bd
 #: 0dead9d1d3cb447991766f2f58e35064
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:7
 #: of
 msgid ""
 "getCollisionDetector(self: dartpy.collision.CollisionObject) -> "
@@ -349,57 +349,57 @@ msgstr ""
 
 #: ../../docstring b19466b3779e475db6f512faa8b8ffa6
 #: d78400de6d4a47ac9f5a321fbaab0040
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollisionDetector:9
 #: of
 msgid "Return collision detection engine associated with this CollisionObject."
 msgstr ""
 
 #: ../../docstring 20ba4c02e1434e6e92fa301f4ad05180
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getShape:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getShape:1
 #: of
 msgid "Return the associated Shape."
 msgstr ""
 
 #: ../../docstring 5c75eff8130641e5874a8b6f1de6379d
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getShapeFrame:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getShapeFrame:1
 #: of
 msgid "Return the associated ShapeFrame."
 msgstr ""
 
 #: ../../docstring 7f0103ffba1c4b77a2887b078385c616
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getTransform:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getTransform:1
 #: of
 msgid "Return the transformation of this CollisionObject in world coordinates."
 msgstr ""
 
 #: ../../docstring ccb9c3da52bc463d9c08a30a5ea53d60
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addContact:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addContact:1
 #: of
 msgid "Add one contact."
 msgstr ""
 
 #: ../../docstring 486e5a57cc7640cea95affdb38b21262
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clear:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.clear:1
 #: of
 msgid "Clear all the contacts."
 msgstr ""
 
 #: ../../docstring 99efb009887545ee9f48d989985dbb59
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollidingBodyNodes:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollidingBodyNodes:1
 #: of
 msgid "Return the set of BodyNodes that are in collision."
 msgstr ""
 
 #: ../../docstring 9d8d62780c5d4fab9a2949acdeadda90
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollidingShapeFrames:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getCollidingShapeFrames:1
 #: of
 msgid "Return the set of ShapeFrames that are in collision."
 msgstr ""
 
 #: ../../docstring 53e8355ec73e41ff8b02a7af3062efba
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:7
 #: e0551b432d594a3fbd97a8bed637b7c0 of
 msgid ""
 "getContact(self: dartpy.collision.CollisionResult, index: "
@@ -407,31 +407,31 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 234446d88da846b79c78cd3625a015f3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:5
 #: of
 msgid "Return the index-th contact."
 msgstr ""
 
 #: ../../docstring 70c0d49546214579b4bd047faa56cf1d
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContact:9
 #: of
 msgid "Return (const) the index-th contact."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContacts:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getContacts:1
 #: eedd193158dd4e4c936c2fe6f5544037 of
 msgid "Return contacts."
 msgstr ""
 
 #: ../../docstring 8bd674a27704419ca1766ae0622dba43
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumContacts:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getNumContacts:1
 #: of
 msgid "Return number of contacts."
 msgstr ""
 
 #: ../../docstring 4494434a782b4fe6a6cf3671c9d49dc3
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:3
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:3
 #: of
 msgid ""
 "inCollision(self: dartpy.collision.CollisionResult, bn: "
@@ -439,13 +439,13 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 78d9d44799f649f483e9cd86793ff362
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:5
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:5
 #: of
 msgid "Returns true if the given BodyNode is in collision."
 msgstr ""
 
 #: ../../docstring c47270adfe7a455bb95bac63883930ea
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:7
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:7
 #: of
 msgid ""
 "inCollision(self: dartpy.collision.CollisionResult, frame: "
@@ -453,31 +453,31 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 365123d128744a039181dbeb6339c444
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:9
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.inCollision:9
 #: of
 msgid "Returns true if the given ShapeFrame is in collision."
 msgstr ""
 
 #: ../../docstring 0b8fdc5ef7be4a4a9db8a69e76b77a72
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.isCollision:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.isCollision:1
 #: of
 msgid "Return binary collision result."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addCollisionFilter:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.addCollisionFilter:1
 #: e8de4f29cc9e4cfb8c51d88e0a29aafd of
 msgid "Adds a collision filter to this CompositeCollisionFilter."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeAllCollisionFilters:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeAllCollisionFilters:1
 #: f32c32f81bd6406eb9fa1ceac76fc869 of
 msgid "Removes all the collision filters from this CompositeCollisionFilter."
 msgstr ""
 
 #: ../../docstring a041f56fc7c44dfc9886294b23a0e577
-#: dartpy.collision.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeCollisionFilter:1
+#: dartpy.collision.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.removeCollisionFilter:1
 #: of
 msgid "Removes a collision filter from this CompositeCollisionFilter."
 msgstr ""

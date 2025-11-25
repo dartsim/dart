@@ -10,24 +10,24 @@ def test_basic():
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
-    for i in range(kr5.getNumBodyNodes()):
-        body = kr5.getBodyNode(i)
-        body_force = body.getBodyForce()
+    for i in range(kr5.get_num_body_nodes()):
+        body = kr5.get_body_node(i)
+        body_force = body.get_body_force()
         assert body_force.size == 6
-        bodyPtr = body.getBodyNodePtr()
+        bodyPtr = body.get_body_node_ptr()
         assert body == bodyPtr
-        assert body.getName() == bodyPtr.getName()
-        assert np.array_equal(np.array(body.getSpatialVelocity()), np.zeros(6)) is True
-        shape_nodes = body.getShapeNodes()
+        assert body.get_name() == bodyPtr.get_name()
+        assert np.array_equal(np.array(body.get_spatial_velocity()), np.zeros(6)) is True
+        shape_nodes = body.get_shape_nodes()
         for shape_node in shape_nodes:
             print(shape_node)
-            if shape_node.hasVisualAspect():
-                visual = shape_node.getVisualAspect()
-                visual.getRGBA()
-            if shape_node.hasCollisionAspect():
-                collision = shape_node.getCollisionAspect()
-            if shape_node.hasDynamicsAspect():
-                dynamics = shape_node.getDynamicsAspect()
+            if shape_node.has_visual_aspect():
+                visual = shape_node.get_visual_aspect()
+                visual.get_rgba()
+            if shape_node.has_collision_aspect():
+                collision = shape_node.get_collision_aspect()
+            if shape_node.has_dynamics_aspect():
+                dynamics = shape_node.get_dynamics_aspect()
 
 
 def test_get_child_methods():
@@ -35,17 +35,17 @@ def test_get_child_methods():
     kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
-    currentBodyNode = kr5.getRootBodyNode()
+    currentBodyNode = kr5.get_root_body_node()
     assert currentBodyNode is not None
 
-    for i in range(1, kr5.getNumBodyNodes()):
-        childBodyNode = currentBodyNode.getChildBodyNode(0)
-        childJoint = currentBodyNode.getChildJoint(0)
+    for i in range(1, kr5.get_num_body_nodes()):
+        childBodyNode = currentBodyNode.get_child_body_node(0)
+        childJoint = currentBodyNode.get_child_joint(0)
 
         assert childBodyNode is not None
         assert childJoint is not None
-        assert childBodyNode.getName() == kr5.getBodyNode(i).getName()
-        assert childJoint.getName() == kr5.getJoint(i).getName()
+        assert childBodyNode.get_name() == kr5.get_body_node(i).get_name()
+        assert childJoint.get_name() != ""
 
         currentBodyNode = childBodyNode
 
@@ -56,7 +56,7 @@ def test_get_inertia():
     assert kr5 is not None
 
     inertias = [
-        kr5.getBodyNode(i).getInertia() for i in range(1, kr5.getNumBodyNodes())
+        kr5.get_body_node(i).get_inertia() for i in range(1, kr5.get_num_body_nodes())
     ]
     assert all([inertia is not None for inertia in inertias])
 

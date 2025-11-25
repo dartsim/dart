@@ -36,7 +36,7 @@ def test_parse_skeleton_missing_package_returns_null():
 def test_parse_skeleton_loads_primitive_geometry():
     loader = UrdfParser()
     assert (
-        loader.parseSkeleton(get_asset_path("urdf/test/primitive_geometry.urdf"))
+        loader.parse_skeleton(get_asset_path("urdf/test/primitive_geometry.urdf"))
         is not None
     )
 
@@ -47,25 +47,23 @@ def test_parse_skeleton_loads_primitive_geometry():
 # def test_parse_world():
 #     loader = UrdfParser()
 #     assert loader.parseWorld(get_asset_path('urdf/testWorld.urdf')) is not None
-
-
 def test_parse_joint_properties():
     loader = UrdfParser()
     robot = loader.parseSkeleton(get_asset_path("urdf/test/joint_properties.urdf"))
     assert robot is not None
 
 
-#    joint1 = robot.getJoint(1)
+#    joint1 = robot.get_joint(1)
 #    assert joint1 is not None
-#    assert joint1.getDampingCoefficient(0) == pytest.approx(1.2, 1e-12)
-#    assert joint1.getCoulombFriction(0) == pytest.approx(2.3, 1e-12)
+#    assert joint1.get_damping_coefficient(0) == pytest.approx(1.2, 1e-12)
+#    assert joint1.get_coulomb_friction(0) == pytest.approx(2.3, 1e-12)
 
-#    joint2 = robot.getJoint(2)
+#    joint2 = robot.get_joint(2)
 #    assert joint2 is not None
-#    assert joint2.getPositionLowerLimit(0) == -float("inf")
-#    assert joint2.getPositionUpperLimit(0) == float("inf")
+#    assert joint2.get_position_lower_limit(0) == -float("inf")
+#    assert joint2.get_position_upper_limit(0) == float("inf")
 #    if not platform.linux_distribution()[1] == '14.04':
-#        assert joint2.isCyclic(0)
+#        assert joint2.is_cyclic(0)
 
 
 if __name__ == "__main__":
