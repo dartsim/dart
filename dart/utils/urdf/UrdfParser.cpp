@@ -404,7 +404,7 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
     default: {
       DART_ERROR(
           "Unsupported RootJointType '{}'. Using Floating instead.",
-          static_cast<int>(options.mDefaultRootJointType));
+          static_cast<int>(options.mDefaultRootJointType)); // LCOV_EXCL_LINE
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
@@ -620,7 +620,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
       break;
     }
     default: {
-      DART_ERROR("Unsupported joint type ({})", _jt->type);
+      DART_ERROR("Unsupported joint type ({})", _jt->type); // LCOV_EXCL_LINE
       return nullptr;
     }
   }
