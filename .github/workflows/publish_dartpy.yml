@@ -97,6 +97,7 @@ jobs:
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
+          disable_annotations: true
           # Enable only when GitHub cache backend is available; otherwise skip.
           use-gha-cache: ${{ env.ACTIONS_CACHE_URL != '' }}
 
