@@ -46,6 +46,8 @@ namespace constraint {
 class DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
+  using BoxedLcpSolver::solve;
+
   struct DART_API Option
   {
     int mMaxIteration;

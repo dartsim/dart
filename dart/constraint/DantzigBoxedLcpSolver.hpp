@@ -43,6 +43,8 @@ namespace constraint {
 class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
+  using BoxedLcpSolver::solve;
+
   // Documentation inherited.
   const std::string& getType() const override;
 

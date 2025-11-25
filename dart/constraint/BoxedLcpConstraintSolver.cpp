@@ -252,16 +252,17 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   }
   const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
   DART_ASSERT(mBoxedLcpSolver);
-  bool success = mBoxedLcpSolver->solve(
-      n,
-      mA.data(),
-      mX.data(),
-      mB.data(),
-      0,
-      mLo.data(),
-      mHi.data(),
-      mFIndex.data(),
-      earlyTermination);
+  math::LcpOptions primaryOptions = mBoxedLcpSolver->getDefaultOptions();
+  primaryOptions.earlyTermination = earlyTermination;
+  math::LcpResult primaryResult = mBoxedLcpSolver->solve(
+      mA.leftCols(static_cast<Eigen::Index>(n)).eval(),
+      mB,
+      mLo,
+      mHi,
+      mFIndex,
+      mX,
+      primaryOptions);
+  bool success = primaryResult.succeeded();
 
   // Sanity check. LCP solvers should not report success with nan values, but
   // it could happen. So we set the success to false for nan values.
@@ -272,16 +273,18 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
-        n,
-        mABackup.data(),
-        mXBackup.data(),
-        mBBackup.data(),
-        0,
-        mLoBackup.data(),
-        mHiBackup.data(),
-        mFIndexBackup.data(),
-        false);
+    math::LcpOptions fallbackOptions
+        = mSecondaryBoxedLcpSolver->getDefaultOptions();
+    fallbackOptions.earlyTermination = false;
+    math::LcpResult fallbackResult = mSecondaryBoxedLcpSolver->solve(
+        mABackup.leftCols(static_cast<Eigen::Index>(n)).eval(),
+        mBBackup,
+        mLoBackup,
+        mHiBackup,
+        mFIndexBackup,
+        mXBackup,
+        fallbackOptions);
+    fallbackSuccess = fallbackResult.succeeded() && !mXBackup.hasNaN();
     mX = mXBackup;
     fallbackRan = true;
   }

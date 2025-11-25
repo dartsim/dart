@@ -36,6 +36,7 @@
 #include <dart/config.hpp>
 
 #include <dart/common/Castable.hpp>
+#include <dart/math/lcp/LcpTypes.hpp>
 
 #include <Eigen/Core>
 
@@ -50,8 +51,23 @@ public:
   /// Destructor
   virtual ~BoxedLcpSolver() = default;
 
-  /// Returns the type
+  /// Returns the type (legacy identifier kept for compatibility)
   virtual const std::string& getType() const = 0;
+
+  /// Default options for this solver
+  virtual math::LcpOptions getDefaultOptions() const;
+  virtual void setDefaultOptions(const math::LcpOptions& options);
+
+  /// Modern Eigen-friendly solve interface. By default this wraps the legacy
+  /// pointer-based solve() below.
+  virtual math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      const math::LcpOptions& options);
 
   /// Solves constraint impulses for a constrained group. The LCP formulation
   /// setting that this function solve is A*x = b + w where each x[i], w[i]
@@ -93,6 +109,9 @@ public:
 #if DART_BUILD_MODE_DEBUG
   virtual bool canSolve(int n, const double* A) = 0;
 #endif
+
+protected:
+  math::LcpOptions mDefaultOptions;
 };
 
 } // namespace constraint
