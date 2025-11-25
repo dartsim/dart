@@ -109,11 +109,11 @@ def test_collision_groups():
     cd = dart.DARTCollisionDetector()
     collision_groups_tester(cd)
 
-    if hasattr(dart.collision, "BulletCollisionDetector"):
+    if hasattr(dart, "BulletCollisionDetector"):
         cd = dart.BulletCollisionDetector()
         collision_groups_tester(cd)
 
-    if hasattr(dart.collision, "OdeCollisionDetector"):
+    if hasattr(dart, "OdeCollisionDetector"):
         cd = dart.OdeCollisionDetector()
         collision_groups_tester(cd)
 
@@ -138,7 +138,7 @@ def test_filter(cd):
     shape_node1.create_collision_aspect()
 
     # Create a world and add the created skeleton
-    world = dart.simulation.World()
+    world = dart.World()
     world.add_skeleton(skel)
 
     # Set a new collision detector
