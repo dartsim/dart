@@ -37,7 +37,8 @@ void defImGuiWidget(nb::module_& m)
   nb::class_<
       dart::gui::ImGuiWidget,
       PyImGuiWidget,
-      nb::holder_type<std::shared_ptr<dart::gui::ImGuiWidget>>>(m, "ImGuiWidget")
+      nb::holder_type<std::shared_ptr<dart::gui::ImGuiWidget>>>(
+          m, "ImGuiWidget")
       .def(nb::init<>())
       .def("render", &dart::gui::ImGuiWidget::render)
       .def(
