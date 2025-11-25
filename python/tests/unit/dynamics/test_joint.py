@@ -107,19 +107,19 @@ def test_access_to_parent_child_transforms():
     skel = dart.Skeleton()
     joint, _ = skel.create_revolute_joint_and_body_node_pair()
 
-    parentToJointTf = dart.Isometry3.Identity()
-    parentToJointTf.set_translation(np.random.rand(3, 1))
-    childToJointTf = dart.Isometry3.Identity()
-    childToJointTf.set_translation(np.random.rand(3, 1))
+    parent_to_joint_tf = dart.Isometry3.identity()
+    parent_to_joint_tf.set_translation(np.random.rand(3, 1))
+    child_to_joint_tf = dart.Isometry3.identity()
+    child_to_joint_tf.set_translation(np.random.rand(3, 1))
 
-    joint.set_transform_from_parent_body_node(parentToJointTf)
-    joint.set_transform_from_child_body_node(childToJointTf)
+    joint.set_transform_from_parent_body_node(parent_to_joint_tf)
+    joint.set_transform_from_child_body_node(child_to_joint_tf)
 
-    storedParentTf = joint.get_transform_from_parent_body_node()
-    storedChildTf = joint.get_transform_from_child_body_node()
+    stored_parent_tf = joint.get_transform_from_parent_body_node()
+    stored_child_tf = joint.get_transform_from_child_body_node()
 
-    assert np.allclose(parentToJointTf.matrix(), storedParentTf.matrix())
-    assert np.allclose(childToJointTf.matrix(), storedChildTf.matrix())
+    assert np.allclose(parent_to_joint_tf.matrix(), stored_parent_tf.matrix())
+    assert np.allclose(child_to_joint_tf.matrix(), stored_child_tf.matrix())
 
 
 def test_ball_joint_positions_conversion():

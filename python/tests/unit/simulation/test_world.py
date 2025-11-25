@@ -5,39 +5,39 @@ import pytest
 
 
 def test_empty_world():
-    world = dart.simulation.World("my world")
+    world = dart.World("my world")
     assert world.get_num_skeletons() == 0
     assert world.get_num_simple_frames() == 0
 
 
 def test_collision_detector_change():
-    world = dart.simulation.World("world")
+    world = dart.World("world")
     solver = world.get_constraint_solver()
     assert solver is not None
 
     assert (
         solver.get_collision_detector().get_type()
-        == dart.collision.FCLCollisionDetector().get_static_type()
+        == dart.FCLCollisionDetector().get_static_type()
     )
 
-    solver.set_collision_detector(dart.collision.DARTCollisionDetector())
+    solver.set_collision_detector(dart.DARTCollisionDetector())
     assert (
         solver.get_collision_detector().get_type()
-        == dart.collision.DARTCollisionDetector().get_static_type()
+        == dart.DARTCollisionDetector().get_static_type()
     )
 
-    if hasattr(dart.collision, "BulletCollisionDetector"):
-        solver.set_collision_detector(dart.collision.BulletCollisionDetector())
+    if hasattr(dart, "BulletCollisionDetector"):
+        solver.set_collision_detector(dart.BulletCollisionDetector())
         assert (
             solver.get_collision_detector().get_type()
-            == dart.collision.BulletCollisionDetector().get_static_type()
+            == dart.BulletCollisionDetector().get_static_type()
         )
 
-    if hasattr(dart.collision, "OdeCollisionDetector"):
-        solver.set_collision_detector(dart.collision.OdeCollisionDetector())
+    if hasattr(dart, "OdeCollisionDetector"):
+        solver.set_collision_detector(dart.OdeCollisionDetector())
         assert (
             solver.get_collision_detector().get_type()
-            == dart.collision.OdeCollisionDetector().get_static_type()
+            == dart.OdeCollisionDetector().get_static_type()
         )
 
 
