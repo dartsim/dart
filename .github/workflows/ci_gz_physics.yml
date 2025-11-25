@@ -67,7 +67,7 @@ jobs:
 
       - name: Configure environment for compiler cache
         run: |
-          if [ -n "${ACTIONS_CACHE_URL:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+          if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
             echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           else
             echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
