@@ -6,8 +6,8 @@ import pytest
 
 
 def test_basic():
-    urdfParser = dart.utils.UrdfParser()
-    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    urdfParser = dart.io.DartLoader()
+    kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
     for i in range(kr5.get_num_body_nodes()):
@@ -31,8 +31,8 @@ def test_basic():
 
 
 def test_get_child_methods():
-    urdfParser = dart.utils.UrdfParser()
-    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    urdfParser = dart.io.DartLoader()
+    kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
     currentBodyNode = kr5.get_root_body_node()
@@ -51,8 +51,8 @@ def test_get_child_methods():
 
 
 def test_get_inertia():
-    urdfParser = dart.utils.UrdfParser()
-    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    urdfParser = dart.io.DartLoader()
+    kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
     inertias = [

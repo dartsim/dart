@@ -40,8 +40,8 @@ def _dof(skeleton: dart.Skeleton, name: str):
 
 def create_simple_atlas():
   """Create a simplified Atlas robot for testing."""
-  urdf = dart.utils.UrdfParser()
-  atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+  urdf = dart.io.DartLoader()
+  atlas = urdf.parse_skeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
   return atlas
 
 
