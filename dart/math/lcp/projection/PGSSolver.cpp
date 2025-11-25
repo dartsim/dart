@@ -62,8 +62,6 @@ LcpResult PGSSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
-  const int nSkip = math::padding(n);
-
   Eigen::VectorXd currentX = options.warmStart ? x : Eigen::VectorXd::Zero(n);
   Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
 

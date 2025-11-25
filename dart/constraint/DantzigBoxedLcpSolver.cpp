@@ -66,8 +66,6 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
   }
 
   const int n = static_cast<int>(b.size());
-  const int nSkip = math::padding(n);
-
   math::DantzigSolver solver;
   math::LcpResult lcpResult = solver.solve(A, b, lo, hi, findex, x, options);
   return lcpResult;
