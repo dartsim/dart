@@ -34,8 +34,9 @@
 
 #include <Eigen/SVD>
 
-#include <cmath>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace math {
@@ -237,8 +238,7 @@ int LemkeImpl(
       // Backtracking on the correction to keep feasibility and improve w
       double step = 1.0;
       for (int i = 0; i < 6; ++i) {
-        const Eigen::VectorXd zCandidate
-            = (*z + step * delta).cwiseMax(0.0);
+        const Eigen::VectorXd zCandidate = (*z + step * delta).cwiseMax(0.0);
         const Eigen::VectorXd wCandidate = M * zCandidate + q;
         if (wCandidate.minCoeff() > w.minCoeff()) {
           *z = zCandidate;
