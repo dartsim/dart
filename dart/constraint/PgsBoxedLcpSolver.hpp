@@ -48,6 +48,15 @@ class DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
 public:
   using BoxedLcpSolver::solve;
 
+  math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      const math::LcpOptions& options) override;
+
   struct DART_API Option
   {
     int mMaxIteration;

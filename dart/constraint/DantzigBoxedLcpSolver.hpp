@@ -45,6 +45,15 @@ class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
 public:
   using BoxedLcpSolver::solve;
 
+  math::LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      const math::LcpOptions& options) override;
+
   // Documentation inherited.
   const std::string& getType() const override;
 

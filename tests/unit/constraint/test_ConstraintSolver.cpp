@@ -41,6 +41,8 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
+
 #include <limits>
 #include <memory>
 #include <vector>
@@ -177,6 +179,39 @@ public:
     for (int i = 0; i < n; ++i)
       x[i] = std::numeric_limits<double>::quiet_NaN();
     return true; // claims success despite NaN output
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+#endif
+};
+
+// Solver that echoes the incoming warm-start seed.
+class WarmStartEchoBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type{"WarmStartEchoBoxedLcpSolver"};
+    return type;
+  }
+
+  bool solve(
+      int /*n*/,
+      double* /*A*/,
+      double* x,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/ = false) override
+  {
+    // Leave x untouched to reflect the initial seed provided by the caller.
+    return true;
   }
 
 #if DART_BUILD_MODE_DEBUG
@@ -645,4 +680,35 @@ TEST(ConstraintSolver, LcpPartialNanFallbackZeroesOnlyNaNEntries)
   ASSERT_EQ(2u, constraintPtr->lastAppliedImpulse.size());
   EXPECT_DOUBLE_EQ(0.0, constraintPtr->lastAppliedImpulse[0]);
   EXPECT_DOUBLE_EQ(0.8, constraintPtr->lastAppliedImpulse[1]);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, BoxedSolverEigenInterfaceRespectsWarmStart)
+{
+  WarmStartEchoBoxedLcpSolver solver;
+
+  Eigen::MatrixXd A(1, 1);
+  A << 1.0;
+  Eigen::VectorXd b(1);
+  b << 0.0;
+  Eigen::VectorXd lo(1);
+  lo << 0.0;
+  Eigen::VectorXd hi(1);
+  hi << 1.0;
+  Eigen::VectorXi findex(1);
+  findex << -1;
+  Eigen::VectorXd x(1);
+  x << 0.7;
+
+  auto opts = solver.getDefaultOptions();
+  opts.warmStart = true;
+  auto warmResult = solver.solve(A, b, lo, hi, findex, x, opts);
+  EXPECT_EQ(dart::math::LcpSolverStatus::Success, warmResult.status);
+  EXPECT_DOUBLE_EQ(0.7, x[0]);
+
+  x.setConstant(0.7);
+  opts.warmStart = false;
+  auto coldResult = solver.solve(A, b, lo, hi, findex, x, opts);
+  EXPECT_EQ(dart::math::LcpSolverStatus::Success, coldResult.status);
+  EXPECT_DOUBLE_EQ(0.0, x[0]);
 }
