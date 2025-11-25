@@ -177,11 +177,11 @@ graph TB
     COLLISION --> COMMON
     SKELETON --> COMMON
 
-    click VIEWER "dart/gui/osg/Viewer.hpp" "Open Viewer"
-    click IMGUI "dart/gui/osg/ImGuiViewer.hpp" "Open ImGuiViewer"
-    click WORLDNODE "dart/gui/osg/WorldNode.hpp" "Open WorldNode"
-    click DND "dart/gui/osg/DragAndDrop.hpp" "Open DragAndDrop"
-    click INTERACTIVE "dart/gui/osg/InteractiveFrame.hpp" "Open InteractiveFrame"
+    click VIEWER "dart/gui/Viewer.hpp" "Open Viewer"
+    click IMGUI "dart/gui/ImGuiViewer.hpp" "Open ImGuiViewer"
+    click WORLDNODE "dart/gui/WorldNode.hpp" "Open WorldNode"
+    click DND "dart/gui/DragAndDrop.hpp" "Open DragAndDrop"
+    click INTERACTIVE "dart/gui/InteractiveFrame.hpp" "Open InteractiveFrame"
     click WORLD "dart/simulation/World.hpp" "Open World"
     click SKELETON "dart/dynamics/Skeleton.hpp" "Open Skeleton"
     click BODYNODE "dart/dynamics/BodyNode.hpp" "Open BodyNode"
@@ -239,18 +239,18 @@ graph TB
 
 ### Component: Viewer (GUI Entry Point)
 
-**File**: [`Viewer.hpp`](dart/gui/osg/Viewer.hpp) | [`Viewer.cpp`](dart/gui/osg/Viewer.cpp)
+**File**: [`Viewer.hpp`](dart/gui/Viewer.hpp) | [`Viewer.cpp`](dart/gui/Viewer.cpp)
 
 **Purpose**: Main 3D visualization window that integrates OpenSceneGraph rendering with DART simulation. Manages camera, lighting, shadows, event handling, and world node registration.
 
 **Key Elements**:
 
-- [`Viewer::Viewer()`](dart/gui/osg/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
-- [`Viewer::addWorldNode()`](dart/gui/osg/Viewer.cpp#L122) - Registers a WorldNode for rendering
-- [`Viewer::enableDragAndDrop()`](dart/gui/osg/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
-- [`Viewer::run()`](dart/gui/osg/Viewer.cpp#L462) - Main rendering loop
-- [`Viewer::setupDefaultLights()`](dart/gui/osg/Viewer.cpp#L292) - Configures scene lighting
-- [`Viewer::captureScreen()`](dart/gui/osg/Viewer.cpp#L373) - Screenshot functionality
+- [`Viewer::Viewer()`](dart/gui/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
+- [`Viewer::addWorldNode()`](dart/gui/Viewer.cpp#L122) - Registers a WorldNode for rendering
+- [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
+- [`Viewer::run()`](dart/gui/Viewer.cpp#L462) - Main rendering loop
+- [`Viewer::setupDefaultLights()`](dart/gui/Viewer.cpp#L292) - Configures scene lighting
+- [`Viewer::captureScreen()`](dart/gui/Viewer.cpp#L373) - Screenshot functionality
 
 **Depends On**:
 
@@ -261,16 +261,16 @@ graph TB
 
 ### Component: ImGuiViewer (Enhanced Viewer)
 
-**File**: [`ImGuiViewer.hpp`](dart/gui/osg/ImGuiViewer.hpp) | [`ImGuiViewer.cpp`](dart/gui/osg/ImGuiViewer.cpp)
+**File**: [`ImGuiViewer.hpp`](dart/gui/ImGuiViewer.hpp) | [`ImGuiViewer.cpp`](dart/gui/ImGuiViewer.cpp)
 
 **Purpose**: Extended viewer with Dear ImGui integration for modern UI widgets and controls. Provides immediate-mode GUI capabilities for debugging, controls, and custom interfaces.
 
 **Key Elements**:
 
-- [`ImGuiViewer::ImGuiViewer()`](dart/gui/osg/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
-- [`ImGuiHandler`](dart/gui/osg/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
-- [`ImGuiWidget`](dart/gui/osg/ImGuiWidget.hpp) - Base class for custom widgets
-- [`AboutWidget`](dart/gui/osg/ImGuiViewer.cpp#L49) - Default about dialog
+- [`ImGuiViewer::ImGuiViewer()`](dart/gui/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
+- [`ImGuiHandler`](dart/gui/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
+- [`ImGuiWidget`](dart/gui/ImGuiWidget.hpp) - Base class for custom widgets
+- [`AboutWidget`](dart/gui/ImGuiViewer.cpp#L49) - Default about dialog
 
 **Depends On**:
 
@@ -281,16 +281,16 @@ graph TB
 
 ### Component: WorldNode (Simulation-Rendering Bridge)
 
-**File**: [`WorldNode.hpp`](dart/gui/osg/WorldNode.hpp) | [`WorldNode.cpp`](dart/gui/osg/WorldNode.cpp)
+**File**: [`WorldNode.hpp`](dart/gui/WorldNode.hpp) | [`WorldNode.cpp`](dart/gui/WorldNode.cpp)
 
 **Purpose**: Encapsulates a DART World for OSG rendering. Manages skeleton visualization, shape nodes, shadow groups, and synchronization between simulation and rendering state.
 
 **Key Elements**:
 
-- [`WorldNode::WorldNode()`](dart/gui/osg/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
-- [`WorldNode::refresh()`](dart/gui/osg/WorldNode.cpp#L138) - Updates visual state from simulation
-- [`WorldNode::customPreRefresh()`](dart/gui/osg/WorldNode.hpp#L81) - Hook for custom update logic
-- [`WorldNode::setShadowTechnique()`](dart/gui/osg/WorldNode.cpp#L218) - Configures shadow rendering
+- [`WorldNode::WorldNode()`](dart/gui/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
+- [`WorldNode::refresh()`](dart/gui/WorldNode.cpp#L138) - Updates visual state from simulation
+- [`WorldNode::customPreRefresh()`](dart/gui/WorldNode.hpp#L81) - Hook for custom update logic
+- [`WorldNode::setShadowTechnique()`](dart/gui/WorldNode.cpp#L218) - Configures shadow rendering
 - Dual scene graph: Normal group and shadow group for optimized shadow rendering
 
 **Depends On**:
@@ -302,15 +302,15 @@ graph TB
 
 ### Component: RealTimeWorldNode (Simulation Loop)
 
-**File**: [`RealTimeWorldNode.hpp`](dart/gui/osg/RealTimeWorldNode.hpp) | [`RealTimeWorldNode.cpp`](dart/gui/osg/RealTimeWorldNode.cpp)
+**File**: [`RealTimeWorldNode.hpp`](dart/gui/RealTimeWorldNode.hpp) | [`RealTimeWorldNode.cpp`](dart/gui/RealTimeWorldNode.cpp)
 
 **Purpose**: Real-time simulation with adaptive time stepping. Maintains target real-time factor (RTF) and provides hooks for custom logic before/after each simulation step.
 
 **Key Elements**:
 
-- [`RealTimeWorldNode::refresh()`](dart/gui/osg/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
-- [`RealTimeWorldNode::customPreStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
-- [`RealTimeWorldNode::customPostStep()`](dart/gui/osg/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
+- [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
+- [`RealTimeWorldNode::customPreStep()`](dart/gui/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
+- [`RealTimeWorldNode::customPostStep()`](dart/gui/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
 - Adaptive stepping: Multiple sub-steps per frame to maintain RTF
 
 **Depends On**:
@@ -322,15 +322,15 @@ graph TB
 
 ### Component: ShapeFrameNode (Frame Visualization)
 
-**File**: [`ShapeFrameNode.hpp`](dart/gui/osg/ShapeFrameNode.hpp) | [`ShapeFrameNode.cpp`](dart/gui/osg/ShapeFrameNode.cpp)
+**File**: [`ShapeFrameNode.hpp`](dart/gui/ShapeFrameNode.hpp) | [`ShapeFrameNode.cpp`](dart/gui/ShapeFrameNode.cpp)
 
 **Purpose**: Bridges DART frames to OSG scene graph. Manages transformation updates, shape rendering, visual properties (color, transparency), and lifecycle.
 
 **Key Elements**:
 
-- [`ShapeFrameNode::ShapeFrameNode()`](dart/gui/osg/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
-- [`ShapeFrameNode::refresh()`](dart/gui/osg/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
-- [`ShapeFrameNode::createShapeNode()`](dart/gui/osg/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
+- [`ShapeFrameNode::ShapeFrameNode()`](dart/gui/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
+- [`ShapeFrameNode::refresh()`](dart/gui/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
+- [`ShapeFrameNode::createShapeNode()`](dart/gui/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
 - Utilization tracking for automatic garbage collection
 
 **Depends On**:
@@ -342,19 +342,19 @@ graph TB
 
 ### Component: Shape Render Nodes
 
-**Directory**: [`dart/gui/osg/render/`](dart/gui/osg/render/)
+**Directory**: [`dart/gui/render/`](dart/gui/render/)
 
 **Purpose**: Specialized renderers for 16+ DART shape types. Each renderer converts DART shape geometry to OSG drawable geometry with proper materials and textures.
 
 **Key Shape Nodes**:
 
-- [`BoxShapeNode`](dart/gui/osg/render/BoxShapeNode.hpp) - Box primitives
-- [`SphereShapeNode`](dart/gui/osg/render/SphereShapeNode.hpp) - Sphere primitives
-- [`CylinderShapeNode`](dart/gui/osg/render/CylinderShapeNode.hpp) - Cylinder primitives
-- [`CapsuleShapeNode`](dart/gui/osg/render/CapsuleShapeNode.hpp) - Capsule primitives
-- [`MeshShapeNode`](dart/gui/osg/render/MeshShapeNode.hpp) - Arbitrary mesh geometry
-- [`SoftMeshShapeNode`](dart/gui/osg/render/SoftMeshShapeNode.hpp) - Deformable soft bodies
-- [`PointCloudShapeNode`](dart/gui/osg/render/PointCloudShapeNode.hpp) - Point cloud visualization
+- [`BoxShapeNode`](dart/gui/render/BoxShapeNode.hpp) - Box primitives
+- [`SphereShapeNode`](dart/gui/render/SphereShapeNode.hpp) - Sphere primitives
+- [`CylinderShapeNode`](dart/gui/render/CylinderShapeNode.hpp) - Cylinder primitives
+- [`CapsuleShapeNode`](dart/gui/render/CapsuleShapeNode.hpp) - Capsule primitives
+- [`MeshShapeNode`](dart/gui/render/MeshShapeNode.hpp) - Arbitrary mesh geometry
+- [`SoftMeshShapeNode`](dart/gui/render/SoftMeshShapeNode.hpp) - Deformable soft bodies
+- [`PointCloudShapeNode`](dart/gui/render/PointCloudShapeNode.hpp) - Point cloud visualization
 
 **Depends On**:
 
@@ -365,16 +365,16 @@ graph TB
 
 ### Component: DragAndDrop System
 
-**File**: [`DragAndDrop.hpp`](dart/gui/osg/DragAndDrop.hpp) | [`DragAndDrop.cpp`](dart/gui/osg/DragAndDrop.cpp)
+**File**: [`DragAndDrop.hpp`](dart/gui/DragAndDrop.hpp) | [`DragAndDrop.cpp`](dart/gui/DragAndDrop.cpp)
 
 **Purpose**: Comprehensive drag-and-drop framework for interactive manipulation with constraint support, rotation modes, and specialized handlers for different entity types.
 
 **Key Elements**:
 
-- [`DragAndDrop`](dart/gui/osg/DragAndDrop.hpp#L61) - Abstract base class
-- [`SimpleFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
-- [`InteractiveFrameDnD`](dart/gui/osg/DragAndDrop.hpp#L236) - Drag interactive frame tools
-- [`BodyNodeDnD`](dart/gui/osg/DragAndDrop.hpp#L266) - Drag robot bodies with IK
+- [`DragAndDrop`](dart/gui/DragAndDrop.hpp#L61) - Abstract base class
+- [`SimpleFrameDnD`](dart/gui/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
+- [`InteractiveFrameDnD`](dart/gui/DragAndDrop.hpp#L236) - Drag interactive frame tools
+- [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266) - Drag robot bodies with IK
 - Constraint types: `UNCONSTRAINED`, `LINE_CONSTRAINT`, `PLANE_CONSTRAINT`
 - Rotation modes: `HOLD_MODKEY`, `ALWAYS_ON`, `ALWAYS_OFF`
 
@@ -387,17 +387,17 @@ graph TB
 
 ### Component: InteractiveFrame
 
-**File**: [`InteractiveFrame.hpp`](dart/gui/osg/InteractiveFrame.hpp) | [`InteractiveFrame.cpp`](dart/gui/osg/InteractiveFrame.cpp)
+**File**: [`InteractiveFrame.hpp`](dart/gui/InteractiveFrame.hpp) | [`InteractiveFrame.cpp`](dart/gui/InteractiveFrame.cpp)
 
 **Purpose**: 3D manipulator widget with visual handles for translation and rotation. Creates arrows, rings, and planes for intuitive 3D object manipulation.
 
 **Key Elements**:
 
-- [`InteractiveFrame`](dart/gui/osg/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
-- [`InteractiveTool`](dart/gui/osg/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
+- [`InteractiveFrame`](dart/gui/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
+- [`InteractiveTool`](dart/gui/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
 - Tool types: `LINEAR` (translation arrows), `ANGULAR` (rotation rings), `PLANAR` (2D planes)
 - Color-coded axes: X=red, Y=green, Z=blue
-- [`resizeStandardVisuals()`](dart/gui/osg/InteractiveFrame.cpp#L570) - Customize tool size/thickness
+- [`resizeStandardVisuals()`](dart/gui/InteractiveFrame.cpp#L570) - Customize tool size/thickness
 
 **Depends On**:
 
@@ -562,7 +562,7 @@ graph TB
 - `dartpy.collision` - Collision detection backends
 - `dartpy.constraint` - Constraint solving
 - `dartpy.simulation` - World simulation
-- `dartpy.gui.osg` - 3D visualization with OSG and ImGui
+- `dartpy.gui` - 3D visualization with OSG and ImGui
 - `dartpy.utils` - File parsers (URDF, SDF, SKEL, MJCF)
 
 **Key Files**:
@@ -621,8 +621,8 @@ sequenceDiagram
 **Key Files**:
 - Example: [`examples/hello_world/main.cpp`](examples/hello_world/main.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
-- [`RealTimeWorldNode::refresh()`](dart/gui/osg/RealTimeWorldNode.cpp#L103)
-- [`Viewer::run()`](dart/gui/osg/Viewer.cpp#L462)
+- [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103)
+- [`Viewer::run()`](dart/gui/Viewer.cpp#L462)
 
 ---
 
@@ -667,9 +667,9 @@ sequenceDiagram
 
 **Key Files**:
 - Example: [`examples/atlas_puppet/main.cpp`](examples/atlas_puppet/main.cpp)
-- [`BodyNodeDnD`](dart/gui/osg/DragAndDrop.hpp#L266)
+- [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266)
 - [`IK::solve()`](dart/dynamics/IK.cpp#L142)
-- [`Viewer::enableDragAndDrop()`](dart/gui/osg/Viewer.cpp#L189)
+- [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189)
 
 ---
 
@@ -758,9 +758,9 @@ sequenceDiagram
 </mermaid>
 
 **Key Files**:
-- [`ImGuiHandler::newFrame()`](dart/gui/osg/ImGuiHandler.cpp#L135)
-- [`ImGuiHandler::render()`](dart/gui/osg/ImGuiHandler.cpp#L207)
-- [`ImGuiWidget::render()`](dart/gui/osg/ImGuiWidget.hpp#L49)
+- [`ImGuiHandler::newFrame()`](dart/gui/ImGuiHandler.cpp#L135)
+- [`ImGuiHandler::render()`](dart/gui/ImGuiHandler.cpp#L207)
+- [`ImGuiWidget::render()`](dart/gui/ImGuiWidget.hpp#L49)
 
 ---
 
@@ -1172,7 +1172,9 @@ dart_gui/
 │   ├── common/               # Common utilities and patterns
 │   ├── constraint/           # Constraint solver
 │   ├── dynamics/             # Kinematics and dynamics
-│   ├── gui/osg/              # OpenSceneGraph visualization
+│   ├── gui/                  # OpenSceneGraph visualization
+│   │   ├── render/           # Rendering utilities
+│   │   └── detail/           # GUI internals
 │   ├── lcpsolver/            # LCP solver
 │   ├── math/                 # Mathematical utilities (includes math/optimization/)
 │   ├── optimizer/            # Deprecated alias headers forwarding to math/optimization
@@ -1194,8 +1196,8 @@ dart_gui/
 **C++ API**:
 
 ```cpp
-#include <dart/All.hpp>              // Core DART
-#include <dart/gui/osg/osg.hpp>       // OSG GUI
+#include <dart/All.hpp>               // Core DART
+#include <dart/gui/All.hpp>           // GUI
 #include <dart/utils/urdf/urdf.hpp>   // URDF parsing
 ```
 
@@ -1203,7 +1205,7 @@ dart_gui/
 
 ```python
 import dartpy as dart
-from dartpy.gui.osg import Viewer, RealTimeWorldNode
+from dartpy.gui import Viewer, RealTimeWorldNode
 from dartpy.utils import DartLoader
 ```
 
@@ -1235,12 +1237,12 @@ while (running) {
 
 ```cpp
 // Create viewer
-gui::osg::Viewer viewer;
+gui::Viewer viewer;
 viewer.setUpViewInWindow(0, 0, 1280, 720);
 
 // Wrap world in real-time node
-osg::ref_ptr<gui::osg::RealTimeWorldNode> node
-  = new gui::osg::RealTimeWorldNode(world);
+osg::ref_ptr<gui::RealTimeWorldNode> node
+  = new gui::RealTimeWorldNode(world);
 
 // Add to viewer
 viewer.addWorldNode(node);
@@ -1257,10 +1259,10 @@ viewer.run();
 ### Pattern 3: Custom Simulation Hooks
 
 ```cpp
-class MyWorldNode : public gui::osg::RealTimeWorldNode {
+class MyWorldNode : public gui::RealTimeWorldNode {
 public:
   MyWorldNode(const simulation::WorldPtr& world)
-    : gui::osg::RealTimeWorldNode(world) {}
+    : gui::RealTimeWorldNode(world) {}
 
   void customPreStep() override {
     // Apply control forces before physics step
@@ -1283,8 +1285,8 @@ viewer.addWorldNode(node);
 
 ```cpp
 // Enable drag-and-drop for a frame
-gui::osg::InteractiveFramePtr manipulator
-  = new gui::osg::InteractiveFrame(Frame::World(), "tool", tf);
+gui::InteractiveFramePtr manipulator
+  = new gui::InteractiveFrame(Frame::World(), "tool", tf);
 world->addSimpleFrame(manipulator);
 viewer.enableDragAndDrop(manipulator.get());
 
@@ -1314,7 +1316,7 @@ Note: SKEL stays as a legacy XML format for backward compatibility. There is no 
 ### Pattern 6: Custom ImGui Widgets
 
 ```cpp
-class MyWidget : public gui::osg::ImGuiWidget {
+class MyWidget : public gui::ImGuiWidget {
 public:
   void render() override {
     ImGui::Begin("My Widget", &mIsVisible);

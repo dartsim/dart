@@ -35,13 +35,13 @@
 
 #include "Controller.hpp"
 
-#include <dart/gui/osg/All.hpp>
+#include <dart/gui/All.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/All.hpp>
 
-class AtlasSimbiconWorldNode : public dart::gui::osg::RealTimeWorldNode
+class AtlasSimbiconWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
   /// Constructor

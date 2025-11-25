@@ -192,7 +192,7 @@ DART is developed by a diverse community of researchers and engineers from aroun
 | [Mike Stilman](https://github.com/mstilman)            | Project creator                                                                             |
 | [Siddhartha S. Srinivasa](https://github.com/siddhss5) | Project advisor                                                                             |
 | [Jeongseok Lee](https://github.com/jslee02)            | Project director, multibody dynamics, constraint resolution, collision detection, tutorials |
-| [Michael X. Grey](https://github.com/mxgrey)           | Project director, extensive API improvements, inverse kinematics, gui::osg, tutorials       |
+| [Michael X. Grey](https://github.com/mxgrey)           | Project director, extensive API improvements, inverse kinematics, gui, tutorials            |
 | [Tobias Kunz](https://github.com/tobiaskunz)           | Former project director, motion planner                                                     |
 
 ### Major Contributors

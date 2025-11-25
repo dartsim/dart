@@ -34,7 +34,7 @@
 
 //==============================================================================
 WamWorld::WamWorld(WorldPtr world, SkeletonPtr robot)
-  : dart::gui::osg::WorldNode(world), mWam(robot)
+  : dart::gui::WorldNode(world), mWam(robot)
 {
   // Do nothing
 }

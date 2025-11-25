@@ -10,6 +10,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 namespace nb = nanobind;
 
@@ -18,6 +19,38 @@ namespace dart::python_nb {
 void defJoint(nb::module_& m)
 {
   using Joint = dart::dynamics::Joint;
+  using ActuatorType = Joint::ActuatorType;
+
+  nb::enum_<ActuatorType>(m, "ActuatorType")
+      .value("FORCE", Joint::FORCE)
+      .value("PASSIVE", Joint::PASSIVE)
+      .value("SERVO", Joint::SERVO)
+      .value("MIMIC", Joint::MIMIC)
+      .value("ACCELERATION", Joint::ACCELERATION)
+      .value("VELOCITY", Joint::VELOCITY)
+      .value("LOCKED", Joint::LOCKED)
+      .export_values();
+
+  m.attr("DefaultActuatorType") = Joint::DefaultActuatorType;
+
+  nb::enum_<dart::dynamics::MimicConstraintType>(m, "MimicConstraintType")
+      .value("Motor", dart::dynamics::MimicConstraintType::Motor)
+      .value("Coupler", dart::dynamics::MimicConstraintType::Coupler)
+      .export_values();
+
+  nb::class_<dart::dynamics::MimicDofProperties>(m, "MimicDofProperties")
+      .def(nb::init<>())
+      .def_rw(
+          "mReferenceJoint",
+          &dart::dynamics::MimicDofProperties::mReferenceJoint)
+      .def_rw(
+          "mReferenceDofIndex",
+          &dart::dynamics::MimicDofProperties::mReferenceDofIndex)
+      .def_rw("mMultiplier", &dart::dynamics::MimicDofProperties::mMultiplier)
+      .def_rw("mOffset", &dart::dynamics::MimicDofProperties::mOffset)
+      .def_rw(
+          "mConstraintType",
+          &dart::dynamics::MimicDofProperties::mConstraintType);
 
   nb::class_<Joint>(m, "Joint")
       .def(
@@ -37,6 +70,50 @@ void defJoint(nb::module_& m)
             return self.getType();
           },
           nb::rv_policy::reference_internal)
+      .def(
+          "setActuatorType",
+          [](Joint& self, ActuatorType actuatorType) {
+            self.setActuatorType(actuatorType);
+          },
+          nb::arg("actuatorType"))
+      .def(
+          "setActuatorTypeForDof",
+          [](Joint& self, std::size_t index, ActuatorType actuatorType) {
+            self.setActuatorType(index, actuatorType);
+          },
+          nb::arg("index"),
+          nb::arg("actuatorType"))
+      .def(
+          "setActuatorTypes",
+          [](Joint& self, const std::vector<ActuatorType>& actuatorTypes) {
+            self.setActuatorTypes(actuatorTypes);
+          },
+          nb::arg("actuatorTypes"))
+      .def(
+          "getActuatorType",
+          [](const Joint& self) { return self.getActuatorType(); })
+      .def(
+          "getActuatorTypeForDof",
+          [](const Joint& self, std::size_t index) {
+            return self.getActuatorType(index);
+          },
+          nb::arg("index"))
+      .def(
+          "getActuatorTypes",
+          [](const Joint& self) { return self.getActuatorTypes(); })
+      .def(
+          "hasActuatorType",
+          [](const Joint& self, ActuatorType actuatorType) {
+            return self.hasActuatorType(actuatorType);
+          },
+          nb::arg("actuatorType"))
+      .def(
+          "setUseCouplerConstraint",
+          &Joint::setUseCouplerConstraint,
+          nb::arg("enable"))
+      .def("isUsingCouplerConstraint", &Joint::isUsingCouplerConstraint)
+      .def("isKinematic", &Joint::isKinematic)
+      .def("isDynamic", &Joint::isDynamic)
       .def("getNumDofs", &Joint::getNumDofs)
       .def(
           "getDof",

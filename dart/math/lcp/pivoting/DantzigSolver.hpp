@@ -34,8 +34,6 @@
 
 #include <dart/math/lcp/LcpSolver.hpp>
 
-#include <dart/Export.hpp>
-
 namespace dart::math {
 
 /// Wrapper around the legacy Dantzig BLCP solver exposing the modern

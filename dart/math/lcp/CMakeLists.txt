@@ -77,7 +77,7 @@ install(
 # Compatibility install for legacy Dantzig include path
 install(
   FILES ${math_lcp_dantzig_hdrs}
-  DESTINATION include/dart/math/lcp/Dantzig
+  DESTINATION include/dart/math/lcp/dantzig
   COMPONENT headers
 )
 

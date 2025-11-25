@@ -49,9 +49,9 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
-      - name: Remove preinstalled pixi (if any)
+      - name: Remove stale pixi binary
         run: rm -f "$HOME/.pixi/bin/pixi"
 
       - name: Setup pixi
@@ -108,7 +108,7 @@ jobs:
       DART_PARALLEL_JOBS: 8
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Remove preinstalled pixi (if any)
         run: rm -f "$HOME/.pixi/bin/pixi"
@@ -171,7 +171,7 @@ jobs:
     # Run Debug builds on every push/PR so regressions are caught before landing on main
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Remove preinstalled pixi (if any)
         run: rm -f "$HOME/.pixi/bin/pixi"

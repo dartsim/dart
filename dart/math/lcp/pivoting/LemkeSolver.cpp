@@ -34,9 +34,8 @@
 
 #include <Eigen/SVD>
 
-#include <vector>
-
 #include <cmath>
+#include <vector>
 
 namespace dart {
 namespace math {
