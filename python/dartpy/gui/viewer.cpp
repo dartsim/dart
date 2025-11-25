@@ -39,7 +39,7 @@ Eigen::Vector4d toVec4(const nb::handle& h)
     if (nb::len(seq) != 4)
       throw nb::type_error("Expected a length-4 sequence");
     Eigen::Vector4d vec;
-    for (std::size_t i = 0; i < 4; ++i)
+    for (nb::ssize_t i = 0; i < 4; ++i)
       vec[i] = nb::cast<double>(seq[i]);
     return vec;
   }
@@ -54,7 +54,7 @@ Eigen::Vector3d toVec3(const nb::handle& h)
     if (nb::len(seq) != 3)
       throw nb::type_error("Expected a length-3 sequence");
     Eigen::Vector3d vec;
-    for (std::size_t i = 0; i < 3; ++i)
+    for (nb::ssize_t i = 0; i < 3; ++i)
       vec[i] = nb::cast<double>(seq[i]);
     return vec;
   }

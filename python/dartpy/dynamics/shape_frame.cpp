@@ -30,15 +30,15 @@ void defShapeFrame(nb::module_& m)
           "setColor",
           [](VisualAspect& self, const nb::handle& color) {
             nb::sequence seq = nb::cast<nb::sequence>(color);
-            const auto n = nb::len(seq);
+            const nb::ssize_t n = nb::len(seq);
             if (n == 3) {
               Eigen::Vector3d vec;
-              for (std::size_t i = 0; i < n; ++i)
+              for (nb::ssize_t i = 0; i < n; ++i)
                 vec[i] = nb::cast<double>(seq[i]);
               self.setColor(vec);
             } else if (n == 4) {
               Eigen::Vector4d vec;
-              for (std::size_t i = 0; i < n; ++i)
+              for (nb::ssize_t i = 0; i < n; ++i)
                 vec[i] = nb::cast<double>(seq[i]);
               self.setColor(vec);
             } else {
