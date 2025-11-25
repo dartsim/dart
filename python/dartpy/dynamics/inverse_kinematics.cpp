@@ -3,7 +3,7 @@
 #include "dart/common/Diagnostics.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/optimizer/Solver.hpp"
+#include "dart/math/optimization/Solver.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -92,7 +92,7 @@ void defInverseKinematics(nb::module_& m)
       .def("getSolver", [](IK& self) { return self.getSolver(); })
       .def(
           "setSolver",
-          [](IK& self, const std::shared_ptr<dart::optimizer::Solver>& solver) {
+          [](IK& self, const std::shared_ptr<dart::math::Solver>& solver) {
             self.setSolver(solver);
           },
           nb::arg("solver"),
