@@ -36,8 +36,6 @@
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Matrix.hpp"
 #include "dart/math/lcp/dantzig/Misc.hpp"
-#include "dart/math/lcp/dantzig/Lcp.hpp"
-
 #include <Eigen/Dense>
 
 #include <vector>
@@ -133,22 +131,134 @@ math::LcpResult PgsBoxedLcpSolver::solve(
     }
   }
 
-  const int nub = 0;
+  // Projected Gauss-Seidel iteration
+  mCacheOrder.clear();
+  mCacheOrder.reserve(n);
 
-  // Allocate w vector for LCP solver
-  std::vector<double> wData(static_cast<std::size_t>(n), 0.0);
+  bool possibleToTerminate = true;
+  for (int i = 0; i < n; ++i) {
+    if (Adata[nSkip * i + i] < mOption.mEpsilonForDivision) {
+      xdata[static_cast<std::size_t>(i)] = 0.0;
+      continue;
+    }
 
-  const bool success = math::SolveLCP<double>(
-      n,
-      Adata.data(),
-      xdata.data(),
-      bdata.data(),
-      wData.data(),
-      nub,
-      loData.data(),
-      hiData.data(),
-      findexData.data(),
-      options.earlyTermination);
+    mCacheOrder.push_back(i);
+
+    const double* APtr = Adata.data() + nSkip * i;
+    const double oldX = xdata[static_cast<std::size_t>(i)];
+
+    double newX = bdata[static_cast<std::size_t>(i)];
+    for (int j = 0; j < i; ++j)
+      newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+    for (int j = i + 1; j < n; ++j)
+      newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+
+    newX /= Adata[nSkip * i + i];
+
+    if (findexData[static_cast<std::size_t>(i)] >= 0) {
+      const double hiTmp = hiData[static_cast<std::size_t>(i)]
+                           * xdata[static_cast<std::size_t>(
+                               findexData[static_cast<std::size_t>(i)])];
+      const double loTmp = -hiTmp;
+
+      if (newX > hiTmp)
+        xdata[static_cast<std::size_t>(i)] = hiTmp;
+      else if (newX < loTmp)
+        xdata[static_cast<std::size_t>(i)] = loTmp;
+      else
+        xdata[static_cast<std::size_t>(i)] = newX;
+    } else {
+      if (newX > hiData[static_cast<std::size_t>(i)])
+        xdata[static_cast<std::size_t>(i)] = hiData[static_cast<std::size_t>(i)];
+      else if (newX < loData[static_cast<std::size_t>(i)])
+        xdata[static_cast<std::size_t>(i)] = loData[static_cast<std::size_t>(i)];
+      else
+        xdata[static_cast<std::size_t>(i)] = newX;
+    }
+
+    if (possibleToTerminate) {
+      const double deltaX = std::abs(
+          xdata[static_cast<std::size_t>(i)] - oldX);
+      if (deltaX > mOption.mDeltaXThreshold)
+        possibleToTerminate = false;
+    }
+  }
+
+  if (!possibleToTerminate) {
+    // Normalizing
+    for (const auto& index : mCacheOrder) {
+      const double dummy = 1.0 / Adata[nSkip * index + index];
+      bdata[static_cast<std::size_t>(index)] *= dummy;
+      for (int j = 0; j < n; ++j)
+        Adata[static_cast<std::size_t>(nSkip * index + j)] *= dummy;
+    }
+
+    for (int iter = 1; iter < mOption.mMaxIteration; ++iter) {
+      if (mOption.mRandomizeConstraintOrder) {
+        if ((iter & 7) == 0) {
+          for (std::size_t i = 1; i < mCacheOrder.size(); ++i) {
+            const int tmp = mCacheOrder[i];
+            const int swapi = math::dRandInt(i + 1);
+            mCacheOrder[i] = mCacheOrder[swapi];
+            mCacheOrder[swapi] = tmp;
+          }
+        }
+      }
+
+      possibleToTerminate = true;
+
+      // Single loop
+      for (const auto& index : mCacheOrder) {
+        const double* APtr = Adata.data() + nSkip * index;
+        double newX = bdata[static_cast<std::size_t>(index)];
+        const double oldX = xdata[static_cast<std::size_t>(index)];
+
+        for (int j = 0; j < index; j++)
+          newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+
+        for (int j = index + 1; j < n; j++)
+          newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+
+        if (findexData[static_cast<std::size_t>(index)] >= 0) {
+          const double hiTmp = hiData[static_cast<std::size_t>(index)]
+                               * xdata[static_cast<std::size_t>(
+                                   findexData[static_cast<std::size_t>(index)])];
+          const double loTmp = -hiTmp;
+
+          if (newX > hiTmp)
+            xdata[static_cast<std::size_t>(index)] = hiTmp;
+          else if (newX < loTmp)
+            xdata[static_cast<std::size_t>(index)] = loTmp;
+          else
+            xdata[static_cast<std::size_t>(index)] = newX;
+        } else {
+          if (newX > hiData[static_cast<std::size_t>(index)])
+            xdata[static_cast<std::size_t>(index)]
+                = hiData[static_cast<std::size_t>(index)];
+          else if (newX < loData[static_cast<std::size_t>(index)])
+            xdata[static_cast<std::size_t>(index)]
+                = loData[static_cast<std::size_t>(index)];
+          else
+            xdata[static_cast<std::size_t>(index)] = newX;
+        }
+
+        if (possibleToTerminate
+            && std::abs(xdata[static_cast<std::size_t>(index)])
+                   > mOption.mEpsilonForDivision) {
+          const double relativeDeltaX = std::abs(
+              (xdata[static_cast<std::size_t>(index)] - oldX)
+              / xdata[static_cast<std::size_t>(index)]);
+          if (relativeDeltaX > mOption.mRelativeDeltaXTolerance)
+            possibleToTerminate = false;
+        }
+      }
+
+      if (possibleToTerminate)
+        break;
+    }
+  }
+
+  const bool success = possibleToTerminate;
 
   x = Eigen::Map<Eigen::VectorXd>(xdata.data(), n);
 
