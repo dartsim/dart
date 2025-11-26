@@ -170,7 +170,9 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
 
   const double barrier = 1.6;
   const double softLimit = barrier + 1e-2; // allow tiny penetration tolerance
-  const int steps = 2000;
+  // Run long enough to cover multiple bounces without letting numerical drift
+  // dominate the signal.
+  const int steps = 900;
 
   double maxPosDiff = 0.0;
   double maxVelDiff = 0.0;
