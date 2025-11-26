@@ -175,6 +175,7 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
   double maxPosDiff = 0.0;
   double maxVelDiff = 0.0;
   double maxSymmetryError = 0.0;
+  double maxAbsPosition = 0.0;
 
   for (int i = 0; i < steps; ++i) {
     baseline.world->step();
@@ -190,8 +191,8 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
           maxSymmetryError,
           std::abs((lp + rp).x()) + std::abs((lv + rv).tail<3>().x()));
 
-      EXPECT_LT(std::abs(lp.x()), softLimit);
-      EXPECT_LT(std::abs(rp.x()), softLimit);
+      maxAbsPosition
+          = std::max({maxAbsPosition, std::abs(lp.x()), std::abs(rp.x())});
     };
 
     updateStats(baseline);
@@ -215,6 +216,7 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
   EXPECT_LT(maxPosDiff, 1e-5);
   EXPECT_LT(maxVelDiff, 1e-5);
   EXPECT_LT(maxSymmetryError, 1e-4);
+  EXPECT_LT(maxAbsPosition, softLimit);
 }
 
 // Regression for https://github.com/dartsim/dart/issues/870: A spinning body in
