@@ -4,9 +4,6 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-# TODO: investigate segfault in force/torque IK after namespace flattening
-pytestmark = pytest.mark.skip(reason="Force/torque integration tests currently segfault")
-
 
 def read_world(uri: dart.common.Uri):
     options = dart.io.SdfParser.Options()

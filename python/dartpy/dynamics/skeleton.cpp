@@ -127,6 +127,23 @@ void defSkeleton(nb::module_& m)
           },
           nb::rv_policy::reference_internal)
       .def(
+          "get_joint",
+          [](Skeleton& self, std::size_t idx) -> dart::dynamics::Joint* {
+            return self.getJoint(idx);
+          },
+          nb::rv_policy::reference_internal)
+      .def(
+          "get_joint",
+          [](Skeleton& self, const std::string& name)
+              -> dart::dynamics::Joint* { return self.getJoint(name); },
+          nb::rv_policy::reference_internal)
+      .def(
+          "get_root_joint",
+          [](Skeleton& self) -> dart::dynamics::Joint* {
+            return self.getRootJoint();
+          },
+          nb::rv_policy::reference_internal)
+      .def(
           "getDof",
           [](Skeleton& self, std::size_t idx) { return self.getDof(idx); },
           nb::rv_policy::reference_internal,
