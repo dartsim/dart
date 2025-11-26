@@ -1,6 +1,6 @@
 # Dependency checks
 if(NOT DART_BUILD_COLLISION_ODE)
-  set(HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
+  set(DART_HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
   return()
 endif()
 
@@ -14,7 +14,7 @@ if(NOT ODE_FOUND)
     "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
   )
 endif()
-set(HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
+set(DART_HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
 set(_dart_ode_public_link ${ODE_LIBRARIES})
 if(NOT _dart_ode_public_link)
   if(TARGET ODE::ODE)

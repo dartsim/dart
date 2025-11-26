@@ -1391,12 +1391,14 @@ macro(dart_check_optional_package variable component dependency)
   mark_as_advanced(DART_SKIP_${variable})
   if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
                      " found")
     endif()
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
+    set(DART_HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${${variable}_FOUND})
       if(ARGV3) # version
         message(WARNING "Looking for ${dependency} - NOT found, to use"
