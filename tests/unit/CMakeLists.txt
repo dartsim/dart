@@ -111,8 +111,10 @@ endif()
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
-dart_add_test(
-  "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+if(TARGET dart-gui)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+endif()
 
 # ==============================================================================
 # Utils Tests
