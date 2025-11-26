@@ -84,7 +84,7 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
     shapeNode->getDynamicsAspect()->setRestitutionCoeff(1.0);
     shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
 
-    body->setInertia(shape->computeInertia(kBoxMass));
+    body->setMomentOfInertia(shape->computeInertia(kBoxMass));
     body->setMass(kBoxMass);
 
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -134,7 +134,7 @@ WorldPtr makeFreeFallWorld(bool spinning)
   shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
 
   const double mass = 2.0;
-  body->setInertia(shape->computeInertia(mass));
+  body->setMomentOfInertia(shape->computeInertia(mass));
   body->setMass(mass);
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
