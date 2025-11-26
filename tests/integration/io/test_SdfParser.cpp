@@ -35,6 +35,7 @@
 #include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
@@ -44,7 +45,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
-#include "dart/config.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
@@ -582,8 +582,7 @@ TEST(SdfParser, WarnsOnMissingInertialBlock)
   EXPECT_DOUBLE_EQ(body->getMass(), 1.0);
 
   const auto logs = capture.contents();
-  EXPECT_NE(
-      logs.find("missing <inertial>"), std::string::npos)
+  EXPECT_NE(logs.find("missing <inertial>"), std::string::npos)
       << "Expected warning about missing <inertial> block in logs: " << logs;
 }
 
@@ -600,9 +599,8 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   <model name="tiny_mass_model">
     <link name="link_with_mass_only">
       <inertial>
-        <mass>)")
-      + std::to_string(tinyMass)
-      + R"(</mass>
+        <mass>)") + std::to_string(tinyMass)
+                               + R"(</mass>
       </inertial>
       <collision name="c">
         <geometry>
@@ -626,8 +624,7 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   const auto* body = skeleton->getBodyNode(0);
   const auto inertia = body->getInertia();
   EXPECT_DOUBLE_EQ(inertia.getMass(), tinyMass);
-  const Eigen::Matrix3d expectedMoment
-      = Eigen::Matrix3d::Identity() * tinyMass;
+  const Eigen::Matrix3d expectedMoment = Eigen::Matrix3d::Identity() * tinyMass;
   EXPECT_TRUE(inertia.getMoment().isApprox(expectedMoment));
 
   const auto logs = capture.contents();
