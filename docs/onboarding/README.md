@@ -1298,8 +1298,8 @@ robot->eachBodyNode([&](BodyNode* bodyNode) {
 
 ```cpp
 // URDF
-dart::utils::UrdfParser loader;
-auto robot = loader.parseSkeleton("path/to/robot.urdf");
+dart::utils::UrdfParser parser;
+auto robot = parser.parseSkeleton("path/to/robot.urdf");
 world->addSkeleton(robot);
 
 // SDF
