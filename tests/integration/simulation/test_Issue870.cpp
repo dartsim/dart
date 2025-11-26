@@ -193,8 +193,10 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
     const auto updateStats = [&](const BoxBounceWorld& w) {
       const auto lp = w.leftFree->getWorldTransform().translation();
       const auto rp = w.rightFree->getWorldTransform().translation();
-      const auto lv = w.leftFree->getSpatialVelocity();
-      const auto rv = w.rightFree->getSpatialVelocity();
+      const auto lv
+          = w.leftFree->getSpatialVelocity(Frame::World(), Frame::World());
+      const auto rv
+          = w.rightFree->getSpatialVelocity(Frame::World(), Frame::World());
 
       maxSymmetryError = std::max(
           maxSymmetryError,
