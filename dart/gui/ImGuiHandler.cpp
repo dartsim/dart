@@ -48,6 +48,8 @@
 
 #include <algorithm>
 
+#include <cmath>
+
 namespace dart {
 namespace gui {
 
@@ -199,6 +201,17 @@ ConvertedKey convertFromOSGKey(int key)
       return ConvertedKey_None;
 #endif
   }
+}
+
+//==============================================================================
+void applyImGuiScale(float scale)
+{
+  if (!std::isfinite(scale) || scale <= 0.f || std::abs(scale - 1.f) < 1e-6f)
+    return;
+
+  auto& style = ImGui::GetStyle();
+  style.ScaleAllSizes(scale);
+  ImGui::GetIO().FontGlobalScale = scale;
 }
 
 //==============================================================================

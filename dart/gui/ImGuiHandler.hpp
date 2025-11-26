@@ -55,6 +55,8 @@ namespace gui {
 
 class ImGuiWidget;
 
+DART_GUI_API void applyImGuiScale(float scale);
+
 class DART_GUI_API ImGuiHandler : public osgGA::GUIEventHandler
 {
 public:

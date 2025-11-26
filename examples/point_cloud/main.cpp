@@ -33,11 +33,14 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 
 #include <dart/All.hpp>
+
+#include <CLI/CLI.hpp>
 
 #include <cmath>
 
@@ -684,8 +687,14 @@ dynamics::SimpleFramePtr createSensorFrame()
   return sensorFrame;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Point cloud visualization example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
@@ -709,6 +718,7 @@ int main()
 
   // Create the Viewer instance
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  dart::gui::applyImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
   viewer->simulate(true);
 

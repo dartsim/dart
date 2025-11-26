@@ -51,6 +51,7 @@
 
 #include <dart/math/Constants.hpp>
 
+#include <CLI/CLI.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <imgui.h>
@@ -599,8 +600,14 @@ private:
 
 } // namespace
 
-int main(int /*argc*/, char* /*argv*/[])
+int main(int argc, char* argv[])
 {
+  CLI::App app("Coupler constraint demo");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(1e-3);
@@ -699,6 +706,7 @@ int main(int /*argc*/, char* /*argv*/[])
       = new CouplerEventHandler(controller.get());
 
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  dart::gui::applyImGuiScale(static_cast<float>(guiScale));
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
