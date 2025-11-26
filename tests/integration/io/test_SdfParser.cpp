@@ -592,6 +592,7 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   auto retriever = std::make_shared<MemoryResourceRetriever>();
   const std::string modelUri = "memory://pkg/models/tiny_mass/model.sdf";
   const double tinyMass = 1e-14;
+  const double clampedMass = 1e-9; // matches parser clamp
 
   const std::string modelSdf = std::string(R"(
 <?xml version="1.0" ?>
@@ -623,13 +624,14 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
   const auto* body = skeleton->getBodyNode(0);
   const auto inertia = body->getInertia();
-  EXPECT_DOUBLE_EQ(inertia.getMass(), tinyMass);
-  const Eigen::Matrix3d expectedMoment = Eigen::Matrix3d::Identity() * tinyMass;
+  EXPECT_DOUBLE_EQ(inertia.getMass(), clampedMass);
+  const Eigen::Matrix3d expectedMoment
+      = Eigen::Matrix3d::Identity() * clampedMass;
   EXPECT_TRUE(inertia.getMoment().isApprox(expectedMoment));
 
   const auto logs = capture.contents();
-  EXPECT_NE(logs.find("very small mass"), std::string::npos)
-      << "Expected warning about tiny mass in logs: " << logs;
+  EXPECT_NE(logs.find("clamping to"), std::string::npos)
+      << "Expected warning about tiny mass clamping in logs: " << logs;
   EXPECT_NE(logs.find("defines <mass> but no <inertia>"), std::string::npos)
       << "Expected warning about missing inertia tensor in logs: " << logs;
 }

@@ -1117,24 +1117,25 @@ SDFBodyNode readBodyNode(
     // mass
     if (hasElement(inertiaElement, "mass")) {
       double mass = getValueDouble(inertiaElement, "mass");
-      properties.mInertia.setMass(mass);
-      massSpecified = true;
-
       if (mass <= 0.0) {
         DART_WARN(
-            "[SdfParser] Link [{}] has non-positive mass [{}]. "
-            "Simulation results will be invalid; please provide a positive "
-            "mass.",
+            "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
+            "to continue parsing.",
             bodyName,
-            mass);
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
       } else if (mass < kMinReasonableMass) {
         DART_WARN(
-            "[SdfParser] Link [{}] has a very small mass [{} kg]; "
-            "this can cause severe numerical issues. Consider using a larger "
-            "scale.",
+            "[SdfParser] Link [{}] has a very small mass [{} kg]; clamping to "
+            "{} to avoid numerical issues.",
             bodyName,
-            mass);
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
       }
+      properties.mInertia.setMass(mass);
+      massSpecified = true;
     }
 
     // offset
