@@ -1648,8 +1648,10 @@ Contact convertContact(
 
   // Enforce deterministic ordering across runs and clones. Tie-break on the
   // underlying FCL object address if keys are identical.
-  const auto fclObj1 = static_cast<FCLCollisionObject*>(contact.collisionObject1);
-  const auto fclObj2 = static_cast<FCLCollisionObject*>(contact.collisionObject2);
+  const auto fclObj1
+      = static_cast<FCLCollisionObject*>(contact.collisionObject1);
+  const auto fclObj2
+      = static_cast<FCLCollisionObject*>(contact.collisionObject2);
   const auto key1 = collisionObjectKey(fclObj1);
   const auto key2 = collisionObjectKey(fclObj2);
   const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
