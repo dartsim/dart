@@ -206,12 +206,22 @@ ConvertedKey convertFromOSGKey(int key)
 //==============================================================================
 void applyImGuiScale(float scale)
 {
-  if (!std::isfinite(scale) || scale <= 0.f || std::abs(scale - 1.f) < 1e-6f)
+  if (!std::isfinite(scale) || scale <= 0.f)
     return;
 
   auto& style = ImGui::GetStyle();
+  ImGuiIO& io = ImGui::GetIO();
+
+  // Reset to defaults before applying the requested scale so repeated calls are
+  // idempotent.
+  style = ImGuiStyle();
+  io.FontGlobalScale = 1.f;
+
+  if (std::abs(scale - 1.f) < 1e-6f)
+    return;
+
   style.ScaleAllSizes(scale);
-  ImGui::GetIO().FontGlobalScale = scale;
+  io.FontGlobalScale = scale;
 }
 
 //==============================================================================
