@@ -23,6 +23,6 @@
 #include <dart/gui/ShapeFrameNode.hpp>
 #include <dart/gui/SupportPolygonVisual.hpp>
 #include <dart/gui/TrackballManipulator.hpp>
-#include <dart/gui/ViewerAttachment.hpp>
 #include <dart/gui/Viewer.hpp>
+#include <dart/gui/ViewerAttachment.hpp>
 #include <dart/gui/WorldNode.hpp>
