@@ -1114,7 +1114,7 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser loader;
   loader.addPackageDirectory("drchubo", dart::config::dataPath("urdf/drchubo"));
   SkeletonPtr hubo = loader.parseSkeleton(
       dart::config::dataPath("urdf/drchubo/drchubo.urdf"));

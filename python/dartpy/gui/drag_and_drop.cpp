@@ -1,8 +1,9 @@
 #include "common/type_casters.hpp"
 #include "gui/gui.hpp"
 
-#include <dart/gui/All.hpp>
 #include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Shape.hpp>

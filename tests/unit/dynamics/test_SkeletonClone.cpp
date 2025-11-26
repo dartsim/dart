@@ -30,22 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_DARTLOADER_HPP_
-#define DART_UTILS_URDF_DARTLOADER_HPP_
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
-#include <dart/utils/urdf/UrdfParser.hpp>
+#include <Eigen/Core>
+#include <gtest/gtest.h>
 
-#include <dart/common/Deprecated.hpp>
+using namespace dart::dynamics;
 
-namespace dart::utils {
-
-// Deprecated compatibility shim for the URDF parser.
-class DART_DEPRECATED(7.0) DartLoader : public UrdfParser
+//==============================================================================
+TEST(Issue896, SkeletonCloneDeepCopiesShapes)
 {
-public:
-  using UrdfParser::UrdfParser;
-};
+  const auto skel = Skeleton::create("original");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
 
-} // namespace dart::utils
+  const auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 2.0, 3.0));
+  body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
 
-#endif // DART_UTILS_URDF_DARTLOADER_HPP_
+  const auto clone = skel->cloneSkeleton();
+  ASSERT_TRUE(clone);
+
+  auto* clonedBody = clone->getBodyNode(body->getName());
+  ASSERT_NE(clonedBody, nullptr);
+  // Use first shape node; cast checked below
+  auto* clonedShapeNode = clonedBody->getShapeNodeWith<VisualAspect>(0);
+  ASSERT_NE(clonedShapeNode, nullptr);
+
+  const auto originalBox = std::dynamic_pointer_cast<BoxShape>(box);
+  ASSERT_NE(originalBox, nullptr);
+  const auto clonedBox
+      = std::dynamic_pointer_cast<BoxShape>(clonedShapeNode->getShape());
+  ASSERT_NE(clonedBox, nullptr);
+
+  EXPECT_NE(originalBox.get(), clonedBox.get());
+
+  const auto originalSize = originalBox->getSize();
+  const Eigen::Vector3d clonedSize(0.25, 0.5, 0.75);
+
+  clonedBox->setSize(clonedSize);
+  EXPECT_EQ(originalBox->getSize(), originalSize);
+  EXPECT_EQ(clonedBox->getSize(), clonedSize);
+}

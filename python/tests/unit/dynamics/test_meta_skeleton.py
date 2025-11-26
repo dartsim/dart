@@ -7,33 +7,33 @@ import pytest
 
 
 def test_basic():
-    urdfParser = dart.utils.DartLoader()
-    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    urdfParser = dart.io.DartLoader()
+    kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
-    shoulder = kr5.getBodyNode("shoulder")
+    shoulder = kr5.get_body_node("shoulder")
     assert shoulder is not None
 
-    elbow = kr5.getBodyNode("elbow")
+    elbow = kr5.get_body_node("elbow")
     assert elbow is not None
 
-    chain1 = dart.dynamics.Chain(shoulder, elbow, False, "midchain")
+    chain1 = dart.Chain(shoulder, elbow, False, "midchain")
     assert chain1 is not None
-    assert chain1.getNumBodyNodes() == 2
+    assert chain1.get_num_body_nodes() == 2
 
-    chain2 = dart.dynamics.Chain(shoulder, elbow, True, "midchain")
+    chain2 = dart.Chain(shoulder, elbow, True, "midchain")
     assert chain2 is not None
-    assert chain2.getNumBodyNodes() == 3
+    assert chain2.get_num_body_nodes() == 3
 
-    assert len(kr5.getPositions()) != 0
-    assert kr5.getNumJoints() != 0
-    assert kr5.getRootJoint() is not None
-    assert len(kr5.getRootJoint().getPositions()) == 0
+    assert len(kr5.get_positions()) != 0
+    assert kr5.get_num_joints() != 0
+    assert kr5.get_root_joint() is not None
+    assert len(kr5.get_root_joint().get_positions()) == 0
 
-    rootBody = kr5.getBodyNode(0)
+    rootBody = kr5.get_body_node(0)
     assert rootBody is not None
 
-    rootJoint = kr5.getJoint(0)
+    rootJoint = kr5.get_joint(0)
     assert rootJoint is not None
 
 

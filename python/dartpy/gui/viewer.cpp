@@ -2,7 +2,11 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/Utils.hpp>
+#include <dart/gui/Viewer.hpp>
+#include <dart/gui/WorldNode.hpp>
 
 #include <dart/simulation/World.hpp>
 
@@ -15,6 +19,10 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
+#include <osgGA/GUIEventHandler>
+#include <osgViewer/View>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 
@@ -31,7 +39,7 @@ Eigen::Vector4d toVec4(const nb::handle& h)
     if (nb::len(seq) != 4)
       throw nb::type_error("Expected a length-4 sequence");
     Eigen::Vector4d vec;
-    for (ssize_t i = 0; i < 4; ++i)
+    for (nb::ssize_t i = 0; i < 4; ++i)
       vec[i] = nb::cast<double>(seq[i]);
     return vec;
   }
@@ -46,7 +54,7 @@ Eigen::Vector3d toVec3(const nb::handle& h)
     if (nb::len(seq) != 3)
       throw nb::type_error("Expected a length-3 sequence");
     Eigen::Vector3d vec;
-    for (ssize_t i = 0; i < 3; ++i)
+    for (nb::ssize_t i = 0; i < 3; ++i)
       vec[i] = nb::cast<double>(seq[i]);
     return vec;
   }

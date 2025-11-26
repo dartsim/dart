@@ -1,13 +1,18 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/GridVisual.hpp>
+#include <dart/gui/PolyhedronVisual.hpp>
+#include <dart/gui/SupportPolygonVisual.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
+
+#include <cstddef>
 
 namespace nb = nanobind;
 
@@ -22,7 +27,7 @@ Eigen::Vector3d toVec3(const nb::handle& h)
     if (nb::len(seq) != 3)
       throw nb::type_error("Expected a length-3 sequence");
     Eigen::Vector3d vec;
-    for (ssize_t i = 0; i < 3; ++i)
+    for (nb::ssize_t i = 0; i < 3; ++i)
       vec[i] = nb::cast<double>(seq[i]);
     return vec;
   }

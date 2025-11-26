@@ -51,9 +51,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Remove stale pixi binary
-        run: rm -f "$HOME/.pixi/bin/pixi"
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -67,6 +64,8 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       - name: Configure environment for compiler cache
         run: |
@@ -114,9 +113,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Remove preinstalled pixi (if any)
-        run: rm -f "$HOME/.pixi/bin/pixi"
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -130,6 +126,8 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       - name: Configure environment for compiler cache
         run: |
@@ -181,9 +179,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Remove preinstalled pixi (if any)
-        run: rm -f "$HOME/.pixi/bin/pixi"
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -197,6 +192,8 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       - name: Configure environment for compiler cache
         run: |

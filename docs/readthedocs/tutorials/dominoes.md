@@ -315,8 +315,7 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the `dart::io::DartLoader` class (pending upcoming changes to DART's
-loading system). First, create a loader:
+by the `dart::utils::UrdfParser` class. First, create a loader:
 
 ```{eval-rst}
 .. tabs::
@@ -338,8 +337,8 @@ loading system). First, create a loader:
 
 Note that many URDF files use ROS's `package:` scheme to specify the locations
 of the resources that need to be loaded. We won't be using this in our example,
-but in general you should use the function `DartLoader::addPackageDirectory`
-to specify the locations of these packages, because DART does not have the same
+but in general you should use the function `UrdfParser::addPackageDirectory` to
+specify the locations of these packages, because DART does not have the same
 package resolving abilities of ROS.
 
 Now we'll have `loader` parse the file into a Skeleton:

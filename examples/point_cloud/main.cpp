@@ -611,7 +611,7 @@ protected:
 
 dynamics::SkeletonPtr createRobot(const std::string& name)
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::utils::UrdfParser();
 
   // Load the robot
   auto robot
@@ -628,7 +628,7 @@ dynamics::SkeletonPtr createRobot(const std::string& name)
 
 dynamics::SkeletonPtr createGround()
 {
-  auto urdfParser = dart::utils::DartLoader();
+  auto urdfParser = dart::utils::UrdfParser();
 
   auto ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
 

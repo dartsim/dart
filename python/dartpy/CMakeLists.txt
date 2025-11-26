@@ -88,7 +88,7 @@ set(dartpy_headers
   common/subject.hpp
   common/uri.hpp
   utils/module.hpp
-  utils/dart_loader.hpp
+  utils/urdf_parser.hpp
   utils/resource_retriever.hpp
   utils/skel_parser.hpp
   utils/sdf_parser.hpp
@@ -163,7 +163,7 @@ set(dartpy_sources
   common/subject.cpp
   common/uri.cpp
   utils/module.cpp
-  utils/dart_loader.cpp
+  utils/urdf_parser.cpp
   utils/resource_retriever.cpp
   utils/skel_parser.cpp
   utils/sdf_parser.cpp
@@ -344,19 +344,21 @@ target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
 
-# Copy the Python package shim into the build tree so tests can import it
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-  ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-  COPYONLY
-)
-add_custom_command(
-  TARGET dartpy POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-          ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-  COMMENT "Updating dartpy __init__.py"
-)
+# Copy pure-Python helpers into the build tree so tests can import them
+foreach(_py_file __init__.py _naming.py _layout.py)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
+    ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    COPYONLY
+  )
+  add_custom_command(
+    TARGET dartpy POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/${_py_file}
+            ${CMAKE_CURRENT_BINARY_DIR}/${_py_file}
+    COMMENT "Updating dartpy ${_py_file}"
+  )
+endforeach()
 
 if(DEFINED DART_DARTPY_RUNTIME_DIR)
   set(_dartpy_output_dir "${DART_DARTPY_RUNTIME_DIR}")
@@ -387,6 +389,8 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
     LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
 elseif(DEFINED PYTHON_SITE_PACKAGES)
@@ -394,6 +398,8 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
     LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )
 endif()

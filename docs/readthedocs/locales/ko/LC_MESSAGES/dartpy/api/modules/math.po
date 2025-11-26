@@ -30,7 +30,7 @@ msgstr ""
 #: 3b491bb5283545a7a221704368f7782e 6d523d13c3e448b194721ca27fa65187
 #: 7605f3c4928448cb8426388ee25f1102 dartpy.math.AngleAxis:1
 #: dartpy.math.Isometry3:1 dartpy.math.Quaternion:1 dartpy.math.Random:1 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring d07cbef0b86e4f44b8d604fee7204c2f dartpy.math.AngleAxis:1 of
@@ -39,14 +39,14 @@ msgstr ""
 
 #: ../../docstring 714a5089b7f84bd9bdf645835312845e
 #: 9806b969b5f94839b3c83d05977d5d7f a77120106d6c4c4ab7687e118a28ed52
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:1
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:1
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:1
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
 #: edd62360d7a94abaa7b3a55f16ecf13f of
 msgid ""
 "multiply(self: dartpy.math.Isometry3, other: dartpy.math.Isometry3) -> "
@@ -54,7 +54,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 11338ca58b8d417193acebd096fcd64a
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
 #: of
 msgid ""
 "multiply(self: dartpy.math.Isometry3, position: "
@@ -67,7 +67,7 @@ msgid "Provides a unit quaternion binding of Eigen::Quaternion<>."
 msgstr ""
 
 #: ../../docstring 389d32d015a5484ca8138c23a9492271
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:3
 #: of
 msgid ""
 "multiply(self: dartpy.math.Quaternion, arg0: dartpy.math.Quaternion) -> "
@@ -75,7 +75,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring c8d32f042340499ca89aa2884a3c35d3
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.multiply:5
 #: of
 msgid ""
 "multiply(self: dartpy.math.Quaternion, position: "
@@ -84,7 +84,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:3
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:3
 #: f525ec533b624b108e12e99e34020f85 of
 msgid ""
 "set_wxyz(self: dartpy.math.Quaternion, wxyz: "
@@ -93,7 +93,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring a89b522342174e2d98aa3603c8569115
-#: dartpy.math.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:5
+#: dartpy.math.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.set_wxyz:5
 #: of
 msgid ""
 "set_wxyz(self: dartpy.math.Quaternion, w: typing.SupportsFloat, x: "

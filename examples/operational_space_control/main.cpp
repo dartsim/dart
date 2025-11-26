@@ -281,7 +281,7 @@ protected:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser loader;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot

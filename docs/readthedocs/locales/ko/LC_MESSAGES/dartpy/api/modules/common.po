@@ -29,7 +29,7 @@ msgstr ""
 #: dartpy.common.Composite:1 dartpy.common.Observer:1 dartpy.common.Resource:1
 #: dartpy.common.ResourceRetriever:1 dartpy.common.Stopwatch:1
 #: dartpy.common.Subject:1 dartpy.common.Uri:1 of
-msgid "Bases: :py:class:`~pybind11_builtins.pybind11_object`"
+msgid "Bases: :py:class:`~nanobind_builtins.nanobind_object`"
 msgstr ""
 
 #: ../../docstring d948eac6028a45048f9f30a0fd9699db
@@ -44,21 +44,21 @@ msgstr ""
 
 #: ../../docstring 2c53ee893422439cbd5482c379dbd552
 #: c2093a4bce4e47629840eaea79f6bb91 d27623435fad41de9c4eecd5969d427c
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:1
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:1
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:1
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:1
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:1
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:1
 #: of
 msgid "Overloaded function."
 msgstr ""
 
 #: ../../docstring 9b801a07fdf84ba582a5d6facfa6e8a8
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:3
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:3
 #: of
 msgid "createFromRelativeUri(base: str, relative: str) -> dartpy.common.Uri"
 msgstr ""
 
 #: ../../docstring b3c4d2f8e80b4100a09ccc78793a459a
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:5
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:5
 #: of
 msgid ""
 "createFromRelativeUri(base: str, relative: str, strict: bool) -> "
@@ -66,7 +66,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 5cc7ae040e68495cb87b20190d2c5de7
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:7
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:7
 #: of
 msgid ""
 "createFromRelativeUri(base: dartpy.common.Uri, relative: str) -> "
@@ -74,7 +74,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 3b3029976c6443bb8f63a426bbc55946
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:9
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:9
 #: of
 msgid ""
 "createFromRelativeUri(base: dartpy.common.Uri, relative: str, strict: "
@@ -82,7 +82,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 82fb3908645b4705ac3a3ffaf5753659
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:11
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:11
 #: of
 msgid ""
 "createFromRelativeUri(base: dartpy.common.Uri, relative: "
@@ -90,7 +90,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring a16ba0f32b76498288b9418dc1c0302b
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:13
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.createFromRelativeUri:13
 #: of
 msgid ""
 "createFromRelativeUri(base: dartpy.common.Uri, relative: "
@@ -98,16 +98,16 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 7a5446bb405a41749be94c345c7f44ef
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:3
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:7
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:3
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:7
 #: e9cf585d82aa4ad1847966beaa609f7b of
 msgid "fromRelativeUri(self: dartpy.common.Uri, base: str, relative: str) -> bool"
 msgstr ""
 
 #: ../../docstring 5221c8db7bef4f1fb3619002019d2b98
 #: 61d27de4c8fb4310acd3b3bff4810abc
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:5
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:9
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:5
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:9
 #: of
 msgid ""
 "fromRelativeUri(self: dartpy.common.Uri, base: str, relative: str, "
@@ -116,8 +116,8 @@ msgstr ""
 
 #: ../../docstring 5b74752718fc4034acc8a76a21030701
 #: c376991dd50245f4a9e286b3fb93edbb
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:11
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:15
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:11
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:15
 #: of
 msgid ""
 "fromRelativeUri(self: dartpy.common.Uri, base: dartpy.common.Uri, "
@@ -126,8 +126,8 @@ msgstr ""
 
 #: ../../docstring 249e93d9992d4a1490803281dcbff0a7
 #: d4a7366106044710b9ff265d7f94940f
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:13
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:17
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:13
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:17
 #: of
 msgid ""
 "fromRelativeUri(self: dartpy.common.Uri, base: dartpy.common.Uri, "
@@ -135,7 +135,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 165a31bc6c8546d3a1807e8c8d4ffc93
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:19
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:19
 #: of
 msgid ""
 "fromRelativeUri(self: dartpy.common.Uri, base: dartpy.common.Uri, "
@@ -143,7 +143,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring b996c254f5c3440db1acb924f1f02764
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:21
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.fromRelativeUri:21
 #: of
 msgid ""
 "fromRelativeUri(self: dartpy.common.Uri, base: dartpy.common.Uri, "
@@ -151,25 +151,25 @@ msgid ""
 msgstr ""
 
 #: ../../docstring
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:3
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:3
 #: ef92343d75684687866c4deb4d1a9482 of
 msgid "getRelativeUri(base: str, relative: str) -> str"
 msgstr ""
 
 #: ../../docstring 6347682eb3ff4447ba8d466d5742ba22
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:5
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:5
 #: of
 msgid "getRelativeUri(base: str, relative: str, strict: bool) -> str"
 msgstr ""
 
 #: ../../docstring 896b76ab90274feabbc1f551fc17e12d
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:7
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:7
 #: of
 msgid "getRelativeUri(base: dartpy.common.Uri, relative: str) -> str"
 msgstr ""
 
 #: ../../docstring 29c19fb05c054ac7b85870a8ecdd74f2
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:9
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:9
 #: of
 msgid ""
 "getRelativeUri(base: dartpy.common.Uri, relative: str, strict: bool) -> "
@@ -177,7 +177,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring b17d1a5aeb4d43fe9144a618524d0202
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:11
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:11
 #: of
 msgid ""
 "getRelativeUri(base: dartpy.common.Uri, relative: dartpy.common.Uri) -> "
@@ -185,7 +185,7 @@ msgid ""
 msgstr ""
 
 #: ../../docstring 5c9258d7869c42d1b4043e30b585028e
-#: dartpy.common.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:13
+#: dartpy.common.nanobind_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1.getRelativeUri:13
 #: of
 msgid ""
 "getRelativeUri(base: dartpy.common.Uri, relative: dartpy.common.Uri, "

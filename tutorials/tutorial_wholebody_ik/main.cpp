@@ -116,7 +116,7 @@ protected:
 SkeletonPtr loadAtlasRobot()
 {
   // Lesson 1: Load the Atlas robot and configure it for a standing pose
-  DartLoader loader;
+  UrdfParser loader;
   SkeletonPtr atlas
       = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 

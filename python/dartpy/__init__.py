@@ -32,6 +32,7 @@ __path__ = _candidate_package_dirs()  # type: ignore[var-annotated]
 
 from . import _dartpy as _ext  # type: ignore[attr-defined]
 __version__ = getattr(_ext, "__version__", None)
+from . import _layout, _naming
 
 
 def _alias_extension_submodules() -> None:
@@ -58,6 +59,8 @@ def _alias_extension_submodules() -> None:
 from ._dartpy import *  # noqa: F401,F403
 
 _alias_extension_submodules()
+_naming.install_aliases(_ext)
+_layout.install_layout(sys.modules[__name__])
 
 
 def __getattr__(name: str):
@@ -68,4 +71,5 @@ def __getattr__(name: str):
   except ModuleNotFoundError as exc:  # pragma: no cover - passthrough
     raise AttributeError(name) from exc
   globals()[name] = module
+  _naming.install_aliases(module)
   return module
