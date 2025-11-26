@@ -30,25 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+#define DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+
 #include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 
-namespace dart {
-namespace collision {
+namespace dart::collision::bullet::detail {
 
-//==============================================================================
-CollisionOption::CollisionOption(
-    bool enableContact,
-    std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts),
-    allowNegativePenetrationDepthContacts(
-        allowNegativePenetrationDepthContacts),
-    collisionFilter(collisionFilter)
+/// Returns true if the manifold point should be reported as a contact for the
+/// given collision option.
+inline bool shouldReportContact(
+    const btManifoldPoint& cp, const CollisionOption& option)
 {
-  // Do nothing
+  if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
+    return false;
+
+  if (!option.allowNegativePenetrationDepthContacts && cp.m_distance1 > 0.0)
+    return false;
+
+  return true;
 }
 
-} // namespace collision
-} // namespace dart
+} // namespace dart::collision::bullet::detail
+
+#endif // DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
