@@ -58,6 +58,10 @@ struct DART_API CollisionOption
   /// detection and returns false immediately.
   std::size_t maxNumContacts;
 
+  /// If false, contacts with negative penetration depth (e.g., proximity hits
+  /// reported by some collision backends such as Bullet) are ignored.
+  bool allowNegativePenetrationDepthContacts;
+
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
 
@@ -65,7 +69,8 @@ struct DART_API CollisionOption
   CollisionOption(
       bool enableContact = true,
       std::size_t maxNumContacts = 1000u,
-      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr,
+      bool allowNegativePenetrationDepthContacts = false);
 };
 
 } // namespace collision
