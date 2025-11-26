@@ -39,6 +39,7 @@
 
 #include <assimp/scene.h>
 
+#include <memory>
 #include <string>
 
 namespace dart {
@@ -47,6 +48,15 @@ namespace dynamics {
 class DART_API MeshShape : public Shape
 {
 public:
+  enum class MeshOwnership
+  {
+    None,
+    Imported, // from aiImportFile* family; free with aiReleaseImport
+    Copied,   // from aiCopyScene; free with aiFreeScene
+    Manual,   // from manual new aiScene; free with delete
+    Custom    // managed externally via shared_ptr deleter
+  };
+
   enum ColorMode
   {
     MATERIAL_COLOR = 0, ///< Use the colors specified by the Mesh's material
@@ -82,6 +92,15 @@ public:
       const Eigen::Vector3d& scale,
       const aiScene* mesh,
       const common::Uri& uri = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr,
+      MeshOwnership ownership = MeshOwnership::Imported);
+
+  /// Constructor that accepts a shared_ptr so callers can supply a custom
+  /// deleter for aiScene.
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<const aiScene> mesh,
+      const common::Uri& uri = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Destructor.
@@ -106,9 +125,22 @@ public:
       const std::string& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
+  /// Sets the mesh pointer with explicit ownership semantics.
+  void setMesh(
+      const aiScene* mesh,
+      MeshOwnership ownership,
+      const common::Uri& path,
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
   void setMesh(
       const aiScene* mesh,
       const common::Uri& path,
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  /// Sets the mesh using a shared_ptr so callers can provide a custom deleter.
+  void setMesh(
+      std::shared_ptr<const aiScene> mesh,
+      const common::Uri& path = "",
       common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
   /// Returns URI to the mesh as std::string; an empty string if unavailable.
@@ -192,16 +224,9 @@ protected:
 
   aiScene* cloneMesh() const;
 
-  enum class MeshOwnership
-  {
-    None,
-    Imported, // from aiImportFile* family; free with aiReleaseImport
-    Copied    // from aiCopyScene; free with aiFreeScene
-  };
-
   void releaseMesh();
 
-  const aiScene* mMesh;
+  std::shared_ptr<const aiScene> mMesh;
   MeshOwnership mMeshOwnership{MeshOwnership::None};
 
   /// URI the mesh, if available).
