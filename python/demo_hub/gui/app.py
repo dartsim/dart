@@ -71,7 +71,7 @@ def _simulate(state: GuiState) -> None:
 def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
     io = imgui.get_io()
     io.config_flags |= imgui.ConfigFlags_.docking_enable
-    imgui.dock_space_over_viewport(0, imgui.get_main_viewport())
+    imgui.dock_space_over_viewport()
 
     _simulate(state)
 
