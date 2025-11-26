@@ -110,7 +110,7 @@ IncludeCategories:
     Priority: 50
 
   # C++ standard library headers, then C
-  # TODO(JS): Add when new C++ STL header begins with "c" is found
+  # NOTE: Add when new C++ STL header begins with "c" is found
   - Regex: "^<charconv>$"
     Priority: 100
   - Regex: "^<chrono>$"
