@@ -85,8 +85,8 @@ def test_free_joint_world_jacobian_translational_dofs():
     spatial_from_jac = world_jac.dot(velocities)
     assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-    linear_velocity = np.array(body.get_linear_velocity(world, world)).reshape(3)
-    assert np.allclose(linear_velocity, velocities[3:], atol=1e-12)
+    spatial_velocity = np.array(body.getSpatialVelocity()).reshape(6)
+    assert np.allclose(spatial_velocity[3:], velocities[3:], atol=1e-12)
 
     num_tests = 10
     for _ in range(num_tests):
@@ -103,8 +103,8 @@ def test_free_joint_world_jacobian_translational_dofs():
         spatial_from_jac = world_jac.dot(velocities)
         assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-        linear_velocity = np.array(body.get_linear_velocity(world, world)).reshape(3)
-        assert np.allclose(linear_velocity, velocities[3:], atol=1e-12)
+        spatial_velocity = np.array(body.getSpatialVelocity()).reshape(6)
+        assert np.allclose(spatial_velocity[3:], velocities[3:], atol=1e-12)
 
 
 if __name__ == "__main__":
