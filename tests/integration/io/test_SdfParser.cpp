@@ -572,7 +572,9 @@ TEST(SdfParser, WarnsOnMissingInertialBlock)
   retriever->add(modelUri, modelSdf);
 
   LogCapture capture;
-  auto skeleton = SdfParser::readSkeleton(modelUri, retriever);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto skeleton = SdfParser::readSkeleton(modelUri, options);
 
   ASSERT_TRUE(skeleton);
   ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
@@ -615,7 +617,9 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   retriever->add(modelUri, modelSdf);
 
   LogCapture capture;
-  auto skeleton = SdfParser::readSkeleton(modelUri, retriever);
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  auto skeleton = SdfParser::readSkeleton(modelUri, options);
 
   ASSERT_TRUE(skeleton);
   ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
