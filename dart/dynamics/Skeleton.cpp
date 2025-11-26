@@ -954,7 +954,7 @@ static std::vector<const T*>& convertToConstPtrVector(
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& Skeleton::getBodyNodes()
+std::vector<BodyNode*>& Skeleton::getBodyNodes()
 {
   return mSkelCache.mBodyNodes;
 }

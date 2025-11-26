@@ -139,7 +139,7 @@ static std::vector<T2>& convertVector(
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
+std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
 {
   return convertVector<BodyNodePtr, BodyNode*>(mBodyNodes, mRawBodyNodes);
 }
