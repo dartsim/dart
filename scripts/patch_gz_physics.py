@@ -319,12 +319,61 @@ TestInfo* MakeAndRegisterTestInfo(
     return True
 
 
+def patch_custom_mesh_shape(mesh_shape_path: Path) -> bool:
+    """
+    Update CustomMeshShape to use MeshShape::setMesh with explicit ownership
+    now that MeshShape stores meshes in shared_ptr.
+    """
+    if not mesh_shape_path.exists():
+        print(f"Error: CustomMeshShape not found at {mesh_shape_path}", file=sys.stderr)
+        return False
+
+    text = mesh_shape_path.read_text()
+    include_snippet = "#include <gz/common/SubMesh.hh>\n"
+    uri_include = "#include <dart/common/Uri.hpp>\n"
+    if include_snippet in text and uri_include not in text:
+        text = text.replace(include_snippet, include_snippet + "\n" + uri_include, 1)
+
+    old_tail = (
+        "  this->mMesh = scene;\n"
+        "  this->mIsBoundingBoxDirty = true;\n"
+        "  this->mIsVolumeDirty = true;\n"
+        "}\n"
+    )
+    new_tail = (
+        "  this->setMesh(\n"
+        "      scene,\n"
+        "      dart::dynamics::MeshShape::MeshOwnership::Manual,\n"
+        "      dart::common::Uri(),\n"
+        "      nullptr);\n"
+        "  this->mIsBoundingBoxDirty = true;\n"
+        "  this->mIsVolumeDirty = true;\n"
+        "}\n"
+    )
+    if old_tail not in text:
+        if new_tail in text:
+            print("✓ CustomMeshShape already patched")
+            mesh_shape_path.write_text(text)
+            return True
+        print(
+            "Error: Failed to locate CustomMeshShape mesh assignment block",
+            file=sys.stderr,
+        )
+        return False
+
+    text = text.replace(old_tail, new_tail, 1)
+    mesh_shape_path.write_text(text)
+    print(f"✓ Patched CustomMeshShape to use MeshShape::setMesh in {mesh_shape_path}")
+    return True
+
+
 def main():
     """Main entry point for the script."""
     # Get the gz-physics CMakeLists.txt path
     repo_root = Path(__file__).parent.parent
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
     gtest_root = cmake_file.parent / "test" / "gtest_vendor"
+    custom_mesh_shape = cmake_file.parent / "dartsim" / "src" / "CustomMeshShape.cc"
 
     # Patch versions
     old_version = "6.10"
@@ -338,6 +387,8 @@ def main():
 
     if success:
         success = inject_make_and_register_overload(gtest_root) and success
+    if success:
+        success = patch_custom_mesh_shape(custom_mesh_shape) and success
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)

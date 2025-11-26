@@ -130,7 +130,7 @@ public:
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
   DART_DEPRECATED(6.13)
-  virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
+  virtual std::vector<BodyNode*>& getBodyNodes() = 0;
 
   /// Deprecated BodyNode list getter kept for downstream consumers (e.g.,
   /// gz-physics) until they migrate away from it.
