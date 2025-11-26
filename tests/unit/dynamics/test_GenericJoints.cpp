@@ -261,9 +261,9 @@ TEST(GenericJoint, Basic)
 //==============================================================================
 TEST(GenericJoint, RejectsNonFiniteInputs)
 {
-#ifdef NDEBUG
+  #ifdef NDEBUG
   GTEST_SKIP() << "Assertions are disabled in Release builds.";
-#endif
+  #endif
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
   const double inf = std::numeric_limits<double>::infinity();

@@ -44,8 +44,9 @@
 #include <dart/math/ConfigurationSpace.hpp>
 #include <dart/math/Helpers.hpp>
 
-#include <cmath>
 #include <sstream>
+
+#include <cmath>
 
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
@@ -759,8 +760,7 @@ GenericJoint<ConfigSpaceT>::getVelocitiesStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
-  detail::assertFiniteState(
-      accels, this, "setAccelerations", "accelerations");
+  detail::assertFiniteState(accels, this, "setAccelerations", "accelerations");
 
   if (this->mAspectState.mAccelerations == accels)
     return;
