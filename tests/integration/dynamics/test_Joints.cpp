@@ -2125,13 +2125,34 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_TRANSLATION_UNCOUPLED)
 
   const Eigen::Isometry3d startTf = joint->getRelativeTransform();
   const Eigen::Isometry3d expectedTf
-      = startTf
-        * math::expMap(joint->getRelativeSpatialVelocity() * dt);
+      = startTf * math::expMap(joint->getRelativeSpatialVelocity() * dt);
 
   skel->integratePositions(dt);
   translated = joint->getRelativeTransform().translation();
   EXPECT_TRUE(equals(joint->getRelativeTransform(), expectedTf));
   EXPECT_TRUE(equals(translated, expectedTf.translation()));
+}
+
+//==============================================================================
+TEST_F(Joints, FREE_JOINT_POSITION_DIFFERENCE_TRANSLATION_IN_WORLD)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  Eigen::Vector6d q1 = Eigen::Vector6d::Zero();
+  q1.head<3>() = Eigen::Vector3d(0.25, -0.3, 0.15);
+  q1.tail<3>() = Eigen::Vector3d(0.4, -0.1, 0.2);
+
+  Eigen::Vector6d q2 = q1;
+  const Eigen::Vector3d delta(0.05, -0.08, 0.12);
+  q2.tail<3>() += delta;
+
+  const Eigen::Vector6d diff = joint->getPositionDifferences(q2, q1);
+
+  EXPECT_TRUE(equals(Eigen::Vector3d::Zero(), diff.head<3>().eval()));
+  EXPECT_TRUE(equals(delta, diff.tail<3>().eval()));
 }
 
 //==============================================================================
@@ -2179,13 +2200,32 @@ TEST_F(Joints, FREE_JOINT_INTEGRATION_MATCHES_BODY_TWIST_LARGE_DT)
   const Eigen::Isometry3d start = joint->getRelativeTransform();
   const Eigen::Vector3d vWorld = start.linear() * twist.tail<3>();
   Eigen::Isometry3d expected = start;
-  expected.linear()
-      = expected.linear() * math::expMapRot(twist.head<3>() * dt);
+  expected.linear() = expected.linear() * math::expMapRot(twist.head<3>() * dt);
   expected.translation() += vWorld * dt;
 
   skel->integratePositions(dt);
 
   EXPECT_TRUE(equals(joint->getRelativeTransform(), expected, 1e-8));
+}
+
+//==============================================================================
+TEST_F(Joints, FREE_JOINT_VELOCITY_INTEGRATES_ACCELERATION)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  const Eigen::Vector6d velocities = random_vec<6>(0.5);
+  const Eigen::Vector6d accelerations = random_vec<6>(0.5);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+
+  const double dt = 1e-3;
+  skel->integrateVelocities(dt);
+
+  const Eigen::Vector6d expected = velocities + accelerations * dt;
+  EXPECT_TRUE(equals(joint->getVelocities(), expected));
 }
 
 //==============================================================================
@@ -2233,8 +2273,7 @@ TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE)
 
   const Eigen::Matrix6d jacobianFd = (jacobian1 - jacobian0) / dt;
 
-  const double maxError
-      = (jacobianDot - jacobianFd).cwiseAbs().maxCoeff();
+  const double maxError = (jacobianDot - jacobianFd).cwiseAbs().maxCoeff();
   EXPECT_LT(maxError, 1e-3);
 }
 
@@ -2259,8 +2298,7 @@ TEST_F(Joints, FREE_JOINT_RELATIVE_JACOBIAN_TIME_DERIVATIVE_IDENTITY_FRAMES)
   const Eigen::Matrix6d jacobian1 = joint->getRelativeJacobian();
 
   const Eigen::Matrix6d jacobianFd = (jacobian1 - jacobian0) / dt;
-  const double maxError
-      = (jacobianDot - jacobianFd).cwiseAbs().maxCoeff();
+  const double maxError = (jacobianDot - jacobianFd).cwiseAbs().maxCoeff();
 
   EXPECT_LT(maxError, 1e-6);
 }
