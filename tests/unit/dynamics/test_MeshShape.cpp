@@ -9,6 +9,7 @@
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -226,4 +227,22 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   EXPECT_TRUE(aliasExtents.isApprox(canonicalExtents, 1e-6))
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();
+}
+
+TEST(MeshShapeTest, RespectsCustomMeshDeleter)
+{
+  std::atomic<int> deleted{0};
+
+  {
+    auto scene = std::shared_ptr<const aiScene>(
+        new aiScene, [&deleted](const aiScene* mesh) {
+          ++deleted;
+          delete const_cast<aiScene*>(mesh);
+        });
+
+    dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene);
+    EXPECT_EQ(shape.getMesh(), scene.get());
+  }
+
+  EXPECT_EQ(deleted.load(), 1);
 }

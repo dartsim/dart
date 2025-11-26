@@ -445,7 +445,12 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mRootNode = node;
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(
+            Eigen::Vector3d::Ones(),
+            scene,
+            common::Uri(),
+            nullptr,
+            dart::dynamics::MeshShape::MeshOwnership::Manual));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -529,7 +534,12 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mRootNode = node;
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+        new dart::dynamics::MeshShape(
+            Eigen::Vector3d::Ones(),
+            scene,
+            common::Uri(),
+            nullptr,
+            dart::dynamics::MeshShape::MeshOwnership::Manual));
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
