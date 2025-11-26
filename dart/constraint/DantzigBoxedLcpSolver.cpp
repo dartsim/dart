@@ -44,6 +44,12 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
+DantzigBoxedLcpSolver::DantzigBoxedLcpSolver()
+{
+  mDefaultOptions.warmStart = true;
+}
+
+//==============================================================================
 math::LcpResult DantzigBoxedLcpSolver::solve(
     const Eigen::MatrixXd& A,
     const Eigen::VectorXd& b,
@@ -65,7 +71,6 @@ math::LcpResult DantzigBoxedLcpSolver::solve(
     return result;
   }
 
-  const int n = static_cast<int>(b.size());
   math::DantzigSolver solver;
   math::LcpResult lcpResult = solver.solve(A, b, lo, hi, findex, x, options);
   return lcpResult;

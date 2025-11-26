@@ -36,6 +36,7 @@
 #include "dart/math/lcp/dantzig/Common.hpp"
 #include "dart/math/lcp/dantzig/Matrix.hpp"
 #include "dart/math/lcp/dantzig/Misc.hpp"
+
 #include <Eigen/Dense>
 
 #include <vector>
@@ -47,6 +48,12 @@
 
 namespace dart {
 namespace constraint {
+
+//==============================================================================
+PgsBoxedLcpSolver::PgsBoxedLcpSolver()
+{
+  mDefaultOptions.warmStart = true;
+}
 
 //==============================================================================
 PgsBoxedLcpSolver::Option::Option(
@@ -169,16 +176,17 @@ math::LcpResult PgsBoxedLcpSolver::solve(
         xdata[static_cast<std::size_t>(i)] = newX;
     } else {
       if (newX > hiData[static_cast<std::size_t>(i)])
-        xdata[static_cast<std::size_t>(i)] = hiData[static_cast<std::size_t>(i)];
+        xdata[static_cast<std::size_t>(i)]
+            = hiData[static_cast<std::size_t>(i)];
       else if (newX < loData[static_cast<std::size_t>(i)])
-        xdata[static_cast<std::size_t>(i)] = loData[static_cast<std::size_t>(i)];
+        xdata[static_cast<std::size_t>(i)]
+            = loData[static_cast<std::size_t>(i)];
       else
         xdata[static_cast<std::size_t>(i)] = newX;
     }
 
     if (possibleToTerminate) {
-      const double deltaX = std::abs(
-          xdata[static_cast<std::size_t>(i)] - oldX);
+      const double deltaX = std::abs(xdata[static_cast<std::size_t>(i)] - oldX);
       if (deltaX > mOption.mDeltaXThreshold)
         possibleToTerminate = false;
     }
@@ -220,9 +228,10 @@ math::LcpResult PgsBoxedLcpSolver::solve(
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
 
         if (findexData[static_cast<std::size_t>(index)] >= 0) {
-          const double hiTmp = hiData[static_cast<std::size_t>(index)]
-                               * xdata[static_cast<std::size_t>(
-                                   findexData[static_cast<std::size_t>(index)])];
+          const double hiTmp
+              = hiData[static_cast<std::size_t>(index)]
+                * xdata[static_cast<std::size_t>(
+                    findexData[static_cast<std::size_t>(index)])];
           const double loTmp = -hiTmp;
 
           if (newX > hiTmp)
@@ -265,7 +274,7 @@ math::LcpResult PgsBoxedLcpSolver::solve(
   // Restore the original PGS option so per-call overrides don't leak.
   setOption(previousOption);
 
-  Eigen::VectorXd wVec = A * x + b;
+  Eigen::VectorXd wVec = A * x - b;
   result.iterations = appliedOption.mMaxIteration;
   result.complementarity = (x.array() * wVec.array()).abs().maxCoeff();
   result.residual = (wVec.array().min(Eigen::ArrayXd::Zero(n)))

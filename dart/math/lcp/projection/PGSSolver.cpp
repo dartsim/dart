@@ -66,8 +66,10 @@ LcpResult PGSSolver::solve(
   Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
 
   bool converged = true;
-  for (int iter = 0; iter < (options.maxIterations > 0 ? options.maxIterations
-                                                       : mDefaultOptions.maxIterations);
+  for (int iter = 0;
+       iter
+       < (options.maxIterations > 0 ? options.maxIterations
+                                    : mDefaultOptions.maxIterations);
        ++iter) {
     converged = true;
     for (int i = 0; i < n; ++i) {
@@ -93,13 +95,15 @@ LcpResult PGSSolver::solve(
   result.iterations = options.maxIterations > 0 ? options.maxIterations
                                                 : mDefaultOptions.maxIterations;
   result.complementarity = (x.array() * w.array()).abs().maxCoeff();
-  result.residual
-      = (w.array().min(Eigen::ArrayXd::Zero(n))).matrix().lpNorm<Eigen::Infinity>();
-  result.status = converged ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
+  result.residual = (w.array().min(Eigen::ArrayXd::Zero(n)))
+                        .matrix()
+                        .lpNorm<Eigen::Infinity>();
+  result.status
+      = converged ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
 
   if (options.validateSolution) {
-    const double tol = std::max(
-        options.complementarityTolerance, options.absoluteTolerance);
+    const double tol
+        = std::max(options.complementarityTolerance, options.absoluteTolerance);
     const bool feasible = w.minCoeff() >= -options.absoluteTolerance
                           && x.minCoeff() >= -options.absoluteTolerance
                           && (x.array() * w.array()).abs().maxCoeff() <= tol;

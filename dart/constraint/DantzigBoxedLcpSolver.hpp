@@ -43,6 +43,8 @@ namespace constraint {
 class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
+  DantzigBoxedLcpSolver();
+
   using BoxedLcpSolver::solve;
 
   math::LcpResult solve(

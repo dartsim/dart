@@ -207,9 +207,12 @@ public:
       const Eigen::VectorXd& /*hi*/,
       const Eigen::VectorXi& /*findex*/,
       Eigen::VectorXd& x,
-      const dart::math::LcpOptions& /*options*/) override
+      const dart::math::LcpOptions& options) override
   {
-    // Leave x untouched to reflect the initial seed provided by the caller.
+    (void)A;
+    // Honor warm-start flag: preserve the seed when enabled, otherwise reset.
+    if (!options.warmStart)
+      x = Eigen::VectorXd::Zero(A.rows());
     dart::math::LcpResult res;
     res.status = dart::math::LcpSolverStatus::Success;
     res.iterations = 1;

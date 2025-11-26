@@ -46,6 +46,8 @@ namespace constraint {
 class DART_API PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
+  PgsBoxedLcpSolver();
+
   using BoxedLcpSolver::solve;
 
   math::LcpResult solve(
