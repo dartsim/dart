@@ -56,6 +56,7 @@
 
 #include <assimp/scene.h>
 
+#include <algorithm>
 #include <limits>
 
 namespace dart {
@@ -1082,16 +1083,21 @@ bool collisionCallback(
   const auto& option = collData->option;
   const auto& filter = option.collisionFilter;
 
-  // Filtering
-  if (filter) {
-    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
-    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
-    DART_ASSERT(collisionObject1);
-    DART_ASSERT(collisionObject2);
+  auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+  DART_ASSERT(collisionObject1);
+  DART_ASSERT(collisionObject2);
 
-    if (filter->ignoresCollision(collisionObject2, collisionObject1))
-      return collData->done;
+  // Ensure deterministic ordering of the collision pair so that reported
+  // normals are stable even if the broadphase shuffles callback arguments.
+  if (collisionObject2 < collisionObject1) {
+    std::swap(o1, o2);
+    std::swap(collisionObject1, collisionObject2);
   }
+
+  // Filtering
+  if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
+    return collData->done;
 
   // Clear previous results
   fclResult.clear();

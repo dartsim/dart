@@ -949,6 +949,51 @@ TEST_F(Collision, testConeCone)
 }
 
 //==============================================================================
+TEST_F(Collision, FCLDeterministicPairOrdering)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  detector->setContactPointComputationMethod(FCLCollisionDetector::DART);
+
+  auto frameA = SimpleFrame::createShared(Frame::World());
+  auto frameB = SimpleFrame::createShared(Frame::World());
+
+  ShapePtr boxShape(new BoxShape(Eigen::Vector3d::Constant(0.1)));
+  frameA->setShape(boxShape);
+  frameB->setShape(boxShape);
+
+  // Slightly overlap the boxes to guarantee contact.
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1u;
+
+  collision::CollisionResult abResult;
+  auto groupAB1 = detector->createCollisionGroup(frameA.get());
+  auto groupAB2 = detector->createCollisionGroup(frameB.get());
+  EXPECT_TRUE(groupAB1->collide(groupAB2.get(), option, &abResult));
+  ASSERT_EQ(abResult.getNumContacts(), 1u);
+
+  collision::CollisionResult baResult;
+  auto groupBA1 = detector->createCollisionGroup(frameB.get());
+  auto groupBA2 = detector->createCollisionGroup(frameA.get());
+  EXPECT_TRUE(groupBA1->collide(groupBA2.get(), option, &baResult));
+  ASSERT_EQ(baResult.getNumContacts(), 1u);
+
+  const auto& contactAB = abResult.getContact(0);
+  const auto& contactBA = baResult.getContact(0);
+
+  // The collision pair ordering should be deterministic regardless of the
+  // groups passed into collide, and the normals should be identical.
+  EXPECT_EQ(contactAB.collisionObject1, contactBA.collisionObject1);
+  EXPECT_EQ(contactAB.collisionObject2, contactBA.collisionObject2);
+  EXPECT_GT(contactAB.normal.norm(), 0.0);
+  EXPECT_TRUE(contactAB.normal.isApprox(contactBA.normal));
+}
+
+//==============================================================================
 void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
