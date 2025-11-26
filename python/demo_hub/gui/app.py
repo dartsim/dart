@@ -71,10 +71,11 @@ def _simulate(state: GuiState) -> None:
 def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
     io = imgui.get_io()
     io.config_flags |= imgui.ConfigFlags_.docking_enable
-    imgui.dock_space_over_viewport()
+    dock_id = _dockspace_fullscreen()
 
     _simulate(state)
 
+    imgui.set_next_window_dock_id(dock_id, imgui.Cond_.first_use_ever)
     imgui.begin("Demo Hub")
 
     changed, selected_idx = imgui.combo("Scene", state.selected_idx, state.scene_ids)
@@ -120,19 +121,64 @@ def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
 
     imgui.end()
 
-    segments = [Segment2D(seg[0], seg[1], seg[2]) for seg in state.scene.debug_draw_2d()]
+    imgui.set_next_window_dock_id(dock_id, imgui.Cond_.first_use_ever)
+    segments = [
+        Segment2D(seg[0], seg[1], seg[2]) for seg in state.scene.debug_draw_2d()
+    ]
     draw_topdown("Viewport (XZ top-down)", segments)
 
 
+def _dockspace_fullscreen() -> None:
+    # Fullscreen dockspace so any window (including ImGui demo widgets) can dock.
+    viewport = imgui.get_main_viewport()
+    imgui.set_next_window_pos(viewport.pos)
+    imgui.set_next_window_size(viewport.size)
+    imgui.set_next_window_viewport(viewport.id_)
+    imgui.push_style_var(imgui.StyleVar_.window_rounding, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.window_padding, (0.0, 0.0))
+
+    window_flags = (
+        imgui.WindowFlags_.no_title_bar
+        | imgui.WindowFlags_.no_collapse
+        | imgui.WindowFlags_.no_resize
+        | imgui.WindowFlags_.no_move
+        | imgui.WindowFlags_.no_bring_to_front_on_focus
+        | imgui.WindowFlags_.no_nav_focus
+        | imgui.WindowFlags_.no_docking
+        | imgui.WindowFlags_.no_background
+    )
+
+    imgui.begin("MainDockSpaceHost", flags=window_flags)
+    imgui.pop_style_var(3)
+    dockspace_id = imgui.get_id("MainDockSpace")
+    imgui.dock_space(dockspace_id, (0.0, 0.0), imgui.DockNodeFlags_.none)
+    imgui.end()
+    return dockspace_id
+
+
 def main(argv: list[str] | None = None) -> None:
-    if os.name != "nt" and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
-        raise SystemExit("GUI requires a display (set DISPLAY/WAYLAND_DISPLAY or run inside a desktop session).")
+    if (
+        os.name != "nt"
+        and not os.environ.get("DISPLAY")
+        and not os.environ.get("WAYLAND_DISPLAY")
+    ):
+        raise SystemExit(
+            "GUI requires a display (set DISPLAY/WAYLAND_DISPLAY or run inside a desktop session)."
+        )
 
     registry = build_default_registry()
 
     parser = argparse.ArgumentParser(description="ImGui shell for demo_hub scenes")
-    parser.add_argument("--scene", default="hello_world", choices=registry.scene_ids, help="Scene id to start with")
-    parser.add_argument("--dt", type=float, default=1.0 / 240.0, help="Simulation timestep")
+    parser.add_argument(
+        "--scene",
+        default="hello_world",
+        choices=registry.scene_ids,
+        help="Scene id to start with",
+    )
+    parser.add_argument(
+        "--dt", type=float, default=1.0 / 240.0, help="Simulation timestep"
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -140,7 +186,8 @@ def main(argv: list[str] | None = None) -> None:
     state = GuiState(registry, args.scene, args.dt)
 
     params = immapp.RunnerParams()
-    params.app_window_params.window_title = "DART Demo Hub (Python)"
+    params.docking_params.main_dock_space_node_flags = imgui.DockNodeFlags_.none
+    params.app_window_params.window_title = "DART Demo Hub"
     params.app_window_params.window_geometry.size = [1280, 720]
     params.callbacks.show_gui = lambda: _render(state)
     immapp.run(runner_params=params)

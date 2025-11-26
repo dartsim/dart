@@ -86,6 +86,7 @@ gh-pages/
 # ImGui configuration
 imgui.ini
 DART_Demo_Hub__Python_.ini
+DART_Demo_Hub*.ini
 
 # Temporary directory for dependencies
 .deps/
