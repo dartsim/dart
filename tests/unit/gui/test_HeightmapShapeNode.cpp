@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2025, The DART development contributors
 
-#include <dart/gui/osg/render/HeightmapShapeNode.hpp>
+#include <dart/gui/render/HeightmapShapeNode.hpp>
 
 #include <dart/dynamics/HeightmapShape.hpp>
 
@@ -10,7 +10,7 @@ namespace {
 
 using Scalar = float;
 using HeightField = dart::dynamics::HeightmapShape<Scalar>::HeightField;
-using Drawable = dart::gui::osg::render::HeightmapShapeDrawable<Scalar>;
+using Drawable = dart::gui::render::HeightmapShapeDrawable<Scalar>;
 
 //------------------------------------------------------------------------------
 TEST(HeightmapShapeNode, VerticesAreCenteredAroundOrigin)
@@ -26,7 +26,7 @@ TEST(HeightmapShapeNode, VerticesAreCenteredAroundOrigin)
   typename Drawable::Vector3 scale;
   scale << 2.0f, 3.0f, 1.0f;
 
-  dart::gui::osg::render::setVertices<Scalar>(
+  dart::gui::render::setVertices<Scalar>(
       heights, *vertices, *faces, *normals, scale);
 
   ASSERT_EQ(vertices->size(), heights.size());

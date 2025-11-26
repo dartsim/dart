@@ -33,6 +33,7 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
 
@@ -456,7 +457,9 @@ int main()
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
-  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, 0.f, 0.1f);
+  // Use a wider height range out of the box so the surface is visible above
+  // the grid without fiddling with the controls.
+  auto terrain = createHeightmapFrame<float>(100u, 100u, 2.f, 2.f, -0.1f, 0.4f);
   world->addSimpleFrame(terrain);
 
   DART_ASSERT(world->getNumSimpleFrames() == 1u);
@@ -472,6 +475,8 @@ int main()
 
   // Create grid
   ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
+  // Sink the grid slightly so the heightmap surface is not z-fighting with it.
+  grid->setOffset(Eigen::Vector3d(0.0, 0.0, -0.01));
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(std::make_shared<HeightmapWidget<float>>(
