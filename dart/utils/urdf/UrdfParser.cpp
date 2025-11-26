@@ -130,11 +130,7 @@ dynamics::SkeletonPtr UrdfParser::parseSkeleton(const common::Uri& uri)
   context.mTransmissions = parseTransmissions(content);
 
   return modelInterfaceToSkeleton(
-      urdfInterface.get(),
-      uri,
-      resourceRetriever,
-      mOptions,
-      &context);
+      urdfInterface.get(), uri, resourceRetriever, mOptions, &context);
 }
 
 //==============================================================================
@@ -207,11 +203,7 @@ simulation::WorldPtr UrdfParser::parseWorldString(
     ParseContext context;
     context.mTransmissions = parseTransmissions(modelContent);
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(),
-        entity.uri,
-        resourceRetriever,
-        mOptions,
-        &context);
+        entity.model.get(), entity.uri, resourceRetriever, mOptions, &context);
 
     if (!skeleton) {
       DART_WARN(

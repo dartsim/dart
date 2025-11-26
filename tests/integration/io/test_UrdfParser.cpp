@@ -32,8 +32,6 @@
 
 #include "helpers/GTestUtils.hpp"
 
-#include <Eigen/Core>
-
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
@@ -41,6 +39,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/urdf/UrdfParser.hpp"
 
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -620,10 +619,8 @@ TEST(UrdfParser, transmissionDynamicsRespectsGearRatio)
     j2->setForce(0, 0.0);
     world->step();
 
-    EXPECT_NEAR(
-        j2->getPosition(0), multiplier * j1->getPosition(0), tol);
-    EXPECT_NEAR(
-        j2->getVelocity(0), multiplier * j1->getVelocity(0), tol);
+    EXPECT_NEAR(j2->getPosition(0), multiplier * j1->getPosition(0), tol);
+    EXPECT_NEAR(j2->getVelocity(0), multiplier * j1->getVelocity(0), tol);
   }
 }
 
