@@ -48,9 +48,14 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/solver/LegacyRigidSolver.hpp"
+#include "dart/simulation/solver/RigidSolver.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -183,11 +188,15 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  setConstraintSolver(std::move(solver));
+  addSolver(std::make_unique<LegacyRigidSolver>());
+  addSolver(std::make_unique<RigidSolver>(mEntityManager));
 
-  if (auto detector = resolveCollisionDetector(config))
-    setCollisionDetector(detector);
+  setConstraintSolver(std::make_unique<constraint::BoxedLcpConstraintSolver>());
+
+  if (auto* collisionSolver = getCollisionCapableSolver()) {
+    if (auto detector = resolveCollisionDetector(config))
+      collisionSolver->setCollisionDetector(detector);
+  }
 }
 
 //==============================================================================
@@ -210,9 +219,11 @@ WorldPtr World::clone() const
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
 
-  auto cd = getConstraintSolver()->getCollisionDetector();
-  if (cd) {
-    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+  if (auto* constraintSolver = getConstraintSolver()) {
+    auto cd = constraintSolver->getCollisionDetector();
+    if (cd) {
+      worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+    }
   }
 
   // Clone and add each Skeleton
@@ -255,8 +266,8 @@ void World::setTimeStep(double _timeStep)
   }
 
   mTimeStep = _timeStep;
-  DART_ASSERT(mConstraintSolver);
-  mConstraintSolver->setTimeStep(_timeStep);
+  for (auto& solver : mRigidSolvers)
+    solver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
 }
@@ -273,7 +284,8 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
-  mConstraintSolver->clearLastCollisionResult();
+  for (auto& solver : mRigidSolvers)
+    solver->reset(*this);
 }
 
 //==============================================================================
@@ -281,42 +293,8 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  // Integrate velocity for unconstrained skeletons
-  {
-    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
-    for (auto& skel : mSkeletons) {
-      if (!skel->isMobile())
-        continue;
-
-      skel->computeForwardDynamics();
-      skel->integrateVelocities(mTimeStep);
-    }
-  }
-
-  // Detect activated constraints and compute constraint impulses
-  {
-    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
-    mConstraintSolver->solve();
-  }
-
-  // Compute velocity changes given constraint impulses
-  for (auto& skel : mSkeletons) {
-    if (!skel->isMobile())
-      continue;
-
-    if (skel->isImpulseApplied()) {
-      skel->computeImpulseForwardDynamics();
-      skel->setImpulseApplied(false);
-    }
-
-    skel->integratePositions(mTimeStep);
-
-    if (_resetCommand) {
-      skel->clearInternalForces();
-      skel->clearExternalForces();
-      skel->resetCommands();
-    }
-  }
+  for (auto& solver : mRigidSolvers)
+    solver->step(*this, _resetCommand);
 
   mTime += mTimeStep;
   mFrame++;
@@ -439,7 +417,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
-  mConstraintSolver->addSkeleton(_skeleton);
+  for (auto& solver : mRigidSolvers)
+    solver->handleSkeletonAdded(*this, _skeleton);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -478,8 +457,9 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
     mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
-  // Remove _skeleton from constraint handler.
-  mConstraintSolver->removeSkeleton(_skeleton);
+  // Notify solvers.
+  for (auto& solver : mRigidSolvers)
+    solver->handleSkeletonRemoved(*this, _skeleton);
 
   // Remove _skeleton from mSkeletons
   mSkeletons.erase(
@@ -644,13 +624,26 @@ bool World::checkCollision(
     const collision::CollisionOption& option,
     collision::CollisionResult* result)
 {
-  return mConstraintSolver->getCollisionGroup()->collide(option, result);
+  auto* solver = getCollisionCapableSolver();
+  if (!solver) {
+    DART_WARN("World '{}' does not have a collision-capable solver.", mName);
+    return false;
+  }
+
+  return solver->checkCollision(option, result);
 }
 
 //==============================================================================
 const collision::CollisionResult& World::getLastCollisionResult() const
 {
-  return mConstraintSolver->getLastCollisionResult();
+  auto* solver = getCollisionCapableSolver();
+  if (!solver) {
+    DART_WARN("World '{}' does not have a collision-capable solver.", mName);
+    static const collision::CollisionResult emptyResult;
+    return emptyResult;
+  }
+
+  return solver->getLastCollisionResult();
 }
 
 //==============================================================================
@@ -663,7 +656,16 @@ void World::setCollisionDetector(
     return;
   }
 
-  mConstraintSolver->setCollisionDetector(collisionDetector);
+  auto* solver = getCollisionCapableSolver();
+  if (!solver) {
+    DART_WARN(
+        "World '{}' does not have a collision-capable solver. Ignoring "
+        "collision detector assignment.",
+        mName);
+    return;
+  }
+
+  solver->setCollisionDetector(collisionDetector);
 }
 
 //==============================================================================
@@ -671,7 +673,8 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
 {
   auto detector = tryCreateCollisionDetector(collisionDetector);
   if (!detector) {
-    auto current = mConstraintSolver->getCollisionDetector();
+    auto* solver = getCollisionCapableSolver();
+    auto current = solver ? solver->getCollisionDetector() : nullptr;
     DART_WARN(
         "Collision detector '{}' is not available for world '{}'. Keeping the "
         "current detector '{}'.",
@@ -687,46 +690,53 @@ void World::setCollisionDetector(CollisionDetectorType collisionDetector)
 //==============================================================================
 collision::CollisionDetectorPtr World::getCollisionDetector()
 {
-  return mConstraintSolver->getCollisionDetector();
+  auto* solver = getCollisionCapableSolver();
+  return solver ? solver->getCollisionDetector() : nullptr;
 }
 
 //==============================================================================
 collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
 {
-  return mConstraintSolver->getCollisionDetector();
+  auto* solver = getCollisionCapableSolver();
+  return solver ? solver->getCollisionDetector() : nullptr;
 }
 
 //==============================================================================
 void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
-  if (!solver) {
-    DART_WARN("nullptr for constraint solver is not allowed. Doing nothing.");
+  auto* constraintSolver = getConstraintCapableSolver();
+  if (!constraintSolver) {
+    DART_ERROR("No constraint-capable solver has been registered.");
     return;
   }
 
-  if (mConstraintSolver)
-    solver->setFromOtherConstraintSolver(*mConstraintSolver);
-
-  mConstraintSolver = std::move(solver);
-  mConstraintSolver->setTimeStep(mTimeStep);
+  constraintSolver->setConstraintSolver(std::move(solver));
 }
 
 //==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver()
 {
-  return mConstraintSolver.get();
+  auto* solver = getConstraintCapableSolver();
+  return solver ? solver->getConstraintSolver() : nullptr;
 }
 
 //==============================================================================
 const constraint::ConstraintSolver* World::getConstraintSolver() const
 {
-  return mConstraintSolver.get();
+  auto* solver = getConstraintCapableSolver();
+  return solver ? solver->getConstraintSolver() : nullptr;
 }
 
 //==============================================================================
 void World::bake()
 {
-  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
+  const auto* constraintSolver = getConstraintSolver();
+  if (!constraintSolver) {
+    DART_WARN("Cannot bake state because no constraint-capable solver exists.");
+    return;
+  }
+
+  const auto collisionResult = constraintSolver->getLastCollisionResult();
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 
@@ -749,6 +759,113 @@ void World::bake()
 Recording* World::getRecording()
 {
   return mRecording;
+}
+
+//==============================================================================
+entt::registry& World::getEntityManager()
+{
+  return mEntityManager;
+}
+
+//==============================================================================
+const entt::registry& World::getEntityManager() const
+{
+  return mEntityManager;
+}
+
+//==============================================================================
+WorldSolver* World::addSolver(std::unique_ptr<WorldSolver> solver)
+{
+  if (!solver) {
+    DART_WARN("Attempted to add a null solver to world '{}'.", mName);
+    return nullptr;
+  }
+
+  solver->setTimeStep(mTimeStep);
+  mRigidSolvers.emplace_back(std::move(solver));
+  return mRigidSolvers.back().get();
+}
+
+//==============================================================================
+std::size_t World::getNumSolvers() const
+{
+  return mRigidSolvers.size();
+}
+
+//==============================================================================
+WorldSolver* World::getSolver(std::size_t index)
+{
+  if (index >= mRigidSolvers.size())
+    return nullptr;
+  return mRigidSolvers[index].get();
+}
+
+//==============================================================================
+const WorldSolver* World::getSolver(std::size_t index) const
+{
+  if (index >= mRigidSolvers.size())
+    return nullptr;
+  return mRigidSolvers[index].get();
+}
+
+//==============================================================================
+WorldSolver* World::getSolver(RigidSolverType type)
+{
+  for (auto& solver : mRigidSolvers) {
+    if (solver->getType() == type)
+      return solver.get();
+  }
+  return nullptr;
+}
+
+//==============================================================================
+const WorldSolver* World::getSolver(RigidSolverType type) const
+{
+  for (auto& solver : mRigidSolvers) {
+    if (solver->getType() == type)
+      return solver.get();
+  }
+  return nullptr;
+}
+
+//==============================================================================
+WorldSolver* World::getConstraintCapableSolver()
+{
+  for (auto& solver : mRigidSolvers) {
+    if (solver->supportsConstraints())
+      return solver.get();
+  }
+  return nullptr;
+}
+
+//==============================================================================
+const WorldSolver* World::getConstraintCapableSolver() const
+{
+  for (const auto& solver : mRigidSolvers) {
+    if (solver->supportsConstraints())
+      return solver.get();
+  }
+  return nullptr;
+}
+
+//==============================================================================
+WorldSolver* World::getCollisionCapableSolver()
+{
+  for (auto& solver : mRigidSolvers) {
+    if (solver->supportsCollision())
+      return solver.get();
+  }
+  return nullptr;
+}
+
+//==============================================================================
+const WorldSolver* World::getCollisionCapableSolver() const
+{
+  for (const auto& solver : mRigidSolvers) {
+    if (solver->supportsCollision())
+      return solver.get();
+  }
+  return nullptr;
 }
 
 //==============================================================================

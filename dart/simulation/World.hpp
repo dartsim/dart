@@ -47,6 +47,10 @@
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/Fwd.hpp>
 
+#include <dart/simulation/solver/WorldSolver.hpp>
+
+#include <entt/entt.hpp>
+
 #include <dart/dynamics/Fwd.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
@@ -59,6 +63,7 @@
 
 #include <Eigen/Dense>
 
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -281,6 +286,28 @@ public:
   /// Get recording
   Recording* getRecording();
 
+  /// Access the centralized ECS entity manager.
+  entt::registry& getEntityManager();
+  const entt::registry& getEntityManager() const;
+
+  /// Adds a solver to this world, taking ownership.
+  WorldSolver* addSolver(std::unique_ptr<WorldSolver> solver);
+
+  /// Returns the number of solvers registered with this world.
+  std::size_t getNumSolvers() const;
+
+  /// Returns the indexed solver.
+  WorldSolver* getSolver(std::size_t index);
+
+  /// Returns the indexed solver (const).
+  const WorldSolver* getSolver(std::size_t index) const;
+
+  /// Returns the first solver matching the given type, or nullptr.
+  WorldSolver* getSolver(RigidSolverType type);
+
+  /// Returns the first solver matching the given type, or nullptr.
+  const WorldSolver* getSolver(RigidSolverType type) const;
+
   /// \{ @name Iterations
 
   /// Iterates all the Skeletons and invokes the callback function.
@@ -353,6 +380,11 @@ protected:
   /// Register when a SimpleFrame's name is changed
   void handleSimpleFrameNameChange(const dynamics::Entity* _entity);
 
+  WorldSolver* getConstraintCapableSolver();
+  const WorldSolver* getConstraintCapableSolver() const;
+  WorldSolver* getCollisionCapableSolver();
+  const WorldSolver* getCollisionCapableSolver() const;
+
   /// Name of this World
   std::string mName;
 
@@ -401,11 +433,14 @@ protected:
   /// Current simulation frame number
   int mFrame;
 
-  /// Constraint solver
-  std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
-
-  ///
+  /// Recording buffer for baked states
   Recording* mRecording;
+
+  /// Collection of rigid solvers that advance the world each step
+  std::vector<std::unique_ptr<WorldSolver>> mRigidSolvers;
+
+  /// Centralized ECS registry shared across solvers.
+  entt::registry mEntityManager;
 
   //--------------------------------------------------------------------------
   // Signals
