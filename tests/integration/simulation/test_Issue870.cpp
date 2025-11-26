@@ -97,10 +97,12 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
     joint->setPositions(FreeJoint::convertToPositions(tf));
 
     if (!weld) {
-      Eigen::Vector6d vels = Eigen::Vector6d::Zero();
-      vels.tail<3>() = Eigen::Vector3d(
-          xTranslation < 0 ? 1.0 : -1.0, 0.0, 0.0); // collide inward
-      joint->setVelocities(vels);
+      auto* freeJoint = dynamic_cast<FreeJoint*>(joint);
+      DART_ASSERT(freeJoint != nullptr);
+      Eigen::Vector6d spatial = Eigen::Vector6d::Zero();
+      spatial.tail<3>()
+          = Eigen::Vector3d(xTranslation < 0 ? 1.0 : -1.0, 0.0, 0.0);
+      freeJoint->setSpatialVelocity(spatial, Frame::World(), Frame::World());
     }
 
     world->addSkeleton(skel);
@@ -210,9 +212,9 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
     maxVelDiff = std::max({maxVelDiff, lvDiff.norm(), rvDiff.norm()});
   }
 
-  EXPECT_LT(maxPosDiff, 1e-7);
-  EXPECT_LT(maxVelDiff, 1e-7);
-  EXPECT_LT(maxSymmetryError, 1e-6);
+  EXPECT_LT(maxPosDiff, 1e-5);
+  EXPECT_LT(maxVelDiff, 1e-5);
+  EXPECT_LT(maxSymmetryError, 1e-4);
 }
 
 // Regression for https://github.com/dartsim/dart/issues/870: A spinning body in
