@@ -1635,10 +1635,8 @@ Contact convertContact(
 {
   Contact contact;
 
-  contact.collisionObject1
-      = static_cast<FCLCollisionObject*>(o1->getUserData());
-  contact.collisionObject2
-      = static_cast<FCLCollisionObject*>(o2->getUserData());
+  contact.collisionObject1 = static_cast<CollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<CollisionObject*>(o2->getUserData());
 
   if (option.enableContact) {
     contact.point = FCLTypes::convertVector3(fclContact.pos);
@@ -1648,12 +1646,19 @@ Contact convertContact(
     contact.triID2 = fclContact.b2;
   }
 
-  // Enforce deterministic ordering across runs and clones.
-  const auto key1 = collisionObjectKey(
-      static_cast<const FCLCollisionObject*>(contact.collisionObject1));
-  const auto key2 = collisionObjectKey(
-      static_cast<const FCLCollisionObject*>(contact.collisionObject2));
-  if (key2 < key1) {
+  // Enforce deterministic ordering across runs and clones. Tie-break on the
+  // underlying FCL object address if keys are identical.
+  const auto fclObj1 = static_cast<FCLCollisionObject*>(contact.collisionObject1);
+  const auto fclObj2 = static_cast<FCLCollisionObject*>(contact.collisionObject2);
+  const auto key1 = collisionObjectKey(fclObj1);
+  const auto key2 = collisionObjectKey(fclObj2);
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
+
+  const bool swapNeeded
+      = (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+
+  if (swapNeeded) {
     std::swap(contact.collisionObject1, contact.collisionObject2);
     std::swap(contact.triID1, contact.triID2);
 

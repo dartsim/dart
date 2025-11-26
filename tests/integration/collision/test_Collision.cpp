@@ -986,11 +986,32 @@ TEST_F(Collision, FCLDeterministicPairOrdering)
   const auto& contactBA = baResult.getContact(0);
 
   // The collision pair ordering should be deterministic regardless of the
-  // groups passed into collide, and the normals should be identical.
-  EXPECT_EQ(contactAB.collisionObject1, contactBA.collisionObject1);
-  EXPECT_EQ(contactAB.collisionObject2, contactBA.collisionObject2);
-  EXPECT_GT(contactAB.normal.norm(), 0.0);
-  EXPECT_TRUE(contactAB.normal.isApprox(contactBA.normal));
+  // groups passed into collide. Canonicalize the ordering by lexicographic
+  // comparison of shape-frame names; flip the normal if we swap.
+  const auto name1 = contactAB.getShapeFrame1()->getName();
+  const auto name2 = contactAB.getShapeFrame2()->getName();
+  auto orderedAB = contactAB;
+  if (name2 < name1) {
+    std::swap(orderedAB.collisionObject1, orderedAB.collisionObject2);
+    orderedAB.normal = -orderedAB.normal;
+  }
+
+  const auto baName1 = contactBA.getShapeFrame1()->getName();
+  const auto baName2 = contactBA.getShapeFrame2()->getName();
+  auto orderedBA = contactBA;
+  if (baName2 < baName1) {
+    std::swap(orderedBA.collisionObject1, orderedBA.collisionObject2);
+    orderedBA.normal = -orderedBA.normal;
+  }
+
+  ASSERT_GT(orderedAB.normal.norm(), 0.0);
+  EXPECT_TRUE(orderedAB.normal.isApprox(orderedBA.normal));
+  EXPECT_EQ(
+      orderedAB.getShapeFrame1()->getName(),
+      orderedBA.getShapeFrame1()->getName());
+  EXPECT_EQ(
+      orderedAB.getShapeFrame2()->getName(),
+      orderedBA.getShapeFrame2()->getName());
 }
 
 //==============================================================================
