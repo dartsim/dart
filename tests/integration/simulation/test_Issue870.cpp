@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/All.hpp>
 
 #include <gtest/gtest.h>
 
@@ -84,8 +84,10 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
     shapeNode->getDynamicsAspect()->setRestitutionCoeff(1.0);
     shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
 
-    body->setMomentOfInertia(shape->computeInertia(kBoxMass));
-    body->setMass(kBoxMass);
+    Inertia inertia;
+    inertia.setMass(kBoxMass);
+    inertia.setMoment(shape->computeInertia(kBoxMass));
+    body->setInertia(inertia);
 
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
     tf.translation() = Eigen::Vector3d(xTranslation, 0.1, 0.0);
@@ -134,8 +136,10 @@ WorldPtr makeFreeFallWorld(bool spinning)
   shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
 
   const double mass = 2.0;
-  body->setMomentOfInertia(shape->computeInertia(mass));
-  body->setMass(mass);
+  Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(shape->computeInertia(mass));
+  body->setInertia(inertia);
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
