@@ -377,11 +377,9 @@ config-py = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
-py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
+py-ex = { cmd = ["python", "scripts/run_py_example.py"], depends-on = [
   "build-py-dev",
-], args = [
-  { arg = "example", default = "hello_world" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
+], env = { BUILD_TYPE = "Release" } }
 
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [
