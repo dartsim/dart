@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-import imgui
+from imgui_bundle import imgui
 
 from demo_hub.gui.primitives import Segment2D
 
@@ -52,4 +52,3 @@ def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
         draw_list.add_line(p0[0], p0[1], p1[0], p1[1], col, thickness=2.0)
 
     imgui.end()
-

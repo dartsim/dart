@@ -16,10 +16,8 @@ pixi run py-ex demo_hub -- --headless --scene pendulum --steps 400
 pixi run py-ex demo_hub -- --headless --scene pendulum --record /tmp/pendulum.jsonl
 ```
 
-GLFW and PyOpenGL ship via the pixi environment. imgui/pyimgui is not yet
-available for Python 3.14, so the launcher will fall back to headless mode
-until a compatible wheel lands. Once available, add it with
-`pixi add --pypi "imgui[glfw]"`.
+ImGui is provided via `imgui-bundle` in the pixi environment (no extra pip
+install needed).
 
 For debugging, use the pixi helpers:
 

@@ -24,20 +24,27 @@ def dispatch(argv: list[str] | None = None) -> None:
     parser.set_defaults(mode="gui")
     args, remaining = parser.parse_known_args(argv)
 
-    if "--help" in (argv or []):
-        if args.mode == "gui":
-            from demo_hub.gui.app import main as gui_main
+    gui_app = None
+    if args.mode == "gui":
+        try:
+            from demo_hub import gui as gui_app  # type: ignore[no-redef]
+        except ModuleNotFoundError as exc:
+            missing = getattr(exc, "name", "") or str(exc)
+            print(
+                f"GUI dependencies missing ({missing}); falling back to headless. "
+                "Run `pixi install` to ensure imgui-bundle is present in the pixi environment."
+            )
+            args.mode = "headless"
 
-            gui_main(["--help"])
+    if "--help" in (argv or []):
+        if args.mode == "gui" and gui_app:
+            gui_app.main(["--help"])  # type: ignore[union-attr]
         else:
             headless_main(["--help"])
         return
 
-    if args.mode == "gui":
-        from demo_hub.gui.app import main as gui_main
-        from demo_hub.gui.app import has_gui_deps
-
-        if not has_gui_deps():
+    if args.mode == "gui" and gui_app:
+        if hasattr(gui_app, "has_gui_deps") and not gui_app.has_gui_deps():  # type: ignore[union-attr]
             print(
                 "GUI dependencies are missing; falling back to headless mode. "
                 "Install imgui[glfw], glfw, and PyOpenGL in the pixi environment to enable the GUI."
@@ -45,7 +52,7 @@ def dispatch(argv: list[str] | None = None) -> None:
             headless_main(remaining)
             return
 
-        gui_main(remaining)
+        gui_app.main(remaining)  # type: ignore[union-attr]
     else:
         headless_main(remaining)
 

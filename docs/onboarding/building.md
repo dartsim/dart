@@ -154,9 +154,6 @@ BUILD_TYPE=Debug pixi run py-ex demo_hub
 BUILD_TYPE=Debug pixi run py-ex demo_hub -- --headless --list
 ```
 
-The GUI path needs imgui[glfw]; wheels are not yet published for Python 3.14, so
-the launcher will fall back to headless until a compatible build is available.
-
 All tasks default to a Debug build of dartpy. Pass extra arguments to the Python
 entrypoint with `SCRIPT_ARGS="--your --flags"` or point `SCRIPT` at a different
 app when needed.
