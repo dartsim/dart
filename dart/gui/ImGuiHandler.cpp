@@ -209,7 +209,8 @@ void applyImGuiScale(float scale)
   if (!std::isfinite(scale) || scale <= 0.f)
     return;
 
-  static ImGuiStyle baseStyle = ImGui::GetStyle(); // capture styled defaults (dark palette)
+  static ImGuiStyle baseStyle
+      = ImGui::GetStyle(); // capture styled defaults (dark palette)
   auto& style = ImGui::GetStyle();
   ImGuiIO& io = ImGui::GetIO();
 
