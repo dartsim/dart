@@ -192,7 +192,17 @@ protected:
 
   aiScene* cloneMesh() const;
 
+  enum class MeshOwnership
+  {
+    None,
+    Imported, // from aiImportFile* family; free with aiReleaseImport
+    Copied    // from aiCopyScene; free with aiFreeScene
+  };
+
+  void releaseMesh();
+
   const aiScene* mMesh;
+  MeshOwnership mMeshOwnership{MeshOwnership::None};
 
   /// URI the mesh, if available).
   common::Uri mMeshUri;

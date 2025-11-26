@@ -398,7 +398,7 @@ def create_floor() -> dart.dynamics.Skeleton:
 
 def create_manipulator() -> dart.dynamics.Skeleton:
     # snippet:py-dominoes-lesson2a-loader-start
-    loader = dart.utils.DartLoader()
+    loader = dart.utils.UrdfParser()
     # snippet:py-dominoes-lesson2a-loader-end
     # snippet:py-dominoes-lesson2a-parse-start
     manipulator = loader.parseSkeleton(

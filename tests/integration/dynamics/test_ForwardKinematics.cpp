@@ -34,7 +34,7 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/utils/urdf/UrdfParser.hpp"
 
 #include <gtest/gtest.h>
 
@@ -177,7 +177,7 @@ TEST(ForwardKinematics, JacobianPartialChange)
   // This is a regression test for issue #499
   const double tolerance = 1e-8;
 
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser loader;
   SkeletonPtr skeleton1
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
@@ -226,7 +226,7 @@ TEST(ForwardKinematics, JacobianEndEffectorChange)
   // This is a regression test for pull request #683
   const double tolerance = 1e-8;
 
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser loader;
   SkeletonPtr skeleton1
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 

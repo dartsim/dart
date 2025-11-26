@@ -88,7 +88,7 @@ set(dartpy_headers
   common/subject.hpp
   common/uri.hpp
   utils/module.hpp
-  utils/dart_loader.hpp
+  utils/urdf_parser.hpp
   utils/resource_retriever.hpp
   utils/skel_parser.hpp
   utils/sdf_parser.hpp
@@ -163,7 +163,7 @@ set(dartpy_sources
   common/subject.cpp
   common/uri.cpp
   utils/module.cpp
-  utils/dart_loader.cpp
+  utils/urdf_parser.cpp
   utils/resource_retriever.cpp
   utils/skel_parser.cpp
   utils/sdf_parser.cpp

@@ -6,7 +6,7 @@ import typing
 from . import MjcfParser
 from . import SdfParser
 from . import SkelParser
-__all__: list[str] = ['CompositeResourceRetriever', 'DartLoader', 'DartLoaderOptions', 'DartLoaderRootJointType', 'DartResourceRetriever', 'MjcfParser', 'PackageResourceRetriever', 'SdfParser', 'SkelParser']
+__all__: list[str] = ['CompositeResourceRetriever', 'UrdfParser', 'UrdfParserOptions', 'UrdfParserRootJointType', 'DartLoader', 'DartLoaderOptions', 'DartLoaderRootJointType', 'DartResourceRetriever', 'MjcfParser', 'PackageResourceRetriever', 'SdfParser', 'SkelParser']
 class CompositeResourceRetriever(dartpy.common.ResourceRetriever):
     def __init__(self) -> None:
         ...
@@ -14,13 +14,36 @@ class CompositeResourceRetriever(dartpy.common.ResourceRetriever):
         ...
     def addSchemaRetriever(self, schema: str, resourceRetriever: dartpy.common.ResourceRetriever) -> bool:
         ...
-class DartLoaderOptions:
-    mDefaultInertia: dartpy.dynamics.Inertia
-    mDefaultRootJointType: DartLoaderRootJointType
-    mResourceRetriever: dartpy.common.ResourceRetriever
-    def __init__(self, resourceRetriever: dartpy.common.ResourceRetriever = None, defaultRootJointType: DartLoaderRootJointType = ..., defaultInertia: dartpy.dynamics.Inertia = ...) -> None:
+class UrdfParser:
+    Options = UrdfParserOptions
+    RootJointType = UrdfParserRootJointType
+    def __init__(self) -> None:
         ...
-class DartLoaderRootJointType:
+    def addPackageDirectory(self, packageName: str, packageDirectory: str) -> None:
+        ...
+    def getOptions(self) -> UrdfParserOptions:
+        ...
+    @typing.overload
+    def parseSkeleton(self, uri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
+        ...
+    @typing.overload
+    def parseSkeletonString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
+        ...
+    @typing.overload
+    def parseWorld(self, uri: dartpy.common.Uri) -> dartpy.simulation.World:
+        ...
+    @typing.overload
+    def parseWorldString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.simulation.World:
+        ...
+    def setOptions(self, options: UrdfParserOptions = ...) -> None:
+        ...
+class UrdfParserOptions:
+    mDefaultInertia: dartpy.dynamics.Inertia
+    mDefaultRootJointType: UrdfParserRootJointType
+    mResourceRetriever: dartpy.common.ResourceRetriever
+    def __init__(self, resourceRetriever: dartpy.common.ResourceRetriever = None, defaultRootJointType: UrdfParserRootJointType = ..., defaultInertia: dartpy.dynamics.Inertia = ...) -> None:
+        ...
+class UrdfParserRootJointType:
     """
     Members:
     
@@ -28,9 +51,9 @@ class DartLoaderRootJointType:
     
       Fixed
     """
-    Fixed: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.Fixed: 1>
-    Floating: typing.ClassVar[DartLoaderRootJointType]  # value = <DartLoaderRootJointType.Floating: 0>
-    __members__: typing.ClassVar[dict[str, DartLoaderRootJointType]]  # value = {'Floating': <DartLoaderRootJointType.Floating: 0>, 'Fixed': <DartLoaderRootJointType.Fixed: 1>}
+    Fixed: typing.ClassVar[UrdfParserRootJointType]  # value = <UrdfParserRootJointType.Fixed: 1>
+    Floating: typing.ClassVar[UrdfParserRootJointType]  # value = <UrdfParserRootJointType.Floating: 0>
+    __members__: typing.ClassVar[dict[str, UrdfParserRootJointType]]  # value = {'Floating': <UrdfParserRootJointType.Floating: 0>, 'Fixed': <UrdfParserRootJointType.Fixed: 1>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -57,29 +80,9 @@ class DartLoaderRootJointType:
     @property
     def value(self) -> int:
         ...
-class DartLoader:
-    Options = DartLoaderOptions
-    RootJointType = DartLoaderRootJointType
-    def __init__(self) -> None:
-        ...
-    def addPackageDirectory(self, packageName: str, packageDirectory: str) -> None:
-        ...
-    def getOptions(self) -> DartLoaderOptions:
-        ...
-    @typing.overload
-    def parseSkeleton(self, uri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
-        ...
-    @typing.overload
-    def parseSkeletonString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.dynamics.Skeleton:
-        ...
-    @typing.overload
-    def parseWorld(self, uri: dartpy.common.Uri) -> dartpy.simulation.World:
-        ...
-    @typing.overload
-    def parseWorldString(self, urdfString: str, baseUri: dartpy.common.Uri) -> dartpy.simulation.World:
-        ...
-    def setOptions(self, options: DartLoaderOptions = ...) -> None:
-        ...
+DartLoader = UrdfParser
+DartLoaderOptions = UrdfParserOptions
+DartLoaderRootJointType = UrdfParserRootJointType
 class DartResourceRetriever(dartpy.common.ResourceRetriever):
     def __init__(self) -> None:
         ...

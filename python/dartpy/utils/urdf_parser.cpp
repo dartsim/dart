@@ -1,7 +1,7 @@
-#include "utils/dart_loader.hpp"
+#include "utils/urdf_parser.hpp"
 
 #include "dart/dynamics/Inertia.hpp"
-#include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/utils/urdf/UrdfParser.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -11,62 +11,62 @@ namespace nb = nanobind;
 
 namespace dart::python_nb {
 
-void defDartLoader(nb::module_& m)
+void defUrdfParser(nb::module_& m)
 {
-  using DartLoader = ::dart::utils::DartLoader;
+  using UrdfParser = ::dart::utils::UrdfParser;
 
   auto root_joint_type
-      = nb::enum_<DartLoader::RootJointType>(m, "DartLoaderRootJointType")
-            .value("Floating", DartLoader::RootJointType::Floating)
-            .value("Fixed", DartLoader::RootJointType::Fixed);
+      = nb::enum_<UrdfParser::RootJointType>(m, "UrdfParserRootJointType")
+            .value("Floating", UrdfParser::RootJointType::Floating)
+            .value("Fixed", UrdfParser::RootJointType::Fixed);
   root_joint_type.attr("FLOATING") = root_joint_type.attr("Floating");
   root_joint_type.attr("FIXED") = root_joint_type.attr("Fixed");
 
   auto options
-      = nb::class_<DartLoader::Options>(m, "DartLoaderOptions")
+      = nb::class_<UrdfParser::Options>(m, "UrdfParserOptions")
             .def(
                 nb::init<
                     common::ResourceRetrieverPtr,
-                    DartLoader::RootJointType,
+                    UrdfParser::RootJointType,
                     const dynamics::Inertia&>(),
                 nb::arg("resourceRetriever") = nullptr,
                 nb::arg("defaultRootJointType")
-                = DartLoader::RootJointType::Floating,
+                = UrdfParser::RootJointType::Floating,
                 nb::arg("defaultInertia") = dynamics::Inertia())
             .def_rw(
-                "mResourceRetriever", &DartLoader::Options::mResourceRetriever)
+                "mResourceRetriever", &UrdfParser::Options::mResourceRetriever)
             .def_rw(
                 "mDefaultRootJointType",
-                &DartLoader::Options::mDefaultRootJointType)
-            .def_rw("mDefaultInertia", &DartLoader::Options::mDefaultInertia);
+                &UrdfParser::Options::mDefaultRootJointType)
+            .def_rw("mDefaultInertia", &UrdfParser::Options::mDefaultInertia);
 
-  auto cls = nb::class_<DartLoader>(m, "DartLoader")
+  auto cls = nb::class_<UrdfParser>(m, "UrdfParser")
                  .def(nb::init<>())
                  .def(
                      "setOptions",
-                     &DartLoader::setOptions,
-                     nb::arg("options") = DartLoader::Options())
-                 .def("getOptions", &DartLoader::getOptions)
+                     &UrdfParser::setOptions,
+                     nb::arg("options") = UrdfParser::Options())
+                 .def("getOptions", &UrdfParser::getOptions)
                  .def(
                      "addPackageDirectory",
-                     &DartLoader::addPackageDirectory,
+                     &UrdfParser::addPackageDirectory,
                      nb::arg("packageName"),
                      nb::arg("packageDirectory"))
                  .def(
                      "parseSkeleton",
-                     [](DartLoader& self, const common::Uri& uri) {
+                     [](UrdfParser& self, const common::Uri& uri) {
                        return self.parseSkeleton(uri);
                      },
                      nb::arg("uri"))
                  .def(
                      "parseSkeleton",
-                     [](DartLoader& self, const std::string& uri) {
+                     [](UrdfParser& self, const std::string& uri) {
                        return self.parseSkeleton(common::Uri(uri));
                      },
                      nb::arg("uri"))
                  .def(
                      "parseSkeletonString",
-                     [](DartLoader& self,
+                     [](UrdfParser& self,
                         const std::string& data,
                         const common::Uri& base) {
                        return self.parseSkeletonString(data, base);
@@ -75,19 +75,19 @@ void defDartLoader(nb::module_& m)
                      nb::arg("baseUri"))
                  .def(
                      "parseWorld",
-                     [](DartLoader& self, const common::Uri& uri) {
+                     [](UrdfParser& self, const common::Uri& uri) {
                        return self.parseWorld(uri);
                      },
                      nb::arg("uri"))
                  .def(
                      "parseWorld",
-                     [](DartLoader& self, const std::string& uri) {
+                     [](UrdfParser& self, const std::string& uri) {
                        return self.parseWorld(common::Uri(uri));
                      },
                      nb::arg("uri"))
                  .def(
                      "parseWorldString",
-                     [](DartLoader& self,
+                     [](UrdfParser& self,
                         const std::string& data,
                         const common::Uri& base) {
                        return self.parseWorldString(data, base);
@@ -97,6 +97,11 @@ void defDartLoader(nb::module_& m)
 
   cls.attr("RootJointType") = root_joint_type;
   cls.attr("Options") = options;
+
+  // Backward compatibility aliases
+  m.attr("DartLoader") = cls;
+  m.attr("DartLoaderOptions") = options;
+  m.attr("DartLoaderRootJointType") = root_joint_type;
 }
 
 } // namespace dart::python_nb

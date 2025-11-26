@@ -130,6 +130,38 @@ double readColladaUnitScale(const std::string& path)
 
 } // namespace
 
+TEST(MeshShapeTest, CloneCreatesIndependentScene)
+{
+  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  ASSERT_NE(scene, nullptr);
+
+  auto original = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  const Eigen::Vector3d originalExtents
+      = original->getBoundingBox().computeFullExtents();
+
+  auto cloned
+      = std::dynamic_pointer_cast<dynamics::MeshShape>(original->clone());
+  ASSERT_NE(cloned, nullptr);
+  EXPECT_NE(original->getMesh(), cloned->getMesh());
+  EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
+      originalExtents, 1e-12));
+
+  cloned->setScale(Eigen::Vector3d::Constant(2.0));
+  EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
+      originalExtents * 2.0, 1e-12));
+  EXPECT_TRUE(original->getBoundingBox().computeFullExtents().isApprox(
+      originalExtents, 1e-12));
+
+  original.reset(); // releasing imported scene should not break clone
+  EXPECT_GT(cloned->getVolume(), 0.0);
+}
+
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 {
 #ifndef AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE

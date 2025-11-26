@@ -4,6 +4,6 @@
 
 namespace dart::python_nb {
 
-void defDartLoader(nanobind::module_& m);
+void defUrdfParser(nanobind::module_& m);
 
 } // namespace dart::python_nb

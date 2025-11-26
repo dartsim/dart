@@ -555,7 +555,7 @@ SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
   // snippet:cpp-dominoes-lesson2a-loader-start
-  dart::utils::DartLoader loader;
+  dart::utils::UrdfParser loader;
   // snippet:cpp-dominoes-lesson2a-loader-end
   // snippet:cpp-dominoes-lesson2a-parse-start
   SkeletonPtr manipulator

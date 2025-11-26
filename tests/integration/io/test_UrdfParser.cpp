@@ -36,7 +36,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
-#include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/utils/urdf/UrdfParser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -46,56 +46,56 @@
 using namespace dart;
 using namespace dart::test;
 using dart::common::Uri;
-using dart::utils::DartLoader;
+using dart::utils::UrdfParser;
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
+TEST(UrdfParser, parseSkeleton_NonExistantPathReturnsNull)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_EQ(
       nullptr,
       loader.parseSkeleton("dart://sample/skel/test/does_not_exist.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
+TEST(UrdfParser, parseSkeleton_InvalidUrdfReturnsNull)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_EQ(
       nullptr, loader.parseSkeleton("dart://sample/urdf/test/invalid.urdf)"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
+TEST(UrdfParser, parseSkeleton_MissingMeshReturnsNull)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_EQ(
       nullptr,
       loader.parseSkeleton("dart://sample/urdf/test/missing_mesh.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
+TEST(UrdfParser, parseSkeleton_InvalidMeshReturnsNull)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_EQ(
       nullptr,
       loader.parseSkeleton("dart://sample/urdf/test/invalid_mesh.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
+TEST(UrdfParser, parseSkeleton_MissingPackageReturnsNull)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_EQ(
       nullptr,
       loader.parseSkeleton("dart://sample/urdf/test/missing_package.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
+TEST(UrdfParser, parseSkeleton_LoadsPrimitiveGeometry)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_TRUE(
       nullptr
       != loader.parseSkeleton(
@@ -103,15 +103,15 @@ TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
 }
 
 //==============================================================================
-TEST(DartLoader, parseWorld)
+TEST(UrdfParser, parseWorld)
 {
-  DartLoader loader;
+  UrdfParser loader;
   EXPECT_TRUE(
       nullptr != loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
 }
 
 //==============================================================================
-TEST(DartLoader, parseJointProperties)
+TEST(UrdfParser, parseJointProperties)
 {
   // clang-format off
   std::string urdfStr = R"(
@@ -177,7 +177,7 @@ TEST(DartLoader, parseJointProperties)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -193,7 +193,7 @@ TEST(DartLoader, parseJointProperties)
 }
 
 //==============================================================================
-TEST(DartLoader, parsePlanarJointLimitsAndAxis)
+TEST(UrdfParser, parsePlanarJointLimitsAndAxis)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -211,7 +211,7 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
@@ -248,7 +248,7 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
 }
 
 //==============================================================================
-TEST(DartLoader, parsePlanarJointArbitraryAxis)
+TEST(UrdfParser, parsePlanarJointArbitraryAxis)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -264,7 +264,7 @@ TEST(DartLoader, parsePlanarJointArbitraryAxis)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
@@ -285,7 +285,7 @@ TEST(DartLoader, parsePlanarJointArbitraryAxis)
 }
 
 //==============================================================================
-TEST(DartLoader, parseFloatingJointLimits)
+TEST(UrdfParser, parseFloatingJointLimits)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -302,7 +302,7 @@ TEST(DartLoader, parseFloatingJointLimits)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
@@ -331,7 +331,7 @@ TEST(DartLoader, parseFloatingJointLimits)
 }
 
 //==============================================================================
-TEST(DartLoader, parseUrdfWithoutWorldLink)
+TEST(UrdfParser, parseUrdfWithoutWorldLink)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -349,8 +349,8 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   )";
   // clang-format on
 
-  DartLoader loader;
-  DartLoader::Options options;
+  UrdfParser loader;
+  UrdfParser::Options options;
 
   // Default
   auto robot1 = loader.parseSkeletonString(urdfStr, "");
@@ -360,7 +360,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot1->getRootJoint()->getName(), "rootJoint");
 
   // Floating
-  options.mDefaultRootJointType = DartLoader::RootJointType::Floating;
+  options.mDefaultRootJointType = UrdfParser::RootJointType::Floating;
   loader.setOptions(options);
   auto robot2 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot2);
@@ -369,7 +369,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
   EXPECT_EQ(robot2->getRootJoint()->getName(), "rootJoint");
 
   // Fixed
-  options.mDefaultRootJointType = DartLoader::RootJointType::Fixed;
+  options.mDefaultRootJointType = UrdfParser::RootJointType::Fixed;
   loader.setOptions(options);
   auto robot3 = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot3);
@@ -379,7 +379,7 @@ TEST(DartLoader, parseUrdfWithoutWorldLink)
 }
 
 //==============================================================================
-TEST(DartLoader, mimicJoint)
+TEST(UrdfParser, mimicJoint)
 {
   // clang-format off
   std::string urdfStr = R"(
@@ -446,7 +446,7 @@ TEST(DartLoader, mimicJoint)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -467,7 +467,7 @@ TEST(DartLoader, mimicJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, badMimicJoint)
+TEST(UrdfParser, badMimicJoint)
 {
   // clang-format off
   std::string urdfStr = R"(
@@ -534,7 +534,7 @@ TEST(DartLoader, badMimicJoint)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -553,7 +553,7 @@ TEST(DartLoader, badMimicJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
+TEST(UrdfParser, WorldShouldBeTreatedAsKeyword)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -573,7 +573,7 @@ TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -582,7 +582,7 @@ TEST(DartLoader, WorldShouldBeTreatedAsKeyword)
 }
 
 //==============================================================================
-TEST(DartLoader, SingleLinkWithoutJoint)
+TEST(UrdfParser, SingleLinkWithoutJoint)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -592,7 +592,7 @@ TEST(DartLoader, SingleLinkWithoutJoint)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -604,7 +604,7 @@ TEST(DartLoader, SingleLinkWithoutJoint)
 }
 
 //==============================================================================
-TEST(DartLoader, MultiTreeRobot)
+TEST(UrdfParser, MultiTreeRobot)
 {
   // clang-format off
   const std::string urdfStr = R"(
@@ -634,7 +634,7 @@ TEST(DartLoader, MultiTreeRobot)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -643,9 +643,9 @@ TEST(DartLoader, MultiTreeRobot)
 }
 
 //==============================================================================
-TEST(DartLoader, KR5MeshColor)
+TEST(UrdfParser, KR5MeshColor)
 {
-  DartLoader loader;
+  UrdfParser loader;
   auto robot
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   ASSERT_TRUE(nullptr != robot);
@@ -665,7 +665,7 @@ TEST(DartLoader, KR5MeshColor)
 }
 
 //==============================================================================
-TEST(DartLoader, parseVisualCollisionName)
+TEST(UrdfParser, parseVisualCollisionName)
 {
   // clang-format off
   std::string urdfStr = R"(
@@ -710,7 +710,7 @@ TEST(DartLoader, parseVisualCollisionName)
   )";
   // clang-format on
 
-  DartLoader loader;
+  UrdfParser loader;
   auto robot = loader.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
@@ -733,7 +733,7 @@ TEST(DartLoader, parseVisualCollisionName)
 }
 
 //==============================================================================
-TEST(DartLoader, Options)
+TEST(UrdfParser, Options)
 {
   // clang-format off
   std::string urdfStr = R"(
@@ -744,8 +744,8 @@ TEST(DartLoader, Options)
   )";
   // clang-format on
 
-  DartLoader loader;
-  DartLoader::Options options;
+  UrdfParser loader;
+  UrdfParser::Options options;
 
   // Default inertia
   auto robot = loader.parseSkeletonString(urdfStr, "");
