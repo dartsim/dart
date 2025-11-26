@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <limits>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -255,3 +256,50 @@ TEST(GenericJoint, Basic)
   MultiDofJointTest genericJoint;
   SO3JointTest so3Joint;
 }
+
+#if GTEST_HAS_DEATH_TEST
+//==============================================================================
+TEST(GenericJoint, RejectsNonFiniteInputs)
+{
+#ifdef NDEBUG
+  GTEST_SKIP() << "Assertions are disabled in Release builds.";
+#endif
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+
+  EXPECT_DEATH(
+      {
+        SingleDofJointTest joint;
+        joint.setPosition(0, nan);
+      },
+      "");
+
+  EXPECT_DEATH(
+      {
+        SingleDofJointTest joint;
+        joint.setVelocity(0, inf);
+      },
+      "");
+
+  EXPECT_DEATH(
+      {
+        MultiDofJointTest joint;
+        const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+        Eigen::VectorXd positions = Eigen::VectorXd::Zero(ndofs);
+        positions[1] = inf;
+        joint.setPositions(positions);
+      },
+      "");
+
+  EXPECT_DEATH(
+      {
+        MultiDofJointTest joint;
+        const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+        Eigen::VectorXd accelerations = Eigen::VectorXd::Zero(ndofs);
+        accelerations[2] = nan;
+        joint.setAccelerations(accelerations);
+      },
+      "");
+}
+#endif
