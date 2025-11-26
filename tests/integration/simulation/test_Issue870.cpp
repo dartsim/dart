@@ -59,7 +59,6 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
   auto world = World::create("issue870_boxes");
   world->setGravity(Eigen::Vector3d::Zero());
   world->setTimeStep(0.002);
-  world->getConstraintSolver()->setNumIterations(200);
 
   auto makeBoxSkeleton = [&](const std::string& name,
                              bool weld,
