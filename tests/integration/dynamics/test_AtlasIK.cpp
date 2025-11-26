@@ -51,9 +51,9 @@ using namespace dart::test;
 TEST(AtlasIK, HandReachesTarget)
 {
   // Load Atlas
-  utils::UrdfParser loader;
+  utils::UrdfParser parser;
   SkeletonPtr atlas
-      = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 
   // Set standing pose
