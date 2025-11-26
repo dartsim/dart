@@ -52,11 +52,23 @@ def _discover_scene_classes() -> Sequence[Type[Scene]]:
   import demo_hub.scenes as scenes_pkg
 
   scene_classes: list[Type[Scene]] = []
+  module_infos: list[pkgutil.ModuleInfo] = []
   for module_info in pkgutil.walk_packages(scenes_pkg.__path__, scenes_pkg.__name__ + "."):
     if module_info.ispkg:
+      package = importlib.import_module(module_info.name)
+      module_infos.extend(
+        sub_info
+        for sub_info in pkgutil.walk_packages(package.__path__, module_info.name + ".")
+        if not sub_info.ispkg
+      )
+    elif module_info.name.endswith(".scene"):
+      module_infos.append(module_info)
+
+  seen_modules = set()
+  for module_info in module_infos:
+    if module_info.name in seen_modules:
       continue
-    if not module_info.name.endswith(".scene"):
-      continue
+    seen_modules.add(module_info.name)
     module = importlib.import_module(module_info.name)
     for _, obj in inspect.getmembers(module, inspect.isclass):
       if issubclass(obj, Scene) and obj is not Scene and hasattr(obj, "metadata"):

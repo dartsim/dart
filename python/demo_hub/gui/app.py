@@ -14,16 +14,14 @@ from demo_hub.gui.viewport import draw_topdown
 logger = logging.getLogger(__name__)
 
 
-def _check_optional_deps() -> None:
+def has_gui_deps() -> bool:
     try:
         import imgui  # noqa: F401
         import glfw  # noqa: F401
         from OpenGL import GL  # noqa: F401
-    except ImportError as exc:  # pragma: no cover - exercised manually
-        raise SystemExit(
-            "Missing optional GUI dependencies. Install imgui[glfw], glfw, and PyOpenGL "
-            "in the pixi environment (e.g., `pixi run pip install \"imgui[glfw]\" glfw PyOpenGL`)."
-        ) from exc
+    except ImportError:  # pragma: no cover - exercised manually
+        return False
+    return True
 
 
 def _init_window(width: int, height: int):
@@ -156,7 +154,10 @@ def _render_loop(window, registry, scene_id: str, dt: float) -> None:  # pragma:
 
 
 def main(argv: list[str] | None = None) -> None:
-    _check_optional_deps()
+    if not has_gui_deps():
+        raise SystemExit(
+            "Missing GUI dependencies. Ensure imgui[glfw], glfw, and PyOpenGL are installed in the pixi environment."
+        )
     registry = build_default_registry()
 
     parser = argparse.ArgumentParser(description="Minimal ImGui shell for demo_hub scenes")

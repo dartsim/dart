@@ -54,6 +54,8 @@ taplo = ">=0.9.3,<1"
 taskflow = ">=3.10.0,<4"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+glfw = ">=3.4,<4"
+pyopengl = ">=3.1.10,<4"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -908,50 +910,6 @@ exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" 
 ], args = [
   { arg = "build_type", default = "Release" },
 ] }
-
-# Run the Python demo hub (headless skeleton for now)
-demo-hub = { cmd = [
-  "bash",
-  "-lc",
-  """
-set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
-APP_ARGS=${APP_ARGS:-{{ app_args }}}
-export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
-python python/demo_hub/app.py ${APP_ARGS} "$@"
-""",
-  "demo-hub",
-], depends-on = [
-  { task = "build-py-dev", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "app_args", default = "" },
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Debug" },
-], env = { PYTHONUNBUFFERED = "1" } }
-
-demo-hub-gui = { cmd = [
-  "bash",
-  "-lc",
-  """
-set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-{{ build_type }}}
-APP_ARGS=${APP_ARGS:-{{ app_args }}}
-export PYTHONPATH="build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}/python:${PYTHONPATH:-}"
-python -m demo_hub.gui.app ${APP_ARGS} "$@"
-""",
-], depends-on = [
-  { task = "build-py-dev", args = [
-    "{{ dartpy }}",
-    "{{ build_type }}",
-  ] },
-], args = [
-  { arg = "app_args", default = "" },
-  { arg = "dartpy", default = "ON" },
-  { arg = "build_type", default = "Debug" },
-], env = { PYTHONUNBUFFERED = "1" } }
 
 # Launch a Python entrypoint under debugpy for IDE attach
 debug-py = { cmd = [

@@ -148,12 +148,14 @@ PORT=5678 SCRIPT=python/demo_hub/app.py pixi run debug-py
 # Launch the same entrypoint under gdb (or lldb fallback) to step into C++
 SCRIPT=python/demo_hub/app.py BUILD_TYPE=Debug pixi run debug-py-native
 
-# Run the demo hub headless without a debugger
-BUILD_TYPE=Debug pixi run demo-hub -- --list
-
-# Run the minimal ImGui GUI shell (install pip deps first: imgui[glfw], glfw, PyOpenGL)
-BUILD_TYPE=Debug pixi run demo-hub-gui
+# Run the demo hub (GUI by default)
+BUILD_TYPE=Debug pixi run py-ex demo_hub
+# Headless mode
+BUILD_TYPE=Debug pixi run py-ex demo_hub -- --headless --list
 ```
+
+The GUI path needs imgui[glfw]; wheels are not yet published for Python 3.14, so
+the launcher will fall back to headless until a compatible build is available.
 
 All tasks default to a Debug build of dartpy. Pass extra arguments to the Python
 entrypoint with `SCRIPT_ARGS="--your --flags"` or point `SCRIPT` at a different

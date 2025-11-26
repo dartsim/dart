@@ -14,6 +14,8 @@ def _resolve_example(args: list[str]) -> tuple[str, list[str]]:
     example = remaining.pop(0)
   else:
     example = os.environ.get("EXAMPLE", "hello_world")
+  while remaining and remaining[0] == "--":
+    remaining.pop(0)
   return example, remaining
 
 
