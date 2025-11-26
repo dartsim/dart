@@ -527,7 +527,7 @@ SkeletonPtr createGround()
 SkeletonPtr createAtlas()
 {
   // Parse in the atlas model
-  DartLoader urdf;
+  UrdfParser urdf;
   SkeletonPtr atlas
       = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 

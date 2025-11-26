@@ -119,7 +119,7 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 //==============================================================================
 TEST(IkFast, LoadWamArmIk)
 {
-  utils::DartLoader urdfParser;
+  utils::UrdfParser urdfParser;
   urdfParser.addPackageDirectory(
       "herb_description", dart::config::dataPath("urdf/wam"));
   auto wam

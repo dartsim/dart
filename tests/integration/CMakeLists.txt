@@ -164,8 +164,8 @@ endif()
 
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
-    dart_add_test("integration" INTEGRATION_io_DartLoader io/test_DartLoader.cpp)
-    target_link_libraries(INTEGRATION_io_DartLoader dart-utils-urdf)
+    dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_UrdfParser.cpp)
+    target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
   endif()
 
   # Additional IO tests

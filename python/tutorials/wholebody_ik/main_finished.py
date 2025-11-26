@@ -74,7 +74,7 @@ def parse_args() -> argparse.Namespace:
 # snippet:py-load-atlas-start
 def load_atlas_robot():
     """Load the Atlas humanoid robot and configure initial pose."""
-    loader = dart.utils.DartLoader()
+    loader = dart.utils.UrdfParser()
     atlas = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
 
     if not atlas:

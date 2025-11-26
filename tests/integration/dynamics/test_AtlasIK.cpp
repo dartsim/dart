@@ -51,7 +51,7 @@ using namespace dart::test;
 TEST(AtlasIK, HandReachesTarget)
 {
   // Load Atlas
-  utils::DartLoader loader;
+  utils::UrdfParser loader;
   SkeletonPtr atlas
       = loader.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
@@ -127,7 +127,7 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
 {
   // This test shows the FIX: tight bounds produce non-zero error
 
-  SkeletonPtr atlas = utils::DartLoader().parseSkeleton(
+  SkeletonPtr atlas = utils::UrdfParser().parseSkeleton(
       "dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 

@@ -47,8 +47,6 @@ def test_parse_skeleton_loads_primitive_geometry():
 # def test_parse_world():
 #     loader = DartLoader()
 #     assert loader.parse_world(get_asset_path('urdf/testWorld.urdf')) is not None
-
-
 def test_parse_joint_properties():
     loader = DartLoader()
     robot = loader.parse_skeleton(get_asset_path("urdf/test/joint_properties.urdf"))
