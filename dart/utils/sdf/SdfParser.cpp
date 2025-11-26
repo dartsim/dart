@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -714,6 +715,7 @@ SDFBodyNode readBodyNode(
   // Name attribute
   std::string name = getAttributeString(bodyNodeElement, "name");
   properties.mName = name;
+  const std::string bodyName = name;
 
   //--------------------------------------------------------------------------
   // gravity
@@ -741,6 +743,8 @@ SDFBodyNode readBodyNode(
 
   //--------------------------------------------------------------------------
   // inertia
+  constexpr double kMinReasonableMass = 1e-9; // 1 microgram
+  bool massSpecified = false;
   if (hasElement(bodyNodeElement, "inertial")) {
     tinyxml2::XMLElement* inertiaElement
         = getElement(bodyNodeElement, "inertial");
@@ -748,7 +752,25 @@ SDFBodyNode readBodyNode(
     // mass
     if (hasElement(inertiaElement, "mass")) {
       double mass = getValueDouble(inertiaElement, "mass");
+      if (mass <= 0.0) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
+            "to continue parsing.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      } else if (mass < kMinReasonableMass) {
+        DART_WARN(
+            "[SdfParser] Link [{}] has a very small mass [{} kg]; clamping to "
+            "{} to avoid numerical issues.",
+            bodyName,
+            mass,
+            kMinReasonableMass);
+        mass = kMinReasonableMass;
+      }
       properties.mInertia.setMass(mass);
+      massSpecified = true;
     }
 
     // offset
@@ -771,7 +793,32 @@ SDFBodyNode readBodyNode(
       double iyz = getValueDouble(moiElement, "iyz");
 
       properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+    } else if (massSpecified) {
+      // Keep the inertia physically meaningful by matching the moment scale
+      // to the specified mass; geometry is unknown, so use an isotropic guess.
+      const double mass = properties.mInertia.getMass();
+      properties.mInertia.setMoment(Eigen::Matrix3d::Identity() * mass);
+      DART_WARN(
+          "[SdfParser] Link [{}] defines <mass> but no <inertia>; using an "
+          "isotropic inertia tensor (mass * I). Provide <inertia> for "
+          "physically correct behavior.",
+          bodyName);
     }
+
+    if (!massSpecified) {
+      DART_WARN(
+          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 "
+          "kg. "
+          "Specify <inertial><mass> to avoid unstable simulation.",
+          bodyName);
+    }
+  } else {
+    DART_WARN(
+        "[SdfParser] Link [{}] is missing <inertial>; using default "
+        "mass/inertia "
+        "(1 kg, unit inertia). Specify <inertial> to avoid unstable "
+        "simulation.",
+        bodyName);
   }
 
   SDFBodyNode sdfBodyNode;
