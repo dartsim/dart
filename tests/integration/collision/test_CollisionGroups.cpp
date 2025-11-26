@@ -318,7 +318,7 @@ TEST_P(CollisionGroupsTest, MetaSkeletonSubscription)
   pairB2.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
   metaGroup->addBodyNode(pairB2.second);
 
-  auto tfB2 = pairB2.first->getTransform();
+  Eigen::Isometry3d tfB2 = Eigen::Isometry3d::Identity();
   tfB2.translation()[0] = 0.2;
   pairB2.first->setTransform(tfB2);
 
