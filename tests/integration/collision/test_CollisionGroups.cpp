@@ -33,6 +33,7 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -43,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>
@@ -260,6 +262,70 @@ TEST_P(CollisionGroupsTest, BodyNodeSubscription)
   // Remove one of the BodyNodes so that there should no longer be a collision.
   group->removeShapeFramesOf(pair_1a.second);
   EXPECT_FALSE(group->collide());
+}
+
+TEST_P(CollisionGroupsTest, MetaSkeletonSubscription)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  } else {
+    std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
+              << std::endl;
+  }
+
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto collisionGroup = cd->createCollisionGroup();
+
+  auto skelA = dart::dynamics::Skeleton::create("skelA");
+  auto skelB = dart::dynamics::Skeleton::create("skelB");
+
+  auto pairA = skelA->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pairB1 = skelB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto pairB2 = skelB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  pairA.first->setTransform(tf);
+
+  tf.translation()[0] = 0.6;
+  pairB1.first->setTransform(tf);
+
+  tf.translation()[0] = 0.3;
+  pairB2.first->setTransform(tf);
+
+  auto metaGroup = dart::dynamics::Group::create(
+      "meta",
+      std::vector<dart::dynamics::BodyNode*>{pairA.second, pairB1.second});
+
+  collisionGroup->subscribeTo(
+      std::const_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
+
+  EXPECT_FALSE(collisionGroup->collide());
+
+  auto sphere = std::make_shared<dart::dynamics::SphereShape>(0.4);
+
+  pairA.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  pairB1.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+
+  EXPECT_TRUE(collisionGroup->collide());
+
+  metaGroup->removeBodyNode(pairB1.second);
+  EXPECT_FALSE(collisionGroup->collide());
+
+  pairB2.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  metaGroup->addBodyNode(pairB2.second);
+
+  auto tfB2 = pairB2.first->getTransform();
+  tfB2.translation()[0] = 0.2;
+  pairB2.first->setTransform(tfB2);
+
+  EXPECT_TRUE(collisionGroup->collide());
+
+  metaGroup->removeBodyNode(pairA.second);
+  EXPECT_FALSE(collisionGroup->collide());
 }
 
 TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
