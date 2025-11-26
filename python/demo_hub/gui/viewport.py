@@ -10,7 +10,7 @@ from demo_hub.gui.primitives import Segment2D
 def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
     """Render a simple top-down 2D view using ImGui draw lists."""
     imgui.begin(name)
-    canvas_pos = imgui.get_window_position()
+    canvas_pos = imgui.get_window_pos()
     canvas_size = imgui.get_window_size()
     width, height = canvas_size.x, canvas_size.y
 
@@ -46,7 +46,7 @@ def draw_topdown(name: str, segments: Iterable[Segment2D], size=(0, 0)) -> None:
 
     for seg in segs:
         c = seg.color
-        col = imgui.get_color_u32_rgba(c[0], c[1], c[2], 1.0)
+        col = imgui.get_color_u32(imgui.ImVec4(c[0], c[1], c[2], 1.0))
         p0 = project(seg.start)
         p1 = project(seg.end)
         draw_list.add_line(p0[0], p0[1], p1[0], p1[1], col, thickness=2.0)

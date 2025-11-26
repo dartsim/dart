@@ -35,6 +35,14 @@ def main(argv: list[str]) -> int:
   env = os.environ.copy()
   existing = env.get("PYTHONPATH", "")
   env["PYTHONPATH"] = f"{py_path}:{existing}" if existing else str(py_path)
+  # Ensure conda libs (glfw, imgui, OpenGL) are ahead of system paths.
+  conda_prefix = env.get("CONDA_PREFIX")
+  if conda_prefix:
+    ld_paths = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = f"{conda_prefix}/lib:{ld_paths}" if ld_paths else f"{conda_prefix}/lib"
+    preload = env.get("LD_PRELOAD", "")
+    glfw_lib = f"{conda_prefix}/lib/libglfw.so"
+    env["LD_PRELOAD"] = f"{glfw_lib}:{preload}" if preload else glfw_lib
 
   cmd = [sys.executable, str(script), *remaining]
   return subprocess.call(cmd, env=env, cwd=repo_root)

@@ -150,7 +150,7 @@ SCRIPT=python/demo_hub/app.py BUILD_TYPE=Debug pixi run debug-py-native
 
 # Run the demo hub (GUI by default)
 BUILD_TYPE=Debug pixi run py-ex demo_hub
-# Headless mode
+# Headless mode (explicit)
 BUILD_TYPE=Debug pixi run py-ex demo_hub -- --headless --list
 ```
 

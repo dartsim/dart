@@ -380,7 +380,7 @@ config-py = { cmd = [
 
 py-ex = { cmd = ["python", "scripts/run_py_example.py"], depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release" } }
+], env = { BUILD_TYPE = "Release", LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}" } }
 
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [

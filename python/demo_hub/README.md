@@ -17,7 +17,7 @@ pixi run py-ex demo_hub -- --headless --scene pendulum --record /tmp/pendulum.js
 ```
 
 ImGui is provided via `imgui-bundle` in the pixi environment (no extra pip
-install needed).
+install needed). If GUI imports fail, reinstall the environment (`pixi install`).
 
 For debugging, use the pixi helpers:
 

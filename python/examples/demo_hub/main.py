@@ -25,16 +25,16 @@ def dispatch(argv: list[str] | None = None) -> None:
     args, remaining = parser.parse_known_args(argv)
 
     gui_app = None
+    gui_app = None
     if args.mode == "gui":
         try:
             from demo_hub import gui as gui_app  # type: ignore[no-redef]
         except ModuleNotFoundError as exc:
             missing = getattr(exc, "name", "") or str(exc)
-            print(
-                f"GUI dependencies missing ({missing}); falling back to headless. "
-                "Run `pixi install` to ensure imgui-bundle is present in the pixi environment."
-            )
-            args.mode = "headless"
+            raise SystemExit(
+                f"GUI dependencies missing ({missing}). "
+                "Run `pixi install` so imgui-bundle (plus glfw/PyOpenGL) are available."
+            ) from exc
 
     if "--help" in (argv or []):
         if args.mode == "gui" and gui_app:

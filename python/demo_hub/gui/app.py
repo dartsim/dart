@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -120,6 +121,9 @@ def _render(state: GuiState) -> None:  # pragma: no cover - manual UI
 
 
 def main(argv: list[str] | None = None) -> None:
+    if os.name != "nt" and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+        raise SystemExit("GUI requires a display (set DISPLAY/WAYLAND_DISPLAY or run inside a desktop session).")
+
     registry = build_default_registry()
 
     parser = argparse.ArgumentParser(description="ImGui shell for demo_hub scenes")
@@ -132,10 +136,10 @@ def main(argv: list[str] | None = None) -> None:
     state = GuiState(registry, args.scene, args.dt)
 
     params = immapp.RunnerParams()
-    params.window_title = "DART Demo Hub (Python)"
-    params.width = 1280
-    params.height = 720
-    immapp.run(gui_function=lambda: _render(state), runner_params=params)
+    params.app_window_params.window_title = "DART Demo Hub (Python)"
+    params.app_window_params.window_geometry.size = [1280, 720]
+    params.callbacks.show_gui = lambda: _render(state)
+    immapp.run(runner_params=params)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual UI
