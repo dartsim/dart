@@ -1,0 +1,113 @@
+/*
+ * Copyright (c) 2011-2025, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/dart.hpp>
+
+#include <gtest/gtest.h>
+
+#include <algorithm>
+
+using namespace dart;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+
+namespace {
+
+WorldPtr makeFreeFallWorld(bool spinning)
+{
+  auto world = World::create(spinning ? "spinning" : "baseline");
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(0.001);
+
+  SkeletonPtr sphere
+      = Skeleton::create(spinning ? "spinning_sphere" : "baseline_sphere");
+  auto pair = sphere->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<EllipsoidShape>(Eigen::Vector3d::Constant(0.2));
+  auto* shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+
+  const double mass = 2.0;
+  body->setInertia(shape->computeInertia(mass));
+  body->setMass(mass);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
+  joint->setPositions(FreeJoint::convertToPositions(tf));
+
+  if (spinning) {
+    Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+    velocities.head<3>() = Eigen::Vector3d(0.0, 0.0, 10.0);
+    joint->setVelocities(velocities);
+  }
+
+  world->addSkeleton(sphere);
+  return world;
+}
+
+} // namespace
+
+// Regression for https://github.com/dartsim/dart/issues/870: A spinning body in
+// free fall should not pick up lateral translation.
+TEST(Issue870, SpinningSphereFreeFallDoesNotDriftSideways)
+{
+  auto baselineWorld = makeFreeFallWorld(false);
+  auto spinningWorld = makeFreeFallWorld(true);
+
+  const int steps = 1500;
+  double maxHorizontalSeparation = 0.0;
+
+  for (int i = 0; i < steps; ++i) {
+    baselineWorld->step();
+    spinningWorld->step();
+
+    const auto* baselineBody = baselineWorld->getSkeleton(0)->getRootBodyNode();
+    const auto* spinningBody = spinningWorld->getSkeleton(0)->getRootBodyNode();
+
+    const Eigen::Vector3d baselinePos
+        = baselineBody->getWorldTransform().translation();
+    const Eigen::Vector3d spinningPos
+        = spinningBody->getWorldTransform().translation();
+
+    const Eigen::Vector2d horizDiff(
+        spinningPos.x() - baselinePos.x(), spinningPos.z() - baselinePos.z());
+    maxHorizontalSeparation
+        = std::max(maxHorizontalSeparation, horizDiff.norm());
+  }
+
+  EXPECT_LT(maxHorizontalSeparation, 1e-7);
+}
