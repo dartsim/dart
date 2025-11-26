@@ -33,15 +33,13 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#if DART_BUILD_MODE_DEBUG
-  #include <mutex>
-#endif
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
 #include <dart/Export.hpp>
 
 #include <iostream>
+#include <memory>
 
 namespace dart::common {
 
@@ -153,10 +151,8 @@ public:
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
 
-#if DART_BUILD_MODE_DEBUG
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
-#endif
 
   /// Prints state of the memory manager.
   void print(std::ostream& os = std::cout, int indent = 0) const;
@@ -169,19 +165,20 @@ private:
   /// The base allocator to allocate memory chunk.
   MemoryAllocator& mBaseAllocator;
 
-#if DART_BUILD_MODE_RELEASE
   /// The free list allocator.
-  FreeListAllocator mFreeListAllocator;
+  std::unique_ptr<FreeListAllocator> mFreeListAllocator;
+
+  /// The free list allocator with debug instrumentation.
+  std::unique_ptr<FreeListAllocator::Debug> mFreeListAllocatorWithDebug;
 
   /// The pool allocator.
-  PoolAllocator mPoolAllocator;
-#else
-  /// The free list allocator.
-  FreeListAllocator::Debug mFreeListAllocator;
+  std::unique_ptr<PoolAllocator> mPoolAllocator;
 
-  /// The pool allocator.
-  PoolAllocator::Debug mPoolAllocator;
-#endif
+  /// The pool allocator with debug instrumentation.
+  std::unique_ptr<PoolAllocator::Debug> mPoolAllocatorWithDebug;
+
+  /// Whether to route allocations through the debug instrumented allocators.
+  bool mUseDebugAllocators{false};
 };
 
 } // namespace dart::common

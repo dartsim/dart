@@ -25,6 +25,7 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_CollisionAccuracy.cpp)
+  dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_BulletEllipsoidRolling.cpp)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_BulletBoxStack.cpp)
 endif()
 
