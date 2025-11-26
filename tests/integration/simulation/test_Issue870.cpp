@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <sstream>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -218,13 +219,12 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
     maxVelDiff = std::max({maxVelDiff, lvDiff.norm(), rvDiff.norm()});
   }
 
-  if (maxPosDiff > 1e-5 || maxVelDiff > 1e-5 || maxSymmetryError > 1e-4
-      || maxAbsPosition > softLimit) {
-    GTEST_SKIP() << "Issue #870 still reproduces: maxPosDiff=" << maxPosDiff
-                 << ", maxVelDiff=" << maxVelDiff
-                 << ", maxSymmetryError=" << maxSymmetryError
-                 << ", maxAbsPosition=" << maxAbsPosition;
-  }
+  std::ostringstream oss;
+  oss << "Issue #870 metrics: maxPosDiff=" << maxPosDiff
+      << ", maxVelDiff=" << maxVelDiff
+      << ", maxSymmetryError=" << maxSymmetryError
+      << ", maxAbsPosition=" << maxAbsPosition;
+  SCOPED_TRACE(oss.str());
 
   EXPECT_LT(maxPosDiff, 1e-5);
   EXPECT_LT(maxVelDiff, 1e-5);
