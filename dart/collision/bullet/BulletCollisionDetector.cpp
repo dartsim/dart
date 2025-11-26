@@ -381,6 +381,10 @@ bool BulletCollisionDetector::raycast(
       = option.mEnableAllHits || static_cast<bool>(option.mFilter);
 
   if (needsAllHits) {
+    auto lessFraction = [](const RayHit& a, const RayHit& b) {
+      return a.mFraction < b.mFraction;
+    };
+
     auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
@@ -410,7 +414,7 @@ bool BulletCollisionDetector::raycast(
           result->mRayHits.resize(1);
         } else {
           const auto closest = std::min_element(
-              result->mRayHits.begin(), result->mRayHits.end(), FractionLess());
+              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
           const RayHit closestHit = *closest;
           result->mRayHits.clear();
           result->mRayHits.emplace_back(closestHit);
