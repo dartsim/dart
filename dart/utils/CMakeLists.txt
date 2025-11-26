@@ -4,7 +4,7 @@ dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
 dart_find_package(sdformat)
 dart_check_optional_package(SDFORMAT "dart-utils" "sdformat" "16.0.0")
-if(NOT HAVE_SDFORMAT)
+if(NOT DART_HAVE_SDFORMAT)
   message(
     FATAL_ERROR
     "libsdformat (>= 16.0.0) is required for dart-utils. Please install it or "

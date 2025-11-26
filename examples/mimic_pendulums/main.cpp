@@ -41,10 +41,10 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/sdf/SdfParser.hpp>
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
-#if HAVE_ODE
+#if DART_HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 #include <dart/simulation/World.hpp>
@@ -162,7 +162,7 @@ struct SolverConfig
 void applyCollisionDetector(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
 {
-#if HAVE_ODE
+#if DART_HAVE_ODE
   if (cfg.useOdeCollision) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::OdeCollisionDetector::create());
@@ -170,7 +170,7 @@ void applyCollisionDetector(
   }
 #endif
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
 #else
@@ -392,7 +392,7 @@ private:
     ImGui::Text("Collision / solver");
 
     bool odeSelected = mConfig.useOdeCollision;
-#if HAVE_ODE
+#if DART_HAVE_ODE
     if (ImGui::Checkbox(
             "Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
       mConfig.useOdeCollision = odeSelected;
@@ -412,7 +412,7 @@ private:
     const auto contacts = mWorld->getLastCollisionResult().getNumContacts();
     ImGui::Text("Contacts last step: %zu", contacts);
 
-#if HAVE_ODE
+#if DART_HAVE_ODE
     if (mConfig.useOdeCollision) {
       ImGui::TextColored(
           ImVec4(0.9f, 0.7f, 0.2f, 1.0f),

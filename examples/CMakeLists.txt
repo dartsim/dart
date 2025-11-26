@@ -28,7 +28,7 @@ add_subdirectory(mixed_chain)
 add_subdirectory(operational_space_control)
 add_subdirectory(polyhedron_visual)
 add_subdirectory(capsule_ground_contact)
-if(HAVE_OCTOMAP)
+if(DART_HAVE_OCTOMAP)
   add_subdirectory(point_cloud)
 endif()
 # TODO: Re-enable when rerun example has source files
