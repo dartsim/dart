@@ -209,12 +209,13 @@ void applyImGuiScale(float scale)
   if (!std::isfinite(scale) || scale <= 0.f)
     return;
 
+  static ImGuiStyle baseStyle = ImGui::GetStyle(); // capture styled defaults (dark palette)
   auto& style = ImGui::GetStyle();
   ImGuiIO& io = ImGui::GetIO();
 
-  // Reset to defaults before applying the requested scale so repeated calls are
-  // idempotent.
-  style = ImGuiStyle();
+  // Reset to the captured base style before applying the requested scale so
+  // repeated calls are idempotent and preserve the configured palette.
+  style = baseStyle;
   io.FontGlobalScale = 1.f;
 
   if (std::abs(scale - 1.f) < 1e-6f)
