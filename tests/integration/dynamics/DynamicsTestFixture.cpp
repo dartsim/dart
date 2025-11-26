@@ -808,7 +808,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   int nTestItr = 2;
 #else
   int nTestItr = 5;
@@ -904,7 +904,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
         compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
         if (skeleton->getNumBodyNodes() == 0u)
           continue;
 
@@ -980,7 +980,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   using namespace utils;
 
   //----------------------------- Settings -------------------------------------
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   int nRandomItr = 2;
 #else
   int nRandomItr = 10;
@@ -1067,7 +1067,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   using namespace utils;
 
   //----------------------------- Settings -------------------------------------
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   int nRandomItr = 2;
   std::size_t numSteps = 1e+1;
 #else
@@ -1157,7 +1157,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   int nRandomItr = 2;
 #else
   int nRandomItr = 10;
@@ -1288,7 +1288,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 //==============================================================================
 void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 {
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 1e+1;
   std::size_t numSteps = 1e+1;
 #else
@@ -1417,7 +1417,7 @@ void DynamicsTest::testInverseDynamics(const common::Uri& uri)
 {
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeleton
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   const std::size_t nRandomItr = 2;
 #else
   const std::size_t nRandomItr = 100;
@@ -1500,7 +1500,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 100;
@@ -1777,7 +1777,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 100;
@@ -1930,7 +1930,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 2;
 #else
   std::size_t nRandomItr = 10;
@@ -1967,7 +1967,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
     auto dof = skel->getNumDofs();
 
     if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof) {
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
       DART_INFO(
           "Skipping COM free fall test for Skeleton [{}] since the Skeleton "
           "doesn't have a FreeJoint at the root body or is immobile.",
@@ -2037,7 +2037,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 1;
@@ -2125,7 +2125,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   std::size_t nRandomItr = 1;
 #else
   std::size_t nRandomItr = 100;
