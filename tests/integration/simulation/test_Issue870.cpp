@@ -59,7 +59,8 @@ BoxBounceWorld makeFourBoxBounceWorld(double pitch)
 {
   auto world = World::create("issue870_boxes");
   world->setGravity(Eigen::Vector3d::Zero());
-  world->setTimeStep(0.002);
+  // Use a small time step to keep the symmetric configuration stable.
+  world->setTimeStep(0.0005);
 
   auto makeBoxSkeleton = [&](const std::string& name,
                              bool weld,
@@ -176,7 +177,8 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
   const double softLimit = barrier + 1e-2; // allow tiny penetration tolerance
   // Run long enough to cover multiple bounces without letting numerical drift
   // dominate the signal.
-  const int steps = 900;
+  // Keep total simulated time roughly consistent with the original test.
+  const int steps = 3600;
 
   double maxPosDiff = 0.0;
   double maxVelDiff = 0.0;
@@ -228,9 +230,9 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
 
   // This test is sensitive to platform-specific collision/contact differences.
   // Use looser thresholds to guard against regressions while avoiding flakes.
-  EXPECT_LT(maxPosDiff, 1e-1);
-  EXPECT_LT(maxVelDiff, 3e1);
-  EXPECT_LT(maxSymmetryError, 2e0);
+  EXPECT_LT(maxPosDiff, 1e-5);
+  EXPECT_LT(maxVelDiff, 1e-5);
+  EXPECT_LT(maxSymmetryError, 1e-4);
   EXPECT_LT(maxAbsPosition, softLimit);
 }
 
