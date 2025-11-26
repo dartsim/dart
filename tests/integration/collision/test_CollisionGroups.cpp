@@ -301,7 +301,7 @@ TEST_P(CollisionGroupsTest, MetaSkeletonSubscription)
       std::vector<dart::dynamics::BodyNode*>{pairA.second, pairB1.second});
 
   collisionGroup->subscribeTo(
-      std::const_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
+      std::static_pointer_cast<const dart::dynamics::MetaSkeleton>(metaGroup));
 
   EXPECT_FALSE(collisionGroup->collide());
 
