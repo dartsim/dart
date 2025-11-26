@@ -17,6 +17,9 @@ if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
 
+dart_add_test(
+  "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
+
 # ==============================================================================
 # Common Tests
 # ==============================================================================
@@ -106,6 +109,14 @@ dart_build_tests(
 if(TARGET dart)
   dart_add_test("unit" UNIT_math_Convhull math/test_Convhull.cpp)
   target_link_libraries(UNIT_math_Convhull dart)
+endif()
+
+# ==============================================================================
+# GUI Tests
+# ==============================================================================
+if(TARGET dart-gui)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
 endif()
 
 # ==============================================================================

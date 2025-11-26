@@ -42,6 +42,10 @@
 #include "dart/gui/ImGuiViewer.hpp"
 #include "dart/gui/ImGuiWidget.hpp"
 
+#include <dart/gui/IncludeImGui.hpp>
+
+#include <utility>
+
 class AtlasSimbiconWorldNode;
 
 class AtlasSimbiconWidget : public dart::gui::ImGuiWidget
@@ -53,6 +57,9 @@ public:
 
   // Documentation inherited
   void render() override;
+
+  /// Compute window position/size scaled to the provided font size.
+  static std::pair<ImVec2, ImVec2> computeWindowPlacement(float fontSize);
 
 protected:
   void setGravity(float gravity);

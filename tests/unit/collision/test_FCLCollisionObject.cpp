@@ -30,61 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/ImGuiViewer.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
-#include "dart/gui/ImGuiHandler.hpp"
-#include "dart/gui/ImGuiWidget.hpp"
+#include <gtest/gtest.h>
 
-namespace dart {
-namespace gui {
+using dart::collision::CollisionDetector;
+using dart::collision::FCLCollisionDetector;
 
-//==============================================================================
-ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
-  : Viewer(clearColor),
-    mImGuiHandler(new ImGuiHandler()),
-    mAboutWidget(new AboutWidget())
+class ExposedFCLCollisionDetector : public FCLCollisionDetector
 {
-  mImGuiHandler->setCameraCallbacks(getCamera());
-  mImGuiHandler->addWidget(mAboutWidget, false);
+public:
+  using FCLCollisionDetector::refreshCollisionObject;
 
-  addEventHandler(mImGuiHandler);
-}
+  std::shared_ptr<dart::collision::CollisionObject> claim(
+      const dart::dynamics::ShapeFrame* shapeFrame)
+  {
+    return CollisionDetector::claimCollisionObject(shapeFrame);
+  }
+};
 
-//==============================================================================
-ImGuiViewer::~ImGuiViewer()
+TEST(FCLCollisionObject, RefreshRetainsUserData)
 {
-  // Do nothing
-}
+  ExposedFCLCollisionDetector detector;
 
-//==============================================================================
-ImGuiHandler* ImGuiViewer::getImGuiHandler()
-{
-  return mImGuiHandler.get();
-}
+  auto skel = dart::dynamics::Skeleton::create("skel");
+  auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
 
-//==============================================================================
-const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
-{
-  return mImGuiHandler.get();
-}
+  auto shape = std::make_shared<dart::dynamics::SphereShape>(0.5);
+  auto shapeNode
+      = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          shape);
 
-//==============================================================================
-void ImGuiViewer::setImGuiScale(float scale)
-{
-  applyImGuiScale(scale);
-}
+  auto obj = detector.claim(shapeNode);
+  auto* fclObj = dynamic_cast<dart::collision::FCLCollisionObject*>(obj.get());
+  ASSERT_NE(fclObj, nullptr);
 
-//==============================================================================
-void ImGuiViewer::showAbout()
-{
-  mAboutWidget->show();
-}
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
 
-//==============================================================================
-void ImGuiViewer::hideAbout()
-{
-  mAboutWidget->hide();
-}
+  shape->setRadius(0.6);
+  detector.refreshCollisionObject(fclObj);
 
-} // namespace gui
-} // namespace dart
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
+}
