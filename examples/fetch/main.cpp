@@ -33,12 +33,15 @@
 #include "dart/common/Macros.hpp"
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/collision/bullet/All.hpp>
 
 #include <dart/All.hpp>
+
+#include <CLI/CLI.hpp>
 
 using namespace dart;
 using dart::simulation::CollisionDetectorType;
@@ -150,9 +153,15 @@ protected:
   osg::ref_ptr<gui::GridVisual> mGrid;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
   using namespace math::suffixes;
+
+  CLI::App app("Fetch pick and place example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
 
   // Create a world from ant.xml
   auto world = utils::MjcfParser::readWorld(
@@ -215,6 +224,7 @@ int main()
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = gui::ImGuiViewer();
+  viewer.setImGuiScale(static_cast<float>(guiScale));
   viewer.addWorldNode(node);
 
   // Create grid

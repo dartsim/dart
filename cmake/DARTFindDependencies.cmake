@@ -46,10 +46,10 @@ if(ASSIMP_FOUND)
       return 1;
     }
     "
-    ASSIMP_AISCENE_CTOR_DTOR_DEFINED
+    DART_ASSIMP_AISCENE_CTOR_DTOR_DEFINED
   )
 
-  if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+  if(NOT DART_ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
     if(DART_VERBOSE)
       message(
         WARNING
@@ -72,10 +72,10 @@ if(ASSIMP_FOUND)
       return 1;
     }
     "
-    ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
+    DART_ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
   )
 
-  if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+  if(NOT DART_ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
     if(DART_VERBOSE)
       message(
         WARNING
@@ -97,18 +97,18 @@ endif()
 dart_find_package(octomap)
 if(OCTOMAP_FOUND OR octomap_FOUND)
   if(NOT DEFINED octomap_VERSION)
-    set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
     message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
         "please install octomap with version information"
     )
   else()
-    set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+    set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
     endif()
   endif()
 else()
-  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
   message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
       "please install octomap"
   )

@@ -458,6 +458,7 @@ class RayHit:
 class RaycastOption:
     mEnableAllHits: bool
     mSortByClosest: bool
+    mFilter: typing.Optional[typing.Callable[[CollisionObject], bool]]
     @typing.overload
     def __init__(self) -> None:
         ...
@@ -465,7 +466,12 @@ class RaycastOption:
     def __init__(self, enableAllHits: bool) -> None:
         ...
     @typing.overload
-    def __init__(self, enableAllHits: bool, sortByClosest: bool) -> None:
+    def __init__(
+        self,
+        enableAllHits: bool,
+        sortByClosest: bool,
+        filter: typing.Optional[typing.Callable[[CollisionObject], bool]] = None,
+    ) -> None:
         ...
 class RaycastResult:
     mRayHits: list[RayHit]

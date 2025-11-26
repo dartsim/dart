@@ -52,9 +52,14 @@
 #include "dart/utils/urdf/IncludeUrdf.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
+#include <tinyxml2.h>
+
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <unordered_map>
+
+#include <cmath>
 
 namespace dart {
 namespace utils {
@@ -121,8 +126,11 @@ dynamics::SkeletonPtr UrdfParser::parseSkeleton(const common::Uri& uri)
     return nullptr;
   }
 
+  ParseContext context;
+  context.mTransmissions = parseTransmissions(content);
+
   return modelInterfaceToSkeleton(
-      urdfInterface.get(), uri, resourceRetriever, mOptions);
+      urdfInterface.get(), uri, resourceRetriever, mOptions, &context);
 }
 
 //==============================================================================
@@ -141,11 +149,15 @@ dynamics::SkeletonPtr UrdfParser::parseSkeletonString(
     return nullptr;
   }
 
+  ParseContext context;
+  context.mTransmissions = parseTransmissions(urdfString);
+
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       baseUri,
       getResourceRetriever(mOptions.mResourceRetriever),
-      mOptions);
+      mOptions,
+      &context);
 }
 
 //==============================================================================
@@ -186,8 +198,12 @@ simulation::WorldPtr UrdfParser::parseWorldString(
 
   for (std::size_t i = 0; i < worldInterface->models.size(); ++i) {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
+    std::string modelContent;
+    readFileToString(resourceRetriever, entity.uri, modelContent);
+    ParseContext context;
+    context.mTransmissions = parseTransmissions(modelContent);
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(), entity.uri, resourceRetriever, mOptions);
+        entity.model.get(), entity.uri, resourceRetriever, mOptions, &context);
 
     if (!skeleton) {
       DART_WARN(
@@ -217,7 +233,8 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    const Options& options)
+    const Options& options,
+    const ParseContext* context)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
@@ -263,6 +280,11 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
   // Find mimic joints
   for (std::size_t i = 0; i < root->child_links.size(); i++)
     addMimicJointsRecursive(model, skeleton, root->child_links[i].get());
+
+  const std::vector<TransmissionInfo> empty;
+  const auto& transmissions
+      = (context != nullptr) ? context->mTransmissions : empty;
+  applyTransmissions(transmissions, model, skeleton);
 
   return skeleton;
 }
@@ -359,6 +381,183 @@ bool UrdfParser::addMimicJointsRecursive(
   }
 
   return true;
+}
+
+//==============================================================================
+std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
+    const std::string& urdfString)
+{
+  std::vector<TransmissionInfo> transmissions;
+
+  if (urdfString.empty())
+    return transmissions;
+
+  tinyxml2::XMLDocument doc;
+  const auto parseResult = doc.Parse(urdfString.c_str());
+  if (parseResult != tinyxml2::XML_SUCCESS) {
+    DART_WARN(
+        "[UrdfParser] Failed to parse URDF for transmissions: tinyxml2 error "
+        "{}."
+        " Transmissions will be ignored.",
+        parseResult);
+    return transmissions;
+  }
+
+  const auto* robotElement = doc.FirstChildElement("robot");
+  if (!robotElement)
+    return transmissions;
+
+  for (auto* tx = robotElement->FirstChildElement("transmission");
+       tx != nullptr;
+       tx = tx->NextSiblingElement("transmission")) {
+    const auto* typeElement = tx->FirstChildElement("type");
+    const std::string type
+        = typeElement && typeElement->GetText() ? typeElement->GetText() : "";
+
+    if (!type.empty() && type.find("SimpleTransmission") == std::string::npos
+        && type.find("simple_transmission") == std::string::npos) {
+      DART_WARN(
+          "[UrdfParser] Transmission [{}] has unsupported type [{}]; skipping.",
+          tx->Attribute("name") ? tx->Attribute("name") : "",
+          type);
+      continue;
+    }
+
+    const auto* jointElement = tx->FirstChildElement("joint");
+    const auto* actuatorElement = tx->FirstChildElement("actuator");
+    if (!jointElement || !actuatorElement) {
+      DART_WARN(
+          "[UrdfParser] Transmission [{}] is missing joint or actuator; "
+          "skipping.",
+          tx->Attribute("name") ? tx->Attribute("name") : "");
+      continue;
+    }
+
+    const char* jointName = jointElement->Attribute("name");
+    const char* actuatorName = actuatorElement->Attribute("name");
+    if (!jointName || !actuatorName) {
+      DART_WARN(
+          "[UrdfParser] Transmission is missing joint or actuator name; "
+          "skipping.");
+      continue;
+    }
+
+    double mechanicalReduction = 1.0;
+    const auto* reductionElement
+        = actuatorElement->FirstChildElement("mechanicalReduction");
+    if (!reductionElement)
+      reductionElement = jointElement->FirstChildElement("mechanicalReduction");
+    if (reductionElement) {
+      const auto queryResult
+          = reductionElement->QueryDoubleText(&mechanicalReduction);
+      if (queryResult != tinyxml2::XML_SUCCESS) {
+        DART_WARN(
+            "[UrdfParser] Failed to read mechanicalReduction for transmission "
+            "[{}:{}]; defaulting to 1.0.",
+            actuatorName,
+            jointName);
+        mechanicalReduction = 1.0;
+      }
+    }
+
+    if (mechanicalReduction == 0.0) {
+      DART_WARN(
+          "[UrdfParser] mechanicalReduction is zero for transmission [{}:{}]; "
+          "skipping.",
+          actuatorName,
+          jointName);
+      continue;
+    }
+
+    transmissions.push_back(
+        {actuatorName, jointName, mechanicalReduction, true});
+  }
+
+  return transmissions;
+}
+
+//==============================================================================
+void UrdfParser::applyTransmissions(
+    const std::vector<TransmissionInfo>& transmissions,
+    const urdf::ModelInterface* model,
+    dynamics::SkeletonPtr skel)
+{
+  if (transmissions.empty())
+    return;
+
+  const std::string modelName = model ? model->getName() : "";
+  std::unordered_map<std::string, std::vector<TransmissionInfo>> grouped;
+  for (const auto& tx : transmissions)
+    grouped[tx.mActuatorName].push_back(tx);
+
+  for (const auto& actuatorPair : grouped) {
+    const auto& entries = actuatorPair.second;
+    if (entries.size() < 2)
+      continue;
+
+    std::vector<std::pair<const TransmissionInfo*, dynamics::Joint*>> valid;
+    for (const auto& tx : entries) {
+      auto* joint = skel->getJoint(tx.mJointName);
+      if (!joint) {
+        DART_WARN(
+            "[UrdfParser] Transmission references missing joint [{}] on model "
+            "[{}]; skipping.",
+            tx.mJointName,
+            modelName);
+        continue;
+      }
+
+      if (joint->getNumDofs() != 1) {
+        DART_WARN(
+            "[UrdfParser] Transmission [{}] targets joint [{}] with {} DoFs; "
+            "only single-DoF joints are supported for transmission coupling.",
+            actuatorPair.first,
+            tx.mJointName,
+            joint->getNumDofs());
+        continue;
+      }
+
+      if (joint->getActuatorType() == dynamics::Joint::MIMIC) {
+        DART_WARN(
+            "[UrdfParser] Transmission [{}] targets joint [{}] that already "
+            "has a mimic actuator; skipping to avoid conflict.",
+            actuatorPair.first,
+            tx.mJointName);
+        continue;
+      }
+
+      valid.emplace_back(&tx, joint);
+    }
+
+    if (valid.size() < 2)
+      continue;
+
+    const auto* referenceInfo = valid.front().first;
+    dynamics::Joint* referenceJoint = valid.front().second;
+    const double referenceReduction = referenceInfo->mMechanicalReduction;
+
+    for (std::size_t i = 1; i < valid.size(); ++i) {
+      const auto* followerInfo = valid[i].first;
+      dynamics::Joint* followerJoint = valid[i].second;
+      const double followerReduction = followerInfo->mMechanicalReduction;
+
+      const double multiplier = referenceReduction / followerReduction;
+      if (!std::isfinite(multiplier) || multiplier == 0.0) {
+        DART_WARN(
+            "[UrdfParser] Invalid gear ratio between joints [{}] and [{}] for "
+            "actuator [{}]; skipping follower.",
+            referenceJoint->getName(),
+            followerJoint->getName(),
+            actuatorPair.first);
+        continue;
+      }
+
+      followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+      followerJoint->setMimicJoint(referenceJoint, multiplier, 0.0);
+      if (followerInfo->mUseCoupler)
+        followerJoint->setUseCouplerConstraint(true);
+    }
+  }
 }
 
 /**

@@ -51,7 +51,7 @@
 #include <limits>
 #include <string>
 
-#if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+#if !(DART_ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to
 // be missing from the standard assimp library (see #451)
 aiScene::aiScene()
@@ -105,11 +105,11 @@ aiScene::~aiScene()
       delete mCameras[a];
   delete[] mCameras;
 }
-#endif // #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+#endif // #if !(DART_ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
 // We define our own constructor and destructor for aiMaterial, because it seems
 // to be missing from the standard assimp library (see #451)
-#if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+#if !(DART_ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 aiMaterial::aiMaterial()
 {
   mNumProperties = 0;
@@ -131,7 +131,7 @@ aiMaterial::~aiMaterial()
 
   delete[] mProperties;
 }
-#endif // #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+#endif // #if !(DART_ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
 namespace dart {
 namespace dynamics {

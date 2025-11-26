@@ -34,7 +34,7 @@
 
 #include <gtest/gtest.h>
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
   #include "dart/collision/CollisionOption.hpp"
   #include "dart/collision/bullet/detail/BulletContact.hpp"
 #endif
@@ -42,7 +42,7 @@
 using namespace dart;
 using namespace dart::collision;
 
-#if HAVE_BULLET
+#if DART_HAVE_BULLET
 using dart::collision::bullet::detail::shouldReportContact;
 
 TEST(BulletContact, FiltersNegativePenetrationDepth)

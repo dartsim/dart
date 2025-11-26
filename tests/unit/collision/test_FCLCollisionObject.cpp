@@ -30,43 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RAYCASTOPTION_HPP_
-#define DART_COLLISION_RAYCASTOPTION_HPP_
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
-#include <dart/Export.hpp>
+#include <gtest/gtest.h>
 
-#include <functional>
-#include <memory>
+using dart::collision::CollisionDetector;
+using dart::collision::FCLCollisionDetector;
 
-#include <cstddef>
-
-namespace dart {
-namespace collision {
-
-class CollisionObject;
-
-struct DART_API RaycastOption
+class ExposedFCLCollisionDetector : public FCLCollisionDetector
 {
-  using RaycastFilter = std::function<bool(const CollisionObject*)>;
+public:
+  using FCLCollisionDetector::refreshCollisionObject;
 
-  /// Constructor
-  RaycastOption(
-      bool enableAllHits = false,
-      bool sortByClosest = false,
-      RaycastFilter filter = nullptr);
-
-  /// Returns true when the filter is not set or allows the object.
-  bool passesFilter(const CollisionObject* object) const;
-
-  bool mEnableAllHits;
-
-  bool mSortByClosest;
-
-  /// Optional filter to reject hits from specific collision objects.
-  RaycastFilter mFilter;
+  std::shared_ptr<dart::collision::CollisionObject> claim(
+      const dart::dynamics::ShapeFrame* shapeFrame)
+  {
+    return CollisionDetector::claimCollisionObject(shapeFrame);
+  }
 };
 
-} // namespace collision
-} // namespace dart
+TEST(FCLCollisionObject, RefreshRetainsUserData)
+{
+  ExposedFCLCollisionDetector detector;
 
-#endif // DART_COLLISION_RAYCASTOPTION_HPP_
+  auto skel = dart::dynamics::Skeleton::create("skel");
+  auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto shape = std::make_shared<dart::dynamics::SphereShape>(0.5);
+  auto shapeNode
+      = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          shape);
+
+  auto obj = detector.claim(shapeNode);
+  auto* fclObj = dynamic_cast<dart::collision::FCLCollisionObject*>(obj.get());
+  ASSERT_NE(fclObj, nullptr);
+
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
+
+  shape->setRadius(0.6);
+  detector.refreshCollisionObject(fclObj);
+
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
+}
