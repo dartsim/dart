@@ -68,25 +68,10 @@ namespace {
 
 std::string collisionObjectKey(const FCLCollisionObject* object)
 {
-  const auto* frame = object->getShapeFrame();
-  if (!frame)
+  if (!object)
     return "";
 
-  const auto* shapeNode = dynamic_cast<const dynamics::ShapeNode*>(frame);
-  if (shapeNode) {
-    const auto bodyNode = shapeNode->getBodyNodePtr();
-    const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
-
-    std::string key;
-    if (skeleton)
-      key += skeleton->getName() + "::";
-    if (bodyNode)
-      key += bodyNode->getName() + "::";
-    key += shapeNode->getName();
-    return key;
-  }
-
-  return frame->getName();
+  return object->getKey();
 }
 
 bool collisionCallback(
@@ -1112,16 +1097,8 @@ bool collisionCallback(
   auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
   DART_ASSERT(collisionObject1);
   DART_ASSERT(collisionObject2);
-
-  // Ensure deterministic ordering of the collision pair so that reported
-  // normals are stable even if the broadphase shuffles callback arguments or
-  // when worlds are cloned.
-  const auto key1 = collisionObjectKey(collisionObject1);
-  const auto key2 = collisionObjectKey(collisionObject2);
-  if (key2 < key1 || (key1 == key2 && collisionObject2 < collisionObject1)) {
-    std::swap(o1, o2);
-    std::swap(collisionObject1, collisionObject2);
-  }
+  if (!collisionObject1 || !collisionObject2)
+    return collData->done;
 
   // Filtering
   if (filter && filter->ignoresCollision(collisionObject2, collisionObject1))
@@ -1669,6 +1646,19 @@ Contact convertContact(
     contact.penetrationDepth = fclContact.penetration_depth;
     contact.triID1 = fclContact.b1;
     contact.triID2 = fclContact.b2;
+  }
+
+  // Enforce deterministic ordering across runs and clones.
+  const auto key1 = collisionObjectKey(
+      static_cast<const FCLCollisionObject*>(contact.collisionObject1));
+  const auto key2 = collisionObjectKey(
+      static_cast<const FCLCollisionObject*>(contact.collisionObject2));
+  if (key2 < key1) {
+    std::swap(contact.collisionObject1, contact.collisionObject2);
+    std::swap(contact.triID1, contact.triID2);
+
+    if (option.enableContact)
+      contact.normal = -contact.normal;
   }
 
   return contact;
