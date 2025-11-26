@@ -555,11 +555,11 @@ SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
   // snippet:cpp-dominoes-lesson2a-loader-start
-  dart::utils::UrdfParser loader;
+  dart::utils::UrdfParser parser;
   // snippet:cpp-dominoes-lesson2a-loader-end
   // snippet:cpp-dominoes-lesson2a-parse-start
   SkeletonPtr manipulator
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   // snippet:cpp-dominoes-lesson2a-parse-end
   // snippet:cpp-dominoes-lesson2a-name-start
   manipulator->setName("manipulator");

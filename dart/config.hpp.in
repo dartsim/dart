@@ -63,10 +63,6 @@
   #define DART_COMPILER_MSVC
 #endif
 
-// Indicates the build mode used for compiling
-#cmakedefine01 DART_BUILD_MODE_DEBUG
-#cmakedefine01 DART_BUILD_MODE_RELEASE
-
 #cmakedefine01 HAVE_BULLET
 #cmakedefine01 HAVE_ODE
 #cmakedefine01 HAVE_OCTOMAP

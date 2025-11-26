@@ -43,9 +43,9 @@ using namespace dart::test;
 //==============================================================================
 TEST(Issue838, MaterialParsing)
 {
-  dart::utils::UrdfParser loader;
+  dart::utils::UrdfParser parser;
   dart::dynamics::SkeletonPtr skeleton
-      = loader.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
   EXPECT_TRUE(nullptr != skeleton);
 
   std::vector<Eigen::Vector4d> colors;

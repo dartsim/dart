@@ -90,9 +90,7 @@ public:
       bool earlyTermination = false)
       = 0;
 
-#if DART_BUILD_MODE_DEBUG
   virtual bool canSolve(int n, const double* A) = 0;
-#endif
 };
 
 } // namespace constraint

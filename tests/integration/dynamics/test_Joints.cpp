@@ -588,7 +588,7 @@ TEST_F(Joints, PositionLimit)
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -668,7 +668,7 @@ TEST_F(Joints, PositionAndVelocityLimit)
   joint1->setVelocityLowerLimit(0, -velLimit1);
   joint1->setVelocityUpperLimit(0, velLimit1);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -829,7 +829,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1087,7 +1087,7 @@ void testServoMotor()
   for (auto pendulum : pendulums)
     world->addSkeleton(pendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1216,7 +1216,7 @@ void testMimicJoint()
 
   world->addSkeleton(pendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1417,7 +1417,7 @@ TEST_F(Joints, PartialMimicJoint)
 
   world->addSkeleton(skeleton);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   const std::size_t numSteps = 400;
 #else
   const std::size_t numSteps = 2000;
@@ -1497,7 +1497,7 @@ TEST_F(Joints, PartialMimicJointWithCouplerFlagFallsBackToMimicMotor)
 
   world->addSkeleton(skeleton);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   const std::size_t numSteps = 400;
 #else
   const std::size_t numSteps = 800;
@@ -1574,7 +1574,7 @@ TEST_F(Joints, JointCoulombFrictionAndPositionLimit)
   EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -2355,7 +2355,7 @@ void testServoVelocityConsistency()
   world->addSkeleton(servoPendulum);
   world->addSkeleton(velocityPendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -2485,7 +2485,7 @@ void testCoMJacobianSignConsistency()
   world->addSkeleton(servoPendulum);
   world->addSkeleton(velocityPendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 1.0;
@@ -2578,7 +2578,7 @@ void testServoActuatorStability()
 
   world->addSkeleton(pendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#if !defined(NDEBUG)
   double simTime = 0.2;
 #else
   double simTime = 2.0;

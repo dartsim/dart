@@ -9,7 +9,7 @@
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
  *   conditions are met:
- *   * Redistributions of source code must retain the above copyright
+ *   * Redistributions of this software must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
  *     copyright notice, this list of conditions and the following
@@ -30,42 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#include "dart/config.hpp"
 
-#include <dart/constraint/BoxedLcpSolver.hpp>
+#include <gtest/gtest.h>
 
-#include <dart/Export.hpp>
+#if HAVE_BULLET
+  #include "dart/collision/CollisionOption.hpp"
+  #include "dart/collision/bullet/detail/BulletContact.hpp"
+#endif
 
-namespace dart {
-namespace constraint {
+using namespace dart;
+using namespace dart::collision;
 
-class DART_API DantzigBoxedLcpSolver : public BoxedLcpSolver
+#if HAVE_BULLET
+using dart::collision::bullet::detail::shouldReportContact;
+
+TEST(BulletContact, FiltersNegativePenetrationDepth)
 {
-public:
-  // Documentation inherited.
-  const std::string& getType() const override;
+  CollisionOption option;
 
-  /// Returns type for this class
-  static const std::string& getStaticType();
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 1);
+  cp.m_distance1 = 0.01; // positive => negative penetration depth
 
-  // Documentation inherited.
-  bool solve(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination) override;
+  EXPECT_FALSE(shouldReportContact(cp, option));
 
-  // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
-};
+  option.allowNegativePenetrationDepthContacts = true;
+  EXPECT_TRUE(shouldReportContact(cp, option));
+}
 
-} // namespace constraint
-} // namespace dart
+TEST(BulletContact, StillReportsPenetratingContacts)
+{
+  CollisionOption option;
 
-#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 1);
+  cp.m_distance1 = -0.02;
+
+  EXPECT_TRUE(shouldReportContact(cp, option));
+}
+
+TEST(BulletContact, RejectsZeroLengthNormals)
+{
+  CollisionOption option;
+  option.allowNegativePenetrationDepthContacts = true;
+
+  btManifoldPoint cp;
+  cp.m_normalWorldOnB = btVector3(0, 0, 0);
+  cp.m_distance1 = -0.01;
+
+  EXPECT_FALSE(shouldReportContact(cp, option));
+}
+#endif
