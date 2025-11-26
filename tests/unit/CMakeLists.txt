@@ -111,13 +111,8 @@ endif()
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
-add_executable(UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
-add_test(NAME UNIT_gui_ImGuiWindowScaling COMMAND $<TARGET_FILE:UNIT_gui_ImGuiWindowScaling>)
-target_link_libraries(UNIT_gui_ImGuiWindowScaling GTest::gtest GTest::gtest_main)
-target_include_directories(
-  UNIT_gui_ImGuiWindowScaling PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
-)
-dart_format_add(gui/test_ImGuiWindowScaling.cpp)
+dart_add_test(
+  "unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
 
 # ==============================================================================
 # Utils Tests
