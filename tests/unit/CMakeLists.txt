@@ -105,6 +105,12 @@ if(TARGET dart)
 endif()
 
 # ==============================================================================
+# GUI Tests
+# ==============================================================================
+dart_add_test("unit" UNIT_gui_ImGuiWindowScaling gui/test_ImGuiWindowScaling.cpp)
+target_link_libraries(UNIT_gui_ImGuiWindowScaling dart-gui)
+
+# ==============================================================================
 # Utils Tests
 # ==============================================================================
 dart_add_test("unit" test_SdfHelpers utils/test_SdfHelpers.cpp)

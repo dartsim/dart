@@ -35,14 +35,23 @@
 #include "AtlasSimbiconWorldNode.hpp"
 
 #include <dart/gui/All.hpp>
+#include <dart/gui/IncludeImGui.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
 #include <dart/All.hpp>
 
-int main()
+#include <CLI/CLI.hpp>
+
+int main(int argc, char* argv[])
 {
+  CLI::App app("Atlas Simbicon example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
@@ -66,6 +75,13 @@ int main()
 
   // Create a Viewer and set it up with the WorldNode
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+
+  if (guiScale != 1.0) {
+    auto& style = ImGui::GetStyle();
+    const float scale = static_cast<float>(guiScale);
+    style.ScaleAllSizes(scale);
+    ImGui::GetIO().FontGlobalScale = scale;
+  }
   viewer->addWorldNode(node);
 
   // Enable shadow

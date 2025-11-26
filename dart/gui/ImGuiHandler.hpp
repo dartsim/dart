@@ -104,6 +104,8 @@ protected:
 
   float mMouseWheel;
 
+  std::array<float, 2> mFramebufferScale;
+
   std::vector<std::shared_ptr<ImGuiWidget>> mWidgets;
 };
 
