@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-
 #include "dart/config.hpp"
+
+#include <gtest/gtest.h>
 
 #if HAVE_BULLET
   #include "dart/collision/CollisionOption.hpp"
