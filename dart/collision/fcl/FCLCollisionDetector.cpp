@@ -159,6 +159,12 @@ Contact convertContact(
     fcl::CollisionObject* o2,
     const CollisionOption& option);
 
+void enforceDeterministicOrdering(
+    Contact& contact,
+    FCLCollisionObject* fclObj1,
+    FCLCollisionObject* fclObj2,
+    const CollisionOption& option);
+
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
 struct FCLCollisionCallbackData
@@ -1426,6 +1432,17 @@ void postProcessDART(
       } else {
         numContacts++;
       }
+
+      enforceDeterministicOrdering(
+          pair1,
+          static_cast<FCLCollisionObject*>(o1->getUserData()),
+          static_cast<FCLCollisionObject*>(o2->getUserData()),
+          option);
+      enforceDeterministicOrdering(
+          pair2,
+          static_cast<FCLCollisionObject*>(o1->getUserData()),
+          static_cast<FCLCollisionObject*>(o2->getUserData()),
+          option);
     }
 
     // For binary check, return after adding the first contact point to the
@@ -1672,6 +1689,31 @@ Contact convertContact(
   }
 
   return contact;
+}
+
+//==============================================================================
+void enforceDeterministicOrdering(
+    Contact& contact,
+    FCLCollisionObject* fclObj1,
+    FCLCollisionObject* fclObj2,
+    const CollisionOption& option)
+{
+  const auto key1 = collisionObjectKey(fclObj1);
+  const auto key2 = collisionObjectKey(fclObj2);
+
+  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
+  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
+
+  const bool swapNeeded
+      = (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+
+  if (swapNeeded) {
+    std::swap(contact.collisionObject1, contact.collisionObject2);
+    std::swap(contact.triID1, contact.triID2);
+
+    if (option.enableContact)
+      contact.normal = -contact.normal;
+  }
 }
 
 } // anonymous namespace
