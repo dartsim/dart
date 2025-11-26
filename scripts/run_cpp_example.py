@@ -16,6 +16,8 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "target",
+        nargs="?",
+        default=None,
         help="CMake target / example binary name (e.g., atlas_simbicon)",
     )
     parser.add_argument(
@@ -30,7 +32,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     known, unknown = parser.parse_known_args(argv)
 
-    if known.pixi_help or not known.target:
+    if known.pixi_help or known.target is None:
         parser.print_help()
         sys.exit(0)
 
