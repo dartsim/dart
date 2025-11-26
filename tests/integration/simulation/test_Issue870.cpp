@@ -166,7 +166,7 @@ TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
 {
   BoxBounceWorld baseline = makeFourBoxBounceWorld(0.0);
   BoxBounceWorld rotated
-      = makeFourBoxBounceWorld(dart::math::constantsd::pi() / 2.0);
+      = makeFourBoxBounceWorld(dart::math::constants<double>::pi() / 2.0);
 
   const double barrier = 1.6;
   const double softLimit = barrier + 1e-2; // allow tiny penetration tolerance
