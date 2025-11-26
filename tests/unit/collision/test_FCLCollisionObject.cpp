@@ -30,54 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
-#include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/fcl/BackwardCompatibility.hpp>
+#include <gtest/gtest.h>
 
-#include <string>
+using dart::collision::CollisionDetector;
+using dart::collision::FCLCollisionDetector;
 
-namespace dart {
-namespace collision {
-
-class FCLCollisionObject : public CollisionObject
+class ExposedFCLCollisionDetector : public FCLCollisionDetector
 {
 public:
-  friend class FCLCollisionDetector;
+  using FCLCollisionDetector::refreshCollisionObject;
 
-  /// Return FCL collision object
-  dart::collision::fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
-
-  /// Deterministic key based on the attached ShapeFrame hierarchy.
-  const std::string& getKey() const
+  std::shared_ptr<dart::collision::CollisionObject> claim(
+      const dart::dynamics::ShapeFrame* shapeFrame)
   {
-    return mKey;
+    return CollisionDetector::claimCollisionObject(shapeFrame);
   }
-
-protected:
-  /// Constructor
-  FCLCollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  /// FCL collision object
-  std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
-
-  /// Stable identifier for deterministic ordering.
-  std::string mKey;
 };
 
-} // namespace collision
-} // namespace dart
+TEST(FCLCollisionObject, RefreshRetainsUserData)
+{
+  ExposedFCLCollisionDetector detector;
 
-#endif // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+  auto skel = dart::dynamics::Skeleton::create("skel");
+  auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto shape = std::make_shared<dart::dynamics::SphereShape>(0.5);
+  auto shapeNode
+      = pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          shape);
+
+  auto obj = detector.claim(shapeNode);
+  auto* fclObj = dynamic_cast<dart::collision::FCLCollisionObject*>(obj.get());
+  ASSERT_NE(fclObj, nullptr);
+
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
+
+  shape->setRadius(0.6);
+  detector.refreshCollisionObject(fclObj);
+
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      fclObj->getFCLCollisionObject()->getUserData());
+}

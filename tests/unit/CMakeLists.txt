@@ -17,6 +17,9 @@ if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_BulletContact.cpp)
 endif()
 
+dart_add_test(
+  "unit" UNIT_collision_FCLCollisionObject collision/test_FCLCollisionObject.cpp)
+
 # ==============================================================================
 # Common Tests
 # ==============================================================================

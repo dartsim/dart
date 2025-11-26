@@ -34,7 +34,10 @@
 
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
@@ -63,6 +66,23 @@ FCLCollisionObject::FCLCollisionObject(
     mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(this);
+
+  if (shapeFrame) {
+    const auto* shapeNode
+        = dynamic_cast<const dynamics::ShapeNode*>(shapeFrame);
+    if (shapeNode) {
+      const auto bodyNode = shapeNode->getBodyNodePtr();
+      const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+
+      if (skeleton)
+        mKey += skeleton->getName() + "::";
+      if (bodyNode)
+        mKey += bodyNode->getName() + "::";
+      mKey += shapeNode->getName();
+    } else {
+      mKey = shapeFrame->getName();
+    }
+  }
 }
 
 //==============================================================================
