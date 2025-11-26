@@ -48,6 +48,8 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
+#include <cmath>
+
 #include <gtest/gtest.h>
 #include <helpers/GTestUtils.hpp>
 
@@ -180,4 +182,44 @@ TEST(Issue1234, Fcl)
         dart::collision::FCLCollisionDetector::PRIMITIVE);
     return detector;
   });
+}
+
+//==============================================================================
+TEST(Issue426, FclThinBoxMeshModeUsesHalfspacePlane)
+{
+  auto detector = dart::collision::FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(dart::collision::FCLCollisionDetector::MESH);
+
+  const double thickness = 5e-5;
+
+  auto plane = dart::dynamics::Skeleton::create("plane");
+  plane->createJointAndBodyNodePair<FreeJoint>()
+      .second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          std::make_shared<dart::dynamics::PlaneShape>(
+              Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto thin = dart::dynamics::Skeleton::create("thin");
+  auto thinBody = thin->createJointAndBodyNodePair<FreeJoint>().second;
+  auto thinShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.2, 0.2, thickness));
+  thinBody->createShapeNodeWith<dart::dynamics::CollisionAspect>(thinShape)
+      ->setRelativeTranslation(Eigen::Vector3d(
+          0.0, 0.0, 0.5 * thickness)); // place the base on the plane
+
+  auto group = detector->createCollisionGroup();
+  group->subscribeTo(plane);
+  group->subscribeTo(thin);
+
+  dart::collision::CollisionResult result;
+  const bool collided = group->collide(dart::collision::CollisionOption(),
+                                       &result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  if (result.getNumContacts() > 0u) {
+    const auto& contact = result.getContact(0u);
+    EXPECT_NEAR(std::abs(contact.normal[2]), 1.0, 1e-6);
+    EXPECT_LE(std::abs(contact.point[2]), thickness);
+  }
 }
