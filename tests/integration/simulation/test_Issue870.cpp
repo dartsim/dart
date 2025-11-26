@@ -42,6 +42,78 @@ using namespace dart::simulation;
 
 namespace {
 
+constexpr double kBoxSize = 0.12;
+constexpr double kBoxMass = 8.0;
+
+struct BoxBounceWorld
+{
+  WorldPtr world;
+  BodyNode* leftFree{};
+  BodyNode* rightFree{};
+};
+
+// Creates the exact four-box setup described in the issue:
+// two free boxes between two welded boxes, zero gravity, restitution 1.0.
+BoxBounceWorld makeFourBoxBounceWorld(double pitch)
+{
+  auto world = World::create("issue870_boxes");
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(0.002);
+
+  auto makeBoxSkeleton = [&](const std::string& name,
+                             bool weld,
+                             double xTranslation) -> BodyNode* {
+    auto skel = Skeleton::create(name);
+    std::pair<Joint*, BodyNode*> pair;
+
+    if (weld) {
+      pair = skel->createJointAndBodyNodePair<WeldJoint>();
+    } else {
+      pair = skel->createJointAndBodyNodePair<FreeJoint>();
+    }
+
+    auto* joint = pair.first;
+    auto* body = pair.second;
+
+    auto shape
+        = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(kBoxSize));
+    auto* shapeNode = body->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(shape);
+    shapeNode->getDynamicsAspect()->setRestitutionCoeff(1.0);
+    shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+
+    body->setInertia(shape->computeInertia(kBoxMass));
+    body->setMass(kBoxMass);
+
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(xTranslation, 0.1, 0.0);
+    tf.linear()
+        = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+    joint->setPositions(FreeJoint::convertToPositions(tf));
+
+    if (!weld) {
+      Eigen::Vector6d vels = Eigen::Vector6d::Zero();
+      vels.tail<3>() = Eigen::Vector3d(
+          xTranslation < 0 ? 1.0 : -1.0, 0.0, 0.0); // collide inward
+      joint->setVelocities(vels);
+    }
+
+    world->addSkeleton(skel);
+    return body;
+  };
+
+  BoxBounceWorld result;
+  result.world = world;
+  makeBoxSkeleton("box3", /*weld=*/true, -1.6);
+  makeBoxSkeleton("box4", /*weld=*/true, 1.6);
+  result.leftFree = makeBoxSkeleton("box1", /*weld=*/false, -0.6);
+  result.rightFree = makeBoxSkeleton("box2", /*weld=*/false, 0.6);
+  return result;
+}
+
 WorldPtr makeFreeFallWorld(bool spinning)
 {
   auto world = World::create(spinning ? "spinning" : "baseline");
@@ -81,6 +153,64 @@ WorldPtr makeFreeFallWorld(bool spinning)
 
 } // namespace
 
+// Regression for https://github.com/dartsim/dart/issues/870 (box bounce
+// symmetry): rotating every box by pi/2 should not affect the symmetric
+// translation of the free boxes or allow them to bypass the welded boxes.
+TEST(Issue870, RotatedBoxesRemainSymmetricBetweenWeldedStops)
+{
+  BoxBounceWorld baseline = makeFourBoxBounceWorld(0.0);
+  BoxBounceWorld rotated
+      = makeFourBoxBounceWorld(dart::math::constantsd::pi() / 2.0);
+
+  const double barrier = 1.6;
+  const double softLimit = barrier + 1e-2; // allow tiny penetration tolerance
+  const int steps = 2000;
+
+  double maxPosDiff = 0.0;
+  double maxVelDiff = 0.0;
+  double maxSymmetryError = 0.0;
+
+  for (int i = 0; i < steps; ++i) {
+    baseline.world->step();
+    rotated.world->step();
+
+    const auto updateStats = [&](const BoxBounceWorld& w) {
+      const auto lp = w.leftFree->getWorldTransform().translation();
+      const auto rp = w.rightFree->getWorldTransform().translation();
+      const auto lv = w.leftFree->getSpatialVelocity();
+      const auto rv = w.rightFree->getSpatialVelocity();
+
+      maxSymmetryError = std::max(
+          maxSymmetryError,
+          std::abs((lp + rp).x()) + std::abs((lv + rv).tail<3>().x()));
+
+      EXPECT_LT(std::abs(lp.x()), softLimit);
+      EXPECT_LT(std::abs(rp.x()), softLimit);
+    };
+
+    updateStats(baseline);
+    updateStats(rotated);
+
+    const Eigen::Vector3d lpDiff
+        = rotated.leftFree->getWorldTransform().translation()
+          - baseline.leftFree->getWorldTransform().translation();
+    const Eigen::Vector3d rpDiff
+        = rotated.rightFree->getWorldTransform().translation()
+          - baseline.rightFree->getWorldTransform().translation();
+    maxPosDiff = std::max({maxPosDiff, lpDiff.norm(), rpDiff.norm()});
+
+    const Eigen::Vector6d lvDiff = rotated.leftFree->getSpatialVelocity()
+                                   - baseline.leftFree->getSpatialVelocity();
+    const Eigen::Vector6d rvDiff = rotated.rightFree->getSpatialVelocity()
+                                   - baseline.rightFree->getSpatialVelocity();
+    maxVelDiff = std::max({maxVelDiff, lvDiff.norm(), rvDiff.norm()});
+  }
+
+  EXPECT_LT(maxPosDiff, 1e-7);
+  EXPECT_LT(maxVelDiff, 1e-7);
+  EXPECT_LT(maxSymmetryError, 1e-6);
+}
+
 // Regression for https://github.com/dartsim/dart/issues/870: A spinning body in
 // free fall should not pick up lateral translation.
 TEST(Issue870, SpinningSphereFreeFallDoesNotDriftSideways)
@@ -88,7 +218,7 @@ TEST(Issue870, SpinningSphereFreeFallDoesNotDriftSideways)
   auto baselineWorld = makeFreeFallWorld(false);
   auto spinningWorld = makeFreeFallWorld(true);
 
-  const int steps = 1500;
+  const int steps = 4000;
   double maxHorizontalSeparation = 0.0;
 
   for (int i = 0; i < steps; ++i) {
