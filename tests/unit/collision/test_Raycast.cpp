@@ -45,6 +45,23 @@ using namespace collision;
 using namespace dynamics;
 using namespace dart::test;
 
+namespace {
+
+class DummyCollisionObject : public collision::CollisionObject
+{
+public:
+  DummyCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* frame)
+    : CollisionObject(detector, frame)
+  {
+  }
+
+  void updateEngineData() override {}
+};
+
+} // namespace
+
 //==============================================================================
 TEST(Raycast, RayHitDefaultConstructor)
 {
@@ -60,6 +77,46 @@ TEST(Raycast, RaycastResultDefaultConstructor)
   RaycastResult result;
   EXPECT_FALSE(result.hasHit());
   EXPECT_TRUE(result.mRayHits.empty());
+}
+
+//==============================================================================
+TEST(Raycast, RaycastOptionPassesFilterWhenUnset)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<SphereShape>(0.1));
+  DummyCollisionObject object(detector.get(), frame.get());
+
+  RaycastOption option;
+
+  EXPECT_FALSE(option.mEnableAllHits);
+  EXPECT_FALSE(option.mSortByClosest);
+  EXPECT_TRUE(option.passesFilter(&object));
+}
+
+//==============================================================================
+TEST(Raycast, RaycastOptionHonorsPredicate)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto firstFrame = SimpleFrame::createShared(Frame::World());
+  firstFrame->setShape(std::make_shared<SphereShape>(0.1));
+  auto secondFrame = SimpleFrame::createShared(Frame::World());
+  secondFrame->setShape(std::make_shared<SphereShape>(0.1));
+
+  DummyCollisionObject first(detector.get(), firstFrame.get());
+  DummyCollisionObject second(detector.get(), secondFrame.get());
+
+  RaycastOption option(
+      true, true, [&](const collision::CollisionObject* obj) {
+        return obj == &first;
+      });
+
+  EXPECT_TRUE(option.mEnableAllHits);
+  EXPECT_TRUE(option.mSortByClosest);
+  EXPECT_TRUE(option.passesFilter(&first));
+  EXPECT_FALSE(option.passesFilter(&second));
 }
 
 //==============================================================================
