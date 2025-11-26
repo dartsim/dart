@@ -367,7 +367,24 @@ void defViewer(nb::module_& m)
                 nb::arg("center"),
                 nb::arg("up"))
             .def("setCameraMode", &Viewer::setCameraMode, nb::arg("mode"))
-            .def("getCameraMode", &Viewer::getCameraMode);
+            .def("getCameraMode", &Viewer::getCameraMode)
+            .def("close", [](Viewer& self) {
+              self.setDone(true);
+              self.setReleaseContextAtEndOfFrameHint(true);
+            })
+            .def("is_closed", [](const Viewer& self) { return self.done(); })
+            .def(
+                "set_clear_color",
+                [](Viewer& self, const Eigen::Vector4d& clearColor) {
+                  self.getCamera()->setClearColor(
+                      dart::gui::eigToOsgVec4f(clearColor));
+                })
+            .def(
+                "get_clear_color",
+                [](Viewer& self) {
+                  const auto c = self.getCamera()->getClearColor();
+                  return Eigen::Vector4d(c[0], c[1], c[2], c[3]);
+                });
 
   nb::enum_<Viewer::LightingMode>(viewer, "LightingMode")
       .value("NO_LIGHT", Viewer::NO_LIGHT)

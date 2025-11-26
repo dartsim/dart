@@ -1,10 +1,10 @@
 """
 Python ImGui widget embedded in dartpy's ImGuiViewer.
 
-Prerequisite: install the Python Dear ImGui binding (PyPI package `imgui`)
-against a version compatible with the ImGui bundled or used by DART
-(e.g., `pip install "imgui>=2.0.0"`). The widget below lives inside the
-ImGui context created by DART and renders via the same event loop.
+Prerequisite: install the Python Dear ImGui binding via the imgui-bundle
+package (PyPI/conda `imgui-bundle`, e.g., `pip install imgui-bundle`).
+The widget below lives inside the ImGui context created by DART and renders via
+the same event loop.
 """
 
 from __future__ import annotations
@@ -13,13 +13,14 @@ import sys
 from typing import List
 
 import dartpy as dart
+import numpy as np
 
 try:
-    import imgui  # type: ignore
+    from imgui_bundle import imgui  # type: ignore
 except ImportError as exc:  # pragma: no cover - optional dependency
     raise SystemExit(
-        "Missing dependency: install the 'imgui' package (PyPI) to run this example, "
-        "e.g. `pip install imgui>=2.0.0`."
+        "Missing dependency: install the 'imgui-bundle' package (PyPI/conda) to run "
+        "this example, e.g. `pip install imgui-bundle`."
     ) from exc
 
 
@@ -28,39 +29,53 @@ class PythonImGuiWidget(dart.gui.ImGuiWidget):
         super().__init__()
         self._viewer = viewer
         self._node = world_node
-        self._gravity = list(self._node.getWorld().getGravity())
+        self._gravity = list(self._node.get_world().get_gravity())
+        self._frames = 0
 
     def render(self) -> None:
         """Render a small control panel into the ImGui overlay."""
+        self._frames += 1
         imgui.set_next_window_size(320, 180, imgui.FIRST_USE_EVER)
         imgui.set_next_window_bg_alpha(0.85)
         imgui.begin("Python Dear ImGui widget")
 
-        simulating = self._viewer.isSimulating()
+        if imgui.is_key_down(imgui.Key.Escape):
+            self._viewer.close()
+
+        simulating = self._viewer.is_simulating()
         if imgui.button("Pause" if simulating else "Play"):
             self._viewer.simulate(not simulating)
         imgui.same_line()
         if imgui.button("Step once"):
             # Single stepping is helpful when paused.
             self._viewer.simulate(False)
-            self._node.getWorld().step()
+            self._node.get_world().step()
 
         imgui.separator()
-        imgui.text(f"Sim time: {self._node.getWorld().getTime():.3f} s")
+        imgui.text(f"Sim time: {self._node.get_world().getTime():.3f} s")
         imgui.text(f"Frame rate: {imgui.get_io().framerate:.1f} fps")
 
         changed, self._gravity[1] = imgui.slider_float(
             "Gravity Y", self._gravity[1], -20.0, 5.0
         )
         if changed:
-            self._node.getWorld().setGravity(self._gravity)
+            self._node.get_world().set_gravity(self._gravity)
+
+        if imgui.button("Quit viewer"):
+            self._viewer.close()
+
+        imgui.separator()
+        imgui.text(f"Frames rendered: {self._frames}")
+        if self._frames > 900 and not self._viewer.is_closed():
+            # Failsafe: auto-close after ~15s if nothing else happens
+            self._viewer.close()
 
         imgui.end()
 
 
 def make_world() -> dart.simulation.World:
-    world = dart.simulation.World()
-    world.setGravity([0.0, -9.81, 0.0])
+    world = dart.World()
+    world.set_gravity([0.0, -9.81, 0.0])
     return world
 
 
@@ -72,19 +87,22 @@ def main(argv: List[str] | None = None) -> int:
     # RealTimeWorldNode drives the simulation loop.
     node = dart.gui.RealTimeWorldNode(world)
 
-    viewer = dart.gui.ImGuiViewer([0.95, 0.95, 0.95, 1.0])
-    viewer.addWorldNode(node)
+    viewer = dart.gui.ImGuiViewer(np.array([0.95, 0.95, 0.95, 1.0], dtype=float))
+    viewer.add_world_node(node)
 
     widget = PythonImGuiWidget(viewer, node)
-    viewer.getImGuiHandler().addWidget(widget, True)
+    viewer.get_im_gui_handler().add_widget(widget, True)
 
     grid = dart.gui.GridVisual()
-    grid.setPlaneType(dart.gui.GridVisual.PlaneType.XZ)
-    grid.setOffset([0.0, -0.5, 0.0])
-    viewer.addAttachment(grid)
+    grid.set_plane_type(dart.gui.GridVisual.PlaneType.XY)
+    grid.set_offset([0.0, -0.5, 0.0])
+    grid.refresh()
+    viewer.add_attachment(grid)
 
-    viewer.setUpViewInWindow(50, 50, 800, 600)
-    viewer.setCameraHomePosition(
+    viewer.set_clear_color(np.array([0.95, 0.95, 0.95, 1.0], dtype=float))
+    viewer.set_up_view_in_window(50, 50, 800, 600)
+    viewer.setup_default_lights()
+    viewer.set_camera_home_position(
         [2.5, 1.5, 2.5],
         [0.0, 0.0, 0.0],
         [0.0, 1.0, 0.0],

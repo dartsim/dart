@@ -13,6 +13,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/trampoline.h>
 
+#include <memory>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -34,11 +36,7 @@ public:
 
 void defImGuiWidget(nb::module_& m)
 {
-  nb::class_<
-      dart::gui::ImGuiWidget,
-      PyImGuiWidget,
-      nb::holder_type<std::shared_ptr<dart::gui::ImGuiWidget>>>(
-          m, "ImGuiWidget")
+  nb::class_<dart::gui::ImGuiWidget, PyImGuiWidget>(m, "ImGuiWidget")
       .def(nb::init<>())
       .def("render", &dart::gui::ImGuiWidget::render)
       .def(
