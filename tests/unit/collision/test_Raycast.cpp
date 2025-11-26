@@ -51,8 +51,7 @@ class DummyCollisionObject : public collision::CollisionObject
 {
 public:
   DummyCollisionObject(
-      collision::CollisionDetector* detector,
-      const dynamics::ShapeFrame* frame)
+      collision::CollisionDetector* detector, const dynamics::ShapeFrame* frame)
     : CollisionObject(detector, frame)
   {
   }
@@ -108,10 +107,9 @@ TEST(Raycast, RaycastOptionHonorsPredicate)
   DummyCollisionObject first(detector.get(), firstFrame.get());
   DummyCollisionObject second(detector.get(), secondFrame.get());
 
-  RaycastOption option(
-      true, true, [&](const collision::CollisionObject* obj) {
-        return obj == &first;
-      });
+  RaycastOption option(true, true, [&](const collision::CollisionObject* obj) {
+    return obj == &first;
+  });
 
   EXPECT_TRUE(option.mEnableAllHits);
   EXPECT_TRUE(option.mSortByClosest);
