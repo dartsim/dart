@@ -65,7 +65,7 @@ def test_free_joint_world_jacobian_translational_dofs():
     skel = dart.Skeleton("test_free_joint_world_jacobian")
     joint, body = skel.create_free_joint_and_body_node_pair()
 
-    world = dart.Frame.World()
+    world = dart.Frame.world()
 
     positions = np.zeros(6)
     positions[:3] = np.array([0.7, -0.4, 0.2])
