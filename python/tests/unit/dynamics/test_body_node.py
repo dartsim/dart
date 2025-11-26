@@ -66,13 +66,14 @@ def test_free_joint_world_jacobian_translational_dofs():
     joint, body = skel.create_free_joint_and_body_node_pair()
 
     world = dart.Frame.world()
+    offset = np.zeros(3)
 
     positions = np.zeros(6)
     positions[:3] = np.array([0.7, -0.4, 0.2])
     positions[3:] = np.array([0.2, -0.1, 0.05])
     joint.set_positions(positions)
 
-    world_jac = np.array(body.get_world_jacobian())
+    world_jac = np.array(body.get_world_jacobian(offset))
     translational_block = world_jac[3:6, 3:6]
     assert np.allclose(translational_block, np.eye(3), atol=1e-12)
 
@@ -92,7 +93,7 @@ def test_free_joint_world_jacobian_translational_dofs():
         positions = np.random.uniform(-0.5, 0.5, 6)
         joint.set_positions(positions)
 
-        world_jac = np.array(body.get_world_jacobian())
+        world_jac = np.array(body.get_world_jacobian(offset))
         translational_block = world_jac[3:6, 3:6]
         assert np.allclose(translational_block, np.eye(3), atol=1e-12)
 
