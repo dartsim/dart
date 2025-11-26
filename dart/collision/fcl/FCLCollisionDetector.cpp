@@ -159,11 +159,10 @@ Contact convertContact(
     fcl::CollisionObject* o2,
     const CollisionOption& option);
 
-void enforceDeterministicOrdering(
-    Contact& contact,
-    FCLCollisionObject* fclObj1,
-    FCLCollisionObject* fclObj2,
-    const CollisionOption& option);
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2);
+
+void applyDeterministicSwap(Contact& contact);
 
 /// Collision data stores the collision request and the result given by
 /// collision algorithm.
@@ -1433,16 +1432,16 @@ void postProcessDART(
         numContacts++;
       }
 
-      enforceDeterministicOrdering(
-          pair1,
-          static_cast<FCLCollisionObject*>(o1->getUserData()),
-          static_cast<FCLCollisionObject*>(o2->getUserData()),
-          option);
-      enforceDeterministicOrdering(
-          pair2,
-          static_cast<FCLCollisionObject*>(o1->getUserData()),
-          static_cast<FCLCollisionObject*>(o2->getUserData()),
-          option);
+      const auto* fclObj1
+          = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2
+          = static_cast<FCLCollisionObject*>(o2->getUserData());
+      if (shouldSwapDeterministically(fclObj1, fclObj2)) {
+        if (option.enableContact)
+          std::swap(pair1.point, pair2.point);
+        applyDeterministicSwap(pair1);
+        applyDeterministicSwap(pair2);
+      }
     }
 
     // For binary check, return after adding the first contact point to the
@@ -1672,31 +1671,15 @@ Contact convertContact(
       = static_cast<FCLCollisionObject*>(contact.collisionObject1);
   const auto fclObj2
       = static_cast<FCLCollisionObject*>(contact.collisionObject2);
-  const auto key1 = collisionObjectKey(fclObj1);
-  const auto key2 = collisionObjectKey(fclObj2);
-  const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
-  const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
-
-  const bool swapNeeded
-      = (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
-
-  if (swapNeeded) {
-    std::swap(contact.collisionObject1, contact.collisionObject2);
-    std::swap(contact.triID1, contact.triID2);
-
-    if (option.enableContact)
-      contact.normal = -contact.normal;
-  }
+  if (shouldSwapDeterministically(fclObj1, fclObj2))
+    applyDeterministicSwap(contact);
 
   return contact;
 }
 
 //==============================================================================
-void enforceDeterministicOrdering(
-    Contact& contact,
-    FCLCollisionObject* fclObj1,
-    FCLCollisionObject* fclObj2,
-    const CollisionOption& option)
+bool shouldSwapDeterministically(
+    const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
 {
   const auto key1 = collisionObjectKey(fclObj1);
   const auto key2 = collisionObjectKey(fclObj2);
@@ -1704,16 +1687,16 @@ void enforceDeterministicOrdering(
   const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
   const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);
 
-  const bool swapNeeded
-      = (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+  return (key2 < key1) || (key1 == key2 && addr2 < addr1 && addr2 != 0u);
+}
 
-  if (swapNeeded) {
-    std::swap(contact.collisionObject1, contact.collisionObject2);
-    std::swap(contact.triID1, contact.triID2);
+//==============================================================================
+void applyDeterministicSwap(Contact& contact)
+{
+  std::swap(contact.collisionObject1, contact.collisionObject2);
+  std::swap(contact.triID1, contact.triID2);
 
-    if (option.enableContact)
-      contact.normal = -contact.normal;
-  }
+  contact.normal = -contact.normal;
 }
 
 } // anonymous namespace
