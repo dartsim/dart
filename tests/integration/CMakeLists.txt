@@ -224,6 +224,9 @@ dart_build_tests(
     simulation/test_Building.cpp
 )
 
+dart_add_test(
+  "integration" INTEGRATION_simulation_Issue870 simulation/test_Issue870.cpp)
+
 if(TARGET dart-utils)
   dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_FileInfoWorld.cpp)
   target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-utils)
