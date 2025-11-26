@@ -36,6 +36,8 @@
 
 #include <dart/All.hpp>
 
+#include <CLI/CLI.hpp>
+
 #include <iostream>
 
 using namespace dart;
@@ -372,8 +374,14 @@ protected:
 };
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  CLI::App app("Box stacking example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   simulation::WorldPtr world = simulation::World::create();
   world->addSkeleton(createFloor());
 
@@ -386,6 +394,7 @@ int main()
 
   // Create a Viewer and set it up with the WorldNode
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

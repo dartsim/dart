@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/GridVisual.hpp>
+#include <dart/gui/ImGuiHandler.hpp>
 #include <dart/gui/ImGuiViewer.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
@@ -61,6 +62,7 @@
 
 #include <dart/common/Uri.hpp>
 
+#include <CLI/CLI.hpp>
 #include <Eigen/Core>
 #include <imgui.h>
 #include <osg/GraphicsContext>
@@ -522,8 +524,14 @@ private:
 } // namespace
 
 //==============================================================================
-int main(int /*argc*/, char*[] /*argv*/)
+int main(int argc, char* argv[])
 {
+  CLI::App app("Mimic pendulums example");
+  double guiScale = 1.0;
+  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
+      ->check(CLI::PositiveNumber);
+  CLI11_PARSE(app, argc, argv);
+
   const std::string worldUri
       = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
 
@@ -552,6 +560,7 @@ int main(int /*argc*/, char*[] /*argv*/)
 
   osg::ref_ptr<RealTimeWorldNode> worldNode = new RealTimeWorldNode(world);
   osg::ref_ptr<ImGuiViewer> viewer = new ImGuiViewer();
+  viewer->setImGuiScale(static_cast<float>(guiScale));
   viewer->addWorldNode(worldNode);
   viewer->addInstructionText("space: toggle simulation\n");
 
