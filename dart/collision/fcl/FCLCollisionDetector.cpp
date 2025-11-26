@@ -1432,10 +1432,8 @@ void postProcessDART(
         numContacts++;
       }
 
-      const auto* fclObj1
-          = static_cast<FCLCollisionObject*>(o1->getUserData());
-      const auto* fclObj2
-          = static_cast<FCLCollisionObject*>(o2->getUserData());
+      const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
       if (shouldSwapDeterministically(fclObj1, fclObj2)) {
         if (option.enableContact)
           std::swap(pair1.point, pair2.point);
