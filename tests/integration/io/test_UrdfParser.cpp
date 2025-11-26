@@ -36,8 +36,10 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/simulation/World.hpp"
 #include "dart/utils/urdf/UrdfParser.hpp"
 
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -464,6 +466,224 @@ TEST(UrdfParser, mimicJoint)
   EXPECT_TRUE(nullptr != joint2->getMimicJoint());
   EXPECT_DOUBLE_EQ(joint2->getMimicMultiplier(), 2.);
   EXPECT_DOUBLE_EQ(joint2->getMimicOffset(), 0.1);
+}
+
+//==============================================================================
+TEST(UrdfParser, transmissionsCreateCoupledMimicJoints)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="transmission_robot">
+      <link name="base"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="l1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l1"/>
+      <joint name="j2" type="continuous">
+        <parent link="l1"/>
+        <child link="l2"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l2"/>
+
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>4.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+    </robot>
+  )";
+  // clang-format on
+
+  UrdfParser loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* refJoint = robot->getJoint("j1");
+  auto* follower = robot->getJoint("j2");
+  ASSERT_NE(refJoint, nullptr);
+  ASSERT_NE(follower, nullptr);
+
+  EXPECT_NE(refJoint->getActuatorType(), dart::dynamics::Joint::MIMIC);
+  EXPECT_EQ(follower->getActuatorType(), dart::dynamics::Joint::MIMIC);
+  EXPECT_EQ(follower->getMimicJoint(), refJoint);
+  EXPECT_TRUE(follower->isUsingCouplerConstraint());
+  EXPECT_DOUBLE_EQ(follower->getMimicMultiplier(), 0.5);
+  EXPECT_DOUBLE_EQ(follower->getMimicOffset(), 0.0);
+}
+
+//==============================================================================
+TEST(UrdfParser, transmissionDynamicsRespectsGearRatio)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="transmission_robot_dynamic">
+      <link name="base">
+        <inertial>
+          <mass value="1.0"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+      </link>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="l1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l1">
+        <inertial>
+          <mass value="1.0"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+      </link>
+      <joint name="j2" type="continuous">
+        <parent link="l1"/>
+        <child link="l2"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l2">
+        <inertial>
+          <mass value="1.0"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+      </link>
+
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>4.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+    </robot>
+  )";
+  // clang-format on
+
+  dart::utils::UrdfParser::Options options;
+  options.mDefaultRootJointType = dart::utils::UrdfParser::RootJointType::Fixed;
+  UrdfParser loader(options);
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(0.001);
+  world->addSkeleton(robot);
+
+  auto* j1 = robot->getJoint("j1");
+  auto* j2 = robot->getJoint("j2");
+  ASSERT_NE(j1, nullptr);
+  ASSERT_NE(j2, nullptr);
+
+  ASSERT_TRUE(j2->isUsingCouplerConstraint());
+  ASSERT_EQ(j2->getActuatorType(), dart::dynamics::Joint::MIMIC);
+  const double multiplier = j2->getMimicMultiplier();
+  ASSERT_DOUBLE_EQ(multiplier, 0.5);
+
+  const double tol = 5e-3;
+  const double torque = 1.0;
+  for (int i = 0; i < 200; ++i) {
+    j1->setForce(0, torque);
+    j2->setForce(0, 0.0);
+    world->step();
+
+    EXPECT_NEAR(j2->getPosition(0), multiplier * j1->getPosition(0), tol);
+    EXPECT_NEAR(j2->getVelocity(0), multiplier * j1->getVelocity(0), tol);
+  }
+}
+
+//==============================================================================
+TEST(UrdfParser, transmissionsSkipInvalidEntries)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="transmission_robot_invalid">
+      <link name="base"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="l1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l1"/>
+      <joint name="j2" type="continuous">
+        <parent link="l1"/>
+        <child link="l2"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="l2"/>
+
+      <!-- Unsupported type should be ignored -->
+      <transmission name="tx_bad_type">
+        <type>transmission_interface/FourBarLinkageTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+
+      <!-- Zero ratio should be ignored -->
+      <transmission name="tx_zero_ratio">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>0.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+    </robot>
+  )";
+  // clang-format on
+
+  UrdfParser loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* j1 = robot->getJoint("j1");
+  auto* j2 = robot->getJoint("j2");
+  ASSERT_NE(j1, nullptr);
+  ASSERT_NE(j2, nullptr);
+
+  // Neither joint should have been converted to a mimic actuator because the
+  // only transmissions were invalid.
+  EXPECT_NE(j1->getActuatorType(), dart::dynamics::Joint::MIMIC);
+  EXPECT_NE(j2->getActuatorType(), dart::dynamics::Joint::MIMIC);
 }
 
 //==============================================================================
