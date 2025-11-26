@@ -123,7 +123,7 @@ RollingResult runRollingTrial(
   Eigen::Isometry3d objectTf = Eigen::Isometry3d::Identity();
   objectTf.translation()
       = normal.normalized() * (support + rampThickness * 0.5 + 0.02);
-  object->getJoint(0)->setTransform(objectTf);
+  dart::dynamics::FreeJoint::setTransformOf(object->getJoint(0), objectTf);
   world->addSkeleton(object);
 
   for (std::size_t i = 0; i < 2000; ++i)
