@@ -51,63 +51,63 @@ using dart::utils::UrdfParser;
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_NonExistantPathReturnsNull)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_EQ(
       nullptr,
-      loader.parseSkeleton("dart://sample/skel/test/does_not_exist.urdf"));
+      parser.parseSkeleton("dart://sample/skel/test/does_not_exist.urdf"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_InvalidUrdfReturnsNull)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_EQ(
-      nullptr, loader.parseSkeleton("dart://sample/urdf/test/invalid.urdf)"));
+      nullptr, parser.parseSkeleton("dart://sample/urdf/test/invalid.urdf)"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_MissingMeshReturnsNull)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_EQ(
       nullptr,
-      loader.parseSkeleton("dart://sample/urdf/test/missing_mesh.urdf"));
+      parser.parseSkeleton("dart://sample/urdf/test/missing_mesh.urdf"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_InvalidMeshReturnsNull)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_EQ(
       nullptr,
-      loader.parseSkeleton("dart://sample/urdf/test/invalid_mesh.urdf"));
+      parser.parseSkeleton("dart://sample/urdf/test/invalid_mesh.urdf"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_MissingPackageReturnsNull)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_EQ(
       nullptr,
-      loader.parseSkeleton("dart://sample/urdf/test/missing_package.urdf"));
+      parser.parseSkeleton("dart://sample/urdf/test/missing_package.urdf"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseSkeleton_LoadsPrimitiveGeometry)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_TRUE(
       nullptr
-      != loader.parseSkeleton(
+      != parser.parseSkeleton(
           "dart://sample/urdf/test/primitive_geometry.urdf"));
 }
 
 //==============================================================================
 TEST(UrdfParser, parseWorld)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   EXPECT_TRUE(
-      nullptr != loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
+      nullptr != parser.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
 }
 
 //==============================================================================
@@ -177,8 +177,8 @@ TEST(UrdfParser, parseJointProperties)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   auto joint1 = robot->getJoint(1);
@@ -211,8 +211,8 @@ TEST(UrdfParser, parsePlanarJointLimitsAndAxis)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
   auto* joint
@@ -264,8 +264,8 @@ TEST(UrdfParser, parsePlanarJointArbitraryAxis)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
   auto* joint
@@ -302,8 +302,8 @@ TEST(UrdfParser, parseFloatingJointLimits)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
   auto* joint
@@ -349,11 +349,11 @@ TEST(UrdfParser, parseUrdfWithoutWorldLink)
   )";
   // clang-format on
 
-  UrdfParser loader;
+  UrdfParser parser;
   UrdfParser::Options options;
 
   // Default
-  auto robot1 = loader.parseSkeletonString(urdfStr, "");
+  auto robot1 = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot1);
   EXPECT_EQ(
       robot1->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
@@ -361,8 +361,8 @@ TEST(UrdfParser, parseUrdfWithoutWorldLink)
 
   // Floating
   options.mDefaultRootJointType = UrdfParser::RootJointType::Floating;
-  loader.setOptions(options);
-  auto robot2 = loader.parseSkeletonString(urdfStr, "");
+  parser.setOptions(options);
+  auto robot2 = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot2);
   EXPECT_EQ(
       robot2->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
@@ -370,8 +370,8 @@ TEST(UrdfParser, parseUrdfWithoutWorldLink)
 
   // Fixed
   options.mDefaultRootJointType = UrdfParser::RootJointType::Fixed;
-  loader.setOptions(options);
-  auto robot3 = loader.parseSkeletonString(urdfStr, "");
+  parser.setOptions(options);
+  auto robot3 = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot3);
   EXPECT_EQ(
       robot3->getRootJoint()->getType(), dynamics::WeldJoint::getStaticType());
@@ -446,8 +446,8 @@ TEST(UrdfParser, mimicJoint)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   auto joint1 = robot->getJoint(1);
@@ -534,8 +534,8 @@ TEST(UrdfParser, badMimicJoint)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   auto joint1 = robot->getJoint(1);
@@ -573,8 +573,8 @@ TEST(UrdfParser, WorldShouldBeTreatedAsKeyword)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   EXPECT_TRUE(robot->getNumBodyNodes() == 1u);
@@ -592,8 +592,8 @@ TEST(UrdfParser, SingleLinkWithoutJoint)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   EXPECT_TRUE(robot->getNumBodyNodes() == 1u);
@@ -634,8 +634,8 @@ TEST(UrdfParser, MultiTreeRobot)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   EXPECT_EQ(robot->getNumBodyNodes(), 2u);
@@ -645,9 +645,9 @@ TEST(UrdfParser, MultiTreeRobot)
 //==============================================================================
 TEST(UrdfParser, KR5MeshColor)
 {
-  UrdfParser loader;
+  UrdfParser parser;
   auto robot
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   ASSERT_TRUE(nullptr != robot);
 
   EXPECT_EQ(robot->getNumBodyNodes(), 7u);
@@ -710,8 +710,8 @@ TEST(UrdfParser, parseVisualCollisionName)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
 
   auto body0 = robot->getBodyNode(0);
@@ -744,11 +744,11 @@ TEST(UrdfParser, Options)
   )";
   // clang-format on
 
-  UrdfParser loader;
+  UrdfParser parser;
   UrdfParser::Options options;
 
   // Default inertia
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
   auto link_0 = robot->getBodyNode("link_0");
   ASSERT_TRUE(link_0 != nullptr);
@@ -759,8 +759,8 @@ TEST(UrdfParser, Options)
   // Custom inertia
   options.mDefaultInertia.setMass(5);
   options.mDefaultInertia.setMoment(1, 2, 3, 4, 5, 6);
-  loader.setOptions(options);
-  robot = loader.parseSkeletonString(urdfStr, "");
+  parser.setOptions(options);
+  robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(nullptr != robot);
   link_0 = robot->getBodyNode("link_0");
   ASSERT_TRUE(link_0 != nullptr);

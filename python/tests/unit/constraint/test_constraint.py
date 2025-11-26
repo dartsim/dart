@@ -1,10 +1,6 @@
-import platform
-
 import dartpy as dart
 import numpy as np
 import pytest
-
-pytestmark = pytest.mark.skip(reason="Constraint bindings need investigation post-dartpy flattening (segfault)")
 
 
 def test_ball_joint_constraint():
@@ -25,8 +21,8 @@ def test_ball_joint_constraint():
     offset1 = [0, 0.025, 0]
     joint_pos = bd1.get_transform().multiply(offset1)
     offset2 = bd2.get_transform().inverse().multiply(joint_pos)
-    constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
-    assert constraint.get_type() == dart.constraint.BallJointConstraint.get_static_type()
+    constraint = dart.BallJointConstraint(bd1, bd2, joint_pos)
+    assert constraint.get_type() == dart.BallJointConstraint.get_static_type()
 
     # Add ball joint constraint to the constraint solver
     constraint_solver = world.get_constraint_solver()
@@ -61,12 +57,10 @@ def test_revolute_joint_constraint():
     joint_pos = bd1.get_transform().multiply(offset)
     axis = [0, 1, 0]
 
-    constraint = dart.constraint.RevoluteJointConstraint(
-        bd1, bd2, joint_pos, axis, axis
-    )
+    constraint = dart.RevoluteJointConstraint(bd1, bd2, joint_pos, axis, axis)
     assert (
         constraint.get_type()
-        == dart.constraint.RevoluteJointConstraint.get_static_type()
+        == dart.RevoluteJointConstraint.get_static_type()
     )
 
     constraint_solver = world.get_constraint_solver()
