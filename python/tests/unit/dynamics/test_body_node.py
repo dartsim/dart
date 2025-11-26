@@ -70,39 +70,39 @@ def test_free_joint_world_jacobian_translational_dofs():
     positions = np.zeros(6)
     positions[:3] = np.array([0.7, -0.4, 0.2])
     positions[3:] = np.array([0.2, -0.1, 0.05])
-    joint.setPositions(positions)
+    joint.set_positions(positions)
 
-    world_jac = np.array(body.getWorldJacobian())
+    world_jac = np.array(body.get_world_jacobian())
     translational_block = world_jac[3:6, 3:6]
     assert np.allclose(translational_block, np.eye(3), atol=1e-12)
 
     velocities = np.zeros(6)
     velocities[:3] = np.array([0.1, 0.15, -0.2])
     velocities[3:] = np.array([0.05, -0.08, 0.12])
-    joint.setVelocities(velocities)
+    joint.set_velocities(velocities)
 
     spatial_from_jac = world_jac.dot(velocities)
     assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-    linear_velocity = np.array(body.getLinearVelocity(world, world)).reshape(3)
+    linear_velocity = np.array(body.get_linear_velocity(world, world)).reshape(3)
     assert np.allclose(linear_velocity, velocities[3:], atol=1e-12)
 
     num_tests = 10
     for _ in range(num_tests):
         positions = np.random.uniform(-0.5, 0.5, 6)
-        joint.setPositions(positions)
+        joint.set_positions(positions)
 
-        world_jac = np.array(body.getWorldJacobian())
+        world_jac = np.array(body.get_world_jacobian())
         translational_block = world_jac[3:6, 3:6]
         assert np.allclose(translational_block, np.eye(3), atol=1e-12)
 
         velocities = np.random.uniform(-1.0, 1.0, 6)
-        joint.setVelocities(velocities)
+        joint.set_velocities(velocities)
 
         spatial_from_jac = world_jac.dot(velocities)
         assert np.allclose(spatial_from_jac[3:], velocities[3:], atol=1e-12)
 
-        linear_velocity = np.array(body.getLinearVelocity(world, world)).reshape(3)
+        linear_velocity = np.array(body.get_linear_velocity(world, world)).reshape(3)
         assert np.allclose(linear_velocity, velocities[3:], atol=1e-12)
 
 
