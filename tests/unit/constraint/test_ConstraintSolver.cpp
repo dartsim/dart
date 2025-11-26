@@ -179,12 +179,10 @@ public:
     return true; // claims success despite NaN output
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 };
 
 // Secondary solver that succeeds and writes a constant impulse.
@@ -215,12 +213,10 @@ public:
     return true;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -254,12 +250,10 @@ public:
     return false; // intentionally report failure
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -295,12 +289,10 @@ public:
     return true;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 
 private:
   double mValue;
@@ -330,12 +322,10 @@ public:
     return false;
   }
 
-#if DART_BUILD_MODE_DEBUG
   bool canSolve(int /*n*/, const double* /*A*/) override
   {
     return true;
   }
-#endif
 };
 
 // Expose the protected solve entry point for testing.

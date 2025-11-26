@@ -131,17 +131,18 @@ void CollisionGroup::subscribeTo(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::subscribeTo(
-    const dynamics::ConstSkeletonPtr& skeleton, const Others&... others)
+    const dynamics::ConstMetaSkeletonPtr& metaSkeleton, const Others&... others)
 {
   const auto inserted = mSkeletonSources.insert(SkeletonSources::value_type(
-      skeleton.get(), SkeletonSource(skeleton, skeleton->getVersion())));
+      metaSkeleton.get(),
+      SkeletonSource(metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
 
   if (inserted.second) {
     SkeletonSource& entry = inserted.first->second;
 
-    const std::size_t numBodies = skeleton->getNumBodyNodes();
+    const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
     for (std::size_t i = 0u; i < numBodies; ++i) {
-      const dynamics::BodyNode* bn = skeleton->getBodyNode(i);
+      const dynamics::BodyNode* bn = metaSkeleton->getBodyNode(i);
 
       auto& childInfo
           = entry.mChildren
@@ -152,7 +153,7 @@ void CollisionGroup::subscribeTo(
       bn->eachShapeNodeWith<dynamics::CollisionAspect>(
           [&](const dynamics::ShapeNode* shapeNode) {
             entry.mObjects.insert(
-                {shapeNode, addShapeFrameImpl(shapeNode, skeleton.get())});
+                {shapeNode, addShapeFrameImpl(shapeNode, metaSkeleton.get())});
             childInfo.mFrames.insert(shapeNode);
           });
     }
@@ -250,13 +251,12 @@ void CollisionGroup::unsubscribeFrom(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::unsubscribeFrom(
-    const dynamics::Skeleton* skeleton, const Others*... others)
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
 {
   auto it = mSkeletonSources.find(skeleton);
   if (it != mSkeletonSources.end()) {
     for (const auto& entry : it->second.mObjects) {
-      removeShapeFrameInternal(
-          entry.first, static_cast<const dynamics::MetaSkeleton*>(skeleton));
+      removeShapeFrameInternal(entry.first, skeleton);
     }
 
     mSkeletonSources.erase(it);
@@ -277,7 +277,7 @@ bool CollisionGroup::isSubscribedTo(
 //==============================================================================
 template <typename... Others>
 bool CollisionGroup::isSubscribedTo(
-    const dynamics::Skeleton* skeleton, const Others*... others)
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
 {
   auto it = mSkeletonSources.find(skeleton);
   return (it != mSkeletonSources.end()) && isSubscribedTo(others...);
