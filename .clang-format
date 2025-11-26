@@ -110,7 +110,7 @@ IncludeCategories:
     Priority: 50
 
   # C++ standard library headers, then C
-  # NOTE: Add when new C++ STL header begins with "c" is found
+  # C-prefix headers (including the full C++20 set) are matched by the "^<c.*>$" regex
   - Regex: "^<charconv>$"
     Priority: 100
   - Regex: "^<chrono>$"
